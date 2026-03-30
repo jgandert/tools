@@ -130,6 +130,16 @@
             z-index: 0;
         }
 
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) .tool-card::after {
+                filter: invert(1) grayscale(100%);
+            }
+        }
+
+        :root[data-theme="dark"] .tool-card::after {
+            filter: invert(1) grayscale(100%);
+        }
+
         /* Individual Icons (SVGs inline for portability, could be images) */
         .card-markdown {
             --bg-icon: url("./paste_to_markdown/icon.svg");
