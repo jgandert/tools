@@ -107,6 +107,9 @@
                 <li>
                     <a href="#structure">Bit Structure</a>
                 </li>
+                <li>
+                    <a href="#faq">FAQ</a>
+                </li>
             </ul>
         </nav>
     </header>
@@ -121,7 +124,7 @@
             <p>
                 A <strong>sumid</strong>
                 is a <strong>256-bit, base-50-encoded, sequential UUID</strong> built from
-                nanosecond-precision timestamps. Unless you're generating trillions of IDs in the same nanosecond,
+                nanosecond-precision timestamps. With 160 bits of randomness per time slot,
                 collisions are negligible.
             </p>
             <p>
@@ -497,9 +500,8 @@
             <h3>Merging</h3>
             <p>
                 When two sumids are merged, the result sorts <strong>between</strong> them. Its position
-                within that range encodes <em>when</em>
-                the merge happened using <strong>logarithmic
-                    compression</strong>: merges soon after creation get far more resolution than merges
+                within that range encodes <em>when</em> the merge happened using <strong>logarithmic
+                compression</strong>: merges soon after creation get far more resolution than merges
                 in the distant future, matching the real-world likelihood of when merges occur.
             </p>
             <p>
@@ -507,6 +509,84 @@
                 to provide sub-slot precision, so repeated merges of the same pair sort
                 chronologically. The remaining <strong>142 random bits</strong> still exceed UUID v4's 122.
                 The approximate merge time can be recovered given both parents and the merged result.
+            </p>
+        </section>
+
+        <section id="faq">
+            <h2>FAQ</h2>
+
+            <h3>When would I actually use merging?</h3>
+            <p>
+                Merging lets you insert an item between two existing items without renumbering anything.
+                If you maintain a sorted list — tasks in a to-do app, pages in a document, rows in a
+                spreadsheet — and a user drags something between two neighbors, you merge those
+                neighbors' IDs to get a new ID that sorts right where you need it. No index shuffling,
+                no fractional positions, no coordination with a server.
+            </p>
+            <p>
+                It also works for <strong>offline collaboration</strong>: two users can independently
+                insert between the same pair of items while disconnected. When they sync, the
+                embedded merge timestamps give each insertion a distinct sort position automatically.
+                Your application still needs to handle semantic conflicts, but ordering is taken care of.
+            </p>
+            <p>
+                Beyond lists, merging applies to any ordered dimension.
+                A design tool can place a layer between two existing z-indices by merging their IDs;
+                repeated merges of the same pair stay chronologically ordered thanks to the overflow
+                bits.
+            </p>
+
+            <h3>How does this compare to UUIDv7?</h3>
+            <p>
+                UUIDv7 gives you 48 bits of millisecond time and 74 bits of randomness in 128 bits total.
+                A sumid gives you 96 bits of nanosecond time and 160 bits of randomness in 256 bits.
+                That means better ordering resolution, fewer collisions, and the ability to merge —
+                at the cost of twice the bits (46 characters vs. 36).
+            </p>
+
+            <h3>Is 46 characters too long?</h3>
+            <p>
+                It depends on your constraints. If you're storing IDs in a database column or passing them
+                in URLs, 46 characters is comparable to a base64-encoded 256-bit hash. If your system
+                is tight on space (e.g. QR codes, SMS), a shorter ID format may be a better fit.
+            </p>
+
+            <h3>Can I extract the creation time from a sumid?</h3>
+            <p>
+                Yes — right-shift the integer value by 160 and you have the timestamp in nanoseconds.
+                The <a href="#content">Validate &amp; Decode</a> tool in the sidebar does this automatically.
+            </p>
+
+            <h3>What happens if two machines generate IDs at the same nanosecond?</h3>
+            <p>
+                They share the same time prefix but differ in the random portion.
+                A collision requires matching all 160 random bits — probability
+                1&nbsp;in&nbsp;2<sup>160</sup> (roughly 10<sup>48</sup>).
+            </p>
+
+            <h3>Why base 50 instead of base 62 or base 64?</h3>
+            <p>
+                Honestly, in most cases it wouldn't matter — IDs are copied and pasted, not
+                read aloud or typed by hand. A larger base would shave off about three characters.
+                But when an ID <em>does</em> end up in a screenshot, a log file, or a
+                support ticket, having no ambiguous glyphs and no shell-unsafe characters removes
+                an entire class of "wait, is that a zero or an O?" moments. The cost is small
+                (46 characters instead of ~43); the payoff is that every character is safe everywhere
+                without escaping or squinting.
+            </p>
+
+            <h3>Do sumids work as database primary keys?</h3>
+            <p>
+                Yes. They're sequential, so B-tree inserts stay roughly append-only — you avoid the
+                random-write penalty that plagues UUIDv4. Store them as a fixed-length string column
+                or as a 256-bit integer, depending on your database.
+            </p>
+
+            <h3>Is the nanosecond timestamp actually nanosecond-precise?</h3>
+            <p>
+                It depends on the platform. Most OSes top out at microsecond precision; browsers
+                at milliseconds. The 96-bit field has room for true nanoseconds, but actual
+                precision is whatever your runtime provides.
             </p>
         </section>
 
