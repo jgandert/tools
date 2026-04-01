@@ -1906,6 +1906,8 @@ dialog footer {
     border-radius: var(--radius);
     font-family: var(--font-sans);
     font-size: 0.75rem;
+    text-transform: none;
+    letter-spacing: normal;
     white-space: nowrap;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
