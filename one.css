@@ -952,6 +952,13 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     color: var(--on-primary);
 }
 
+.segmented-control input:disabled+label,
+.segmented-control label:has(input:disabled) {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .segmented-control input {
     display: none !important;
 }
