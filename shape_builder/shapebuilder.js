@@ -1,4 +1,4 @@
-(function (window) {
+(function(window) {
     // Use global paper if available (for non-module environments)
     const paper = window.paper || (typeof require !== "undefined" ? require("paper") : null);
 
@@ -91,16 +91,27 @@
             } else {
                 this.p = new paper.Point(x || 0, y || 0);
             }
-            if (pathContext !== undefined) {this.pathContext = pathContext;}
-            if (offsetContext !== undefined) {this.offsetContext = offsetContext;}
+            if (pathContext !== undefined) {
+                this.pathContext = pathContext;
+            }
+            if (offsetContext !== undefined) {
+                this.offsetContext = offsetContext;
+            }
         }
 
-        get x() { return this.p.x; }
-        get y() { return this.p.y; }
+        get x() {
+            return this.p.x;
+        }
+
+        get y() {
+            return this.p.y;
+        }
 
         movePerpendicular({ amount, direction, path, offset }) {
             const targetPath = path || this.pathContext;
-            if (!targetPath) {throw new Error("movePerpendicular requires a shape or path reference.");}
+            if (!targetPath) {
+                throw new Error("movePerpendicular requires a shape or path reference.");
+            }
             const paperPath = targetPath.path || targetPath;
             let actualOffset = offset !== undefined ? offset : this.offsetContext;
             if (actualOffset === undefined) {
@@ -161,13 +172,13 @@
                 right: b.right,
                 width: b.width,
                 height: b.height,
-                center: [b.center.x, b.center.y]
+                center: [b.center.x, b.center.y],
             };
         }
 
         static inheritPoints(newPath, parents) {
             const newPoints = {};
-            
+
             function getNearest(path, pt) {
                 if (typeof path.getNearestLocation === "function") {
                     const loc = path.getNearestLocation(pt);
@@ -310,7 +321,7 @@
             return this.moveUntil({
                 direction: vector,
                 step: 1,
-                condition: (self) => self.path.intersects(stopAt.path)
+                condition: (self) => self.path.intersects(stopAt.path),
             });
         }
 
@@ -318,7 +329,10 @@
             console.warn("Offset implementation uses simple scaling. Recommend native paper.js offset if available.");
             const sx = (this.bounds.width + 2 * amount) / this.bounds.width;
             const sy = (this.bounds.height + 2 * amount) / this.bounds.height;
-            return this.clone().stretch({ width: this.bounds.width * sx, height: this.bounds.height * sy });
+            return this.clone().stretch({
+                width: this.bounds.width * sx,
+                height: this.bounds.height * sy,
+            });
         }
 
         roundCorners({ radius }) {
@@ -337,13 +351,19 @@
             if (off1 === null || off2 === null) {
                 // Highly forgiving fallback just retrieving via points if offset is not mathematically perfectly on the generated curve
                 // This typically happens if the bounding boxes drifted after boolean unions / slicing
-                if (off1 === null) {console.warn("from point offset on outline drift:", p1);}
-                if (off2 === null) {console.warn("to point offset on outline drift:", p2);}
+                if (off1 === null) {
+                    console.warn("from point offset on outline drift:", p1);
+                }
+                if (off2 === null) {
+                    console.warn("to point offset on outline drift:", p2);
+                }
                 throw new Error("Points must be closely on the shape outline.");
             }
 
             const pathLength = this.path.length;
-            if (off2 < off1) {off2 += pathLength;}
+            if (off2 < off1) {
+                off2 += pathLength;
+            }
 
             let targetOff = off1 + (off2 - off1) * percent;
             targetOff = targetOff % pathLength;
@@ -373,7 +393,9 @@
         }
 
         snapPoints({ map }) {
-            if (!map || map.length === 0) {return this;}
+            if (!map || map.length === 0) {
+                return this;
+            }
 
             const from1Pt = (typeof map[0].from === "string" ? this.points[map[0].from] : map[0].from).p;
             const to1Pt = new PointWrapper(map[0].to).p;
@@ -444,7 +466,7 @@
             const h = gap;
             const rectCutter = new paper.Path.Rectangle({
                 point: [c.x - w / 2, c.y - h / 2],
-                size: [w, h]
+                size: [w, h],
             });
             rectCutter.rotate(angle, c);
 
@@ -495,9 +517,15 @@
         toSVG({ fill, stroke, strokeWidth } = {}) {
             const d = this.path.pathData;
             const attrs = [`d="${d}"`];
-            if (fill) {attrs.push(`fill="${fill}"`);}
-            if (stroke) {attrs.push(`stroke="${stroke}"`);}
-            if (strokeWidth !== undefined) {attrs.push(`stroke-width="${strokeWidth}"`);}
+            if (fill) {
+                attrs.push(`fill="${fill}"`);
+            }
+            if (stroke) {
+                attrs.push(`stroke="${stroke}"`);
+            }
+            if (strokeWidth !== undefined) {
+                attrs.push(`stroke-width="${strokeWidth}"`);
+            }
 
             // If the resulting path doesn't explicitly close cleanly in some string reps,
             // paper.js pathData handles it natively.
@@ -548,14 +576,18 @@
         keepTop() {
             const { pathLeft, pathRight } = this._buildHalfPolygons();
             const leftBox = pathLeft.bounds;
-            if (leftBox.center.y < this.p1.y) {return this.shape.intersect({ shapes: [new Shape(pathLeft)] });}
+            if (leftBox.center.y < this.p1.y) {
+                return this.shape.intersect({ shapes: [new Shape(pathLeft)] });
+            }
             return this.shape.intersect({ shapes: [new Shape(pathRight)] });
         }
 
         keepBottom() {
             const { pathLeft, pathRight } = this._buildHalfPolygons();
             const leftBox = pathLeft.bounds;
-            if (leftBox.center.y >= this.p1.y) {return this.shape.intersect({ shapes: [new Shape(pathLeft)] });}
+            if (leftBox.center.y >= this.p1.y) {
+                return this.shape.intersect({ shapes: [new Shape(pathLeft)] });
+            }
             return this.shape.intersect({ shapes: [new Shape(pathRight)] });
         }
     }
@@ -569,7 +601,7 @@
             if (points) {
                 const path = new paper.Path({
                     segments: points.map(p => new PointWrapper(p).p),
-                    closed: true
+                    closed: true,
                 });
                 const namedPoints = {
                     A: new PointWrapper(path.segments[0].point),
@@ -587,7 +619,7 @@
                 return new Shape(path, {
                     A: new PointWrapper(p1),
                     B: new PointWrapper(p2),
-                    C: new PointWrapper(p3)
+                    C: new PointWrapper(p3),
                 });
             }
         },
@@ -599,7 +631,7 @@
                 A: new PointWrapper(c.x, c.y - radius),
                 B: new PointWrapper(c.x + radius, c.y),
                 C: new PointWrapper(c.x, c.y + radius),
-                D: new PointWrapper(c.x - radius, c.y)
+                D: new PointWrapper(c.x - radius, c.y),
             });
         },
 
@@ -607,7 +639,7 @@
             const c = center ? new PointWrapper(center).p : new paper.Point(0, 0);
             const path = new paper.Path.Rectangle({
                 point: [c.x - width / 2, c.y - height / 2],
-                size: [width, height]
+                size: [width, height],
             });
             return new Shape(path, {
                 A: new PointWrapper(path.segments[0].point),
@@ -620,7 +652,7 @@
         Polygon: ({ points }) => {
             const path = new paper.Path({
                 segments: points.map(p => new PointWrapper(p).p),
-                closed: true
+                closed: true,
             });
             return new Shape(path);
         },
@@ -659,7 +691,9 @@
         xor: ({ shapes }) => shapes[0].xor({ shapes: shapes.slice(1) }),
 
         align: ({ shapes, axis, distribution, width }) => {
-            if (!shapes || shapes.length === 0) {return;}
+            if (!shapes || shapes.length === 0) {
+                return;
+            }
             const currentPos = 0;
             const spacing = distribution === "space-between" ? width / (shapes.length - 1 || 1) : width / shapes.length;
 
@@ -673,7 +707,7 @@
                     sh.translate({ dx: 0, dy: target - sh.bounds.center[1] });
                 }
             }
-        }
+        },
     };
 
 

@@ -12,30 +12,30 @@ const testData = {
     last_updated: "2026-02-16T18:00:00Z",
     metadata: {
         version: 1.2,
-        environment: "production"
+        environment: "production",
     },
     users: [
         {
             id: 101, name: "Alice Vance", age: 28, str_id: "3", is_admin: true,
             tags: ["frontend", "ux", "mentor"],
             address: { city: "Berlin", country: "Germany" },
-            deleted_at: null
+            deleted_at: null,
         },
         {
             id: 102, name: "Bob Smith", age: 34, is_admin: false,
             tags: ["backend", "devops"],
             secret_identity: "Bernd Schmitt",
             address: { city: "San Francisco", country: "USA" },
-            deleted_at: "2025-12-01"
+            deleted_at: "2025-12-01",
         },
         {
             id: 103, name: "Charlie Day", age: 40, is_admin: false,
             tags: ["manager"],
             address: { city: "Berlin", country: "Germany" },
-            deleted_at: null
-        }
+            deleted_at: null,
+        },
     ],
-    total_count: 3
+    total_count: 3,
 };
 
 let passed = 0;
@@ -46,40 +46,66 @@ let failed = 0;
  * Returns true if a and b are structurally identical.
  */
 function deepEqual(a, b) {
-    if (a === b) {return true;}
-    if (a === undefined && b === undefined) {return true;}
-    if (a === null || b === null) {return a === b;}
-    if (typeof a !== typeof b) {return false;}
-    if (typeof a !== "object") {return false;}
+    if (a === b) {
+        return true;
+    }
+    if (a === undefined && b === undefined) {
+        return true;
+    }
+    if (a === null || b === null) {
+        return a === b;
+    }
+    if (typeof a !== typeof b) {
+        return false;
+    }
+    if (typeof a !== "object") {
+        return false;
+    }
 
     const aIsArr = Array.isArray(a);
     const bIsArr = Array.isArray(b);
-    if (aIsArr !== bIsArr) {return false;}
+    if (aIsArr !== bIsArr) {
+        return false;
+    }
 
     if (aIsArr) {
-        if (a.length !== b.length) {return false;}
+        if (a.length !== b.length) {
+            return false;
+        }
         for (let i = 0; i < a.length; i++) {
-            if (!deepEqual(a[i], b[i])) {return false;}
+            if (!deepEqual(a[i], b[i])) {
+                return false;
+            }
         }
         return true;
     }
 
     const aKeys = Object.keys(a);
     const bKeys = Object.keys(b);
-    if (aKeys.length !== bKeys.length) {return false;}
+    if (aKeys.length !== bKeys.length) {
+        return false;
+    }
     for (const key of aKeys) {
-        if (!Object.prototype.hasOwnProperty.call(b, key)) {return false;}
-        if (!deepEqual(a[key], b[key])) {return false;}
+        if (!Object.prototype.hasOwnProperty.call(b, key)) {
+            return false;
+        }
+        if (!deepEqual(a[key], b[key])) {
+            return false;
+        }
     }
     return true;
 }
 
 function serialize(val) {
-    if (val === undefined) {return "undefined";}
+    if (val === undefined) {
+        return "undefined";
+    }
     try {
         return JSON.stringify(val, (_, v) => v === undefined ? "__UNDEF__" : v, 2)
             .replace(/\"__UNDEF__\"/g, "undefined");
-    } catch { return String(val); }
+    } catch {
+        return String(val);
+    }
 }
 
 function test(description, query, expected) {
@@ -285,7 +311,7 @@ test("Root-level projection",
     "=> {last_updated, meta: metadata}",
     {
         last_updated: "2026-02-16T18:00:00Z",
-        meta: { version: 1.2, environment: "production" }
+        meta: { version: 1.2, environment: "production" },
     });
 
 test("Projection with explicit key:value",
@@ -304,7 +330,7 @@ test("Filter then project with deep resolution",
     "users.{age < 40} => {first_name: name, location: address.city}",
     [
         { first_name: "Alice Vance", location: "Berlin" },
-        { first_name: "Bob Smith", location: "San Francisco" }
+        { first_name: "Bob Smith", location: "San Francisco" },
     ]);
 
 test("Projection with spread and but",
@@ -315,7 +341,7 @@ test("Projection with spread and but",
         age: 28,
         str_id: "3",
         tags: ["frontend", "ux", "mentor"],
-        deleted_at: null
+        deleted_at: null,
     }]);
 
 test("Projection with multiple fields",
@@ -323,7 +349,7 @@ test("Projection with multiple fields",
     [
         { id: 101, name: "Alice Vance" },
         { id: 102, name: "Bob Smith" },
-        { id: 103, name: "Charlie Day" }
+        { id: 103, name: "Charlie Day" },
     ]);
 
 // ============================================================
@@ -398,7 +424,7 @@ test(":group_by deep path",
     "users:group_by(address.country)",
     {
         Germany: [testData.users[0], testData.users[2]],
-        USA: [testData.users[1]]
+        USA: [testData.users[1]],
     });
 
 test("Project then group_by",
@@ -406,11 +432,11 @@ test("Project then group_by",
     {
         Berlin: [
             { name: "Alice Vance", city: "Berlin" },
-            { name: "Charlie Day", city: "Berlin" }
+            { name: "Charlie Day", city: "Berlin" },
         ],
         "San Francisco": [
-            { name: "Bob Smith", city: "San Francisco" }
-        ]
+            { name: "Bob Smith", city: "San Francisco" },
+        ],
     });
 
 // ============================================================
@@ -429,7 +455,7 @@ test("Composition with backtick aliases and inline modifiers",
     "{`all tags`: users.tags:flat, users: `users`.{`tags`:len > 1} => {`user:id` : id}}",
     {
         "all tags": ["frontend", "ux", "mentor", "backend", "devops", "manager"],
-        users: [{ "user:id": 101 }, { "user:id": 102 }]
+        users: [{ "user:id": 101 }, { "user:id": 102 }],
     });
 
 test("Composition with single alias",
@@ -449,7 +475,7 @@ test(":join with single-quoted separator in projection",
     [
         { tags: "frontend / ux / mentor" },
         { tags: "backend / devops" },
-        { tags: "manager" }
+        { tags: "manager" },
     ]);
 
 test(":join with double-quoted separator in projection",
@@ -457,7 +483,7 @@ test(":join with double-quoted separator in projection",
     [
         { tags: "frontend:ux:mentor" },
         { tags: "backend:devops" },
-        { tags: "manager" }
+        { tags: "manager" },
     ]);
 
 test(":join with bare separator in projection",
@@ -465,7 +491,7 @@ test(":join with bare separator in projection",
     [
         { tags: "frontend:ux:mentor" },
         { tags: "backend:devops" },
-        { tags: "manager" }
+        { tags: "manager" },
     ]);
 
 test(":join with spaced separator in projection (double quotes)",
@@ -473,7 +499,7 @@ test(":join with spaced separator in projection (double quotes)",
     [
         { tags: "frontend / ux / mentor" },
         { tags: "backend / devops" },
-        { tags: "manager" }
+        { tags: "manager" },
     ]);
 
 // ============================================================
@@ -912,7 +938,7 @@ testWith(":group_by with missing key on some elements",
     "items:group_by(type)",
     {
         a: [{ type: "a", v: 1 }, { type: "a", v: 3 }],
-        undefined: [{ v: 2 }]
+        undefined: [{ v: 2 }],
     });
 
 testWith(":group_by on single item",
@@ -980,7 +1006,7 @@ test("Projection accessing missing field returns undefined in shape",
     [
         { id: 101, missing: undefined },
         { id: 102, missing: undefined },
-        { id: 103, missing: undefined }
+        { id: 103, missing: undefined },
     ]);
 
 // --- Query whitespace handling ---
@@ -1345,7 +1371,7 @@ test("Projection using :len inline modifier",
     [
         { name: "Alice Vance", tag_count: 3 },
         { name: "Bob Smith", tag_count: 2 },
-        { name: "Charlie Day", tag_count: 1 }
+        { name: "Charlie Day", tag_count: 1 },
     ]);
 
 // ============================================================
@@ -1359,7 +1385,7 @@ test("Projection with spread and added computed field",
         id: 101, name: "Alice Vance", age: 28, str_id: "3", is_admin: true,
         tags: ["frontend", "ux", "mentor"],
         address: { city: "Berlin", country: "Germany" },
-        deleted_at: null
+        deleted_at: null,
     });
 
 // ============================================================
@@ -1475,7 +1501,7 @@ test("Projection resolving deep nested path",
     [
         { name: "Alice Vance", country: "Germany" },
         { name: "Bob Smith", country: "USA" },
-        { name: "Charlie Day", country: "Germany" }
+        { name: "Charlie Day", country: "Germany" },
     ]);
 
 // ============================================================
@@ -1849,7 +1875,7 @@ test("Composition with new modifiers",
     {
         reversed_names: ["Charlie Day", "Bob Smith", "Alice Vance"],
         tag_count: 6,
-        countries: ["Germany", "USA"]
+        countries: ["Germany", "USA"],
     });
 
 test(":upper in filter via inline modifier",

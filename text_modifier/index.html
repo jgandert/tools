@@ -5,7 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
-    <meta name="description" content="Text Modifier - A versatile tool for extracting and transforming text.">
+    <meta name="description"
+          content="Text Modifier - A versatile tool for extracting and transforming text.">
     <title>Text Modifier</title>
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <link rel="stylesheet" type="text/css" href="../one.css">
@@ -38,184 +39,214 @@
 </head>
 
 <body>
-    <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
 
-    <header>
-        <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
-        <hgroup>
-            <h1>Text Modifier</h1>
-            <p>Transform, clean, sort, encode, decode, and extract data from text.</p>
-        </hgroup>
-        <button type="button" class="btn-sym btn-danger" id="restore-default" data-tooltip="Restore default example" data-tooltip-pos="below">
-            restore
-        </button>
-        <button type="button" class="btn-danger" id="clear-all">
-            <span class="sym">delete</span> Clear All
-        </button>
-    </header>
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Text Modifier</h1>
+        <p>Transform, clean, sort, encode, decode, and extract data from text.</p>
+    </hgroup>
+    <button type="button" class="btn-sym btn-danger" id="restore-default"
+            data-tooltip="Restore default example" data-tooltip-pos="below">
+        restore
+    </button>
+    <button type="button" class="btn-danger" id="clear-all">
+        <span class="sym">delete</span> Clear All
+    </button>
+</header>
 
-    <main id="content">
-        <label for="input-text">Input:</label>
-        <textarea id="input-text" placeholder="Enter your text here..." rows="12"></textarea>
+<main id="content">
+    <label for="input-text">Input:</label>
+    <textarea id="input-text" placeholder="Enter your text here..." rows="12"></textarea>
 
-        <div class="text-muted text-sm mt-0 mb-2" id="stats"></div>
+    <div class="text-muted text-sm mt-0 mb-2" id="stats"></div>
 
-        <label for="output-text">Output:</label>
-        <textarea id="output-text" placeholder="Result will appear here..." class="mb-0" rows="12"></textarea>
-    </main>
+    <label for="output-text">Output:</label>
+    <textarea id="output-text" placeholder="Result will appear here..." class="mb-0"
+              rows="12"></textarea>
+</main>
 
-    <aside>
-        <form id="sidebar-form">
-            <fieldset>
-                <legend>Settings</legend>
+<aside>
+    <form id="sidebar-form">
+        <fieldset>
+            <legend>Settings</legend>
 
-                <label>
-                    Replace Input with result <input type="checkbox" role="switch" id="replace-input">
+            <label>
+                Replace Input with result <input type="checkbox" role="switch" id="replace-input">
 
-                </label>
+            </label>
 
-                <label>
-                    Append result to Output <input type="checkbox" role="switch" id="append-output" checked>
-                </label>
-            </fieldset>
-        </form>
-        <fieldset class="mb-4">
-            <legend><span class="sym mr-2">title</span> Case & Formatting</legend>
-            <div class="group">
-                <button type="button" data-action="uppercase">Uppercase</button>
-                <button type="button" data-action="lowercase">Lowercase</button>
-                <button type="button" data-action="titlecase">Title Case</button>
-                <button type="button" data-action="sentencecase">Sentence Case</button>
-                <button type="button" data-action="camelcase">camelCase</button>
-                <button type="button" data-action="snakecase">snake_case</button>
-                <button type="button" data-action="kebabcase">kebab-case</button>
-                <button type="button" data-action="swapcase">Swap Case</button>
-                <button type="button" data-action="slugify">Slugify</button>
-                <button type="button" data-action="reverse-chars">Reverse characters (per line)</button>
-                <button type="button" data-action="mockingcase">mOcKiNg CaSe</button>
-            </div>
+            <label>
+                Append result to Output <input type="checkbox" role="switch" id="append-output"
+                                               checked>
+            </label>
         </fieldset>
+    </form>
+    <fieldset class="mb-4">
+        <legend><span class="sym mr-2">title</span> Case & Formatting</legend>
+        <div class="group">
+            <button type="button" data-action="uppercase">Uppercase</button>
+            <button type="button" data-action="lowercase">Lowercase</button>
+            <button type="button" data-action="titlecase">Title Case</button>
+            <button type="button" data-action="sentencecase">Sentence Case</button>
+            <button type="button" data-action="camelcase">camelCase</button>
+            <button type="button" data-action="snakecase">snake_case</button>
+            <button type="button" data-action="kebabcase">kebab-case</button>
+            <button type="button" data-action="swapcase">Swap Case</button>
+            <button type="button" data-action="slugify">Slugify</button>
+            <button type="button" data-action="reverse-chars">Reverse characters (per line)</button>
+            <button type="button" data-action="mockingcase">mOcKiNg CaSe</button>
+        </div>
+    </fieldset>
 
-        <fieldset class="mb-4">
-            <legend><span class="sym mr-2">cleaning_services</span> Cleaning & Normalization</legend>
-            <div class="group">
-                <button type="button" data-action="trim-lines">Trim whitespace in each line</button>
-                <button type="button" data-action="trim-multiple-spaces">Trim spaces that occur multiple times</button>
-                <button type="button" data-action="trim-multiple-empty-lines">Trim empty lines that occur multiple
-                    times</button>
-                <button type="button" data-action="remove-duplicate-lines">Remove all duplicate lines</button>
-                <button type="button" data-action="remove-trailing-whitespace">Remove all trailing whitespace</button>
-                <button type="button" data-action="remove-leading-whitespace">Remove all leading whitespace</button>
-                <button type="button" data-action="remove-non-printable">Remove all non-printable characters</button>
-                <button type="button" data-action="tabs-to-spaces">Convert tabs to spaces</button>
-                <button type="button" data-action="spaces-to-tabs">Convert spaces to tabs</button>
-                <button type="button" data-action="remove-empty-lines">Remove all empty lines</button>
-                <button type="button" data-action="strip-non-alphanumeric">Strip all non-alphanumeric
-                    characters</button>
-                <button type="button" data-action="normalize-nfc">Normalize to NFC</button>
-                <button type="button" data-action="normalize-nfd">Normalize to NFD</button>
-                <button type="button" data-action="strip-html">Strip HTML tags</button>
-                <button type="button" data-action="unsmart-quotes">Unsmart quotes (curly to straight)</button>
-                <button type="button" data-action="remove-markdown-links-text">Remove Markdown links (keep text)</button>
-                <button type="button" data-action="remove-markdown-links-all">Remove Markdown links</button>
-                <button type="button" data-action="remove-markdown-images-alt">Remove Markdown images (keep alt text)</button>
-                <button type="button" data-action="remove-markdown-images-all">Remove Markdown images</button>
-            </div>
-        </fieldset>
+    <fieldset class="mb-4">
+        <legend><span class="sym mr-2">cleaning_services</span> Cleaning & Normalization</legend>
+        <div class="group">
+            <button type="button" data-action="trim-lines">Trim whitespace in each line</button>
+            <button type="button" data-action="trim-multiple-spaces">Trim spaces that occur multiple
+                times
+            </button>
+            <button type="button" data-action="trim-multiple-empty-lines">Trim empty lines that
+                occur multiple
+                times
+            </button>
+            <button type="button" data-action="remove-duplicate-lines">Remove all duplicate lines
+            </button>
+            <button type="button" data-action="remove-trailing-whitespace">Remove all trailing
+                whitespace
+            </button>
+            <button type="button" data-action="remove-leading-whitespace">Remove all leading
+                whitespace
+            </button>
+            <button type="button" data-action="remove-non-printable">Remove all non-printable
+                characters
+            </button>
+            <button type="button" data-action="tabs-to-spaces">Convert tabs to spaces</button>
+            <button type="button" data-action="spaces-to-tabs">Convert spaces to tabs</button>
+            <button type="button" data-action="remove-empty-lines">Remove all empty lines</button>
+            <button type="button" data-action="strip-non-alphanumeric">Strip all non-alphanumeric
+                characters
+            </button>
+            <button type="button" data-action="normalize-nfc">Normalize to NFC</button>
+            <button type="button" data-action="normalize-nfd">Normalize to NFD</button>
+            <button type="button" data-action="strip-html">Strip HTML tags</button>
+            <button type="button" data-action="unsmart-quotes">Unsmart quotes (curly to straight)
+            </button>
+            <button type="button" data-action="remove-markdown-links-text">Remove Markdown links
+                (keep text)
+            </button>
+            <button type="button" data-action="remove-markdown-links-all">Remove Markdown links
+            </button>
+            <button type="button" data-action="remove-markdown-images-alt">Remove Markdown images
+                (keep alt text)
+            </button>
+            <button type="button" data-action="remove-markdown-images-all">Remove Markdown images
+            </button>
+        </div>
+    </fieldset>
 
-        <fieldset class="mb-4">
-            <legend><span class="sym mr-2">sort</span> Sorting & Organization</legend>
-            <div class="group">
-                <button type="button" data-action="sort-asc">Sort lines (A-Z)</button>
-                <button type="button" data-action="sort-desc">Sort lines (Z-A)</button>
-                <button type="button" data-action="sort-numeric">Sort lines numerically</button>
-                <button type="button" data-action="sort-length">Sort lines by length</button>
-                <button type="button" data-action="sort-word-count">Sort lines by word count</button>
-                <button type="button" data-action="sort-last-word">Sort lines by last word</button>
-                <button type="button" data-action="reverse-lines">Reverse line order</button>
-                <button type="button" data-action="add-line-numbers">Add line numbers</button>
-                <button type="button" data-action="remove-line-numbers">Remove line numbers</button>
-                <button type="button" data-action="shuffle-lines">Shuffle lines randomly</button>
-                <button type="button" data-action="list-generator">Make each line an element in a list</button>
-            </div>
-        </fieldset>
+    <fieldset class="mb-4">
+        <legend><span class="sym mr-2">sort</span> Sorting & Organization</legend>
+        <div class="group">
+            <button type="button" data-action="sort-asc">Sort lines (A-Z)</button>
+            <button type="button" data-action="sort-desc">Sort lines (Z-A)</button>
+            <button type="button" data-action="sort-numeric">Sort lines numerically</button>
+            <button type="button" data-action="sort-length">Sort lines by length</button>
+            <button type="button" data-action="sort-word-count">Sort lines by word count</button>
+            <button type="button" data-action="sort-last-word">Sort lines by last word</button>
+            <button type="button" data-action="reverse-lines">Reverse line order</button>
+            <button type="button" data-action="add-line-numbers">Add line numbers</button>
+            <button type="button" data-action="remove-line-numbers">Remove line numbers</button>
+            <button type="button" data-action="shuffle-lines">Shuffle lines randomly</button>
+            <button type="button" data-action="list-generator">Make each line an element in a list
+            </button>
+        </div>
+    </fieldset>
 
-        <fieldset class="mb-4">
-            <legend><span class="sym mr-2">lock</span> Encoding & Transformation</legend>
-            <div class="group">
-                <button type="button" data-action="url-encode">URL encode</button>
-                <button type="button" data-action="url-decode">URL decode</button>
-                <button type="button" data-action="html-encode">HTML entity encode</button>
-                <button type="button" data-action="html-decode">HTML entity decode</button>
-                <button type="button" data-action="hex-encode">Hex encode</button>
-                <button type="button" data-action="hex-decode">Hex decode</button>
-                <button type="button" data-action="rot13">ROT13 encode/decode</button>
-                <button type="button" data-action="base64-encode">Base64 encode</button>
-                <button type="button" data-action="base64-decode">Base64 decode</button>
-                <button type="button" data-action="base64url-encode">Base64 URL encode</button>
-                <button type="button" data-action="base64url-decode">Base64 URL decode</button>
-                <button type="button" data-action="json-escape">JSON escape</button>
-                <button type="button" data-action="json-unescape">JSON unescape</button>
-                <button type="button" data-action="java-escape">Java escape</button>
-                <button type="button" data-action="java-unescape">Java unescape</button>
-                <button type="button" data-action="unicode-escape">Unicode escape</button>
-                <button type="button" data-action="unicode-unescape">Unicode unescape</button>
-                <button type="button" data-action="morse-encode">Morse code encode</button>
-                <button type="button" data-action="morse-decode">Morse code decode</button>
-                <button type="button" data-action="sha-256">SHA-256</button>
-                <button type="button" data-action="sha-384">SHA-384</button>
-                <button type="button" data-action="sha-512">SHA-512</button>
-                <button type="button" data-action="undo-sha">Undo SHA sum</button>
-            </div>
-        </fieldset>
+    <fieldset class="mb-4">
+        <legend><span class="sym mr-2">lock</span> Encoding & Transformation</legend>
+        <div class="group">
+            <button type="button" data-action="url-encode">URL encode</button>
+            <button type="button" data-action="url-decode">URL decode</button>
+            <button type="button" data-action="html-encode">HTML entity encode</button>
+            <button type="button" data-action="html-decode">HTML entity decode</button>
+            <button type="button" data-action="hex-encode">Hex encode</button>
+            <button type="button" data-action="hex-decode">Hex decode</button>
+            <button type="button" data-action="rot13">ROT13 encode/decode</button>
+            <button type="button" data-action="base64-encode">Base64 encode</button>
+            <button type="button" data-action="base64-decode">Base64 decode</button>
+            <button type="button" data-action="base64url-encode">Base64 URL encode</button>
+            <button type="button" data-action="base64url-decode">Base64 URL decode</button>
+            <button type="button" data-action="json-escape">JSON escape</button>
+            <button type="button" data-action="json-unescape">JSON unescape</button>
+            <button type="button" data-action="java-escape">Java escape</button>
+            <button type="button" data-action="java-unescape">Java unescape</button>
+            <button type="button" data-action="unicode-escape">Unicode escape</button>
+            <button type="button" data-action="unicode-unescape">Unicode unescape</button>
+            <button type="button" data-action="morse-encode">Morse code encode</button>
+            <button type="button" data-action="morse-decode">Morse code decode</button>
+            <button type="button" data-action="sha-256">SHA-256</button>
+            <button type="button" data-action="sha-384">SHA-384</button>
+            <button type="button" data-action="sha-512">SHA-512</button>
+            <button type="button" data-action="undo-sha">Undo SHA sum</button>
+        </div>
+    </fieldset>
 
-        <fieldset class="mb-4">
-            <legend><span class="sym mr-2">search</span> Extraction & Pattern Matching</legend>
-            <div class="group">
-                <button type="button" data-action="extract-emails">Extract all email addresses</button>
-                <button type="button" data-action="extract-urls">Extract all URLs</button>
-                <button type="button" data-action="extract-ips">Extract all IP addresses</button>
-                <button type="button" data-action="extract-numbers">Extract all numbers</button>
-                <button type="button" data-action="extract-hex-colors">Extract all hex colors</button>
-                <button type="button" data-action="extract-dates">Extract dates</button>
-                <button type="button" data-action="extract-times">Extract times</button>
-                <button type="button" data-action="extract-datetime">Extract date & times</button>
-                <button type="button" data-action="remove-numbers">Remove all numbers</button>
-                <button type="button" data-action="remove-special">Remove all special characters</button>
-                <button type="button" data-action="wrap-quotes">Wrap each line in double quotes</button>
-                <button type="button" data-action="extract-quotes">Extract parts within double quotes</button>
-                <button type="button" data-action="join-comma">Join lines with comma</button>
-                <button type="button" data-action="split-comma">Split comma-separated values into lines</button>
-            </div>
-        </fieldset>
-    </aside>
+    <fieldset class="mb-4">
+        <legend><span class="sym mr-2">search</span> Extraction & Pattern Matching</legend>
+        <div class="group">
+            <button type="button" data-action="extract-emails">Extract all email addresses</button>
+            <button type="button" data-action="extract-urls">Extract all URLs</button>
+            <button type="button" data-action="extract-ips">Extract all IP addresses</button>
+            <button type="button" data-action="extract-numbers">Extract all numbers</button>
+            <button type="button" data-action="extract-hex-colors">Extract all hex colors</button>
+            <button type="button" data-action="extract-dates">Extract dates</button>
+            <button type="button" data-action="extract-times">Extract times</button>
+            <button type="button" data-action="extract-datetime">Extract date & times</button>
+            <button type="button" data-action="remove-numbers">Remove all numbers</button>
+            <button type="button" data-action="remove-special">Remove all special characters
+            </button>
+            <button type="button" data-action="wrap-quotes">Wrap each line in double quotes</button>
+            <button type="button" data-action="extract-quotes">Extract parts within double quotes
+            </button>
+            <button type="button" data-action="join-comma">Join lines with comma</button>
+            <button type="button" data-action="split-comma">Split comma-separated values into
+                lines
+            </button>
+        </div>
+    </fieldset>
+</aside>
 
-    <dialog id="joke-modal" aria-labelledby="joke-title" aria-describedby="joke-desc" aria-modal="true">
-        <article>
-            <header>
-                <h3 id="joke-title">Reversing Cryptographic Hash...</h3>
-            </header>
-            <p id="joke-desc">Brute-forcing input to recover the original content. This may take a while.
-                <br/><br/>Note: Due to the birthday paradox and the pigeonhole principle, we might discover an equivalent collision rather than the original plaintext.
-            </p>
-            <progress value="0" max="100"></progress>
-            <p class="text-muted text-sm" id="joke-pct">0.00000000000000000000000000000000000000000000000000000000001% completed</p>
-            <p class="text-muted text-sm mb-0"><strong>Estimated time remaining:</strong></p>
-            <p class="text-muted text-sm" id="time-estimate">Calculating...</p>
-            <footer>
-                <button type="button">Cancel</button>
-            </footer>
-        </article>
-    </dialog>
+<dialog id="joke-modal" aria-labelledby="joke-title" aria-describedby="joke-desc" aria-modal="true">
+    <article>
+        <header>
+            <h3 id="joke-title">Reversing Cryptographic Hash...</h3>
+        </header>
+        <p id="joke-desc">Brute-forcing input to recover the original content. This may take a
+            while.
+            <br /><br />Note: Due to the birthday paradox and the pigeonhole principle, we might
+            discover an equivalent collision rather than the original plaintext.
+        </p>
+        <progress value="0" max="100"></progress>
+        <p class="text-muted text-sm" id="joke-pct">
+            0.00000000000000000000000000000000000000000000000000000000001% completed</p>
+        <p class="text-muted text-sm mb-0"><strong>Estimated time remaining:</strong></p>
+        <p class="text-muted text-sm" id="time-estimate">Calculating...</p>
+        <footer>
+            <button type="button">Cancel</button>
+        </footer>
+    </article>
+</dialog>
 
-    <script>
-        const inputText = document.getElementById("input-text");
-        const outputText = document.getElementById("output-text");
-        const statsEl = document.getElementById("stats");
-        const replaceInputCb = document.getElementById("replace-input");
-        const appendOutputCb = document.getElementById("append-output");
+<script>
+    const inputText = document.getElementById("input-text");
+    const outputText = document.getElementById("output-text");
+    const statsEl = document.getElementById("stats");
+    const replaceInputCb = document.getElementById("replace-input");
+    const appendOutputCb = document.getElementById("append-output");
 
-        const DEFAULT_EXAMPLE = `Welcome to the Text Modifier!
+    const DEFAULT_EXAMPLE = `Welcome to the Text Modifier!
 This is a test document designed to try out some of the features.
 
 Case & Formatting:
@@ -261,608 +292,633 @@ Dates & Times:
 2:38 PM
 2024-12-25T12:00:00Z`;
 
-        const MORSE_CODE = {
-            'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.',
-            'G': '--.', 'H': '....', 'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..',
-            'M': '--', 'N': '-.', 'O': '---', 'P': '.--.', 'Q': '--.-', 'R': '.-.',
-            'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
-            'Y': '-.--', 'Z': '--..', '1': '.----', '2': '..---', '3': '...--',
-            '4': '....-', '5': '.....', '6': '-....', '7': '--...', '8': '---..',
-            '9': '----.', '0': '-----', ' ': '/'
-        };
-        const REVERSE_MORSE = Object.fromEntries(Object.entries(MORSE_CODE).map(([k, v]) => [v, k]));
+    const MORSE_CODE = {
+        "A": ".-", "B": "-...", "C": "-.-.", "D": "-..", "E": ".", "F": "..-.",
+        "G": "--.", "H": "....", "I": "..", "J": ".---", "K": "-.-", "L": ".-..",
+        "M": "--", "N": "-.", "O": "---", "P": ".--.", "Q": "--.-", "R": ".-.",
+        "S": "...", "T": "-", "U": "..-", "V": "...-", "W": ".--", "X": "-..-",
+        "Y": "-.--", "Z": "--..", "1": ".----", "2": "..---", "3": "...--",
+        "4": "....-", "5": ".....", "6": "-....", "7": "--...", "8": "---..",
+        "9": "----.", "0": "-----", " ": "/",
+    };
+    const REVERSE_MORSE = Object.fromEntries(Object.entries(MORSE_CODE).map(([k, v]) => [v, k]));
 
-        const updateStats = () => {
-            const text = inputText.value;
-            const lines = text ? text.split(/\r?\n/) : [];
-            const lineCount = lines.length;
-            const avgLineLength = lineCount === 0 ? 0 : Math.round(text.length / lineCount);
+    const updateStats = () => {
+        const text = inputText.value;
+        const lines = text ? text.split(/\r?\n/) : [];
+        const lineCount = lines.length;
+        const avgLineLength = lineCount === 0 ? 0 : Math.round(text.length / lineCount);
 
-            // Sentence count approximation
-            const sentences = text.split(/[.!?]+(?:[\s\n]+|$)/).filter(s => s.trim().length > 0).length;
+        // Sentence count approximation
+        const sentences = text.split(/[.!?]+(?:[\s\n]+|$)/).filter(s => s.trim().length > 0).length;
 
-            const wordsMatch = text.match(/\b\w+\b/g);
-            const words = wordsMatch ? wordsMatch.length : 0;
+        const wordsMatch = text.match(/\b\w+\b/g);
+        const words = wordsMatch ? wordsMatch.length : 0;
 
-            const uniqueWordsMatch = text.toLowerCase().match(/\b\w+\b/g);
-            const uniqueWords = uniqueWordsMatch ? new Set(uniqueWordsMatch).size : 0;
+        const uniqueWordsMatch = text.toLowerCase().match(/\b\w+\b/g);
+        const uniqueWords = uniqueWordsMatch ? new Set(uniqueWordsMatch).size : 0;
 
-            const lettersMatch = text.match(/\p{L}/gu);
-            const letters = lettersMatch ? lettersMatch.length : 0;
+        const lettersMatch = text.match(/\p{L}/gu);
+        const letters = lettersMatch ? lettersMatch.length : 0;
 
-            const digitsMatch = text.match(/\d/g);
-            const digits = digitsMatch ? digitsMatch.length : 0;
+        const digitsMatch = text.match(/\d/g);
+        const digits = digitsMatch ? digitsMatch.length : 0;
 
-            const nonLetterDigitMatch = text.match(/[^\p{L}\d\s]/gu);
-            const nonLetterDigit = nonLetterDigitMatch ? nonLetterDigitMatch.length : 0;
+        const nonLetterDigitMatch = text.match(/[^\p{L}\d\s]/gu);
+        const nonLetterDigit = nonLetterDigitMatch ? nonLetterDigitMatch.length : 0;
 
-            const characters = text.length;
-            const nonDigits = text.match(/\D/g)?.length || 0;
+        const characters = text.length;
+        const nonDigits = text.match(/\D/g)?.length || 0;
 
-            statsEl.innerHTML = `
+        statsEl.innerHTML = `
                 ${lineCount} lines (${avgLineLength} avg line length), ${sentences} sentences, ${words} words, ${uniqueWords} unique words<br>
                 ${letters} letters, ${digits} digits, ${nonLetterDigit} non-letter characters, ${nonDigits} non-digit characters, ${characters} characters
             `;
-        };
+    };
 
-        const saveState = () => {
-            localStorage.setItem("text-modifier-input", inputText.value);
-            localStorage.setItem("text-modifier-output", outputText.value);
-            localStorage.setItem("text-modifier-replace-input", replaceInputCb.checked);
-            localStorage.setItem("text-modifier-append-output", appendOutputCb.checked);
-        };
+    const saveState = () => {
+        localStorage.setItem("text-modifier-input", inputText.value);
+        localStorage.setItem("text-modifier-output", outputText.value);
+        localStorage.setItem("text-modifier-replace-input", replaceInputCb.checked);
+        localStorage.setItem("text-modifier-append-output", appendOutputCb.checked);
+    };
 
-        const loadState = () => {
-            const savedInput = localStorage.getItem("text-modifier-input");
-            const savedOutput = localStorage.getItem("text-modifier-output");
-            const savedReplaceInput = localStorage.getItem("text-modifier-replace-input");
-            const savedAppendOutput = localStorage.getItem("text-modifier-append-output");
+    const loadState = () => {
+        const savedInput = localStorage.getItem("text-modifier-input");
+        const savedOutput = localStorage.getItem("text-modifier-output");
+        const savedReplaceInput = localStorage.getItem("text-modifier-replace-input");
+        const savedAppendOutput = localStorage.getItem("text-modifier-append-output");
 
-            if (savedInput !== null) {
-                inputText.value = savedInput;
-            } else {
-                inputText.value = DEFAULT_EXAMPLE;
+        if (savedInput !== null) {
+            inputText.value = savedInput;
+        } else {
+            inputText.value = DEFAULT_EXAMPLE;
+        }
+        if (savedOutput !== null) outputText.value = savedOutput;
+        if (savedReplaceInput !== null) replaceInputCb.checked = savedReplaceInput === "true";
+        if (savedAppendOutput !== null) appendOutputCb.checked = savedAppendOutput === "true";
+
+        updateStats();
+    };
+
+    inputText.addEventListener("input", () => {
+        updateStats();
+        saveState();
+    });
+    outputText.addEventListener("input", saveState);
+    replaceInputCb.addEventListener("change", saveState);
+    appendOutputCb.addEventListener("change", saveState);
+
+    loadState();
+
+    const processAction = async (action) => {
+        const text = inputText.value;
+        let result = text;
+
+        switch (action) {
+            // Case & Formatting
+            case "uppercase":
+                result = text.toUpperCase();
+                break;
+            case "lowercase":
+                result = text.toLowerCase();
+                break;
+            case "titlecase":
+                result = text.replace(/\b\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+                break;
+            case "sentencecase":
+                // Simple sentence case approximation
+                result = text.toLowerCase().replace(/(^\s*\w|[.!?]\s*\w)/g, c => c.toUpperCase());
+                break;
+            case "camelcase":
+                result = text.replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
+                    return index === 0 ? word.toLowerCase() : word.toUpperCase();
+                }).replace(/\s+/g, "");
+                break;
+            case "snakecase":
+                result = text.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
+                    ?.map(x => x.toLowerCase())
+                    .join("_") || text;
+                break;
+            case "kebabcase":
+                result = text.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
+                    ?.map(x => x.toLowerCase())
+                    .join("-") || text;
+                break;
+            case "swapcase":
+                result = text.split("").map(c => {
+                    return c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase();
+                }).join("");
+                break;
+            case "slugify":
+                result = text.toLowerCase()
+                    .replace(/[^a-z0-9\s-]/g, "")
+                    .replace(/[\s-]+/g, "-")
+                    .replace(/^-+|-+$/g, "");
+                break;
+            case "reverse-chars":
+                result = text.split(/\r?\n/).map(line => line.split("").reverse().join("")).join("\n");
+                break;
+            case "mockingcase":
+                result = text.split("").map((c, i) => i % 2 === 0 ? c.toLowerCase() : c.toUpperCase()).join("");
+                break;
+
+            // Cleaning & Normalization
+            case "trim-lines":
+                result = text.split(/\r?\n/).map(line => line.trim()).join("\n");
+                break;
+            case "trim-multiple-spaces":
+                result = text.replace(/ {2,}/g, " ");
+                break;
+            case "trim-multiple-empty-lines":
+                result = text.replace(/\n{3,}/g, "\n\n");
+                break;
+            case "remove-duplicate-lines":
+                result = [...new Set(text.split(/\r?\n/))].join("\n");
+                break;
+            case "remove-trailing-whitespace":
+                result = text.split(/\r?\n/).map(line => line.trimEnd()).join("\n");
+                break;
+            case "remove-leading-whitespace":
+                result = text.split(/\r?\n/).map(line => line.trimStart()).join("\n");
+                break;
+            case "remove-non-printable":
+                // eslint-disable-next-line no-control-regex
+                result = text.replace(/[\x00-\x09\x0B-\x1F\x7F]/g, "");
+                break;
+            case "tabs-to-spaces":
+                result = text.replace(/\t/g, "    ");
+                break;
+            case "spaces-to-tabs":
+                result = text.replace(/ {4}/g, "\t");
+                break;
+            case "remove-empty-lines":
+                result = text.split(/\r?\n/).filter(line => line.trim().length > 0).join("\n");
+                break;
+            case "strip-non-alphanumeric":
+                result = text.replace(/[^a-zA-Z0-9]/g, "");
+                break;
+            case "normalize-nfc":
+                result = text.normalize("NFC");
+                break;
+            case "normalize-nfd":
+                result = text.normalize("NFD");
+                break;
+            case "strip-html":
+                result = text.replace(/<[^>]*>?/gm, "");
+                break;
+            case "unsmart-quotes":
+                result = text
+                    .replace(/[\u201C\u201D\u201E\u201F\u00AB\u00BB]/g, "\"")
+                    .replace(/[\u2018\u2019\u201A\u201B\u2039\u203A]/g, "'");
+                break;
+            case "remove-markdown-links-text":
+                result = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1");
+                break;
+            case "remove-markdown-links-all":
+                result = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "");
+                break;
+            case "remove-markdown-images-alt":
+                result = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, "$1");
+                break;
+            case "remove-markdown-images-all":
+                result = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, "");
+                break;
+
+            // Sorting & Organization
+            case "sort-asc":
+                result = text.split(/\r?\n/).sort().join("\n");
+                break;
+            case "sort-desc":
+                result = text.split(/\r?\n/).sort((a, b) => b.localeCompare(a)).join("\n");
+                break;
+            case "sort-numeric":
+                result = text.split(/\r?\n/).sort((a, b) => {
+                    const na = parseFloat(a.match(/-?\d+(\.\d+)?/)?.[0] || 0);
+                    const nb = parseFloat(b.match(/-?\d+(\.\d+)?/)?.[0] || 0);
+                    return na - nb;
+                }).join("\n");
+                break;
+            case "sort-length":
+                result = text.split(/\r?\n/).sort((a, b) => a.length - b.length).join("\n");
+                break;
+            case "sort-word-count":
+                result = text.split(/\r?\n/).sort((a, b) => (a.match(/\b\w+\b/g) || []).length - (b.match(/\b\w+\b/g) || []).length).join("\n");
+                break;
+            case "sort-last-word":
+                result = text.split(/\r?\n/).sort((a, b) => {
+                    const wa = a.trim().split(/\s+/).pop().toLowerCase();
+                    const wb = b.trim().split(/\s+/).pop().toLowerCase();
+                    return wa.localeCompare(wb);
+                }).join("\n");
+                break;
+            case "reverse-lines":
+                result = text.split(/\r?\n/).reverse().join("\n");
+                break;
+            case "add-line-numbers":
+                result = text.split(/\r?\n/).map((line, i) => `${i + 1}. ${line}`).join("\n");
+                break;
+            case "remove-line-numbers":
+                result = text.split(/\r?\n/).map(line => line.replace(/^\s*\d+[\.\)]?\s*/, "")).join("\n");
+                break;
+            case "shuffle-lines": {
+                const arr = text.split(/\r?\n/);
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                result = arr.join("\n");
             }
-            if (savedOutput !== null) outputText.value = savedOutput;
-            if (savedReplaceInput !== null) replaceInputCb.checked = savedReplaceInput === "true";
-            if (savedAppendOutput !== null) appendOutputCb.checked = savedAppendOutput === "true";
+                break;
+            case "list-generator":
+                result = "[" + text.split(/\r?\n/).map(line => "\"" + line.replace(/"/g, "\\\"") + "\"").join(", ") + "]";
+                break;
 
+            // Encoding & Transformation
+            case "url-encode":
+                result = encodeURIComponent(text);
+                break;
+            case "url-decode":
+                try {
+                    result = decodeURIComponent(text);
+                } catch {
+                    result = "Error decoding URL";
+                }
+                break;
+            case "html-encode":
+                result = text.replace(/[\u00A0-\u9999<>\&]/g, i => "&#" + i.charCodeAt(0) + ";");
+                break;
+            case "html-decode": {
+                const doc = new DOMParser().parseFromString(text, "text/html");
+                result = doc.documentElement.textContent;
+            }
+                break;
+            case "hex-encode":
+                result = Array.from(text).map(c => c.charCodeAt(0).toString(16).padStart(2, "0")).join("");
+                break;
+            case "hex-decode":
+                try {
+                    const hex = text.replace(/\s+/g, "");
+                    result = "";
+                    for (let i = 0; i < hex.length; i += 2) {
+                        result += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+                    }
+                } catch {
+                    result = "Error decoding hex";
+                }
+                break;
+            case "rot13":
+                result = text.replace(/[a-zA-Z]/g, c => {
+                    const base = c <= "Z" ? 65 : 97;
+                    return String.fromCharCode(((c.charCodeAt(0) - base + 13) % 26) + base);
+                });
+                break;
+            case "base64-encode":
+                try {
+                    result = btoa(text);
+                } catch {
+                    result = "Error encoding Base64";
+                }
+                break;
+            case "base64-decode":
+                try {
+                    result = atob(text);
+                } catch {
+                    result = "Error decoding Base64";
+                }
+                break;
+            case "base64url-encode":
+                try {
+                    result = btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+                } catch {
+                    result = "Error encoding Base64 URL";
+                }
+                break;
+            case "base64url-decode":
+                try {
+                    let b64 = text.replace(/-/g, "+").replace(/_/g, "/");
+                    while (b64.length % 4) b64 += "=";
+                    result = atob(b64);
+                } catch {
+                    result = "Error decoding Base64 URL";
+                }
+                break;
+            case "json-escape":
+                result = JSON.stringify(text).slice(1, -1);
+                break;
+            case "json-unescape":
+                try {
+                    result = JSON.parse("\"" + text + "\"");
+                } catch {
+                    result = "Error unescaping JSON";
+                }
+                break;
+            case "java-escape":
+                result = text.replace(/\\/g, "\\\\")
+                    .replace(/"/g, "\\\"")
+                    .replace(/\n/g, "\\n")
+                    .replace(/\r/g, "\\r")
+                    .replace(/\t/g, "\\t");
+                break;
+            case "java-unescape":
+                result = text.replace(/\\n/g, "\n")
+                    .replace(/\\r/g, "\r")
+                    .replace(/\\t/g, "\t")
+                    .replace(/\\"/g, "\"")
+                    .replace(/\\\\/g, "\\");
+                break;
+            case "unicode-escape":
+                result = text.split("").map(c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0")).join("");
+                break;
+            case "unicode-unescape":
+                result = text.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+                break;
+            case "morse-encode":
+                result = text.toUpperCase().split("").map(c => MORSE_CODE[c] || c).join(" ");
+                break;
+            case "morse-decode":
+                result = text.split(/\s+/).map(c => REVERSE_MORSE[c] || c).join("");
+                break;
+
+            // Hashing
+            case "sha-256":
+            case "sha-384":
+            case "sha-512": {
+                const algo = action.toUpperCase();
+                const msgUint8 = new TextEncoder().encode(text);
+                const hashBuffer = await crypto.subtle.digest(algo, msgUint8);
+                if (Uint8Array.prototype.toHex) {
+                    result = new Uint8Array(hashBuffer).toHex();
+                } else {
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    result = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+                }
+            }
+                break;
+
+            // Extraction & Pattern Matching
+            case "extract-emails":
+                result = (text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || []).join("\n");
+                break;
+            case "extract-urls":
+                result = (text.match(/https?:\/\/[^\s]+/g) || []).join("\n");
+                break;
+            case "extract-ips":
+                result = (text.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g) || []).join("\n");
+                break;
+            case "extract-numbers":
+                result = (text.match(/-?\d+(\.\d+)?/g) || []).join("\n");
+                break;
+            case "extract-hex-colors":
+                result = (text.match(/#(?:[0-9a-fA-F]{3,4}){1,2}\b/g) || []).join("\n");
+                break;
+            case "extract-dates":
+                result = (text.match(/\b\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}\b/g) || []).join("\n");
+                break;
+            case "extract-times":
+                result = (text.match(/\b\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?\b/gi) || []).join("\n");
+                break;
+            case "extract-datetime":
+                result = (text.match(/\b\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}(?:[\sT]\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?)?\b/gi) || []).join("\n");
+                break;
+            case "remove-numbers":
+                result = text.replace(/[0-9]/g, "");
+                break;
+            case "remove-special":
+                result = text.replace(/[^a-zA-Z0-9\s]/g, "");
+                break;
+            case "wrap-quotes":
+                result = text.split(/\r?\n/).map(line => `"${line}"`).join("\n");
+                break;
+            case "extract-quotes":
+                result = (text.match(/(["'])(?:(?=(\\?))\2.)*?\1/g) || [])
+                    .map(m => m.slice(1, -1))
+                    .join("\n");
+                break;
+            case "join-comma":
+                result = text.split(/\r?\n/).join(",");
+                break;
+            case "split-comma":
+                result = text.split(",").join("\n");
+                break;
+            case "undo-sha":
+                openJokeModal();
+                return;
+        }
+
+        if (replaceInputCb.checked) {
+            inputText.value = result;
             updateStats();
-        };
+        }
 
-        inputText.addEventListener("input", () => {
+        if (appendOutputCb.checked) {
+            outputText.value += (outputText.value && !outputText.value.endsWith("\n") ? "\n\n" : "") + result + "\n\n";
+        } else {
+            outputText.value = result;
+        }
+        // Auto scroll to bottom
+        outputText.scrollTop = outputText.scrollHeight;
+        saveState();
+    };
+
+    document.getElementById("clear-all").addEventListener("click", () => {
+        if (confirm("Clear all text?")) {
+            inputText.value = "";
+            outputText.value = "";
             updateStats();
             saveState();
-        });
-        outputText.addEventListener("input", saveState);
-        replaceInputCb.addEventListener("change", saveState);
-        appendOutputCb.addEventListener("change", saveState);
+        }
+    });
 
-        loadState();
-
-        const processAction = async (action) => {
-            const text = inputText.value;
-            let result = text;
-
-            switch (action) {
-                // Case & Formatting
-                case "uppercase": result = text.toUpperCase(); break;
-                case "lowercase": result = text.toLowerCase(); break;
-                case "titlecase":
-                    result = text.replace(/\b\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-                    break;
-                case "sentencecase":
-                    // Simple sentence case approximation
-                    result = text.toLowerCase().replace(/(^\s*\w|[.!?]\s*\w)/g, c => c.toUpperCase());
-                    break;
-                case "camelcase":
-                    result = text.replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
-                        return index === 0 ? word.toLowerCase() : word.toUpperCase();
-                    }).replace(/\s+/g, '');
-                    break;
-                case "snakecase":
-                    result = text.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
-                        ?.map(x => x.toLowerCase())
-                        .join('_') || text;
-                    break;
-                case "kebabcase":
-                    result = text.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
-                        ?.map(x => x.toLowerCase())
-                        .join('-') || text;
-                    break;
-                case "swapcase":
-                    result = text.split('').map(c => {
-                        return c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase();
-                    }).join('');
-                    break;
-                case "slugify":
-                    result = text.toLowerCase()
-                        .replace(/[^a-z0-9\s-]/g, '')
-                        .replace(/[\s-]+/g, '-')
-                        .replace(/^-+|-+$/g, '');
-                    break;
-                case "reverse-chars":
-                    result = text.split(/\r?\n/).map(line => line.split('').reverse().join('')).join('\n');
-                    break;
-                case "mockingcase":
-                    result = text.split('').map((c, i) => i % 2 === 0 ? c.toLowerCase() : c.toUpperCase()).join('');
-                    break;
-
-                // Cleaning & Normalization
-                case "trim-lines":
-                    result = text.split(/\r?\n/).map(line => line.trim()).join('\n');
-                    break;
-                case "trim-multiple-spaces":
-                    result = text.replace(/ {2,}/g, ' ');
-                    break;
-                case "trim-multiple-empty-lines":
-                    result = text.replace(/\n{3,}/g, '\n\n');
-                    break;
-                case "remove-duplicate-lines":
-                    result = [...new Set(text.split(/\r?\n/))].join('\n');
-                    break;
-                case "remove-trailing-whitespace":
-                    result = text.split(/\r?\n/).map(line => line.trimEnd()).join('\n');
-                    break;
-                case "remove-leading-whitespace":
-                    result = text.split(/\r?\n/).map(line => line.trimStart()).join('\n');
-                    break;
-                case "remove-non-printable":
-                    // eslint-disable-next-line no-control-regex
-                    result = text.replace(/[\x00-\x09\x0B-\x1F\x7F]/g, '');
-                    break;
-                case "tabs-to-spaces":
-                    result = text.replace(/\t/g, '    ');
-                    break;
-                case "spaces-to-tabs":
-                    result = text.replace(/ {4}/g, '\t');
-                    break;
-                case "remove-empty-lines":
-                    result = text.split(/\r?\n/).filter(line => line.trim().length > 0).join('\n');
-                    break;
-                case "strip-non-alphanumeric":
-                    result = text.replace(/[^a-zA-Z0-9]/g, '');
-                    break;
-                case "normalize-nfc":
-                    result = text.normalize('NFC');
-                    break;
-                case "normalize-nfd":
-                    result = text.normalize('NFD');
-                    break;
-                case "strip-html":
-                    result = text.replace(/<[^>]*>?/gm, '');
-                    break;
-                case "unsmart-quotes":
-                    result = text
-                        .replace(/[\u201C\u201D\u201E\u201F\u00AB\u00BB]/g, '"')
-                        .replace(/[\u2018\u2019\u201A\u201B\u2039\u203A]/g, "'");
-                    break;
-                case "remove-markdown-links-text":
-                    result = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1');
-                    break;
-                case "remove-markdown-links-all":
-                    result = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '');
-                    break;
-                case "remove-markdown-images-alt":
-                    result = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '$1');
-                    break;
-                case "remove-markdown-images-all":
-                    result = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '');
-                    break;
-
-                // Sorting & Organization
-                case "sort-asc":
-                    result = text.split(/\r?\n/).sort().join('\n');
-                    break;
-                case "sort-desc":
-                    result = text.split(/\r?\n/).sort((a, b) => b.localeCompare(a)).join('\n');
-                    break;
-                case "sort-numeric":
-                    result = text.split(/\r?\n/).sort((a, b) => {
-                        const na = parseFloat(a.match(/-?\d+(\.\d+)?/)?.[0] || 0);
-                        const nb = parseFloat(b.match(/-?\d+(\.\d+)?/)?.[0] || 0);
-                        return na - nb;
-                    }).join('\n');
-                    break;
-                case "sort-length":
-                    result = text.split(/\r?\n/).sort((a, b) => a.length - b.length).join('\n');
-                    break;
-                case "sort-word-count":
-                    result = text.split(/\r?\n/).sort((a, b) => (a.match(/\b\w+\b/g) || []).length - (b.match(/\b\w+\b/g) || []).length).join('\n');
-                    break;
-                case "sort-last-word":
-                    result = text.split(/\r?\n/).sort((a, b) => {
-                        const wa = a.trim().split(/\s+/).pop().toLowerCase();
-                        const wb = b.trim().split(/\s+/).pop().toLowerCase();
-                        return wa.localeCompare(wb);
-                    }).join('\n');
-                    break;
-                case "reverse-lines":
-                    result = text.split(/\r?\n/).reverse().join('\n');
-                    break;
-                case "add-line-numbers":
-                    result = text.split(/\r?\n/).map((line, i) => `${i + 1}. ${line}`).join('\n');
-                    break;
-                case "remove-line-numbers":
-                    result = text.split(/\r?\n/).map(line => line.replace(/^\s*\d+[\.\)]?\s*/, '')).join('\n');
-                    break;
-                case "shuffle-lines":
-                    {
-                        const arr = text.split(/\r?\n/);
-                        for (let i = arr.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [arr[i], arr[j]] = [arr[j], arr[i]];
-                        }
-                        result = arr.join('\n');
-                    }
-                    break;
-                case "list-generator":
-                    result = '[' + text.split(/\r?\n/).map(line => '"' + line.replace(/"/g, '\\"') + '"').join(', ') + ']';
-                    break;
-
-                // Encoding & Transformation
-                case "url-encode":
-                    result = encodeURIComponent(text);
-                    break;
-                case "url-decode":
-                    try { result = decodeURIComponent(text); } catch { result = "Error decoding URL"; }
-                    break;
-                case "html-encode":
-                    result = text.replace(/[\u00A0-\u9999<>\&]/g, i => '&#' + i.charCodeAt(0) + ';');
-                    break;
-                case "html-decode":
-                    {
-                        const doc = new DOMParser().parseFromString(text, "text/html");
-                        result = doc.documentElement.textContent;
-                    }
-                    break;
-                case "hex-encode":
-                    result = Array.from(text).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
-                    break;
-                case "hex-decode":
-                    try {
-                        const hex = text.replace(/\s+/g, '');
-                        result = '';
-                        for (let i = 0; i < hex.length; i += 2) {
-                            result += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-                        }
-                    } catch { result = "Error decoding hex"; }
-                    break;
-                case "rot13":
-                    result = text.replace(/[a-zA-Z]/g, c => {
-                        const base = c <= 'Z' ? 65 : 97;
-                        return String.fromCharCode(((c.charCodeAt(0) - base + 13) % 26) + base);
-                    });
-                    break;
-                case "base64-encode":
-                    try { result = btoa(text); } catch { result = "Error encoding Base64"; }
-                    break;
-                case "base64-decode":
-                    try { result = atob(text); } catch { result = "Error decoding Base64"; }
-                    break;
-                case "base64url-encode":
-                    try { result = btoa(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } catch { result = "Error encoding Base64 URL"; }
-                    break;
-                case "base64url-decode":
-                    try {
-                        let b64 = text.replace(/-/g, '+').replace(/_/g, '/');
-                        while (b64.length % 4) b64 += '=';
-                        result = atob(b64);
-                    } catch { result = "Error decoding Base64 URL"; }
-                    break;
-                case "json-escape":
-                    result = JSON.stringify(text).slice(1, -1);
-                    break;
-                case "json-unescape":
-                    try { result = JSON.parse('"' + text + '"'); } catch { result = "Error unescaping JSON"; }
-                    break;
-                case "java-escape":
-                    result = text.replace(/\\/g, "\\\\")
-                        .replace(/"/g, "\\\"")
-                        .replace(/\n/g, "\\n")
-                        .replace(/\r/g, "\\r")
-                        .replace(/\t/g, "\\t");
-                    break;
-                case "java-unescape":
-                    result = text.replace(/\\n/g, "\n")
-                        .replace(/\\r/g, "\r")
-                        .replace(/\\t/g, "\t")
-                        .replace(/\\"/g, "\"")
-                        .replace(/\\\\/g, "\\");
-                    break;
-                case "unicode-escape":
-                    result = text.split('').map(c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, '0')).join('');
-                    break;
-                case "unicode-unescape":
-                    result = text.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
-                    break;
-                case "morse-encode":
-                    result = text.toUpperCase().split('').map(c => MORSE_CODE[c] || c).join(' ');
-                    break;
-                case "morse-decode":
-                    result = text.split(/\s+/).map(c => REVERSE_MORSE[c] || c).join('');
-                    break;
-
-                // Hashing
-                case "sha-256":
-                case "sha-384":
-                case "sha-512":
-                    {
-                        const algo = action.toUpperCase();
-                        const msgUint8 = new TextEncoder().encode(text);
-                        const hashBuffer = await crypto.subtle.digest(algo, msgUint8);
-                        if (Uint8Array.prototype.toHex) {
-                            result = new Uint8Array(hashBuffer).toHex();
-                        } else {
-                            const hashArray = Array.from(new Uint8Array(hashBuffer));
-                            result = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-                        }
-                    }
-                    break;
-
-                // Extraction & Pattern Matching
-                case "extract-emails":
-                    result = (text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || []).join('\n');
-                    break;
-                case "extract-urls":
-                    result = (text.match(/https?:\/\/[^\s]+/g) || []).join('\n');
-                    break;
-                case "extract-ips":
-                    result = (text.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g) || []).join('\n');
-                    break;
-                case "extract-numbers":
-                    result = (text.match(/-?\d+(\.\d+)?/g) || []).join('\n');
-                    break;
-                case "extract-hex-colors":
-                    result = (text.match(/#(?:[0-9a-fA-F]{3,4}){1,2}\b/g) || []).join('\n');
-                    break;
-                case "extract-dates":
-                    result = (text.match(/\b\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}\b/g) || []).join('\n');
-                    break;
-                case "extract-times":
-                    result = (text.match(/\b\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?\b/gi) || []).join('\n');
-                    break;
-                case "extract-datetime":
-                    result = (text.match(/\b\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}(?:[\sT]\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?)?\b/gi) || []).join('\n');
-                    break;
-                case "remove-numbers":
-                    result = text.replace(/[0-9]/g, '');
-                    break;
-                case "remove-special":
-                    result = text.replace(/[^a-zA-Z0-9\s]/g, '');
-                    break;
-                case "wrap-quotes":
-                    result = text.split(/\r?\n/).map(line => `"${line}"`).join('\n');
-                    break;
-                case "extract-quotes":
-                    result = (text.match(/(["'])(?:(?=(\\?))\2.)*?\1/g) || [])
-                        .map(m => m.slice(1, -1))
-                        .join('\n');
-                    break;
-                case "join-comma":
-                    result = text.split(/\r?\n/).join(',');
-                    break;
-                case "split-comma":
-                    result = text.split(',').join('\n');
-                    break;
-                case "undo-sha":
-                    openJokeModal();
-                    return;
-            }
-
-            if (replaceInputCb.checked) {
-                inputText.value = result;
-                updateStats();
-            }
-
-            if (appendOutputCb.checked) {
-                outputText.value += (outputText.value && !outputText.value.endsWith('\n') ? '\n\n' : '') + result + '\n\n';
-            } else {
-                outputText.value = result;
-            }
-            // Auto scroll to bottom
-            outputText.scrollTop = outputText.scrollHeight;
+    document.getElementById("restore-default").addEventListener("click", () => {
+        if (confirm("Restore default example?")) {
+            inputText.value = DEFAULT_EXAMPLE;
+            updateStats();
             saveState();
-        };
+        }
+    });
 
-        document.getElementById("clear-all").addEventListener("click", () => {
-            if (confirm("Clear all text?")) {
-                inputText.value = "";
-                outputText.value = "";
-                updateStats();
-                saveState();
-            }
+    document.querySelectorAll("button[data-action]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            processAction(btn.getAttribute("data-action"));
         });
+    });
 
-        document.getElementById("restore-default").addEventListener("click", () => {
-            if (confirm("Restore default example?")) {
-                inputText.value = DEFAULT_EXAMPLE;
-                updateStats();
-                saveState();
-            }
-        });
+    // Helper function to force JavaScript to print extremely large or small
+    // floating-point numbers without defaulting to exponential (e) notation.
+    function formatWithoutExponent(num) {
+        if (typeof num === "bigint") return num.toString();
 
-        document.querySelectorAll("button[data-action]").forEach(btn => {
-            btn.addEventListener("click", () => {
-                processAction(btn.getAttribute("data-action"));
-            });
-        });
+        let str = String(num);
+        if (!str.toLowerCase().includes("e")) return str;
 
-        // Helper function to force JavaScript to print extremely large or small 
-        // floating-point numbers without defaulting to exponential (e) notation.
-        function formatWithoutExponent(num) {
-            if (typeof num === 'bigint') return num.toString();
-            
-            let str = String(num);
-            if (!str.toLowerCase().includes('e')) return str;
-            
-            let [base, exp] = str.toLowerCase().split('e');
-            let exponent = parseInt(exp, 10);
-            let [lead, decimal = ''] = base.split('.');
-            
-            let sign = lead.startsWith('-') ? '-' : '';
-            lead = lead.replace('-', '');
-            
-            if (exponent > 0) {
-                let padding = exponent - decimal.length;
-                if (padding >= 0) return sign + lead + decimal + '0'.repeat(padding);
-                return sign + lead + decimal.slice(0, exponent) + '.' + decimal.slice(exponent);
-            } else {
-                let padding = Math.abs(exponent) - 1;
-                return sign + '0.' + '0'.repeat(padding) + lead + decimal;
+        let [base, exp] = str.toLowerCase().split("e");
+        let exponent = parseInt(exp, 10);
+        let [lead, decimal = ""] = base.split(".");
+
+        let sign = lead.startsWith("-") ? "-" : "";
+        lead = lead.replace("-", "");
+
+        if (exponent > 0) {
+            let padding = exponent - decimal.length;
+            if (padding >= 0) return sign + lead + decimal + "0".repeat(padding);
+            return sign + lead + decimal.slice(0, exponent) + "." + decimal.slice(exponent);
+        } else {
+            let padding = Math.abs(exponent) - 1;
+            return sign + "0." + "0".repeat(padding) + lead + decimal;
+        }
+    }
+
+    // === BASE CONSTANTS ===
+    // 10^24 hashes per second (1 Yottahash/s), written without exponents.
+    const HASH_RATE_PER_SECOND = 1000000000000000000000000;
+
+    // Seconds in a Julian year (60 sec * 60 min * 24 hr * 365.25 days)
+    const SECONDS_PER_YEAR = 31557600;
+
+    // === SHA-256 (Pre-image: 2^256) ===
+    // BigInt ('n') is used here to prevent JavaScript from dropping digits.
+    const SHA256_PREIMAGE_OPERATIONS = 2n ** 256n;
+    const SHA256_PREIMAGE_SECONDS = Number(SHA256_PREIMAGE_OPERATIONS) / HASH_RATE_PER_SECOND;
+    const SHA256_PREIMAGE_YEARS = SHA256_PREIMAGE_SECONDS / SECONDS_PER_YEAR;
+    const SHA256_PERCENT_PER_SECOND = (HASH_RATE_PER_SECOND / Number(SHA256_PREIMAGE_OPERATIONS)) * 100;
+
+    console.log("=== SHA-256 ===");
+    console.log(`Total Operations Required : ${formatWithoutExponent(SHA256_PREIMAGE_OPERATIONS)}`);
+    console.log(`Time to Break (Years)     : ${formatWithoutExponent(SHA256_PREIMAGE_YEARS)}`);
+    console.log(`% Covered in 1 Second     : ${formatWithoutExponent(SHA256_PERCENT_PER_SECOND)}%\n`);
+
+    // === SHA-384 (Pre-image: 2^384) ===
+    const SHA384_PREIMAGE_OPERATIONS = 2n ** 384n;
+    const SHA384_PREIMAGE_SECONDS = Number(SHA384_PREIMAGE_OPERATIONS) / HASH_RATE_PER_SECOND;
+    const SHA384_PREIMAGE_YEARS = SHA384_PREIMAGE_SECONDS / SECONDS_PER_YEAR;
+    const SHA384_PERCENT_PER_SECOND = (HASH_RATE_PER_SECOND / Number(SHA384_PREIMAGE_OPERATIONS)) * 100;
+
+    console.log("=== SHA-384 ===");
+    console.log(`Total Operations Required : ${formatWithoutExponent(SHA384_PREIMAGE_OPERATIONS)}`);
+    console.log(`Time to Break (Years)     : ${formatWithoutExponent(SHA384_PREIMAGE_YEARS)}`);
+    console.log(`% Covered in 1 Second     : ${formatWithoutExponent(SHA384_PERCENT_PER_SECOND)}%\n`);
+
+    // === SHA-512 (Pre-image: 2^512) ===
+    const SHA512_PREIMAGE_OPERATIONS = 2n ** 512n;
+    const SHA512_PREIMAGE_SECONDS = Number(SHA512_PREIMAGE_OPERATIONS) / HASH_RATE_PER_SECOND;
+    const SHA512_PREIMAGE_YEARS = SHA512_PREIMAGE_SECONDS / SECONDS_PER_YEAR;
+    const SHA512_PERCENT_PER_SECOND = (HASH_RATE_PER_SECOND / Number(SHA512_PREIMAGE_OPERATIONS)) * 100;
+
+    console.log("=== SHA-512 ===");
+    console.log(`Total Operations Required : ${formatWithoutExponent(SHA512_PREIMAGE_OPERATIONS)}`);
+    console.log(`Time to Break (Years)     : ${formatWithoutExponent(SHA512_PREIMAGE_YEARS)}`);
+    console.log(`% Covered in 1 Second     : ${formatWithoutExponent(SHA512_PERCENT_PER_SECOND)}%`);
+
+    const jokeModal = document.getElementById("joke-modal");
+    const timeEstimateEl = document.getElementById("time-estimate");
+    let jokeInterval;
+    let currentHashType = null;
+    let cumulativeProbability = 0;
+
+    const formatJokeTime = (seconds) => {
+        const units = [
+            { name: "year", seconds: 31536000n },
+            { name: "month", seconds: 2592000n },
+            { name: "week", seconds: 604800n },
+            { name: "day", seconds: 86400n },
+            { name: "hour", seconds: 3600n },
+            { name: "minute", seconds: 60n },
+            { name: "second", seconds: 1n },
+        ];
+
+        let remaining = seconds;
+        const result = [];
+
+        for (const unit of units) {
+            const value = remaining / unit.seconds;
+            if (value > 0n) {
+                const formattedValue = unit.name === "year" ? new Intl.NumberFormat().format(value) : value.toString();
+                result.push(`${formattedValue} ${unit.name}${value > 1n ? "s" : ""}`);
+                remaining %= unit.seconds;
             }
         }
 
-        // === BASE CONSTANTS ===
-        // 10^24 hashes per second (1 Yottahash/s), written without exponents.
-        const HASH_RATE_PER_SECOND = 1000000000000000000000000; 
+        if (result.length === 0) return "0 seconds";
+        if (result.length === 1) return result[0];
+        const last = result.pop();
+        const oxfordComma = result.length > 1 ? "," : "";
+        return result.join(", ") + oxfordComma + " and " + last;
+    };
 
-        // Seconds in a Julian year (60 sec * 60 min * 24 hr * 365.25 days)
-        const SECONDS_PER_YEAR = 31557600;
+    const updateJokeTime = () => {
+        // Calculate base seconds using BigInt for precision at high magnitudes
+        let secBI = 0n;
+        const hrBI = BigInt(HASH_RATE_PER_SECOND);
 
-        // === SHA-256 (Pre-image: 2^256) ===
-        // BigInt ('n') is used here to prevent JavaScript from dropping digits.
-        const SHA256_PREIMAGE_OPERATIONS = 2n ** 256n; 
-        const SHA256_PREIMAGE_SECONDS = Number(SHA256_PREIMAGE_OPERATIONS) / HASH_RATE_PER_SECOND;
-        const SHA256_PREIMAGE_YEARS = SHA256_PREIMAGE_SECONDS / SECONDS_PER_YEAR;
-        const SHA256_PERCENT_PER_SECOND = (HASH_RATE_PER_SECOND / Number(SHA256_PREIMAGE_OPERATIONS)) * 100;
+        if (currentHashType === "sha256") secBI = SHA256_PREIMAGE_OPERATIONS / hrBI;
+        else if (currentHashType === "sha384") secBI = SHA384_PREIMAGE_OPERATIONS / hrBI;
+        else if (currentHashType === "sha512") secBI = SHA512_PREIMAGE_OPERATIONS / hrBI;
 
-        console.log("=== SHA-256 ===");
-        console.log(`Total Operations Required : ${formatWithoutExponent(SHA256_PREIMAGE_OPERATIONS)}`);
-        console.log(`Time to Break (Years)     : ${formatWithoutExponent(SHA256_PREIMAGE_YEARS)}`);
-        console.log(`% Covered in 1 Second     : ${formatWithoutExponent(SHA256_PERCENT_PER_SECOND)}%\n`);
+        // Apply a random jitter between 50% and 150% of the theoretical collision time
+        const jitterPercent = BigInt(Math.floor(Math.random() * 100) + 50);
+        const jitteredSeconds = (secBI * jitterPercent) / 100n;
 
-        // === SHA-384 (Pre-image: 2^384) ===
-        const SHA384_PREIMAGE_OPERATIONS = 2n ** 384n;
-        const SHA384_PREIMAGE_SECONDS = Number(SHA384_PREIMAGE_OPERATIONS) / HASH_RATE_PER_SECOND;
-        const SHA384_PREIMAGE_YEARS = SHA384_PREIMAGE_SECONDS / SECONDS_PER_YEAR;
-        const SHA384_PERCENT_PER_SECOND = (HASH_RATE_PER_SECOND / Number(SHA384_PREIMAGE_OPERATIONS)) * 100;
+        timeEstimateEl.textContent = formatJokeTime(jitteredSeconds);
 
-        console.log("=== SHA-384 ===");
-        console.log(`Total Operations Required : ${formatWithoutExponent(SHA384_PREIMAGE_OPERATIONS)}`);
-        console.log(`Time to Break (Years)     : ${formatWithoutExponent(SHA384_PREIMAGE_YEARS)}`);
-        console.log(`% Covered in 1 Second     : ${formatWithoutExponent(SHA384_PERCENT_PER_SECOND)}%\n`);
+        // Increment probability based on the specific hash type constants
+        let baseRate = 0;
+        if (currentHashType === "sha256") baseRate = SHA256_PERCENT_PER_SECOND;
+        else if (currentHashType === "sha384") baseRate = SHA384_PERCENT_PER_SECOND;
+        else if (currentHashType === "sha512") baseRate = SHA512_PERCENT_PER_SECOND;
 
-        // === SHA-512 (Pre-image: 2^512) ===
-        const SHA512_PREIMAGE_OPERATIONS = 2n ** 512n;
-        const SHA512_PREIMAGE_SECONDS = Number(SHA512_PREIMAGE_OPERATIONS) / HASH_RATE_PER_SECOND;
-        const SHA512_PREIMAGE_YEARS = SHA512_PREIMAGE_SECONDS / SECONDS_PER_YEAR;
-        const SHA512_PERCENT_PER_SECOND = (HASH_RATE_PER_SECOND / Number(SHA512_PREIMAGE_OPERATIONS)) * 100;
+        // 1.2 seconds between updates, plus some random noise (80% to 120% of base rate)
+        const increment = baseRate * 1.2 * (0.8 + Math.random() * 0.4);
+        cumulativeProbability += increment;
 
-        console.log("=== SHA-512 ===");
-        console.log(`Total Operations Required : ${formatWithoutExponent(SHA512_PREIMAGE_OPERATIONS)}`);
-        console.log(`Time to Break (Years)     : ${formatWithoutExponent(SHA512_PREIMAGE_YEARS)}`);
-        console.log(`% Covered in 1 Second     : ${formatWithoutExponent(SHA512_PERCENT_PER_SECOND)}%`);
+        document.getElementById("joke-pct").textContent = formatWithoutExponent(cumulativeProbability) + "% completed";
+    };
 
-        const jokeModal = document.getElementById("joke-modal");
-        const timeEstimateEl = document.getElementById("time-estimate");
-        let jokeInterval;
-        let currentHashType = null;
-        let cumulativeProbability = 0;
+    let pendingHashes = [];
+    const openJokeModal = () => {
+        const text = inputText.value;
+        // Look for any 64, 96, or 128 character hex strings anywhere in the text
+        const hashRegex = /\b([0-9a-fA-F]{64}|[0-9a-fA-F]{96}|[0-9a-fA-F]{128})\b/g;
+        const matches = [...text.matchAll(hashRegex)];
 
-        const formatJokeTime = (seconds) => {
-            const units = [
-                { name: 'year', seconds: 31536000n },
-                { name: 'month', seconds: 2592000n },
-                { name: 'week', seconds: 604800n },
-                { name: 'day', seconds: 86400n },
-                { name: 'hour', seconds: 3600n },
-                { name: 'minute', seconds: 60n },
-                { name: 'second', seconds: 1n }
-            ];
+        pendingHashes = matches.map(m => {
+            const len = m[0].length;
+            if (len === 64) return "sha256";
+            if (len === 96) return "sha384";
+            if (len === 128) return "sha512";
+            return null;
+        }).filter(Boolean);
 
-            let remaining = seconds;
-            const result = [];
+        if (pendingHashes.length === 0) return;
+        processNextHash();
+    };
 
-            for (const unit of units) {
-                const value = remaining / unit.seconds;
-                if (value > 0n) {
-                    const formattedValue = unit.name === 'year' ? new Intl.NumberFormat().format(value) : value.toString();
-                    result.push(`${formattedValue} ${unit.name}${value > 1n ? 's' : ''}`);
-                    remaining %= unit.seconds;
-                }
-            }
+    const processNextHash = () => {
+        const nextType = pendingHashes.shift();
+        if (!nextType) return;
+        currentHashType = nextType;
+        // Start with a truly tiny random probability to match the starting visual
+        cumulativeProbability = Math.random() * 1e-60;
 
-            if (result.length === 0) return "0 seconds";
-            if (result.length === 1) return result[0];
-            const last = result.pop();
-            const oxfordComma = result.length > 1 ? ',' : '';
-            return result.join(', ') + oxfordComma + ' and ' + last;
-        };
+        document.getElementById("joke-title").textContent = `Reversing ${nextType} Hash...`;
+        jokeModal.showModal();
+        updateJokeTime();
+        jokeInterval = setInterval(updateJokeTime, 1200);
+    };
 
-        const updateJokeTime = () => {
-            // Calculate base seconds using BigInt for precision at high magnitudes
-            let secBI = 0n;
-            const hrBI = BigInt(HASH_RATE_PER_SECOND);
+    jokeModal.addEventListener("close", () => {
+        clearInterval(jokeInterval);
+        if (pendingHashes.length > 0) {
+            setTimeout(processNextHash, 150);
+        }
+    });
 
-            if (currentHashType === "sha256") secBI = SHA256_PREIMAGE_OPERATIONS / hrBI;
-            else if (currentHashType === "sha384") secBI = SHA384_PREIMAGE_OPERATIONS / hrBI;
-            else if (currentHashType === "sha512") secBI = SHA512_PREIMAGE_OPERATIONS / hrBI;
-
-            // Apply a random jitter between 50% and 150% of the theoretical collision time
-            const jitterPercent = BigInt(Math.floor(Math.random() * 100) + 50);
-            const jitteredSeconds = (secBI * jitterPercent) / 100n;
-
-            timeEstimateEl.textContent = formatJokeTime(jitteredSeconds);
-
-            // Increment probability based on the specific hash type constants
-            let baseRate = 0;
-            if (currentHashType === "sha256") baseRate = SHA256_PERCENT_PER_SECOND;
-            else if (currentHashType === "sha384") baseRate = SHA384_PERCENT_PER_SECOND;
-            else if (currentHashType === "sha512") baseRate = SHA512_PERCENT_PER_SECOND;
-
-            // 1.2 seconds between updates, plus some random noise (80% to 120% of base rate)
-            const increment = baseRate * 1.2 * (0.8 + Math.random() * 0.4);
-            cumulativeProbability += increment;
-
-            document.getElementById("joke-pct").textContent = formatWithoutExponent(cumulativeProbability) + "% completed";
-        };
-
-        let pendingHashes = [];
-        const openJokeModal = () => {
-            const text = inputText.value;
-            // Look for any 64, 96, or 128 character hex strings anywhere in the text
-            const hashRegex = /\b([0-9a-fA-F]{64}|[0-9a-fA-F]{96}|[0-9a-fA-F]{128})\b/g;
-            const matches = [...text.matchAll(hashRegex)];
-            
-            pendingHashes = matches.map(m => {
-                const len = m[0].length;
-                if (len === 64) return "sha256";
-                if (len === 96) return "sha384";
-                if (len === 128) return "sha512";
-                return null;
-            }).filter(Boolean);
-
-            if (pendingHashes.length === 0) return;
-            processNextHash();
-        };
-
-        const processNextHash = () => {
-            const nextType = pendingHashes.shift();
-            if (!nextType) return;
-            currentHashType = nextType;
-            // Start with a truly tiny random probability to match the starting visual
-            cumulativeProbability = Math.random() * 1e-60;
-
-            document.getElementById("joke-title").textContent = `Reversing ${nextType} Hash...`;
-            jokeModal.showModal();
-            updateJokeTime();
-            jokeInterval = setInterval(updateJokeTime, 1200);
-        };
-
-        jokeModal.addEventListener("close", () => {
-            clearInterval(jokeInterval);
-            if (pendingHashes.length > 0) {
-                setTimeout(processNextHash, 150);
-            }
-        });
-
-        jokeModal.addEventListener("click", (e) => {
-            if (e.target.closest("button")) {
-                jokeModal.close();
-            }
-        });
-    </script>
+    jokeModal.addEventListener("click", (e) => {
+        if (e.target.closest("button")) {
+            jokeModal.close();
+        }
+    });
+</script>
 </body>
 
 </html>

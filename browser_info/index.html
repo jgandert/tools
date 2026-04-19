@@ -1,121 +1,124 @@
 <!DOCTYPE html>
 <html lang="en" class="layout-centered">
 
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="light dark">
-        <meta name="description" content="A comprehensive diagnostic tool to dump browser-specific information, hardware specifications, and localization settings into a formatted JSON structure.">
-        <title>Browser Information Dump</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <link rel="stylesheet" type="text/css" href="../one.css">
-        <style>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="A comprehensive diagnostic tool to dump browser-specific information, hardware specifications, and localization settings into a formatted JSON structure.">
+    <title>Browser Information Dump</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
         textarea#log-out {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
             font-size: 0.875rem;
             min-height: 500px;
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <main>
-            <section>
-                <h2>Browser Diagnostics</h2>
-                <p>Gathering comprehensive metadata from your browser environment. This tool extracts navigator properties, screen specifications, and localization settings.</p>
+<body>
+<main>
+    <section>
+        <h2>Browser Diagnostics</h2>
+        <p>Gathering comprehensive metadata from your browser environment. This tool extracts
+            navigator properties, screen specifications, and localization settings.</p>
 
-                <div class="mt-6">
-                    <label for="log-out">Browser Metadata (JSON)</label>
-                    <textarea id="log-out" rows="20" readonly placeholder="Initializing data collection..."></textarea>
-                </div>
+        <div class="mt-6">
+            <label for="log-out">Browser Metadata (JSON)</label>
+            <textarea id="log-out" rows="20" readonly
+                      placeholder="Initializing data collection..."></textarea>
+        </div>
 
-                <div class="flex-row mt-4">
-                    <button type="button" id="copy-btn">Copy to Clipboard</button>
-                </div>
-            </section>
-        </main>
+        <div class="flex-row mt-4">
+            <button type="button" id="copy-btn">Copy to Clipboard</button>
+        </div>
+    </section>
+</main>
 
-        <script>
-        async function dumpBrowserData() {
-            const logOutput = document.getElementById("log-out");
-            if (!logOutput) {
-                console.error("Textarea with ID 'log-out' not found.");
-                return;
-            }
-
-            // Helper function to dynamically extract all non-function properties from an object
-            function extractDynamicProperties(obj, excludeKeys = []) {
-                const extractedData = {};
-                for (const key in obj) {
-                    // Skip explicitly excluded keys (like hardware devices)
-                    if (excludeKeys.includes(key)) continue;
-
-                    try {
-                        const value = obj[key];
-                        // Only grab strings, numbers, booleans, and arrays (skip functions/methods)
-                        if (typeof value !== "function" && typeof value !== "object" || Array.isArray(value)) {
-                            extractedData[key] = value;
-                        }
-                    } catch {
-                        // Some properties might throw errors if accessed without user permission
-                        extractedData[key] = "[Access Restricted]";
-                    }
-                }
-                return extractedData;
-            }
-
-            const browserData = {};
-
-            // 1. Dynamically extract everything from Navigator
-            // We exclude 'mediaDevices' and 'mediaSession' to avoid input/output device data
-            browserData.navigator = extractDynamicProperties(navigator, ["mediaDevices", "mediaSession"]);
-
-            // 2. Dynamically extract everything from Screen
-            browserData.screen = extractDynamicProperties(screen);
-
-            // 3. Internationalization (Intl is already a plain object, so we can grab it directly)
-            try {
-                browserData.localization = Intl.DateTimeFormat().resolvedOptions();
-            } catch {
-                browserData.localization = "[Intl API not supported]";
-            }
-
-            // 4. Local Fonts (Still requires specific API call)
-            browserData.fonts = "Permission denied or unsupported.";
-            if ("queryLocalFonts" in window) {
-                try {
-                    const localFonts = await window.queryLocalFonts();
-                    browserData.fonts = [...new Set(localFonts.map(font => font.family))];
-                } catch (error) {
-                    browserData.fonts = `[Font Access Restricted: ${error.message}]`;
-                }
-            }
-
-            // Output the fully dynamic object as a formatted JSON string
-            logOutput.value = JSON.stringify(browserData, null, 4);
+<script>
+    async function dumpBrowserData() {
+        const logOutput = document.getElementById("log-out");
+        if (!logOutput) {
+            console.error("Textarea with ID 'log-out' not found.");
+            return;
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            dumpBrowserData();
+        // Helper function to dynamically extract all non-function properties from an object
+        function extractDynamicProperties(obj, excludeKeys = []) {
+            const extractedData = {};
+            for (const key in obj) {
+                // Skip explicitly excluded keys (like hardware devices)
+                if (excludeKeys.includes(key)) continue;
 
-            const copyBtn = document.getElementById("copy-btn");
-            const logOutput = document.getElementById("log-out");
-
-            copyBtn.addEventListener("click", async () => {
                 try {
-                    await navigator.clipboard.writeText(logOutput.value);
-                    const originalText = copyBtn.textContent;
-                    copyBtn.textContent = "Copied!";
-                    setTimeout(() => {
-                        copyBtn.textContent = originalText;
-                    }, 2000);
-                } catch (err) {
-                    console.error("Failed to copy text: ", err);
+                    const value = obj[key];
+                    // Only grab strings, numbers, booleans, and arrays (skip functions/methods)
+                    if (typeof value !== "function" && typeof value !== "object" || Array.isArray(value)) {
+                        extractedData[key] = value;
+                    }
+                } catch {
+                    // Some properties might throw errors if accessed without user permission
+                    extractedData[key] = "[Access Restricted]";
                 }
-            });
+            }
+            return extractedData;
+        }
+
+        const browserData = {};
+
+        // 1. Dynamically extract everything from Navigator
+        // We exclude 'mediaDevices' and 'mediaSession' to avoid input/output device data
+        browserData.navigator = extractDynamicProperties(navigator, ["mediaDevices", "mediaSession"]);
+
+        // 2. Dynamically extract everything from Screen
+        browserData.screen = extractDynamicProperties(screen);
+
+        // 3. Internationalization (Intl is already a plain object, so we can grab it directly)
+        try {
+            browserData.localization = Intl.DateTimeFormat().resolvedOptions();
+        } catch {
+            browserData.localization = "[Intl API not supported]";
+        }
+
+        // 4. Local Fonts (Still requires specific API call)
+        browserData.fonts = "Permission denied or unsupported.";
+        if ("queryLocalFonts" in window) {
+            try {
+                const localFonts = await window.queryLocalFonts();
+                browserData.fonts = [...new Set(localFonts.map(font => font.family))];
+            } catch (error) {
+                browserData.fonts = `[Font Access Restricted: ${error.message}]`;
+            }
+        }
+
+        // Output the fully dynamic object as a formatted JSON string
+        logOutput.value = JSON.stringify(browserData, null, 4);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        dumpBrowserData();
+
+        const copyBtn = document.getElementById("copy-btn");
+        const logOutput = document.getElementById("log-out");
+
+        copyBtn.addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(logOutput.value);
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = "Copied!";
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            } catch (err) {
+                console.error("Failed to copy text: ", err);
+            }
         });
-    </script>
-    </body>
+    });
+</script>
+</body>
 
 </html>

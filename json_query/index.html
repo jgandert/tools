@@ -24,52 +24,55 @@
 </head>
 
 <body>
-    <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
 
-    <header>
-        <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
-        <hgroup>
-            <h1>JSON Query & Transform Tool</h1>
-            <p>Load or paste JSON data and test queries.</p>
-        </hgroup>
-        <button type="button" id="open-modal" class="btn-sym" aria-haspopup="dialog" aria-controls="modal-info">
-            info
-        </button>
-    </header>
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>JSON Query & Transform Tool</h1>
+        <p>Load or paste JSON data and test queries.</p>
+    </hgroup>
+    <button type="button" id="open-modal" class="btn-sym" aria-haspopup="dialog"
+            aria-controls="modal-info">
+        info
+    </button>
+</header>
 
-    <main id="content">
-        <section id="query-section">
-            <div role="search">
-                <input type="search" id="query-input" placeholder="e.g. users{'ux' in tags}.id" aria-label="JSON Query"
-                    value="users.{'ux' in tags && deleted_at == null} => {name, hired: true, over_18: age > 18, ... but age, str_id, is_admin, deleted_at}[0]">
-                <button type="button" id="run-query-btn" aria-label="Run query">
-                    <span class="sym">search</span>
-                </button>
-            </div>
-            <div id="error-msg" class="error-message"></div>
-        </section>
-
-        <section id="output-section">
-            <label for="json-output">
-                Output
-                <textarea id="json-output" class="code-area" rows="20" readonly
-                    placeholder="Result will appear here..."></textarea>
-            </label>
-        </section>
-    </main>
-
-    <aside>
-        <h2>Input JSON</h2>
-        <p>
-            <button type="button" id="load-file-btn">
-                <span class="sym">folder_open</span> Load from file
+<main id="content">
+    <section id="query-section">
+        <div role="search">
+            <input type="search" id="query-input" placeholder="e.g. users{'ux' in tags}.id"
+                   aria-label="JSON Query"
+                   value="users.{'ux' in tags && deleted_at == null} => {name, hired: true, over_18: age > 18, ... but age, str_id, is_admin, deleted_at}[0]">
+            <button type="button" id="run-query-btn" aria-label="Run query">
+                <span class="sym">search</span>
             </button>
-            <input type="file" id="file-input" accept="application/json,.json" hidden aria-hidden="true">
-        </p>
-        <form onsubmit="return false;">
-            <label for="json-input">
-                JSON Data
-                <textarea id="json-input" class="code-area" rows="25" placeholder="Paste JSON here...">
+        </div>
+        <div id="error-msg" class="error-message"></div>
+    </section>
+
+    <section id="output-section">
+        <label for="json-output">
+            Output
+            <textarea id="json-output" class="code-area" rows="20" readonly
+                      placeholder="Result will appear here..."></textarea>
+        </label>
+    </section>
+</main>
+
+<aside>
+    <h2>Input JSON</h2>
+    <p>
+        <button type="button" id="load-file-btn">
+            <span class="sym">folder_open</span> Load from file
+        </button>
+        <input type="file" id="file-input" accept="application/json,.json" hidden
+               aria-hidden="true">
+    </p>
+    <form onsubmit="return false;">
+        <label for="json-input">
+            JSON Data
+            <textarea id="json-input" class="code-area" rows="25" placeholder="Paste JSON here...">
 {
     "organization": "Tech Innovators Inc",
     "active_status": true,
@@ -126,39 +129,41 @@
     "total_count": 3
 }
                     </textarea>
-            </label>
-        </form>
-        <hr>
-        <label for="indent-input">
-            Indentation
-            <input type="number" id="indent-input" min="0" max="8" value="4">
         </label>
-    </aside>
+    </form>
+    <hr>
+    <label for="indent-input">
+        Indentation
+        <input type="number" id="indent-input" min="0" max="8" value="4">
+    </label>
+</aside>
 
-    <dialog id="modal-info" class="modal-info" aria-labelledby="dialog-title" aria-describedby="dialog-desc"
+<dialog id="modal-info" class="modal-info" aria-labelledby="dialog-title"
+        aria-describedby="dialog-desc"
         aria-modal="true">
-        <article>
-            <header>
-                <h3 id="dialog-title">JSON Query Language Specification</h3>
-            </header>
+    <article>
+        <header>
+            <h3 id="dialog-title">JSON Query Language Specification</h3>
+        </header>
 
 
-            <p>A lightweight, JavaScript-native syntax for deep traversal, mutation, filtering, and aggregation of JSON
-                data. Queries are evaluated strictly <strong>left-to-right</strong>.
-            </p>
+        <p>A lightweight, JavaScript-native syntax for deep traversal, mutation, filtering, and
+            aggregation of JSON
+            data. Queries are evaluated strictly <strong>left-to-right</strong>.
+        </p>
 
-            <div class="note">
-                <strong>Core Philosophy:</strong> Path extraction happens first, followed by filtering
-                <code>{condition}</code>
-                , projection/shaping <code>=&gt; {shape}</code>, and finally modifiers
-                <code>:modifier</code>
-                . Weak typing applies implicitly (e.g., <code>"3" &lt;= 3</code> evaluates to
-                <code>true</code>).
-            </div>
+        <div class="note">
+            <strong>Core Philosophy:</strong> Path extraction happens first, followed by filtering
+            <code>{condition}</code>
+            , projection/shaping <code>=&gt; {shape}</code>, and finally modifiers
+            <code>:modifier</code>
+            . Weak typing applies implicitly (e.g., <code>"3" &lt;= 3</code> evaluates to
+            <code>true</code>).
+        </div>
 
-            <h2>1. Data Context Reference</h2>
-            <p>All examples in this documentation are executed against the following JSON dataset:</p>
-            <pre>
+        <h2>1. Data Context Reference</h2>
+        <p>All examples in this documentation are executed against the following JSON dataset:</p>
+        <pre>
 <code>{
   "total_count": 3,
   "users": [
@@ -180,248 +185,262 @@
   "metadata": { "version": 1.2 }
 }</code></pre>
 
-            <hr>
+        <hr>
 
-            <h2>2. Basic Extraction & Traversal</h2>
-            <p>Use dot notation (or implicit paths) to extract nodes. If applied to an array, the language automatically
-                maps the path extraction across all items in the array.</p>
+        <h2>2. Basic Extraction & Traversal</h2>
+        <p>Use dot notation (or implicit paths) to extract nodes. If applied to an array, the
+            language automatically
+            maps the path extraction across all items in the array.</p>
 
-            <table>
-                <tr>
-                    <th>Query String</th>
-                    <th>Result / Explanation</th>
-                </tr>
-                <tr>
-                    <td>
-                        <code>active_status</code>
-                    </td>
-                    <td>
-                        <pre>true</pre>Fetches root-level primitives.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>metadata.version</code>
-                    </td>
-                    <td>
-                        <pre>1.2</pre>Traverses objects.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.name</code>
-                    </td>
-                    <td>
-                        <pre>["Alice Vance", "Bob Smith", "Charlie Day"]</pre>Auto-maps extraction
-                        across arrays.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.secret_identity</code>
-                    </td>
-                    <td>
-                        <pre>[undefined, "Bernd Schmitt", undefined]</pre>Missing properties safely
-                        return native <code>undefined</code>.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users[0].name</code>
-                    </td>
-                    <td>
-                        <pre>Alice Vance</pre>
-                        You can access array elements by index.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users[-1].name[0]</code>
-                    </td>
-                    <td>
-                        <pre>C</pre>
-                        Use -1 for getting the last element. Strings can also be indexed.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users[0:2].name</code>
-                    </td>
-                    <td>
-                        <pre>["Alice Vance", "Bob Smith"]</pre>
-                        Python-style slicing. Returns elements from start (inclusive) to end (exclusive).
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users[1:]</code>
-                        <br>
-                        <code>users[:-1]</code>
-                        <br>
-                        <code>users[-2:]</code>
-                    </td>
-                    <td>
-                        Open slices. Omit start or end to slice from the beginning or to the end.
-                        Negative indices count from the end.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users[-1].name[0:3]</code>
-                    </td>
-                    <td>
-                        <pre>Cha</pre>
-                        Slicing works on strings too.
-                    </td>
-                </tr>
-            </table>
+        <table>
+            <tr>
+                <th>Query String</th>
+                <th>Result / Explanation</th>
+            </tr>
+            <tr>
+                <td>
+                    <code>active_status</code>
+                </td>
+                <td>
+                    <pre>true</pre>
+                    Fetches root-level primitives.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>metadata.version</code>
+                </td>
+                <td>
+                    <pre>1.2</pre>
+                    Traverses objects.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.name</code>
+                </td>
+                <td>
+                    <pre>["Alice Vance", "Bob Smith", "Charlie Day"]</pre>
+                    Auto-maps extraction
+                    across arrays.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.secret_identity</code>
+                </td>
+                <td>
+                    <pre>[undefined, "Bernd Schmitt", undefined]</pre>
+                    Missing properties safely
+                    return native <code>undefined</code>.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users[0].name</code>
+                </td>
+                <td>
+                    <pre>Alice Vance</pre>
+                    You can access array elements by index.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users[-1].name[0]</code>
+                </td>
+                <td>
+                    <pre>C</pre>
+                    Use -1 for getting the last element. Strings can also be indexed.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users[0:2].name</code>
+                </td>
+                <td>
+                    <pre>["Alice Vance", "Bob Smith"]</pre>
+                    Python-style slicing. Returns elements from start (inclusive) to end
+                    (exclusive).
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users[1:]</code>
+                    <br>
+                    <code>users[:-1]</code>
+                    <br>
+                    <code>users[-2:]</code>
+                </td>
+                <td>
+                    Open slices. Omit start or end to slice from the beginning or to the end.
+                    Negative indices count from the end.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users[-1].name[0:3]</code>
+                </td>
+                <td>
+                    <pre>Cha</pre>
+                    Slicing works on strings too.
+                </td>
+            </tr>
+        </table>
 
-            <hr>
+        <hr>
 
-            <h2>3. Filtering Data</h2>
-            <p>
-                Encapsulate conditions inside braces <code>{}</code>. The syntax maps closely to JS operators but
-                introduces cleaner query aliases.</p>
-            <ul>
-                <li>
-                    <strong>Supported logic:</strong>
-                    <code>and</code>
-                    , <code>or</code>
-                    , <code>not</code>.
-                </li>
-                <li>
-                    <strong>Supported comparisons:</strong>
-                    <code>==</code>
-                    , <code>!=</code>
-                    , <code>&lt;</code>,
-                    <code>&gt;</code>
-                    , <code>&lt;=</code>
-                    , <code>&gt;=</code>.
-                </li>
-                <li>
-                    <strong>Special operators:</strong>
-                    <code>has field</code>
-                    , <code>in</code>
-                    , <code>contains</code>,
-                    <code>=~</code>
-                    (Regex match), <code>!~</code> (Negated regex).
-                </li>
-            </ul>
+        <h2>3. Filtering Data</h2>
+        <p>
+            Encapsulate conditions inside braces <code>{}</code>. The syntax maps closely to JS
+            operators but
+            introduces cleaner query aliases.</p>
+        <ul>
+            <li>
+                <strong>Supported logic:</strong>
+                <code>and</code>
+                , <code>or</code>
+                , <code>not</code>.
+            </li>
+            <li>
+                <strong>Supported comparisons:</strong>
+                <code>==</code>
+                , <code>!=</code>
+                , <code>&lt;</code>,
+                <code>&gt;</code>
+                , <code>&lt;=</code>
+                , <code>&gt;=</code>.
+            </li>
+            <li>
+                <strong>Special operators:</strong>
+                <code>has field</code>
+                , <code>in</code>
+                , <code>contains</code>,
+                <code>=~</code>
+                (Regex match), <code>!~</code> (Negated regex).
+            </li>
+        </ul>
 
-            <table>
-                <tr>
-                    <th>Query String</th>
-                    <th>Result / Explanation</th>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.{address.city == 'Berlin'}.name</code>
-                        <br>
-                        <code>users{address.city == 'Berlin'}name</code>
-                    </td>
-                    <td>
-                        <pre>["Alice Vance", "Charlie Day"]</pre>Filters array based on deep
-                        boolean evaluations. Note that the <code>.</code> before and after braces is optional.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.{age &lt; 40 and not is_admin}.name</code>
-                    </td>
-                    <td>
-                        <pre>["Bob Smith"]</pre>Compound logic operators.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.{deleted_at == null}.id</code>
-                    </td>
-                    <td>
-                        <pre>[101, 103]</pre>Null comparisons.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.{has secret_identity}.name</code>
-                        <br>
-                        <code>users.{secret_identity != undefined}.name</code>
-                    </td>
-                    <td>
-                        <pre>["Bob Smith"]</pre>
-                        <code>has</code> verifies property existence.
-                        Standard undefined checks also work.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.{'ux' in tags}.id</code>
-                        <br>
-                        <code>users.{tags contains "ux"}.id</code>
-                    </td>
-                    <td>
-                        <pre>[101]</pre>
-                        <code>in</code>
-                        and <code>contains</code> act as safe
-                        array-inclusion lookups. Both syntaxes act as identical synonyms.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.{str_id &lt;= 3}.name</code>
-                    </td>
-                    <td>
-                        <pre>["Alice Vance"]</pre>Demonstrates implicit JS weak-typing. String "3"
-                        is evaluated successfully against Integer 3.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.{name =~ /^B/}.id</code>
-                    </td>
-                    <td>
-                        <pre>[102]</pre>
-                        The <code>=~</code> operator invokes native JavaScript
-                        RegExp pattern matching.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.{name !~ /^A/}.name</code>
-                    </td>
-                    <td>
-                        <pre>["Bob Smith", "Charlie Day"]</pre>
-                        The <code>!~</code> operator negates the
-                        regex match. Supports flags like <code>/pattern/i</code>.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users{tags:len &lt; 3}.id</code>
-                    </td>
-                    <td>
-                        <pre>[102, 103]</pre>
-                        You can also use modifiers in conditions.
-                    </td>
-                </tr>
-            </table>
+        <table>
+            <tr>
+                <th>Query String</th>
+                <th>Result / Explanation</th>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.{address.city == 'Berlin'}.name</code>
+                    <br>
+                    <code>users{address.city == 'Berlin'}name</code>
+                </td>
+                <td>
+                    <pre>["Alice Vance", "Charlie Day"]</pre>
+                    Filters array based on deep
+                    boolean evaluations. Note that the <code>.</code> before and after braces is
+                    optional.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.{age &lt; 40 and not is_admin}.name</code>
+                </td>
+                <td>
+                    <pre>["Bob Smith"]</pre>
+                    Compound logic operators.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.{deleted_at == null}.id</code>
+                </td>
+                <td>
+                    <pre>[101, 103]</pre>
+                    Null comparisons.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.{has secret_identity}.name</code>
+                    <br>
+                    <code>users.{secret_identity != undefined}.name</code>
+                </td>
+                <td>
+                    <pre>["Bob Smith"]</pre>
+                    <code>has</code> verifies property existence.
+                    Standard undefined checks also work.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.{'ux' in tags}.id</code>
+                    <br>
+                    <code>users.{tags contains "ux"}.id</code>
+                </td>
+                <td>
+                    <pre>[101]</pre>
+                    <code>in</code>
+                    and <code>contains</code> act as safe
+                    array-inclusion lookups. Both syntaxes act as identical synonyms.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.{str_id &lt;= 3}.name</code>
+                </td>
+                <td>
+                    <pre>["Alice Vance"]</pre>
+                    Demonstrates implicit JS weak-typing. String "3"
+                    is evaluated successfully against Integer 3.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.{name =~ /^B/}.id</code>
+                </td>
+                <td>
+                    <pre>[102]</pre>
+                    The <code>=~</code> operator invokes native JavaScript
+                    RegExp pattern matching.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.{name !~ /^A/}.name</code>
+                </td>
+                <td>
+                    <pre>["Bob Smith", "Charlie Day"]</pre>
+                    The <code>!~</code> operator negates the
+                    regex match. Supports flags like <code>/pattern/i</code>.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users{tags:len &lt; 3}.id</code>
+                </td>
+                <td>
+                    <pre>[102, 103]</pre>
+                    You can also use modifiers in conditions.
+                </td>
+            </tr>
+        </table>
 
-            <hr>
+        <hr>
 
-            <h2>4. Projection & Shape Mutation</h2>
-            <p>
-                Use the fat arrow <code>=&gt; {}</code> to remap existing objects into entirely new structures. You can
-                map variables directly, inject hardcoded strings, or use spread syntax to control field inheritance.</p>
+        <h2>4. Projection & Shape Mutation</h2>
+        <p>
+            Use the fat arrow <code>=&gt; {}</code> to remap existing objects into entirely new
+            structures. You can
+            map variables directly, inject hardcoded strings, or use spread syntax to control field
+            inheritance.</p>
 
-            <table>
-                <tr>
-                    <th>Query String</th>
-                    <th>Result / Explanation</th>
-                </tr>
-                <tr>
-                    <td>
-                        <code>=&gt; {last_updated, meta: metadata}</code>
-                    </td>
-                    <td>
+        <table>
+            <tr>
+                <th>Query String</th>
+                <th>Result / Explanation</th>
+            </tr>
+            <tr>
+                <td>
+                    <code>=&gt; {last_updated, meta: metadata}</code>
+                </td>
+                <td>
                         <pre>
 <code>{
   "last_updated": "2026-02-16T18:00:00Z",
@@ -430,52 +449,55 @@
     "environment": "production"
   }
 }</code></pre>
-                        Project whole input to a new structure with only last_updated and metadata (renaming metadata to
-                        meta).
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users =&gt; {id: id}</code>
-                        <br>
-                        <code>users =&gt; {id}</code>
-                    </td>
-                    <td>
+                    Project whole input to a new structure with only last_updated and metadata
+                    (renaming metadata to
+                    meta).
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users =&gt; {id: id}</code>
+                    <br>
+                    <code>users =&gt; {id}</code>
+                </td>
+                <td>
                         <pre>
 <code>[{"id": 101}, {"id": 102}, {"id": 103}]</code>
-</pre>Standard key/value
-                        mapping.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users =&gt; {name: "test"}</code>
-                    </td>
-                    <td>
-                        <pre>[{"name": "test"}, {"name": "test"}, {"name": "test"}]</pre>Supports
-                        injection of hardcoded literals.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.{age &lt; 40} =&gt; {first_name: name, location:
-                                address.city}</code>
-                    </td>
-                    <td>
+</pre>
+                    Standard key/value
+                    mapping.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users =&gt; {name: "test"}</code>
+                </td>
+                <td>
+                    <pre>[{"name": "test"}, {"name": "test"}, {"name": "test"}]</pre>
+                    Supports
+                    injection of hardcoded literals.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.{age &lt; 40} =&gt; {first_name: name, location:
+                        address.city}</code>
+                </td>
+                <td>
                         <pre>
 <code>[
   {"first_name": "Alice Vance", "location": "Berlin"}, 
   {"first_name": "Bob Smith", "location": "San Francisco"}
 ]</code></pre>
-                        Shape mapping with nested resolution.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.{id == 101} =&gt; {first_name: name, ... but name, is_admin,
-                                address}</code>
-                    </td>
-                    <td>
+                    Shape mapping with nested resolution.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.{id == 101} =&gt; {first_name: name, ... but name, is_admin,
+                        address}</code>
+                </td>
+                <td>
                         <pre>
 <code>[
   {
@@ -487,170 +509,179 @@
     "deleted_at": null
   }
 ]</code></pre>
-                        Use <code>...</code> to spread the original object properties. Use
-                        <code>... but field, field</code> to blacklist specific fields from the spread operation.
-                    </td>
-                </tr>
-            </table>
+                    Use <code>...</code> to spread the original object properties. Use
+                    <code>... but field, field</code> to blacklist specific fields from the spread
+                    operation.
+                </td>
+            </tr>
+        </table>
 
-            <hr>
+        <hr>
 
-            <h2>5. Array Manipulation</h2>
-            <p>
-                Modifiers (prefixed by <code>:</code>) alter structural boundaries, limits, and array definitions.
-            </p>
+        <h2>5. Array Manipulation</h2>
+        <p>
+            Modifiers (prefixed by <code>:</code>) alter structural boundaries, limits, and array
+            definitions.
+        </p>
 
-            <table>
-                <tr>
-                    <th>Query String</th>
-                    <th>Result / Explanation</th>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.tags</code>
-                    </td>
-                    <td>
+        <table>
+            <tr>
+                <th>Query String</th>
+                <th>Result / Explanation</th>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.tags</code>
+                </td>
+                <td>
                         <pre>
 <code>[["frontend", "ux", "mentor"], ["backend", "devops"], ["manager"]]</code>
 </pre>
-                        Standard
-                        traversal maintains 2D structural boundaries.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.tags:flat</code>
-                    </td>
-                    <td>
+                    Standard
+                    traversal maintains 2D structural boundaries.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.tags:flat</code>
+                </td>
+                <td>
                         <pre>
 <code>["frontend", "ux", "mentor", "backend", "devops", "manager"]</code>
 </pre>
-                        <code>:flat</code> destroys 1 level of inner-array boundaries.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.address.city:unique</code>
-                    </td>
-                    <td>
+                    <code>:flat</code> destroys 1 level of inner-array boundaries.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.address.city:unique</code>
+                </td>
+                <td>
                         <pre>
 <code>["Berlin", "San Francisco"]</code>
-</pre>Deduplicates elements.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.tags:flat:join(', ')</code>
-                    </td>
-                    <td>
+</pre>
+                    Deduplicates elements.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.tags:flat:join(', ')</code>
+                </td>
+                <td>
                         <pre>
 <code>"frontend, ux, backend, devops, manager"</code>
-</pre>Chains modifiers to
-                        collapse an array into a single concatenated string.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users:limit(1).name</code>
-                    </td>
-                    <td>
+</pre>
+                    Chains modifiers to
+                    collapse an array into a single concatenated string.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users:limit(1).name</code>
+                </td>
+                <td>
                         <pre>
 <code>["Alice Vance"]</code>
-</pre>Truncates arrays.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users:len</code>
-                        <br>
-                        <code>users.name:len</code>
-                    </td>
-                    <td>
+</pre>
+                    Truncates arrays.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users:len</code>
+                    <br>
+                    <code>users.name:len</code>
+                </td>
+                <td>
                         <pre>
 <code>3</code>
-</pre>Returns counts of arrays
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users[0]:len</code>
-                    </td>
-                    <td>
+</pre>
+                    Returns counts of arrays
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users[0]:len</code>
+                </td>
+                <td>
                         <pre>
 <code>8</code>
-</pre>... or count of object keys.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users:reverse.name</code>
-                    </td>
-                    <td>
+</pre>
+                    ... or count of object keys.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users:reverse.name</code>
+                </td>
+                <td>
                         <pre>
 <code>["Charlie Day", "Bob Smith", "Alice Vance"]</code>
 </pre>
-                        <code>:reverse</code> reverses array order without mutating.
-                    </td>
-                </tr>
-            </table>
+                    <code>:reverse</code> reverses array order without mutating.
+                </td>
+            </tr>
+        </table>
 
-            <hr>
+        <hr>
 
-            <h2>6. Aggregations, Grouping & Sorting</h2>
+        <h2>6. Aggregations, Grouping & Sorting</h2>
 
-            <table>
-                <tr>
-                    <th>Query String</th>
-                    <th>Result / Explanation</th>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.age:avg</code>
-                    </td>
-                    <td>
+        <table>
+            <tr>
+                <th>Query String</th>
+                <th>Result / Explanation</th>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.age:avg</code>
+                </td>
+                <td>
                         <pre>
 <code>34</code>
 </pre>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.age:max</code>
-                    </td>
-                    <td>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.age:max</code>
+                </td>
+                <td>
                         <pre>
 <code>40</code>
 </pre>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.age:sum</code>
-                    </td>
-                    <td>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.age:sum</code>
+                </td>
+                <td>
                         <pre>
 <code>102</code>
-</pre>Math modifiers apply calculations against evaluated arrays.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users:sort(age, desc).name</code>
-                    </td>
-                    <td>
+</pre>
+                    Math modifiers apply calculations against evaluated arrays.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users:sort(age, desc).name</code>
+                </td>
+                <td>
                         <pre>
 <code>["Charlie Day", "Bob Smith", "Alice Vance"]</code>
-</pre>Accepts a sort
-                        target
-                        and an optional direction (<code>asc</code>
-                        / <code>desc</code>).
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users:group_by(address.country)</code>
-                    </td>
-                    <td>
+</pre>
+                    Accepts a sort
+                    target
+                    and an optional direction (<code>asc</code>
+                    / <code>desc</code>).
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users:group_by(address.country)</code>
+                </td>
+                <td>
                         <pre>
 <code>{
   "Germany": [
@@ -661,14 +692,14 @@
     {"id": 102, "name": "Bob Smith", ...}
   ]
 }</code></pre>
-                        Pivots flat arrays into key-value objects based on deep-object values.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users =&gt; {name, city: address.city}:group_by(city)</code>
-                    </td>
-                    <td>
+                    Pivots flat arrays into key-value objects based on deep-object values.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users =&gt; {name, city: address.city}:group_by(city)</code>
+                </td>
+                <td>
                         <pre>
 <code>{
   "Berlin": [
@@ -688,124 +719,128 @@
     }
   ]
 }</code></pre>
-                        First project the users to a new structure with only name and city, and then group by
-                        city.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users:count_by(address.country)</code>
-                    </td>
-                    <td>
+                    First project the users to a new structure with only name and city, and then
+                    group by
+                    city.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users:count_by(address.country)</code>
+                </td>
+                <td>
                         <pre>
 <code>{"Germany": 2, "USA": 1}</code>
 </pre>
-                        Like <code>:group_by</code>, but returns counts per group instead of arrays.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users:group_by(address.country):keys</code>
-                    </td>
-                    <td>
+                    Like <code>:group_by</code>, but returns counts per group instead of arrays.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users:group_by(address.country):keys</code>
+                </td>
+                <td>
                         <pre>
 <code>["Germany", "USA"]</code>
 </pre>
-                        <code>:keys</code>
-                        extracts object keys as an array. Useful after <code>:group_by</code>.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users:group_by(address.country):values</code>
-                    </td>
-                    <td>
-                        Returns the grouped arrays. <code>:values</code> extracts object values as an array.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users:group_by(address.country):entries</code>
-                    </td>
-                    <td>
+                    <code>:keys</code>
+                    extracts object keys as an array. Useful after <code>:group_by</code>.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users:group_by(address.country):values</code>
+                </td>
+                <td>
+                    Returns the grouped arrays. <code>:values</code> extracts object values as an
+                    array.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users:group_by(address.country):entries</code>
+                </td>
+                <td>
                         <pre>
 <code>[{"key": "Germany", "value": [...]}, {"key": "USA", "value": [...]}]</code>
 </pre>
-                        <code>:entries</code>
-                        converts an object into an array of <code>{key, value}</code> pairs,
-                        bridging object results back into array processing.
-                    </td>
-                </tr>
-            </table>
+                    <code>:entries</code>
+                    converts an object into an array of <code>{key, value}</code> pairs,
+                    bridging object results back into array processing.
+                </td>
+            </tr>
+        </table>
 
 
-            <hr>
+        <hr>
 
-            <h2>7. String Modifiers</h2>
-            <p>String modifiers transform text values. When applied to an array, they auto-map over each element.</p>
+        <h2>7. String Modifiers</h2>
+        <p>String modifiers transform text values. When applied to an array, they auto-map over each
+            element.</p>
 
-            <table>
-                <tr>
-                    <th>Query String</th>
-                    <th>Result / Explanation</th>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.name:upper</code>
-                    </td>
-                    <td>
+        <table>
+            <tr>
+                <th>Query String</th>
+                <th>Result / Explanation</th>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.name:upper</code>
+                </td>
+                <td>
                         <pre>
 <code>["ALICE VANCE", "BOB SMITH", "CHARLIE DAY"]</code>
 </pre>
-                        Converts strings to uppercase.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.name:lower</code>
-                    </td>
-                    <td>
+                    Converts strings to uppercase.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.name:lower</code>
+                </td>
+                <td>
                         <pre>
 <code>["alice vance", "bob smith", "charlie day"]</code>
 </pre>
-                        Converts strings to lowercase.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>name:lower:trim</code>
-                    </td>
-                    <td>
-                        Modifiers can be chained. <code>:trim</code> removes leading and trailing whitespace.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>users.{name:upper == 'BOB SMITH'}.id</code>
-                    </td>
-                    <td>
+                    Converts strings to lowercase.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>name:lower:trim</code>
+                </td>
+                <td>
+                    Modifiers can be chained. <code>:trim</code> removes leading and trailing
+                    whitespace.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>users.{name:upper == 'BOB SMITH'}.id</code>
+                </td>
+                <td>
                         <pre>
 <code>[102]</code>
 </pre>
-                        String modifiers also work inline within filters.
-                    </td>
-                </tr>
-            </table>
+                    String modifiers also work inline within filters.
+                </td>
+            </tr>
+        </table>
 
-            <hr>
+        <hr>
 
-            <h2>8. Composition (Multi-Queries)</h2>
+        <h2>8. Composition (Multi-Queries)</h2>
 
-            <table>
-                <tr>
-                    <th>Query String</th>
-                    <th>Result / Explanation</th>
-                </tr>
-                <tr>
-                    <td>
-                        <code>{total: users:len, hired: users.{tags contains 'ux'}.name}</code>
-                    </td>
-                    <td>
+        <table>
+            <tr>
+                <th>Query String</th>
+                <th>Result / Explanation</th>
+            </tr>
+            <tr>
+                <td>
+                    <code>{total: users:len, hired: users.{tags contains 'ux'}.name}</code>
+                </td>
+                <td>
                         <pre>
 <code>{
   "total": 3,
@@ -813,14 +848,15 @@
     "Alice Vance"
   ]
 }</code></pre>
-                        Each value of the result object is computed as a separate query.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>{total: `users`:len, "hired users": `users`.{tags contains 'ux'}.name}</code>
-                    </td>
-                    <td>
+                    Each value of the result object is computed as a separate query.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>{total: `users`:len, "hired users": `users`.{tags contains
+                        'ux'}.name}</code>
+                </td>
+                <td>
                         <pre>
 <code>{
   "total": 3,
@@ -828,16 +864,19 @@
     "Alice Vance"
   ]
 }</code></pre>
-                        You can use string syntax (double or single quotes) for aliases to include spaces and special
-                        characters. Arbitrary JSON field names that include special characters or spaces can be wrapped
-                        in backticks.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>{`all tags`: users.tags:flat, users: `users`.{`tags`:len > 1} =&gt; {`user:id` : id}}</code>
-                    </td>
-                    <td>
+                    You can use string syntax (double or single quotes) for aliases to include
+                    spaces and special
+                    characters. Arbitrary JSON field names that include special characters or spaces
+                    can be wrapped
+                    in backticks.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>{`all tags`: users.tags:flat, users: `users`.{`tags`:len > 1} =&gt;
+                        {`user:id` : id}}</code>
+                </td>
+                <td>
                         <pre>
 <code>{
   "all tags": [
@@ -857,112 +896,112 @@
     }
   ]
 }</code></pre>
-                    </td>
-                </tr>
-            </table>
+                </td>
+            </tr>
+        </table>
 
-            <footer>
-                <button type="button" data-action="close">Close</button>
-            </footer>
-        </article>
-    </dialog>
+        <footer>
+            <button type="button" data-action="close">Close</button>
+        </footer>
+    </article>
+</dialog>
 
-    <script src="query_engine.js"></script>
-    <script>
-        // --- Modal Logic ---
-        const dialog = document.getElementById("modal-info");
-        document.getElementById("open-modal").addEventListener("click", () => dialog?.showModal?.());
-        dialog.addEventListener("click", (e) => {
-            if (e.target === dialog || e.target.closest("[data-action='close']")) {
-                dialog.close();
-            }
-        });
+<script src="query_engine.js"></script>
+<script>
+    // --- Modal Logic ---
+    const dialog = document.getElementById("modal-info");
+    document.getElementById("open-modal").addEventListener("click", () => dialog?.showModal?.());
+    dialog.addEventListener("click", (e) => {
+        if (e.target === dialog || e.target.closest("[data-action='close']")) {
+            dialog.close();
+        }
+    });
 
-        // Example usage:
-        // const engine = new JSONQuery(mockData);
-        // console.log(engine.update("users{'ux' in tags}.id"));
+    // Example usage:
+    // const engine = new JSONQuery(mockData);
+    // console.log(engine.update("users{'ux' in tags}.id"));
 
-        const jsonInput = document.getElementById("json-input");
-        const queryInput = document.getElementById("query-input");
-        const jsonOutput = document.getElementById("json-output");
-        const runQueryBtn = document.getElementById("run-query-btn");
-        const loadFileBtn = document.getElementById("load-file-btn");
-        const fileInput = document.getElementById("file-input");
-        const errorMsg = document.getElementById("error-msg");
-        const indentInput = document.getElementById("indent-input");
+    const jsonInput = document.getElementById("json-input");
+    const queryInput = document.getElementById("query-input");
+    const jsonOutput = document.getElementById("json-output");
+    const runQueryBtn = document.getElementById("run-query-btn");
+    const loadFileBtn = document.getElementById("load-file-btn");
+    const fileInput = document.getElementById("file-input");
+    const errorMsg = document.getElementById("error-msg");
+    const indentInput = document.getElementById("indent-input");
 
-        // Load indentation from localStorage
-        const savedIndent = localStorage.getItem("json-query-indent");
-        if (savedIndent !== null) {
-            indentInput.value = savedIndent;
+    // Load indentation from localStorage
+    const savedIndent = localStorage.getItem("json-query-indent");
+    if (savedIndent !== null) {
+        indentInput.value = savedIndent;
+    }
+
+    indentInput.addEventListener("change", () => {
+        localStorage.setItem("json-query-indent", indentInput.value);
+        runQueryBtn.click();
+    });
+
+    loadFileBtn.addEventListener("click", () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            jsonInput.value = e.target.result;
+        };
+        reader.readAsText(file);
+        fileInput.value = ""; // Reset input to allow reloading the same file
+    });
+
+    runQueryBtn.addEventListener("click", () => {
+        errorMsg.textContent = "";
+        jsonOutput.value = "";
+
+        const rawData = jsonInput.value.trim();
+        const query = queryInput.value.trim();
+
+        if (!rawData) {
+            errorMsg.textContent = "Please provide JSON data.";
+            return;
         }
 
-        indentInput.addEventListener("change", () => {
-            localStorage.setItem("json-query-indent", indentInput.value);
+        if (!query) {
+            errorMsg.textContent = "Please provide a query.";
+            return;
+        }
+
+        let parsedData;
+        try {
+            parsedData = JSON.parse(rawData);
+        } catch (err) {
+            errorMsg.textContent = "Invalid JSON: " + err.message;
+            return;
+        }
+
+        try {
+            const engine = new JSONQuery(parsedData);
+            const result = engine.update(query);
+            const indent = parseInt(indentInput.value, 10);
+            jsonOutput.value = stringifyWithUndefined(result, isNaN(indent) ? 4 : indent);
+        } catch (err) {
+            errorMsg.textContent = "Query Error: " + err.message;
+        }
+    });
+
+    queryInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
             runQueryBtn.click();
-        });
+        }
+    });
 
-        loadFileBtn.addEventListener("click", () => {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener("change", (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                jsonInput.value = e.target.result;
-            };
-            reader.readAsText(file);
-            fileInput.value = ""; // Reset input to allow reloading the same file
-        });
-
-        runQueryBtn.addEventListener("click", () => {
-            errorMsg.textContent = "";
-            jsonOutput.value = "";
-
-            const rawData = jsonInput.value.trim();
-            const query = queryInput.value.trim();
-
-            if (!rawData) {
-                errorMsg.textContent = "Please provide JSON data.";
-                return;
-            }
-
-            if (!query) {
-                errorMsg.textContent = "Please provide a query.";
-                return;
-            }
-
-            let parsedData;
-            try {
-                parsedData = JSON.parse(rawData);
-            } catch (err) {
-                errorMsg.textContent = "Invalid JSON: " + err.message;
-                return;
-            }
-
-            try {
-                const engine = new JSONQuery(parsedData);
-                const result = engine.update(query);
-                const indent = parseInt(indentInput.value, 10);
-                jsonOutput.value = stringifyWithUndefined(result, isNaN(indent) ? 4 : indent);
-            } catch (err) {
-                errorMsg.textContent = "Query Error: " + err.message;
-            }
-        });
-
-        queryInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                runQueryBtn.click();
-            }
-        });
-
-        // Run the default query on load
-        runQueryBtn.click();
-    </script>
+    // Run the default query on load
+    runQueryBtn.click();
+</script>
 </body>
 
 </html>

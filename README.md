@@ -11,7 +11,7 @@ requires zero server interaction.
 - **Unified design system** — all tools<sup>1</sup> share
   [`one.css`](one_css/index.html), a class-lite semantic stylesheet providing
   consistent theming (including dark mode), typography, layout primitives, and
-  iconography across every page. 
+  iconography across every page.
 - **Single-file architecture** — each tool is a (nearly) self-contained `index.html`
   that can be opened directly in a browser.
 - **Offline-ready** — everything runs in the browser; no backend needed.

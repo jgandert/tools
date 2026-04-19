@@ -2,7 +2,6 @@ import hashlib
 import secrets
 import time
 
-
 SORTED_ALPHABET = '467ACDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz'
 BASE = len(SORTED_ALPHABET)
 CHAR_TO_INDEX = {ch: i for i, ch in enumerate(SORTED_ALPHABET)}
@@ -80,6 +79,7 @@ def _str_to_rand_bits(text: str) -> int:
 
     # digest_size is in bytes (so 8 bit * 20 = 160)
     return int.from_bytes(hashlib.blake2b(encoded_text, digest_size=20).digest())
+
 
 def sum_id_from_time_ns_and_str_seed(time_ns: int, seed: str) -> str:
     """
@@ -241,11 +241,13 @@ if __name__ == '__main__':
     print(f"min: '{MIN_SUM_ID}' and max: '{MAX_SUM_ID}'")
     print()
     NANOSECONDS_PER_YEAR = int(365.2425 * 24 * 60 * 60 * 1_000_000_000)
-    x = NANOSECONDS_PER_YEAR*14_000_004_000*2
+    x = NANOSECONDS_PER_YEAR * 14_000_004_000 * 2
     print("24 billion years requires about", x.bit_length(), "bits")
+
 
     def show(label, sid):
         print(f"  {label}: {sid}  ({_sum_id_iso(sid)})")
+
 
     m1 = sum_id()
     m1_int = sum_id_base_to_int(m1)
@@ -262,6 +264,7 @@ if __name__ == '__main__':
     print(is_valid_sum_id('milk'))
     print()
 
+
     def show_merged():
         print("# merging two IDs")
         mm = merge_two_sum_ids(m1, m2)
@@ -275,6 +278,7 @@ if __name__ == '__main__':
 
         print(f"  sorted: {sorted([(m1, 'm1'), (mm, 'mm'), (m2, 'm2')])}")
         print()
+
 
     show_merged()
     show_merged()

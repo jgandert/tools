@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="en" class="layout-centered theme-blue">
 
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="light dark">
-        <title>Universal Favicon Packer</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <link rel="stylesheet" type="text/css" href="../one.css">
-        <script src="../client-zip.js"></script>
-        <style>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Universal Favicon Packer</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../client-zip.js"></script>
+    <style>
         .split-card > div {
             min-width: 320px;
         }
@@ -257,544 +257,608 @@
             margin-top: var(--spacing-lg);
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <main>
-            <section id="upload-section">
-                <h2>Universal Favicon Packer</h2>
-                <p>Upload a logo icon to generate a complete, precise set of modern favicon assets client-side.</p>
+<body>
+<main>
+    <section id="upload-section">
+        <h2>Universal Favicon Packer</h2>
+        <p>Upload a logo icon to generate a complete, precise set of modern favicon assets
+            client-side.</p>
 
-                <div class="file-drop-area" id="drop-area">
-                    <input type="file" id="file-input" accept="image/svg+xml, image/png, image/jpeg">
+        <div class="file-drop-area" id="drop-area">
+            <input type="file" id="file-input" accept="image/svg+xml, image/png, image/jpeg">
+        </div>
+    </section>
+
+    <section id="editor-section">
+        <h2>Favicon Packer</h2>
+        <form id="favicon-form">
+
+            <fieldset>
+                <legend>Classic and SVG Favicons</legend>
+                <div class="split-card">
+                    <div>
+                        <h3>Light Mode</h3>
+                        <div class="preview-pane flex-center flex-wrap mb-4 light">
+                            <div class="preview-box flex-col">
+                                <div class="tab-preview">
+                                    <canvas id="prev-tab-light" width="32" height="32"
+                                            class="tab-canvas"></canvas>
+                                    My App
+                                </div>
+                                <div class="search-preview">
+                                    <div class="search-icon-wrapper light">
+                                        <canvas id="prev-search-light" width="96" height="96"
+                                                class="search-canvas"></canvas>
+                                    </div>
+                                    <div class="flex-v">
+                                        <div class="mock-text-sm"></div>
+                                        <div class="mock-text-md light"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="cl-mode-asis">
+                                <input type="radio" id="cl-mode-asis" name="cl-mode" value="asis"
+                                       checked> Use the
+                                icon as is
+                            </label>
+                            <label for="cl-mode-bg">
+                                <input type="radio" id="cl-mode-bg" name="cl-mode" value="bg"> Add a
+                                plain
+                                background and margins
+                            </label>
+                            <div id="cl-bg-wrap" class="init-hidden flex-v">
+                                <label for="cl-bg" class="sub-option">
+                                    Background Color <input type="color" id="cl-bg" value="#ffffff">
+                                </label>
+                                <label for="cl-margin" class="sub-option">
+                                    Margin (
+                                    <output id="cl-margin-val">10</output>
+                                    %) <input type="range"
+                                              id="cl-margin" min="0" max="40" value="10">
+                                </label>
+                            </div>
+                            <label for="cl-mode-bright">
+                                <input type="radio" id="cl-mode-bright" name="cl-mode"
+                                       value="brightness"> Change
+                                brightness
+                            </label>
+                            <label for="cl-bright" class="sub-option" id="cl-bright-wrap">
+                                Brightness (
+                                <output id="cl-bright-val">100</output>
+                                %) <input type="range"
+                                          id="cl-bright" min="0" max="200" value="100">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3>Dark Mode</h3>
+                        <div class="preview-pane flex-center flex-wrap mb-4 dark">
+                            <div class="preview-box flex-col">
+                                <div class="tab-preview">
+                                    <canvas id="prev-tab-dark" width="32" height="32"
+                                            class="tab-canvas"></canvas>
+                                    My App
+                                </div>
+                                <div class="search-preview">
+                                    <div class="search-icon-wrapper dark">
+                                        <canvas id="prev-search-dark" width="96" height="96"
+                                                class="search-canvas"></canvas>
+                                    </div>
+                                    <div class="flex-v">
+                                        <div class="mock-text-sm"></div>
+                                        <div class="mock-text-md dark"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="cd-mode-asis">
+                                <input type="radio" id="cd-mode-asis" name="cd-mode" value="asis"
+                                       checked> Use the
+                                icon as is
+                            </label>
+                            <label for="cd-mode-bg">
+                                <input type="radio" id="cd-mode-bg" name="cd-mode" value="bg"> Add a
+                                plain
+                                background and margins
+                            </label>
+                            <div id="cd-bg-wrap" class="init-hidden flex-v">
+                                <label for="cd-bg" class="sub-option">
+                                    Background Color <input type="color" id="cd-bg" value="#000000">
+                                </label>
+                                <label for="cd-margin" class="sub-option">
+                                    Margin (
+                                    <output id="cd-margin-val">10</output>
+                                    %) <input type="range"
+                                              id="cd-margin" min="0" max="40" value="10">
+                                </label>
+                            </div>
+                            <label for="cd-mode-bright">
+                                <input type="radio" id="cd-mode-bright" name="cd-mode"
+                                       value="brightness"> Change
+                                brightness
+                            </label>
+                            <label for="cd-bright" class="sub-option" id="cd-bright-wrap">
+                                Brightness (
+                                <output id="cd-bright-val">100</output>
+                                %) <input type="range"
+                                          id="cd-bright" min="0" max="200" value="100">
+                            </label>
+                            <label for="cd-mode-invert">
+                                <input type="radio" id="cd-mode-invert" name="cd-mode"
+                                       value="invert"> Invert colors
+                            </label>
+                        </div>
+                    </div>
                 </div>
-            </section>
+            </fieldset>
 
-            <section id="editor-section">
-                <h2>Favicon Packer</h2>
-                <form id="favicon-form">
-
-                    <fieldset>
-                        <legend>Classic and SVG Favicons</legend>
-                        <div class="split-card">
-                            <div>
-                                <h3>Light Mode</h3>
-                                <div class="preview-pane flex-center flex-wrap mb-4 light">
-                                    <div class="preview-box flex-col">
-                                        <div class="tab-preview">
-                                            <canvas id="prev-tab-light" width="32" height="32" class="tab-canvas"></canvas>
-                                            My App
-                                        </div>
-                                        <div class="search-preview">
-                                            <div class="search-icon-wrapper light">
-                                                <canvas id="prev-search-light" width="96" height="96"
-                                                    class="search-canvas"></canvas>
-                                            </div>
-                                            <div class="flex-v">
-                                                <div class="mock-text-sm"></div>
-                                                <div class="mock-text-md light"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label for="cl-mode-asis">
-                                        <input type="radio" id="cl-mode-asis" name="cl-mode" value="asis" checked> Use the
-                                        icon as is
-                                    </label>
-                                    <label for="cl-mode-bg">
-                                        <input type="radio" id="cl-mode-bg" name="cl-mode" value="bg"> Add a plain
-                                        background and margins
-                                    </label>
-                                    <div id="cl-bg-wrap" class="init-hidden flex-v">
-                                        <label for="cl-bg" class="sub-option">
-                                            Background Color <input type="color" id="cl-bg" value="#ffffff">
-                                        </label>
-                                        <label for="cl-margin" class="sub-option">
-                                            Margin (<output id="cl-margin-val">10</output>
-                                            %) <input type="range"
-                                                id="cl-margin" min="0" max="40" value="10">
-                                        </label>
-                                    </div>
-                                    <label for="cl-mode-bright">
-                                        <input type="radio" id="cl-mode-bright" name="cl-mode" value="brightness"> Change
-                                        brightness
-                                    </label>
-                                    <label for="cl-bright" class="sub-option" id="cl-bright-wrap">
-                                        Brightness (<output id="cl-bright-val">100</output>
-                                        %) <input type="range"
-                                            id="cl-bright" min="0" max="200" value="100">
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h3>Dark Mode</h3>
-                                <div class="preview-pane flex-center flex-wrap mb-4 dark">
-                                    <div class="preview-box flex-col">
-                                        <div class="tab-preview">
-                                            <canvas id="prev-tab-dark" width="32" height="32" class="tab-canvas"></canvas>
-                                            My App
-                                        </div>
-                                        <div class="search-preview">
-                                            <div class="search-icon-wrapper dark">
-                                                <canvas id="prev-search-dark" width="96" height="96"
-                                                    class="search-canvas"></canvas>
-                                            </div>
-                                            <div class="flex-v">
-                                                <div class="mock-text-sm"></div>
-                                                <div class="mock-text-md dark"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label for="cd-mode-asis">
-                                        <input type="radio" id="cd-mode-asis" name="cd-mode" value="asis" checked> Use the
-                                        icon as is
-                                    </label>
-                                    <label for="cd-mode-bg">
-                                        <input type="radio" id="cd-mode-bg" name="cd-mode" value="bg"> Add a plain
-                                        background and margins
-                                    </label>
-                                    <div id="cd-bg-wrap" class="init-hidden flex-v">
-                                        <label for="cd-bg" class="sub-option">
-                                            Background Color <input type="color" id="cd-bg" value="#000000">
-                                        </label>
-                                        <label for="cd-margin" class="sub-option">
-                                            Margin (<output id="cd-margin-val">10</output>
-                                            %) <input type="range"
-                                                id="cd-margin" min="0" max="40" value="10">
-                                        </label>
-                                    </div>
-                                    <label for="cd-mode-bright">
-                                        <input type="radio" id="cd-mode-bright" name="cd-mode" value="brightness"> Change
-                                        brightness
-                                    </label>
-                                    <label for="cd-bright" class="sub-option" id="cd-bright-wrap">
-                                        Brightness (<output id="cd-bright-val">100</output>
-                                        %) <input type="range"
-                                            id="cd-bright" min="0" max="200" value="100">
-                                    </label>
-                                    <label for="cd-mode-invert">
-                                        <input type="radio" id="cd-mode-invert" name="cd-mode" value="invert"> Invert colors
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Apple Touch Icon</legend>
-                        <div class="flex-row mb-4 items-center split-card">
-                            <div class="preview-pane flex-column max-w-200">
-                                <canvas id="prev-apple" width="180" height="180" class="ap-canvas"></canvas>
-                                <span id="prev-apple-name">My App</span>
-                            </div>
-                            <div>
-                                <label for="ap-mode-asis">
-                                    <input type="radio" id="ap-mode-asis" name="ap-mode" value="asis" checked> Use the icon
-                                    as is
-                                </label>
-                                <label for="ap-mode-bg">
-                                    <input type="radio" id="ap-mode-bg" name="ap-mode" value="bg"> Add a plain background
-                                    and margins
-                                </label>
-                                <div id="ap-bg-wrap" class="init-hidden flex-v">
-                                    <label for="ap-bg" class="sub-option">
-                                        Background Color <input type="color" id="ap-bg" value="#ffffff">
-                                    </label>
-                                    <label for="ap-margin" class="sub-option">
-                                        Margin (<output id="ap-margin-val">10</output>
-                                        %) <input type="range" id="ap-margin"
-                                            min="0" max="40" value="10">
-                                    </label>
-                                </div>
-                                <label for="ap-name">
-                                    App Name
-                                    <input type="text" id="ap-name" value="My App" placeholder="My App">
-                                </label>
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Web App Manifest (Android)</legend>
-                        <div class="flex-row mb-4 split-card">
-                            <div class="preview-pane flex-center flex-wrap mb-4">
-                                <div class="an-preview-row">
-                                    <div class="flex-vc">
-                                        <div class="an-card-label">Home Screen</div>
-                                        <canvas id="prev-android" width="192" height="192" class="an-home-canvas"></canvas>
-                                        <div id="prev-android-name" class="an-home-name">My App Name</div>
-                                    </div>
-
-                                    <div class="flex-vc">
-                                        <div class="an-card-label">Task Switcher</div>
-                                        <div class="an-task">
-                                            <div id="prev-an-task-header" class="an-task-header">
-                                                <canvas id="prev-an-task-icon" width="192" height="192"
-                                                    class="an-task-icon"></canvas>
-                                                <span id="prev-an-task-title" class="an-task-title">App</span>
-                                            </div>
-                                            <div class="an-task-body"></div>
-                                        </div>
-                                    </div>
-
-                                    <div class="flex-vc">
-                                        <div class="an-card-label">Splash Screen</div>
-                                        <div id="prev-an-splash" class="an-splash">
-                                            <canvas id="prev-an-splash-icon" width="192" height="192"
-                                                class="an-splash-icon"></canvas>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <label for="an-mode-asis">
-                                    <input type="radio" id="an-mode-asis" name="an-mode" value="asis" checked> Use the icon
-                                    as is
-                                </label>
-                                <label for="an-mode-bg">
-                                    <input type="radio" id="an-mode-bg" name="an-mode" value="bg"> Add a plain background
-                                    and margins
-                                </label>
-                                <div id="an-bg-wrap" class="init-hidden flex-v">
-                                    <label for="an-bg" class="sub-option">
-                                        Background Color <input type="color" id="an-bg" value="#ffffff">
-                                    </label>
-                                    <label for="an-margin" class="sub-option">
-                                        Margin (<output id="an-margin-val">10</output>
-                                        %) <input type="range" id="an-margin"
-                                            min="0" max="40" value="10">
-                                    </label>
-                                </div>
-                                <label for="an-theme">
-                                    Theme Color (Browser Header)
-                                    <input type="color" id="an-theme" value="#000000">
-                                </label>
-                                <label for="an-name">
-                                    Name
-                                    <input type="text" id="an-name" value="My App Name">
-                                </label>
-                                <label for="an-short">
-                                    Short Name
-                                    <input type="text" id="an-short" value="App">
-                                </label>
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Path Configuration</legend>
-                        <label for="out-path">
-                            Asset Path
-                            <input type="text" id="out-path" value="/" placeholder="/">
+            <fieldset>
+                <legend>Apple Touch Icon</legend>
+                <div class="flex-row mb-4 items-center split-card">
+                    <div class="preview-pane flex-column max-w-200">
+                        <canvas id="prev-apple" width="180" height="180" class="ap-canvas"></canvas>
+                        <span id="prev-apple-name">My App</span>
+                    </div>
+                    <div>
+                        <label for="ap-mode-asis">
+                            <input type="radio" id="ap-mode-asis" name="ap-mode" value="asis"
+                                   checked> Use the icon
+                            as is
                         </label>
-                    </fieldset>
-
-                    <div class="flex-row">
-                        <button type="button" id="generate-btn" class="btn-primary">Generate & Download</button>
-                        <button type="button" id="reset-btn" class="btn">Start Over</button>
+                        <label for="ap-mode-bg">
+                            <input type="radio" id="ap-mode-bg" name="ap-mode" value="bg"> Add a
+                            plain background
+                            and margins
+                        </label>
+                        <div id="ap-bg-wrap" class="init-hidden flex-v">
+                            <label for="ap-bg" class="sub-option">
+                                Background Color <input type="color" id="ap-bg" value="#ffffff">
+                            </label>
+                            <label for="ap-margin" class="sub-option">
+                                Margin (
+                                <output id="ap-margin-val">10</output>
+                                %) <input type="range" id="ap-margin"
+                                          min="0" max="40" value="10">
+                            </label>
+                        </div>
+                        <label for="ap-name">
+                            App Name
+                            <input type="text" id="ap-name" value="My App" placeholder="My App">
+                        </label>
                     </div>
+                </div>
+            </fieldset>
 
-                    <div class="mt-large">
-                        <h3>HTML Code</h3>
-                        <p>
-                            Paste this into your <code>&lt;head&gt;</code> block:
-                        </p>
-                    <pre id="html-output">...</pre>
+            <fieldset>
+                <legend>Web App Manifest (Android)</legend>
+                <div class="flex-row mb-4 split-card">
+                    <div class="preview-pane flex-center flex-wrap mb-4">
+                        <div class="an-preview-row">
+                            <div class="flex-vc">
+                                <div class="an-card-label">Home Screen</div>
+                                <canvas id="prev-android" width="192" height="192"
+                                        class="an-home-canvas"></canvas>
+                                <div id="prev-android-name" class="an-home-name">My App Name</div>
+                            </div>
+
+                            <div class="flex-vc">
+                                <div class="an-card-label">Task Switcher</div>
+                                <div class="an-task">
+                                    <div id="prev-an-task-header" class="an-task-header">
+                                        <canvas id="prev-an-task-icon" width="192" height="192"
+                                                class="an-task-icon"></canvas>
+                                        <span id="prev-an-task-title"
+                                              class="an-task-title">App</span>
+                                    </div>
+                                    <div class="an-task-body"></div>
+                                </div>
+                            </div>
+
+                            <div class="flex-vc">
+                                <div class="an-card-label">Splash Screen</div>
+                                <div id="prev-an-splash" class="an-splash">
+                                    <canvas id="prev-an-splash-icon" width="192" height="192"
+                                            class="an-splash-icon"></canvas>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </form>
-            </section>
-        </main>
+                    <div>
+                        <label for="an-mode-asis">
+                            <input type="radio" id="an-mode-asis" name="an-mode" value="asis"
+                                   checked> Use the icon
+                            as is
+                        </label>
+                        <label for="an-mode-bg">
+                            <input type="radio" id="an-mode-bg" name="an-mode" value="bg"> Add a
+                            plain background
+                            and margins
+                        </label>
+                        <div id="an-bg-wrap" class="init-hidden flex-v">
+                            <label for="an-bg" class="sub-option">
+                                Background Color <input type="color" id="an-bg" value="#ffffff">
+                            </label>
+                            <label for="an-margin" class="sub-option">
+                                Margin (
+                                <output id="an-margin-val">10</output>
+                                %) <input type="range" id="an-margin"
+                                          min="0" max="40" value="10">
+                            </label>
+                        </div>
+                        <label for="an-theme">
+                            Theme Color (Browser Header)
+                            <input type="color" id="an-theme" value="#000000">
+                        </label>
+                        <label for="an-name">
+                            Name
+                            <input type="text" id="an-name" value="My App Name">
+                        </label>
+                        <label for="an-short">
+                            Short Name
+                            <input type="text" id="an-short" value="App">
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
 
-        <script>
-        const dropArea = document.getElementById("drop-area");
-        const fileInput = document.getElementById("file-input");
-        const uploadSection = document.getElementById("upload-section");
-        const editorSection = document.getElementById("editor-section");
+            <fieldset>
+                <legend>Path Configuration</legend>
+                <label for="out-path">
+                    Asset Path
+                    <input type="text" id="out-path" value="/" placeholder="/">
+                </label>
+            </fieldset>
 
-        let uploadedFile = null;
-        let originalImage = new Image();
-        let originalDataUrl = null;
+            <div class="flex-row">
+                <button type="button" id="generate-btn" class="btn-primary">Generate & Download
+                </button>
+                <button type="button" id="reset-btn" class="btn">Start Over</button>
+            </div>
 
-        // Drag/Drop logic
-        dropArea.addEventListener("click", () => fileInput.click());
-        ["dragenter", "dragover", "dragleave", "drop"].forEach(evt => {
-            dropArea.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
+            <div class="mt-large">
+                <h3>HTML Code</h3>
+                <p>
+                    Paste this into your <code>&lt;head&gt;</code> block:
+                </p>
+                <pre id="html-output">...</pre>
+            </div>
+        </form>
+    </section>
+</main>
+
+<script>
+    const dropArea = document.getElementById("drop-area");
+    const fileInput = document.getElementById("file-input");
+    const uploadSection = document.getElementById("upload-section");
+    const editorSection = document.getElementById("editor-section");
+
+    let uploadedFile = null;
+    let originalImage = new Image();
+    let originalDataUrl = null;
+
+    // Drag/Drop logic
+    dropArea.addEventListener("click", () => fileInput.click());
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(evt => {
+        dropArea.addEventListener(evt, e => {
+            e.preventDefault();
+            e.stopPropagation();
         });
-        ["dragenter", "dragover"].forEach(evt => dropArea.addEventListener(evt, () => dropArea.classList.add("drag-over")));
-        ["dragleave", "drop"].forEach(evt => dropArea.addEventListener(evt, () => dropArea.classList.remove("drag-over")));
+    });
+    ["dragenter", "dragover"].forEach(evt => dropArea.addEventListener(evt, () => dropArea.classList.add("drag-over")));
+    ["dragleave", "drop"].forEach(evt => dropArea.addEventListener(evt, () => dropArea.classList.remove("drag-over")));
 
-        dropArea.addEventListener("drop", e => {
-            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-        });
-        fileInput.addEventListener("change", e => {
-            if (e.target.files.length) handleFile(e.target.files[0]);
-        });
+    dropArea.addEventListener("drop", e => {
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener("change", e => {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+    });
 
-        function handleFile(file) {
-            if (!file.type.match(/^image\/(png|jpeg|svg\+xml)$/)) {
-                alert("Please upload a PNG, JPG, or SVG image.");
-                return;
-            }
-            uploadedFile = file;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                originalDataUrl = e.target.result;
-                originalImage.onload = () => {
-                    uploadSection.style.display = "none";
-                    editorSection.style.display = "block";
-                    updateAll();
-                };
-                originalImage.src = originalDataUrl;
+    function handleFile(file) {
+        if (!file.type.match(/^image\/(png|jpeg|svg\+xml)$/)) {
+            alert("Please upload a PNG, JPG, or SVG image.");
+            return;
+        }
+        uploadedFile = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            originalDataUrl = e.target.result;
+            originalImage.onload = () => {
+                uploadSection.style.display = "none";
+                editorSection.style.display = "block";
+                updateAll();
             };
-            reader.readAsDataURL(file);
-        }
+            originalImage.src = originalDataUrl;
+        };
+        reader.readAsDataURL(file);
+    }
 
-        document.getElementById("ap-name").addEventListener("input", (e) => {
-            document.getElementById("an-name").value = e.target.value;
-            document.getElementById("an-short").value = e.target.value;
+    document.getElementById("ap-name").addEventListener("input", (e) => {
+        document.getElementById("an-name").value = e.target.value;
+        document.getElementById("an-short").value = e.target.value;
+    });
+
+    // Reset
+    document.getElementById("reset-btn").addEventListener("click", () => {
+        uploadSection.style.display = "block";
+        editorSection.style.display = "none";
+        fileInput.value = "";
+    });
+
+    // Event listener for updates
+    const form = document.getElementById("favicon-form");
+    form.addEventListener("input", updateAll);
+
+    function updateAll() {
+        updateVisibility();
+        drawPreviews();
+        updateHTMLCode();
+        updateOutputs();
+    }
+
+    function updateOutputs() {
+        const ids = ["cl-margin", "cl-bright", "cd-margin", "cd-bright", "ap-margin", "an-margin"];
+        ids.forEach(id => {
+            const input = document.getElementById(id);
+            const output = document.getElementById(id + "-val");
+            if (input && output) output.value = input.value;
         });
+    }
 
-        // Reset
-        document.getElementById("reset-btn").addEventListener("click", () => {
-            uploadSection.style.display = "block";
-            editorSection.style.display = "none";
-            fileInput.value = "";
-        });
+    function updateVisibility() {
+        const getVal = (name) => document.querySelector(`input[name="${name}"]:checked`).value;
 
-        // Event listener for updates
-        const form = document.getElementById("favicon-form");
-        form.addEventListener("input", updateAll);
+        document.getElementById("cl-bg-wrap").style.display = getVal("cl-mode") === "bg" ? "flex" : "none";
+        document.getElementById("cl-bright-wrap").style.display = getVal("cl-mode") === "brightness" ? "flex" : "none";
 
-        function updateAll() {
-            updateVisibility();
-            drawPreviews();
-            updateHTMLCode();
-            updateOutputs();
-        }
+        document.getElementById("cd-bg-wrap").style.display = getVal("cd-mode") === "bg" ? "flex" : "none";
+        document.getElementById("cd-bright-wrap").style.display = getVal("cd-mode") === "brightness" ? "flex" : "none";
 
-        function updateOutputs() {
-            const ids = ["cl-margin", "cl-bright", "cd-margin", "cd-bright", "ap-margin", "an-margin"];
-            ids.forEach(id => {
-                const input = document.getElementById(id);
-                const output = document.getElementById(id + "-val");
-                if (input && output) output.value = input.value;
-            });
-        }
+        document.getElementById("ap-bg-wrap").style.display = getVal("ap-mode") === "bg" ? "flex" : "none";
+        document.getElementById("prev-apple-name").textContent = document.getElementById("ap-name").value || "My App";
 
-        function updateVisibility() {
-            const getVal = (name) => document.querySelector(`input[name="${name}"]:checked`).value;
+        document.getElementById("an-bg-wrap").style.display = getVal("an-mode") === "bg" ? "flex" : "none";
+        document.getElementById("prev-android-name").textContent = document.getElementById("an-name").value || "My App Name";
 
-            document.getElementById("cl-bg-wrap").style.display = getVal("cl-mode") === "bg" ? "flex" : "none";
-            document.getElementById("cl-bright-wrap").style.display = getVal("cl-mode") === "brightness" ? "flex" : "none";
+        const anTheme = document.getElementById("an-theme").value;
+        const anBg = document.getElementById("an-bg").value;
+        document.getElementById("prev-an-task-header").style.backgroundColor = anTheme;
+        document.getElementById("prev-an-splash").style.backgroundColor = getVal("an-mode") === "bg" ? anBg : "#ffffff";
+        document.getElementById("prev-an-task-title").textContent = document.getElementById("an-short").value || "App";
 
-            document.getElementById("cd-bg-wrap").style.display = getVal("cd-mode") === "bg" ? "flex" : "none";
-            document.getElementById("cd-bright-wrap").style.display = getVal("cd-mode") === "brightness" ? "flex" : "none";
+        // Contrast color for task switcher header text
+        const yiq = getContrastYIQ(anTheme);
+        document.getElementById("prev-an-task-title").style.color = yiq >= 128 ? "#000" : "#fff";
+    }
 
-            document.getElementById("ap-bg-wrap").style.display = getVal("ap-mode") === "bg" ? "flex" : "none";
-            document.getElementById("prev-apple-name").textContent = document.getElementById("ap-name").value || "My App";
+    function getContrastYIQ(hexcolor) {
+        const hex = hexcolor.replace("#", "");
+        if (hex.length !== 6) return 0;
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        return ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    }
 
-            document.getElementById("an-bg-wrap").style.display = getVal("an-mode") === "bg" ? "flex" : "none";
-            document.getElementById("prev-android-name").textContent = document.getElementById("an-name").value || "My App Name";
+    function getSettings(prefix) {
+        return {
+            mode: document.querySelector(`input[name="${prefix}-mode"]:checked`).value,
+            bgColor: document.getElementById(`${prefix}-bg`)?.value || "#ffffff",
+            brightness: document.getElementById(`${prefix}-bright`)?.value || 100,
+            margin: document.getElementById(`${prefix}-margin`)?.value || 10,
+        };
+    }
 
-            const anTheme = document.getElementById("an-theme").value;
-            const anBg = document.getElementById("an-bg").value;
-            document.getElementById("prev-an-task-header").style.backgroundColor = anTheme;
-            document.getElementById("prev-an-splash").style.backgroundColor = getVal("an-mode") === "bg" ? anBg : "#ffffff";
-            document.getElementById("prev-an-task-title").textContent = document.getElementById("an-short").value || "App";
+    function renderToCanvas(w, h, settings) {
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
 
-            // Contrast color for task switcher header text
-            const yiq = getContrastYIQ(anTheme);
-            document.getElementById("prev-an-task-title").style.color = yiq >= 128 ? "#000" : "#fff";
-        }
+        ctx.clearRect(0, 0, w, h);
 
-        function getContrastYIQ(hexcolor) {
-            const hex = hexcolor.replace("#", "");
-            if (hex.length !== 6) return 0;
-            const r = parseInt(hex.substr(0, 2), 16);
-            const g = parseInt(hex.substr(2, 2), 16);
-            const b = parseInt(hex.substr(4, 2), 16);
-            return ((r * 299) + (g * 587) + (b * 114)) / 1000;
-        }
-
-        function getSettings(prefix) {
-            return {
-                mode: document.querySelector(`input[name="${prefix}-mode"]:checked`).value,
-                bgColor: document.getElementById(`${prefix}-bg`)?.value || "#ffffff",
-                brightness: document.getElementById(`${prefix}-bright`)?.value || 100,
-                margin: document.getElementById(`${prefix}-margin`)?.value || 10
-            };
-        }
-
-        function renderToCanvas(w, h, settings) {
-            const canvas = document.createElement("canvas");
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext("2d");
-
-            ctx.clearRect(0, 0, w, h);
-
-            if (settings.mode === "bg") {
-                ctx.fillStyle = settings.bgColor;
-                ctx.fillRect(0, 0, w, h);
-                const margin = w * (settings.margin / 100);
-                ctx.drawImage(originalImage, margin, margin, w - margin * 2, h - margin * 2);
-            } else {
-                if (settings.mode === "brightness") {
-                    ctx.filter = `brightness(${settings.brightness}%)`;
-                } else if (settings.mode === "invert") {
-                    ctx.filter = "invert(100%)";
-                }
-                ctx.drawImage(originalImage, 0, 0, w, h);
-                ctx.filter = "none";
+        if (settings.mode === "bg") {
+            ctx.fillStyle = settings.bgColor;
+            ctx.fillRect(0, 0, w, h);
+            const margin = w * (settings.margin / 100);
+            ctx.drawImage(originalImage, margin, margin, w - margin * 2, h - margin * 2);
+        } else {
+            if (settings.mode === "brightness") {
+                ctx.filter = `brightness(${settings.brightness}%)`;
+            } else if (settings.mode === "invert") {
+                ctx.filter = "invert(100%)";
             }
-            return canvas;
+            ctx.drawImage(originalImage, 0, 0, w, h);
+            ctx.filter = "none";
         }
+        return canvas;
+    }
 
-        function drawCanvasNode(id, settings) {
-            const node = document.getElementById(id);
-            if (!node) return;
-            const tmp = renderToCanvas(node.width, node.height, settings);
-            const ctx = node.getContext("2d");
-            ctx.clearRect(0, 0, node.width, node.height);
-            ctx.drawImage(tmp, 0, 0);
-        }
+    function drawCanvasNode(id, settings) {
+        const node = document.getElementById(id);
+        if (!node) return;
+        const tmp = renderToCanvas(node.width, node.height, settings);
+        const ctx = node.getContext("2d");
+        ctx.clearRect(0, 0, node.width, node.height);
+        ctx.drawImage(tmp, 0, 0);
+    }
 
-        function drawPreviews() {
-            const clSet = getSettings("cl");
-            drawCanvasNode("prev-tab-light", clSet);
-            drawCanvasNode("prev-search-light", clSet);
+    function drawPreviews() {
+        const clSet = getSettings("cl");
+        drawCanvasNode("prev-tab-light", clSet);
+        drawCanvasNode("prev-search-light", clSet);
 
-            const cdSet = getSettings("cd");
-            drawCanvasNode("prev-tab-dark", cdSet);
-            drawCanvasNode("prev-search-dark", cdSet);
+        const cdSet = getSettings("cd");
+        drawCanvasNode("prev-tab-dark", cdSet);
+        drawCanvasNode("prev-search-dark", cdSet);
 
-            const apSet = getSettings("ap");
-            drawCanvasNode("prev-apple", apSet);
+        const apSet = getSettings("ap");
+        drawCanvasNode("prev-apple", apSet);
 
-            const anSet = getSettings("an");
-            drawCanvasNode("prev-android", anSet);
-            drawCanvasNode("prev-an-task-icon", anSet);
-            drawCanvasNode("prev-an-splash-icon", anSet);
-        }
+        const anSet = getSettings("an");
+        drawCanvasNode("prev-android", anSet);
+        drawCanvasNode("prev-an-task-icon", anSet);
+        drawCanvasNode("prev-an-splash-icon", anSet);
+    }
 
-        function updateHTMLCode() {
-            let path = document.getElementById("out-path").value;
-            if (!path.endsWith("/")) path += "/";
+    function updateHTMLCode() {
+        let path = document.getElementById("out-path").value;
+        if (!path.endsWith("/")) path += "/";
 
-            const html = `<link rel="icon" type="image/png" href="${path}favicon-96x96.png" sizes="96x96" />
+        const html = `<link rel="icon" type="image/png" href="${path}favicon-96x96.png" sizes="96x96" />
 <link rel="icon" type="image/svg+xml" href="${path}favicon.svg" />
 <link rel="shortcut icon" href="${path}favicon.ico" />
 <link rel="apple-touch-icon" sizes="180x180" href="${path}apple-touch-icon.png" />
 <link rel="manifest" href="${path}site.webmanifest" />`;
 
-            document.getElementById("html-output").textContent = html;
+        document.getElementById("html-output").textContent = html;
+    }
+
+    function getCanvasBlob(canvas) {
+        return new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+    }
+
+    function buildRasterSVG(dataUrl, width, height, clSet, cdSet) {
+        let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">\n`;
+        let style = "";
+
+        let lightFilter = clSet.mode === "brightness" ? `brightness(${clSet.brightness}%)` : "";
+        let darkFilter = cdSet.mode === "brightness" ? `brightness(${cdSet.brightness}%)` : (cdSet.mode === "invert" ? "invert(100%)" : "");
+
+        if (lightFilter) style += `.icon { filter: ${lightFilter}; }\n`;
+        if (darkFilter) style += `@media (prefers-color-scheme: dark) { .icon { filter: ${darkFilter}; } }\n`;
+        if (style) svg += `<style>\n${style}</style>\n`;
+
+        let x = 0, y = 0, w = width, h = height;
+        if (clSet.mode === "bg") {
+            svg += `<rect width="100%" height="100%" fill="${clSet.bgColor}" />\n`;
+            x = width * (clSet.margin / 100);
+            y = height * (clSet.margin / 100);
+            w = width * (1 - 2 * (clSet.margin / 100));
+            h = height * (1 - 2 * (clSet.margin / 100));
         }
 
-        function getCanvasBlob(canvas) {
-            return new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-        }
+        svg += `<image href="${dataUrl}" x="${x}" y="${y}" width="${w}" height="${h}" class="icon" />\n`;
+        svg += "</svg>";
+        return svg;
+    }
 
-        function buildRasterSVG(dataUrl, width, height, clSet, cdSet) {
-            let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">\n`;
-            let style = "";
+    document.getElementById("generate-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("generate-btn");
+        btn.setAttribute("aria-busy", "true");
+        const oldText = btn.textContent;
+        btn.textContent = "Generating...";
+        btn.disabled = true;
 
-            let lightFilter = clSet.mode === "brightness" ? `brightness(${clSet.brightness}%)` : "";
-            let darkFilter = cdSet.mode === "brightness" ? `brightness(${cdSet.brightness}%)` : (cdSet.mode === "invert" ? "invert(100%)" : "");
+        try {
+            const zipFiles = [];
+            const clSet = getSettings("cl");
+            const cdSet = getSettings("cd");
+            const apSet = getSettings("ap");
+            const anSet = getSettings("an");
 
-            if (lightFilter) style += `.icon { filter: ${lightFilter}; }\n`;
-            if (darkFilter) style += `@media (prefers-color-scheme: dark) { .icon { filter: ${darkFilter}; } }\n`;
-            if (style) svg += `<style>\n${style}</style>\n`;
+            const c32 = renderToCanvas(32, 32, clSet);
+            zipFiles.push({
+                name: "favicon.ico",
+                lastModified: new Date(),
+                input: await getCanvasBlob(c32),
+            });
 
-            let x = 0, y = 0, w = width, h = height;
-            if (clSet.mode === "bg") {
-                svg += `<rect width="100%" height="100%" fill="${clSet.bgColor}" />\n`;
-                x = width * (clSet.margin / 100);
-                y = height * (clSet.margin / 100);
-                w = width * (1 - 2 * (clSet.margin / 100));
-                h = height * (1 - 2 * (clSet.margin / 100));
+            const c96 = renderToCanvas(96, 96, clSet);
+            zipFiles.push({
+                name: "favicon-96x96.png",
+                lastModified: new Date(),
+                input: await getCanvasBlob(c96),
+            });
+
+            const c180 = renderToCanvas(180, 180, apSet);
+            zipFiles.push({
+                name: "apple-touch-icon.png",
+                lastModified: new Date(),
+                input: await getCanvasBlob(c180),
+            });
+
+            const c192 = renderToCanvas(192, 192, anSet);
+            zipFiles.push({
+                name: "web-app-manifest-192x192.png",
+                lastModified: new Date(),
+                input: await getCanvasBlob(c192),
+            });
+
+            const c512 = renderToCanvas(512, 512, anSet);
+            zipFiles.push({
+                name: "web-app-manifest-512x512.png",
+                lastModified: new Date(),
+                input: await getCanvasBlob(c512),
+            });
+
+            let outPath = document.getElementById("out-path").value || "/";
+            if (!outPath.endsWith("/")) outPath += "/";
+
+            const manifestStr = JSON.stringify({
+                name: document.getElementById("an-name").value || "App Name",
+                short_name: document.getElementById("an-short").value || "App",
+                icons: [
+                    {
+                        src: `${outPath}web-app-manifest-192x192.png`,
+                        sizes: "192x192",
+                        type: "image/png",
+                        purpose: "maskable any",
+                    },
+                    {
+                        src: `${outPath}web-app-manifest-512x512.png`,
+                        sizes: "512x512",
+                        type: "image/png",
+                        purpose: "maskable any",
+                    },
+                ],
+                theme_color: document.getElementById("an-theme").value,
+                background_color: anSet.mode === "bg" ? anSet.bgColor : "#ffffff",
+                display: "standalone",
+            }, null, 2);
+            zipFiles.push({
+                name: "site.webmanifest",
+                lastModified: new Date(),
+                input: manifestStr,
+            });
+
+            if (uploadedFile.type === "image/svg+xml") {
+                zipFiles.push({
+                    name: "favicon.svg",
+                    lastModified: new Date(),
+                    input: await uploadedFile.text(),
+                });
+            } else {
+                zipFiles.push({
+                    name: "favicon.svg",
+                    lastModified: new Date(),
+                    input: buildRasterSVG(originalDataUrl, originalImage.width, originalImage.height, clSet, cdSet),
+                });
             }
 
-            svg += `<image href="${dataUrl}" x="${x}" y="${y}" width="${w}" height="${h}" class="icon" />\n`;
-            svg += "</svg>";
-            return svg;
+            const zipBlob = await downloadZip(zipFiles).blob();
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(zipBlob);
+            a.download = "favicons.zip";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } catch (e) {
+            console.error(e);
+            alert("An error occurred during export.");
+        } finally {
+            btn.removeAttribute("aria-busy");
+            btn.textContent = oldText;
+            btn.disabled = false;
         }
-
-        document.getElementById("generate-btn").addEventListener("click", async () => {
-            const btn = document.getElementById("generate-btn");
-            btn.setAttribute("aria-busy", "true");
-            const oldText = btn.textContent;
-            btn.textContent = "Generating...";
-            btn.disabled = true;
-
-            try {
-                const zipFiles = [];
-                const clSet = getSettings("cl");
-                const cdSet = getSettings("cd");
-                const apSet = getSettings("ap");
-                const anSet = getSettings("an");
-
-                const c32 = renderToCanvas(32, 32, clSet);
-                zipFiles.push({ name: "favicon.ico", lastModified: new Date(), input: await getCanvasBlob(c32) });
-
-                const c96 = renderToCanvas(96, 96, clSet);
-                zipFiles.push({ name: "favicon-96x96.png", lastModified: new Date(), input: await getCanvasBlob(c96) });
-
-                const c180 = renderToCanvas(180, 180, apSet);
-                zipFiles.push({ name: "apple-touch-icon.png", lastModified: new Date(), input: await getCanvasBlob(c180) });
-
-                const c192 = renderToCanvas(192, 192, anSet);
-                zipFiles.push({ name: "web-app-manifest-192x192.png", lastModified: new Date(), input: await getCanvasBlob(c192) });
-
-                const c512 = renderToCanvas(512, 512, anSet);
-                zipFiles.push({ name: "web-app-manifest-512x512.png", lastModified: new Date(), input: await getCanvasBlob(c512) });
-
-                let outPath = document.getElementById("out-path").value || "/";
-                if (!outPath.endsWith("/")) outPath += "/";
-
-                const manifestStr = JSON.stringify({
-                    name: document.getElementById("an-name").value || "App Name",
-                    short_name: document.getElementById("an-short").value || "App",
-                    icons: [
-                        { src: `${outPath}web-app-manifest-192x192.png`, sizes: "192x192", type: "image/png", purpose: "maskable any" },
-                        { src: `${outPath}web-app-manifest-512x512.png`, sizes: "512x512", type: "image/png", purpose: "maskable any" }
-                    ],
-                    theme_color: document.getElementById("an-theme").value,
-                    background_color: anSet.mode === "bg" ? anSet.bgColor : "#ffffff",
-                    display: "standalone"
-                }, null, 2);
-                zipFiles.push({ name: "site.webmanifest", lastModified: new Date(), input: manifestStr });
-
-                if (uploadedFile.type === "image/svg+xml") {
-                    zipFiles.push({ name: "favicon.svg", lastModified: new Date(), input: await uploadedFile.text() });
-                } else {
-                    zipFiles.push({
-                        name: "favicon.svg",
-                        lastModified: new Date(),
-                        input: buildRasterSVG(originalDataUrl, originalImage.width, originalImage.height, clSet, cdSet)
-                    });
-                }
-
-                const zipBlob = await downloadZip(zipFiles).blob();
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(zipBlob);
-                a.download = "favicons.zip";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } catch (e) {
-                console.error(e);
-                alert("An error occurred during export.");
-            } finally {
-                btn.removeAttribute("aria-busy");
-                btn.textContent = oldText;
-                btn.disabled = false;
-            }
-        });
-    </script>
-    </body>
+    });
+</script>
+</body>
 
 </html>

@@ -1,15 +1,15 @@
 <!doctype html>
 <html lang="en">
 
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="light dark">
-        <title>Shape Builder</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <link rel="stylesheet" type="text/css" href="../one.css">
-        <style>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Shape Builder</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
         #content {
             display: flex;
             flex-direction: column;
@@ -72,462 +72,477 @@
             margin-bottom: 0.5rem;
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
 
 
-        <header>
-            <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
-            <hgroup>
-                <h1>Shape Builder</h1>
-                <p>Code geometry visually with shapebuilder.js</p>
-            </hgroup>
-            <nav aria-label="Primary">
-                <ul>
-                    <li>
-                        <button type="button" id="reset-btn">
-                            <span class="sym">refresh</span> Reset Code
-                        </button>
-                    </li>
-                    <li>
-                        <button id="export-svg-btn" title="Download [Ctrl+S]" type="button">
-                            <span class="sym">download</span>
-                            <kbd>^S</kbd>
-                        </button>
-                    </li>
-                </ul>
-            </nav>
-        </header>
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Shape Builder</h1>
+        <p>Code geometry visually with shapebuilder.js</p>
+    </hgroup>
+    <nav aria-label="Primary">
+        <ul>
+            <li>
+                <button type="button" id="reset-btn">
+                    <span class="sym">refresh</span> Reset Code
+                </button>
+            </li>
+            <li>
+                <button id="export-svg-btn" title="Download [Ctrl+S]" type="button">
+                    <span class="sym">download</span>
+                    <kbd>^S</kbd>
+                </button>
+            </li>
+        </ul>
+    </nav>
+</header>
 
-        <aside>
-            <h2>Clickable Reference Guide</h2>
+<aside>
+    <h2>Clickable Reference Guide</h2>
 
-            <details open>
-                <summary>Primitives</summary>
-                <ul>
-                    <li>
-                        <code>b.Point({ x: 10, y: 20 })</code>
-                    </li>
-                    <li>
-                        <code>b.Triangle({ side: 50 })</code>
-                    </li>
-                    <li>
-                        <code>b.Circle({ radius: 40, center: [0, 0] })</code>
-                    </li>
-                    <li>
-                        <code>b.Rectangle({ width: 40, height: 20, center: [0, 0] })</code>
-                    </li>
-                    <li>
-                        <code>b.Polygon({ points: [[0,0], [50,10], [20,40]] })</code>
-                    </li>
-                    <li>
-                        <code>b.Line({ start: [0, 0], end: [100, 100], thickness: 2, cap: 'round' })</code>
-                        <br>
-                        <small>Can also be defined by {center, angle, length}. cap can be 'round', 'square', or
-                            'butt'.</small>
-                    </li>
-                    <li>
-                        <code>b.Bezier({ points: [[0,0], [50,50], [100,0]] })</code>
-                    </li>
-                </ul>
-            </details>
+    <details open>
+        <summary>Primitives</summary>
+        <ul>
+            <li>
+                <code>b.Point({ x: 10, y: 20 })</code>
+            </li>
+            <li>
+                <code>b.Triangle({ side: 50 })</code>
+            </li>
+            <li>
+                <code>b.Circle({ radius: 40, center: [0, 0] })</code>
+            </li>
+            <li>
+                <code>b.Rectangle({ width: 40, height: 20, center: [0, 0] })</code>
+            </li>
+            <li>
+                <code>b.Polygon({ points: [[0,0], [50,10], [20,40]] })</code>
+            </li>
+            <li>
+                <code>b.Line({ start: [0, 0], end: [100, 100], thickness: 2, cap: 'round' })</code>
+                <br>
+                <small>Can also be defined by {center, angle, length}. cap can be 'round', 'square',
+                    or
+                    'butt'.</small>
+            </li>
+            <li>
+                <code>b.Bezier({ points: [[0,0], [50,50], [100,0]] })</code>
+            </li>
+        </ul>
+    </details>
 
-            <details open>
-                <summary>Transformations</summary>
-                <ul>
-                    <li>
-                        <code>.translate({ dx: 10, dy: -5 })</code>
-                    </li>
-                    <li>
-                        <code>.rotate({ angle: 45, center: [0, 0] })</code>
-                        <br>
-                        <small>center is optional, defaults to the bounds center.</small>
-                    </li>
-                    <li>
-                        <code>.scale({ factor: 1.5, center: [0, 0] })</code>
-                        <br>
-                        <small>center is optional, defaults to the bounds center.</small>
-                    </li>
-                    <li>
-                        <code>.stretch({ width: 100, height: 50, preserveWidth: false, preserveHeight: false })</code>
-                    </li>
-                    <li>
-                        <code>.moveUntil({ direction: [1, 0], step: 1, condition: (shape) => shape.bounds.left > 50 })</code>
-                        <br>
-                        <small>Moves shape in direction by step until condition function returns true.</small>
-                    </li>
-                    <li>
-                        <code>.slideDirection({ vector: [1, 0], stopAt: otherShape })</code>
-                        <br>
-                        <small>Continuously slides shape in the given vector direction until it intersects with stopAt
-                            shape.</small>
-                    </li>
-                    <li>
-                        <code>.mirror({ axis: 'vertical', about: 'center' })</code>
-                        <br>
-                        <small>axis can be 'vertical' or 'horizontal'. about can be 'center' or a Point.</small>
-                    </li>
-                </ul>
-            </details>
+    <details open>
+        <summary>Transformations</summary>
+        <ul>
+            <li>
+                <code>.translate({ dx: 10, dy: -5 })</code>
+            </li>
+            <li>
+                <code>.rotate({ angle: 45, center: [0, 0] })</code>
+                <br>
+                <small>center is optional, defaults to the bounds center.</small>
+            </li>
+            <li>
+                <code>.scale({ factor: 1.5, center: [0, 0] })</code>
+                <br>
+                <small>center is optional, defaults to the bounds center.</small>
+            </li>
+            <li>
+                <code>.stretch({ width: 100, height: 50, preserveWidth: false, preserveHeight: false
+                    })</code>
+            </li>
+            <li>
+                <code>.moveUntil({ direction: [1, 0], step: 1, condition: (shape) =>
+                    shape.bounds.left > 50 })</code>
+                <br>
+                <small>Moves shape in direction by step until condition function returns
+                    true.</small>
+            </li>
+            <li>
+                <code>.slideDirection({ vector: [1, 0], stopAt: otherShape })</code>
+                <br>
+                <small>Continuously slides shape in the given vector direction until it intersects
+                    with stopAt
+                    shape.</small>
+            </li>
+            <li>
+                <code>.mirror({ axis: 'vertical', about: 'center' })</code>
+                <br>
+                <small>axis can be 'vertical' or 'horizontal'. about can be 'center' or a
+                    Point.</small>
+            </li>
+        </ul>
+    </details>
 
-            <details open>
-                <summary>Boolean Operations</summary>
-                <ul>
-                    <li>
-                        <code>.union({ shapes: [otherShape] })</code>
-                        or <code>b.union({ shapes: [s1, s2] })</code>
-                    </li>
-                    <li>
-                        <code>.subtract({ shapes: [otherShape] })</code>
-                        or <code>b.subtract({ shapes: [s1, s2] })</code>
-                    </li>
-                    <li>
-                        <code>.intersect({ shapes: [otherShape] })</code>
-                        or <code>b.intersect({ shapes: [s1, s2] })</code>
-                    </li>
-                    <li>
-                        <code>.xor({ shapes: [otherShape] })</code>
-                        or <code>b.xor({ shapes: [s1, s2] })</code>
-                    </li>
-                    <li>
-                        <code>b.align({ shapes: [s1, s2], axis: 'horizontal', distribution: 'space-between', width: 100 })</code>
-                        <br>
-                        <small>axis: 'horizontal'|'vertical'. distribution: 'space-between'|'space-around'.</small>
-                    </li>
-                </ul>
-            </details>
+    <details open>
+        <summary>Boolean Operations</summary>
+        <ul>
+            <li>
+                <code>.union({ shapes: [otherShape] })</code>
+                or <code>b.union({ shapes: [s1, s2] })</code>
+            </li>
+            <li>
+                <code>.subtract({ shapes: [otherShape] })</code>
+                or <code>b.subtract({ shapes: [s1, s2] })</code>
+            </li>
+            <li>
+                <code>.intersect({ shapes: [otherShape] })</code>
+                or <code>b.intersect({ shapes: [s1, s2] })</code>
+            </li>
+            <li>
+                <code>.xor({ shapes: [otherShape] })</code>
+                or <code>b.xor({ shapes: [s1, s2] })</code>
+            </li>
+            <li>
+                <code>b.align({ shapes: [s1, s2], axis: 'horizontal', distribution: 'space-between',
+                    width: 100 })</code>
+                <br>
+                <small>axis: 'horizontal'|'vertical'. distribution:
+                    'space-between'|'space-around'.</small>
+            </li>
+        </ul>
+    </details>
 
-            <details open>
-                <summary>Path Operations</summary>
-                <ul>
-                    <li>
-                        <code>.offset({ amount: 5, join: 'round' })</code>
-                        <br>
-                        <small>join can be 'miter', 'round', or 'bevel' (Note: currently a simple scale
-                            implementation).</small>
-                    </li>
-                    <li>
-                        <code>.roundCorners({ radius: 5 })</code>
-                    </li>
-                    <li>
-                        <code>.getPointOnPath({ from: 'A', to: 'B', percent: 0.5 })</code>
-                        <br>
-                        <small>Gets a point along the perimeter relative to existing named points.</small>
-                    </li>
-                    <li>
-                        <code>.sliceByPoints({ p1: [0,0], p2: [100,0] })</code> &rarr; Slicer
-                    </li>
-                    <li>
-                        <code>.sliceByLine({ lineShape: otherLine })</code> &rarr; Slicer
-                    </li>
-                    <li>
-                        <code>.snapPoints({ map: [{from: 'top', to: [100, 10]}] })</code>
-                        <br>
-                        <small>Moves/rotates the shape to map its points onto target points exactly.</small>
-                    </li>
-                    <li>
-                        <code>.distributePoints({ count: 5, paddingMode: 'space-evenly' })</code>
-                        <br>
-                        <small>Returns n equitable points along the path. paddingMode: 'space-evenly' or
-                            'space-between'.</small>
-                    </li>
-                    <li>
-                        <code>.split({ angle: 45, center: [0,0], gap: 10 })</code>
-                        <br>
-                        <small>Slices the shape into pieces with a straight gap through it.</small>
-                    </li>
-                    <li>
-                        <code>.strokeToPath({ width: 5, cap: 'round' })</code>
-                        <br>
-                        <small>Converts a stroked line into a filled path shape. cap: 'round' or 'butt'.</small>
-                    </li>
-                    <li>
-                        <code>.radialRepeat({ count: 4, center: [0,0] })</code>
-                        <br>
-                        <small>Copies and rotates the shape into a circular pattern.</small>
-                    </li>
-                    <li>
-                        <code>.smooth({ tension: 0.5 })</code>
-                        <br>
-                        <small>Smooths the sharp corners of a path. tension: 0 to 1.</small>
-                    </li>
-                </ul>
-            </details>
+    <details open>
+        <summary>Path Operations</summary>
+        <ul>
+            <li>
+                <code>.offset({ amount: 5, join: 'round' })</code>
+                <br>
+                <small>join can be 'miter', 'round', or 'bevel' (Note: currently a simple scale
+                    implementation).</small>
+            </li>
+            <li>
+                <code>.roundCorners({ radius: 5 })</code>
+            </li>
+            <li>
+                <code>.getPointOnPath({ from: 'A', to: 'B', percent: 0.5 })</code>
+                <br>
+                <small>Gets a point along the perimeter relative to existing named points.</small>
+            </li>
+            <li>
+                <code>.sliceByPoints({ p1: [0,0], p2: [100,0] })</code> &rarr; Slicer
+            </li>
+            <li>
+                <code>.sliceByLine({ lineShape: otherLine })</code> &rarr; Slicer
+            </li>
+            <li>
+                <code>.snapPoints({ map: [{from: 'top', to: [100, 10]}] })</code>
+                <br>
+                <small>Moves/rotates the shape to map its points onto target points exactly.</small>
+            </li>
+            <li>
+                <code>.distributePoints({ count: 5, paddingMode: 'space-evenly' })</code>
+                <br>
+                <small>Returns n equitable points along the path. paddingMode: 'space-evenly' or
+                    'space-between'.</small>
+            </li>
+            <li>
+                <code>.split({ angle: 45, center: [0,0], gap: 10 })</code>
+                <br>
+                <small>Slices the shape into pieces with a straight gap through it.</small>
+            </li>
+            <li>
+                <code>.strokeToPath({ width: 5, cap: 'round' })</code>
+                <br>
+                <small>Converts a stroked line into a filled path shape. cap: 'round' or
+                    'butt'.</small>
+            </li>
+            <li>
+                <code>.radialRepeat({ count: 4, center: [0,0] })</code>
+                <br>
+                <small>Copies and rotates the shape into a circular pattern.</small>
+            </li>
+            <li>
+                <code>.smooth({ tension: 0.5 })</code>
+                <br>
+                <small>Smooths the sharp corners of a path. tension: 0 to 1.</small>
+            </li>
+        </ul>
+    </details>
 
-            <details open>
-                <summary>Slicer Output</summary>
-                <ul>
-                    <li>
-                        <code>.keepLeft()</code>
-                    </li>
-                    <li>
-                        <code>.keepRight()</code>
-                    </li>
-                    <li>
-                        <code>.keepTop()</code>
-                    </li>
-                    <li>
-                        <code>.keepBottom()</code>
-                    </li>
-                </ul>
-                <small class="slicer-note">Used after slicing to discard one
-                    half.</small>
-            </details>
+    <details open>
+        <summary>Slicer Output</summary>
+        <ul>
+            <li>
+                <code>.keepLeft()</code>
+            </li>
+            <li>
+                <code>.keepRight()</code>
+            </li>
+            <li>
+                <code>.keepTop()</code>
+            </li>
+            <li>
+                <code>.keepBottom()</code>
+            </li>
+        </ul>
+        <small class="slicer-note">Used after slicing to discard one
+            half.</small>
+    </details>
 
-            <details open>
-                <summary>Output & Data</summary>
-                <ul>
-                    <li>
-                        <code>.toSVG({ fill: '#6750a4', stroke: '#000', strokeWidth: 2 })</code>
-                        <br>
-                        <small>Exports the shape as an SVG path string element.</small>
-                    </li>
-                    <li>
-                        <code>.bounds</code>
-                        <br>
-                        <small>Returns object: {top, bottom, left, right, center, width, height}.</small>
-                    </li>
-                    <li>
-                        <code>.points</code>
-                        <br>
-                        <small>Dictionary of named PointWrapper objects attached to the shape outline.</small>
-                    </li>
-                </ul>
-            </details>
+    <details open>
+        <summary>Output & Data</summary>
+        <ul>
+            <li>
+                <code>.toSVG({ fill: '#6750a4', stroke: '#000', strokeWidth: 2 })</code>
+                <br>
+                <small>Exports the shape as an SVG path string element.</small>
+            </li>
+            <li>
+                <code>.bounds</code>
+                <br>
+                <small>Returns object: {top, bottom, left, right, center, width, height}.</small>
+            </li>
+            <li>
+                <code>.points</code>
+                <br>
+                <small>Dictionary of named PointWrapper objects attached to the shape
+                    outline.</small>
+            </li>
+        </ul>
+    </details>
 
-            <details open>
-                <summary>Point Methods</summary>
-                <ul>
-                    <li>
-                        <code>pt.movePerpendicular({ amount: 10, direction: 'inward', path: shape, offset: 0 })</code>
-                        <br>
-                        <small>Used on Point on a path to move it inward or outward by normal vectors.</small>
-                    </li>
-                    <li>
-                        <code>Point.interpolate({ pt1: [0,0], pt2: [10,10], percent: 0.5 })</code>
-                        <br>
-                        <small>Returns point part-way between pt1 and pt2.</small>
-                    </li>
-                </ul>
-            </details>
+    <details open>
+        <summary>Point Methods</summary>
+        <ul>
+            <li>
+                <code>pt.movePerpendicular({ amount: 10, direction: 'inward', path: shape, offset: 0
+                    })</code>
+                <br>
+                <small>Used on Point on a path to move it inward or outward by normal
+                    vectors.</small>
+            </li>
+            <li>
+                <code>Point.interpolate({ pt1: [0,0], pt2: [10,10], percent: 0.5 })</code>
+                <br>
+                <small>Returns point part-way between pt1 and pt2.</small>
+            </li>
+        </ul>
+    </details>
 
-            <details open>
-                <summary>Color Utilities</summary>
-                <ul>
-                    <li>
-                        <code>color_invert('#6750a4')</code>
-                        <br>
-                        <small>Returns inverted hex color using Oklab space.</small>
-                    </li>
-                    <li>
-                        <code>color_rotate('#6750a4', 0.5)</code>
-                        <br>
-                        <small>Rotates color hue 0.0 to 1.0 returning hex color.</small>
-                    </li>
-                </ul>
-            </details>
-        </aside>
+    <details open>
+        <summary>Color Utilities</summary>
+        <ul>
+            <li>
+                <code>color_invert('#6750a4')</code>
+                <br>
+                <small>Returns inverted hex color using Oklab space.</small>
+            </li>
+            <li>
+                <code>color_rotate('#6750a4', 0.5)</code>
+                <br>
+                <small>Rotates color hue 0.0 to 1.0 returning hex color.</small>
+            </li>
+        </ul>
+    </details>
+</aside>
 
-        <main id="content">
-            <section class="editor-container">
-                <h3>Code</h3>
-                <textarea id="code-input" autocomplete="off" spellcheck="false"
-                    placeholder="Write shapebuilder JS code here..."></textarea>
-            </section>
+<main id="content">
+    <section class="editor-container">
+        <h3>Code</h3>
+        <textarea id="code-input" autocomplete="off" spellcheck="false"
+                  placeholder="Write shapebuilder JS code here..."></textarea>
+    </section>
 
-            <section class="output-container">
-                <h3>Output</h3>
-                <div id="shape-container"></div>
-            <pre id="error-container">
+    <section class="output-container">
+        <h3>Output</h3>
+        <div id="shape-container"></div>
+        <pre id="error-container">
 <code id="error-output"></code>
 </pre>
-            </section>
-        </main>
+    </section>
+</main>
 
-        <footer>
-            Uses <a href="./paper.js" target="_blank">paper.js</a> (an thus straps.js and acorn.js), all of which are released under the MIT license.
-        </footer>
+<footer>
+    Uses <a href="./paper.js" target="_blank">paper.js</a> (an thus straps.js and acorn.js), all of
+    which are released under the MIT license.
+</footer>
 
-        <script src="./paper.js"></script>
-        <script>window.paper = paper;</script>
-        <script src="./shapebuilder.js"></script>
-        <script>
-        // Gain access to globals from shapebuilder.js
-        const { Builder: b, Shape, Point } = window.ShapeBuilder;
+<script src="./paper.js"></script>
+<script>window.paper = paper;</script>
+<script src="./shapebuilder.js"></script>
+<script>
+    // Gain access to globals from shapebuilder.js
+    const { Builder: b, Shape, Point } = window.ShapeBuilder;
 
-        const _colorCtx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
-        _colorCtx.canvas.width = 1; _colorCtx.canvas.height = 1;
+    const _colorCtx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+    _colorCtx.canvas.width = 1;
+    _colorCtx.canvas.height = 1;
 
-        function oklab_process_color(cssColorStr, fallbackColor) {
-            _colorCtx.clearRect(0, 0, 1, 1);
-            _colorCtx.fillStyle = fallbackColor; // fallback if string is invalid
-            _colorCtx.fillStyle = cssColorStr;
-            _colorCtx.fillRect(0, 0, 1, 1);
-            const data = _colorCtx.getImageData(0, 0, 1, 1).data;
-            const r = data[0].toString(16).padStart(2, "0");
-            const g = data[1].toString(16).padStart(2, "0");
-            const b_c = data[2].toString(16).padStart(2, "0"); // renamed from b to b_c to avoid shadow variable b
-            return `#${r}${g}${b_c}`;
-        }
+    function oklab_process_color(cssColorStr, fallbackColor) {
+        _colorCtx.clearRect(0, 0, 1, 1);
+        _colorCtx.fillStyle = fallbackColor; // fallback if string is invalid
+        _colorCtx.fillStyle = cssColorStr;
+        _colorCtx.fillRect(0, 0, 1, 1);
+        const data = _colorCtx.getImageData(0, 0, 1, 1).data;
+        const r = data[0].toString(16).padStart(2, "0");
+        const g = data[1].toString(16).padStart(2, "0");
+        const b_c = data[2].toString(16).padStart(2, "0"); // renamed from b to b_c to avoid shadow variable b
+        return `#${r}${g}${b_c}`;
+    }
 
-        function color_invert(hexColor) {
-            return oklab_process_color(`oklab(from ${hexColor} calc(1 - l) a b)`, hexColor);
-        }
+    function color_invert(hexColor) {
+        return oklab_process_color(`oklab(from ${hexColor} calc(1 - l) a b)`, hexColor);
+    }
 
-        function color_rotate(hexColor, amount) {
-            return oklab_process_color(`oklch(from ${hexColor} l c calc(h + ${amount * 360}))`, hexColor);
-        }
+    function color_rotate(hexColor, amount) {
+        return oklab_process_color(`oklch(from ${hexColor} l c calc(h + ${amount * 360}))`, hexColor);
+    }
 
-        const codeInput = document.getElementById("code-input");
-        const shapeContainer = document.getElementById("shape-container");
-        const errorOutput = document.getElementById("error-output");
-        const errorContainer = document.getElementById("error-container");
-        const exportSvgBtn = document.getElementById("export-svg-btn");
-        const resetBtn = document.getElementById("reset-btn");
+    const codeInput = document.getElementById("code-input");
+    const shapeContainer = document.getElementById("shape-container");
+    const errorOutput = document.getElementById("error-output");
+    const errorContainer = document.getElementById("error-container");
+    const exportSvgBtn = document.getElementById("export-svg-btn");
+    const resetBtn = document.getElementById("reset-btn");
 
-        // Capture global module errors
-        window.addEventListener("error", (event) => {
-            errorOutput.textContent += "\nGlobal Error: " + event.message;
-        });
-        window.addEventListener("unhandledrejection", (event) => {
-            errorOutput.textContent += "\nPromise Error: " + event.reason;
-        });
+    // Capture global module errors
+    window.addEventListener("error", (event) => {
+        errorOutput.textContent += "\nGlobal Error: " + event.message;
+    });
+    window.addEventListener("unhandledrejection", (event) => {
+        errorOutput.textContent += "\nPromise Error: " + event.reason;
+    });
 
-        // Library check
-        console.log("Shape Builder Initializing...");
-        if (b && Shape && Point) {
-            console.log("shapebuilder.js loaded successfully");
-        } else {
-            console.error("shapebuilder.js failed to export essentials");
-            errorOutput.textContent = "Critical Error: shapebuilder.js failed to load correctly.";
-        }
+    // Library check
+    console.log("Shape Builder Initializing...");
+    if (b && Shape && Point) {
+        console.log("shapebuilder.js loaded successfully");
+    } else {
+        console.error("shapebuilder.js failed to export essentials");
+        errorOutput.textContent = "Critical Error: shapebuilder.js failed to load correctly.";
+    }
 
-        function updateShape() {
-            errorOutput.textContent = "";
-            try {
-                const code = codeInput.value;
-                localStorage.setItem("shapebuilder_code", code);
-                // Safely evaluate user code within an async function context to allow standard JS.
-                const func = new Function("b", "Shape", "Point", "color_invert", "color_rotate", code);
-                const result = func(b, Shape, Point, color_invert, color_rotate);
+    function updateShape() {
+        errorOutput.textContent = "";
+        try {
+            const code = codeInput.value;
+            localStorage.setItem("shapebuilder_code", code);
+            // Safely evaluate user code within an async function context to allow standard JS.
+            const func = new Function("b", "Shape", "Point", "color_invert", "color_rotate", code);
+            const result = func(b, Shape, Point, color_invert, color_rotate);
 
-                let svgOutput = "";
+            let svgOutput = "";
 
-                if (typeof result === "string") {
-                    svgOutput = result;
-                } else if (result && typeof result.toSVG === "function") {
-                    svgOutput = result.toSVG({ fill: "#6750a4" });
-                } else if (Array.isArray(result)) {
-                    svgOutput = result.map(sh => {
-                        if (typeof sh === "string") return sh;
-                        if (sh && typeof sh.toSVG === "function") return sh.toSVG({ fill: "#6750a4" });
-                        return "";
-                    }).join("\n");
-                } else {
-                    if (result !== undefined) {
-                        throw new Error("Script must return an SVG string or a Shape object.");
-                    }
+            if (typeof result === "string") {
+                svgOutput = result;
+            } else if (result && typeof result.toSVG === "function") {
+                svgOutput = result.toSVG({ fill: "#6750a4" });
+            } else if (Array.isArray(result)) {
+                svgOutput = result.map(sh => {
+                    if (typeof sh === "string") return sh;
+                    if (sh && typeof sh.toSVG === "function") return sh.toSVG({ fill: "#6750a4" });
+                    return "";
+                }).join("\n");
+            } else {
+                if (result !== undefined) {
+                    throw new Error("Script must return an SVG string or a Shape object.");
                 }
+            }
 
-                if (svgOutput) {
-                    // Wrap the output in an SVG viewbox if there isn't one already
-                    if (!svgOutput.includes("<svg")) {
-                        // Creating a tighter viewBox, centered on 0,0
-                        svgOutput = `<svg viewBox="-150 -150 300 300" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+            if (svgOutput) {
+                // Wrap the output in an SVG viewbox if there isn't one already
+                if (!svgOutput.includes("<svg")) {
+                    // Creating a tighter viewBox, centered on 0,0
+                    svgOutput = `<svg viewBox="-150 -150 300 300" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
                             ${svgOutput}
                         </svg>`;
-                    }
-                    shapeContainer.innerHTML = svgOutput;
-
-                    const svgEl = shapeContainer.querySelector("svg");
-                    if (svgEl) {
-                        svgEl.dataset.originalSvg = svgOutput;
-                        try {
-                            const bbox = svgEl.getBBox();
-                            if (bbox.width > 0 || bbox.height > 0) {
-                                const pad = 10;
-                                let vbW = 300, vbH = 300;
-                                const vb = svgEl.getAttribute("viewBox");
-                                if (vb) {
-                                    const p = vb.split(/[\s,]+/);
-                                    if (p.length === 4) {
-                                        vbW = Math.max(parseFloat(p[2]), bbox.width + pad * 2);
-                                        vbH = Math.max(parseFloat(p[3]), bbox.height + pad * 2);
-                                    }
-                                }
-                                svgEl.setAttribute("viewBox", `${bbox.x - pad} ${bbox.y - pad} ${vbW} ${vbH}`);
-                                svgEl.setAttribute("preserveAspectRatio", "xMinYMin meet");
-                                svgEl.style.width = "100%";
-                                svgEl.style.height = "100%";
-                            }
-                        } catch (e) { }
-                    }
-                } else {
-                    shapeContainer.innerHTML = result === undefined ? "<i>(Returned undefined)</i>" : "";
                 }
+                shapeContainer.innerHTML = svgOutput;
 
-            } catch (err) {
-                errorOutput.textContent = "Error: " + err.message + "\n" + (err.stack || "");
-            } finally {
-                errorContainer.style.display = errorOutput.textContent ? "block" : "none";
+                const svgEl = shapeContainer.querySelector("svg");
+                if (svgEl) {
+                    svgEl.dataset.originalSvg = svgOutput;
+                    try {
+                        const bbox = svgEl.getBBox();
+                        if (bbox.width > 0 || bbox.height > 0) {
+                            const pad = 10;
+                            let vbW = 300, vbH = 300;
+                            const vb = svgEl.getAttribute("viewBox");
+                            if (vb) {
+                                const p = vb.split(/[\s,]+/);
+                                if (p.length === 4) {
+                                    vbW = Math.max(parseFloat(p[2]), bbox.width + pad * 2);
+                                    vbH = Math.max(parseFloat(p[3]), bbox.height + pad * 2);
+                                }
+                            }
+                            svgEl.setAttribute("viewBox", `${bbox.x - pad} ${bbox.y - pad} ${vbW} ${vbH}`);
+                            svgEl.setAttribute("preserveAspectRatio", "xMinYMin meet");
+                            svgEl.style.width = "100%";
+                            svgEl.style.height = "100%";
+                        }
+                    } catch (e) {
+                    }
+                }
+            } else {
+                shapeContainer.innerHTML = result === undefined ? "<i>(Returned undefined)</i>" : "";
             }
+
+        } catch (err) {
+            errorOutput.textContent = "Error: " + err.message + "\n" + (err.stack || "");
+        } finally {
+            errorContainer.style.display = errorOutput.textContent ? "block" : "none";
         }
+    }
 
-        codeInput.addEventListener("input", updateShape);
+    codeInput.addEventListener("input", updateShape);
 
-        exportSvgBtn.addEventListener("click", () => {
-            const svgElement = shapeContainer.querySelector("svg");
-            if (!svgElement) {
-                alert("No SVG to export");
-                return;
-            }
-            const svgContent = svgElement.dataset.originalSvg || svgElement.outerHTML;
-            const blob = new Blob([svgContent], { type: "image/svg+xml;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            const iso = new Date().toISOString().replace(/:/g, "-");
-            a.download = `builder-shape-${iso}.svg`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+    exportSvgBtn.addEventListener("click", () => {
+        const svgElement = shapeContainer.querySelector("svg");
+        if (!svgElement) {
+            alert("No SVG to export");
+            return;
+        }
+        const svgContent = svgElement.dataset.originalSvg || svgElement.outerHTML;
+        const blob = new Blob([svgContent], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const iso = new Date().toISOString().replace(/:/g, "-");
+        a.download = `builder-shape-${iso}.svg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    // Keyboard shortcuts
+    window.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+            e.preventDefault();
+            exportSvgBtn.click();
+        }
+    });
+
+    // Add click-to-insert functionality for sidebar code elements
+    document.querySelectorAll("aside code").forEach(codeEl => {
+        codeEl.title = "Click to insert";
+        codeEl.addEventListener("mousedown", (e) => {
+            if (e.button !== 0) return;
+            e.preventDefault(); // Prevents losing focus in the editor
+
+            const textToInsert = codeEl.textContent;
+            const startPos = codeInput.selectionStart;
+            const endPos = codeInput.selectionEnd;
+
+            const beforeText = codeInput.value.substring(0, startPos);
+            const afterText = codeInput.value.substring(endPos);
+
+            codeInput.value = beforeText + textToInsert + afterText;
+
+            const newPos = startPos + textToInsert.length;
+            codeInput.setSelectionRange(newPos, newPos);
+
+            updateShape();
         });
+    });
 
-        // Keyboard shortcuts
-        window.addEventListener("keydown", (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
-                e.preventDefault();
-                exportSvgBtn.click();
-            }
-        });
-
-        // Add click-to-insert functionality for sidebar code elements
-        document.querySelectorAll("aside code").forEach(codeEl => {
-            codeEl.title = "Click to insert";
-            codeEl.addEventListener("mousedown", (e) => {
-                if (e.button !== 0) return;
-                e.preventDefault(); // Prevents losing focus in the editor
-
-                const textToInsert = codeEl.textContent;
-                const startPos = codeInput.selectionStart;
-                const endPos = codeInput.selectionEnd;
-
-                const beforeText = codeInput.value.substring(0, startPos);
-                const afterText = codeInput.value.substring(endPos);
-
-                codeInput.value = beforeText + textToInsert + afterText;
-
-                const newPos = startPos + textToInsert.length;
-                codeInput.setSelectionRange(newPos, newPos);
-
-                updateShape();
-            });
-        });
-
-        const DEFAULT_CODE = `// A complex shape composition using every method of the library!
+    const DEFAULT_CODE = `// A complex shape composition using every method of the library!
 
 // Primitives
 const p = b.Point({ x: 10, y: 10 });
@@ -637,24 +652,24 @@ return [
     b.Circle({ radius: 2, center: perpPt.p }).toSVG({ fill: 'red' }) // movePerpendicular visualization
 ].join('\\n');`;
 
-        const savedCode = localStorage.getItem("shapebuilder_code");
-        if (savedCode) {
-            codeInput.value = savedCode;
-        } else {
+    const savedCode = localStorage.getItem("shapebuilder_code");
+    if (savedCode) {
+        codeInput.value = savedCode;
+    } else {
+        codeInput.value = DEFAULT_CODE;
+    }
+
+    resetBtn.addEventListener("click", () => {
+        if (confirm("Reset code to example?")) {
             codeInput.value = DEFAULT_CODE;
+            localStorage.removeItem("shapebuilder_code");
+            updateShape();
         }
+    });
 
-        resetBtn.addEventListener("click", () => {
-            if (confirm("Reset code to example?")) {
-                codeInput.value = DEFAULT_CODE;
-                localStorage.removeItem("shapebuilder_code");
-                updateShape();
-            }
-        });
-
-        // Initial render
-        updateShape();
-    </script>
-    </body>
+    // Initial render
+    updateShape();
+</script>
+</body>
 
 </html>

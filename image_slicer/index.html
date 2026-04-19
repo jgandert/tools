@@ -1,15 +1,16 @@
 <!doctype html>
 <html lang="en" class="theme-orange">
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <title>Image Slicer</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <script src="../client-zip.js"></script>
-        <link rel="stylesheet" href="../one.css">
-        <style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <title>Image Slicer</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <script src="../client-zip.js"></script>
+    <link rel="stylesheet" href="../one.css">
+    <style>
         /* ------------------------------------------------------------------
             TOOL SPECIFIC STYLES
             ------------------------------------------------------------------ */
@@ -125,7 +126,6 @@
         }
 
 
-
         .placeholder-note {
             color: var(--on-surface-variant);
             text-align: center;
@@ -138,545 +138,546 @@
             margin-bottom: var(--spacing-md);
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
-        <div class="progress-bar" id="progress-bar"></div>
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<div class="progress-bar" id="progress-bar"></div>
 
-        <header>
-            <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
-            <hgroup>
-                <h1>Image Slicer</h1>
-            </hgroup>
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Image Slicer</h1>
+    </hgroup>
 
-            <button id="zoom-fit" type="button">
-                <span>Fit</span>
-            </button>
-            <button id="zoom-100" type="button">
-                <span>1:1</span>
-            </button>
-        </header>
+    <button id="zoom-fit" type="button">
+        <span>Fit</span>
+    </button>
+    <button id="zoom-100" type="button">
+        <span>1:1</span>
+    </button>
+</header>
 
-        <main id="canvas-area" class="main-content">
-            <div class="canvas-area" id="canvas-scroll">
-                <div id="preview-wrapper" class="preview-container">
-                    <img id="preview-img" src="" alt="" hidden>
-                    <canvas id="overlay-canvas"></canvas>
-                </div>
-                <div id="placeholder-text" class="placeholder-note">
-                    Load an image to start slicing
-                </div>
-            </div>
-        </main>
+<main id="canvas-area" class="main-content">
+    <div class="canvas-area" id="canvas-scroll">
+        <div id="preview-wrapper" class="preview-container">
+            <img id="preview-img" src="" alt="" hidden>
+            <canvas id="overlay-canvas"></canvas>
+        </div>
+        <div id="placeholder-text" class="placeholder-note">
+            Load an image to start slicing
+        </div>
+    </div>
+</main>
 
-        <aside id="sidebar">
-            <h2 hidden>Sidebar</h2>
-            <div class="file-drop-area" id="drop-area">
-                <input type="file" id="file-input" accept="image/*">
-            </div>
+<aside id="sidebar">
+    <h2 hidden>Sidebar</h2>
+    <div class="file-drop-area" id="drop-area">
+        <input type="file" id="file-input" accept="image/*">
+    </div>
 
-            <fieldset>
-                <legend>Image Details</legend>
-                <div class="flex-row">
-                    <label for="img-width">
-                        Original Width
-                        <input type="text" id="img-width" value="-" readonly disabled>
-                    </label>
-                    <label for="img-height">
-                        Original Height
-                        <input type="text" id="img-height" value="-" readonly disabled>
-                    </label>
-                </div>
-            </fieldset>
+    <fieldset>
+        <legend>Image Details</legend>
+        <div class="flex-row">
+            <label for="img-width">
+                Original Width
+                <input type="text" id="img-width" value="-" readonly disabled>
+            </label>
+            <label for="img-height">
+                Original Height
+                <input type="text" id="img-height" value="-" readonly disabled>
+            </label>
+        </div>
+    </fieldset>
 
-            <fieldset>
-                <legend>Slicing Strategy</legend>
-                <label for="preset-select">
-                    Target Aspect Ratio
-                    <select id="preset-select">
-                        <option value="a4">A4 (ISO 216)</option>
-                        <option value="a3">A3 (ISO 216)</option>
-                        <option value="letter">US Letter</option>
-                        <option value="instagram_portrait">Instagram Portrait (4:5)</option>
-                        <option value="instagram_square">Instagram Square (1:1)</option>
-                        <option value="screen_16_9">16:9 Screen</option>
-                        <option value="custom">Custom Ratio</option>
-                    </select>
-                </label>
+    <fieldset>
+        <legend>Slicing Strategy</legend>
+        <label for="preset-select">
+            Target Aspect Ratio
+            <select id="preset-select">
+                <option value="a4">A4 (ISO 216)</option>
+                <option value="a3">A3 (ISO 216)</option>
+                <option value="letter">US Letter</option>
+                <option value="instagram_portrait">Instagram Portrait (4:5)</option>
+                <option value="instagram_square">Instagram Square (1:1)</option>
+                <option value="screen_16_9">16:9 Screen</option>
+                <option value="custom">Custom Ratio</option>
+            </select>
+        </label>
 
-                <div id="custom-ratio-row" hidden class="flex-row">
-                    <label for="ratio-w">
-                        Ratio W
-                        <input type="number" id="ratio-w" value="1">
-                    </label>
-                    <label for="ratio-h">
-                        Ratio H
-                        <input type="number" id="ratio-h" value="1.414">
-                    </label>
-                </div>
+        <div id="custom-ratio-row" hidden class="flex-row">
+            <label for="ratio-w">
+                Ratio W
+                <input type="number" id="ratio-w" value="1">
+            </label>
+            <label for="ratio-h">
+                Ratio H
+                <input type="number" id="ratio-h" value="1.414">
+            </label>
+        </div>
 
-                <label for="orientation-select">
-                    Orientation
-                    <select id="orientation-select">
-                        <option value="portrait">Portrait (Vertical)</option>
-                        <option value="landscape">Landscape (Horizontal)</option>
-                    </select>
-                </label>
+        <label for="orientation-select">
+            Orientation
+            <select id="orientation-select">
+                <option value="portrait">Portrait (Vertical)</option>
+                <option value="landscape">Landscape (Horizontal)</option>
+            </select>
+        </label>
 
-                <label for="format-select">
-                    Output Format
-                    <select id="format-select">
-                        <option value="image/jpeg">JPEG (smaller)</option>
-                        <option value="image/png">PNG (lossless)</option>
-                    </select>
-                </label>
-            </fieldset>
+        <label for="format-select">
+            Output Format
+            <select id="format-select">
+                <option value="image/jpeg">JPEG (smaller)</option>
+                <option value="image/png">PNG (lossless)</option>
+            </select>
+        </label>
+    </fieldset>
 
-            <fieldset>
-                <legend>Preview & Output</legend>
-                <div id="slice-summary" class="summary-note">
-                    No image loaded.
-                </div>
+    <fieldset>
+        <legend>Preview & Output</legend>
+        <div id="slice-summary" class="summary-note">
+            No image loaded.
+        </div>
 
-                <button class="btn-primary w-full" id="download-btn" disabled type="button">
-                    <span class="sym">download</span> Download ZIP
-                </button>
-            </fieldset>
-        </aside>
+        <button class="btn-primary w-full" id="download-btn" disabled type="button">
+            <span class="sym">download</span> Download ZIP
+        </button>
+    </fieldset>
+</aside>
 
 
+<script>
+    // State
+    let state = {
+        image: null, // The Image Object
+        src: null, // The DataURL
+        width: 0,
+        height: 0,
+        slices: [], // Array of slice definitions {y, h}
+        config: {
+            preset: "a4",
+            orientation: "portrait",
+            customW: 1,
+            customH: 1.414,
+            format: "image/jpeg",
+        },
+        zoom: "fit",
+    };
 
-        <script>
-        // State
-        let state = {
-            image: null, // The Image Object
-            src: null, // The DataURL
-            width: 0,
-            height: 0,
-            slices: [], // Array of slice definitions {y, h}
-            config: {
-                preset: "a4",
-                orientation: "portrait",
-                customW: 1,
-                customH: 1.414,
-                format: "image/jpeg",
-            },
-            zoom: "fit",
-        };
+    const PRESETS = {
+        a4: 1 / Math.sqrt(2), // 0.707
+        a3: 1 / Math.sqrt(2),
+        letter: 8.5 / 11,
+        instagram_portrait: 4 / 5,
+        instagram_square: 1,
+        screen_16_9: 16 / 9,
+    };
 
-        const PRESETS = {
-            a4: 1 / Math.sqrt(2), // 0.707
-            a3: 1 / Math.sqrt(2),
-            letter: 8.5 / 11,
-            instagram_portrait: 4 / 5,
-            instagram_square: 1,
-            screen_16_9: 16 / 9,
-        };
+    // DOM Elements
+    const els = {
+        dropArea: document.getElementById("drop-area"),
+        fileInput: document.getElementById("file-input"),
+        imgWidth: document.getElementById("img-width"),
+        imgHeight: document.getElementById("img-height"),
+        preset: document.getElementById("preset-select"),
+        customRow: document.getElementById("custom-ratio-row"),
+        ratioW: document.getElementById("ratio-w"),
+        ratioH: document.getElementById("ratio-h"),
+        orientation: document.getElementById("orientation-select"),
+        format: document.getElementById("format-select"),
+        summary: document.getElementById("slice-summary"),
+        downloadBtn: document.getElementById("download-btn"),
+        previewWrapper: document.getElementById("preview-wrapper"),
+        previewImg: document.getElementById("preview-img"),
+        overlayCanvas: document.getElementById("overlay-canvas"),
+        canvasArea: document.getElementById("canvas-area"),
+        placeholder: document.getElementById("placeholder-text"),
+        progressBar: document.getElementById("progress-bar"),
+        sidebar: document.getElementById("sidebar"),
+    };
 
-        // DOM Elements
-        const els = {
-            dropArea: document.getElementById("drop-area"),
-            fileInput: document.getElementById("file-input"),
-            imgWidth: document.getElementById("img-width"),
-            imgHeight: document.getElementById("img-height"),
-            preset: document.getElementById("preset-select"),
-            customRow: document.getElementById("custom-ratio-row"),
-            ratioW: document.getElementById("ratio-w"),
-            ratioH: document.getElementById("ratio-h"),
-            orientation: document.getElementById("orientation-select"),
-            format: document.getElementById("format-select"),
-            summary: document.getElementById("slice-summary"),
-            downloadBtn: document.getElementById("download-btn"),
-            previewWrapper: document.getElementById("preview-wrapper"),
-            previewImg: document.getElementById("preview-img"),
-            overlayCanvas: document.getElementById("overlay-canvas"),
-            canvasArea: document.getElementById("canvas-area"),
-            placeholder: document.getElementById("placeholder-text"),
-            progressBar: document.getElementById("progress-bar"),
-            sidebar: document.getElementById("sidebar"),
-        };
-
-        // --- PERSISTENCE ---
-        function saveState() {
-            try {
-                const toSave = { config: state.config, zoom: state.zoom };
-                localStorage.setItem("imageSlicerState", JSON.stringify(toSave));
-            } catch { /* Silent fail for storage access */ }
+    // --- PERSISTENCE ---
+    function saveState() {
+        try {
+            const toSave = { config: state.config, zoom: state.zoom };
+            localStorage.setItem("imageSlicerState", JSON.stringify(toSave));
+        } catch { /* Silent fail for storage access */
         }
+    }
 
-        function loadState() {
-            try {
-                const raw = localStorage.getItem("imageSlicerState");
-                if (raw) {
-                    const loaded = JSON.parse(raw);
-                    state.config = { ...state.config, ...loaded.config };
-                    state.zoom = loaded.zoom || state.zoom;
+    function loadState() {
+        try {
+            const raw = localStorage.getItem("imageSlicerState");
+            if (raw) {
+                const loaded = JSON.parse(raw);
+                state.config = { ...state.config, ...loaded.config };
+                state.zoom = loaded.zoom || state.zoom;
 
-                    // Sync DOM
-                    els.preset.value = state.config.preset;
-                    els.orientation.value = state.config.orientation;
-                    els.format.value = state.config.format;
-                    els.ratioW.value = state.config.customW;
-                    els.ratioH.value = state.config.customH;
-                    return true;
-                }
-            } catch { /* Ignore malformed state from storage */ }
-
-            // Sync state from DOM if no stored state (handles browser form persistence)
-            state.config.preset = els.preset.value;
-            state.config.orientation = els.orientation.value;
-            state.config.format = els.format.value;
-            state.config.customW = parseFloat(els.ratioW.value) || 1;
-            state.config.customH = parseFloat(els.ratioH.value) || 1.414;
-            return false;
-        }
-
-        function updatePresetVisibility() {
-            if (state.config.preset === "custom") {
-                els.customRow.hidden = false;
-            } else {
-                els.customRow.hidden = true;
+                // Sync DOM
+                els.preset.value = state.config.preset;
+                els.orientation.value = state.config.orientation;
+                els.format.value = state.config.format;
+                els.ratioW.value = state.config.customW;
+                els.ratioH.value = state.config.customH;
+                return true;
             }
+        } catch { /* Ignore malformed state from storage */
         }
 
-        // --- INIT & EVENT LISTENERS ---
-        function init() {
-            // File Upload
-            els.dropArea.addEventListener("click", () => els.fileInput.click());
-            els.fileInput.addEventListener("change", handleFileSelect);
+        // Sync state from DOM if no stored state (handles browser form persistence)
+        state.config.preset = els.preset.value;
+        state.config.orientation = els.orientation.value;
+        state.config.format = els.format.value;
+        state.config.customW = parseFloat(els.ratioW.value) || 1;
+        state.config.customH = parseFloat(els.ratioH.value) || 1.414;
+        return false;
+    }
 
-            document.getElementById("zoom-fit").addEventListener("click", () => setZoom("fit"));
-            document.getElementById("zoom-100").addEventListener("click", () => setZoom(1));
-            document.getElementById("download-btn").addEventListener("click", downloadSlices);
+    function updatePresetVisibility() {
+        if (state.config.preset === "custom") {
+            els.customRow.hidden = false;
+        } else {
+            els.customRow.hidden = true;
+        }
+    }
 
-            ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
-                els.dropArea.addEventListener(eventName, preventDefaults, false);
-            });
-            ["dragenter", "dragover"].forEach((eventName) => {
-                els.dropArea.addEventListener(
-                    eventName,
-                    () => els.dropArea.classList.add("drag-over"),
-                    false
-                );
-            });
-            ["dragleave", "drop"].forEach((eventName) => {
-                els.dropArea.addEventListener(
-                    eventName,
-                    () => els.dropArea.classList.remove("drag-over"),
-                    false
-                );
-            });
-            els.dropArea.addEventListener("drop", handleDrop, false);
+    // --- INIT & EVENT LISTENERS ---
+    function init() {
+        // File Upload
+        els.dropArea.addEventListener("click", () => els.fileInput.click());
+        els.fileInput.addEventListener("change", handleFileSelect);
 
-            // Controls
-            els.preset.addEventListener("change", (e) => {
-                state.config.preset = e.target.value;
-                updatePresetVisibility();
-                saveState();
-                recalc();
-            });
-            els.orientation.addEventListener("change", (e) => {
-                state.config.orientation = e.target.value;
-                saveState();
-                recalc();
-            });
-            els.ratioW.addEventListener("input", (e) => {
-                state.config.customW = parseFloat(e.target.value) || 1;
-                saveState();
-                recalc();
-            });
-            els.ratioH.addEventListener("input", (e) => {
-                state.config.customH = parseFloat(e.target.value) || 1;
-                saveState();
-                recalc();
-            });
-            els.format.addEventListener("change", (e) => {
-                state.config.format = e.target.value;
-                saveState();
-            });
+        document.getElementById("zoom-fit").addEventListener("click", () => setZoom("fit"));
+        document.getElementById("zoom-100").addEventListener("click", () => setZoom(1));
+        document.getElementById("download-btn").addEventListener("click", downloadSlices);
 
-            window.addEventListener("resize", () => {
-                if (state.zoom === "fit") fitPreview();
-                drawOverlay(); // Redraw lines on resize
-            });
+        ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+            els.dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        ["dragenter", "dragover"].forEach((eventName) => {
+            els.dropArea.addEventListener(
+                eventName,
+                () => els.dropArea.classList.add("drag-over"),
+                false,
+            );
+        });
+        ["dragleave", "drop"].forEach((eventName) => {
+            els.dropArea.addEventListener(
+                eventName,
+                () => els.dropArea.classList.remove("drag-over"),
+                false,
+            );
+        });
+        els.dropArea.addEventListener("drop", handleDrop, false);
 
-            // Sync initial state
-            loadState();
+        // Controls
+        els.preset.addEventListener("change", (e) => {
+            state.config.preset = e.target.value;
             updatePresetVisibility();
-        }
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            if (files.length) handleFile(files[0]);
-        }
-
-        function handleFileSelect(e) {
-            if (e.target.files.length) handleFile(e.target.files[0]);
-        }
-
-        function handleFile(file) {
-            if (!file.type.startsWith("image/")) return alert("Please upload an image.");
-
-            els.placeholder.textContent = "Loading image...";
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                state.src = e.target.result;
-                const img = new Image();
-                img.onload = () => {
-                    state.image = img;
-                    state.width = img.naturalWidth;
-                    state.height = img.naturalHeight;
-
-                    els.imgWidth.value = state.width + "px";
-                    els.imgHeight.value = state.height + "px";
-
-                    els.previewImg.src = state.src;
-                    els.previewImg.hidden = false;
-                    els.placeholder.hidden = true;
-
-                    els.downloadBtn.disabled = false;
-
-                    recalc();
-                    setZoom(state.zoom);
-                };
-                img.src = state.src;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // --- CORE LOGIC ---
-
-        function getTargetRatio() {
-            let ratio = 1;
-            if (state.config.preset === "custom") {
-                ratio = state.config.customW / state.config.customH;
-            } else {
-                ratio = PRESETS[state.config.preset];
-            }
-
-            // Flip ratio for landscape orientation (e.g., A4 portrait 0.707 → landscape 1.414)
-            if (state.config.orientation === "landscape" && state.config.preset !== "custom") {
-                if (ratio < 1) ratio = 1 / ratio;
-            } else if (
-                state.config.orientation === "portrait" &&
-                state.config.preset !== "custom"
-            ) {
-                if (ratio > 1) ratio = 1 / ratio;
-            }
-
-            return ratio;
-        }
-
-        function recalc() {
-            if (!state.image) return;
-
-            const ratio = getTargetRatio();
-
-            // We are slicing vertically (top to bottom).
-            // Slice Width is fixed to Image Width.
-            // Target Slice Height = Image Width / Ratio.
-
-            const sliceH = state.width / ratio;
-            const totalH = state.height;
-
-            state.slices = [];
-            let currentY = 0;
-
-            // Generate full slices
-            while (currentY + sliceH <= totalH) {
-                state.slices.push({ y: currentY, h: sliceH, type: "Full" });
-                currentY += sliceH;
-            }
-
-            // Remainder
-            const remainder = totalH - currentY;
-            if (remainder > 1) {
-                // Ignore sub-pixel remainders
-                state.slices.push({ y: currentY, h: remainder, type: "Remainder" });
-            }
-
-            updateSummary();
-            drawOverlay();
-        }
-
-        function updateSummary() {
-            const count = state.slices.length;
-            const last = state.slices[count - 1];
-            let text = `Total Slices: ${count}.`;
-            if (last.type === "Remainder") {
-                const pct = Math.round((last.h / state.slices[0].h) * 100);
-                text += ` (Last slice is ${pct}% height of others)`;
-            }
-            els.summary.innerHTML = text;
-        }
-
-        function drawOverlay() {
-            if (!state.image) return;
-
-            const canvas = els.overlayCanvas;
-            const img = els.previewImg;
-
-            // Sync canvas size with displayed image size
-            canvas.width = img.width;
-            canvas.height = img.height;
-
-            const ctx = canvas.getContext("2d");
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Calculate scale factor (Display px / Real px)
-            const scale = img.width / state.width;
-
-            ctx.strokeStyle = "#ef4444";
-            ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]);
-
-            ctx.fillStyle = "rgba(239, 68, 68, 0.2)";
-            ctx.font = "bold 14px Inter, sans-serif";
-
-            state.slices.forEach((slice, index) => {
-                const y = slice.y * scale;
-                const h = slice.h * scale;
-
-                // Draw bottom line of slice (except last one which matches image bottom)
-                if (index < state.slices.length - 1) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, y + h);
-                    ctx.lineTo(canvas.width, y + h);
-                    ctx.stroke();
-                }
-
-                // Draw label
-                ctx.fillStyle = "rgba(0,0,0,0.5)";
-                ctx.fillRect(5, y + 5, 60, 20);
-                ctx.fillStyle = "#fff";
-                ctx.fillText(`Slice ${index + 1}`, 10, y + 20);
-            });
-        }
-
-        // --- PREVIEW ZOOM ---
-        function setZoom(mode) {
-            state.zoom = mode;
             saveState();
-            if (mode === "fit") {
-                fitPreview();
-            } else {
-                els.previewWrapper.style.width = state.width + "px";
-                els.previewWrapper.style.height = "auto"; // let aspect ratio handle height
-                // Redraw overlay after layout update to ensure correct alignment.
-                requestAnimationFrame(drawOverlay);
-            }
-        }
-
-        function fitPreview() {
-            if (!state.image) return;
-            const pad = 80;
-            const canvasArea = document.getElementById("canvas-scroll");
-            const availableW = canvasArea.clientWidth - pad;
-            // Cap at actual width
-            const finalW = Math.min(availableW, state.width);
-
-            els.previewWrapper.style.width = finalW + "px";
-            els.previewWrapper.style.height = "auto";
-            requestAnimationFrame(drawOverlay);
-        }
-
-        // --- DOWNLOAD & GENERATION ---
-
-        async function downloadSlices() {
-            if (!state.slices.length) return;
-
-            els.downloadBtn.disabled = true;
-            els.downloadBtn.textContent = "Processing...";
-            els.progressBar.style.width = "0%";
-
-            try {
-                // Prepare offscreen canvas
-                const canvas = document.createElement("canvas");
-                const ctx = canvas.getContext("2d");
-                const fileExt = state.config.format === "image/png" ? "png" : "jpg";
-
-                const filesForZip = [];
-
-                // Process slices sequentially to not freeze UI too much
-                for (let i = 0; i < state.slices.length; i++) {
-                    const slice = state.slices[i];
-
-                    canvas.width = state.width;
-                    canvas.height = Math.floor(slice.h); // Integers only for canvas
-
-                    // Draw portion
-                    ctx.drawImage(
-                        state.image,
-                        0,
-                        Math.floor(slice.y),
-                        state.width,
-                        Math.floor(slice.h), // Source
-                        0,
-                        0,
-                        state.width,
-                        Math.floor(slice.h) // Dest
-                    );
-
-                    // Convert to Blob
-                    const blob = await new Promise((resolve) =>
-                        canvas.toBlob(resolve, state.config.format, 0.9)
-                    );
-
-                    // Create File object for client-zip
-                    const filename = `slice_${(i + 1).toString().padStart(3, "0")}.${fileExt}`;
-
-                    // Wrap the blob in a File object so client-zip can include it with the right filename
-                    const fileObj = new File([blob], filename, { type: state.config.format });
-                    filesForZip.push(fileObj);
-
-                    // Update UI
-                    const pct = Math.round(((i + 1) / state.slices.length) * 100);
-                    els.progressBar.style.width = pct + "%";
-                    els.downloadBtn.textContent = `Processing ${pct}%`;
-
-                    // Small delay to allow UI refresh
-                    await new Promise((r) => setTimeout(r, 10));
-                }
-
-                els.downloadBtn.textContent = "Zipping...";
-
-                // Use client-zip to generate the archive
-                const blob = await downloadZip(filesForZip).blob();
-
-                // Trigger download
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = "slices.zip";
-                link.click();
-                link.remove();
-            } catch (err) {
-                console.error(err);
-                alert("Error generating slices: " + err.message);
-            } finally {
-                els.downloadBtn.disabled = false;
-                els.downloadBtn.textContent = "Download ZIP";
-                els.progressBar.style.width = "0%";
-            }
-        }
-
-
-        // Window Resize Handler for Sidebar
-        window.addEventListener("resize", () => {
-            if (state.zoom === "fit") fitPreview();
-            drawOverlay();
+            recalc();
+        });
+        els.orientation.addEventListener("change", (e) => {
+            state.config.orientation = e.target.value;
+            saveState();
+            recalc();
+        });
+        els.ratioW.addEventListener("input", (e) => {
+            state.config.customW = parseFloat(e.target.value) || 1;
+            saveState();
+            recalc();
+        });
+        els.ratioH.addEventListener("input", (e) => {
+            state.config.customH = parseFloat(e.target.value) || 1;
+            saveState();
+            recalc();
+        });
+        els.format.addEventListener("change", (e) => {
+            state.config.format = e.target.value;
+            saveState();
         });
 
-        // Bootstrap
-        init();
-    </script>
-    </body>
+        window.addEventListener("resize", () => {
+            if (state.zoom === "fit") fitPreview();
+            drawOverlay(); // Redraw lines on resize
+        });
+
+        // Sync initial state
+        loadState();
+        updatePresetVisibility();
+    }
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length) handleFile(files[0]);
+    }
+
+    function handleFileSelect(e) {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+    }
+
+    function handleFile(file) {
+        if (!file.type.startsWith("image/")) return alert("Please upload an image.");
+
+        els.placeholder.textContent = "Loading image...";
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            state.src = e.target.result;
+            const img = new Image();
+            img.onload = () => {
+                state.image = img;
+                state.width = img.naturalWidth;
+                state.height = img.naturalHeight;
+
+                els.imgWidth.value = state.width + "px";
+                els.imgHeight.value = state.height + "px";
+
+                els.previewImg.src = state.src;
+                els.previewImg.hidden = false;
+                els.placeholder.hidden = true;
+
+                els.downloadBtn.disabled = false;
+
+                recalc();
+                setZoom(state.zoom);
+            };
+            img.src = state.src;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // --- CORE LOGIC ---
+
+    function getTargetRatio() {
+        let ratio = 1;
+        if (state.config.preset === "custom") {
+            ratio = state.config.customW / state.config.customH;
+        } else {
+            ratio = PRESETS[state.config.preset];
+        }
+
+        // Flip ratio for landscape orientation (e.g., A4 portrait 0.707 → landscape 1.414)
+        if (state.config.orientation === "landscape" && state.config.preset !== "custom") {
+            if (ratio < 1) ratio = 1 / ratio;
+        } else if (
+            state.config.orientation === "portrait" &&
+            state.config.preset !== "custom"
+        ) {
+            if (ratio > 1) ratio = 1 / ratio;
+        }
+
+        return ratio;
+    }
+
+    function recalc() {
+        if (!state.image) return;
+
+        const ratio = getTargetRatio();
+
+        // We are slicing vertically (top to bottom).
+        // Slice Width is fixed to Image Width.
+        // Target Slice Height = Image Width / Ratio.
+
+        const sliceH = state.width / ratio;
+        const totalH = state.height;
+
+        state.slices = [];
+        let currentY = 0;
+
+        // Generate full slices
+        while (currentY + sliceH <= totalH) {
+            state.slices.push({ y: currentY, h: sliceH, type: "Full" });
+            currentY += sliceH;
+        }
+
+        // Remainder
+        const remainder = totalH - currentY;
+        if (remainder > 1) {
+            // Ignore sub-pixel remainders
+            state.slices.push({ y: currentY, h: remainder, type: "Remainder" });
+        }
+
+        updateSummary();
+        drawOverlay();
+    }
+
+    function updateSummary() {
+        const count = state.slices.length;
+        const last = state.slices[count - 1];
+        let text = `Total Slices: ${count}.`;
+        if (last.type === "Remainder") {
+            const pct = Math.round((last.h / state.slices[0].h) * 100);
+            text += ` (Last slice is ${pct}% height of others)`;
+        }
+        els.summary.innerHTML = text;
+    }
+
+    function drawOverlay() {
+        if (!state.image) return;
+
+        const canvas = els.overlayCanvas;
+        const img = els.previewImg;
+
+        // Sync canvas size with displayed image size
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Calculate scale factor (Display px / Real px)
+        const scale = img.width / state.width;
+
+        ctx.strokeStyle = "#ef4444";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+
+        ctx.fillStyle = "rgba(239, 68, 68, 0.2)";
+        ctx.font = "bold 14px Inter, sans-serif";
+
+        state.slices.forEach((slice, index) => {
+            const y = slice.y * scale;
+            const h = slice.h * scale;
+
+            // Draw bottom line of slice (except last one which matches image bottom)
+            if (index < state.slices.length - 1) {
+                ctx.beginPath();
+                ctx.moveTo(0, y + h);
+                ctx.lineTo(canvas.width, y + h);
+                ctx.stroke();
+            }
+
+            // Draw label
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillRect(5, y + 5, 60, 20);
+            ctx.fillStyle = "#fff";
+            ctx.fillText(`Slice ${index + 1}`, 10, y + 20);
+        });
+    }
+
+    // --- PREVIEW ZOOM ---
+    function setZoom(mode) {
+        state.zoom = mode;
+        saveState();
+        if (mode === "fit") {
+            fitPreview();
+        } else {
+            els.previewWrapper.style.width = state.width + "px";
+            els.previewWrapper.style.height = "auto"; // let aspect ratio handle height
+            // Redraw overlay after layout update to ensure correct alignment.
+            requestAnimationFrame(drawOverlay);
+        }
+    }
+
+    function fitPreview() {
+        if (!state.image) return;
+        const pad = 80;
+        const canvasArea = document.getElementById("canvas-scroll");
+        const availableW = canvasArea.clientWidth - pad;
+        // Cap at actual width
+        const finalW = Math.min(availableW, state.width);
+
+        els.previewWrapper.style.width = finalW + "px";
+        els.previewWrapper.style.height = "auto";
+        requestAnimationFrame(drawOverlay);
+    }
+
+    // --- DOWNLOAD & GENERATION ---
+
+    async function downloadSlices() {
+        if (!state.slices.length) return;
+
+        els.downloadBtn.disabled = true;
+        els.downloadBtn.textContent = "Processing...";
+        els.progressBar.style.width = "0%";
+
+        try {
+            // Prepare offscreen canvas
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const fileExt = state.config.format === "image/png" ? "png" : "jpg";
+
+            const filesForZip = [];
+
+            // Process slices sequentially to not freeze UI too much
+            for (let i = 0; i < state.slices.length; i++) {
+                const slice = state.slices[i];
+
+                canvas.width = state.width;
+                canvas.height = Math.floor(slice.h); // Integers only for canvas
+
+                // Draw portion
+                ctx.drawImage(
+                    state.image,
+                    0,
+                    Math.floor(slice.y),
+                    state.width,
+                    Math.floor(slice.h), // Source
+                    0,
+                    0,
+                    state.width,
+                    Math.floor(slice.h), // Dest
+                );
+
+                // Convert to Blob
+                const blob = await new Promise((resolve) =>
+                    canvas.toBlob(resolve, state.config.format, 0.9),
+                );
+
+                // Create File object for client-zip
+                const filename = `slice_${(i + 1).toString().padStart(3, "0")}.${fileExt}`;
+
+                // Wrap the blob in a File object so client-zip can include it with the right filename
+                const fileObj = new File([blob], filename, { type: state.config.format });
+                filesForZip.push(fileObj);
+
+                // Update UI
+                const pct = Math.round(((i + 1) / state.slices.length) * 100);
+                els.progressBar.style.width = pct + "%";
+                els.downloadBtn.textContent = `Processing ${pct}%`;
+
+                // Small delay to allow UI refresh
+                await new Promise((r) => setTimeout(r, 10));
+            }
+
+            els.downloadBtn.textContent = "Zipping...";
+
+            // Use client-zip to generate the archive
+            const blob = await downloadZip(filesForZip).blob();
+
+            // Trigger download
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "slices.zip";
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error(err);
+            alert("Error generating slices: " + err.message);
+        } finally {
+            els.downloadBtn.disabled = false;
+            els.downloadBtn.textContent = "Download ZIP";
+            els.progressBar.style.width = "0%";
+        }
+    }
+
+
+    // Window Resize Handler for Sidebar
+    window.addEventListener("resize", () => {
+        if (state.zoom === "fit") fitPreview();
+        drawOverlay();
+    });
+
+    // Bootstrap
+    init();
+</script>
+</body>
 
 </html>

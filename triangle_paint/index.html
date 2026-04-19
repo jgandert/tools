@@ -1,14 +1,15 @@
 <!doctype html>
 <html lang="en" class="theme-blue">
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <title>Triangle Paint</title>
-        <link rel="stylesheet" href="../one.css">
-        <style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <title>Triangle Paint</title>
+    <link rel="stylesheet" href="../one.css">
+    <style>
         /* ------------------------------------------------------------------
             TOOL SPECIFIC STYLES
             ------------------------------------------------------------------ */
@@ -161,7 +162,7 @@
             color: var(--on-surface);
         }
 
-        .tool-switch input:checked+label {
+        .tool-switch input:checked + label {
             background: var(--primary);
             color: white;
         }
@@ -260,285 +261,285 @@
             margin-left: 8px;
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
 
-        <header>
-            <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
-            <hgroup>
-                <h1>Triangle Paint</h1>
-            </hgroup>
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Triangle Paint</h1>
+    </hgroup>
 
-            <button class="btn-primary" id="save-btn" title="Save [Ctrl+S]" type="button">
-                <span class="sym">save</span>
-                <span class="hide-mobile">Save</span>
+    <button class="btn-primary" id="save-btn" title="Save [Ctrl+S]" type="button">
+        <span class="sym">save</span>
+        <span class="hide-mobile">Save</span>
+    </button>
+</header>
+
+<main class="main-content">
+    <div class="canvas-container" id="scroll-container">
+        <canvas id="grid-canvas"></canvas>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="controls-bottom-bar">
+        <!-- Color / Eraser / Palette -->
+        <div class="control-group">
+            <button type="button" id="btn-eraser" title="Eraser [1]">
+                <span class="sym lg">ink_eraser</span>
             </button>
-        </header>
-
-        <main class="main-content">
-            <div class="canvas-container" id="scroll-container">
-                <canvas id="grid-canvas"></canvas>
-            </div>
-
-            <!-- Bottom Controls -->
-            <div class="controls-bottom-bar">
-                <!-- Color / Eraser / Palette -->
-                <div class="control-group">
-                    <button type="button" id="btn-eraser" title="Eraser [1]">
-                        <span class="sym lg">ink_eraser</span>
-                    </button>
-                    <input type="color" id="color-picker" value="#ff5733">
-                    <div class="palette">
-                        <div class="palette-swatch" id="swatch-1" title="Color [2]"></div>
-                        <div class="palette-swatch" id="swatch-2" title="Color [3]"></div>
-                        <div class="palette-swatch" id="swatch-3" title="Color [4]"></div>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <!-- Tools -->
-                <div class="tool-switch">
-                    <input type="radio" id="t-draw" name="tool" value="draw" checked>
-                    <label for="t-draw" title="Draw [D]">
-                        <span class="sym lg">edit</span>
-                    </label>
-
-                    <input type="radio" id="t-fill" name="tool" value="fill">
-                    <label for="t-fill" title="Fill Bucket [F]">
-                        <span class="sym lg">format_color_fill</span>
-                    </label>
-
-                    <input type="radio" id="t-scroll" name="tool" value="scroll">
-                    <label for="t-scroll" title="Scroll/Pan [S]">
-                        <span class="sym lg">pan_tool</span>
-                    </label>
-                </div>
-
-                <div class="divider"></div>
-
-                <!-- History -->
-                <div class="control-group">
-                    <button type="button" class="btn-sym" id="undo-btn" title="Undo [Ctrl+Z]">
-                        <span class="sym">undo</span>
-                    </button>
-                    <button type="button" class="btn-sym" id="redo-btn" title="Redo [Ctrl+Y]">
-                        <span class="sym">redo</span>
-                    </button>
-                </div>
-            </div>
-        </main>
-
-        <aside id="sidebar">
-            <h2 class="hidden">Sidebar</h2>
-            <fieldset>
-                <legend>File</legend>
-                <button type="button" class="w-full mb-2" id="new-artwork-btn">
-                    <span class="sym">add</span>
-                    New Artwork
-                </button>
-                <button type="button" class="w-full" id="open-btn" title="Load [Ctrl+O]">
-                    <span class="sym">folder_open</span>
-                    Open
-                </button>
-                <input type="file" id="file-input" accept=".svg" class="hidden">
-            </fieldset>
-
-            <fieldset>
-                <legend>Grid Settings</legend>
-                <div class="flex-row mb-2">
-                    <label class="flex-1 mb-0" for="grid-cols">
-                        Cols
-                        <input type="number" id="grid-cols" value="20" min="2">
-                    </label>
-                    <label class="flex-1 mb-0" for="grid-rows">
-                        Rows
-                        <input type="number" id="grid-rows" value="20" min="2">
-                    </label>
-                </div>
-                <button type="button" class="btn-danger w-full" id="clear-grid-btn">
-                    <span class="sym">delete</span>
-                    Clear Grid
-                </button>
-            </fieldset>
-
-            <fieldset>
-                <legend>View</legend>
-                <label class="mb-0" for="zoom-slider">
-                    Zoom
-                    <span id="zoom-label" class="zoom-label-val">35</span>
-                    <input type="range" id="zoom-slider" min="10" max="100" value="35">
-                </label>
-            </fieldset>
-
-            <div id="log-area"></div>
-        </aside>
-
-        <!-- EXPORT MODAL -->
-        <div id="export-modal">
-            <div class="modal-content">
-                <h3 class="mt-0 mb-0">SVG Code</h3>
-                <textarea id="svg-output" readonly></textarea>
-                <div class="flex-row mb-4">
-                    <button type="button" class="btn-primary flex-1" id="copy-clipboard-btn">
-                        Copy to Clipboard
-                    </button>
-                    <button type="button" class="flex-1" id="close-modal-btn">
-                        Close
-                    </button>
-                </div>
+            <input type="color" id="color-picker" value="#ff5733">
+            <div class="palette">
+                <div class="palette-swatch" id="swatch-1" title="Color [2]"></div>
+                <div class="palette-swatch" id="swatch-2" title="Color [3]"></div>
+                <div class="palette-swatch" id="swatch-3" title="Color [4]"></div>
             </div>
         </div>
 
-        <script>
-        /** UI HELPERS **/
-        /* Sidebar toggle is purely CSS now, except we might need to close it on backdrop click manually */
-        function closeModal() {
-            document.getElementById("export-modal").style.display = "none";
-        }
+        <div class="divider"></div>
 
-        /** CONFIG & STATE **/
-        const canvas = document.getElementById("grid-canvas");
-        const ctx = canvas.getContext("2d");
-        const scrollContainer = document.getElementById("scroll-container");
-        const logBox = document.getElementById("log-area");
+        <!-- Tools -->
+        <div class="tool-switch">
+            <input type="radio" id="t-draw" name="tool" value="draw" checked>
+            <label for="t-draw" title="Draw [D]">
+                <span class="sym lg">edit</span>
+            </label>
 
-        let sideLength = 35;
-        let triHeight = sideLength * (Math.sqrt(3) / 2);
-        let currentCols = 20;
-        let currentRows = 20;
+            <input type="radio" id="t-fill" name="tool" value="fill">
+            <label for="t-fill" title="Fill Bucket [F]">
+                <span class="sym lg">format_color_fill</span>
+            </label>
 
-        // Key="row,col" -> Value=HexColor
-        let gridData = {};
+            <input type="radio" id="t-scroll" name="tool" value="scroll">
+            <label for="t-scroll" title="Scroll/Pan [S]">
+                <span class="sym lg">pan_tool</span>
+            </label>
+        </div>
 
-        let undoStack = [];
-        let redoStack = [];
-        let recentColors = ["#ffffff", "#ffffff", "#ffffff"];
+        <div class="divider"></div>
 
-        let isDrawing = false;
-        let mode = "draw"; // 'draw', 'fill', 'scroll'
-        let paintType = "color"; // 'color' or 'eraser'
+        <!-- History -->
+        <div class="control-group">
+            <button type="button" class="btn-sym" id="undo-btn" title="Undo [Ctrl+Z]">
+                <span class="sym">undo</span>
+            </button>
+            <button type="button" class="btn-sym" id="redo-btn" title="Redo [Ctrl+Y]">
+                <span class="sym">redo</span>
+            </button>
+        </div>
+    </div>
+</main>
 
-        let isDraggingScroll = false;
-        let startScrollX, startScrollY, startScrollLeft, startScrollTop;
+<aside id="sidebar">
+    <h2 class="hidden">Sidebar</h2>
+    <fieldset>
+        <legend>File</legend>
+        <button type="button" class="w-full mb-2" id="new-artwork-btn">
+            <span class="sym">add</span>
+            New Artwork
+        </button>
+        <button type="button" class="w-full" id="open-btn" title="Load [Ctrl+O]">
+            <span class="sym">folder_open</span>
+            Open
+        </button>
+        <input type="file" id="file-input" accept=".svg" class="hidden">
+    </fieldset>
 
-        function log(msg) {
-            const time = new Date().toLocaleTimeString().split(" ")[0];
-            const line = document.createElement("div");
-            line.textContent = `[${time}] ${msg}`;
-            logBox.appendChild(line);
-            logBox.scrollTop = logBox.scrollHeight;
-        }
+    <fieldset>
+        <legend>Grid Settings</legend>
+        <div class="flex-row mb-2">
+            <label class="flex-1 mb-0" for="grid-cols">
+                Cols
+                <input type="number" id="grid-cols" value="20" min="2">
+            </label>
+            <label class="flex-1 mb-0" for="grid-rows">
+                Rows
+                <input type="number" id="grid-rows" value="20" min="2">
+            </label>
+        </div>
+        <button type="button" class="btn-danger w-full" id="clear-grid-btn">
+            <span class="sym">delete</span>
+            Clear Grid
+        </button>
+    </fieldset>
 
-        /** INIT **/
-        function init() {
-            const saved = localStorage.getItem("triGridData_v7");
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    gridData = parsed.grid || {};
-                    currentCols = parsed.cols || 20;
-                    currentRows = parsed.rows || 20;
-                    sideLength = parsed.zoom || 35;
-                    recentColors = parsed.colors || ["#ffffff", "#ffffff", "#ffffff"];
-                    document.getElementById("grid-cols").value = currentCols;
-                    document.getElementById("grid-rows").value = currentRows;
-                    document.getElementById("zoom-slider").value = sideLength;
-                    log("Restored session.");
-                } catch (e) {
-                    log("Error loading save.");
-                }
-            } else {
-                // Fit to screen initial
-                const sc = document.getElementById("scroll-container");
-                // Subtract some padding/margin
-                const w = sc.clientWidth - 40;
-                const h = sc.clientHeight - 40;
+    <fieldset>
+        <legend>View</legend>
+        <label class="mb-0" for="zoom-slider">
+            Zoom
+            <span id="zoom-label" class="zoom-label-val">35</span>
+            <input type="range" id="zoom-slider" min="10" max="100" value="35">
+        </label>
+    </fieldset>
 
-                // Ensure default configuration values are initialized.
-                sideLength = 35;
-                document.getElementById("zoom-slider").value = sideLength;
-                updateDerivedValues();
+    <div id="log-area"></div>
+</aside>
 
-                const suggestedCols = Math.floor(((w - sideLength) * 2) / sideLength);
-                const suggestedRows = Math.floor((h - triHeight) / triHeight);
+<!-- EXPORT MODAL -->
+<div id="export-modal">
+    <div class="modal-content">
+        <h3 class="mt-0 mb-0">SVG Code</h3>
+        <textarea id="svg-output" readonly></textarea>
+        <div class="flex-row mb-4">
+            <button type="button" class="btn-primary flex-1" id="copy-clipboard-btn">
+                Copy to Clipboard
+            </button>
+            <button type="button" class="flex-1" id="close-modal-btn">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
 
-                currentCols = Math.max(5, suggestedCols);
-                currentRows = Math.max(5, suggestedRows);
+<script>
+    /** UI HELPERS **/
+    /* Sidebar toggle is purely CSS now, except we might need to close it on backdrop click manually */
+    function closeModal() {
+        document.getElementById("export-modal").style.display = "none";
+    }
 
+    /** CONFIG & STATE **/
+    const canvas = document.getElementById("grid-canvas");
+    const ctx = canvas.getContext("2d");
+    const scrollContainer = document.getElementById("scroll-container");
+    const logBox = document.getElementById("log-area");
+
+    let sideLength = 35;
+    let triHeight = sideLength * (Math.sqrt(3) / 2);
+    let currentCols = 20;
+    let currentRows = 20;
+
+    // Key="row,col" -> Value=HexColor
+    let gridData = {};
+
+    let undoStack = [];
+    let redoStack = [];
+    let recentColors = ["#ffffff", "#ffffff", "#ffffff"];
+
+    let isDrawing = false;
+    let mode = "draw"; // 'draw', 'fill', 'scroll'
+    let paintType = "color"; // 'color' or 'eraser'
+
+    let isDraggingScroll = false;
+    let startScrollX, startScrollY, startScrollLeft, startScrollTop;
+
+    function log(msg) {
+        const time = new Date().toLocaleTimeString().split(" ")[0];
+        const line = document.createElement("div");
+        line.textContent = `[${time}] ${msg}`;
+        logBox.appendChild(line);
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    /** INIT **/
+    function init() {
+        const saved = localStorage.getItem("triGridData_v7");
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                gridData = parsed.grid || {};
+                currentCols = parsed.cols || 20;
+                currentRows = parsed.rows || 20;
+                sideLength = parsed.zoom || 35;
+                recentColors = parsed.colors || ["#ffffff", "#ffffff", "#ffffff"];
                 document.getElementById("grid-cols").value = currentCols;
                 document.getElementById("grid-rows").value = currentRows;
-                log(`Initialized to fit screen: ${currentCols}x${currentRows}`);
+                document.getElementById("zoom-slider").value = sideLength;
+                log("Restored session.");
+            } catch (e) {
+                log("Error loading save.");
             }
+        } else {
+            // Fit to screen initial
+            const sc = document.getElementById("scroll-container");
+            // Subtract some padding/margin
+            const w = sc.clientWidth - 40;
+            const h = sc.clientHeight - 40;
 
-            refreshPaletteUI();
+            // Ensure default configuration values are initialized.
+            sideLength = 35;
+            document.getElementById("zoom-slider").value = sideLength;
             updateDerivedValues();
-            setMode("draw"); // Default
-            // Restore radio state
-            if (mode === "fill") document.getElementById("t-fill").checked = true;
-            else if (mode === "scroll") document.getElementById("t-scroll").checked = true;
-            else document.getElementById("t-draw").checked = true;
 
-            activateColor(document.getElementById("color-picker").value);
-            updateCanvasSize();
-            drawGrid();
-            setTimeout(drawGrid, 100);
+            const suggestedCols = Math.floor(((w - sideLength) * 2) / sideLength);
+            const suggestedRows = Math.floor((h - triHeight) / triHeight);
 
-            setupKeyboardShortcuts();
+            currentCols = Math.max(5, suggestedCols);
+            currentRows = Math.max(5, suggestedRows);
+
+            document.getElementById("grid-cols").value = currentCols;
+            document.getElementById("grid-rows").value = currentRows;
+            log(`Initialized to fit screen: ${currentCols}x${currentRows}`);
         }
 
-        function saveToStorage() {
-            const state = {
-                grid: gridData,
-                cols: currentCols,
-                rows: currentRows,
-                zoom: parseInt(document.getElementById("zoom-slider").value),
-                colors: recentColors,
-            };
-            localStorage.setItem("triGridData_v7", JSON.stringify(state));
-        }
+        refreshPaletteUI();
+        updateDerivedValues();
+        setMode("draw"); // Default
+        // Restore radio state
+        if (mode === "fill") document.getElementById("t-fill").checked = true;
+        else if (mode === "scroll") document.getElementById("t-scroll").checked = true;
+        else document.getElementById("t-draw").checked = true;
 
-        /** KEYBOARD SHORTCUTS **/
-        function setupKeyboardShortcuts() {
-            document.addEventListener("keydown", function (e) {
-                // Ignore if typing in inputs
-                if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+        activateColor(document.getElementById("color-picker").value);
+        updateCanvasSize();
+        drawGrid();
+        setTimeout(drawGrid, 100);
 
-                const ctrl = e.ctrlKey || e.metaKey;
-                const shift = e.shiftKey;
+        setupKeyboardShortcuts();
+    }
 
-                if (ctrl) {
-                    // IO
-                    if (e.key === "s" || e.key === "S") {
-                        e.preventDefault();
-                        saveAndExport();
-                        return;
-                    }
-                    if (e.key === "o" || e.key === "O") {
-                        e.preventDefault();
-                        document.getElementById("file-input").click();
-                        return;
-                    }
-                    // History
-                    if (e.key === "z" || e.key === "Z") {
-                        e.preventDefault();
-                        if (shift) performRedo();
-                        else performUndo();
-                        return;
-                    }
-                    if (e.key === "y" || e.key === "Y") {
-                        e.preventDefault();
-                        if (shift) performUndo();
-                        else performRedo();
-                        return;
-                    }
+    function saveToStorage() {
+        const state = {
+            grid: gridData,
+            cols: currentCols,
+            rows: currentRows,
+            zoom: parseInt(document.getElementById("zoom-slider").value),
+            colors: recentColors,
+        };
+        localStorage.setItem("triGridData_v7", JSON.stringify(state));
+    }
+
+    /** KEYBOARD SHORTCUTS **/
+    function setupKeyboardShortcuts() {
+        document.addEventListener("keydown", function(e) {
+            // Ignore if typing in inputs
+            if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+            const ctrl = e.ctrlKey || e.metaKey;
+            const shift = e.shiftKey;
+
+            if (ctrl) {
+                // IO
+                if (e.key === "s" || e.key === "S") {
+                    e.preventDefault();
+                    saveAndExport();
                     return;
                 }
+                if (e.key === "o" || e.key === "O") {
+                    e.preventDefault();
+                    document.getElementById("file-input").click();
+                    return;
+                }
+                // History
+                if (e.key === "z" || e.key === "Z") {
+                    e.preventDefault();
+                    if (shift) performRedo();
+                    else performUndo();
+                    return;
+                }
+                if (e.key === "y" || e.key === "Y") {
+                    e.preventDefault();
+                    if (shift) performUndo();
+                    else performRedo();
+                    return;
+                }
+                return;
+            }
 
-                // Tools (No modifiers)
-                switch (e.key.toLowerCase()) {
+            // Tools (No modifiers)
+            switch (e.key.toLowerCase()) {
                 case "d":
                     document.getElementById("t-draw").checked = true;
                     setMode("draw");
@@ -563,570 +564,583 @@
                 case "4":
                     pickSwatch(2);
                     break;
-                }
-            });
-        }
+            }
+        });
+    }
 
-        /** PAINT MODE **/
-        function activateEraser() {
-            paintType = "eraser";
-            document.getElementById("btn-eraser").classList.add("active");
-            log("Tool: Eraser");
-        }
+    /** PAINT MODE **/
+    function activateEraser() {
+        paintType = "eraser";
+        document.getElementById("btn-eraser").classList.add("active");
+        log("Tool: Eraser");
+    }
 
-        function activateColor(hex) {
-            paintType = "color";
-            document.getElementById("btn-eraser").classList.remove("active");
-            if (hex) document.getElementById("color-picker").value = hex;
-        }
+    function activateColor(hex) {
+        paintType = "color";
+        document.getElementById("btn-eraser").classList.remove("active");
+        if (hex) document.getElementById("color-picker").value = hex;
+    }
 
-        function updatePalette(newColor) {
-            activateColor(newColor);
-            if (!recentColors.includes(newColor)) {
-                recentColors.unshift(newColor);
-                recentColors.pop();
-                refreshPaletteUI();
+    function updatePalette(newColor) {
+        activateColor(newColor);
+        if (!recentColors.includes(newColor)) {
+            recentColors.unshift(newColor);
+            recentColors.pop();
+            refreshPaletteUI();
+        }
+    }
+
+    function refreshPaletteUI() {
+        for (let i = 0; i < 3; i++) {
+            const swatch = document.getElementById("swatch-" + (i + 1));
+            swatch.style.backgroundColor = recentColors[i];
+            swatch.dataset.color = recentColors[i];
+        }
+    }
+
+    function pickSwatch(index) {
+        if (index < 0 || index >= recentColors.length) return;
+        const el = document.getElementById("swatch-" + (index + 1));
+        const c = el.dataset.color;
+        if (c && c !== "transparent") {
+            activateColor(c);
+            updatePalette(c);
+        }
+    }
+
+    /** RLE COMPRESSION **/
+    function compressData(arr) {
+        if (arr.length === 0) return "";
+        let result = [];
+        let count = 1;
+        let current = arr[0];
+        for (let i = 1; i < arr.length; i++) {
+            if (arr[i] === current) count++;
+            else {
+                result.push(count > 1 ? `${count}*${current}` : current);
+                current = arr[i];
+                count = 1;
             }
         }
+        result.push(count > 1 ? `${count}*${current}` : current);
+        return result.join(",");
+    }
 
-        function refreshPaletteUI() {
-            for (let i = 0; i < 3; i++) {
-                const swatch = document.getElementById("swatch-" + (i + 1));
-                swatch.style.backgroundColor = recentColors[i];
-                swatch.dataset.color = recentColors[i];
-            }
-        }
-
-        function pickSwatch(index) {
-            if (index < 0 || index >= recentColors.length) return;
-            const el = document.getElementById("swatch-" + (index + 1));
-            const c = el.dataset.color;
-            if (c && c !== "transparent") {
-                activateColor(c);
-                updatePalette(c);
-            }
-        }
-
-        /** RLE COMPRESSION **/
-        function compressData(arr) {
-            if (arr.length === 0) return "";
-            let result = [];
-            let count = 1;
-            let current = arr[0];
-            for (let i = 1; i < arr.length; i++) {
-                if (arr[i] === current) count++;
-                else {
-                    result.push(count > 1 ? `${count}*${current}` : current);
-                    current = arr[i];
-                    count = 1;
-                }
-            }
-            result.push(count > 1 ? `${count}*${current}` : current);
-            return result.join(",");
-        }
-
-        function expandData(str) {
-            const result = [];
-            const items = str.split(",");
-            items.forEach((item) => {
-                if (item.includes("*")) {
-                    const parts = item.split("*");
-                    const count = parseInt(parts[0]);
-                    const val = parseInt(parts[1]);
-                    for (let i = 0; i < count; i++) result.push(val);
-                } else {
-                    result.push(parseInt(item));
-                }
-            });
-            return result;
-        }
-
-        /** TOOL MODES **/
-        function setMode(newMode) {
-            mode = newMode;
-            if (mode === "scroll") {
-                scrollContainer.style.cursor = "grab";
-                scrollContainer.style.touchAction = "auto";
+    function expandData(str) {
+        const result = [];
+        const items = str.split(",");
+        items.forEach((item) => {
+            if (item.includes("*")) {
+                const parts = item.split("*");
+                const count = parseInt(parts[0]);
+                const val = parseInt(parts[1]);
+                for (let i = 0; i < count; i++) result.push(val);
             } else {
-                scrollContainer.style.cursor = "crosshair";
-                scrollContainer.style.touchAction = "none";
+                result.push(parseInt(item));
             }
-            log("Mode: " + mode.toUpperCase());
-        }
+        });
+        return result;
+    }
 
-        /** GEOMETRY **/
-        function updateDerivedValues() {
-            sideLength = parseInt(document.getElementById("zoom-slider").value);
-            triHeight = sideLength * (Math.sqrt(3) / 2);
+    /** TOOL MODES **/
+    function setMode(newMode) {
+        mode = newMode;
+        if (mode === "scroll") {
+            scrollContainer.style.cursor = "grab";
+            scrollContainer.style.touchAction = "auto";
+        } else {
+            scrollContainer.style.cursor = "crosshair";
+            scrollContainer.style.touchAction = "none";
         }
-        function updateZoomLabel() {
-            document.getElementById("zoom-label").textContent =
-                document.getElementById("zoom-slider").value;
-        }
-        function handleZoomChange() {
-            updateDerivedValues();
-            updateCanvasSize();
-            drawGrid();
-            saveToStorage();
-        }
-        function resizeGrid() {
-            saveStateForUndo();
-            currentCols = parseInt(document.getElementById("grid-cols").value) || 20;
-            currentRows = parseInt(document.getElementById("grid-rows").value) || 20;
-            updateCanvasSize();
-            drawGrid();
-            saveToStorage();
-            log(`Resized to ${currentCols}x${currentRows}`);
-        }
-        function updateCanvasSize() {
-            canvas.width = (currentCols * sideLength) / 2 + sideLength;
-            canvas.height = currentRows * triHeight + triHeight;
-        }
-        function getTriangleVertices(col, row) {
-            const xBase = col * (sideLength / 2);
-            const yBase = row * triHeight;
-            const isUp = (col + row) % 2 === 0;
-            if (isUp)
-                return [
-                    { x: xBase, y: yBase + triHeight },
-                    { x: xBase + sideLength, y: yBase + triHeight },
-                    { x: xBase + sideLength / 2, y: yBase },
-                ];
-            else
-                return [
-                    { x: xBase, y: yBase },
-                    { x: xBase + sideLength / 2, y: yBase + triHeight },
-                    { x: xBase + sideLength, y: yBase },
-                ];
-        }
-        function pixelToGrid(px, py) {
-            const colApprox = Math.floor(px / (sideLength / 2));
-            const rowApprox = Math.floor(py / triHeight);
-            for (let r = rowApprox - 1; r <= rowApprox + 1; r++) {
-                for (let c = colApprox - 1; c <= colApprox + 1; c++) {
-                    if (r >= 0 && r < currentRows && c >= 0 && c < currentCols) {
-                        const verts = getTriangleVertices(c, r);
-                        if (pointInTriangle(px, py, verts[0], verts[1], verts[2]))
-                            return { r, c };
-                    }
+        log("Mode: " + mode.toUpperCase());
+    }
+
+    /** GEOMETRY **/
+    function updateDerivedValues() {
+        sideLength = parseInt(document.getElementById("zoom-slider").value);
+        triHeight = sideLength * (Math.sqrt(3) / 2);
+    }
+
+    function updateZoomLabel() {
+        document.getElementById("zoom-label").textContent =
+            document.getElementById("zoom-slider").value;
+    }
+
+    function handleZoomChange() {
+        updateDerivedValues();
+        updateCanvasSize();
+        drawGrid();
+        saveToStorage();
+    }
+
+    function resizeGrid() {
+        saveStateForUndo();
+        currentCols = parseInt(document.getElementById("grid-cols").value) || 20;
+        currentRows = parseInt(document.getElementById("grid-rows").value) || 20;
+        updateCanvasSize();
+        drawGrid();
+        saveToStorage();
+        log(`Resized to ${currentCols}x${currentRows}`);
+    }
+
+    function updateCanvasSize() {
+        canvas.width = (currentCols * sideLength) / 2 + sideLength;
+        canvas.height = currentRows * triHeight + triHeight;
+    }
+
+    function getTriangleVertices(col, row) {
+        const xBase = col * (sideLength / 2);
+        const yBase = row * triHeight;
+        const isUp = (col + row) % 2 === 0;
+        if (isUp)
+            return [
+                { x: xBase, y: yBase + triHeight },
+                { x: xBase + sideLength, y: yBase + triHeight },
+                { x: xBase + sideLength / 2, y: yBase },
+            ];
+        else
+            return [
+                { x: xBase, y: yBase },
+                { x: xBase + sideLength / 2, y: yBase + triHeight },
+                { x: xBase + sideLength, y: yBase },
+            ];
+    }
+
+    function pixelToGrid(px, py) {
+        const colApprox = Math.floor(px / (sideLength / 2));
+        const rowApprox = Math.floor(py / triHeight);
+        for (let r = rowApprox - 1; r <= rowApprox + 1; r++) {
+            for (let c = colApprox - 1; c <= colApprox + 1; c++) {
+                if (r >= 0 && r < currentRows && c >= 0 && c < currentCols) {
+                    const verts = getTriangleVertices(c, r);
+                    if (pointInTriangle(px, py, verts[0], verts[1], verts[2]))
+                        return { r, c };
                 }
             }
-            return null;
         }
-        function pointInTriangle(px, py, p1, p2, p3) {
-            const areaOrig = Math.abs(
-                (p2.x - p1.x) * (p3.y - p1.y) - (p3.x - p1.x) * (p2.y - p1.y)
-            );
-            const area1 = Math.abs((p1.x - px) * (p2.y - py) - (p2.x - px) * (p1.y - py));
-            const area2 = Math.abs((p2.x - px) * (p3.y - py) - (p3.x - px) * (p2.y - py));
-            const area3 = Math.abs((p3.x - px) * (p1.y - py) - (p1.x - px) * (p3.y - py));
-            return Math.abs(area1 + area2 + area3 - areaOrig) < 0.1;
-        }
+        return null;
+    }
 
-        /** UNDO/REDO **/
-        function saveStateForUndo() {
-            if (undoStack.length > 30) undoStack.shift();
-            undoStack.push(JSON.stringify({ grid: gridData, c: currentCols, r: currentRows }));
-            redoStack = [];
-        }
-        function performUndo() {
-            if (undoStack.length === 0) return log("Nothing to undo.");
-            redoStack.push(JSON.stringify({ grid: gridData, c: currentCols, r: currentRows }));
-            const state = JSON.parse(undoStack.pop());
-            gridData = state.grid;
-            currentCols = state.c;
-            currentRows = state.r;
-            syncUIAndDraw();
-            log("Undone.");
-        }
-        function performRedo() {
-            if (redoStack.length === 0) return log("Nothing to redo.");
-            undoStack.push(JSON.stringify({ grid: gridData, c: currentCols, r: currentRows }));
-            const state = JSON.parse(redoStack.pop());
-            gridData = state.grid;
-            currentCols = state.c;
-            currentRows = state.r;
-            syncUIAndDraw();
-            log("Redone.");
-        }
-        function syncUIAndDraw() {
-            document.getElementById("grid-cols").value = currentCols;
-            document.getElementById("grid-rows").value = currentRows;
-            updateCanvasSize();
-            drawGrid();
-            saveToStorage();
-        }
+    function pointInTriangle(px, py, p1, p2, p3) {
+        const areaOrig = Math.abs(
+            (p2.x - p1.x) * (p3.y - p1.y) - (p3.x - p1.x) * (p2.y - p1.y),
+        );
+        const area1 = Math.abs((p1.x - px) * (p2.y - py) - (p2.x - px) * (p1.y - py));
+        const area2 = Math.abs((p2.x - px) * (p3.y - py) - (p3.x - px) * (p2.y - py));
+        const area3 = Math.abs((p3.x - px) * (p1.y - py) - (p1.x - px) * (p3.y - py));
+        return Math.abs(area1 + area2 + area3 - areaOrig) < 0.1;
+    }
 
-        /** DRAWING & FILL **/
-        function drawGrid() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let key in gridData) {
-                const [r, c] = key.split(",").map(Number);
-                if (r >= currentRows || c >= currentCols) continue;
+    /** UNDO/REDO **/
+    function saveStateForUndo() {
+        if (undoStack.length > 30) undoStack.shift();
+        undoStack.push(JSON.stringify({ grid: gridData, c: currentCols, r: currentRows }));
+        redoStack = [];
+    }
+
+    function performUndo() {
+        if (undoStack.length === 0) return log("Nothing to undo.");
+        redoStack.push(JSON.stringify({ grid: gridData, c: currentCols, r: currentRows }));
+        const state = JSON.parse(undoStack.pop());
+        gridData = state.grid;
+        currentCols = state.c;
+        currentRows = state.r;
+        syncUIAndDraw();
+        log("Undone.");
+    }
+
+    function performRedo() {
+        if (redoStack.length === 0) return log("Nothing to redo.");
+        undoStack.push(JSON.stringify({ grid: gridData, c: currentCols, r: currentRows }));
+        const state = JSON.parse(redoStack.pop());
+        gridData = state.grid;
+        currentCols = state.c;
+        currentRows = state.r;
+        syncUIAndDraw();
+        log("Redone.");
+    }
+
+    function syncUIAndDraw() {
+        document.getElementById("grid-cols").value = currentCols;
+        document.getElementById("grid-rows").value = currentRows;
+        updateCanvasSize();
+        drawGrid();
+        saveToStorage();
+    }
+
+    /** DRAWING & FILL **/
+    function drawGrid() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let key in gridData) {
+            const [r, c] = key.split(",").map(Number);
+            if (r >= currentRows || c >= currentCols) continue;
+            const verts = getTriangleVertices(c, r);
+            ctx.fillStyle = gridData[key];
+            ctx.beginPath();
+            ctx.moveTo(verts[0].x, verts[0].y);
+            ctx.lineTo(verts[1].x, verts[1].y);
+            ctx.lineTo(verts[2].x, verts[2].y);
+            ctx.fill();
+        }
+        // Use a semi-transparent gray for grid lines that works in both light and dark modes
+        ctx.strokeStyle = "rgba(128, 128, 128, 0.3)";
+
+        ctx.lineWidth = 0.5;
+        for (let r = 0; r < currentRows; r++) {
+            for (let c = 0; c < currentCols; c++) {
                 const verts = getTriangleVertices(c, r);
-                ctx.fillStyle = gridData[key];
                 ctx.beginPath();
                 ctx.moveTo(verts[0].x, verts[0].y);
                 ctx.lineTo(verts[1].x, verts[1].y);
                 ctx.lineTo(verts[2].x, verts[2].y);
-                ctx.fill();
-            }
-            // Use a semi-transparent gray for grid lines that works in both light and dark modes
-            ctx.strokeStyle = "rgba(128, 128, 128, 0.3)";
-
-            ctx.lineWidth = 0.5;
-            for (let r = 0; r < currentRows; r++) {
-                for (let c = 0; c < currentCols; c++) {
-                    const verts = getTriangleVertices(c, r);
-                    ctx.beginPath();
-                    ctx.moveTo(verts[0].x, verts[0].y);
-                    ctx.lineTo(verts[1].x, verts[1].y);
-                    ctx.lineTo(verts[2].x, verts[2].y);
-                    ctx.closePath();
-                    ctx.stroke();
-                }
+                ctx.closePath();
+                ctx.stroke();
             }
         }
+    }
 
-        function clearGrid() {
-            if (Object.keys(gridData).length === 0) return;
-            saveStateForUndo();
-            gridData = {};
-            drawGrid();
-            saveToStorage();
-            log("Grid cleared.");
-        }
+    function clearGrid() {
+        if (Object.keys(gridData).length === 0) return;
+        saveStateForUndo();
+        gridData = {};
+        drawGrid();
+        saveToStorage();
+        log("Grid cleared.");
+    }
 
-        function performFill(startR, startC, targetColor) {
-            const startKey = `${startR},${startC}`;
-            const sourceColor = gridData[startKey];
+    function performFill(startR, startC, targetColor) {
+        const startKey = `${startR},${startC}`;
+        const sourceColor = gridData[startKey];
 
-            if (sourceColor === targetColor) return;
-            if (!sourceColor && !targetColor) return;
+        if (sourceColor === targetColor) return;
+        if (!sourceColor && !targetColor) return;
 
-            const queue = [{ r: startR, c: startC }];
-            const visited = new Set();
-            visited.add(startKey);
+        const queue = [{ r: startR, c: startC }];
+        const visited = new Set();
+        visited.add(startKey);
 
-            while (queue.length > 0) {
-                const { r, c } = queue.shift();
-                const key = `${r},${c}`;
+        while (queue.length > 0) {
+            const { r, c } = queue.shift();
+            const key = `${r},${c}`;
 
-                if (targetColor) gridData[key] = targetColor;
-                else delete gridData[key];
+            if (targetColor) gridData[key] = targetColor;
+            else delete gridData[key];
 
-                const isUp = (r + c) % 2 === 0;
-                const neighbors = [
-                    { r: r, c: c - 1 },
-                    { r: r, c: c + 1 },
-                    isUp ? { r: r + 1, c: c } : { r: r - 1, c: c },
-                ];
+            const isUp = (r + c) % 2 === 0;
+            const neighbors = [
+                { r: r, c: c - 1 },
+                { r: r, c: c + 1 },
+                isUp ? { r: r + 1, c: c } : { r: r - 1, c: c },
+            ];
 
-                for (let n of neighbors) {
-                    if (n.r >= 0 && n.r < currentRows && n.c >= 0 && n.c < currentCols) {
-                        const nKey = `${n.r},${n.c}`;
-                        if (!visited.has(nKey)) {
-                            const nColor = gridData[nKey];
-                            if (nColor === sourceColor) {
-                                visited.add(nKey);
-                                queue.push(n);
-                            }
+            for (let n of neighbors) {
+                if (n.r >= 0 && n.r < currentRows && n.c >= 0 && n.c < currentCols) {
+                    const nKey = `${n.r},${n.c}`;
+                    if (!visited.has(nKey)) {
+                        const nColor = gridData[nKey];
+                        if (nColor === sourceColor) {
+                            visited.add(nKey);
+                            queue.push(n);
                         }
                     }
                 }
             }
-            drawGrid();
         }
+        drawGrid();
+    }
 
-        /** INPUT HANDLERS **/
-        function handleInputStart(e) {
-            if (mode === "scroll") {
-                isDraggingScroll = true;
-                const t = e.touches ? e.touches[0] : e;
-                startScrollX = t.clientX;
-                startScrollY = t.clientY;
-                startScrollLeft = scrollContainer.scrollLeft;
-                startScrollTop = scrollContainer.scrollTop;
-                scrollContainer.style.cursor = "grabbing";
-                return;
-            }
-            isDrawing = true;
-            saveStateForUndo();
-            handleDrawAction(e);
-        }
-
-        function handleInputMove(e) {
-            if (mode === "scroll") {
-                if (!isDraggingScroll) return;
-                e.preventDefault();
-                const t = e.touches ? e.touches[0] : e;
-                const dx = t.clientX - startScrollX;
-                const dy = t.clientY - startScrollY;
-                scrollContainer.scrollLeft = startScrollLeft - dx;
-                scrollContainer.scrollTop = startScrollTop - dy;
-                return;
-            }
-            // Prevent scrolling when drawing
-            if (e.cancelable && isDrawing) e.preventDefault();
-            if (isDrawing) handleDrawAction(e);
-        }
-
-        function handleInputEnd() {
-            if (isDraggingScroll) {
-                isDraggingScroll = false;
-                scrollContainer.style.cursor = "grab";
-            }
-            if (isDrawing) {
-                isDrawing = false;
-                saveToStorage();
-            }
-        }
-
-        function handleDrawAction(e) {
-            const rect = canvas.getBoundingClientRect();
+    /** INPUT HANDLERS **/
+    function handleInputStart(e) {
+        if (mode === "scroll") {
+            isDraggingScroll = true;
             const t = e.touches ? e.touches[0] : e;
-            const x = t.clientX - rect.left;
-            const y = t.clientY - rect.top;
+            startScrollX = t.clientX;
+            startScrollY = t.clientY;
+            startScrollLeft = scrollContainer.scrollLeft;
+            startScrollTop = scrollContainer.scrollTop;
+            scrollContainer.style.cursor = "grabbing";
+            return;
+        }
+        isDrawing = true;
+        saveStateForUndo();
+        handleDrawAction(e);
+    }
 
-            const cell = pixelToGrid(x, y);
-            if (!cell) return;
+    function handleInputMove(e) {
+        if (mode === "scroll") {
+            if (!isDraggingScroll) return;
+            e.preventDefault();
+            const t = e.touches ? e.touches[0] : e;
+            const dx = t.clientX - startScrollX;
+            const dy = t.clientY - startScrollY;
+            scrollContainer.scrollLeft = startScrollLeft - dx;
+            scrollContainer.scrollTop = startScrollTop - dy;
+            return;
+        }
+        // Prevent scrolling when drawing
+        if (e.cancelable && isDrawing) e.preventDefault();
+        if (isDrawing) handleDrawAction(e);
+    }
 
-            const key = `${cell.r},${cell.c}`;
-            const applyValue =
-                paintType === "eraser" ? null : document.getElementById("color-picker").value;
+    function handleInputEnd() {
+        if (isDraggingScroll) {
+            isDraggingScroll = false;
+            scrollContainer.style.cursor = "grab";
+        }
+        if (isDrawing) {
+            isDrawing = false;
+            saveToStorage();
+        }
+    }
 
-            if (mode === "fill") {
-                performFill(cell.r, cell.c, applyValue);
-                isDrawing = false;
-                if (applyValue) updatePalette(applyValue);
-            } else if (mode === "draw") {
-                const currentVal = gridData[key];
-                if (
-                    (applyValue === null && currentVal) ||
-                    (applyValue && currentVal !== applyValue)
-                ) {
-                    if (applyValue) {
-                        gridData[key] = applyValue;
-                        updatePalette(applyValue);
-                    } else {
-                        delete gridData[key];
-                    }
-                    requestAnimationFrame(drawGrid);
+    function handleDrawAction(e) {
+        const rect = canvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        const x = t.clientX - rect.left;
+        const y = t.clientY - rect.top;
+
+        const cell = pixelToGrid(x, y);
+        if (!cell) return;
+
+        const key = `${cell.r},${cell.c}`;
+        const applyValue =
+            paintType === "eraser" ? null : document.getElementById("color-picker").value;
+
+        if (mode === "fill") {
+            performFill(cell.r, cell.c, applyValue);
+            isDrawing = false;
+            if (applyValue) updatePalette(applyValue);
+        } else if (mode === "draw") {
+            const currentVal = gridData[key];
+            if (
+                (applyValue === null && currentVal) ||
+                (applyValue && currentVal !== applyValue)
+            ) {
+                if (applyValue) {
+                    gridData[key] = applyValue;
+                    updatePalette(applyValue);
+                } else {
+                    delete gridData[key];
                 }
+                requestAnimationFrame(drawGrid);
             }
         }
+    }
 
-        const container = scrollContainer;
-        container.addEventListener("mousedown", handleInputStart);
-        container.addEventListener("mousemove", handleInputMove);
-        window.addEventListener("mouseup", handleInputEnd);
-        container.addEventListener("touchstart", handleInputStart, { passive: false });
-        container.addEventListener("touchmove", handleInputMove, { passive: false });
-        window.addEventListener("touchend", handleInputEnd);
+    const container = scrollContainer;
+    container.addEventListener("mousedown", handleInputStart);
+    container.addEventListener("mousemove", handleInputMove);
+    window.addEventListener("mouseup", handleInputEnd);
+    container.addEventListener("touchstart", handleInputStart, { passive: false });
+    container.addEventListener("touchmove", handleInputMove, { passive: false });
+    window.addEventListener("touchend", handleInputEnd);
 
-        /** IMPORT / EXPORT **/
-        function saveAndExport() {
-            log("Generating SVG...");
+    /** IMPORT / EXPORT **/
+    function saveAndExport() {
+        log("Generating SVG...");
+        try {
+            const svgContent = generateSVG();
+            document.getElementById("svg-output").value = svgContent;
+            // Show the SVG in the modal and trigger a file download simultaneously
+            document.getElementById("export-modal").style.display = "flex";
+
+            const blob = new Blob([svgContent], { type: "image/svg+xml" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "hex_grid_art.svg";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            log("Saved to download.");
+        } catch (e) {
+            log("Error: " + e.message);
+        }
+    }
+
+    function handleFileLoad(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
             try {
-                const svgContent = generateSVG();
-                document.getElementById("svg-output").value = svgContent;
-                // Show the SVG in the modal and trigger a file download simultaneously
-                document.getElementById("export-modal").style.display = "flex";
-
-                const blob = new Blob([svgContent], { type: "image/svg+xml" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "hex_grid_art.svg";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                log("Saved to download.");
-            } catch (e) {
-                log("Error: " + e.message);
-            }
-        }
-
-        function handleFileLoad(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const content = e.target.result;
-                try {
-                    const match = content.match(new RegExp("<!-- GRID_DATA: (.*) -->"));
-                    if (match) {
-                        saveStateForUndo();
-                        const metaStr = match[1];
-                        const rMatch = metaStr.match(/R=(\d+)/);
-                        const cMatch = metaStr.match(/C=(\d+)/);
-                        currentRows = rMatch ? parseInt(rMatch[1]) : 20;
-                        currentCols = cMatch ? parseInt(cMatch[1]) : 20;
-                        const colMatch = metaStr.match(/COLORS=\{(.*?)\}/);
-                        const idToColor = {};
-                        if (colMatch) {
-                            colMatch[1].split(",").forEach((p) => {
-                                const [id, hex] = p.split(":");
-                                idToColor[id] = hex;
-                            });
-                        }
-                        const dataMatch = metaStr.match(/DATA=(.*)$/);
-                        if (dataMatch) {
-                            const rawData = dataMatch[1].trim();
-                            const expandedValues = expandData(rawData);
-                            gridData = {};
-                            let index = 0;
-                            for (let r = 0; r < currentRows; r++) {
-                                for (let c = 0; c < currentCols; c++) {
-                                    const val = expandedValues[index++];
-                                    if (val > 0 && idToColor[val])
-                                        gridData[`${r},${c}`] = idToColor[val];
-                                }
+                const match = content.match(new RegExp("<!-- GRID_DATA: (.*) -->"));
+                if (match) {
+                    saveStateForUndo();
+                    const metaStr = match[1];
+                    const rMatch = metaStr.match(/R=(\d+)/);
+                    const cMatch = metaStr.match(/C=(\d+)/);
+                    currentRows = rMatch ? parseInt(rMatch[1]) : 20;
+                    currentCols = cMatch ? parseInt(cMatch[1]) : 20;
+                    const colMatch = metaStr.match(/COLORS=\{(.*?)\}/);
+                    const idToColor = {};
+                    if (colMatch) {
+                        colMatch[1].split(",").forEach((p) => {
+                            const [id, hex] = p.split(":");
+                            idToColor[id] = hex;
+                        });
+                    }
+                    const dataMatch = metaStr.match(/DATA=(.*)$/);
+                    if (dataMatch) {
+                        const rawData = dataMatch[1].trim();
+                        const expandedValues = expandData(rawData);
+                        gridData = {};
+                        let index = 0;
+                        for (let r = 0; r < currentRows; r++) {
+                            for (let c = 0; c < currentCols; c++) {
+                                const val = expandedValues[index++];
+                                if (val > 0 && idToColor[val])
+                                    gridData[`${r},${c}`] = idToColor[val];
                             }
                         }
-                        syncUIAndDraw();
-                        log("File loaded.");
-                    } else {
-                        log("Error: No data in SVG.");
                     }
-                } catch (err) {
-                    log("Error: " + err.message);
+                    syncUIAndDraw();
+                    log("File loaded.");
+                } else {
+                    log("Error: No data in SVG.");
                 }
-            };
-            reader.readAsText(file);
-            input.value = "";
+            } catch (err) {
+                log("Error: " + err.message);
+            }
+        };
+        reader.readAsText(file);
+        input.value = "";
+    }
+
+    /* SVG GENERATION LOGIC */
+    function generateSVG() {
+        const colorMap = {};
+        let nextId = 1;
+        const usedColors = new Set(Object.values(gridData));
+        usedColors.forEach((c) => (colorMap[c] = nextId++));
+        const colorHeader = Object.entries(colorMap)
+            .map(([c, id]) => `${id}:${c}`)
+            .join(",");
+        let rawArray = [];
+        for (let r = 0; r < currentRows; r++) {
+            for (let c = 0; c < currentCols; c++) {
+                const k = `${r},${c}`;
+                const val = gridData[k] ? colorMap[gridData[k]] : 0;
+                rawArray.push(val);
+            }
+        }
+        const compressedStr = compressData(rawArray);
+        const metaComment = `<!-- GRID_DATA: R=${currentRows},C=${currentCols}; COLORS={${colorHeader}}; DATA=${compressedStr} -->`;
+
+        const groups = {};
+        for (let k in gridData) {
+            const [r, c] = k.split(",").map(Number);
+            if (r >= currentRows || c >= currentCols) continue;
+            const color = gridData[k];
+            if (!groups[color]) groups[color] = [];
+            groups[color].push(k);
         }
 
-        /* SVG GENERATION LOGIC */
-        function generateSVG() {
-            const colorMap = {};
-            let nextId = 1;
-            const usedColors = new Set(Object.values(gridData));
-            usedColors.forEach((c) => (colorMap[c] = nextId++));
-            const colorHeader = Object.entries(colorMap)
-                .map(([c, id]) => `${id}:${c}`)
-                .join(",");
-            let rawArray = [];
-            for (let r = 0; r < currentRows; r++) {
-                for (let c = 0; c < currentCols; c++) {
-                    const k = `${r},${c}`;
-                    const val = gridData[k] ? colorMap[gridData[k]] : 0;
-                    rawArray.push(val);
-                }
-            }
-            const compressedStr = compressData(rawArray);
-            const metaComment = `<!-- GRID_DATA: R=${currentRows},C=${currentCols}; COLORS={${colorHeader}}; DATA=${compressedStr} -->`;
-
-            const groups = {};
-            for (let k in gridData) {
+        let paths = "";
+        const f = (n) => Number(n).toFixed(2);
+        for (let color in groups) {
+            const cells = groups[color];
+            const boundaryMap = new Map();
+            cells.forEach((k) => {
                 const [r, c] = k.split(",").map(Number);
-                if (r >= currentRows || c >= currentCols) continue;
-                const color = gridData[k];
-                if (!groups[color]) groups[color] = [];
-                groups[color].push(k);
-            }
+                const v = getTriangleVertices(c, r);
+                processDirectedEdge(boundaryMap, v[0], v[1]);
+                processDirectedEdge(boundaryMap, v[1], v[2]);
+                processDirectedEdge(boundaryMap, v[2], v[0]);
+            });
+            const loops = buildDirectedLoops(boundaryMap);
+            let d = "";
+            loops.forEach((loop) => {
+                if (!loop.length) return;
+                d += `M ${f(loop[0].x)} ${f(loop[0].y)} `;
+                for (let i = 1; i < loop.length; i++)
+                    d += `L ${f(loop[i].x)} ${f(loop[i].y)} `;
+                d += "Z ";
+            });
+            paths += `<path fill="${color}" d="${d}" stroke="none" fill-rule="evenodd"/>\n`;
+        }
+        return `${metaComment}\n<svg width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}" xmlns="http://www.w3.org/2000/svg">\n${paths}</svg>`;
+    }
 
-            let paths = "";
-            const f = (n) => Number(n).toFixed(2);
-            for (let color in groups) {
-                const cells = groups[color];
-                const boundaryMap = new Map();
-                cells.forEach((k) => {
-                    const [r, c] = k.split(",").map(Number);
-                    const v = getTriangleVertices(c, r);
-                    processDirectedEdge(boundaryMap, v[0], v[1]);
-                    processDirectedEdge(boundaryMap, v[1], v[2]);
-                    processDirectedEdge(boundaryMap, v[2], v[0]);
-                });
-                const loops = buildDirectedLoops(boundaryMap);
-                let d = "";
-                loops.forEach((loop) => {
-                    if (!loop.length) return;
-                    d += `M ${f(loop[0].x)} ${f(loop[0].y)} `;
-                    for (let i = 1; i < loop.length; i++)
-                        d += `L ${f(loop[i].x)} ${f(loop[i].y)} `;
-                    d += "Z ";
-                });
-                paths += `<path fill="${color}" d="${d}" stroke="none" fill-rule="evenodd"/>\n`;
-            }
-            return `${metaComment}\n<svg width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}" xmlns="http://www.w3.org/2000/svg">\n${paths}</svg>`;
+    function processDirectedEdge(map, p1, p2) {
+        const f = (n) => n.toFixed(2);
+        const kFwd = `${f(p1.x)},${f(p1.y)}|${f(p2.x)},${f(p2.y)}`;
+        const kRev = `${f(p2.x)},${f(p2.y)}|${f(p1.x)},${f(p1.y)}`;
+        if (map.has(kRev)) map.delete(kRev);
+        else map.set(kFwd, { p1, p2, key: kFwd });
+    }
+
+    function buildDirectedLoops(edgeMap) {
+        const f = (n) => n.toFixed(2);
+        const adj = {};
+        for (let edge of edgeMap.values()) {
+            const s1 = `${f(edge.p1.x)},${f(edge.p1.y)}`;
+            if (!adj[s1]) adj[s1] = [];
+            adj[s1].push(edge);
         }
-        function processDirectedEdge(map, p1, p2) {
-            const f = (n) => n.toFixed(2);
-            const kFwd = `${f(p1.x)},${f(p1.y)}|${f(p2.x)},${f(p2.y)}`;
-            const kRev = `${f(p2.x)},${f(p2.y)}|${f(p1.x)},${f(p1.y)}`;
-            if (map.has(kRev)) map.delete(kRev);
-            else map.set(kFwd, { p1, p2, key: kFwd });
-        }
-        function buildDirectedLoops(edgeMap) {
-            const f = (n) => n.toFixed(2);
-            const adj = {};
-            for (let edge of edgeMap.values()) {
-                const s1 = `${f(edge.p1.x)},${f(edge.p1.y)}`;
-                if (!adj[s1]) adj[s1] = [];
-                adj[s1].push(edge);
-            }
-            const loops = [];
-            const visited = new Set();
-            const edges = Array.from(edgeMap.values());
-            for (let startEdge of edges) {
-                if (visited.has(startEdge.key)) continue;
-                const loop = [];
-                let currEdge = startEdge;
-                let safety = 0;
-                while (true && safety++ < 10000) {
-                    visited.add(currEdge.key);
-                    loop.push(currEdge.p1);
-                    const nextPtStr = `${f(currEdge.p2.x)},${f(currEdge.p2.y)}`;
-                    const candidates = adj[nextPtStr];
-                    if (!candidates) break;
-                    let nextEdge = null;
-                    for (let cand of candidates) {
-                        if (!visited.has(cand.key)) {
-                            nextEdge = cand;
-                            break;
-                        }
+        const loops = [];
+        const visited = new Set();
+        const edges = Array.from(edgeMap.values());
+        for (let startEdge of edges) {
+            if (visited.has(startEdge.key)) continue;
+            const loop = [];
+            let currEdge = startEdge;
+            let safety = 0;
+            while (true && safety++ < 10000) {
+                visited.add(currEdge.key);
+                loop.push(currEdge.p1);
+                const nextPtStr = `${f(currEdge.p2.x)},${f(currEdge.p2.y)}`;
+                const candidates = adj[nextPtStr];
+                if (!candidates) break;
+                let nextEdge = null;
+                for (let cand of candidates) {
+                    if (!visited.has(cand.key)) {
+                        nextEdge = cand;
+                        break;
                     }
-                    if (!nextEdge) break;
-                    currEdge = nextEdge;
                 }
-                loops.push(loop);
+                if (!nextEdge) break;
+                currEdge = nextEdge;
             }
-            return loops;
+            loops.push(loop);
         }
-        function copyToClipboard() {
-            const copyText = document.getElementById("svg-output");
-            copyText.select();
-            copyText.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(copyText.value);
-            log("Copied to clipboard.");
-        }
+        return loops;
+    }
 
-        /* EVENT LISTENERS */
-        document.getElementById("save-btn").addEventListener("click", saveAndExport);
-        document.getElementById("btn-eraser").addEventListener("click", activateEraser);
-        document.getElementById("color-picker").addEventListener("input", (e) => activateColor(e.target.value));
-        document.getElementById("color-picker").addEventListener("change", (e) => updatePalette(e.target.value));
-        document.getElementById("swatch-1").addEventListener("click", () => pickSwatch(0));
-        document.getElementById("swatch-2").addEventListener("click", () => pickSwatch(1));
-        document.getElementById("swatch-3").addEventListener("click", () => pickSwatch(2));
-        document.getElementById("t-draw").addEventListener("change", () => setMode("draw"));
-        document.getElementById("t-fill").addEventListener("change", () => setMode("fill"));
-        document.getElementById("t-scroll").addEventListener("change", () => setMode("scroll"));
-        document.getElementById("undo-btn").addEventListener("click", performUndo);
-        document.getElementById("redo-btn").addEventListener("click", performRedo);
-        document.getElementById("new-artwork-btn").addEventListener("click", () => window.location.reload());
-        document.getElementById("open-btn").addEventListener("click", () => document.getElementById("file-input").click());
-        document.getElementById("file-input").addEventListener("change", (e) => handleFileLoad(e.target));
-        document.getElementById("grid-cols").addEventListener("change", resizeGrid);
-        document.getElementById("grid-rows").addEventListener("change", resizeGrid);
-        document.getElementById("clear-grid-btn").addEventListener("click", clearGrid);
-        document.getElementById("zoom-slider").addEventListener("input", updateZoomLabel);
-        document.getElementById("zoom-slider").addEventListener("change", handleZoomChange);
-        document.getElementById("copy-clipboard-btn").addEventListener("click", copyToClipboard);
-        document.getElementById("close-modal-btn").addEventListener("click", closeModal);
-        document.addEventListener("DOMContentLoaded", init);
-    </script>
-    </body>
+    function copyToClipboard() {
+        const copyText = document.getElementById("svg-output");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+        log("Copied to clipboard.");
+    }
+
+    /* EVENT LISTENERS */
+    document.getElementById("save-btn").addEventListener("click", saveAndExport);
+    document.getElementById("btn-eraser").addEventListener("click", activateEraser);
+    document.getElementById("color-picker").addEventListener("input", (e) => activateColor(e.target.value));
+    document.getElementById("color-picker").addEventListener("change", (e) => updatePalette(e.target.value));
+    document.getElementById("swatch-1").addEventListener("click", () => pickSwatch(0));
+    document.getElementById("swatch-2").addEventListener("click", () => pickSwatch(1));
+    document.getElementById("swatch-3").addEventListener("click", () => pickSwatch(2));
+    document.getElementById("t-draw").addEventListener("change", () => setMode("draw"));
+    document.getElementById("t-fill").addEventListener("change", () => setMode("fill"));
+    document.getElementById("t-scroll").addEventListener("change", () => setMode("scroll"));
+    document.getElementById("undo-btn").addEventListener("click", performUndo);
+    document.getElementById("redo-btn").addEventListener("click", performRedo);
+    document.getElementById("new-artwork-btn").addEventListener("click", () => window.location.reload());
+    document.getElementById("open-btn").addEventListener("click", () => document.getElementById("file-input").click());
+    document.getElementById("file-input").addEventListener("change", (e) => handleFileLoad(e.target));
+    document.getElementById("grid-cols").addEventListener("change", resizeGrid);
+    document.getElementById("grid-rows").addEventListener("change", resizeGrid);
+    document.getElementById("clear-grid-btn").addEventListener("click", clearGrid);
+    document.getElementById("zoom-slider").addEventListener("input", updateZoomLabel);
+    document.getElementById("zoom-slider").addEventListener("change", handleZoomChange);
+    document.getElementById("copy-clipboard-btn").addEventListener("click", copyToClipboard);
+    document.getElementById("close-modal-btn").addEventListener("click", closeModal);
+    document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
 
 </html>

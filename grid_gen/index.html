@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <title>Grid Generator</title>
@@ -20,24 +21,21 @@
             box-shadow: var(--shadow-md);
             background: transparent;
             line-height: 0;
-            transition:
-                width 0.3s,
-                height 0.3s;
+            transition: width 0.3s,
+            height 0.3s;
         }
 
         .svg-container.transparent-bg {
             background-color: var(--check-1);
-            background-image:
-                linear-gradient(45deg, var(--check-2) 25%, transparent 25%),
-                linear-gradient(-45deg, var(--check-2) 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, var(--check-2) 75%),
-                linear-gradient(-45deg, transparent 75%, var(--check-2) 75%);
+            background-image: linear-gradient(45deg, var(--check-2) 25%, transparent 25%),
+            linear-gradient(-45deg, var(--check-2) 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, var(--check-2) 75%),
+            linear-gradient(-45deg, transparent 75%, var(--check-2) 75%);
             background-size: 20px 20px;
-            background-position:
-                0 0,
-                0 10px,
-                10px -10px,
-                -10px 0px;
+            background-position: 0 0,
+            0 10px,
+            10px -10px,
+            -10px 0px;
         }
 
         /* Tool Specific Variables */
@@ -141,7 +139,7 @@
             margin-bottom: var(--spacing-sm);
         }
 
-        .setting-row>label {
+        .setting-row > label {
             flex: 1;
             margin: 0;
         }
@@ -183,7 +181,7 @@
             margin-bottom: var(--spacing-sm);
         }
 
-        .grid-item-row>label {
+        .grid-item-row > label {
             flex: 1;
             margin: 0;
         }
@@ -212,321 +210,323 @@
 </head>
 
 <body>
-    <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
 
-    <header>
-        <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
-        <hgroup>
-            <h1>Grid Generator</h1>
-        </hgroup>
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Grid Generator</h1>
+    </hgroup>
 
-        <button onclick="toggleCode()" type="button">
-            <span class="sym">code</span>
-            <span class="hide-mobile">View Source</span>
-        </button>
-        <button class="btn-primary" onclick="downloadSVG()" type="button">
-            <span class="sym">download</span>
-            <span>SVG</span>
-        </button>
-        <button onclick="downloadPNG()" type="button">
-            <span class="sym">download</span>
-            <span>PNG</span>
-        </button>
-    </header>
+    <button onclick="toggleCode()" type="button">
+        <span class="sym">code</span>
+        <span class="hide-mobile">View Source</span>
+    </button>
+    <button class="btn-primary" onclick="downloadSVG()" type="button">
+        <span class="sym">download</span>
+        <span>SVG</span>
+    </button>
+    <button onclick="downloadPNG()" type="button">
+        <span class="sym">download</span>
+        <span>PNG</span>
+    </button>
+</header>
 
-    <main id="canvas-area">
-        <div id="canvas-scroll">
-            <div id="svg-wrapper" class="svg-container"></div>
-        </div>
-    </main>
+<main id="canvas-area">
+    <div id="canvas-scroll">
+        <div id="svg-wrapper" class="svg-container"></div>
+    </div>
+</main>
 
-    <aside id="sidebar">
-        <h2 hidden>Sidebar</h2>
-        <!-- DISPLAY SETTINGS -->
-        <fieldset>
-            <legend>Display</legend>
-            <label>
-                Fit to Screen
-                <input type="checkbox" role="switch" id="fit-toggle" checked>
-            </label>
+<aside id="sidebar">
+    <h2 hidden>Sidebar</h2>
+    <!-- DISPLAY SETTINGS -->
+    <fieldset>
+        <legend>Display</legend>
+        <label>
+            Fit to Screen
+            <input type="checkbox" role="switch" id="fit-toggle" checked>
+        </label>
 
-            <label id="bg-toggle-container">
+        <label id="bg-toggle-container">
                 <span>
                     Show Real Colors <span class="input-label-hint">Turn off to invert
                         black lines for visibility in Dark Mode</span>
                 </span>
-                <input type="checkbox" role="switch" id="show-output-bg">
-            </label>
-        </fieldset>
+            <input type="checkbox" role="switch" id="show-output-bg">
+        </label>
+    </fieldset>
 
-        <!-- CANVAS SETTINGS -->
-        <fieldset>
-            <legend>Canvas</legend>
-            <div class="setting-row">
-                <label>
-                    Size Preset
-                    <select id="preset-select">
-                        <option value="custom">Custom</option>
-                        <option value="logo">Square Logo</option>
-                        <option value="icon">App Icon</option>
-                        <option value="wallpaper">Wallpaper</option>
-                        <option value="a4">A4 Print</option>
-                    </select>
-                </label>
-                <label>
-                    Padding (px)
-                    <input type="number" id="canvas-padding" value="40">
-                </label>
-            </div>
-            <div class="setting-row">
-                <label>
-                    Width
-                    <input type="number" id="canvas-width" value="800">
-                </label>
-                <label>
-                    Height
-                    <input type="number" id="canvas-height" value="600">
-                </label>
-            </div>
-
+    <!-- CANVAS SETTINGS -->
+    <fieldset>
+        <legend>Canvas</legend>
+        <div class="setting-row">
             <label>
-                Add Background
-                <input type="checkbox" role="switch" id="has-bg" checked>
+                Size Preset
+                <select id="preset-select">
+                    <option value="custom">Custom</option>
+                    <option value="logo">Square Logo</option>
+                    <option value="icon">App Icon</option>
+                    <option value="wallpaper">Wallpaper</option>
+                    <option value="a4">A4 Print</option>
+                </select>
             </label>
-
-            <label class="mb-0">
-                Background Color
-                <input type="color" id="canvas-bg" value="#ffffff">
+            <label>
+                Padding (px)
+                <input type="number" id="canvas-padding" value="40">
             </label>
-        </fieldset>
-
-        <!-- LAYERS -->
-        <fieldset>
-            <legend>Grid Layers</legend>
-            <div id="grid-list"></div>
-            <button class="btn-primary w-full" id="add-grid-btn" type="button">
-                <span class="sym">add</span>
-                Add Layer
-            </button>
-        </fieldset>
-
-        <!-- RESET -->
-        <button class="btn-danger w-full mt-2" onclick="resetSettings()" type="button">
-            <span class="sym">refresh</span>
-            Reset to Defaults
-        </button>
-    </aside>
-
-    <div class="code-output" id="code-drawer">
-        <div class="code-header">
-            <span>SVG Source</span>
-            <div class="flex-row gap-2">
-                <button id="copy-btn" onclick="copyCode()" type="button">
-                    Copy
-                </button>
-                <button onclick="toggleCode()" type="button">
-                    Close
-                </button>
-            </div>
         </div>
-        <textarea id="svg-code" readonly onclick="this.select()"></textarea>
+        <div class="setting-row">
+            <label>
+                Width
+                <input type="number" id="canvas-width" value="800">
+            </label>
+            <label>
+                Height
+                <input type="number" id="canvas-height" value="600">
+            </label>
+        </div>
+
+        <label>
+            Add Background
+            <input type="checkbox" role="switch" id="has-bg" checked>
+        </label>
+
+        <label class="mb-0">
+            Background Color
+            <input type="color" id="canvas-bg" value="#ffffff">
+        </label>
+    </fieldset>
+
+    <!-- LAYERS -->
+    <fieldset>
+        <legend>Grid Layers</legend>
+        <div id="grid-list"></div>
+        <button class="btn-primary w-full" id="add-grid-btn" type="button">
+            <span class="sym">add</span>
+            Add Layer
+        </button>
+    </fieldset>
+
+    <!-- RESET -->
+    <button class="btn-danger w-full mt-2" onclick="resetSettings()" type="button">
+        <span class="sym">refresh</span>
+        Reset to Defaults
+    </button>
+</aside>
+
+<div class="code-output" id="code-drawer">
+    <div class="code-header">
+        <span>SVG Source</span>
+        <div class="flex-row gap-2">
+            <button id="copy-btn" onclick="copyCode()" type="button">
+                Copy
+            </button>
+            <button onclick="toggleCode()" type="button">
+                Close
+            </button>
+        </div>
     </div>
-    </div>
+    <textarea id="svg-code" readonly onclick="this.select()"></textarea>
+</div>
+</div>
 
-    <script>
-        let state = {
-            theme: "dark",
-            fitToScreen: true,
-            hasBackground: true,
-            showRealColors: false,
-            canvas: {
-                width: 800,
-                height: 600,
-                padding: 40,
-                bgColor: "#ffffff",
-            },
-            grids: [],
-        };
+<script>
+    let state = {
+        theme: "dark",
+        fitToScreen: true,
+        hasBackground: true,
+        showRealColors: false,
+        canvas: {
+            width: 800,
+            height: 600,
+            padding: 40,
+            bgColor: "#ffffff",
+        },
+        grids: [],
+    };
 
-        const els = {
-            body: document.body,
-            sidebar: document.getElementById("sidebar"),
-            canvasArea: document.getElementById("canvas-area"),
-            bgToggleContainer: document.getElementById("bg-toggle-container"),
-            hasBgCheckbox: document.getElementById("has-bg"),
-            width: document.getElementById("canvas-width"),
-            height: document.getElementById("canvas-height"),
-            padding: document.getElementById("canvas-padding"),
-            bg: document.getElementById("canvas-bg"),
-            showOutputBg: document.getElementById("show-output-bg"),
-            preset: document.getElementById("preset-select"),
-            gridList: document.getElementById("grid-list"),
-            svgWrapper: document.getElementById("svg-wrapper"),
-            svgCode: document.getElementById("svg-code"),
-            drawer: document.getElementById("code-drawer"),
-            fitToggle: document.getElementById("fit-toggle"),
-        };
+    const els = {
+        body: document.body,
+        sidebar: document.getElementById("sidebar"),
+        canvasArea: document.getElementById("canvas-area"),
+        bgToggleContainer: document.getElementById("bg-toggle-container"),
+        hasBgCheckbox: document.getElementById("has-bg"),
+        width: document.getElementById("canvas-width"),
+        height: document.getElementById("canvas-height"),
+        padding: document.getElementById("canvas-padding"),
+        bg: document.getElementById("canvas-bg"),
+        showOutputBg: document.getElementById("show-output-bg"),
+        preset: document.getElementById("preset-select"),
+        gridList: document.getElementById("grid-list"),
+        svgWrapper: document.getElementById("svg-wrapper"),
+        svgCode: document.getElementById("svg-code"),
+        drawer: document.getElementById("code-drawer"),
+        fitToggle: document.getElementById("fit-toggle"),
+    };
 
-        const PRESETS = {
-            logo: { w: 512, h: 512 },
-            icon: { w: 192, h: 192 },
-            wallpaper: { w: 1920, h: 1080 },
-            a4: { w: 794, h: 1123 },
-        };
+    const PRESETS = {
+        logo: { w: 512, h: 512 },
+        icon: { w: 192, h: 192 },
+        wallpaper: { w: 1920, h: 1080 },
+        a4: { w: 794, h: 1123 },
+    };
 
-        function saveState() {
+    function saveState() {
+        try {
+            localStorage.setItem("svgGridGenState", JSON.stringify(state));
+        } catch { /* Silent fail for storage access issues */
+        }
+    }
+
+    function loadState() {
+        const raw = localStorage.getItem("svgGridGenState");
+        if (raw) {
             try {
-                localStorage.setItem("svgGridGenState", JSON.stringify(state));
-            } catch { /* Silent fail for storage access issues */ }
-        }
-
-        function loadState() {
-            const raw = localStorage.getItem("svgGridGenState");
-            if (raw) {
-                try {
-                    const loaded = JSON.parse(raw);
-                    state = {
-                        ...state,
-                        ...loaded,
-                        canvas: { ...state.canvas, ...loaded.canvas },
-                    };
-                    els.width.value = state.canvas.width;
-                    els.height.value = state.canvas.height;
-                    els.padding.value = state.canvas.padding;
-                    els.bg.value = state.canvas.bgColor;
-                    els.hasBgCheckbox.checked = state.hasBackground;
-                    els.showOutputBg.checked = state.showRealColors;
-                    els.fitToggle.checked = state.fitToScreen;
-                    return true;
-                } catch { /* Ignore malformed state */ }
-            }
-            return false;
-        }
-
-        function init() {
-            const loaded = loadState();
-
-            // Set theme based on system preference
-            state.theme =
-                window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches
-                    ? "light"
-                    : "dark";
-
-            // Listen for system theme changes
-            window
-                .matchMedia("(prefers-color-scheme: light)")
-                .addEventListener("change", (e) => {
-                    state.theme = e.matches ? "light" : "dark";
-                    updateUIState();
-                    updatePreview();
-                });
-
-            if (!loaded || state.grids.length === 0) {
-                addGridInternal(8, 8, 1, "#3b82f6");
-                addGridInternal(32, 32, 0.5, "#000000");
-            }
-
-            renderGridList();
-            bindEvents();
-            updateUIState();
-            updatePreview();
-        }
-
-
-        function updateUIState() {
-            els.bg.disabled = !state.hasBackground;
-            if (els.bgToggleContainer) {
-                els.bgToggleContainer.classList.toggle("hidden", state.theme !== "dark");
+                const loaded = JSON.parse(raw);
+                state = {
+                    ...state,
+                    ...loaded,
+                    canvas: { ...state.canvas, ...loaded.canvas },
+                };
+                els.width.value = state.canvas.width;
+                els.height.value = state.canvas.height;
+                els.padding.value = state.canvas.padding;
+                els.bg.value = state.canvas.bgColor;
+                els.hasBgCheckbox.checked = state.hasBackground;
+                els.showOutputBg.checked = state.showRealColors;
+                els.fitToggle.checked = state.fitToScreen;
+                return true;
+            } catch { /* Ignore malformed state */
             }
         }
+        return false;
+    }
 
-        function bindEvents() {
-            window.addEventListener("resize", () => {
-                if (state.fitToScreen) updatePreview();
+    function init() {
+        const loaded = loadState();
+
+        // Set theme based on system preference
+        state.theme =
+            window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light"
+                : "dark";
+
+        // Listen for system theme changes
+        window
+            .matchMedia("(prefers-color-scheme: light)")
+            .addEventListener("change", (e) => {
+                state.theme = e.matches ? "light" : "dark";
+                updateUIState();
+                updatePreview();
             });
 
-            ["width", "height", "padding"].forEach(
-                (k) =>
+        if (!loaded || state.grids.length === 0) {
+            addGridInternal(8, 8, 1, "#3b82f6");
+            addGridInternal(32, 32, 0.5, "#000000");
+        }
+
+        renderGridList();
+        bindEvents();
+        updateUIState();
+        updatePreview();
+    }
+
+
+    function updateUIState() {
+        els.bg.disabled = !state.hasBackground;
+        if (els.bgToggleContainer) {
+            els.bgToggleContainer.classList.toggle("hidden", state.theme !== "dark");
+        }
+    }
+
+    function bindEvents() {
+        window.addEventListener("resize", () => {
+            if (state.fitToScreen) updatePreview();
+        });
+
+        ["width", "height", "padding"].forEach(
+            (k) =>
                 (els[k].oninput = (e) => {
                     state.canvas[k] = parseInt(e.target.value) || 0;
                     els.preset.value = "custom";
                     saveState();
                     updatePreview();
-                })
-            );
+                }),
+        );
 
-            els.bg.oninput = (e) => {
-                state.canvas.bgColor = e.target.value;
-                saveState();
-                updatePreview();
-            };
-            els.hasBgCheckbox.onchange = (e) => {
-                state.hasBackground = e.target.checked;
-                updateUIState();
-                saveState();
-                updatePreview();
-            };
-            els.showOutputBg.onchange = (e) => {
-                state.showRealColors = e.target.checked;
-                saveState();
-                updatePreview();
-            };
-            els.fitToggle.onchange = (e) => {
-                state.fitToScreen = e.target.checked;
-                saveState();
-                updatePreview();
-            };
-
-            els.preset.onchange = (e) => {
-                const p = PRESETS[e.target.value];
-                if (!p && e.target.value !== "custom") return;
-                if (["logo", "icon"].includes(e.target.value)) {
-                    const s = prompt("Size (px):", p.w);
-                    if (!s) {
-                        e.target.value = "custom";
-                        return;
-                    }
-                    state.canvas.width = state.canvas.height = parseInt(s);
-                } else if (p) {
-                    state.canvas.width = p.w;
-                    state.canvas.height = p.h;
-                }
-                els.width.value = state.canvas.width;
-                els.height.value = state.canvas.height;
-                saveState();
-                updatePreview();
-            };
-
-            document.getElementById("add-grid-btn").onclick = addGrid;
-        }
-
-        function addGridInternal(cols, rows, weight, color) {
-            state.grids.push({
-                id: Math.random().toString(36),
-                cols,
-                rows,
-                strokeWidth: weight,
-                color: color,
-                opacity: weight < 1 ? 0.4 : 1.0,
-                offsetX: 0,
-                offsetY: 0,
-            });
-        }
-
-        function addGrid() {
-            addGridInternal(10, 10, 1, "#000000");
-            renderGridList();
+        els.bg.oninput = (e) => {
+            state.canvas.bgColor = e.target.value;
             saveState();
             updatePreview();
-        }
+        };
+        els.hasBgCheckbox.onchange = (e) => {
+            state.hasBackground = e.target.checked;
+            updateUIState();
+            saveState();
+            updatePreview();
+        };
+        els.showOutputBg.onchange = (e) => {
+            state.showRealColors = e.target.checked;
+            saveState();
+            updatePreview();
+        };
+        els.fitToggle.onchange = (e) => {
+            state.fitToScreen = e.target.checked;
+            saveState();
+            updatePreview();
+        };
 
-        function renderGridList() {
-            els.gridList.innerHTML = "";
-            state.grids.forEach((g, i) => {
-                const div = document.createElement("div");
-                div.className = "grid-item";
+        els.preset.onchange = (e) => {
+            const p = PRESETS[e.target.value];
+            if (!p && e.target.value !== "custom") return;
+            if (["logo", "icon"].includes(e.target.value)) {
+                const s = prompt("Size (px):", p.w);
+                if (!s) {
+                    e.target.value = "custom";
+                    return;
+                }
+                state.canvas.width = state.canvas.height = parseInt(s);
+            } else if (p) {
+                state.canvas.width = p.w;
+                state.canvas.height = p.h;
+            }
+            els.width.value = state.canvas.width;
+            els.height.value = state.canvas.height;
+            saveState();
+            updatePreview();
+        };
 
-                div.innerHTML = `
+        document.getElementById("add-grid-btn").onclick = addGrid;
+    }
+
+    function addGridInternal(cols, rows, weight, color) {
+        state.grids.push({
+            id: Math.random().toString(36),
+            cols,
+            rows,
+            strokeWidth: weight,
+            color: color,
+            opacity: weight < 1 ? 0.4 : 1.0,
+            offsetX: 0,
+            offsetY: 0,
+        });
+    }
+
+    function addGrid() {
+        addGridInternal(10, 10, 1, "#000000");
+        renderGridList();
+        saveState();
+        updatePreview();
+    }
+
+    function renderGridList() {
+        els.gridList.innerHTML = "";
+        state.grids.forEach((g, i) => {
+            const div = document.createElement("div");
+            div.className = "grid-item";
+
+            div.innerHTML = `
             <div class="grid-item-header">
                 <span class="grid-item-title">Layer ${i + 1}</span>
                 <div class="grid-item-actions">
@@ -555,208 +555,209 @@
                 </div>
             </label>
         `;
-                els.gridList.appendChild(div);
-            });
-        }
+            els.gridList.appendChild(div);
+        });
+    }
 
-        function updGrid(i, k, v) {
-            if (["cols", "rows", "offsetX", "offsetY"].includes(k)) v = parseInt(v) || 0;
-            if (["strokeWidth"].includes(k)) v = parseFloat(v) || 0;
-            state.grids[i][k] = v;
+    function updGrid(i, k, v) {
+        if (["cols", "rows", "offsetX", "offsetY"].includes(k)) v = parseInt(v) || 0;
+        if (["strokeWidth"].includes(k)) v = parseFloat(v) || 0;
+        state.grids[i][k] = v;
+        saveState();
+        updatePreview();
+    }
+
+    function updateOpacity(i, val, source) {
+        let v = parseFloat(val);
+        if (isNaN(v)) v = 1;
+        if (v < 0) v = 0;
+        if (v > 1) v = 1;
+        state.grids[i].opacity = v;
+        const rangeEl = document.getElementById(`op-range-${i}`);
+        const numEl = document.getElementById(`op-num-${i}`);
+        if (source === "range" && numEl) numEl.value = v;
+        if (source === "number" && rangeEl) rangeEl.value = v;
+        saveState();
+        updatePreview();
+    }
+
+    function removeGrid(i) {
+        if (confirm("Delete layer?")) {
+            state.grids.splice(i, 1);
+            renderGridList();
             saveState();
             updatePreview();
         }
+    }
 
-        function updateOpacity(i, val, source) {
-            let v = parseFloat(val);
-            if (isNaN(v)) v = 1;
-            if (v < 0) v = 0;
-            if (v > 1) v = 1;
-            state.grids[i].opacity = v;
-            const rangeEl = document.getElementById(`op-range-${i}`);
-            const numEl = document.getElementById(`op-num-${i}`);
-            if (source === "range" && numEl) numEl.value = v;
-            if (source === "number" && rangeEl) rangeEl.value = v;
+    function moveGrid(i, d) {
+        const n = i + d;
+        if (n >= 0 && n < state.grids.length) {
+            const [x] = state.grids.splice(i, 1);
+            state.grids.splice(n, 0, x);
+            renderGridList();
             saveState();
             updatePreview();
         }
+    }
 
-        function removeGrid(i) {
-            if (confirm("Delete layer?")) {
-                state.grids.splice(i, 1);
-                renderGridList();
-                saveState();
-                updatePreview();
-            }
-        }
+    function generateSVG(exportMode) {
+        const { width, height, padding, bgColor } = state.canvas;
+        const dw = width - padding * 2,
+            dh = height - padding * 2;
 
-        function moveGrid(i, d) {
-            const n = i + d;
-            if (n >= 0 && n < state.grids.length) {
-                const [x] = state.grids.splice(i, 1);
-                state.grids.splice(n, 0, x);
-                renderGridList();
-                saveState();
-                updatePreview();
-            }
-        }
-
-        function generateSVG(exportMode) {
-            const { width, height, padding, bgColor } = state.canvas;
-            const dw = width - padding * 2,
-                dh = height - padding * 2;
-
-            let content = state.grids
-                .map((g) => {
-                    let d = "";
-                    if (g.cols > 0) {
-                        const sx = dw / g.cols;
-                        for (let i = 0; i <= g.cols; i++)
-                            d += `M${parseFloat((i * sx).toFixed(2))} 0V${dh}`;
-                    }
-                    if (g.rows > 0) {
-                        const sy = dh / g.rows;
-                        for (let i = 0; i <= g.rows; i++)
-                            d += `M0 ${parseFloat((i * sy).toFixed(2))}H${dw}`;
-                    }
-
-                    let renderColor = g.color;
-                    if (!exportMode && state.theme === "dark" && !state.showRealColors) {
-                        if (g.color === "#000000") renderColor = "#ffffff";
-                    }
-
-                    return `<g transform="translate(${padding + g.offsetX} ${padding + g.offsetY})" opacity="${g.opacity}"><path d="${d}" stroke="${renderColor}" stroke-width="${g.strokeWidth}" fill="none" vector-effect="non-scaling-stroke"/></g>`;
-                })
-                .join("");
-
-            const bg =
-                (exportMode || state.theme === "light" || state.showRealColors) &&
-                    state.hasBackground
-                    ? `<rect width="100%" height="100%" fill="${bgColor}"/>`
-                    : "";
-
-            return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">${bg}${content}</svg>`;
-        }
-
-        function updatePreview() {
-            els.svgWrapper.innerHTML = generateSVG(false);
-            els.svgCode.value = generateSVG(true);
-
-            if (!state.hasBackground) {
-                els.svgWrapper.classList.add("transparent-bg");
-            } else {
-                els.svgWrapper.classList.remove("transparent-bg");
-            }
-
-            if (state.fitToScreen) {
-                const isMobile = window.innerWidth <= 900;
-                const paddingX = 40;
-                const paddingY = isMobile ? 20 : 80;
-
-                const areaW = els.canvasArea.clientWidth - paddingX;
-                const areaH = els.canvasArea.clientHeight - paddingY;
-
-                const scale = Math.min(areaW / state.canvas.width, areaH / state.canvas.height);
-                const finalW = Math.max(10, Math.floor(state.canvas.width * scale));
-                const finalH = Math.max(10, Math.floor(state.canvas.height * scale));
-
-                els.svgWrapper.style.width = finalW + "px";
-                els.svgWrapper.style.height = finalH + "px";
-
-                const svg = els.svgWrapper.querySelector("svg");
-                if (svg) {
-                    svg.setAttribute("width", "100%");
-                    svg.setAttribute("height", "100%");
+        let content = state.grids
+            .map((g) => {
+                let d = "";
+                if (g.cols > 0) {
+                    const sx = dw / g.cols;
+                    for (let i = 0; i <= g.cols; i++)
+                        d += `M${parseFloat((i * sx).toFixed(2))} 0V${dh}`;
                 }
-            } else {
-                els.svgWrapper.style.width = state.canvas.width + "px";
-                els.svgWrapper.style.height = state.canvas.height + "px";
-                const svg = els.svgWrapper.querySelector("svg");
-                if (svg) {
-                    svg.setAttribute("width", state.canvas.width);
-                    svg.setAttribute("height", state.canvas.height);
+                if (g.rows > 0) {
+                    const sy = dh / g.rows;
+                    for (let i = 0; i <= g.rows; i++)
+                        d += `M0 ${parseFloat((i * sy).toFixed(2))}H${dw}`;
                 }
+
+                let renderColor = g.color;
+                if (!exportMode && state.theme === "dark" && !state.showRealColors) {
+                    if (g.color === "#000000") renderColor = "#ffffff";
+                }
+
+                return `<g transform="translate(${padding + g.offsetX} ${padding + g.offsetY})" opacity="${g.opacity}"><path d="${d}" stroke="${renderColor}" stroke-width="${g.strokeWidth}" fill="none" vector-effect="non-scaling-stroke"/></g>`;
+            })
+            .join("");
+
+        const bg =
+            (exportMode || state.theme === "light" || state.showRealColors) &&
+            state.hasBackground
+                ? `<rect width="100%" height="100%" fill="${bgColor}"/>`
+                : "";
+
+        return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">${bg}${content}</svg>`;
+    }
+
+    function updatePreview() {
+        els.svgWrapper.innerHTML = generateSVG(false);
+        els.svgCode.value = generateSVG(true);
+
+        if (!state.hasBackground) {
+            els.svgWrapper.classList.add("transparent-bg");
+        } else {
+            els.svgWrapper.classList.remove("transparent-bg");
+        }
+
+        if (state.fitToScreen) {
+            const isMobile = window.innerWidth <= 900;
+            const paddingX = 40;
+            const paddingY = isMobile ? 20 : 80;
+
+            const areaW = els.canvasArea.clientWidth - paddingX;
+            const areaH = els.canvasArea.clientHeight - paddingY;
+
+            const scale = Math.min(areaW / state.canvas.width, areaH / state.canvas.height);
+            const finalW = Math.max(10, Math.floor(state.canvas.width * scale));
+            const finalH = Math.max(10, Math.floor(state.canvas.height * scale));
+
+            els.svgWrapper.style.width = finalW + "px";
+            els.svgWrapper.style.height = finalH + "px";
+
+            const svg = els.svgWrapper.querySelector("svg");
+            if (svg) {
+                svg.setAttribute("width", "100%");
+                svg.setAttribute("height", "100%");
+            }
+        } else {
+            els.svgWrapper.style.width = state.canvas.width + "px";
+            els.svgWrapper.style.height = state.canvas.height + "px";
+            const svg = els.svgWrapper.querySelector("svg");
+            if (svg) {
+                svg.setAttribute("width", state.canvas.width);
+                svg.setAttribute("height", state.canvas.height);
             }
         }
+    }
 
-        function toggleCode() {
-            els.drawer.classList.toggle("visible");
-        }
+    function toggleCode() {
+        els.drawer.classList.toggle("visible");
+    }
 
-        function downloadSVG() {
-            const b = new Blob([generateSVG(true)], {
-                type: "image/svg+xml",
-            });
+    function downloadSVG() {
+        const b = new Blob([generateSVG(true)], {
+            type: "image/svg+xml",
+        });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(b);
+        a.download = `grid-${state.canvas.width}x${state.canvas.height}.svg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    function downloadPNG() {
+        // 1. Get the SVG string (ensure it has the correct background settings)
+        const svgString = generateSVG(true);
+        const { width, height } = state.canvas;
+
+        // 2. Create a Blob and URL for the SVG
+        const blob = new Blob([svgString], {
+            type: "image/svg+xml;charset=utf-8",
+        });
+        const url = URL.createObjectURL(blob);
+
+        // 3. Create an Image element to load the SVG
+        const img = new Image();
+
+        img.onload = () => {
+            // 4. Create a canvas to draw the image
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+
+            // 5. Draw the image onto the canvas
+            ctx.drawImage(img, 0, 0);
+
+            // 6. Trigger download
             const a = document.createElement("a");
-            a.href = URL.createObjectURL(b);
-            a.download = `grid-${state.canvas.width}x${state.canvas.height}.svg`;
+            a.download = `grid-${width}x${height}.png`;
+            a.href = canvas.toDataURL("image/png");
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+
+            // 7. Cleanup
+            URL.revokeObjectURL(url);
+        };
+
+        img.src = url;
+    }
+
+    init();
+
+    async function copyCode() {
+        if (!els.svgCode.value) return;
+        try {
+            await navigator.clipboard.writeText(els.svgCode.value);
+            const btn = document.getElementById("copy-btn");
+            const originalText = btn.textContent;
+            btn.textContent = "Copied!";
+            setTimeout(() => {
+                btn.textContent = originalText;
+            }, 2000);
+        } catch (err) {
+            console.error("Failed to copy:", err);
         }
+    }
 
-        function downloadPNG() {
-            // 1. Get the SVG string (ensure it has the correct background settings)
-            const svgString = generateSVG(true);
-            const { width, height } = state.canvas;
-
-            // 2. Create a Blob and URL for the SVG
-            const blob = new Blob([svgString], {
-                type: "image/svg+xml;charset=utf-8",
-            });
-            const url = URL.createObjectURL(blob);
-
-            // 3. Create an Image element to load the SVG
-            const img = new Image();
-
-            img.onload = () => {
-                // 4. Create a canvas to draw the image
-                const canvas = document.createElement("canvas");
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext("2d");
-
-                // 5. Draw the image onto the canvas
-                ctx.drawImage(img, 0, 0);
-
-                // 6. Trigger download
-                const a = document.createElement("a");
-                a.download = `grid-${width}x${height}.png`;
-                a.href = canvas.toDataURL("image/png");
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                // 7. Cleanup
-                URL.revokeObjectURL(url);
-            };
-
-            img.src = url;
+    function resetSettings() {
+        if (confirm("Reset all settings to default?")) {
+            localStorage.removeItem("svgGridGenState");
+            location.reload();
         }
-
-        init();
-        async function copyCode() {
-            if (!els.svgCode.value) return;
-            try {
-                await navigator.clipboard.writeText(els.svgCode.value);
-                const btn = document.getElementById("copy-btn");
-                const originalText = btn.textContent;
-                btn.textContent = "Copied!";
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                }, 2000);
-            } catch (err) {
-                console.error("Failed to copy:", err);
-            }
-        }
-
-        function resetSettings() {
-            if (confirm("Reset all settings to default?")) {
-                localStorage.removeItem("svgGridGenState");
-                location.reload();
-            }
-        }
-    </script>
+    }
+</script>
 </body>
 
 </html>

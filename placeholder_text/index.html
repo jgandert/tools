@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" class="layout-centered theme-ocker">
 
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="light dark">
-        <title>Themed Ipsum Generator</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <link rel="stylesheet" type="text/css" href="../one.css">
-        <style>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Themed Ipsum Generator</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
         #output {
             height: 400px;
             overflow-y: auto;
@@ -28,579 +28,835 @@
             margin-bottom: 0;
         }
 
-        main>section {
+        main > section {
             margin-bottom: 0;
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <main>
-            <section>
-                <h2>Themed Ipsum Generator</h2>
+<body>
+<main>
+    <section>
+        <h2>Themed Ipsum Generator</h2>
 
-                <div class="segmented-control" role="group" aria-label="Generator Theme">
-                    <input type="radio" name="generator" id="gen-gourmet" value="gourmet" checked>
-                    <label for="gen-gourmet">Gourmet</label>
+        <div class="segmented-control" role="group" aria-label="Generator Theme">
+            <input type="radio" name="generator" id="gen-gourmet" value="gourmet" checked>
+            <label for="gen-gourmet">Gourmet</label>
 
-                    <input type="radio" name="generator" id="gen-alien" value="alien">
-                    <label for="gen-alien">Alien</label>
+            <input type="radio" name="generator" id="gen-alien" value="alien">
+            <label for="gen-alien">Alien</label>
 
-                    <input type="radio" name="generator" id="gen-fantasy" value="fantasy">
-                    <label for="gen-fantasy">Fantasy</label>
+            <input type="radio" name="generator" id="gen-fantasy" value="fantasy">
+            <label for="gen-fantasy">Fantasy</label>
 
-                    <input type="radio" name="generator" id="gen-corporate" value="corporate">
-                    <label for="gen-corporate">Corporate</label>
-                </div>
+            <input type="radio" name="generator" id="gen-corporate" value="corporate">
+            <label for="gen-corporate">Corporate</label>
+        </div>
 
-                <div class="mt-4 flex-row gap-4">
-                    <div class="flex-1">
-                        <label for="paragraphs">Paragraphs</label>
-                        <input type="number" id="paragraphs" value="2" min="1">
-                    </div>
-                    <div class="flex-1">
-                        <label for="sentences">Sentences per paragraph</label>
-                        <input type="number" id="sentences" value="5" min="1">
-                    </div>
-                </div>
+        <div class="mt-4 flex-row gap-4">
+            <div class="flex-1">
+                <label for="paragraphs">Paragraphs</label>
+                <input type="number" id="paragraphs" value="2" min="1">
+            </div>
+            <div class="flex-1">
+                <label for="sentences">Sentences per paragraph</label>
+                <input type="number" id="sentences" value="5" min="1">
+            </div>
+        </div>
 
-                <div class="mt-4 flex-row gap-2">
-                    <button id="regen-btn" type="button">
-                        <span class="sym">refresh</span> Regenerate
-                    </button>
-                    <button id="copy-btn" type="button">
-                        <span class="sym">content_copy</span> Copy to Clipboard
-                    </button>
-                </div>
+        <div class="mt-4 flex-row gap-2">
+            <button id="regen-btn" type="button">
+                <span class="sym">refresh</span> Regenerate
+            </button>
+            <button id="copy-btn" type="button">
+                <span class="sym">content_copy</span> Copy to Clipboard
+            </button>
+        </div>
 
-                <div id="output"></div>
-            </section>
-        </main>
+        <div id="output"></div>
+    </section>
+</main>
 
-        <script>
-        /**
-         * Core foundation for all themed generators. Handles paragraph/sentence structure,
-         * history tracking to avoid immediate repetitions, and common string utilities.
-         */
-        class BaseGenerator {
-            constructor(themeName) {
-                if (new.target === BaseGenerator) {
-                    throw new TypeError("Cannot construct Abstract instances of BaseGenerator directly. Please extend this class.");
-                }
-                this.themeName = themeName;
-                this.history = new Map();
-                this.templateHistory = [];
+<script>
+    /**
+     * Core foundation for all themed generators. Handles paragraph/sentence structure,
+     * history tracking to avoid immediate repetitions, and common string utilities.
+     */
+    class BaseGenerator {
+        constructor(themeName) {
+            if (new.target === BaseGenerator) {
+                throw new TypeError("Cannot construct Abstract instances of BaseGenerator directly. Please extend this class.");
             }
+            this.themeName = themeName;
+            this.history = new Map();
+            this.templateHistory = [];
+        }
 
-            getTemplateType(max) {
-                // Ensure we don't repeat the same template too soon.
-                // Limit history to half the number of templates or 5.
-                const historyLimit = Math.max(1, Math.min(Math.floor(max / 2), 5));
-                let type;
-                let attempts = 0;
-                do {
-                    type = Math.floor(Math.random() * max);
-                    attempts++;
-                } while (this.templateHistory.includes(type) && attempts < 100);
+        getTemplateType(max) {
+            // Ensure we don't repeat the same template too soon.
+            // Limit history to half the number of templates or 5.
+            const historyLimit = Math.max(1, Math.min(Math.floor(max / 2), 5));
+            let type;
+            let attempts = 0;
+            do {
+                type = Math.floor(Math.random() * max);
+                attempts++;
+            } while (this.templateHistory.includes(type) && attempts < 100);
 
-                this.templateHistory.push(type);
-                if (this.templateHistory.length > historyLimit) {
-                    this.templateHistory.shift();
-                }
-                return type;
+            this.templateHistory.push(type);
+            if (this.templateHistory.length > historyLimit) {
+                this.templateHistory.shift();
             }
+            return type;
+        }
 
-            generateSentence() {
-                throw new Error(`Method 'generateSentence()' must be implemented in the ${this.themeName} subclass.`);
-            }
-
-            /**
-             * Core generation engine. Calls the subclass's generateSentence method to build the output.
-             * @param {number} paragraphsCount - The number of paragraphs to generate.
-             * @param {number} sentencesPerParagraph - The number of sentences per paragraph.
-             * @returns {string[]} An array of strings, where each string is a complete paragraph.
-             */
-            generate(paragraphsCount, sentencesPerParagraph) {
-                const paragraphs = [];
-                for (let p = 0; p < paragraphsCount; p++) {
-                    const currentParagraphSentences = [];
-                    for (let s = 0; s < sentencesPerParagraph; s++) {
-                        currentParagraphSentences.push(this.generateSentence());
-                    }
-                    paragraphs.push(currentParagraphSentences.join(" "));
-                }
-                return paragraphs;
-            }
-
-            // --- Utility Methods for Subclasses ---
-
-            /**
-             * Selects a random element from a provided array avoiding recent duplicates.
-             * @param {Array} array - The vocabulary array to pull from.
-             * @returns {string} A random string from the array.
-             */
-            sample(array) {
-                if (!array || array.length === 0) return "";
-                if (array.length === 1) return array[0];
-
-                let lastUsed = this.history.get(array);
-                if (!lastUsed) {
-                    lastUsed = [];
-                    this.history.set(array, lastUsed);
-                }
-
-                let available = array.filter(item => !lastUsed.includes(item));
-
-                if (available.length === 0) {
-                    available = array;
-                    lastUsed.length = 0;
-                }
-
-                const picked = available[Math.floor(Math.random() * available.length)];
-                lastUsed.push(picked);
-
-                const maxHistory = Math.min(5, Math.floor(array.length / 2));
-                if (lastUsed.length > Math.max(1, maxHistory)) {
-                    lastUsed.shift();
-                }
-
-                return picked;
-            }
-
-            capitalize(string) {
-                if (!string) return "";
-                return string.charAt(0).toUpperCase() + string.slice(1);
-            }
-
-            getArticle(word) {
-                if (!word) return "";
-                const vowels = ["a", "e", "i", "o", "u"];
-                const startsWithVowel = vowels.includes(word.charAt(0).toLowerCase());
-                return startsWithVowel ? `an ${word}` : `a ${word}`;
-            }
-
-            toGerund(verb) {
-                const exceptions = { "puree": "pureeing", "flambé": "flambéing", "pan-fry": "pan-frying", "deep-fry": "deep-frying", "sous-vide": "sous-viding", "bake-blind": "baking-blind" };
-                if (exceptions[verb]) return exceptions[verb];
-                if (verb.endsWith("e") && !verb.endsWith("ee")) return verb.slice(0, -1) + "ing";
-                const cvcRegex = /([^aeiou][aeiou])([bdfglmnprstz])$/i;
-                if (cvcRegex.test(verb) && verb.length < 6) return verb + verb.charAt(verb.length - 1) + "ing";
-                return verb + "ing";
-            }
-
-            toPastParticiple(verb) {
-                if (!verb) return "";
-                const exceptions = { "sous-vide": "sous-vided", "pan-fry": "pan-fried", "deep-fry": "deep-fried", "bake-blind": "baked-blind", "A/B test": "A/B tested" };
-                if (exceptions[verb]) return exceptions[verb];
-                if (verb.endsWith("e") && !verb.endsWith("ee")) return verb + "d";
-                if (verb.endsWith("y") && !verb.match(/[aeiou]y$/i)) return verb.slice(0, -1) + "ied";
-                const cvcRegex = /([^aeiou][aeiou])([bdfglmnprstz])$/i;
-                if (cvcRegex.test(verb) && verb.length < 6) return verb + verb.charAt(verb.length - 1) + "ed";
-                return verb + "ed";
-            }
-
-            pluralize(word) {
-                if (!word) return "";
-                if (word.endsWith("s") || word.endsWith("x") || word.endsWith("ch") || word.endsWith("sh")) return word + "es";
-                if (word.endsWith("y") && !["a", "e", "i", "o", "u"].includes(word.slice(-2, -1).toLowerCase())) return word.slice(0, -1) + "ies";
-                return word + "s";
-            }
+        generateSentence() {
+            throw new Error(`Method 'generateSentence()' must be implemented in the ${this.themeName} subclass.`);
         }
 
         /**
-         * Generates high-end culinary descriptions using a specialized vocabulary of
-         * action verbs, ingredients, and flavor profiles.
+         * Core generation engine. Calls the subclass's generateSentence method to build the output.
+         * @param {number} paragraphsCount - The number of paragraphs to generate.
+         * @param {number} sentencesPerParagraph - The number of sentences per paragraph.
+         * @returns {string[]} An array of strings, where each string is a complete paragraph.
          */
-        class GourmetGenerator extends BaseGenerator {
-            constructor() {
-                super("GourmetGenerator");
-                this.actionVerbs = ["macerate", "deglaze", "emulsify", "sous-vide", "sear", "blanch", "julienne", "fold", "whisk", "confit", "forage", "ferment", "braise", "poach", "roast", "grill", "broil", "bake", "sauté", "fry", "deep-fry", "pan-fry", "sweat", "reduce", "simmer", "boil", "steam", "parboil", "steep", "infuse", "clarify", "whip", "beat", "blend", "puree", "mash", "crush", "muddle", "supreme", "score", "butterfly", "truss", "fillet", "debone", "mince", "dice", "chop", "rough-chop", "slice", "shave", "grate", "zest", "peel", "skin", "scale", "hull", "pit", "core", "deseed", "temper", "crystallize", "caramelize", "flambé", "smoke", "cold-smoke", "cure", "pickle", "brine", "marinate", "baste", "glaze", "dust", "sprinkle", "garnish", "plate", "drizzle", "dollop", "quenelle", "pipe", "spread", "layer", "stack", "torch", "char", "blacken", "blister", "toast", "bloom", "rest", "age", "dry-age", "dehydrate", "rehydrate", "sprout", "culture", "curdle", "churn", "press", "extrude", "spherify", "gel", "thicken", "bind", "aerate", "foam", "extract", "distill", "render", "skim", "strain", "filter", "sift", "knead", "proof", "punch-down", "shape", "laminate", "bake-blind", "chill", "freeze", "blast-freeze", "melt", "microplane", "acidulate", "alkalize", "carbonize", "concassé", "enrober", "monter au beurre", "singer", "vanner", "rubanner", "frapper", "chemiser", "beurrer", "lustrer", "napper", "clouter", "flash-freeze", "cold-press", "brunoise", "lard", "barde", "nappé", "brine-cure", "ferment-dry", "acid-wash", "carbon-filter", "slow-rend", "cold-infuse", "flash-sear", "wood-fire", "oak-smoke", "spirit-glaze", "sugar-coat", "salt-bake"];
-                this.ingredients = ["heirloom shallots", "A5 wagyu brisket", "foraged chanterelles", "duck fat", "roasted bone marrow", "activated charcoal", "micro-greens", "Hokkaido sea urchin", "heritage pork belly", "black garlic", "white truffles", "black winter truffles", "saffron threads", "beluga caviar", "osetra caviar", "foie gras", "sweetbreads", "veal cheeks", "bone-in ribeye", "venison loin", "wild boar shoulder", "squab", "quail", "pheasant", "guinea fowl", "cornish hen", "duck breast", "duck confit", "goose liver", "rabbit saddle", "frog legs", "escargot", "langoustines", "spot prawns", "soft shell crab", "diver scallops", "geoduck", "bluefin tuna belly", "yellowtail collar", "monkfish liver", "sea cucumber", "abalone", "razor clams", "mussels", "littleneck clams", "oysters", "octopus tentacles", "squid ink", "wagyu tallow", "lardo", "guanciale", "pancetta", "prosciutto di parma", "jamón ibérico", "chorizo", "nduja", "bresaola", "bone broth", "dashi", "kombu", "bonito flakes", "miso paste", "gochujang", "yuzu kosho", "preserved lemons", "lacto-fermented blueberries", "pickled mustard seeds", "caper berries", "castelvetrano olives", "pine nuts", "marcona almonds", "pistachios", "macadamia nuts", "hazelnuts", "walnuts", "pecans", "chestnuts", "pumpkin seeds", "sunflower seeds", "chia seeds", "flax seeds", "hemp hearts", "quinoa", "farro", "freekeh", "amaranth", "bulgur", "couscous", "polenta", "arborio rice", "carnaroli rice", "black forbidden rice", "wild rice", "sushi rice", "tapioca pearls", "sago", "finger limes", "Buddha's hand citron", "calamansi", "meyer lemons", "blood oranges", "pomelo", "ruby red grapefruit", "white asparagus", "fiddlehead ferns", "ramps", "garlic scapes", "stinging nettles", "purslane", "sorrel", "watercress", "endive", "radicchio", "frisée", "mizuna", "tatsoi", "bok choy", "gai lan", "napa cabbage", "kohlrabi", "celeriac", "salsify", "jerusalem artichokes", "parsnips", "rutabaga", "turnips", "daikon radish", "watermelon radish", "golden beets", "chioggia beets", "baby carrots", "fennel bulbs", "leeks", "spring onions", "pearl onions", "cipollini onions", "garlic cloves", "elephant garlic", "ginger root", "galangal", "turmeric root", "lemongrass", "kaffir lime leaves", "pandan leaves", "curry leaves", "shiso leaves", "epazote", "hoja santa", "cilantro", "parsley", "chervil", "tarragon", "dill", "fennel fronds", "mint", "basil", "Thai basil", "holy basil", "oregano", "marjoram", "thyme", "rosemary", "sage", "bay leaves", "nasturtium blossoms", "dragonfruit", "rambutan", "lychee", "persimmon", "iberico ham", "uni-butter", "matsutake", "bottarga silver", "preserved duck egg", "wasabi root", "horseradish", "black peppercorns", "pink peppercorns", "star anise", "cinnamon sticks", "cloves", "cardamom pods", "vanilla beans", "tonka beans", "cocoa nibs", "smoked paprika", "sumac", "za'atar", "dukkah", "harissa", "chimichurri", "pesto", "tapenade"];
-                this.adjectives = ["translucent", "robust", "delicate", "unctuous", "crisp", "gelatinous", "aerated", "earthy", "ethereal", "caramelized", "velvety", "silky", "smooth", "creamy", "rich", "decadent", "luscious", "buttery", "flaky", "tender", "succulent", "juicy", "moist", "dry", "crumbly", "crunchy", "crackling", "shatteringly-crisp", "chewy", "toothsome", "al-dente", "springy", "bouncy", "spongy", "airy", "light", "pillowy", "fluffy", "dense", "heavy", "hearty", "rustic", "refined", "elegant", "sophisticated", "complex", "nuanced", "balanced", "harmonious", "bright", "vibrant", "zesty", "tangy", "tart", "sour", "acidic", "sharp", "pungent", "assertive", "bold", "aggressive", "intense", "fiery", "spicy", "piquant", "peppery", "numbing", "cooling", "refreshing", "palate-cleansing", "herbaceous", "grassy", "floral", "botanical", "perfumed", "fragrant", "aromatic", "savory", "umami-rich", "meaty", "brothy", "salty", "briny", "oceanic", "marine", "mineral", "flinty", "chalky", "loamy", "mushroomy", "funky", "fermented", "cultured", "aged", "mature", "vintage", "ripe", "overripe", "sweet", "honeyed", "syrupy", "candied", "glazed", "frosted", "dusted", "bitter", "astringent", "tannic", "smoky", "charred", "blackened", "ashen", "woody", "oaky", "nutty", "toasted", "roasted", "browned", "golden", "amber", "mahogany", "ruby", "garnet", "emerald", "jade", "pale", "opaque", "cloudy", "murky", "clear", "crystalline", "luminous", "iridescent", "glossy", "shiny", "matte", "rough", "coarse", "fine", "pulverized", "powdered", "granulated", "crushed", "smashed", "bruised", "wilted", "weeping", "mottled", "striated", "marbled", "opalescent", "prismatic", "volcanic", "obsidian", "glacial", "nebulous", "astral", "primal", "elemental"];
-                this.flavorProfiles = ["umami resonance", "tart undertone", "botanical finish", "smoky complexity", "herbaceous note", "Maillard reaction", "tannin structure", "bright acidity", "earthy depth", "savory persistence", "floral bouquet", "oceanic brine", "mineral snap", "sweet-and-sour balance", "lingering heat", "subtle nuttiness", "rich marrow essence", "fermented funk", "cultured tang", "roasted depth", "caramelized sweetness", "bitter edge", "astringent pull", "peppery bite", "warming spice", "cooling menthol", "zesty brightness", "citrusy twang", "resinous pine", "woody resonance", "aged complexity", "vintage character", "primal smoke", "ashen finish", "honeyed floral", "malted sweetness", "yeasty breadiness", "lactic tang", "fungal earthiness", "truffle aroma", "marine salinity", "iodine notes", "metallic twinge", "flinty minerality", "chalky texture", "velvety mouthfeel", "clean snap", "effervescent tickle", "robust foundation", "delicate top-notes", "fleeting sweetness", "aggressive heat", "numbing sensation", "slow-building spice", "sharp piquancy", "vibrant herbaceousness", "dark cocoa notes", "espresso bitterness", "toffee richness", "vanilla warmth", "caramel undertones", "buttery richness", "unctuous fat", "gelatinous body", "ethereal lightness", "clean finish", "lingering aftertaste", "oxidative nuttiness", "petrichor essence", "saline breadth", "mineral percussion", "citrus burst", "spice-forward profile", "herbal infusion", "fruity brightness"];
-                this.measurements = ["1/4 cup", "a precise pinch", "exactly 180 grams", "two delicate drops", "a generous splash", "50 milliliters", "a mere suggestion", "three scant tablespoons", "exactly one fluid ounce", "a baker's dozen", "half a kilo", "precisely 42 degrees Celsius", "a microscopic dusting", "one heavy glug", "a conservative drizzle", "five distinct spheres", "a three-finger pinch", "exactly 200 milligrams", "a quarter-teaspoon", "one heaping ladle", "a modest smear", "two fluid drams", "exactly 12 ounces", "a liberal coating", "three precise micro-grams", "a chef's handful", "one standard quart", "half a pint", "exactly 10 milliliters", "a gentle misting", "four thick ribbons", "exactly 1.5 liters", "a whisper", "a smattering", "exactly 30 grams", "two robust dollops", "a calculated fraction", "exactly 8.5 ounces", "a singular leaf", "exactly 100 degrees Fahrenheit", "a half-cup measure", "exactly 75 centiliters", "a thimbleful", "three generous scoops", "exactly 450 grams", "a microscopic shaving", "exactly 2.5 cups", "a heavy-handed pour", "exactly 5 kilograms", "a modest handful", "two full sprigs", "exactly 60 seconds of pouring", "a sheer layer", "exactly 1/8 of a teaspoon", "a rapid dash", "exactly 120 milliliters", "a bountiful handful", "exactly 15 grams", "a fleeting splash", "exactly 3/4 of a cup", "a calibrated pipette", "exactly two drops", "a translucent film", "a fine mist", "a deluge", "a nanogram", "a cubic centimeter", "a light glazing", "a heavy reduction"];
-                this.liquids = ["clarified truffle butter", "fermented plum reduction", "dry vermouth", "first-press yuzu juice", "house-made kombucha", "court bouillon", "aged balsamic vinegar", "white balsamic", "sherry vinegar", "champagne vinegar", "apple cider vinegar", "black rice vinegar", "red wine reduction", "white wine deglaze", "port wine syrup", "madeira wine", "marsala", "cognac", "armagnac", "calvados", "grand marnier", "absinthe", "chartreuse", "amaro", "fernet", "campari", "aperol", "sake", "mirin", "shaoxing wine", "awamori", "mezcal", "tequila", "gin", "vodka", "white rum", "dark rum", "aged bourbon", "rye whiskey", "scotch whisky", "single malt", "irish whiskey", "Japanese whisky", "chicken consommé", "beef dashi", "mushroom tea", "tomato water", "cucumber juice", "celery juice", "green apple extraction", "pomegranate molasses", "maple syrup", "agave nectar", "birch syrup", "sorghum syrup", "date syrup", "coconut aminos", "liquid aminos", "tamari", "shoyu", "white soy sauce", "fish sauce", "colatura di alici", "squid ink broth", "whey", "buttermilk", "kefir", "crème fraîche", "heavy cream", "double cream", "clotted cream", "coconut milk", "coconut cream", "almond milk", "oat milk", "cashew cream", "hazelnut oil", "walnut oil", "pumpkin seed oil", "sesame oil", "toasted sesame oil", "chili oil", "garlic oil", "herb-infused olive oil", "extra virgin olive oil", "grapeseed oil", "avocado oil", "duck fat liquid", "rendered lardo", "brown butter (beurre noisette)", "white-soy serum", "prawn-head oil", "ginger-scallion infusion", "pomegranate reduction", "hibiscus tea", "rose water", "orange blossom water", "bitters", "tonic water", "carbonated water"];
-                this.tools = ["heavy-bottomed copper skillet", "immersion blender", "centrifuge", "smoking gun", "japanese mandoline", "granite mortar", "marble pestle", "fine-mesh chinois", "tamis", "superbag", "vacuum sealer", "sous-vide circulator", "blast chiller", "anti-griddle", "pacojet", "thermomix", "dehydrator", "rotary evaporator", "siphon whip", "cream whipper", "culinary torch", "blowtorch", "offset spatula", "plating tweezers", "surgical scalpel", "microplane grater", "box grater", "zester", "pasta machine", "meat grinder", "sausage stuffer", "cast iron dutch oven", "enameled braiser", "carbon steel wok", "teppanyaki grill", "robata grill", "yakitori grill", "wood-fired oven", "tandoor clay oven", "plancha", "salamander broiler", "induction burner", "combi oven", "steam oven", "pressure cooker", "instant pot", "slow cooker", "rice cooker", "bamboo steamer", "tagine", "paella pan", "blini pan", "crêpe pan", "sauteuse", "rondeau", "stockpot", "bain-marie", "double boiler", "stand mixer", "food processor", "burr grinder", "spice mill", "masticating juicer", "cold-press juicer", "hydraulic press", "cheesecloth", "butcher's twine", "cheese wire", "truffle slicer", "oyster knife", "boning knife", "filet knife", "cleaver", "nakiri", "santoku", "gyuto", "yanagiba", "paring knife", "bread knife", "steel honing rod", "whetstone", "copper sugar pot", "silicone baking mat", "perforated tart ring", "geometric mold", "cryogenic tank", "piping bag", "pastry brush", "spatula", "whisk", "tongs", "ladle", "slotted spoon", "skimmer"];
-                this.dishEndings = ["anchors the dish", "brings the elements together", "elevates the entire profile", "adds a crucial dimension", "cuts through the richness", "balances the complex composition", "provides a surprising contrast", "ties the flavors together", "lingers on the palate", "defies expectations", "subverts the traditional narrative", "harmonizes the disparate components", "grounds the ethereal notes", "completes the sensory journey"];
-                this.plateStarts = ["For plating", "To finish", "As a final touch", "Before serving", "To complete the dish", "For the final presentation", "At the pass", "In the final assembly", "Just before the guests arrive", "Upon final inspection", "To ground the composition", "As the final gesture", "Before the first bite"];
-                this.dustings = ["dusting", "sprinkling", "garnish", "hint", "scattering", "accent", "shaving", "micro-emulsion", "whisper", "delicate misting", "chromatic veil", "molecular drizzle", "fine particulate", "aromatic haze", "ethereal film"];
-                this.transitions = ["meanwhile", "consequently", "furthermore", "subsequently", "accordingly", "thereafter", "ultimately", "simultaneously", "henceforth", "in tandem", "complementary to this", "by extension"];
-            }
-
-            getNounPhrase() {
-                const adj = this.sample(this.adjectives);
-                const ing = this.sample(this.ingredients);
-                return `${this.getArticle(adj)} ${ing}`;
-            }
-
-            generateSentence() {
-                const templateType = this.getTemplateType(33);
-                let sentence = "";
-                const v1 = this.sample(this.actionVerbs);
-                const v2 = this.sample(this.actionVerbs);
-                const ing1 = this.sample(this.ingredients);
-                const ing2 = this.sample(this.ingredients);
-                const liq = this.sample(this.liquids);
-                const tool = this.sample(this.tools);
-                const adj1 = this.sample(this.adjectives);
-                const adj2 = this.sample(this.adjectives);
-                const flav = this.sample(this.flavorProfiles);
-                const meas = this.sample(this.measurements);
-                const trans = this.sample(this.transitions);
-
-                const end = this.sample(this.dishEndings);
-                const start = this.sample(this.plateStarts);
-                const dust = this.sample(this.dustings);
-
-                switch (templateType) {
-                    case 0: sentence = `Carefully ${v1} the ${ing1} while simultaneously ${this.toGerund(v2)} the ${ing2} in ${liq}, achieving ${this.getArticle(flav)} that perfectly ${end}.`; break;
-                    case 1: sentence = `The ${adj1} mouthfeel of the ${ing1} juxtaposes beautifully with ${this.getNounPhrase()}, bound together by ${meas} of ${liq}.`; break;
-                    case 2: sentence = `To elevate the intrinsic ${flav}, one must firmly ${v1} the ${ing1} until perfectly ${adj1}; finish with ${meas} of ${liq} passed explicitly through ${this.getArticle(tool)}.`; break;
-                    case 3: sentence = `Utilizing ${this.getArticle(tool)}, begin ${this.toGerund(v1)} the ${ing1} to isolate its delicate core, ensuring the resulting texture remains uncompromisingly ${adj1}.`; break;
-                    case 4: sentence = `Harvested at absolute peak maturity, the ${ing1} requires minimal intervention; simply ${v1} gently and dress with ${liq} to highlight its natural ${flav}.`; break;
-                    case 5: sentence = `${start}, strategically ${v1} the ${ing1} atop ${this.getNounPhrase()} foundation, completing the composition with ${this.getArticle(adj1)} ${dust} of ${ing2}.`; break;
-                    case 6: sentence = `A whisper of ${liq} provides the foundational ${flav} upon which the ${adj1} ${ing1} is meticulously ${this.toPastParticiple(v1)}.`; break;
-                    case 7: sentence = `Experience the olfactory resonance of ${ing1} as it is deeply ${this.toPastParticiple(v1)} against a backdrop of ${adj1} ${ing2}.`; break;
-                    case 8: sentence = `The chef's intent is clear: ${v1} the ${ing1} until the ${flav} is purely ${adj1}, then serve atop ${liq}.`; break;
-                    case 9: sentence = `By ${this.toGerund(v1)} the ${ing1} with ${this.getArticle(tool)}, one achieves ${this.getArticle(adj1)} symmetry that ${end}.`; break;
-                    case 10: sentence = `Rare ${ing1} is first ${this.toPastParticiple(v1)} for 72 hours, then flash-${this.toPastParticiple(v2)} to preserve its ${flav}.`; break;
-                    case 11: sentence = `This dish explores the binary nature of ${ing1} and ${ing2}, featuring ${this.getArticle(adj1)} ${dust} of ${liq}.`; break;
-                    case 12: sentence = `A symphony of ${adj1} textures, starting with ${ing1} and culminating in ${this.getArticle(adj2)} finish of ${liq}.`; break;
-                    case 13: sentence = `Precision is paramount when ${this.toGerund(v1)} the ${ing1}; even ${meas} too much ${liq} can mask the ${flav}.`; break;
-                    case 14: sentence = `The ${ing1} is ${this.toPastParticiple(v1)} in its own juices, creating ${this.getArticle(adj1)} essence that ${end}.`; break;
-                    case 15: sentence = `${this.getArticle(adj1)} study in contrast, the ${ing1} is presented both ${this.toPastParticiple(v1)} and ${this.toPastParticiple(v2)}.`; break;
-                    case 16: sentence = `To unlock the ${flav}, the ${ing1} must be ${this.toPastParticiple(v1)} using ${this.getArticle(tool)} while ${this.toGerund(v2)}.`; break;
-                    case 17: sentence = `The final composition: ${ing1}, ${ing2}, and ${meas} of ${adj1} ${liq}.`; break;
-                    case 18: sentence = `Notice the ${adj1} architecture of the ${ing1}, which has been ${this.toPastParticiple(v1)} to emphasize its ${flav}.`; break;
-                    case 19: sentence = `Beyond the ${flav}, this dish transcends the ${adj1} limits of ${ing1} by ${this.toGerund(v2)} it in ${liq}.`; break;
-                    case 20: sentence = `${start}, the ${ing1} is ${this.toPastParticiple(v1)} with ${this.getArticle(tool)} to achieve ${this.getArticle(adj1)} finish.`; break;
-                    case 21: sentence = `The ${ing1} serves as the primary canvas for ${this.toGerund(v1)}, eventually ${this.toGerund(v2)} into ${this.getArticle(flav)}.`; break;
-                    case 22: sentence = `${this.capitalize(trans)}, the chef opted to ${v1} the ${ing1} alongside ${this.getNounPhrase()}, resulting in ${this.getArticle(flav)}.`; break;
-                    case 23: sentence = `The ${ing1} is ${this.toPastParticiple(v1)} and then lightly ${this.toPastParticiple(v2)}, creating ${this.getArticle(adj1)} contrast that ${end}.`; break;
-                    case 24: sentence = `Witness the ${adj1} transformation of ${ing1} as it is ${this.toPastParticiple(v1)} within ${this.getArticle(tool)}.`; break;
-                    case 25: sentence = `A ${adj1} ${dust} of ${ing1} provides the final ${flav} needed to ${v1} the ${ing2}.`; break;
-                    case 26: sentence = `For a bolder profile, ${v1} the ${ing1} until ${adj1}, folding in ${meas} of ${liq} to unlock the ${flav}.`; break;
-                    case 27: sentence = `The delicate interplay between the ${ing1} and ${adj2} ${ing2} creates ${this.getArticle(flav)} that easily ${end}.`; break;
-                    case 28: sentence = `Never underestimate the power of ${this.toGerund(v1)} the ${ing1}; even a seemingly ${adj1} component can yield ${flav}.`; break;
-                    case 29: sentence = `${start}, consider ${this.toGerund(v1)} the ${ing1} with ${liq} for an intensely ${adj1} experience.`; break;
-                    case 30: sentence = `A well-executed dish relies on ${this.toGerund(v1)} the ${ing1} and carefully ${this.toGerund(v2)} the ${ing2} to maintain the ${flav}.`; break;
-                    case 31: sentence = `The ${flav} is amplified merely by ${this.toGerund(v1)} the ${adj1} ${ing1} over ${this.getArticle(tool)}.`; break;
-                    case 32: sentence = `By combining ${meas} of ${liq} with ${ing1}, you introduce a surprisingly ${adj1} textural element with ${adj2} ${dust}.`; break;
+        generate(paragraphsCount, sentencesPerParagraph) {
+            const paragraphs = [];
+            for (let p = 0; p < paragraphsCount; p++) {
+                const currentParagraphSentences = [];
+                for (let s = 0; s < sentencesPerParagraph; s++) {
+                    currentParagraphSentences.push(this.generateSentence());
                 }
-                return this.capitalize(sentence);
+                paragraphs.push(currentParagraphSentences.join(" "));
             }
-
+            return paragraphs;
         }
 
+        // --- Utility Methods for Subclasses ---
+
         /**
-         * Builds alien-sounding text using phonetic construction utilities.
+         * Selects a random element from a provided array avoiding recent duplicates.
+         * @param {Array} array - The vocabulary array to pull from.
+         * @returns {string} A random string from the array.
          */
-        class AlienLanguageGenerator extends BaseGenerator {
-            constructor() {
-                super("AlienLanguageGenerator");
-                this.prefixes = ["syl", "kor", "vae", "thal", "mor", "aer", "gyl", "xen", "vor", "il", "am", "el", "na", "ru", "za", "ky", "ly", "my", "ny", "py", "ry", "sy", "ty", "vy", "wy", "xy", "zy", "bel", "car", "dar", "far", "gar", "har", "ael", "bel", "cae", "dra", "ela", "fen", "gla", "hyl", "ilm", "jae", "kae", "lyl", "pha", "rho", "tau", "psi", "omega", "kro", "mye", "tha", "zyl", "pyr", "geo", "cry", "hyd", "aer", "lux", "nox", "vel"];
-                this.roots = ["thir", "fenn", "koron", "zara", "goth", "morn", "loth", "rien", "gale", "bane", "cyn", "drak", "vyr", "wyn", "xar", "zyl", "quor", "vex", "jor", "karn", "lum", "nox", "pax", "rax", "sax", "tax", "vax", "wax", "yax", "zax", "bryn", "cryn", "dryn", "fryn", "gryn", "hryn", "jryn", "kryn", "vyr", "thor", "mal", "zen", "ryn", "val", "dor", "mor", "kal", "fin", "gal", "syl", "astra", "chrono", "bio", "cyber", "eth", "vost", "kryl", "mund", "strak", "phyr", "glost", "drand", "vyrn", "shon", "krax", "zand", "tryl", "zort", "quib", "vrox", "glim", "slah", "druv", "morg", "krax", "phay", "vlen", "stry", "gorp", "blix", "vorn", "zeld", "quax", "flux", "grit", "muld", "skon", "vrek", "prid", "glon", "stiv", "brim", "klay", "phur", "vost", "gram", "myle", "strok", "blur", "vhex", "zorp", "quiv", "glex", "sliv", "drax", "monk", "kren", "phal", "vlar", "stur", "gron", "mith", "stok", "blen", "vash", "zalt", "quab", "glan", "slat", "drut", "mosp", "krev", "phel", "vleg", "stem", "grab", "myll", "stril", "blon", "vhor"];
-                this.suffixes = ["ion", "ar", "el", "is", "us", "a", "ae", "i", "o", "u", "th", "g", "k", "l", "m", "n", "r", "s", "v", "z", "iel", "ath", "eth", "ith", "oth", "uth", "al", "il", "ol", "ul", "am", "em", "im", "om", "um", "aris", "en", "is", "on", "us", "a", "ia", "os", "um", "et", "il", "yn", "ix", "ox", "ex", "ux", "ax", "athis", "oxis", "unth", "yr", "enis", "aris", "orth", "ilth", "emis", "axas", "oz", "ez"];
+        sample(array) {
+            if (!array || array.length === 0) return "";
+            if (array.length === 1) return array[0];
+
+            let lastUsed = this.history.get(array);
+            if (!lastUsed) {
+                lastUsed = [];
+                this.history.set(array, lastUsed);
             }
 
+            let available = array.filter(item => !lastUsed.includes(item));
 
-            generatePhoneticWord() {
-                const p = this.sample(this.prefixes);
-                const r = this.sample(this.roots);
-                const s = this.sample(this.suffixes);
-                return Math.random() > 0.8 ? `${p}'${r}${s}` : `${p}${r}${s}`;
+            if (available.length === 0) {
+                available = array;
+                lastUsed.length = 0;
             }
 
-            generateConlangClause() {
-                const wordCount = Math.floor(Math.random() * 5) + 4;
+            const picked = available[Math.floor(Math.random() * available.length)];
+            lastUsed.push(picked);
+
+            const maxHistory = Math.min(5, Math.floor(array.length / 2));
+            if (lastUsed.length > Math.max(1, maxHistory)) {
+                lastUsed.shift();
+            }
+
+            return picked;
+        }
+
+        capitalize(string) {
+            if (!string) return "";
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        getArticle(word) {
+            if (!word) return "";
+            const vowels = ["a", "e", "i", "o", "u"];
+            const startsWithVowel = vowels.includes(word.charAt(0).toLowerCase());
+            return startsWithVowel ? `an ${word}` : `a ${word}`;
+        }
+
+        toGerund(verb) {
+            const exceptions = {
+                "puree": "pureeing",
+                "flambé": "flambéing",
+                "pan-fry": "pan-frying",
+                "deep-fry": "deep-frying",
+                "sous-vide": "sous-viding",
+                "bake-blind": "baking-blind",
+            };
+            if (exceptions[verb]) return exceptions[verb];
+            if (verb.endsWith("e") && !verb.endsWith("ee")) return verb.slice(0, -1) + "ing";
+            const cvcRegex = /([^aeiou][aeiou])([bdfglmnprstz])$/i;
+            if (cvcRegex.test(verb) && verb.length < 6) return verb + verb.charAt(verb.length - 1) + "ing";
+            return verb + "ing";
+        }
+
+        toPastParticiple(verb) {
+            if (!verb) return "";
+            const exceptions = {
+                "sous-vide": "sous-vided",
+                "pan-fry": "pan-fried",
+                "deep-fry": "deep-fried",
+                "bake-blind": "baked-blind",
+                "A/B test": "A/B tested",
+            };
+            if (exceptions[verb]) return exceptions[verb];
+            if (verb.endsWith("e") && !verb.endsWith("ee")) return verb + "d";
+            if (verb.endsWith("y") && !verb.match(/[aeiou]y$/i)) return verb.slice(0, -1) + "ied";
+            const cvcRegex = /([^aeiou][aeiou])([bdfglmnprstz])$/i;
+            if (cvcRegex.test(verb) && verb.length < 6) return verb + verb.charAt(verb.length - 1) + "ed";
+            return verb + "ed";
+        }
+
+        pluralize(word) {
+            if (!word) return "";
+            if (word.endsWith("s") || word.endsWith("x") || word.endsWith("ch") || word.endsWith("sh")) return word + "es";
+            if (word.endsWith("y") && !["a", "e", "i", "o", "u"].includes(word.slice(-2, -1).toLowerCase())) return word.slice(0, -1) + "ies";
+            return word + "s";
+        }
+    }
+
+    /**
+     * Generates high-end culinary descriptions using a specialized vocabulary of
+     * action verbs, ingredients, and flavor profiles.
+     */
+    class GourmetGenerator extends BaseGenerator {
+        constructor() {
+            super("GourmetGenerator");
+            this.actionVerbs = ["macerate", "deglaze", "emulsify", "sous-vide", "sear", "blanch", "julienne", "fold", "whisk", "confit", "forage", "ferment", "braise", "poach", "roast", "grill", "broil", "bake", "sauté", "fry", "deep-fry", "pan-fry", "sweat", "reduce", "simmer", "boil", "steam", "parboil", "steep", "infuse", "clarify", "whip", "beat", "blend", "puree", "mash", "crush", "muddle", "supreme", "score", "butterfly", "truss", "fillet", "debone", "mince", "dice", "chop", "rough-chop", "slice", "shave", "grate", "zest", "peel", "skin", "scale", "hull", "pit", "core", "deseed", "temper", "crystallize", "caramelize", "flambé", "smoke", "cold-smoke", "cure", "pickle", "brine", "marinate", "baste", "glaze", "dust", "sprinkle", "garnish", "plate", "drizzle", "dollop", "quenelle", "pipe", "spread", "layer", "stack", "torch", "char", "blacken", "blister", "toast", "bloom", "rest", "age", "dry-age", "dehydrate", "rehydrate", "sprout", "culture", "curdle", "churn", "press", "extrude", "spherify", "gel", "thicken", "bind", "aerate", "foam", "extract", "distill", "render", "skim", "strain", "filter", "sift", "knead", "proof", "punch-down", "shape", "laminate", "bake-blind", "chill", "freeze", "blast-freeze", "melt", "microplane", "acidulate", "alkalize", "carbonize", "concassé", "enrober", "monter au beurre", "singer", "vanner", "rubanner", "frapper", "chemiser", "beurrer", "lustrer", "napper", "clouter", "flash-freeze", "cold-press", "brunoise", "lard", "barde", "nappé", "brine-cure", "ferment-dry", "acid-wash", "carbon-filter", "slow-rend", "cold-infuse", "flash-sear", "wood-fire", "oak-smoke", "spirit-glaze", "sugar-coat", "salt-bake"];
+            this.ingredients = ["heirloom shallots", "A5 wagyu brisket", "foraged chanterelles", "duck fat", "roasted bone marrow", "activated charcoal", "micro-greens", "Hokkaido sea urchin", "heritage pork belly", "black garlic", "white truffles", "black winter truffles", "saffron threads", "beluga caviar", "osetra caviar", "foie gras", "sweetbreads", "veal cheeks", "bone-in ribeye", "venison loin", "wild boar shoulder", "squab", "quail", "pheasant", "guinea fowl", "cornish hen", "duck breast", "duck confit", "goose liver", "rabbit saddle", "frog legs", "escargot", "langoustines", "spot prawns", "soft shell crab", "diver scallops", "geoduck", "bluefin tuna belly", "yellowtail collar", "monkfish liver", "sea cucumber", "abalone", "razor clams", "mussels", "littleneck clams", "oysters", "octopus tentacles", "squid ink", "wagyu tallow", "lardo", "guanciale", "pancetta", "prosciutto di parma", "jamón ibérico", "chorizo", "nduja", "bresaola", "bone broth", "dashi", "kombu", "bonito flakes", "miso paste", "gochujang", "yuzu kosho", "preserved lemons", "lacto-fermented blueberries", "pickled mustard seeds", "caper berries", "castelvetrano olives", "pine nuts", "marcona almonds", "pistachios", "macadamia nuts", "hazelnuts", "walnuts", "pecans", "chestnuts", "pumpkin seeds", "sunflower seeds", "chia seeds", "flax seeds", "hemp hearts", "quinoa", "farro", "freekeh", "amaranth", "bulgur", "couscous", "polenta", "arborio rice", "carnaroli rice", "black forbidden rice", "wild rice", "sushi rice", "tapioca pearls", "sago", "finger limes", "Buddha's hand citron", "calamansi", "meyer lemons", "blood oranges", "pomelo", "ruby red grapefruit", "white asparagus", "fiddlehead ferns", "ramps", "garlic scapes", "stinging nettles", "purslane", "sorrel", "watercress", "endive", "radicchio", "frisée", "mizuna", "tatsoi", "bok choy", "gai lan", "napa cabbage", "kohlrabi", "celeriac", "salsify", "jerusalem artichokes", "parsnips", "rutabaga", "turnips", "daikon radish", "watermelon radish", "golden beets", "chioggia beets", "baby carrots", "fennel bulbs", "leeks", "spring onions", "pearl onions", "cipollini onions", "garlic cloves", "elephant garlic", "ginger root", "galangal", "turmeric root", "lemongrass", "kaffir lime leaves", "pandan leaves", "curry leaves", "shiso leaves", "epazote", "hoja santa", "cilantro", "parsley", "chervil", "tarragon", "dill", "fennel fronds", "mint", "basil", "Thai basil", "holy basil", "oregano", "marjoram", "thyme", "rosemary", "sage", "bay leaves", "nasturtium blossoms", "dragonfruit", "rambutan", "lychee", "persimmon", "iberico ham", "uni-butter", "matsutake", "bottarga silver", "preserved duck egg", "wasabi root", "horseradish", "black peppercorns", "pink peppercorns", "star anise", "cinnamon sticks", "cloves", "cardamom pods", "vanilla beans", "tonka beans", "cocoa nibs", "smoked paprika", "sumac", "za'atar", "dukkah", "harissa", "chimichurri", "pesto", "tapenade"];
+            this.adjectives = ["translucent", "robust", "delicate", "unctuous", "crisp", "gelatinous", "aerated", "earthy", "ethereal", "caramelized", "velvety", "silky", "smooth", "creamy", "rich", "decadent", "luscious", "buttery", "flaky", "tender", "succulent", "juicy", "moist", "dry", "crumbly", "crunchy", "crackling", "shatteringly-crisp", "chewy", "toothsome", "al-dente", "springy", "bouncy", "spongy", "airy", "light", "pillowy", "fluffy", "dense", "heavy", "hearty", "rustic", "refined", "elegant", "sophisticated", "complex", "nuanced", "balanced", "harmonious", "bright", "vibrant", "zesty", "tangy", "tart", "sour", "acidic", "sharp", "pungent", "assertive", "bold", "aggressive", "intense", "fiery", "spicy", "piquant", "peppery", "numbing", "cooling", "refreshing", "palate-cleansing", "herbaceous", "grassy", "floral", "botanical", "perfumed", "fragrant", "aromatic", "savory", "umami-rich", "meaty", "brothy", "salty", "briny", "oceanic", "marine", "mineral", "flinty", "chalky", "loamy", "mushroomy", "funky", "fermented", "cultured", "aged", "mature", "vintage", "ripe", "overripe", "sweet", "honeyed", "syrupy", "candied", "glazed", "frosted", "dusted", "bitter", "astringent", "tannic", "smoky", "charred", "blackened", "ashen", "woody", "oaky", "nutty", "toasted", "roasted", "browned", "golden", "amber", "mahogany", "ruby", "garnet", "emerald", "jade", "pale", "opaque", "cloudy", "murky", "clear", "crystalline", "luminous", "iridescent", "glossy", "shiny", "matte", "rough", "coarse", "fine", "pulverized", "powdered", "granulated", "crushed", "smashed", "bruised", "wilted", "weeping", "mottled", "striated", "marbled", "opalescent", "prismatic", "volcanic", "obsidian", "glacial", "nebulous", "astral", "primal", "elemental"];
+            this.flavorProfiles = ["umami resonance", "tart undertone", "botanical finish", "smoky complexity", "herbaceous note", "Maillard reaction", "tannin structure", "bright acidity", "earthy depth", "savory persistence", "floral bouquet", "oceanic brine", "mineral snap", "sweet-and-sour balance", "lingering heat", "subtle nuttiness", "rich marrow essence", "fermented funk", "cultured tang", "roasted depth", "caramelized sweetness", "bitter edge", "astringent pull", "peppery bite", "warming spice", "cooling menthol", "zesty brightness", "citrusy twang", "resinous pine", "woody resonance", "aged complexity", "vintage character", "primal smoke", "ashen finish", "honeyed floral", "malted sweetness", "yeasty breadiness", "lactic tang", "fungal earthiness", "truffle aroma", "marine salinity", "iodine notes", "metallic twinge", "flinty minerality", "chalky texture", "velvety mouthfeel", "clean snap", "effervescent tickle", "robust foundation", "delicate top-notes", "fleeting sweetness", "aggressive heat", "numbing sensation", "slow-building spice", "sharp piquancy", "vibrant herbaceousness", "dark cocoa notes", "espresso bitterness", "toffee richness", "vanilla warmth", "caramel undertones", "buttery richness", "unctuous fat", "gelatinous body", "ethereal lightness", "clean finish", "lingering aftertaste", "oxidative nuttiness", "petrichor essence", "saline breadth", "mineral percussion", "citrus burst", "spice-forward profile", "herbal infusion", "fruity brightness"];
+            this.measurements = ["1/4 cup", "a precise pinch", "exactly 180 grams", "two delicate drops", "a generous splash", "50 milliliters", "a mere suggestion", "three scant tablespoons", "exactly one fluid ounce", "a baker's dozen", "half a kilo", "precisely 42 degrees Celsius", "a microscopic dusting", "one heavy glug", "a conservative drizzle", "five distinct spheres", "a three-finger pinch", "exactly 200 milligrams", "a quarter-teaspoon", "one heaping ladle", "a modest smear", "two fluid drams", "exactly 12 ounces", "a liberal coating", "three precise micro-grams", "a chef's handful", "one standard quart", "half a pint", "exactly 10 milliliters", "a gentle misting", "four thick ribbons", "exactly 1.5 liters", "a whisper", "a smattering", "exactly 30 grams", "two robust dollops", "a calculated fraction", "exactly 8.5 ounces", "a singular leaf", "exactly 100 degrees Fahrenheit", "a half-cup measure", "exactly 75 centiliters", "a thimbleful", "three generous scoops", "exactly 450 grams", "a microscopic shaving", "exactly 2.5 cups", "a heavy-handed pour", "exactly 5 kilograms", "a modest handful", "two full sprigs", "exactly 60 seconds of pouring", "a sheer layer", "exactly 1/8 of a teaspoon", "a rapid dash", "exactly 120 milliliters", "a bountiful handful", "exactly 15 grams", "a fleeting splash", "exactly 3/4 of a cup", "a calibrated pipette", "exactly two drops", "a translucent film", "a fine mist", "a deluge", "a nanogram", "a cubic centimeter", "a light glazing", "a heavy reduction"];
+            this.liquids = ["clarified truffle butter", "fermented plum reduction", "dry vermouth", "first-press yuzu juice", "house-made kombucha", "court bouillon", "aged balsamic vinegar", "white balsamic", "sherry vinegar", "champagne vinegar", "apple cider vinegar", "black rice vinegar", "red wine reduction", "white wine deglaze", "port wine syrup", "madeira wine", "marsala", "cognac", "armagnac", "calvados", "grand marnier", "absinthe", "chartreuse", "amaro", "fernet", "campari", "aperol", "sake", "mirin", "shaoxing wine", "awamori", "mezcal", "tequila", "gin", "vodka", "white rum", "dark rum", "aged bourbon", "rye whiskey", "scotch whisky", "single malt", "irish whiskey", "Japanese whisky", "chicken consommé", "beef dashi", "mushroom tea", "tomato water", "cucumber juice", "celery juice", "green apple extraction", "pomegranate molasses", "maple syrup", "agave nectar", "birch syrup", "sorghum syrup", "date syrup", "coconut aminos", "liquid aminos", "tamari", "shoyu", "white soy sauce", "fish sauce", "colatura di alici", "squid ink broth", "whey", "buttermilk", "kefir", "crème fraîche", "heavy cream", "double cream", "clotted cream", "coconut milk", "coconut cream", "almond milk", "oat milk", "cashew cream", "hazelnut oil", "walnut oil", "pumpkin seed oil", "sesame oil", "toasted sesame oil", "chili oil", "garlic oil", "herb-infused olive oil", "extra virgin olive oil", "grapeseed oil", "avocado oil", "duck fat liquid", "rendered lardo", "brown butter (beurre noisette)", "white-soy serum", "prawn-head oil", "ginger-scallion infusion", "pomegranate reduction", "hibiscus tea", "rose water", "orange blossom water", "bitters", "tonic water", "carbonated water"];
+            this.tools = ["heavy-bottomed copper skillet", "immersion blender", "centrifuge", "smoking gun", "japanese mandoline", "granite mortar", "marble pestle", "fine-mesh chinois", "tamis", "superbag", "vacuum sealer", "sous-vide circulator", "blast chiller", "anti-griddle", "pacojet", "thermomix", "dehydrator", "rotary evaporator", "siphon whip", "cream whipper", "culinary torch", "blowtorch", "offset spatula", "plating tweezers", "surgical scalpel", "microplane grater", "box grater", "zester", "pasta machine", "meat grinder", "sausage stuffer", "cast iron dutch oven", "enameled braiser", "carbon steel wok", "teppanyaki grill", "robata grill", "yakitori grill", "wood-fired oven", "tandoor clay oven", "plancha", "salamander broiler", "induction burner", "combi oven", "steam oven", "pressure cooker", "instant pot", "slow cooker", "rice cooker", "bamboo steamer", "tagine", "paella pan", "blini pan", "crêpe pan", "sauteuse", "rondeau", "stockpot", "bain-marie", "double boiler", "stand mixer", "food processor", "burr grinder", "spice mill", "masticating juicer", "cold-press juicer", "hydraulic press", "cheesecloth", "butcher's twine", "cheese wire", "truffle slicer", "oyster knife", "boning knife", "filet knife", "cleaver", "nakiri", "santoku", "gyuto", "yanagiba", "paring knife", "bread knife", "steel honing rod", "whetstone", "copper sugar pot", "silicone baking mat", "perforated tart ring", "geometric mold", "cryogenic tank", "piping bag", "pastry brush", "spatula", "whisk", "tongs", "ladle", "slotted spoon", "skimmer"];
+            this.dishEndings = ["anchors the dish", "brings the elements together", "elevates the entire profile", "adds a crucial dimension", "cuts through the richness", "balances the complex composition", "provides a surprising contrast", "ties the flavors together", "lingers on the palate", "defies expectations", "subverts the traditional narrative", "harmonizes the disparate components", "grounds the ethereal notes", "completes the sensory journey"];
+            this.plateStarts = ["For plating", "To finish", "As a final touch", "Before serving", "To complete the dish", "For the final presentation", "At the pass", "In the final assembly", "Just before the guests arrive", "Upon final inspection", "To ground the composition", "As the final gesture", "Before the first bite"];
+            this.dustings = ["dusting", "sprinkling", "garnish", "hint", "scattering", "accent", "shaving", "micro-emulsion", "whisper", "delicate misting", "chromatic veil", "molecular drizzle", "fine particulate", "aromatic haze", "ethereal film"];
+            this.transitions = ["meanwhile", "consequently", "furthermore", "subsequently", "accordingly", "thereafter", "ultimately", "simultaneously", "henceforth", "in tandem", "complementary to this", "by extension"];
+        }
+
+        getNounPhrase() {
+            const adj = this.sample(this.adjectives);
+            const ing = this.sample(this.ingredients);
+            return `${this.getArticle(adj)} ${ing}`;
+        }
+
+        generateSentence() {
+            const templateType = this.getTemplateType(33);
+            let sentence = "";
+            const v1 = this.sample(this.actionVerbs);
+            const v2 = this.sample(this.actionVerbs);
+            const ing1 = this.sample(this.ingredients);
+            const ing2 = this.sample(this.ingredients);
+            const liq = this.sample(this.liquids);
+            const tool = this.sample(this.tools);
+            const adj1 = this.sample(this.adjectives);
+            const adj2 = this.sample(this.adjectives);
+            const flav = this.sample(this.flavorProfiles);
+            const meas = this.sample(this.measurements);
+            const trans = this.sample(this.transitions);
+
+            const end = this.sample(this.dishEndings);
+            const start = this.sample(this.plateStarts);
+            const dust = this.sample(this.dustings);
+
+            switch (templateType) {
+                case 0:
+                    sentence = `Carefully ${v1} the ${ing1} while simultaneously ${this.toGerund(v2)} the ${ing2} in ${liq}, achieving ${this.getArticle(flav)} that perfectly ${end}.`;
+                    break;
+                case 1:
+                    sentence = `The ${adj1} mouthfeel of the ${ing1} juxtaposes beautifully with ${this.getNounPhrase()}, bound together by ${meas} of ${liq}.`;
+                    break;
+                case 2:
+                    sentence = `To elevate the intrinsic ${flav}, one must firmly ${v1} the ${ing1} until perfectly ${adj1}; finish with ${meas} of ${liq} passed explicitly through ${this.getArticle(tool)}.`;
+                    break;
+                case 3:
+                    sentence = `Utilizing ${this.getArticle(tool)}, begin ${this.toGerund(v1)} the ${ing1} to isolate its delicate core, ensuring the resulting texture remains uncompromisingly ${adj1}.`;
+                    break;
+                case 4:
+                    sentence = `Harvested at absolute peak maturity, the ${ing1} requires minimal intervention; simply ${v1} gently and dress with ${liq} to highlight its natural ${flav}.`;
+                    break;
+                case 5:
+                    sentence = `${start}, strategically ${v1} the ${ing1} atop ${this.getNounPhrase()} foundation, completing the composition with ${this.getArticle(adj1)} ${dust} of ${ing2}.`;
+                    break;
+                case 6:
+                    sentence = `A whisper of ${liq} provides the foundational ${flav} upon which the ${adj1} ${ing1} is meticulously ${this.toPastParticiple(v1)}.`;
+                    break;
+                case 7:
+                    sentence = `Experience the olfactory resonance of ${ing1} as it is deeply ${this.toPastParticiple(v1)} against a backdrop of ${adj1} ${ing2}.`;
+                    break;
+                case 8:
+                    sentence = `The chef's intent is clear: ${v1} the ${ing1} until the ${flav} is purely ${adj1}, then serve atop ${liq}.`;
+                    break;
+                case 9:
+                    sentence = `By ${this.toGerund(v1)} the ${ing1} with ${this.getArticle(tool)}, one achieves ${this.getArticle(adj1)} symmetry that ${end}.`;
+                    break;
+                case 10:
+                    sentence = `Rare ${ing1} is first ${this.toPastParticiple(v1)} for 72 hours, then flash-${this.toPastParticiple(v2)} to preserve its ${flav}.`;
+                    break;
+                case 11:
+                    sentence = `This dish explores the binary nature of ${ing1} and ${ing2}, featuring ${this.getArticle(adj1)} ${dust} of ${liq}.`;
+                    break;
+                case 12:
+                    sentence = `A symphony of ${adj1} textures, starting with ${ing1} and culminating in ${this.getArticle(adj2)} finish of ${liq}.`;
+                    break;
+                case 13:
+                    sentence = `Precision is paramount when ${this.toGerund(v1)} the ${ing1}; even ${meas} too much ${liq} can mask the ${flav}.`;
+                    break;
+                case 14:
+                    sentence = `The ${ing1} is ${this.toPastParticiple(v1)} in its own juices, creating ${this.getArticle(adj1)} essence that ${end}.`;
+                    break;
+                case 15:
+                    sentence = `${this.getArticle(adj1)} study in contrast, the ${ing1} is presented both ${this.toPastParticiple(v1)} and ${this.toPastParticiple(v2)}.`;
+                    break;
+                case 16:
+                    sentence = `To unlock the ${flav}, the ${ing1} must be ${this.toPastParticiple(v1)} using ${this.getArticle(tool)} while ${this.toGerund(v2)}.`;
+                    break;
+                case 17:
+                    sentence = `The final composition: ${ing1}, ${ing2}, and ${meas} of ${adj1} ${liq}.`;
+                    break;
+                case 18:
+                    sentence = `Notice the ${adj1} architecture of the ${ing1}, which has been ${this.toPastParticiple(v1)} to emphasize its ${flav}.`;
+                    break;
+                case 19:
+                    sentence = `Beyond the ${flav}, this dish transcends the ${adj1} limits of ${ing1} by ${this.toGerund(v2)} it in ${liq}.`;
+                    break;
+                case 20:
+                    sentence = `${start}, the ${ing1} is ${this.toPastParticiple(v1)} with ${this.getArticle(tool)} to achieve ${this.getArticle(adj1)} finish.`;
+                    break;
+                case 21:
+                    sentence = `The ${ing1} serves as the primary canvas for ${this.toGerund(v1)}, eventually ${this.toGerund(v2)} into ${this.getArticle(flav)}.`;
+                    break;
+                case 22:
+                    sentence = `${this.capitalize(trans)}, the chef opted to ${v1} the ${ing1} alongside ${this.getNounPhrase()}, resulting in ${this.getArticle(flav)}.`;
+                    break;
+                case 23:
+                    sentence = `The ${ing1} is ${this.toPastParticiple(v1)} and then lightly ${this.toPastParticiple(v2)}, creating ${this.getArticle(adj1)} contrast that ${end}.`;
+                    break;
+                case 24:
+                    sentence = `Witness the ${adj1} transformation of ${ing1} as it is ${this.toPastParticiple(v1)} within ${this.getArticle(tool)}.`;
+                    break;
+                case 25:
+                    sentence = `A ${adj1} ${dust} of ${ing1} provides the final ${flav} needed to ${v1} the ${ing2}.`;
+                    break;
+                case 26:
+                    sentence = `For a bolder profile, ${v1} the ${ing1} until ${adj1}, folding in ${meas} of ${liq} to unlock the ${flav}.`;
+                    break;
+                case 27:
+                    sentence = `The delicate interplay between the ${ing1} and ${adj2} ${ing2} creates ${this.getArticle(flav)} that easily ${end}.`;
+                    break;
+                case 28:
+                    sentence = `Never underestimate the power of ${this.toGerund(v1)} the ${ing1}; even a seemingly ${adj1} component can yield ${flav}.`;
+                    break;
+                case 29:
+                    sentence = `${start}, consider ${this.toGerund(v1)} the ${ing1} with ${liq} for an intensely ${adj1} experience.`;
+                    break;
+                case 30:
+                    sentence = `A well-executed dish relies on ${this.toGerund(v1)} the ${ing1} and carefully ${this.toGerund(v2)} the ${ing2} to maintain the ${flav}.`;
+                    break;
+                case 31:
+                    sentence = `The ${flav} is amplified merely by ${this.toGerund(v1)} the ${adj1} ${ing1} over ${this.getArticle(tool)}.`;
+                    break;
+                case 32:
+                    sentence = `By combining ${meas} of ${liq} with ${ing1}, you introduce a surprisingly ${adj1} textural element with ${adj2} ${dust}.`;
+                    break;
+            }
+            return this.capitalize(sentence);
+        }
+
+    }
+
+    /**
+     * Builds alien-sounding text using phonetic construction utilities.
+     */
+    class AlienLanguageGenerator extends BaseGenerator {
+        constructor() {
+            super("AlienLanguageGenerator");
+            this.prefixes = ["syl", "kor", "vae", "thal", "mor", "aer", "gyl", "xen", "vor", "il", "am", "el", "na", "ru", "za", "ky", "ly", "my", "ny", "py", "ry", "sy", "ty", "vy", "wy", "xy", "zy", "bel", "car", "dar", "far", "gar", "har", "ael", "bel", "cae", "dra", "ela", "fen", "gla", "hyl", "ilm", "jae", "kae", "lyl", "pha", "rho", "tau", "psi", "omega", "kro", "mye", "tha", "zyl", "pyr", "geo", "cry", "hyd", "aer", "lux", "nox", "vel"];
+            this.roots = ["thir", "fenn", "koron", "zara", "goth", "morn", "loth", "rien", "gale", "bane", "cyn", "drak", "vyr", "wyn", "xar", "zyl", "quor", "vex", "jor", "karn", "lum", "nox", "pax", "rax", "sax", "tax", "vax", "wax", "yax", "zax", "bryn", "cryn", "dryn", "fryn", "gryn", "hryn", "jryn", "kryn", "vyr", "thor", "mal", "zen", "ryn", "val", "dor", "mor", "kal", "fin", "gal", "syl", "astra", "chrono", "bio", "cyber", "eth", "vost", "kryl", "mund", "strak", "phyr", "glost", "drand", "vyrn", "shon", "krax", "zand", "tryl", "zort", "quib", "vrox", "glim", "slah", "druv", "morg", "krax", "phay", "vlen", "stry", "gorp", "blix", "vorn", "zeld", "quax", "flux", "grit", "muld", "skon", "vrek", "prid", "glon", "stiv", "brim", "klay", "phur", "vost", "gram", "myle", "strok", "blur", "vhex", "zorp", "quiv", "glex", "sliv", "drax", "monk", "kren", "phal", "vlar", "stur", "gron", "mith", "stok", "blen", "vash", "zalt", "quab", "glan", "slat", "drut", "mosp", "krev", "phel", "vleg", "stem", "grab", "myll", "stril", "blon", "vhor"];
+            this.suffixes = ["ion", "ar", "el", "is", "us", "a", "ae", "i", "o", "u", "th", "g", "k", "l", "m", "n", "r", "s", "v", "z", "iel", "ath", "eth", "ith", "oth", "uth", "al", "il", "ol", "ul", "am", "em", "im", "om", "um", "aris", "en", "is", "on", "us", "a", "ia", "os", "um", "et", "il", "yn", "ix", "ox", "ex", "ux", "ax", "athis", "oxis", "unth", "yr", "enis", "aris", "orth", "ilth", "emis", "axas", "oz", "ez"];
+        }
+
+
+        generatePhoneticWord() {
+            const p = this.sample(this.prefixes);
+            const r = this.sample(this.roots);
+            const s = this.sample(this.suffixes);
+            return Math.random() > 0.8 ? `${p}'${r}${s}` : `${p}${r}${s}`;
+        }
+
+        generateConlangClause() {
+            const wordCount = Math.floor(Math.random() * 5) + 4;
+            const words = [];
+            for (let i = 0; i < wordCount; i++) words.push(this.generatePhoneticWord());
+            let clause = words.join(" ");
+            return this.capitalize(clause) + this.sample([".", ".", "...", "!", "?"]);
+        }
+
+        generateSentence() {
+            const getPhrase = (min, max) => {
+                const len = Math.floor(Math.random() * (max - min + 1)) + min;
                 const words = [];
-                for (let i = 0; i < wordCount; i++) words.push(this.generatePhoneticWord());
-                let clause = words.join(" ");
-                return this.capitalize(clause) + this.sample([".", ".", "...", "!", "?"]);
-            }
-
-            generateSentence() {
-                const getPhrase = (min, max) => {
-                    const len = Math.floor(Math.random() * (max - min + 1)) + min;
-                    const words = [];
-                    for (let i = 0; i < len; i++) words.push(this.generatePhoneticWord());
-                    return words.join(" ");
-                };
-
-                const w1 = this.generatePhoneticWord(), w2 = this.generatePhoneticWord(), w3 = this.generatePhoneticWord();
-                const w4 = this.generatePhoneticWord(), w5 = this.generatePhoneticWord(), w6 = this.generatePhoneticWord();
-                const p1 = getPhrase(3, 5), p2 = getPhrase(4, 7), p3 = getPhrase(6, 10), p4 = getPhrase(5, 8);
-
-                const templateType = this.getTemplateType(30);
-
-                switch (templateType) {
-                    case 0: return `${this.capitalize(w1)} ${w2} ${p1} ${w3}.`;
-                    case 1: return `${this.capitalize(w1)}! ${this.capitalize(p2)} ${w3}.`;
-                    case 2: return `${this.capitalize(p1)} ${w2} ${w3} ${w4}?`;
-                    case 3: return `${this.capitalize(w1)}, ${p2} — ${w4}.`;
-                    case 4: return `${this.capitalize(p3)} (${w4}).`;
-                    case 5: return `${this.capitalize(w1)} ${w2} ${p1} ${w4} ${w5} ${p2}!`;
-                    case 6: return `${this.capitalize(w1)}-${w2} ${p2} ${w4}.`;
-                    case 7: return `${this.capitalize(p1)} ${w2}... ${p2}.`;
-                    case 8: return `${this.capitalize(w1)} ${p1} ${w3} ${p4} — ${p3}.`;
-                    case 9: return `*${p1}* ${w2} ${p2} ${w4}.`;
-                    case 10: return `${this.capitalize(p3)} ${w4} ${w5}?`;
-                    case 11: return `${this.capitalize(w1)}! ${this.capitalize(w1)}! ${this.capitalize(p2)}.`;
-                    case 12: return `${this.capitalize(p1)} (${p2} ${w4}).`;
-                    case 13: return `...${p1} ${w2} ${p3}? ${this.capitalize(w4)}!`;
-                    case 14: return `${this.capitalize(w1)} ${p2} ${w3}... ${p1} ${w5}.`;
-                    case 15: return `${this.capitalize(p1)} ${this.sample([",", "—", "::"])} ${p3}.`;
-                    case 16: return `${this.capitalize(p2)} ${w2} ${p1} ${w3} ${w4} ${p2}!`;
-                    case 17: return `${this.capitalize(p1)} ${this.sample(["•", "::", "---"])} ${p2} ${w2} ${w3} ${p3}.`;
-                    case 18: return `${this.capitalize(p1)} ${p2} ${w3}... ${p3}? ${this.capitalize(p4)}!`;
-                    case 19: return `${this.capitalize(p3)} (${w1} ${w2}) ${p2}.`;
-                    case 20: return `${this.capitalize(p3)} ${this.sample(["::", "---", "»"])} ${p1} ${p2}.`;
-                    case 21: return `${this.capitalize(w1)} ${w2} ${p3} ${w3} ${p4} ${p2} ${w5}.`;
-                    case 22: return `[ ${p2} ] ${this.capitalize(p1)} ${w3} ${w4}.`;
-                    case 23: return `${this.capitalize(p1)} ${w2} ${p3} :: ${p2}.`;
-                    case 24: return `${this.capitalize(p3)} ${p1}... ${p2}!`;
-                    case 25: return `${this.capitalize(w1)} ${w2}-${w3} ${p3} ${p1}.`;
-                    case 26: return `${this.capitalize(p2)}, ${this.capitalize(p1)} ${w4} ${p3}.`;
-                    case 27: return `${this.capitalize(w1)} ${this.sample(["(v)", "(x)", "(^)", "(o)"])} ${p3} ${p2}.`;
-                    case 28: return `${this.capitalize(p3)} ${w1} ${w2} ${w3} ${p4}.`;
-                    case 29: return `${this.capitalize(p1)} ${w1} ${p2} ${w2} ${p3}.`;
-                }
-            }
-        }
-
-        /**
-         * Generates high-fantasy lore by combining mythic events,
-         * artifacts, and entities.
-         */
-        class FantasyLoreGenerator extends BaseGenerator {
-            constructor() {
-                super("FantasyLoreGenerator");
-                this.mythicEntities = ["the Shadow-King", "the Celestial Vanguard", "the Arch-Mage", "the Star-Weavers", "the Blood-Lords of Kraven", "the Silent Sisterhood", "the Obsidian Order", "the Iron Dictator", "the Sun-Priests", "the Void-Walkers", "the Dragon-Riders", "the Lich-Queen", "the Storm-Callers", "the Earth-Shakers", "the Fire-Forgers", "the Frost-Giants", "the Night-Elves", "the Day-Walkers", "the Moon-Children", "the Star-Born", "the Ashen King", "the Undying Emperor", "the Void-Entity", "the Astral Serpents", "the Bone-Crafters", "the Time-Weavers", "the Dream-Eaters", "the Soul-Harvesters", "the Light-Bringers", "the Shadow-Dancers", "the Runemasters", "the Crypt-Keepers", "the Grave-Walkers", "the Spirit-Binders", "the Blood-Mages", "The Weaver of Fates", "The Iron Harbinger", "The Silver Saint", "The Eternal Watcher", "The Crimson Oracle", "The Void-Stalker", "The Sun-Eater", "The Marble Queen", "The Clockwork Titan", "The Pale Herald", "The Mirror Man", "The Weaver of Whispers", "The Storm Giant", "The Deep Sea Sovereign", "The Ash Born", "The Eternal Exile", "The Starless King", "The Crimson King", "The Weeping Oracle", "The Iron Saint", "The Starless Watcher", "The Gilded Sovereign", "The Tattered Prophet", "The Silent Arbiter", "The Eternal Architect", "The Abyssal Weaver", "The Solar Vanguard", "The Moon-Lit Knight", "The Forgotten Seraph"];
-                this.ancientArtifacts = ["the Sun-Blade", "the Soul-Forge", "the Dream-Weaver", "the Crown of Thorns", "the Staff of Ages", "the Orb of Destruction", "the Amulet of Power", "the Ring of Shadows", "the Cloak of Invisibility", "the Sword of Destiny", "the Shield of Valor", "the Chalice of Life", "the Tome of Knowledge", "the Grimoire of Spells", "the Book of Shadows", "the Crystal Skull", "the Obsidian Monolith", "the Celestial Astrolabe", "the Void-Prism", "the Blood-Chalice", "the Star-Map", "the Bone-Flute", "the Spirit-Lantern", "the Shadow-Mirror", "the Time-Turner", "the Dream-Catcher", "the Soul-Stone", "The Key of Seven Veils", "The Aegis of Infinity", "The Heart of the Void", "The Scepter of Silence", "the Mirror of Truth", "the Soul-Stealer", "the Void-Dagger", "the Solar-Scepter", "the Lunar-Bow", "the Earth-Hammer", "the Wind-Staff", "the Fire-Whip", "the Blood-Axe", "the Time-Dial", "the Echoing Horn", "the Aegis of Ages", "the Shattered Key", "the Mirror of Eternity", "the Bell of Oblivion", "the Thread of Fate", "the Empty Throne", "the Crimson Seal", "the Obsidian Rose", "the Starlight Lantern", "the Void-Compass", "the Iron Crown", "the Scepter of Dust", "the Horn of Valor"];
-                this.mythicRealms = ["Eldoria", "the Obsidian Wastes", "the Astral Sea", "Kaz-Môran", "the Crystal Spires", "the Whispering Woods", "the Shattered Isles", "the Crimson Peaks", "the Sunken City of Atlantis", "the Floating Islands", "the Under-Realm", "the Ethereal Plane", "the Fey-Wilds", "the Shadow-Lands", "the Frost-Wastes", "the Ash-Barrens", "the Void-Abyss", "the Celestial Heavens", "the Demon-Wastes", "the Spirit-Realm", "the Dream-Scape", "the Nightmare-Realm", "the Bone-Deserts", "the Blood-Swamps", "the Fire-Mountains", "the Ice-Canyons", "The Whispering Void", "The Sunken Archives", "The Garden of Forgetting", "The Silver City", "The Bleeding Sands", "The Sea of Sighs", "The Iron Citadel", "The Garden of Statues", "The Echoing Canyons", "The Verdant Abyss", "The Frozen Spire", "The Midnight Plateau", "The Celestial Cradle", "the Radiant Valley", "the Serpentine Reef"];
-                this.esotericMaterials = ["star-metal", "void-glass", "blood-iron", "ether", "dragon-bone", "mithril", "adamantium", "orichalcum", "dark-matter", "celestial-bronze", "infernal-iron", "spirit-wood", "shadow-silk", "moon-stone", "sun-gold", "frost-ice", "storm-lightning", "earth-stone", "fire-flame", "water-ice", "abyssal-obsidian", "chronos-crystal", "soul-amber", "dream-dust", "nightmare-ash", "bone-ash", "blood-crystal", "shadow-glass", "light-metal", "spirit-iron", "plasma-glass", "singularity-core", "chrono-steel", "living-gold", "cold-iron", "ghost-thread", "starlight-silk", "earth-blood", "void-tendril", "solar-flare"];
-                this.epicVerbs = ["banished", "forged", "shattered", "unbound", "consumed", "awakened", "sealed", "conquered", "destroyed", "created", "summoned", "repelled", "corrupted", "purified", "discovered", "lost", "hidden", "revealed", "defended", "betrayed", "usurped", "enslaved", "liberated", "obliterated", "transcended", "ascended", "descended", "devoured", "resurrected", "sacrificed", "reforged", "annihilated", "manifested", "contained", "severed", "ignited", "hollowed", "bound", "echoed", "wept", "scourged", "knighted"];
-                this.arcaneDisciplines = ["necromancy", "chronomancy", "elemental weaving", "blood magic", "shadow manipulation", "light weaving", "soul binding", "mind control", "illusion magic", "transmutation", "divination", "abjuration", "conjuration", "enchantment", "evocation", "void magic", "chaos magic", "order magic", "nature magic", "arcane magic", "divine magic", "astromancy", "geomancy", "pyromancy", "cryomancy", "aeromancy", "hydromancy", "oneiromancy", "sanguimancy", "thaumaturgy", "runecraft", "ether-tuning", "lithomancy", "psionics", "kinetic-weaving", "spatial-folding", "echo-magic", "dream-shaping"];
-                this.cataclysmicEvents = ["the Great Sundering", "the Crimson Eclipse", "the Star-Fall", "the Void-Rift", "the Celestial Alignment", "the Blood-Moon", "the Night of Shadows", "the Day of Fire", "the Winter of Discontent", "the War of the Gods", "the Rebellion of the Angels", "the Fall of Man", "the Awakening of the Deep", "the Shattering of the Sky", "the Boiling of the Seas", "the Freezing of the Sun", "the Dying of the Light", "the Birth of the Dark", "the Return of the King", "the End of Days", "the Beginning of Time", "The Silence", "The Great Emergence", "The Singularity Event", "the Night of Falling Stars", "the Second Silence", "the Thawing of the World", "the Great Forgetting", "the Unraveling", "the Crimson Tide"];
-                this.loreAdjectives = ["abyssal", "luminescent", "forgotten", "cursed", "celestial", "ancient", "forbidden", "sacred", "profane", "eternal", "ephemeral", "infinite", "finite", "mortal", "immortal", "divine", "infernal", "demonic", "angelic", "spirit", "ghostly", "spectral", "phantasmal", "ethereal", "corporeal", "physical", "metaphysical", "magical", "mundane", "extraordinary", "ordinary", "supernatural", "natural", "unnatural", "primordial", "inevitable", "transcendent", "eldritch", "hallowed", "blighted", "serene", "ominous", "radiant", "obsidian", "shimmering", "hollow"];
-                this.timeAdverbs = ["once more", "forever", "for eternity", "ultimately", "at long last", "yet again", "until the end of days", "before the dawn", "beyond the veil", "throughout the ages", "in the blink of an eye", "in the age of myth", "as the world ends", "before the first word", "when the stars align", "since the beginning"];
-                this.scholars = ["Scholars of", "Mages versed in", "Students of", "Masters of", "Those who study", "Initiates of", "The Keepers of", "The Guardians of", "The Disciples of", "The Grey Monks of", "The Sages of", "The Scribes of", "The Hermits of", "The Archivists of"];
-                this.destructives = ["devastating", "unfathomable", "terrifying", "absolute", "world-ending", "cataclysmic", "unprecedented", "god-like", "inevitable", "reality-shattering", "unstoppable", "irreversible", "sacrificial", "harrowing", "soul-crushing"];
-                this.mythicNumbers = ["seven", "thirteen", "three", "nine", "twelve", "forty-two", "a thousand", "infinite", "eleven", "twenty-one", "zero", "ninety-nine", "the first"];
-            }
-
-
-            generateSentence() {
-                const templateType = this.getTemplateType(37);
-                let lore = "";
-                const entity1 = this.sample(this.mythicEntities), entity2 = this.sample(this.mythicEntities);
-                const artifact = this.sample(this.ancientArtifacts), realm = this.sample(this.mythicRealms);
-                const material = this.sample(this.esotericMaterials), verb = this.sample(this.epicVerbs);
-                const magic = this.sample(this.arcaneDisciplines), event = this.sample(this.cataclysmicEvents), adj = this.sample(this.loreAdjectives);
-                const adv = this.sample(this.timeAdverbs);
-                const schol = this.sample(this.scholars);
-                const dest = this.sample(this.destructives);
-
-                switch (templateType) {
-                    case 0: lore = `When ${event} aligns with the ascendance of ${entity1}, ${artifact} shall awaken from ${realm} to be ${verb} ${adv}.`; break;
-                    case 1: lore = `Following ${event}, ${entity1} definitively ${verb} ${artifact}, forever altering the flow of ${magic} throughout ${realm}.`; break;
-                    case 2: lore = `Forged from ${adj} ${material} and imbued with highly volatile ${magic}, ${artifact} granted ${entity2} the absolute power to shape ${realm}.`; break;
-                    case 3: lore = `The relentless armies of ${entity1} clashed furiously against ${entity2} across the borders of ${realm}, their mastery of ${magic} scarring the ${material} bedrock.`; break;
-                    case 4: lore = `${schol} ${magic} theorize that ${artifact} acts as a direct conduit to ${realm}, channeling raw ${material} into ${dest}, ${adj} power.`; break;
-                    case 5: lore = `Deep within the heart of ${realm} lies the ruin of ${entity1}, an ancient monolith of ${material} that continuously radiates ${adj} ${magic} energy.`; break;
-                    case 6: lore = `Legends speak of a time when ${entity1} used ${artifact} to ${verb} the very foundations of ${realm}.`; break;
-                    case 7: lore = `The ${schol} retain a ${adj} fear of ${event}, believing it will one day ${verb} the ${material} gates.`; break;
-                    case 8: lore = `Within the ${adj} depths of ${realm}, ${entity1} remains eternally ${verb}, guarded by ${artifact}.`; break;
-                    case 9: lore = `Should ${artifact} ever be ${verb} by ${entity2}, the age of ${magic} shall surely end in ${dest} ruin.`; break;
-                    case 10: lore = `The ${adj} ${material} used to build ${realm} was allegedly stolen from ${entity1} during ${event}.`; break;
-                    case 11: lore = `It is written that ${entity1} and ${entity2} will meet at ${realm} for one final, ${dest} ${event}.`; break;
-                    case 12: lore = `The ${magic} of ${realm} is ${adj} and wild, ever since ${artifact} was ${verb} by ${entity1}.`; break;
-                    case 13: lore = `Ancient ${material} inscriptions found in ${realm} suggest that ${event} was actually ${this.getArticle(adj)} ritual.`; break;
-                    case 14: lore = `By the power of ${artifact}, ${entity1} was able to ${verb} the ${adj} spirits of ${realm}.`; break;
-                    case 15: lore = `${this.capitalize(event)} brought about ${this.getArticle(adj)} change in ${realm}, where ${entity1} now rules over ${material}.`; break;
-                    case 16: lore = `Whispers in the dark claim that ${entity1} has found a way to ${verb} ${artifact} once more.`; break;
-                    case 17: lore = `The ${material} soul of ${realm} can only be saved if ${entity1} is ${verb} before ${event}.`; break;
-                    case 18: lore = `Long before ${event}, the ${entity1} used ${material} to create ${this.getArticle(adj)} sanctuary in ${realm}.`; break;
-                    case 19: lore = `Even the ${schol} ${magic} cannot explain why ${entity1} seeks to ${verb} ${artifact} using ${material}.`; break;
-                    case 20: lore = `Through ${adj} ${magic}, the very essence of ${realm} was ${verb} into ${artifact}.`; break;
-                    case 21: lore = `The ${dest} reach of ${entity1} extends beyond ${realm}, driven by the power of ${artifact}.`; break;
-                    case 22: lore = `Only those who possess the ${artifact} can hope to ${verb} the ${adj} terrors unleashed during ${event}.`; break;
-                    case 23: lore = `A prophecy foretells that ${entity1} will return to ${realm} to ${verb} the ${this.sample(this.mythicNumbers)} seals of ${material}.`; break;
-                    case 24: lore = `The ${magic} used by ${entity2} was said to be ${dest}, yet it was ${entity1} who ultimately ${verb} the world.`; break;
-                    case 25: lore = `Hidden within ${realm}, the ${artifact} remains a testament to the ${adj} legacy of ${entity1}.`; break;
-                    case 26: lore = `Before the first age of ${realm}, ${entity1} used the power of ${artifact} to create the ${material} stars that guide ${magic} users today.`; break;
-                    case 27: lore = `It is said that ${entity1} will only return from ${realm} when the ${material} heart of ${artifact} is finally ${verb}.`; break;
-                    case 28: lore = `The ${schol} of ${magic} remember the ${dest} ${event} as the moment when ${entity1} first ${verb} the ${adj} walls of ${realm}.`; break;
-                    case 29: lore = `Through the use of ${artifact}, ${entity2} was able to ${verb} the ${material} chains that held ${entity1} for ${this.sample(this.mythicNumbers)} ages.`; break;
-                    case 30: lore = `Even as the shadows of ${event} loomed over ${realm}, ${entity1} secretly ${verb} ${artifact} using ${adj} ${material}.`; break;
-                    case 31: lore = `Few among the ${schol} ${magic} comprehend how ${entity1} harnessed ${material} to outlast the ${dest} ${event}.`; break;
-                    case 32: lore = `Wrapped in the lost tomes of ${realm}, legends recall the day ${entity2} finally ${verb} ${artifact}.`; break;
-                    case 33: lore = `The ${adj} incantations of ${magic} required to ${verb} ${artifact} were ultimately forgotten after ${event}.`; break;
-                    case 34: lore = `For ${this.sample(this.mythicNumbers)} centuries, ${entity1} sought the ${adj} knowledge necessary to wield the ${dest} power of ${artifact}.`; break;
-                    case 35: lore = `The ${material} core of ${artifact} vibrates with an old ${magic}, binding ${entity1} to ${realm} for eternity.`; break;
-                    case 36: lore = `When the skies over ${realm} finally turn ${adj}, ${entity2} shall ${verb} the ${material} remnants of ${artifact}.`; break;
-                }
-                return lore;
-            }
-        }
-
-        /**
-         * Produces corporate-themed synergistic text focused on leverage, agility,
-         * and stakeholders. Includes a specialized article handler for acronyms (ROI, KPI).
-         */
-        class CorporateSynergyGenerator extends BaseGenerator {
-            constructor() {
-                super("CorporateSynergyGenerator");
-                this.actionVerbs = ["synergize", "leverage", "pivot", "disrupt", "optimize", "architect", "incubate", "incentivize", "gamify", "monetize", "streamline", "ideate", "iterate", "onboard", "align", "empower", "scale", "deploy", "integrate", "benchmark", "catalyze", "drive", "impact", "transform", "maximize", "revolutionize", "synthesize", "operationalize", "productize", "contextualize", "democratize", "future-proof", "white-board", "growth-hack", "A/B test", "re-engage", "retarget", "upsell", "cross-sell", "funnel", "segment", "convert", "nurture", "activate", "rebrand", "reposition", "navigate", "champion", "spearhead", "fast-track", "greenlight", "sunset", "deprecate", "automate", "unify", "consolidate", "orchestrate", "calibrate", "audit", "forecast", "mitigate", "troubleshoot", "amplify", "boost", "elevate", "hyper-target", "geo-target", "personalize", "localize", "globalize", "crowdsource", "bootstrap", "flesh-out", "unpack", "drill-down", "disintermediate", "hyper-scale", "re-architect", "re-imagine", "tailor", "right-size", "bandwidth-optimize", "barrier-remove", "bridge-build", "capability-model", "center-of-gravity-shift", "culture-shock", "dependency-map", "efficiency-drive", "friction-remove", "goal-set", "horizon-scan", "impact-measure"];
-                this.adjectives = ["agile", "lean", "frictionless", "omnichannel", "holistic", "scalable", "disruptive", "synergistic", "hyper-local", "cloud-native", "turnkey", "best-in-class", "bleeding-edge", "cutting-edge", "state-of-the-art", "next-gen", "paradigm-shifting", "actionable", "granular", "robust", "seamless", "integrated", "end-to-end", "B2B", "B2C", "peer-to-peer", "cross-functional", "client-facing", "mission-critical", "proactive", "reactive", "data-driven", "insight-driven", "AI-powered", "algorithmic", "programmatic", "organic", "viral", "evergreen", "snackable", "immersive", "interactive", "gamified", "user-centric", "customer-centric", "mobile-first", "responsive", "dynamic", "static", "high-level", "low-hanging", "top-tier", "bottom-line", "value-added", "core", "strategic", "tactical", "operational", "logistical", "fiscal", "quarterly", "annual", "year-over-year", "month-over-month", "long-term", "short-term", "mid-term", "asynchronous", "synchronous", "real-time", "on-demand", "bespoke", "custom", "tailored", "modular", "plug-and-play", "open-source", "proprietary", "decentralized", "distributed", "blockchain-adjacent", "quantum-ready", "semantic", "contextual", "predictive", "prescriptive", "diagnostic", "descriptive", "qualitative", "quantitative", "tangible", "intangible", "ambient", "invisible", "ubiquitous", "omnipresent", "outcome-based", "purpose-driven", "future-forward", "market-ready"];
-                this.nouns = ["paradigm", "deliverable", "metric", "bandwidth", "ROI", "KPI", "vertical", "touchpoint", "synergy", "ecosystem", "methodology", "framework", "infrastructure", "architecture", "pipeline", "funnel", "roadmap", "blueprint", "wireframe", "mockup", "prototype", "MVP", "beta-test", "rollout", "launch", "campaign", "initiative", "strategy", "tactic", "workflow", "process", "procedure", "protocol", "best-practice", "case-study", "whitepaper", "thought-leadership", "content-silo", "data-lake", "data-warehouse", "dashboard", "analytic", "insight", "learning", "takeaway", "action-item", "pain-point", "bottleneck", "friction-point", "value-proposition", "core-competency", "differentiator", "USP", "persona", "demographic", "psychographic", "target-audience", "stakeholder", "shareholder", "investor", "board-member", "C-suite", "thought-leader", "influencer", "early-adopter", "laggard", "churn-rate", "retention-rate", "conversion-rate", "click-through-rate", "impression", "engagement", "reach", "frequency", "market-share", "mind-share", "wallet-share", "profit-margin", "bottom-line", "top-line", "revenue-stream", "cash-flow", "burn-rate", "runway", "valuation", "exit-strategy", "merger", "acquisition", "north-star", "center-of-excellence", "wheelhouse", "solution-set", "culture", "commitment", "experience", "landscape", "milestone", "pivot", "disruption", "optimization", "scalability", "agility", "value-stream", "bandwidth-cap", "bottleneck-analysis", "churn-probability", "customer-journey", "decision-framework", "ecosystem-play", "feedback-loop", "growth-lever", "incentive-structure", "market-segmentation", "operational-model"];
-                this.idioms = ["move the needle", "think outside the box", "peel the onion", "boil the ocean", "circle back", "take this offline", "put a pin in it", "run it up the flagpole", "skate to where the puck is going", "open the kimono", "drink our own champagne", "eat our own dog food", "hit the ground running", "reinvent the wheel", "push the envelope", "raise the bar", "shift the paradigm", "connect the dots", "read between the lines", "get our ducks in a row", "compare apples to apples", "trim the fat", "lean in", "double down", "pivot to video", "move fast and break things", "fail fast", "fail forward", "iterate rapidly", "build the plane while flying it", "throw spaghetti at the wall", "see what sticks", "look under the hood", "kick the tires", "dot the i's and cross the t's", "cross-pollinate ideas", "herd cats", "find the silver bullet", "capture lightning in a bottle", "punch above our weight", "open the floodgates", "break the silos", "climb the mountain"];
-                this.timelines = ["for Q1", "for Q2", "for Q3", "for Q4", "by EOQ", "by EOY", "moving forward", "down the road", "in the next reporting cycle", "before EOQ", "in the long run", "at the end of the day", "by EOD", "in the upcoming fiscal year", "as we speak", "on a go-forward basis", "next quarter", "this quarter", "by next fiscal", "ASAP", "on the horizon", "at your earliest convenience", "in the interim", "post-launch", "mid-cycle", "year-end", "quarter-end", "by COP", "by EOB", "TBD", "during the roadshow", "pre-IPO", "post-merger", "in the next sprint", "phase 2", "post-hoc", "long-tail"];
-                this.outcomes = ["actionable insights", "a positive ROI", "maximum throughput", "sustained growth", "stakeholder buy-in", "market disruption", "a win-win scenario", "synergistic outcomes", "core alignment", "level-up performance", "unprecedented scalability", "vertical integration", "disruptive innovation", "market supremacy", "zero friction", "customer delight", "brand advocacy"];
-                this.transitions = ["resulting in", "leading to", "driving", "creating", "fostering", "catalyzing", "delivering", "yielding", "unleashing", "triggering", "ensuring", "facilitating", "accelerating", "powering", "amplifying", "reinforcing", "streamlining", "solidifying", "igniting", "galvanizing"];
-            }
-
-            getIndefiniteArticle(word) {
-                if (!word) return "";
-                const vowels = ["a", "e", "i", "o", "u"], vowelSoundingAcronyms = ["R", "M", "N", "S", "F", "H", "L", "X"];
-                const firstLetter = word.charAt(0).toLowerCase(), firstLetterUpper = word.charAt(0);
-                if (vowels.includes(firstLetter) || (word === word.toUpperCase() && vowelSoundingAcronyms.includes(firstLetterUpper))) return `an ${word}`;
-                return `a ${word}`;
-            }
-
-            generateSentence() {
-                const templateType = this.getTemplateType(32);
-                let sentence = "";
-                const v1 = this.sample(this.actionVerbs), v2 = this.sample(this.actionVerbs);
-                const adj1 = this.sample(this.adjectives), adj2 = this.sample(this.adjectives);
-                const noun1 = this.sample(this.nouns), noun2 = this.sample(this.nouns), noun3 = this.sample(this.nouns), idiom = this.sample(this.idioms);
-                const time = this.sample(this.timelines);
-                const out = this.sample(this.outcomes);
-                const trans = this.sample(this.transitions);
-
-                switch (templateType) {
-                    case 0: sentence = `By leveraging ${adj1} ${this.pluralize(noun1)}, we can actively ${v1} our ${this.pluralize(noun2)} and truly ${idiom} ${time}.`; break;
-                    case 1: sentence = `Let's ${idiom} on the ${adj1} ${noun1} so we can ${v1} the ${adj2} ${this.pluralize(noun2)} ${time}.`; break;
-                    case 2: sentence = `Our ${adj1} approach to ${noun1} will inherently ${v1} cross-functional ${this.pluralize(noun2)}, ${trans} ${out}.`; break;
-                    case 3: sentence = `To effectively ${v1} the broader ecosystem, we must transition from ${adj1} ${this.pluralize(noun1)} to ${adj2} ${this.pluralize(noun2)}.`; break;
-                    case 4: sentence = `Please ensure your ${this.pluralize(noun1)} are aligned with the ${adj1} ${this.pluralize(noun2)} before we attempt to ${v1} the ${this.pluralize(noun3)}.`; break;
-                    case 5: sentence = `We need to ${v1} our ${this.pluralize(noun1)} if we're going to truly ${idiom} and reach our ${out} goals.`; break;
-                    case 6: sentence = `The ${adj1} nature of our ${noun1} allows us to ${v1} without losing focus on our ${this.pluralize(noun2)}.`; break;
-                    case 7: sentence = `Let's take ${this.getIndefiniteArticle(adj1)} look at how we ${v1} our ${noun1} to see if we're actually ${this.toGerund(v2)} value.`; break;
-                    case 8: sentence = `Our core ${noun1} is to ${v1} the market by delivering ${adj1}, ${adj2} ${this.pluralize(noun3)} ${time}.`; break;
-                    case 9: sentence = `If we can ${v1} our ${this.pluralize(noun1)} with the client's ${this.pluralize(noun2)}, we'll achieve ${out}.`; break;
-                    case 10: sentence = `It's time to ${idiom} and start ${this.toGerund(v1)} our ${adj1} digital transformation ${time}.`; break;
-                    case 11: sentence = `By ${this.toGerund(v1)} the ${noun1}, we unlock ${adj1} ${this.pluralize(noun2)} that drive ${out}.`; break;
-                    case 12: sentence = `Can we ${v1} more ${adj1} ${this.pluralize(noun3)} for our ${this.pluralize(noun1)} to help us ${idiom}?`; break;
-                    case 13: sentence = `The ${adj1} ${noun1} we've ${this.toPastParticiple(v1)} will ensure we stay ahead of the ${adj2} curve ${time}.`; break;
-                    case 14: sentence = `We must ${v1} our internal ${this.pluralize(noun1)} to foster a more ${adj1}, ${adj2} ${noun3} ${time}.`; break;
-                    case 15: sentence = `Is it possible to ${v1} the ${noun1} while still ${this.toGerund(v2)} our ${this.pluralize(noun2)}?`; break;
-                    case 16: sentence = `Ultimately, we want to ${v1} ${adj1} ${this.pluralize(noun1)} that deliver ${out} for all stakeholders.`; break;
-                    case 17: sentence = `We must ${v1} the ${noun1} to ensure ${adj1} ${this.pluralize(noun2)} that truly ${idiom}.`; break;
-                    case 18: sentence = `By ${this.toGerund(v1)} our ${this.pluralize(noun1)}, we can ${v2} the ${adj1} ${noun3} ${time}.`; break;
-                    case 19: sentence = `It's mission-critical to ${idiom} and ${v1} the ${adj1} ${noun1} ${time}.`; break;
-                    case 20: sentence = `Our ${noun1} strategy is to ${v1} ${adj1} ${this.pluralize(noun2)} and ${trans} ${out}.`; break;
-                    case 21: sentence = `To truly ${v1} our market presence, we must ${idiom} and embrace ${adj1} ${this.pluralize(noun1)}.`; break;
-                    case 22: sentence = `The ${v1} of ${adj1} ${this.pluralize(noun1)} is ${trans} ${out} in real-time.`; break;
-                    case 23: sentence = `${this.capitalize(this.toGerund(v1))} the ${noun1} will allow us to ${v2} our ${adj1} ${this.pluralize(noun2)} ${time}.`; break;
-                    case 24: sentence = `We need to ${v1} our ${adj1} ${this.pluralize(noun1)} to ensure we ${idiom} without ${this.toGerund(v2)} the ${noun2}.`; break;
-                    case 25: sentence = `To successfully ${v1} our ${this.pluralize(noun1)}, we must relentlessly pursue ${adj1} ${this.pluralize(noun2)} and ${idiom}.`; break;
-                    case 26: sentence = `We have the opportunity to ${v1} across the ${noun1} if we can properly onboard the ${adj1} ${noun2} strategy.`; break;
-                    case 27: sentence = `Our priority ${time} is to ${idiom} while simultaneously ${this.toGerund(v1)} next-gen ${this.pluralize(noun1)} for our clients.`; break;
-                    case 28: sentence = `Can we ensure that our ${adj1} ${noun1} will consistently generate ${out} when we actually ${v1} the product?`; break;
-                    case 29: sentence = `By adopting ${this.getIndefiniteArticle(adj1)} ${noun1} architecture, we expect to heavily ${v1} our core ${this.pluralize(noun2)} ${time}.`; break;
-                    case 30: sentence = `Let's make an effort to ${v2} our current pipeline, thereby ${this.toGerund(v1)} a more ${adj1} approach to ${noun1}.`; break;
-                    case 31: sentence = `The focus group expects us to ${v1} these ${adj1} ${this.pluralize(noun1)} and eventually ${idiom} for maximum impact.`; break;
-                }
-                return this.capitalize(sentence);
-            }
-
-        }
-
-        // --- Application Logic ---
-        const gGourmet = new GourmetGenerator();
-        const gAlien = new AlienLanguageGenerator();
-        const gFantasy = new FantasyLoreGenerator();
-        const gCorporate = new CorporateSynergyGenerator();
-
-        const outputEl = document.getElementById("output");
-        const paragraphInput = document.getElementById("paragraphs");
-        const sentenceInput = document.getElementById("sentences");
-        const copyBtn = document.getElementById("copy-btn");
-        const regenBtn = document.getElementById("regen-btn");
-        const genRadios = document.querySelectorAll("input[name=\"generator\"]");
-
-        function getActiveGenerator() {
-            const selected = document.querySelector("input[name=\"generator\"]:checked").value;
-            if (selected === "gourmet") return gGourmet;
-            if (selected === "alien") return gAlien;
-            if (selected === "fantasy") return gFantasy;
-            return gCorporate;
-        }
-
-        function updateOutput() {
-            const generator = getActiveGenerator();
-            const pCount = parseInt(paragraphInput.value) || 1;
-            const sCount = parseInt(sentenceInput.value) || 1;
-            const paragraphs = generator.generate(pCount, sCount);
-
-            outputEl.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join("");
-
-            // Update body class based on theme
-            let theme = "ocker"; // Case for gCorporate
-            if (generator === gGourmet) theme = "red";
-            else if (generator === gAlien) theme = "purple";
-            else if (generator === gFantasy) theme = "green";
-
-            document.documentElement.className = "layout-centered theme-" + theme;
-        }
-
-        // Event Listeners
-        genRadios.forEach(radio => radio.addEventListener("change", updateOutput));
-        paragraphInput.addEventListener("input", updateOutput);
-        sentenceInput.addEventListener("input", updateOutput);
-        regenBtn.addEventListener("click", updateOutput);
-
-        copyBtn.addEventListener("click", async () => {
-            const text = Array.from(outputEl.querySelectorAll("p")).map(p => p.innerText).join("\n\n");
-            const showSuccess = () => {
-                const originalText = copyBtn.innerHTML;
-                copyBtn.innerHTML = "<span class=\"sym\">check</span> Copied!";
-                setTimeout(() => copyBtn.innerHTML = originalText, 2000);
+                for (let i = 0; i < len; i++) words.push(this.generatePhoneticWord());
+                return words.join(" ");
             };
 
-            // 1. Try modern clipboard API
-            if (navigator.clipboard?.writeText && window.isSecureContext) {
-                try {
-                    await navigator.clipboard.writeText(text);
-                    showSuccess();
-                    return;
-                } catch (err) {
-                    console.error("Clipboard API failed:", err);
-                }
-            }
+            const w1 = this.generatePhoneticWord(), w2 = this.generatePhoneticWord(),
+                w3 = this.generatePhoneticWord();
+            const w4 = this.generatePhoneticWord(), w5 = this.generatePhoneticWord(),
+                w6 = this.generatePhoneticWord();
+            const p1 = getPhrase(3, 5), p2 = getPhrase(4, 7), p3 = getPhrase(6, 10),
+                p4 = getPhrase(5, 8);
 
-            // 2. Fallback to textarea select/copy (works in non-secure context and old browsers)
+            const templateType = this.getTemplateType(30);
+
+            switch (templateType) {
+                case 0:
+                    return `${this.capitalize(w1)} ${w2} ${p1} ${w3}.`;
+                case 1:
+                    return `${this.capitalize(w1)}! ${this.capitalize(p2)} ${w3}.`;
+                case 2:
+                    return `${this.capitalize(p1)} ${w2} ${w3} ${w4}?`;
+                case 3:
+                    return `${this.capitalize(w1)}, ${p2} — ${w4}.`;
+                case 4:
+                    return `${this.capitalize(p3)} (${w4}).`;
+                case 5:
+                    return `${this.capitalize(w1)} ${w2} ${p1} ${w4} ${w5} ${p2}!`;
+                case 6:
+                    return `${this.capitalize(w1)}-${w2} ${p2} ${w4}.`;
+                case 7:
+                    return `${this.capitalize(p1)} ${w2}... ${p2}.`;
+                case 8:
+                    return `${this.capitalize(w1)} ${p1} ${w3} ${p4} — ${p3}.`;
+                case 9:
+                    return `*${p1}* ${w2} ${p2} ${w4}.`;
+                case 10:
+                    return `${this.capitalize(p3)} ${w4} ${w5}?`;
+                case 11:
+                    return `${this.capitalize(w1)}! ${this.capitalize(w1)}! ${this.capitalize(p2)}.`;
+                case 12:
+                    return `${this.capitalize(p1)} (${p2} ${w4}).`;
+                case 13:
+                    return `...${p1} ${w2} ${p3}? ${this.capitalize(w4)}!`;
+                case 14:
+                    return `${this.capitalize(w1)} ${p2} ${w3}... ${p1} ${w5}.`;
+                case 15:
+                    return `${this.capitalize(p1)} ${this.sample([",", "—", "::"])} ${p3}.`;
+                case 16:
+                    return `${this.capitalize(p2)} ${w2} ${p1} ${w3} ${w4} ${p2}!`;
+                case 17:
+                    return `${this.capitalize(p1)} ${this.sample(["•", "::", "---"])} ${p2} ${w2} ${w3} ${p3}.`;
+                case 18:
+                    return `${this.capitalize(p1)} ${p2} ${w3}... ${p3}? ${this.capitalize(p4)}!`;
+                case 19:
+                    return `${this.capitalize(p3)} (${w1} ${w2}) ${p2}.`;
+                case 20:
+                    return `${this.capitalize(p3)} ${this.sample(["::", "---", "»"])} ${p1} ${p2}.`;
+                case 21:
+                    return `${this.capitalize(w1)} ${w2} ${p3} ${w3} ${p4} ${p2} ${w5}.`;
+                case 22:
+                    return `[ ${p2} ] ${this.capitalize(p1)} ${w3} ${w4}.`;
+                case 23:
+                    return `${this.capitalize(p1)} ${w2} ${p3} :: ${p2}.`;
+                case 24:
+                    return `${this.capitalize(p3)} ${p1}... ${p2}!`;
+                case 25:
+                    return `${this.capitalize(w1)} ${w2}-${w3} ${p3} ${p1}.`;
+                case 26:
+                    return `${this.capitalize(p2)}, ${this.capitalize(p1)} ${w4} ${p3}.`;
+                case 27:
+                    return `${this.capitalize(w1)} ${this.sample(["(v)", "(x)", "(^)", "(o)"])} ${p3} ${p2}.`;
+                case 28:
+                    return `${this.capitalize(p3)} ${w1} ${w2} ${w3} ${p4}.`;
+                case 29:
+                    return `${this.capitalize(p1)} ${w1} ${p2} ${w2} ${p3}.`;
+            }
+        }
+    }
+
+    /**
+     * Generates high-fantasy lore by combining mythic events,
+     * artifacts, and entities.
+     */
+    class FantasyLoreGenerator extends BaseGenerator {
+        constructor() {
+            super("FantasyLoreGenerator");
+            this.mythicEntities = ["the Shadow-King", "the Celestial Vanguard", "the Arch-Mage", "the Star-Weavers", "the Blood-Lords of Kraven", "the Silent Sisterhood", "the Obsidian Order", "the Iron Dictator", "the Sun-Priests", "the Void-Walkers", "the Dragon-Riders", "the Lich-Queen", "the Storm-Callers", "the Earth-Shakers", "the Fire-Forgers", "the Frost-Giants", "the Night-Elves", "the Day-Walkers", "the Moon-Children", "the Star-Born", "the Ashen King", "the Undying Emperor", "the Void-Entity", "the Astral Serpents", "the Bone-Crafters", "the Time-Weavers", "the Dream-Eaters", "the Soul-Harvesters", "the Light-Bringers", "the Shadow-Dancers", "the Runemasters", "the Crypt-Keepers", "the Grave-Walkers", "the Spirit-Binders", "the Blood-Mages", "The Weaver of Fates", "The Iron Harbinger", "The Silver Saint", "The Eternal Watcher", "The Crimson Oracle", "The Void-Stalker", "The Sun-Eater", "The Marble Queen", "The Clockwork Titan", "The Pale Herald", "The Mirror Man", "The Weaver of Whispers", "The Storm Giant", "The Deep Sea Sovereign", "The Ash Born", "The Eternal Exile", "The Starless King", "The Crimson King", "The Weeping Oracle", "The Iron Saint", "The Starless Watcher", "The Gilded Sovereign", "The Tattered Prophet", "The Silent Arbiter", "The Eternal Architect", "The Abyssal Weaver", "The Solar Vanguard", "The Moon-Lit Knight", "The Forgotten Seraph"];
+            this.ancientArtifacts = ["the Sun-Blade", "the Soul-Forge", "the Dream-Weaver", "the Crown of Thorns", "the Staff of Ages", "the Orb of Destruction", "the Amulet of Power", "the Ring of Shadows", "the Cloak of Invisibility", "the Sword of Destiny", "the Shield of Valor", "the Chalice of Life", "the Tome of Knowledge", "the Grimoire of Spells", "the Book of Shadows", "the Crystal Skull", "the Obsidian Monolith", "the Celestial Astrolabe", "the Void-Prism", "the Blood-Chalice", "the Star-Map", "the Bone-Flute", "the Spirit-Lantern", "the Shadow-Mirror", "the Time-Turner", "the Dream-Catcher", "the Soul-Stone", "The Key of Seven Veils", "The Aegis of Infinity", "The Heart of the Void", "The Scepter of Silence", "the Mirror of Truth", "the Soul-Stealer", "the Void-Dagger", "the Solar-Scepter", "the Lunar-Bow", "the Earth-Hammer", "the Wind-Staff", "the Fire-Whip", "the Blood-Axe", "the Time-Dial", "the Echoing Horn", "the Aegis of Ages", "the Shattered Key", "the Mirror of Eternity", "the Bell of Oblivion", "the Thread of Fate", "the Empty Throne", "the Crimson Seal", "the Obsidian Rose", "the Starlight Lantern", "the Void-Compass", "the Iron Crown", "the Scepter of Dust", "the Horn of Valor"];
+            this.mythicRealms = ["Eldoria", "the Obsidian Wastes", "the Astral Sea", "Kaz-Môran", "the Crystal Spires", "the Whispering Woods", "the Shattered Isles", "the Crimson Peaks", "the Sunken City of Atlantis", "the Floating Islands", "the Under-Realm", "the Ethereal Plane", "the Fey-Wilds", "the Shadow-Lands", "the Frost-Wastes", "the Ash-Barrens", "the Void-Abyss", "the Celestial Heavens", "the Demon-Wastes", "the Spirit-Realm", "the Dream-Scape", "the Nightmare-Realm", "the Bone-Deserts", "the Blood-Swamps", "the Fire-Mountains", "the Ice-Canyons", "The Whispering Void", "The Sunken Archives", "The Garden of Forgetting", "The Silver City", "The Bleeding Sands", "The Sea of Sighs", "The Iron Citadel", "The Garden of Statues", "The Echoing Canyons", "The Verdant Abyss", "The Frozen Spire", "The Midnight Plateau", "The Celestial Cradle", "the Radiant Valley", "the Serpentine Reef"];
+            this.esotericMaterials = ["star-metal", "void-glass", "blood-iron", "ether", "dragon-bone", "mithril", "adamantium", "orichalcum", "dark-matter", "celestial-bronze", "infernal-iron", "spirit-wood", "shadow-silk", "moon-stone", "sun-gold", "frost-ice", "storm-lightning", "earth-stone", "fire-flame", "water-ice", "abyssal-obsidian", "chronos-crystal", "soul-amber", "dream-dust", "nightmare-ash", "bone-ash", "blood-crystal", "shadow-glass", "light-metal", "spirit-iron", "plasma-glass", "singularity-core", "chrono-steel", "living-gold", "cold-iron", "ghost-thread", "starlight-silk", "earth-blood", "void-tendril", "solar-flare"];
+            this.epicVerbs = ["banished", "forged", "shattered", "unbound", "consumed", "awakened", "sealed", "conquered", "destroyed", "created", "summoned", "repelled", "corrupted", "purified", "discovered", "lost", "hidden", "revealed", "defended", "betrayed", "usurped", "enslaved", "liberated", "obliterated", "transcended", "ascended", "descended", "devoured", "resurrected", "sacrificed", "reforged", "annihilated", "manifested", "contained", "severed", "ignited", "hollowed", "bound", "echoed", "wept", "scourged", "knighted"];
+            this.arcaneDisciplines = ["necromancy", "chronomancy", "elemental weaving", "blood magic", "shadow manipulation", "light weaving", "soul binding", "mind control", "illusion magic", "transmutation", "divination", "abjuration", "conjuration", "enchantment", "evocation", "void magic", "chaos magic", "order magic", "nature magic", "arcane magic", "divine magic", "astromancy", "geomancy", "pyromancy", "cryomancy", "aeromancy", "hydromancy", "oneiromancy", "sanguimancy", "thaumaturgy", "runecraft", "ether-tuning", "lithomancy", "psionics", "kinetic-weaving", "spatial-folding", "echo-magic", "dream-shaping"];
+            this.cataclysmicEvents = ["the Great Sundering", "the Crimson Eclipse", "the Star-Fall", "the Void-Rift", "the Celestial Alignment", "the Blood-Moon", "the Night of Shadows", "the Day of Fire", "the Winter of Discontent", "the War of the Gods", "the Rebellion of the Angels", "the Fall of Man", "the Awakening of the Deep", "the Shattering of the Sky", "the Boiling of the Seas", "the Freezing of the Sun", "the Dying of the Light", "the Birth of the Dark", "the Return of the King", "the End of Days", "the Beginning of Time", "The Silence", "The Great Emergence", "The Singularity Event", "the Night of Falling Stars", "the Second Silence", "the Thawing of the World", "the Great Forgetting", "the Unraveling", "the Crimson Tide"];
+            this.loreAdjectives = ["abyssal", "luminescent", "forgotten", "cursed", "celestial", "ancient", "forbidden", "sacred", "profane", "eternal", "ephemeral", "infinite", "finite", "mortal", "immortal", "divine", "infernal", "demonic", "angelic", "spirit", "ghostly", "spectral", "phantasmal", "ethereal", "corporeal", "physical", "metaphysical", "magical", "mundane", "extraordinary", "ordinary", "supernatural", "natural", "unnatural", "primordial", "inevitable", "transcendent", "eldritch", "hallowed", "blighted", "serene", "ominous", "radiant", "obsidian", "shimmering", "hollow"];
+            this.timeAdverbs = ["once more", "forever", "for eternity", "ultimately", "at long last", "yet again", "until the end of days", "before the dawn", "beyond the veil", "throughout the ages", "in the blink of an eye", "in the age of myth", "as the world ends", "before the first word", "when the stars align", "since the beginning"];
+            this.scholars = ["Scholars of", "Mages versed in", "Students of", "Masters of", "Those who study", "Initiates of", "The Keepers of", "The Guardians of", "The Disciples of", "The Grey Monks of", "The Sages of", "The Scribes of", "The Hermits of", "The Archivists of"];
+            this.destructives = ["devastating", "unfathomable", "terrifying", "absolute", "world-ending", "cataclysmic", "unprecedented", "god-like", "inevitable", "reality-shattering", "unstoppable", "irreversible", "sacrificial", "harrowing", "soul-crushing"];
+            this.mythicNumbers = ["seven", "thirteen", "three", "nine", "twelve", "forty-two", "a thousand", "infinite", "eleven", "twenty-one", "zero", "ninety-nine", "the first"];
+        }
+
+
+        generateSentence() {
+            const templateType = this.getTemplateType(37);
+            let lore = "";
+            const entity1 = this.sample(this.mythicEntities),
+                entity2 = this.sample(this.mythicEntities);
+            const artifact = this.sample(this.ancientArtifacts),
+                realm = this.sample(this.mythicRealms);
+            const material = this.sample(this.esotericMaterials),
+                verb = this.sample(this.epicVerbs);
+            const magic = this.sample(this.arcaneDisciplines),
+                event = this.sample(this.cataclysmicEvents), adj = this.sample(this.loreAdjectives);
+            const adv = this.sample(this.timeAdverbs);
+            const schol = this.sample(this.scholars);
+            const dest = this.sample(this.destructives);
+
+            switch (templateType) {
+                case 0:
+                    lore = `When ${event} aligns with the ascendance of ${entity1}, ${artifact} shall awaken from ${realm} to be ${verb} ${adv}.`;
+                    break;
+                case 1:
+                    lore = `Following ${event}, ${entity1} definitively ${verb} ${artifact}, forever altering the flow of ${magic} throughout ${realm}.`;
+                    break;
+                case 2:
+                    lore = `Forged from ${adj} ${material} and imbued with highly volatile ${magic}, ${artifact} granted ${entity2} the absolute power to shape ${realm}.`;
+                    break;
+                case 3:
+                    lore = `The relentless armies of ${entity1} clashed furiously against ${entity2} across the borders of ${realm}, their mastery of ${magic} scarring the ${material} bedrock.`;
+                    break;
+                case 4:
+                    lore = `${schol} ${magic} theorize that ${artifact} acts as a direct conduit to ${realm}, channeling raw ${material} into ${dest}, ${adj} power.`;
+                    break;
+                case 5:
+                    lore = `Deep within the heart of ${realm} lies the ruin of ${entity1}, an ancient monolith of ${material} that continuously radiates ${adj} ${magic} energy.`;
+                    break;
+                case 6:
+                    lore = `Legends speak of a time when ${entity1} used ${artifact} to ${verb} the very foundations of ${realm}.`;
+                    break;
+                case 7:
+                    lore = `The ${schol} retain a ${adj} fear of ${event}, believing it will one day ${verb} the ${material} gates.`;
+                    break;
+                case 8:
+                    lore = `Within the ${adj} depths of ${realm}, ${entity1} remains eternally ${verb}, guarded by ${artifact}.`;
+                    break;
+                case 9:
+                    lore = `Should ${artifact} ever be ${verb} by ${entity2}, the age of ${magic} shall surely end in ${dest} ruin.`;
+                    break;
+                case 10:
+                    lore = `The ${adj} ${material} used to build ${realm} was allegedly stolen from ${entity1} during ${event}.`;
+                    break;
+                case 11:
+                    lore = `It is written that ${entity1} and ${entity2} will meet at ${realm} for one final, ${dest} ${event}.`;
+                    break;
+                case 12:
+                    lore = `The ${magic} of ${realm} is ${adj} and wild, ever since ${artifact} was ${verb} by ${entity1}.`;
+                    break;
+                case 13:
+                    lore = `Ancient ${material} inscriptions found in ${realm} suggest that ${event} was actually ${this.getArticle(adj)} ritual.`;
+                    break;
+                case 14:
+                    lore = `By the power of ${artifact}, ${entity1} was able to ${verb} the ${adj} spirits of ${realm}.`;
+                    break;
+                case 15:
+                    lore = `${this.capitalize(event)} brought about ${this.getArticle(adj)} change in ${realm}, where ${entity1} now rules over ${material}.`;
+                    break;
+                case 16:
+                    lore = `Whispers in the dark claim that ${entity1} has found a way to ${verb} ${artifact} once more.`;
+                    break;
+                case 17:
+                    lore = `The ${material} soul of ${realm} can only be saved if ${entity1} is ${verb} before ${event}.`;
+                    break;
+                case 18:
+                    lore = `Long before ${event}, the ${entity1} used ${material} to create ${this.getArticle(adj)} sanctuary in ${realm}.`;
+                    break;
+                case 19:
+                    lore = `Even the ${schol} ${magic} cannot explain why ${entity1} seeks to ${verb} ${artifact} using ${material}.`;
+                    break;
+                case 20:
+                    lore = `Through ${adj} ${magic}, the very essence of ${realm} was ${verb} into ${artifact}.`;
+                    break;
+                case 21:
+                    lore = `The ${dest} reach of ${entity1} extends beyond ${realm}, driven by the power of ${artifact}.`;
+                    break;
+                case 22:
+                    lore = `Only those who possess the ${artifact} can hope to ${verb} the ${adj} terrors unleashed during ${event}.`;
+                    break;
+                case 23:
+                    lore = `A prophecy foretells that ${entity1} will return to ${realm} to ${verb} the ${this.sample(this.mythicNumbers)} seals of ${material}.`;
+                    break;
+                case 24:
+                    lore = `The ${magic} used by ${entity2} was said to be ${dest}, yet it was ${entity1} who ultimately ${verb} the world.`;
+                    break;
+                case 25:
+                    lore = `Hidden within ${realm}, the ${artifact} remains a testament to the ${adj} legacy of ${entity1}.`;
+                    break;
+                case 26:
+                    lore = `Before the first age of ${realm}, ${entity1} used the power of ${artifact} to create the ${material} stars that guide ${magic} users today.`;
+                    break;
+                case 27:
+                    lore = `It is said that ${entity1} will only return from ${realm} when the ${material} heart of ${artifact} is finally ${verb}.`;
+                    break;
+                case 28:
+                    lore = `The ${schol} of ${magic} remember the ${dest} ${event} as the moment when ${entity1} first ${verb} the ${adj} walls of ${realm}.`;
+                    break;
+                case 29:
+                    lore = `Through the use of ${artifact}, ${entity2} was able to ${verb} the ${material} chains that held ${entity1} for ${this.sample(this.mythicNumbers)} ages.`;
+                    break;
+                case 30:
+                    lore = `Even as the shadows of ${event} loomed over ${realm}, ${entity1} secretly ${verb} ${artifact} using ${adj} ${material}.`;
+                    break;
+                case 31:
+                    lore = `Few among the ${schol} ${magic} comprehend how ${entity1} harnessed ${material} to outlast the ${dest} ${event}.`;
+                    break;
+                case 32:
+                    lore = `Wrapped in the lost tomes of ${realm}, legends recall the day ${entity2} finally ${verb} ${artifact}.`;
+                    break;
+                case 33:
+                    lore = `The ${adj} incantations of ${magic} required to ${verb} ${artifact} were ultimately forgotten after ${event}.`;
+                    break;
+                case 34:
+                    lore = `For ${this.sample(this.mythicNumbers)} centuries, ${entity1} sought the ${adj} knowledge necessary to wield the ${dest} power of ${artifact}.`;
+                    break;
+                case 35:
+                    lore = `The ${material} core of ${artifact} vibrates with an old ${magic}, binding ${entity1} to ${realm} for eternity.`;
+                    break;
+                case 36:
+                    lore = `When the skies over ${realm} finally turn ${adj}, ${entity2} shall ${verb} the ${material} remnants of ${artifact}.`;
+                    break;
+            }
+            return lore;
+        }
+    }
+
+    /**
+     * Produces corporate-themed synergistic text focused on leverage, agility,
+     * and stakeholders. Includes a specialized article handler for acronyms (ROI, KPI).
+     */
+    class CorporateSynergyGenerator extends BaseGenerator {
+        constructor() {
+            super("CorporateSynergyGenerator");
+            this.actionVerbs = ["synergize", "leverage", "pivot", "disrupt", "optimize", "architect", "incubate", "incentivize", "gamify", "monetize", "streamline", "ideate", "iterate", "onboard", "align", "empower", "scale", "deploy", "integrate", "benchmark", "catalyze", "drive", "impact", "transform", "maximize", "revolutionize", "synthesize", "operationalize", "productize", "contextualize", "democratize", "future-proof", "white-board", "growth-hack", "A/B test", "re-engage", "retarget", "upsell", "cross-sell", "funnel", "segment", "convert", "nurture", "activate", "rebrand", "reposition", "navigate", "champion", "spearhead", "fast-track", "greenlight", "sunset", "deprecate", "automate", "unify", "consolidate", "orchestrate", "calibrate", "audit", "forecast", "mitigate", "troubleshoot", "amplify", "boost", "elevate", "hyper-target", "geo-target", "personalize", "localize", "globalize", "crowdsource", "bootstrap", "flesh-out", "unpack", "drill-down", "disintermediate", "hyper-scale", "re-architect", "re-imagine", "tailor", "right-size", "bandwidth-optimize", "barrier-remove", "bridge-build", "capability-model", "center-of-gravity-shift", "culture-shock", "dependency-map", "efficiency-drive", "friction-remove", "goal-set", "horizon-scan", "impact-measure"];
+            this.adjectives = ["agile", "lean", "frictionless", "omnichannel", "holistic", "scalable", "disruptive", "synergistic", "hyper-local", "cloud-native", "turnkey", "best-in-class", "bleeding-edge", "cutting-edge", "state-of-the-art", "next-gen", "paradigm-shifting", "actionable", "granular", "robust", "seamless", "integrated", "end-to-end", "B2B", "B2C", "peer-to-peer", "cross-functional", "client-facing", "mission-critical", "proactive", "reactive", "data-driven", "insight-driven", "AI-powered", "algorithmic", "programmatic", "organic", "viral", "evergreen", "snackable", "immersive", "interactive", "gamified", "user-centric", "customer-centric", "mobile-first", "responsive", "dynamic", "static", "high-level", "low-hanging", "top-tier", "bottom-line", "value-added", "core", "strategic", "tactical", "operational", "logistical", "fiscal", "quarterly", "annual", "year-over-year", "month-over-month", "long-term", "short-term", "mid-term", "asynchronous", "synchronous", "real-time", "on-demand", "bespoke", "custom", "tailored", "modular", "plug-and-play", "open-source", "proprietary", "decentralized", "distributed", "blockchain-adjacent", "quantum-ready", "semantic", "contextual", "predictive", "prescriptive", "diagnostic", "descriptive", "qualitative", "quantitative", "tangible", "intangible", "ambient", "invisible", "ubiquitous", "omnipresent", "outcome-based", "purpose-driven", "future-forward", "market-ready"];
+            this.nouns = ["paradigm", "deliverable", "metric", "bandwidth", "ROI", "KPI", "vertical", "touchpoint", "synergy", "ecosystem", "methodology", "framework", "infrastructure", "architecture", "pipeline", "funnel", "roadmap", "blueprint", "wireframe", "mockup", "prototype", "MVP", "beta-test", "rollout", "launch", "campaign", "initiative", "strategy", "tactic", "workflow", "process", "procedure", "protocol", "best-practice", "case-study", "whitepaper", "thought-leadership", "content-silo", "data-lake", "data-warehouse", "dashboard", "analytic", "insight", "learning", "takeaway", "action-item", "pain-point", "bottleneck", "friction-point", "value-proposition", "core-competency", "differentiator", "USP", "persona", "demographic", "psychographic", "target-audience", "stakeholder", "shareholder", "investor", "board-member", "C-suite", "thought-leader", "influencer", "early-adopter", "laggard", "churn-rate", "retention-rate", "conversion-rate", "click-through-rate", "impression", "engagement", "reach", "frequency", "market-share", "mind-share", "wallet-share", "profit-margin", "bottom-line", "top-line", "revenue-stream", "cash-flow", "burn-rate", "runway", "valuation", "exit-strategy", "merger", "acquisition", "north-star", "center-of-excellence", "wheelhouse", "solution-set", "culture", "commitment", "experience", "landscape", "milestone", "pivot", "disruption", "optimization", "scalability", "agility", "value-stream", "bandwidth-cap", "bottleneck-analysis", "churn-probability", "customer-journey", "decision-framework", "ecosystem-play", "feedback-loop", "growth-lever", "incentive-structure", "market-segmentation", "operational-model"];
+            this.idioms = ["move the needle", "think outside the box", "peel the onion", "boil the ocean", "circle back", "take this offline", "put a pin in it", "run it up the flagpole", "skate to where the puck is going", "open the kimono", "drink our own champagne", "eat our own dog food", "hit the ground running", "reinvent the wheel", "push the envelope", "raise the bar", "shift the paradigm", "connect the dots", "read between the lines", "get our ducks in a row", "compare apples to apples", "trim the fat", "lean in", "double down", "pivot to video", "move fast and break things", "fail fast", "fail forward", "iterate rapidly", "build the plane while flying it", "throw spaghetti at the wall", "see what sticks", "look under the hood", "kick the tires", "dot the i's and cross the t's", "cross-pollinate ideas", "herd cats", "find the silver bullet", "capture lightning in a bottle", "punch above our weight", "open the floodgates", "break the silos", "climb the mountain"];
+            this.timelines = ["for Q1", "for Q2", "for Q3", "for Q4", "by EOQ", "by EOY", "moving forward", "down the road", "in the next reporting cycle", "before EOQ", "in the long run", "at the end of the day", "by EOD", "in the upcoming fiscal year", "as we speak", "on a go-forward basis", "next quarter", "this quarter", "by next fiscal", "ASAP", "on the horizon", "at your earliest convenience", "in the interim", "post-launch", "mid-cycle", "year-end", "quarter-end", "by COP", "by EOB", "TBD", "during the roadshow", "pre-IPO", "post-merger", "in the next sprint", "phase 2", "post-hoc", "long-tail"];
+            this.outcomes = ["actionable insights", "a positive ROI", "maximum throughput", "sustained growth", "stakeholder buy-in", "market disruption", "a win-win scenario", "synergistic outcomes", "core alignment", "level-up performance", "unprecedented scalability", "vertical integration", "disruptive innovation", "market supremacy", "zero friction", "customer delight", "brand advocacy"];
+            this.transitions = ["resulting in", "leading to", "driving", "creating", "fostering", "catalyzing", "delivering", "yielding", "unleashing", "triggering", "ensuring", "facilitating", "accelerating", "powering", "amplifying", "reinforcing", "streamlining", "solidifying", "igniting", "galvanizing"];
+        }
+
+        getIndefiniteArticle(word) {
+            if (!word) return "";
+            const vowels = ["a", "e", "i", "o", "u"],
+                vowelSoundingAcronyms = ["R", "M", "N", "S", "F", "H", "L", "X"];
+            const firstLetter = word.charAt(0).toLowerCase(), firstLetterUpper = word.charAt(0);
+            if (vowels.includes(firstLetter) || (word === word.toUpperCase() && vowelSoundingAcronyms.includes(firstLetterUpper))) return `an ${word}`;
+            return `a ${word}`;
+        }
+
+        generateSentence() {
+            const templateType = this.getTemplateType(32);
+            let sentence = "";
+            const v1 = this.sample(this.actionVerbs), v2 = this.sample(this.actionVerbs);
+            const adj1 = this.sample(this.adjectives), adj2 = this.sample(this.adjectives);
+            const noun1 = this.sample(this.nouns), noun2 = this.sample(this.nouns),
+                noun3 = this.sample(this.nouns), idiom = this.sample(this.idioms);
+            const time = this.sample(this.timelines);
+            const out = this.sample(this.outcomes);
+            const trans = this.sample(this.transitions);
+
+            switch (templateType) {
+                case 0:
+                    sentence = `By leveraging ${adj1} ${this.pluralize(noun1)}, we can actively ${v1} our ${this.pluralize(noun2)} and truly ${idiom} ${time}.`;
+                    break;
+                case 1:
+                    sentence = `Let's ${idiom} on the ${adj1} ${noun1} so we can ${v1} the ${adj2} ${this.pluralize(noun2)} ${time}.`;
+                    break;
+                case 2:
+                    sentence = `Our ${adj1} approach to ${noun1} will inherently ${v1} cross-functional ${this.pluralize(noun2)}, ${trans} ${out}.`;
+                    break;
+                case 3:
+                    sentence = `To effectively ${v1} the broader ecosystem, we must transition from ${adj1} ${this.pluralize(noun1)} to ${adj2} ${this.pluralize(noun2)}.`;
+                    break;
+                case 4:
+                    sentence = `Please ensure your ${this.pluralize(noun1)} are aligned with the ${adj1} ${this.pluralize(noun2)} before we attempt to ${v1} the ${this.pluralize(noun3)}.`;
+                    break;
+                case 5:
+                    sentence = `We need to ${v1} our ${this.pluralize(noun1)} if we're going to truly ${idiom} and reach our ${out} goals.`;
+                    break;
+                case 6:
+                    sentence = `The ${adj1} nature of our ${noun1} allows us to ${v1} without losing focus on our ${this.pluralize(noun2)}.`;
+                    break;
+                case 7:
+                    sentence = `Let's take ${this.getIndefiniteArticle(adj1)} look at how we ${v1} our ${noun1} to see if we're actually ${this.toGerund(v2)} value.`;
+                    break;
+                case 8:
+                    sentence = `Our core ${noun1} is to ${v1} the market by delivering ${adj1}, ${adj2} ${this.pluralize(noun3)} ${time}.`;
+                    break;
+                case 9:
+                    sentence = `If we can ${v1} our ${this.pluralize(noun1)} with the client's ${this.pluralize(noun2)}, we'll achieve ${out}.`;
+                    break;
+                case 10:
+                    sentence = `It's time to ${idiom} and start ${this.toGerund(v1)} our ${adj1} digital transformation ${time}.`;
+                    break;
+                case 11:
+                    sentence = `By ${this.toGerund(v1)} the ${noun1}, we unlock ${adj1} ${this.pluralize(noun2)} that drive ${out}.`;
+                    break;
+                case 12:
+                    sentence = `Can we ${v1} more ${adj1} ${this.pluralize(noun3)} for our ${this.pluralize(noun1)} to help us ${idiom}?`;
+                    break;
+                case 13:
+                    sentence = `The ${adj1} ${noun1} we've ${this.toPastParticiple(v1)} will ensure we stay ahead of the ${adj2} curve ${time}.`;
+                    break;
+                case 14:
+                    sentence = `We must ${v1} our internal ${this.pluralize(noun1)} to foster a more ${adj1}, ${adj2} ${noun3} ${time}.`;
+                    break;
+                case 15:
+                    sentence = `Is it possible to ${v1} the ${noun1} while still ${this.toGerund(v2)} our ${this.pluralize(noun2)}?`;
+                    break;
+                case 16:
+                    sentence = `Ultimately, we want to ${v1} ${adj1} ${this.pluralize(noun1)} that deliver ${out} for all stakeholders.`;
+                    break;
+                case 17:
+                    sentence = `We must ${v1} the ${noun1} to ensure ${adj1} ${this.pluralize(noun2)} that truly ${idiom}.`;
+                    break;
+                case 18:
+                    sentence = `By ${this.toGerund(v1)} our ${this.pluralize(noun1)}, we can ${v2} the ${adj1} ${noun3} ${time}.`;
+                    break;
+                case 19:
+                    sentence = `It's mission-critical to ${idiom} and ${v1} the ${adj1} ${noun1} ${time}.`;
+                    break;
+                case 20:
+                    sentence = `Our ${noun1} strategy is to ${v1} ${adj1} ${this.pluralize(noun2)} and ${trans} ${out}.`;
+                    break;
+                case 21:
+                    sentence = `To truly ${v1} our market presence, we must ${idiom} and embrace ${adj1} ${this.pluralize(noun1)}.`;
+                    break;
+                case 22:
+                    sentence = `The ${v1} of ${adj1} ${this.pluralize(noun1)} is ${trans} ${out} in real-time.`;
+                    break;
+                case 23:
+                    sentence = `${this.capitalize(this.toGerund(v1))} the ${noun1} will allow us to ${v2} our ${adj1} ${this.pluralize(noun2)} ${time}.`;
+                    break;
+                case 24:
+                    sentence = `We need to ${v1} our ${adj1} ${this.pluralize(noun1)} to ensure we ${idiom} without ${this.toGerund(v2)} the ${noun2}.`;
+                    break;
+                case 25:
+                    sentence = `To successfully ${v1} our ${this.pluralize(noun1)}, we must relentlessly pursue ${adj1} ${this.pluralize(noun2)} and ${idiom}.`;
+                    break;
+                case 26:
+                    sentence = `We have the opportunity to ${v1} across the ${noun1} if we can properly onboard the ${adj1} ${noun2} strategy.`;
+                    break;
+                case 27:
+                    sentence = `Our priority ${time} is to ${idiom} while simultaneously ${this.toGerund(v1)} next-gen ${this.pluralize(noun1)} for our clients.`;
+                    break;
+                case 28:
+                    sentence = `Can we ensure that our ${adj1} ${noun1} will consistently generate ${out} when we actually ${v1} the product?`;
+                    break;
+                case 29:
+                    sentence = `By adopting ${this.getIndefiniteArticle(adj1)} ${noun1} architecture, we expect to heavily ${v1} our core ${this.pluralize(noun2)} ${time}.`;
+                    break;
+                case 30:
+                    sentence = `Let's make an effort to ${v2} our current pipeline, thereby ${this.toGerund(v1)} a more ${adj1} approach to ${noun1}.`;
+                    break;
+                case 31:
+                    sentence = `The focus group expects us to ${v1} these ${adj1} ${this.pluralize(noun1)} and eventually ${idiom} for maximum impact.`;
+                    break;
+            }
+            return this.capitalize(sentence);
+        }
+
+    }
+
+    // --- Application Logic ---
+    const gGourmet = new GourmetGenerator();
+    const gAlien = new AlienLanguageGenerator();
+    const gFantasy = new FantasyLoreGenerator();
+    const gCorporate = new CorporateSynergyGenerator();
+
+    const outputEl = document.getElementById("output");
+    const paragraphInput = document.getElementById("paragraphs");
+    const sentenceInput = document.getElementById("sentences");
+    const copyBtn = document.getElementById("copy-btn");
+    const regenBtn = document.getElementById("regen-btn");
+    const genRadios = document.querySelectorAll("input[name=\"generator\"]");
+
+    function getActiveGenerator() {
+        const selected = document.querySelector("input[name=\"generator\"]:checked").value;
+        if (selected === "gourmet") return gGourmet;
+        if (selected === "alien") return gAlien;
+        if (selected === "fantasy") return gFantasy;
+        return gCorporate;
+    }
+
+    function updateOutput() {
+        const generator = getActiveGenerator();
+        const pCount = parseInt(paragraphInput.value) || 1;
+        const sCount = parseInt(sentenceInput.value) || 1;
+        const paragraphs = generator.generate(pCount, sCount);
+
+        outputEl.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join("");
+
+        // Update body class based on theme
+        let theme = "ocker"; // Case for gCorporate
+        if (generator === gGourmet) theme = "red";
+        else if (generator === gAlien) theme = "purple";
+        else if (generator === gFantasy) theme = "green";
+
+        document.documentElement.className = "layout-centered theme-" + theme;
+    }
+
+    // Event Listeners
+    genRadios.forEach(radio => radio.addEventListener("change", updateOutput));
+    paragraphInput.addEventListener("input", updateOutput);
+    sentenceInput.addEventListener("input", updateOutput);
+    regenBtn.addEventListener("click", updateOutput);
+
+    copyBtn.addEventListener("click", async () => {
+        const text = Array.from(outputEl.querySelectorAll("p")).map(p => p.innerText).join("\n\n");
+        const showSuccess = () => {
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = "<span class=\"sym\">check</span> Copied!";
+            setTimeout(() => copyBtn.innerHTML = originalText, 2000);
+        };
+
+        // 1. Try modern clipboard API
+        if (navigator.clipboard?.writeText && window.isSecureContext) {
             try {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                textArea.style.position = "fixed";
-                textArea.style.left = "-9999px";
-                textArea.style.top = "0";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                const successful = document.execCommand("copy");
-                document.body.removeChild(textArea);
-                if (successful) showSuccess();
+                await navigator.clipboard.writeText(text);
+                showSuccess();
+                return;
             } catch (err) {
-                console.error("Fallback copy failed:", err);
+                console.error("Clipboard API failed:", err);
             }
-        });
+        }
 
-        // Initial Generation
-        updateOutput();
-    </script>
-    </body>
+        // 2. Fallback to textarea select/copy (works in non-secure context and old browsers)
+        try {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            const successful = document.execCommand("copy");
+            document.body.removeChild(textArea);
+            if (successful) showSuccess();
+        } catch (err) {
+            console.error("Fallback copy failed:", err);
+        }
+    });
+
+    // Initial Generation
+    updateOutput();
+</script>
+</body>
 
 </html>

@@ -414,521 +414,596 @@
 </head>
 
 <body>
-    <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
 
-    <header>
-        <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
-        <hgroup>
-            <h1>Decidr</h1>
-            <p>The versatile decision engine</p>
-        </hgroup>
-        <div class="group">
-            <button type="button" id="btn-history" class="btn-sym" data-tooltip="History"
-                data-tooltip-pos="below">history</button>
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Decidr</h1>
+        <p>The versatile decision engine</p>
+    </hgroup>
+    <div class="group">
+        <button type="button" id="btn-history" class="btn-sym" data-tooltip="History"
+                data-tooltip-pos="below">history
+        </button>
+    </div>
+</header>
+
+<main>
+    <!-- ═══════════════════ INPUT PHASE ═══════════════════ -->
+    <section id="phase-input">
+        <h2>What are you deciding?</h2>
+
+        <input type="text" id="question" placeholder="Should I… / Pizza or Sushi / What to watch…"
+               maxlength="200"
+               autocomplete="off">
+
+        <div class="group mb-4">
+            <button type="button" data-quick="yesno">Yes or No</button>
+            <button type="button" data-quick="number">Pick a Number</button>
+            <button type="button" data-quick="sort">Sort Priorities</button>
         </div>
-    </header>
 
-    <main>
-        <!-- ═══════════════════ INPUT PHASE ═══════════════════ -->
-        <section id="phase-input">
-            <h2>What are you deciding?</h2>
-
-            <input type="text" id="question" placeholder="Should I… / Pizza or Sushi / What to watch…" maxlength="200"
-                autocomplete="off">
-
-            <div class="group mb-4">
-                <button type="button" data-quick="yesno">Yes or No</button>
-                <button type="button" data-quick="number">Pick a Number</button>
-                <button type="button" data-quick="sort">Sort Priorities</button>
-            </div>
-
-            <!-- Number range config -->
-            <fieldset id="number-config" hidden>
-                <legend>Number Range</legend>
-                <div class="flex-row">
-                    <label>
-                        Min <input type="number" id="num-min" value="1">
-                    </label>
-                    <label>
-                        Max <input type="number" id="num-max" value="100">
-                    </label>
-                    <label>
-                        Pick <input type="number" id="num-count" value="1" min="1">
-                    </label>
-                </div>
-            </fieldset>
-
-            <!-- Options list -->
-            <fieldset id="options-fieldset">
-                <legend>Options</legend>
-                <div id="options-list"></div>
-                <button type="button" id="btn-add-option" class="mt-2">
-                    <span class="sym">add</span> Add option
-                </button>
-            </fieldset>
-
-            <!-- Choose randomly checkbox -->
-            <label class="mt-4" id="random-toggle-row">
-                <input type="checkbox" id="choose-randomly" checked> Choose randomly?
-            </label>
-
-            <!-- Mode toggles -->
-            <div class="group mt-2 mb-4" id="add-detail-bar">
-                <button type="button" id="btn-add-proscons" data-tooltip="List pros and cons per option">
-                    <span class="sym">rule</span> Pros &amp; Cons
-                </button>
-                <button type="button" id="btn-add-criteria" data-tooltip="Score options on named criteria">
-                    <span class="sym">equalizer</span> Criteria
-                </button>
-            </div>
-
-            <!-- Random mode config: pick count + weights -->
-            <div id="cfg-random-mode">
-                <div class="flex-row mt-2">
-                    <label for="pick-count">
-                        Pick count <input type="number" id="pick-count" value="1" min="1" max="99">
-                    </label>
-                    <label>
-                        <input type="checkbox" id="with-replacement"> With replacement
-                    </label>
-                </div>
-            </div>
-
-            <!-- Manual mode: shown only when not in random/group/number mode -->
-
-
-            <!-- Group count (shown when method=group from quick chip) -->
-            <div id="cfg-group" hidden>
-                <label for="group-count">
-                    Groups <input type="number" id="group-count" value="2" min="2" max="20">
+        <!-- Number range config -->
+        <fieldset id="number-config" hidden>
+            <legend>Number Range</legend>
+            <div class="flex-row">
+                <label>
+                    Min <input type="number" id="num-min" value="1">
+                </label>
+                <label>
+                    Max <input type="number" id="num-max" value="100">
+                </label>
+                <label>
+                    Pick <input type="number" id="num-count" value="1" min="1">
                 </label>
             </div>
-
-            <!-- Layer: Weights (random mode only) -->
-            <div class="layer-panel" id="layer-weights">
-                <fieldset>
-                    <legend>Weights</legend>
-                    <div id="weights-list"></div>
-                </fieldset>
-            </div>
-
-            <!-- Layer: Pros & Cons (manual mode, always on) -->
-            <div class="layer-panel" id="layer-proscons">
-                <fieldset>
-                    <legend>Pros &amp; Cons</legend>
-                    <div id="proscons-list"></div>
-                </fieldset>
-            </div>
-
-            <!-- Layer: Criteria & Scores -->
-            <div class="layer-panel" id="layer-criteria">
-                <fieldset>
-                    <legend>Criteria &amp; Scores</legend>
-                    <div id="criteria-def"></div>
-                    <div class="group mb-4">
-                        <button type="button" id="btn-add-criterion">
-                            <span class="sym">add</span> Criterion
-                        </button>
-                        <select id="criteria-template" title="Apply template">
-                            <option value="">Template…</option>
-                            <option value="food">Food</option>
-                            <option value="hiring">Hiring</option>
-                            <option value="purchase">Purchase</option>
-                            <option value="travel">Travel</option>
-                            <option value="generic">Generic</option>
-                            <option value="eisenhower">Eisenhower</option>
-                            <option value="cost-benefit">Cost-Benefit</option>
-                        </select>
-                    </div>
-                    <div class="scores-grid" id="scores-grid"></div>
-                </fieldset>
-            </div>
-
-            <!-- Comparison style: shown only when neither Pros/Cons nor Criteria are active -->
-            <div id="cfg-comparison" hidden>
-                <div class="segmented-control mt-2" role="group" aria-label="Comparison style">
-                    <input type="radio" name="comp-style" id="cs-pairwise" value="pairwise" checked>
-                    <label for="cs-pairwise" data-tooltip="Compare every pair of options head-to-head" data-tooltip-pos="below">Pairwise</label>
-                    <input type="radio" name="comp-style" id="cs-elimination" value="elimination">
-                    <label for="cs-elimination" data-tooltip="Single-elimination tournament bracket" data-tooltip-pos="below">Bracket</label>
-                    <input type="radio" name="comp-style" id="cs-sequential" value="sequential">
-                    <label for="cs-sequential" data-tooltip="Keep or drop each option one at a time" data-tooltip-pos="below">Sequential</label>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- ═══════════════════ PROCESS PHASE ═══════════════════ -->
-        <section id="phase-process" hidden>
-            <h2 id="process-title">Deciding…</h2>
-            <div id="process-content"></div>
-        </section>
-
-        <!-- ═══════════════════ RESULT PHASE ═══════════════════ -->
-        <section id="phase-result" hidden>
-            <p class="winner-label" id="result-label">The decision is</p>
-            <p class="winner-name animate-up" id="result-winner-name"></p>
-            <ul class="rationale-list animate-up" id="result-rationale"></ul>
-            <div id="result-ranking"></div>
-            <div id="result-sensitivity"></div>
-            <div id="result-groups"></div>
-            <div id="result-math-report" class="mt-4" hidden>
-                <div class="header-row">
-                    <h3 class="m-0">Report</h3>
-                    <button type="button" class="btn-sm" id="btn-copy-math">
-                        <span class="sym">content_copy</span> Copy
-                        markdown</button>
-                </div>
-                <details id="math-details-el" class="mt-2">
-                    <summary>View step-by-step calculations</summary>
-                    <div id="math-report-content" class="mt-2"></div>
-                </details>
-            </div>
-            <div class="group mt-4">
-                <button type="button" id="btn-add-detail">
-                    <span class="sym">layers</span> Add detail
-                </button>
-                <button type="button" class="btn-sym" id="btn-share" data-tooltip="Copy share link">share</button>
-            </div>
-        </section>
-
-        <!-- ═══════════════════ ACTION BAR ═══════════════════ -->
-        <div class="group mt-4" id="action-bar">
-            <button type="submit" id="btn-decide" data-state="disabled" disabled>Decide</button>
-            <button type="button" id="btn-undo" class="btn-sym" data-tooltip="Undo" disabled>undo</button>
-            <button type="button" class="btn-danger btn-sym" id="btn-reset" data-tooltip="Reset"
-                aria-label="Reset">delete</button>
-        </div>
-    </main>
-
-    <footer>
-        <p>Decidr — The Versatile Decision Engine</p>
-    </footer>
-
-    <!-- ═══════════════════ CONFIRM DIALOG ════════════════════ -->
-    <dialog id="dialog-confirm" aria-labelledby="confirm-title" aria-modal="true">
-        <article>
-            <header>
-                <h3 id="confirm-title">Replace existing options?</h3>
-            </header>
-            <p id="confirm-msg"></p>
-            <footer>
-                <button type="button" data-action="cancel" id="btn-confirm-cancel">Cancel</button>
-                <button type="button" id="btn-confirm-ok">Replace</button>
-            </footer>
-        </article>
-    </dialog>
-
-    <!-- ═══════════════════ HISTORY DIALOG ═══════════════════ -->
-    <dialog id="dialog-history" aria-labelledby="history-title" aria-modal="true">
-        <article>
-            <header>
-                <h3 id="history-title">History</h3>
-            </header>
-            <div role="search">
-                <input type="search" id="history-search" placeholder="Search decisions…" aria-label="Search history">
-            </div>
-            <div id="history-list"></div>
-            <footer>
-                <button type="button" class="btn-sym" data-action="cancel" id="btn-close-history">close</button>
-            </footer>
-        </article>
-    </dialog>
-
-    <aside>
-        <h2>Settings</h2>
-        <fieldset>
-            <legend>Preferences</legend>
-            <label for="pref-anim">Animation speed
-                <select id="pref-anim">
-                    <option value="normal">Normal</option>
-                    <option value="fast">Fast</option>
-                    <option value="off">Off</option>
-                </select>
-            </label>
-            <label for="pref-sens-w">Sensitivity — weight threshold
-                <input type="number" id="pref-sens-w" value="2" min="0" max="10" step="0.5">
-            </label>
-            <label for="pref-sens-s">Sensitivity — score threshold
-                <input type="number" id="pref-sens-s" value="1" min="0" max="5" step="0.5">
-            </label>
-            <label for="pref-hide-total">
-                <input type="checkbox" id="pref-hide-total"> Only show totals after decide
-            </label>
-            <label for="pref-save-history">
-                <input type="checkbox" id="pref-save-history"> Save previous decisions
-            </label>
         </fieldset>
-        <div class="form-actions">
-            <button type="button" id="btn-export">
-                <span class="sym">download</span> Export
+
+        <!-- Options list -->
+        <fieldset id="options-fieldset">
+            <legend>Options</legend>
+            <div id="options-list"></div>
+            <button type="button" id="btn-add-option" class="mt-2">
+                <span class="sym">add</span> Add option
             </button>
-            <button type="button" id="btn-import">
-                <span class="sym">upload</span> Import
+        </fieldset>
+
+        <!-- Choose randomly checkbox -->
+        <label class="mt-4" id="random-toggle-row">
+            <input type="checkbox" id="choose-randomly" checked> Choose randomly?
+        </label>
+
+        <!-- Mode toggles -->
+        <div class="group mt-2 mb-4" id="add-detail-bar">
+            <button type="button" id="btn-add-proscons"
+                    data-tooltip="List pros and cons per option">
+                <span class="sym">rule</span> Pros &amp; Cons
+            </button>
+            <button type="button" id="btn-add-criteria"
+                    data-tooltip="Score options on named criteria">
+                <span class="sym">equalizer</span> Criteria
             </button>
         </div>
-        <button type="button" id="btn-reset-all" class="btn-danger w-full mt-2">
-            <span class="sym">refresh</span> Reset
-            to Defaults</button>
-    </aside>
 
-    <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+        <!-- Random mode config: pick count + weights -->
+        <div id="cfg-random-mode">
+            <div class="flex-row mt-2">
+                <label for="pick-count">
+                    Pick count <input type="number" id="pick-count" value="1" min="1" max="99">
+                </label>
+                <label>
+                    <input type="checkbox" id="with-replacement"> With replacement
+                </label>
+            </div>
+        </div>
 
-    <script>
-        "use strict";
-        // ══════════════════════════════════════════════════════════
-        //  CONSTANTS
-        // ══════════════════════════════════════════════════════════
-        const PALETTE = ["#6750a4", "#006a6a", "#b3261e", "#006399", "#7d5700", "#146c2e", "#984061", "#4a6741", "#006874", "#5c6bc0"];
+        <!-- Manual mode: shown only when not in random/group/number mode -->
 
-        const CRITERIA_PRESETS = {
-            food: ["Price", "Distance", "Reviews", "Cuisine", "Wait time"],
-            hiring: ["Skills", "Culture fit", "Salary", "Experience", "Availability"],
-            purchase: ["Price", "Quality", "Reviews", "Warranty", "Availability"],
-            travel: ["Cost", "Distance", "Weather", "Activities", "Safety"],
-            generic: ["Cost", "Quality", "Time", "Risk", "Enjoyment"],
-            eisenhower: ["Urgency", "Importance"],
-            "cost-benefit": ["Direct Costs", "Indirect Costs", "Tangible Benefits", "Intangible Benefits", "Risk Exposure"],
+
+        <!-- Group count (shown when method=group from quick chip) -->
+        <div id="cfg-group" hidden>
+            <label for="group-count">
+                Groups <input type="number" id="group-count" value="2" min="2" max="20">
+            </label>
+        </div>
+
+        <!-- Layer: Weights (random mode only) -->
+        <div class="layer-panel" id="layer-weights">
+            <fieldset>
+                <legend>Weights</legend>
+                <div id="weights-list"></div>
+            </fieldset>
+        </div>
+
+        <!-- Layer: Pros & Cons (manual mode, always on) -->
+        <div class="layer-panel" id="layer-proscons">
+            <fieldset>
+                <legend>Pros &amp; Cons</legend>
+                <div id="proscons-list"></div>
+            </fieldset>
+        </div>
+
+        <!-- Layer: Criteria & Scores -->
+        <div class="layer-panel" id="layer-criteria">
+            <fieldset>
+                <legend>Criteria &amp; Scores</legend>
+                <div id="criteria-def"></div>
+                <div class="group mb-4">
+                    <button type="button" id="btn-add-criterion">
+                        <span class="sym">add</span> Criterion
+                    </button>
+                    <select id="criteria-template" title="Apply template">
+                        <option value="">Template…</option>
+                        <option value="food">Food</option>
+                        <option value="hiring">Hiring</option>
+                        <option value="purchase">Purchase</option>
+                        <option value="travel">Travel</option>
+                        <option value="generic">Generic</option>
+                        <option value="eisenhower">Eisenhower</option>
+                        <option value="cost-benefit">Cost-Benefit</option>
+                    </select>
+                </div>
+                <div class="scores-grid" id="scores-grid"></div>
+            </fieldset>
+        </div>
+
+        <!-- Comparison style: shown only when neither Pros/Cons nor Criteria are active -->
+        <div id="cfg-comparison" hidden>
+            <div class="segmented-control mt-2" role="group" aria-label="Comparison style">
+                <input type="radio" name="comp-style" id="cs-pairwise" value="pairwise" checked>
+                <label for="cs-pairwise" data-tooltip="Compare every pair of options head-to-head"
+                       data-tooltip-pos="below">Pairwise</label>
+                <input type="radio" name="comp-style" id="cs-elimination" value="elimination">
+                <label for="cs-elimination" data-tooltip="Single-elimination tournament bracket"
+                       data-tooltip-pos="below">Bracket</label>
+                <input type="radio" name="comp-style" id="cs-sequential" value="sequential">
+                <label for="cs-sequential" data-tooltip="Keep or drop each option one at a time"
+                       data-tooltip-pos="below">Sequential</label>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- ═══════════════════ PROCESS PHASE ═══════════════════ -->
+    <section id="phase-process" hidden>
+        <h2 id="process-title">Deciding…</h2>
+        <div id="process-content"></div>
+    </section>
+
+    <!-- ═══════════════════ RESULT PHASE ═══════════════════ -->
+    <section id="phase-result" hidden>
+        <p class="winner-label" id="result-label">The decision is</p>
+        <p class="winner-name animate-up" id="result-winner-name"></p>
+        <ul class="rationale-list animate-up" id="result-rationale"></ul>
+        <div id="result-ranking"></div>
+        <div id="result-sensitivity"></div>
+        <div id="result-groups"></div>
+        <div id="result-math-report" class="mt-4" hidden>
+            <div class="header-row">
+                <h3 class="m-0">Report</h3>
+                <button type="button" class="btn-sm" id="btn-copy-math">
+                    <span class="sym">content_copy</span> Copy
+                    markdown
+                </button>
+            </div>
+            <details id="math-details-el" class="mt-2">
+                <summary>View step-by-step calculations</summary>
+                <div id="math-report-content" class="mt-2"></div>
+            </details>
+        </div>
+        <div class="group mt-4">
+            <button type="button" id="btn-add-detail">
+                <span class="sym">layers</span> Add detail
+            </button>
+            <button type="button" class="btn-sym" id="btn-share" data-tooltip="Copy share link">
+                share
+            </button>
+        </div>
+    </section>
+
+    <!-- ═══════════════════ ACTION BAR ═══════════════════ -->
+    <div class="group mt-4" id="action-bar">
+        <button type="submit" id="btn-decide" data-state="disabled" disabled>Decide</button>
+        <button type="button" id="btn-undo" class="btn-sym" data-tooltip="Undo" disabled>undo
+        </button>
+        <button type="button" class="btn-danger btn-sym" id="btn-reset" data-tooltip="Reset"
+                aria-label="Reset">delete
+        </button>
+    </div>
+</main>
+
+<footer>
+    <p>Decidr — The Versatile Decision Engine</p>
+</footer>
+
+<!-- ═══════════════════ CONFIRM DIALOG ════════════════════ -->
+<dialog id="dialog-confirm" aria-labelledby="confirm-title" aria-modal="true">
+    <article>
+        <header>
+            <h3 id="confirm-title">Replace existing options?</h3>
+        </header>
+        <p id="confirm-msg"></p>
+        <footer>
+            <button type="button" data-action="cancel" id="btn-confirm-cancel">Cancel</button>
+            <button type="button" id="btn-confirm-ok">Replace</button>
+        </footer>
+    </article>
+</dialog>
+
+<!-- ═══════════════════ HISTORY DIALOG ═══════════════════ -->
+<dialog id="dialog-history" aria-labelledby="history-title" aria-modal="true">
+    <article>
+        <header>
+            <h3 id="history-title">History</h3>
+        </header>
+        <div role="search">
+            <input type="search" id="history-search" placeholder="Search decisions…"
+                   aria-label="Search history">
+        </div>
+        <div id="history-list"></div>
+        <footer>
+            <button type="button" class="btn-sym" data-action="cancel" id="btn-close-history">
+                close
+            </button>
+        </footer>
+    </article>
+</dialog>
+
+<aside>
+    <h2>Settings</h2>
+    <fieldset>
+        <legend>Preferences</legend>
+        <label for="pref-anim">Animation speed
+            <select id="pref-anim">
+                <option value="normal">Normal</option>
+                <option value="fast">Fast</option>
+                <option value="off">Off</option>
+            </select>
+        </label>
+        <label for="pref-sens-w">Sensitivity — weight threshold
+            <input type="number" id="pref-sens-w" value="2" min="0" max="10" step="0.5">
+        </label>
+        <label for="pref-sens-s">Sensitivity — score threshold
+            <input type="number" id="pref-sens-s" value="1" min="0" max="5" step="0.5">
+        </label>
+        <label for="pref-hide-total">
+            <input type="checkbox" id="pref-hide-total"> Only show totals after decide
+        </label>
+        <label for="pref-save-history">
+            <input type="checkbox" id="pref-save-history"> Save previous decisions
+        </label>
+    </fieldset>
+    <div class="form-actions">
+        <button type="button" id="btn-export">
+            <span class="sym">download</span> Export
+        </button>
+        <button type="button" id="btn-import">
+            <span class="sym">upload</span> Import
+        </button>
+    </div>
+    <button type="button" id="btn-reset-all" class="btn-danger w-full mt-2">
+        <span class="sym">refresh</span> Reset
+        to Defaults
+    </button>
+</aside>
+
+<div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+    "use strict";
+    // ══════════════════════════════════════════════════════════
+    //  CONSTANTS
+    // ══════════════════════════════════════════════════════════
+    const PALETTE = ["#6750a4", "#006a6a", "#b3261e", "#006399", "#7d5700", "#146c2e", "#984061", "#4a6741", "#006874", "#5c6bc0"];
+
+    const CRITERIA_PRESETS = {
+        food: ["Price", "Distance", "Reviews", "Cuisine", "Wait time"],
+        hiring: ["Skills", "Culture fit", "Salary", "Experience", "Availability"],
+        purchase: ["Price", "Quality", "Reviews", "Warranty", "Availability"],
+        travel: ["Cost", "Distance", "Weather", "Activities", "Safety"],
+        generic: ["Cost", "Quality", "Time", "Risk", "Enjoyment"],
+        eisenhower: ["Urgency", "Importance"],
+        "cost-benefit": ["Direct Costs", "Indirect Costs", "Tangible Benefits", "Intangible Benefits", "Risk Exposure"],
+    };
+
+    const KEYWORD_CATS = {
+        food: ["dinner", "eat", "restaurant", "lunch", "food", "pizza", "sushi", "cook"],
+        hiring: ["hire", "candidate", "interview", "recruit"],
+        purchase: ["buy", "purchase", "shop", "order"],
+        travel: ["trip", "vacation", "travel", "flight", "hotel"],
+    };
+
+    const ORACLE_YESNO = ["Yes", "No", "Definitely yes", "Definitely no", "Most likely", "Unlikely", "Ask again later", "The answer is yes", "Unclear — flip a coin"];
+    const ORACLE_OPEN = ["Try it", "Go for it", "Think it over", "Why not?", "Trust your gut", "One step at a time", "Seek more information", "Let fate decide"];
+
+    // ══════════════════════════════════════════════════════════
+    //  STATE
+    // ══════════════════════════════════════════════════════════
+    function mkId() {
+        return Math.random().toString(36).slice(2, 9);
+    }
+
+    function newState() {
+        return {
+            schemaVersion: 1,
+            id: mkId(),
+            question: "",
+            contextCategory: null,
+            options: [],
+            optionsLocked: false,
+            weights: {},
+            proscons: {},
+            criteria: [],
+            scores: {},
+            method: "auto",
+            chooseRandomly: true,
+            methodConfig: { type: "random", pickCount: 1, withReplacement: false },
+            result: null,
+            resultHistory: [],
+            phase: "input",
+            activeLayers: [],
+            undoStack: [],
         };
+    }
 
-        const KEYWORD_CATS = {
-            food: ["dinner", "eat", "restaurant", "lunch", "food", "pizza", "sushi", "cook"],
-            hiring: ["hire", "candidate", "interview", "recruit"],
-            purchase: ["buy", "purchase", "shop", "order"],
-            travel: ["trip", "vacation", "travel", "flight", "hotel"],
-        };
+    let prefs = Object.assign(
+        {
+            animationSpeed: "normal",
+            sensitivityWeightThreshold: 2,
+            sensitivityScoreThreshold: 1,
+            showTotalAfterDecide: true,
+            saveHistory: true,
+        },
+        tryParse(localStorage.getItem("decidr_prefs")),
+    );
 
-        const ORACLE_YESNO = ["Yes", "No", "Definitely yes", "Definitely no", "Most likely", "Unlikely", "Ask again later", "The answer is yes", "Unclear — flip a coin"];
-        const ORACLE_OPEN = ["Try it", "Go for it", "Think it over", "Why not?", "Trust your gut", "One step at a time", "Seek more information", "Let fate decide"];
+    let state = newState();
+    let savedHistory = tryParse(localStorage.getItem("decidr_history")) || [];
+    let _compSession = 0; // incremented each time a comparison session starts; used to invalidate stale keyboard handlers
 
-        // ══════════════════════════════════════════════════════════
-        //  STATE
-        // ══════════════════════════════════════════════════════════
-        function mkId() { return Math.random().toString(36).slice(2, 9); }
+    // Restore last session
+    const saved = tryParse(localStorage.getItem("decidr_state"));
+    if (saved?.schemaVersion === 1) {
+        state = Object.assign(newState(), saved);
+        state.phase = "input";
+        state.undoStack = [];
+    }
 
-        function newState() {
-            return {
-                schemaVersion: 1,
-                id: mkId(),
-                question: "",
-                contextCategory: null,
-                options: [],
-                optionsLocked: false,
-                weights: {},
-                proscons: {},
-                criteria: [],
-                scores: {},
-                method: "auto",
-                chooseRandomly: true,
-                methodConfig: { type: "random", pickCount: 1, withReplacement: false },
-                result: null,
-                resultHistory: [],
-                phase: "input",
-                activeLayers: [],
-                undoStack: [],
-            };
+    function tryParse(s) {
+        try {
+            return s ? JSON.parse(s) : null;
+        } catch {
+            return null;
         }
+    }
 
-        let prefs = Object.assign(
-            { animationSpeed: "normal", sensitivityWeightThreshold: 2, sensitivityScoreThreshold: 1, showTotalAfterDecide: true, saveHistory: true },
-            tryParse(localStorage.getItem("decidr_prefs"))
-        );
+    // Debounced save
+    let _saveTimer;
 
-        let state = newState();
-        let savedHistory = tryParse(localStorage.getItem("decidr_history")) || [];
-        let _compSession = 0; // incremented each time a comparison session starts; used to invalidate stale keyboard handlers
+    function scheduleSave() {
+        clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(() => localStorage.setItem("decidr_state", JSON.stringify(state)), 500);
+    }
 
-        // Restore last session
-        const saved = tryParse(localStorage.getItem("decidr_state"));
-        if (saved?.schemaVersion === 1) {
-            state = Object.assign(newState(), saved);
-            state.phase = "input";
-            state.undoStack = [];
-        }
+    function savePrefs() {
+        localStorage.setItem("decidr_prefs", JSON.stringify(prefs));
+    }
 
-        function tryParse(s) { try { return s ? JSON.parse(s) : null; } catch { return null; } }
+    function pushToHistory(result) {
+        if (!prefs.saveHistory) return;
+        savedHistory.unshift({
+            id: mkId(),
+            question: state.question || "Untitled",
+            winner: result.winner,
+            method: result.method,
+            date: new Date().toISOString(),
+            state: JSON.parse(JSON.stringify(state)),
+        });
+        if (savedHistory.length > 50) savedHistory.length = 50;
+        localStorage.setItem("decidr_history", JSON.stringify(savedHistory));
+    }
 
-        // Debounced save
-        let _saveTimer;
-        function scheduleSave() {
-            clearTimeout(_saveTimer);
-            _saveTimer = setTimeout(() => localStorage.setItem("decidr_state", JSON.stringify(state)), 500);
-        }
+    // ── Undo ──
+    function pushUndo() {
+        const snap = JSON.parse(JSON.stringify(state));
+        snap.undoStack = [];
+        state.undoStack.push(snap);
+        if (state.undoStack.length > 50) state.undoStack.shift();
+    }
 
-        function savePrefs() { localStorage.setItem("decidr_prefs", JSON.stringify(prefs)); }
+    function undo() {
+        if (!state.undoStack.length) return;
+        const prev = state.undoStack.pop();
+        const stack = state.undoStack.slice();
+        state = prev;
+        state.undoStack = stack;
+        renderAll();
+        scheduleSave();
+    }
 
-        function pushToHistory(result) {
-            if (!prefs.saveHistory) return;
-            savedHistory.unshift({ id: mkId(), question: state.question || "Untitled", winner: result.winner, method: result.method, date: new Date().toISOString(), state: JSON.parse(JSON.stringify(state)) });
-            if (savedHistory.length > 50) savedHistory.length = 50;
-            localStorage.setItem("decidr_history", JSON.stringify(savedHistory));
-        }
+    // ══════════════════════════════════════════════════════════
+    //  RENDERING
+    // ══════════════════════════════════════════════════════════
+    function renderAll() {
+        renderPhase();
+        renderOptions();
+        renderWeights();
+        renderProscons();
+        renderCriteria();
+        renderScoresGrid();
+        renderActionBar();
+        updateInputMode();
+        document.getElementById("question").value = state.question;
+        document.getElementById("choose-randomly").checked = !!state.chooseRandomly;
+        document.getElementById("pref-anim").value = prefs.animationSpeed;
+        document.getElementById("pref-sens-w").value = prefs.sensitivityWeightThreshold;
+        document.getElementById("pref-sens-s").value = prefs.sensitivityScoreThreshold;
+        document.getElementById("pref-hide-total").checked = !!prefs.showTotalAfterDecide;
+        document.getElementById("pref-save-history").checked = !!prefs.saveHistory;
+    }
 
-        // ── Undo ──
-        function pushUndo() {
-            const snap = JSON.parse(JSON.stringify(state));
-            snap.undoStack = [];
-            state.undoStack.push(snap);
-            if (state.undoStack.length > 50) state.undoStack.shift();
-        }
+    function renderPhase() {
+        document.getElementById("phase-input").hidden = state.phase !== "input";
+        document.getElementById("phase-process").hidden = state.phase !== "process";
+        document.getElementById("phase-result").hidden = state.phase !== "result";
+    }
 
-        function undo() {
-            if (!state.undoStack.length) return;
-            const prev = state.undoStack.pop();
-            const stack = state.undoStack.slice();
-            state = prev;
-            state.undoStack = stack;
-            renderAll();
-            scheduleSave();
-        }
-
-        // ══════════════════════════════════════════════════════════
-        //  RENDERING
-        // ══════════════════════════════════════════════════════════
-        function renderAll() {
-            renderPhase();
-            renderOptions();
-            renderWeights();
-            renderProscons();
-            renderCriteria();
-            renderScoresGrid();
-            renderActionBar();
-            updateInputMode();
-            document.getElementById("question").value = state.question;
-            document.getElementById("choose-randomly").checked = !!state.chooseRandomly;
-            document.getElementById("pref-anim").value = prefs.animationSpeed;
-            document.getElementById("pref-sens-w").value = prefs.sensitivityWeightThreshold;
-            document.getElementById("pref-sens-s").value = prefs.sensitivityScoreThreshold;
-            document.getElementById("pref-hide-total").checked = !!prefs.showTotalAfterDecide;
-            document.getElementById("pref-save-history").checked = !!prefs.saveHistory;
-        }
-
-        function renderPhase() {
-            document.getElementById("phase-input").hidden = state.phase !== "input";
-            document.getElementById("phase-process").hidden = state.phase !== "process";
-            document.getElementById("phase-result").hidden = state.phase !== "result";
-        }
-
-        function renderOptions() {
-            const list = document.getElementById("options-list");
-            list.innerHTML = "";
-            state.options.forEach((opt, i) => {
-                const row = document.createElement("div");
-                row.className = "option-row";
-                const dot = document.createElement("span");
-                dot.className = "option-color";
-                dot.style.background = opt.color;
-                const inp = document.createElement("input");
-                inp.type = "text";
-                inp.value = opt.name;
-                inp.placeholder = `Option ${i + 1}`;
-                inp.addEventListener("input", e => {
-                    const v = e.target.value;
-                    const dup = state.options.some(o => o.id !== opt.id && o.name.trim() === v.trim() && v.trim());
-                    inp.setAttribute("aria-invalid", dup ? "true" : "false");
-                    if (!dup) { opt.name = v; state.optionsLocked = true; renderWeights(); renderProscons(); updateDecideBtn(); scheduleSave(); }
-                });
-                inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addOption(); } });
-                const del = document.createElement("button");
-                del.type = "button";
-                del.className = "btn-sym";
-                del.textContent = "close";
-                del.setAttribute("aria-label", "Remove");
-                del.addEventListener("click", () => {
-                    pushUndo();
+    function renderOptions() {
+        const list = document.getElementById("options-list");
+        list.innerHTML = "";
+        state.options.forEach((opt, i) => {
+            const row = document.createElement("div");
+            row.className = "option-row";
+            const dot = document.createElement("span");
+            dot.className = "option-color";
+            dot.style.background = opt.color;
+            const inp = document.createElement("input");
+            inp.type = "text";
+            inp.value = opt.name;
+            inp.placeholder = `Option ${i + 1}`;
+            inp.addEventListener("input", e => {
+                const v = e.target.value;
+                const dup = state.options.some(o => o.id !== opt.id && o.name.trim() === v.trim() && v.trim());
+                inp.setAttribute("aria-invalid", dup ? "true" : "false");
+                if (!dup) {
+                    opt.name = v;
                     state.optionsLocked = true;
-                    state.options.splice(i, 1);
-                    delete state.weights[opt.id];
-                    delete state.proscons[opt.id];
-                    delete state.scores[opt.id];
-                    renderAll();
+                    renderWeights();
+                    renderProscons();
+                    updateDecideBtn();
                     scheduleSave();
-                });
-                row.append(dot, inp, del);
-                list.appendChild(row);
+                }
             });
-        }
-
-        function renderWeights() {
-            const list = document.getElementById("weights-list");
-            list.innerHTML = "";
-            state.options.forEach(opt => {
-                const w = state.weights[opt.id] ?? 0.5;
-                const row = document.createElement("div");
-                row.className = "weight-row";
-                const lbl = document.createElement("label");
-                const dot = document.createElement("span");
-                dot.className = "option-color";
-                dot.style.background = opt.color;
-                const range = document.createElement("input");
-                range.type = "range";
-                range.min = "0.01"; range.max = "1"; range.step = "0.01";
-                range.value = w;
-                const val = document.createElement("span");
-                val.className = "weight-val";
-                val.textContent = w.toFixed(2);
-                range.addEventListener("input", () => {
-                    state.weights[opt.id] = parseFloat(range.value);
-                    val.textContent = parseFloat(range.value).toFixed(2);
-                    scheduleSave();
-                });
-                lbl.append(dot, ` ${opt.name || "…"}`, range);
-                row.append(lbl, val);
-                list.appendChild(row);
+            inp.addEventListener("keydown", e => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    addOption();
+                }
             });
-        }
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "btn-sym";
+            del.textContent = "close";
+            del.setAttribute("aria-label", "Remove");
+            del.addEventListener("click", () => {
+                pushUndo();
+                state.optionsLocked = true;
+                state.options.splice(i, 1);
+                delete state.weights[opt.id];
+                delete state.proscons[opt.id];
+                delete state.scores[opt.id];
+                renderAll();
+                scheduleSave();
+            });
+            row.append(dot, inp, del);
+            list.appendChild(row);
+        });
+    }
 
-        function renderProscons() {
-            const list = document.getElementById("proscons-list");
-            list.innerHTML = "";
-            state.options.forEach(opt => {
-                state.proscons[opt.id] ??= { pros: [], cons: [] };
-                const pc = state.proscons[opt.id];
-                const wrap = document.createElement("div");
-                const h = document.createElement("h4");
-                const dot = document.createElement("span");
-                dot.className = "option-color";
-                dot.style.background = opt.color;
-                h.append(dot, ` ${opt.name || "…"}`);
-                wrap.appendChild(h);
-                ["pros", "cons"].forEach(side => {
-                    const lbl = document.createElement("p");
-                    lbl.className = "text-muted mb-1";
-                    lbl.textContent = side === "pros" ? "+ Pros" : "− Cons";
-                    wrap.appendChild(lbl);
-                    pc[side].forEach((ann, ai) => {
-                        const row = document.createElement("div");
-                        row.className = "proscon-item";
-                        const val = document.createElement("input");
-                        val.type = "number"; val.min = "1"; val.max = "10"; val.value = ann.value || 1;
-                        val.title = "Importance (1–10)";
-                        val.addEventListener("input", e => { ann.value = parseFloat(e.target.value) || 1; updateInputMode(); scheduleSave(); });
-                        const inp = document.createElement("input");
-                        inp.type = "text"; inp.value = ann.text;
-                        inp.addEventListener("input", e => { ann.text = e.target.value; scheduleSave(); });
-                        const del = document.createElement("button");
-                        del.type = "button"; del.className = "btn-sym"; del.textContent = "close";
-                        del.addEventListener("click", () => { pc[side].splice(ai, 1); renderProscons(); scheduleSave(); });
-                        row.append(val, inp, del);
-                        wrap.appendChild(row);
+    function renderWeights() {
+        const list = document.getElementById("weights-list");
+        list.innerHTML = "";
+        state.options.forEach(opt => {
+            const w = state.weights[opt.id] ?? 0.5;
+            const row = document.createElement("div");
+            row.className = "weight-row";
+            const lbl = document.createElement("label");
+            const dot = document.createElement("span");
+            dot.className = "option-color";
+            dot.style.background = opt.color;
+            const range = document.createElement("input");
+            range.type = "range";
+            range.min = "0.01";
+            range.max = "1";
+            range.step = "0.01";
+            range.value = w;
+            const val = document.createElement("span");
+            val.className = "weight-val";
+            val.textContent = w.toFixed(2);
+            range.addEventListener("input", () => {
+                state.weights[opt.id] = parseFloat(range.value);
+                val.textContent = parseFloat(range.value).toFixed(2);
+                scheduleSave();
+            });
+            lbl.append(dot, ` ${opt.name || "…"}`, range);
+            row.append(lbl, val);
+            list.appendChild(row);
+        });
+    }
+
+    function renderProscons() {
+        const list = document.getElementById("proscons-list");
+        list.innerHTML = "";
+        state.options.forEach(opt => {
+            state.proscons[opt.id] ??= { pros: [], cons: [] };
+            const pc = state.proscons[opt.id];
+            const wrap = document.createElement("div");
+            const h = document.createElement("h4");
+            const dot = document.createElement("span");
+            dot.className = "option-color";
+            dot.style.background = opt.color;
+            h.append(dot, ` ${opt.name || "…"}`);
+            wrap.appendChild(h);
+            ["pros", "cons"].forEach(side => {
+                const lbl = document.createElement("p");
+                lbl.className = "text-muted mb-1";
+                lbl.textContent = side === "pros" ? "+ Pros" : "− Cons";
+                wrap.appendChild(lbl);
+                pc[side].forEach((ann, ai) => {
+                    const row = document.createElement("div");
+                    row.className = "proscon-item";
+                    const val = document.createElement("input");
+                    val.type = "number";
+                    val.min = "1";
+                    val.max = "10";
+                    val.value = ann.value || 1;
+                    val.title = "Importance (1–10)";
+                    val.addEventListener("input", e => {
+                        ann.value = parseFloat(e.target.value) || 1;
+                        updateInputMode();
+                        scheduleSave();
                     });
-                    const add = document.createElement("button");
-                    add.type = "button";
-                    add.innerHTML = `<span class="sym">add</span> ${side === "pros" ? "Pro" : "Con"}`;
-                    add.addEventListener("click", () => { pc[side].push({ id: mkId(), text: "", value: 1 }); renderProscons(); scheduleSave(); });
-                    wrap.appendChild(add);
+                    const inp = document.createElement("input");
+                    inp.type = "text";
+                    inp.value = ann.text;
+                    inp.addEventListener("input", e => {
+                        ann.text = e.target.value;
+                        scheduleSave();
+                    });
+                    const del = document.createElement("button");
+                    del.type = "button";
+                    del.className = "btn-sym";
+                    del.textContent = "close";
+                    del.addEventListener("click", () => {
+                        pc[side].splice(ai, 1);
+                        renderProscons();
+                        scheduleSave();
+                    });
+                    row.append(val, inp, del);
+                    wrap.appendChild(row);
                 });
-                list.appendChild(wrap);
+                const add = document.createElement("button");
+                add.type = "button";
+                add.innerHTML = `<span class="sym">add</span> ${side === "pros" ? "Pro" : "Con"}`;
+                add.addEventListener("click", () => {
+                    pc[side].push({ id: mkId(), text: "", value: 1 });
+                    renderProscons();
+                    scheduleSave();
+                });
+                wrap.appendChild(add);
             });
-        }
+            list.appendChild(wrap);
+        });
+    }
 
-        function renderCriteria() {
-            const def = document.getElementById("criteria-def");
-            def.innerHTML = "";
-            state.criteria.forEach((crit, ci) => {
-                const row = document.createElement("div");
-                row.className = "criterion-row";
-                row.innerHTML = `
+    function renderCriteria() {
+        const def = document.getElementById("criteria-def");
+        def.innerHTML = "";
+        state.criteria.forEach((crit, ci) => {
+            const row = document.createElement("div");
+            row.className = "criterion-row";
+            row.innerHTML = `
                 <input type="text" value="${crit.name}" placeholder="Criterion name">
                 <select title="Direction">
                     <option value="higher-better"${crit.direction !== "lower-better" ? " selected" : ""}>Higher = better</option>
@@ -936,518 +1011,598 @@
                 </select>
                 <input type="number" min="1" max="10" value="${crit.weight}" title="Weight (1–10)">
                 <button type="button" class="btn-sym" aria-label="Remove">close</button>`;
-                row.querySelector("input[type=\"text\"]").addEventListener("input", e => {
-                    crit.name = e.target.value;
-                    const th = document.querySelector(`#scores-grid thead th:nth-child(${ci + 2})`);
-                    if (th) th.textContent = (crit.name || "?") + " \xd7" + crit.weight;
-                    scheduleSave();
-                });
-                row.querySelector("select").addEventListener("change", e => { crit.direction = e.target.value; scheduleSave(); });
-                row.querySelector("input[type=\"number\"]").addEventListener("input", e => {
-                    crit.weight = parseInt(e.target.value) || 1;
+            row.querySelector("input[type=\"text\"]").addEventListener("input", e => {
+                crit.name = e.target.value;
+                const th = document.querySelector(`#scores-grid thead th:nth-child(${ci + 2})`);
+                if (th) th.textContent = (crit.name || "?") + " \xd7" + crit.weight;
+                scheduleSave();
+            });
+            row.querySelector("select").addEventListener("change", e => {
+                crit.direction = e.target.value;
+                scheduleSave();
+            });
+            row.querySelector("input[type=\"number\"]").addEventListener("input", e => {
+                crit.weight = parseInt(e.target.value) || 1;
+                refreshScoreTotals();
+                scheduleSave();
+            });
+            row.querySelector("button").addEventListener("click", () => {
+                state.criteria.splice(ci, 1);
+                renderCriteria();
+                renderScoresGrid();
+                scheduleSave();
+            });
+            def.appendChild(row);
+        });
+    }
+
+    function renderScoresGrid() {
+        const grid = document.getElementById("scores-grid");
+        if (!state.criteria.length || !state.options.length) {
+            grid.innerHTML = "";
+            return;
+        }
+        // Compute totals for heat map
+        const totals = state.options.map(opt => {
+            let t = 0;
+            state.criteria.forEach(c => {
+                const raw = (state.scores[opt.id] || {})[c.id] || 0;
+                const v = c.direction === "lower-better" ? (10 - raw) : raw;
+                t += v * c.weight;
+            });
+            if (state.activeLayers.includes("proscons")) {
+                const pc = state.proscons[opt.id] || { pros: [], cons: [] };
+                t += pc.pros.reduce((acc, p) => acc + (p.value || 1), 0);
+                t -= pc.cons.reduce((acc, c) => acc + (c.value || 1), 0);
+            }
+            return t;
+        });
+        const maxT = Math.max(...totals, 1);
+        const table = document.createElement("table");
+        const thead = document.createElement("thead");
+        const hrow = document.createElement("tr");
+        hrow.innerHTML = "<th>Option</th>" + state.criteria.map(c => `<th>${c.name || "?"} ×${c.weight}</th>`).join("") + "<th>Total</th>";
+        thead.appendChild(hrow);
+        table.appendChild(thead);
+        const tbody = document.createElement("tbody");
+        state.options.forEach((opt, oi) => {
+            state.scores[opt.id] ??= {};
+            const tr = document.createElement("tr");
+            const td0 = document.createElement("td");
+            const dot = document.createElement("span");
+            dot.className = "option-color";
+            dot.style.background = opt.color;
+            td0.append(dot, ` ${opt.name || "…"}`);
+            tr.appendChild(td0);
+            state.criteria.forEach(c => {
+                const td = document.createElement("td");
+                const inp = document.createElement("input");
+                inp.type = "number";
+                inp.min = "0";
+                inp.max = "10";
+                inp.value = state.scores[opt.id][c.id] ?? "";
+                inp.placeholder = "0";
+                inp.addEventListener("input", e => {
+                    state.scores[opt.id][c.id] = parseFloat(e.target.value) || 0;
                     refreshScoreTotals();
                     scheduleSave();
                 });
-                row.querySelector("button").addEventListener("click", () => { state.criteria.splice(ci, 1); renderCriteria(); renderScoresGrid(); scheduleSave(); });
-                def.appendChild(row);
+                td.appendChild(inp);
+                tr.appendChild(td);
             });
-        }
-
-        function renderScoresGrid() {
-            const grid = document.getElementById("scores-grid");
-            if (!state.criteria.length || !state.options.length) { grid.innerHTML = ""; return; }
-            // Compute totals for heat map
-            const totals = state.options.map(opt => {
-                let t = 0;
-                state.criteria.forEach(c => {
-                    const raw = (state.scores[opt.id] || {})[c.id] || 0;
-                    const v = c.direction === "lower-better" ? (10 - raw) : raw;
-                    t += v * c.weight;
-                });
-                if (state.activeLayers.includes("proscons")) {
-                    const pc = state.proscons[opt.id] || { pros: [], cons: [] };
-                    t += pc.pros.reduce((acc, p) => acc + (p.value || 1), 0);
-                    t -= pc.cons.reduce((acc, c) => acc + (c.value || 1), 0);
-                }
-                return t;
-            });
-            const maxT = Math.max(...totals, 1);
-            const table = document.createElement("table");
-            const thead = document.createElement("thead");
-            const hrow = document.createElement("tr");
-            hrow.innerHTML = "<th>Option</th>" + state.criteria.map(c => `<th>${c.name || "?"} ×${c.weight}</th>`).join("") + "<th>Total</th>";
-            thead.appendChild(hrow); table.appendChild(thead);
-            const tbody = document.createElement("tbody");
-            state.options.forEach((opt, oi) => {
-                state.scores[opt.id] ??= {};
-                const tr = document.createElement("tr");
-                const td0 = document.createElement("td");
-                const dot = document.createElement("span");
-                dot.className = "option-color"; dot.style.background = opt.color;
-                td0.append(dot, ` ${opt.name || "…"}`);
-                tr.appendChild(td0);
-                state.criteria.forEach(c => {
-                    const td = document.createElement("td");
-                    const inp = document.createElement("input");
-                    inp.type = "number"; inp.min = "0"; inp.max = "10";
-                    inp.value = state.scores[opt.id][c.id] ?? "";
-                    inp.placeholder = "0";
-                    inp.addEventListener("input", e => { state.scores[opt.id][c.id] = parseFloat(e.target.value) || 0; refreshScoreTotals(); scheduleSave(); });
-                    td.appendChild(inp); tr.appendChild(td);
-                });
-                const hideT = prefs.showTotalAfterDecide && state.phase !== "result";
-                const tdT = document.createElement("td");
-                const pct = totals[oi] / maxT;
-                tdT.textContent = totals[oi].toFixed(1);
-                tdT.style.background = `color-mix(in srgb, hsl(${Math.round(120 * pct)},55%,45%) 25%, var(--surface-container-high) 75%)`;
-                if (hideT) tdT.hidden = true;
-                tr.appendChild(tdT);
-                tbody.appendChild(tr);
-            });
-            table.appendChild(tbody);
             const hideT = prefs.showTotalAfterDecide && state.phase !== "result";
-            if (hideT) {
-                hrow.lastElementChild.hidden = true;
-            }
-            grid.innerHTML = ""; grid.appendChild(table);
+            const tdT = document.createElement("td");
+            const pct = totals[oi] / maxT;
+            tdT.textContent = totals[oi].toFixed(1);
+            tdT.style.background = `color-mix(in srgb, hsl(${Math.round(120 * pct)},55%,45%) 25%, var(--surface-container-high) 75%)`;
+            if (hideT) tdT.hidden = true;
+            tr.appendChild(tdT);
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        const hideT = prefs.showTotalAfterDecide && state.phase !== "result";
+        if (hideT) {
+            hrow.lastElementChild.hidden = true;
         }
+        grid.innerHTML = "";
+        grid.appendChild(table);
+    }
 
-        function refreshScoreTotals() {
-            const totals = state.options.map(opt => {
-                let t = 0;
-                state.criteria.forEach(c => {
-                    const raw = (state.scores[opt.id] || {})[c.id] || 0;
-                    const v = c.direction === "lower-better" ? (10 - raw) : raw;
-                    t += v * c.weight;
-                });
-                if (state.activeLayers.includes("proscons")) {
-                    const pc = state.proscons[opt.id] || { pros: [], cons: [] };
-                    t += pc.pros.reduce((acc, p) => acc + (p.value || 1), 0);
-                    t -= pc.cons.reduce((acc, c) => acc + (c.value || 1), 0);
-                }
-                return t;
+    function refreshScoreTotals() {
+        const totals = state.options.map(opt => {
+            let t = 0;
+            state.criteria.forEach(c => {
+                const raw = (state.scores[opt.id] || {})[c.id] || 0;
+                const v = c.direction === "lower-better" ? (10 - raw) : raw;
+                t += v * c.weight;
             });
-            const maxT = Math.max(...totals, 1);
-            const table = document.querySelector("#scores-grid table");
-            if (!table) return;
+            if (state.activeLayers.includes("proscons")) {
+                const pc = state.proscons[opt.id] || { pros: [], cons: [] };
+                t += pc.pros.reduce((acc, p) => acc + (p.value || 1), 0);
+                t -= pc.cons.reduce((acc, c) => acc + (c.value || 1), 0);
+            }
+            return t;
+        });
+        const maxT = Math.max(...totals, 1);
+        const table = document.querySelector("#scores-grid table");
+        if (!table) return;
 
-            const hideT = prefs.showTotalAfterDecide && state.phase !== "result";
-            const hrow = table.querySelector("thead tr");
-            if (hrow) hrow.lastElementChild.hidden = hideT;
+        const hideT = prefs.showTotalAfterDecide && state.phase !== "result";
+        const hrow = table.querySelector("thead tr");
+        if (hrow) hrow.lastElementChild.hidden = hideT;
 
-            document.querySelectorAll("#scores-grid tbody tr").forEach((tr, oi) => {
-                const tdT = tr.lastElementChild;
-                const pct = totals[oi] / maxT;
-                tdT.textContent = totals[oi].toFixed(1);
-                tdT.style.background = `color-mix(in srgb, hsl(${Math.round(120 * pct)},55%,45%) 25%, var(--surface-container-high) 75%)`;
-                tdT.hidden = hideT;
-            });
-        }
+        document.querySelectorAll("#scores-grid tbody tr").forEach((tr, oi) => {
+            const tdT = tr.lastElementChild;
+            const pct = totals[oi] / maxT;
+            tdT.textContent = totals[oi].toFixed(1);
+            tdT.style.background = `color-mix(in srgb, hsl(${Math.round(120 * pct)},55%,45%) 25%, var(--surface-container-high) 75%)`;
+            tdT.hidden = hideT;
+        });
+    }
 
-        function renderActionBar() {
-            updateDecideBtn();
-            document.getElementById("btn-undo").disabled = !state.undoStack.length;
-        }
+    function renderActionBar() {
+        updateDecideBtn();
+        document.getElementById("btn-undo").disabled = !state.undoStack.length;
+    }
 
-        function updateInputMode() {
-            const isRandom = state.chooseRandomly;
-            const isGroup = state.method === "group";
-            const isNumber = state.method === "number";
+    function updateInputMode() {
+        const isRandom = state.chooseRandomly;
+        const isGroup = state.method === "group";
+        const isNumber = state.method === "number";
 
-            const btnProscons = document.getElementById("btn-add-proscons");
-            const btnCriteria = document.getElementById("btn-add-criteria");
-            const hasProscons = state.activeLayers.includes("proscons");
-            const hasCriteria = state.activeLayers.includes("criteria");
+        const btnProscons = document.getElementById("btn-add-proscons");
+        const btnCriteria = document.getElementById("btn-add-criteria");
+        const hasProscons = state.activeLayers.includes("proscons");
+        const hasCriteria = state.activeLayers.includes("criteria");
 
-            // Mode toggles visibility & state
-            document.getElementById("random-toggle-row").hidden = isNumber;
-            document.getElementById("add-detail-bar").hidden = isRandom || isGroup || isNumber;
-            btnProscons.setAttribute("aria-pressed", hasProscons);
-            btnCriteria.setAttribute("aria-pressed", hasCriteria);
+        // Mode toggles visibility & state
+        document.getElementById("random-toggle-row").hidden = isNumber;
+        document.getElementById("add-detail-bar").hidden = isRandom || isGroup || isNumber;
+        btnProscons.setAttribute("aria-pressed", hasProscons);
+        btnCriteria.setAttribute("aria-pressed", hasCriteria);
 
-            // Top-level sections visibility
-            document.getElementById("cfg-random-mode").hidden = !isRandom || isGroup || isNumber;
-            document.getElementById("cfg-group").hidden = !isGroup;
-            document.getElementById("number-config").hidden = !isNumber;
-            document.getElementById("options-fieldset").hidden = isNumber;
+        // Top-level sections visibility
+        document.getElementById("cfg-random-mode").hidden = !isRandom || isGroup || isNumber;
+        document.getElementById("cfg-group").hidden = !isGroup;
+        document.getElementById("number-config").hidden = !isNumber;
+        document.getElementById("options-fieldset").hidden = isNumber;
 
-            // Weights layer: shown in random mode
-            document.getElementById("layer-weights").classList.toggle("active", isRandom && !isGroup && !isNumber && state.options.length > 0);
+        // Weights layer: shown in random mode
+        document.getElementById("layer-weights").classList.toggle("active", isRandom && !isGroup && !isNumber && state.options.length > 0);
 
-            // Pros/cons & Criteria layers: shown toggled on
-            document.getElementById("layer-proscons").classList.toggle("active", hasProscons);
-            document.getElementById("layer-criteria").classList.toggle("active", hasCriteria);
+        // Pros/cons & Criteria layers: shown toggled on
+        document.getElementById("layer-proscons").classList.toggle("active", hasProscons);
+        document.getElementById("layer-criteria").classList.toggle("active", hasCriteria);
 
-            // Comparison style: shown when in manual mode, with enough options
-            const opts = state.options.filter(o => o.name.trim());
-            const comparisonCfg = document.getElementById("cfg-comparison");
-            const canCompare = !isRandom && !isGroup && !isNumber && opts.length > 2;
-            comparisonCfg.hidden = !canCompare;
+        // Comparison style: shown when in manual mode, with enough options
+        const opts = state.options.filter(o => o.name.trim());
+        const comparisonCfg = document.getElementById("cfg-comparison");
+        const canCompare = !isRandom && !isGroup && !isNumber && opts.length > 2;
+        comparisonCfg.hidden = !canCompare;
 
-            if (canCompare) {
-                const switchEnabled = !hasProscons && !hasCriteria;
-                const radios = comparisonCfg.querySelectorAll("input");
-                radios.forEach(r => r.disabled = !switchEnabled);
-                if (!switchEnabled) {
-                    comparisonCfg.setAttribute("data-tooltip", "Comparisons are disabled when criteria or pros & cons are active");
-                    comparisonCfg.setAttribute("data-tooltip-pos", "below");
-                } else {
-                    comparisonCfg.removeAttribute("data-tooltip");
-                }
+        if (canCompare) {
+            const switchEnabled = !hasProscons && !hasCriteria;
+            const radios = comparisonCfg.querySelectorAll("input");
+            radios.forEach(r => r.disabled = !switchEnabled);
+            if (!switchEnabled) {
+                comparisonCfg.setAttribute("data-tooltip", "Comparisons are disabled when criteria or pros & cons are active");
+                comparisonCfg.setAttribute("data-tooltip-pos", "below");
+            } else {
+                comparisonCfg.removeAttribute("data-tooltip");
             }
         }
+    }
 
-        function updateDecideBtn() {
-            updateInputMode();
-            const btn = document.getElementById("btn-decide");
-            const opts = state.options.filter(o => o.name.trim());
-            const hasContent = opts.length > 0 || state.question.trim() || state.method === "number";
-            const isManual = !state.chooseRandomly && state.method !== "group" && state.method !== "number";
+    function updateDecideBtn() {
+        updateInputMode();
+        const btn = document.getElementById("btn-decide");
+        const opts = state.options.filter(o => o.name.trim());
+        const hasContent = opts.length > 0 || state.question.trim() || state.method === "number";
+        const isManual = !state.chooseRandomly && state.method !== "group" && state.method !== "number";
 
-            if (state.phase === "result") {
-                btn.disabled = false; btn.textContent = "Decide again?"; btn.dataset.state = "complete";
-                btn.removeAttribute("data-tooltip");
-                return;
-            }
-
-            if (!hasContent) {
-                btn.disabled = true; btn.dataset.state = "disabled";
-                btn.removeAttribute("data-tooltip");
-                return;
-            }
-
-            // 1 option: disabled (except for number pick)
-            if (state.method !== "number" && opts.length === 1) {
-                btn.disabled = true; btn.dataset.state = "disabled";
-                btn.setAttribute("data-tooltip", "Add more options to make a decision");
-                return;
-            }
-
-
-            // 2 options in manual mode: need proscons or criteria
-            if (isManual && opts.length === 2 && !state.activeLayers.includes("proscons") && !state.activeLayers.includes("criteria")) {
-                btn.disabled = true; btn.dataset.state = "disabled";
-                btn.setAttribute("data-tooltip", "Enable Pros & Cons or Criteria for a 2-way comparison");
-                return;
-            }
-
-            btn.disabled = false; btn.textContent = "Decide"; btn.dataset.state = "ready";
+        if (state.phase === "result") {
+            btn.disabled = false;
+            btn.textContent = "Decide again?";
+            btn.dataset.state = "complete";
             btn.removeAttribute("data-tooltip");
+            return;
         }
 
-        // ══════════════════════════════════════════════════════════
-        //  RESOLUTION
-        // ══════════════════════════════════════════════════════════
-        function effectiveMethod() {
-            if (state.method === "number") return "number";
-            if (state.method === "group") return "group";
-            if (!state.chooseRandomly) {
-                // Manual mode: detail layers active → scored; else comparison
-                if (state.activeLayers.includes("criteria") || state.activeLayers.includes("proscons")) return "scored";
-                return "comparison";
-            }
-            return "random";
+        if (!hasContent) {
+            btn.disabled = true;
+            btn.dataset.state = "disabled";
+            btn.removeAttribute("data-tooltip");
+            return;
         }
 
-        function startDecide() {
-            if (state.phase === "result") {
-                // Decide again: jump straight to process with same data
-                state.phase = "process"; renderPhase();
-                setTimeout(resolve, 80);
-                return;
-            }
-            pushUndo();
-            state.phase = "process"; renderPhase();
-            resolve();
-            scheduleSave();
+        // 1 option: disabled (except for number pick)
+        if (state.method !== "number" && opts.length === 1) {
+            btn.disabled = true;
+            btn.dataset.state = "disabled";
+            btn.setAttribute("data-tooltip", "Add more options to make a decision");
+            return;
         }
 
-        function resolve() {
-            const m = effectiveMethod();
-            if (state.method === "number") resolveNumber();
-            else if (m === "scored") resolveScored();
-            else if (m === "comparison") resolveComparison();
-            else if (m === "group") resolveGroup();
-            else resolveRandom();
+
+        // 2 options in manual mode: need proscons or criteria
+        if (isManual && opts.length === 2 && !state.activeLayers.includes("proscons") && !state.activeLayers.includes("criteria")) {
+            btn.disabled = true;
+            btn.dataset.state = "disabled";
+            btn.setAttribute("data-tooltip", "Enable Pros & Cons or Criteria for a 2-way comparison");
+            return;
         }
 
-        // ── Random ──
-        function resolveRandom() {
-            const opts = state.options.filter(o => o.name.trim());
-            if (!opts.length) { resolveOracle(); return; }
-            if (opts.length === 2) { resolveBinary(opts); return; }
-            resolveShuffle(opts);
+        btn.disabled = false;
+        btn.textContent = "Decide";
+        btn.dataset.state = "ready";
+        btn.removeAttribute("data-tooltip");
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  RESOLUTION
+    // ══════════════════════════════════════════════════════════
+    function effectiveMethod() {
+        if (state.method === "number") return "number";
+        if (state.method === "group") return "group";
+        if (!state.chooseRandomly) {
+            // Manual mode: detail layers active → scored; else comparison
+            if (state.activeLayers.includes("criteria") || state.activeLayers.includes("proscons")) return "scored";
+            return "comparison";
         }
+        return "random";
+    }
 
-        function resolveOracle() {
-            const q = state.question.toLowerCase();
-            const isYN = /^(should|would|is|are|will|can|could|has|have|did|does|do)\b/.test(q) || q.endsWith("?");
-            const pool = isYN ? ORACLE_YESNO : ORACLE_OPEN;
-            const answer = pool[Math.floor(Math.random() * pool.length)];
-            const dur = animDur(2500);
-            const pc = document.getElementById("process-content");
-            pc.innerHTML = "<p class=\"big-reveal\" id=\"oracle-el\">…</p>";
-            const el = document.getElementById("oracle-el");
-            let elapsed = 0;
-            const iv = setInterval(() => {
-                el.textContent = pool[Math.floor(Math.random() * pool.length)];
-                elapsed += 200;
-                if (elapsed >= dur - 400) { clearInterval(iv); el.textContent = answer; }
-            }, 200);
-            setTimeout(() => showResult({ winner: answer, method: "oracle", rankings: [], rationale: ["Oracle answer"], sensitivityWarnings: [] }), dur);
+    function startDecide() {
+        if (state.phase === "result") {
+            // Decide again: jump straight to process with same data
+            state.phase = "process";
+            renderPhase();
+            setTimeout(resolve, 80);
+            return;
         }
+        pushUndo();
+        state.phase = "process";
+        renderPhase();
+        resolve();
+        scheduleSave();
+    }
 
-        function resolveBinary(opts) {
-            const ws = opts.map(o => state.weights[o.id] ?? 0.5);
-            const total = ws.reduce((a, b) => a + b, 0);
-            let acc = 0, winner = null;
-            const r = Math.random() * total;
+    function resolve() {
+        const m = effectiveMethod();
+        if (state.method === "number") resolveNumber();
+        else if (m === "scored") resolveScored();
+        else if (m === "comparison") resolveComparison();
+        else if (m === "group") resolveGroup();
+        else resolveRandom();
+    }
 
-            const report = {
-                title: "Weighted Random (Binary)",
-                inputs: opts.map((o, i) => `${o.name}: weight ${ws[i]}`),
-                steps: [`Total weight: ${total.toFixed(2)}`, `Random roll: ${r.toFixed(4)}`]
-            };
+    // ── Random ──
+    function resolveRandom() {
+        const opts = state.options.filter(o => o.name.trim());
+        if (!opts.length) {
+            resolveOracle();
+            return;
+        }
+        if (opts.length === 2) {
+            resolveBinary(opts);
+            return;
+        }
+        resolveShuffle(opts);
+    }
 
-            for (let i = 0; i < opts.length; i++) {
-                const start = acc;
-                acc += ws[i];
-                const prob = (ws[i] / total * 100).toFixed(1);
-                report.steps.push(`${opts[i].name}: [${start.toFixed(2)} ➞ ${acc.toFixed(2)}) — Prob: ${prob}%`);
-                if (r < acc && !winner) winner = opts[i];
-            }
-            winner ??= opts[opts.length - 1];
-            report.result = `Roll ${r.toFixed(4)} fell into **${winner.name}**'s range.`;
-
-            const dur = animDur(1500);
-            const pc = document.getElementById("process-content");
-            pc.innerHTML = `<div class="binary-options"><div class="binary-opt" id="bo0">${opts[0].name}</div><span class="matchup-vs">VS</span><div class="binary-opt" id="bo1">${opts[1].name}</div></div>`;
-            let flip = 0;
-            const iv = setInterval(() => {
-                document.getElementById("bo0").classList.toggle("winner", flip === 0);
-                document.getElementById("bo1").classList.toggle("winner", flip === 1);
-                flip ^= 1;
-            }, 120);
-            setTimeout(() => {
+    function resolveOracle() {
+        const q = state.question.toLowerCase();
+        const isYN = /^(should|would|is|are|will|can|could|has|have|did|does|do)\b/.test(q) || q.endsWith("?");
+        const pool = isYN ? ORACLE_YESNO : ORACLE_OPEN;
+        const answer = pool[Math.floor(Math.random() * pool.length)];
+        const dur = animDur(2500);
+        const pc = document.getElementById("process-content");
+        pc.innerHTML = "<p class=\"big-reveal\" id=\"oracle-el\">…</p>";
+        const el = document.getElementById("oracle-el");
+        let elapsed = 0;
+        const iv = setInterval(() => {
+            el.textContent = pool[Math.floor(Math.random() * pool.length)];
+            elapsed += 200;
+            if (elapsed >= dur - 400) {
                 clearInterval(iv);
-                const wi = opts.indexOf(winner);
-                document.getElementById("bo0").classList.toggle("winner", wi === 0);
-                document.getElementById("bo1").classList.toggle("winner", wi === 1);
-                setTimeout(() => showResult({
-                    winner: winner.name, winnerId: winner.id, method: "random",
-                    rankings: opts.map((o, i) => ({ optionId: o.id, score: ws[i] / total, rank: o === winner ? 1 : 2 })),
-                    rationale: [state.activeLayers.includes("weights") ? `Weighted: ${((ws[wi] / total) * 100).toFixed(0)}% chance` : "Randomly selected"],
-                    sensitivityWarnings: [],
-                    mathReport: report,
-                }), 500);
-            }, dur);
-        }
-
-        function resolveShuffle(opts) {
-            const ws = opts.map(o => state.weights[o.id] ?? 0.5);
-            const total = ws.reduce((a, b) => a + b, 0);
-            let acc = 0, winner = null;
-            const r = Math.random() * total;
-
-            const report = {
-                title: "Weighted Random Selection",
-                inputs: opts.map((o, i) => `${o.name}: weight ${ws[i]}`),
-                steps: [`Total weight: ${total.toFixed(2)}`, `Random roll: ${r.toFixed(4)}`]
-            };
-
-            for (let i = 0; i < opts.length; i++) {
-                const start = acc;
-                acc += ws[i];
-                const prob = (ws[i] / total * 100).toFixed(1);
-                report.steps.push(`${opts[i].name}: [${start.toFixed(2)} ➞ ${acc.toFixed(2)}) — Prob: ${prob}%`);
-                if (r < acc && !winner) winner = opts[i];
+                el.textContent = answer;
             }
-            winner ??= opts[opts.length - 1];
-            report.result = `Roll ${r.toFixed(4)} fell into **${winner.name}**'s range.`;
+        }, 200);
+        setTimeout(() => showResult({
+            winner: answer,
+            method: "oracle",
+            rankings: [],
+            rationale: ["Oracle answer"],
+            sensitivityWarnings: [],
+        }), dur);
+    }
 
-            const dur = animDur(2500);
-            const pc = document.getElementById("process-content");
-            const ul = document.createElement("ul"); ul.className = "option-list-anim";
-            opts.forEach(o => { const li = document.createElement("li"); li.textContent = o.name; li.dataset.id = o.id; ul.appendChild(li); });
-            pc.innerHTML = ""; pc.appendChild(ul);
-            let step = 0;
-            const iv = setInterval(() => {
-                ul.querySelectorAll("li").forEach((li, i) => li.classList.toggle("highlighted", i === step % opts.length));
-                step++;
-            }, 120);
-            setTimeout(() => {
-                clearInterval(iv);
-                ul.querySelectorAll("li").forEach(li => li.classList.toggle("highlighted", li.dataset.id === winner.id));
-                setTimeout(() => showResult({
-                    winner: winner.name, winnerId: winner.id, method: "random",
-                    rankings: opts.map((o, i) => ({ optionId: o.id, score: ws[i] / total, rank: o === winner ? 1 : i + 2 })).sort((a, b) => a.rank - b.rank),
-                    rationale: [state.activeLayers.includes("weights") ? "Weighted random selection" : "Random selection from list"],
-                    sensitivityWarnings: [],
-                    mathReport: report,
-                }), 500);
-            }, dur);
+    function resolveBinary(opts) {
+        const ws = opts.map(o => state.weights[o.id] ?? 0.5);
+        const total = ws.reduce((a, b) => a + b, 0);
+        let acc = 0, winner = null;
+        const r = Math.random() * total;
+
+        const report = {
+            title: "Weighted Random (Binary)",
+            inputs: opts.map((o, i) => `${o.name}: weight ${ws[i]}`),
+            steps: [`Total weight: ${total.toFixed(2)}`, `Random roll: ${r.toFixed(4)}`],
+        };
+
+        for (let i = 0; i < opts.length; i++) {
+            const start = acc;
+            acc += ws[i];
+            const prob = (ws[i] / total * 100).toFixed(1);
+            report.steps.push(`${opts[i].name}: [${start.toFixed(2)} ➞ ${acc.toFixed(2)}) — Prob: ${prob}%`);
+            if (r < acc && !winner) winner = opts[i];
         }
+        winner ??= opts[opts.length - 1];
+        report.result = `Roll ${r.toFixed(4)} fell into **${winner.name}**'s range.`;
 
-        function resolveNumber() {
-            const min = parseFloat(document.getElementById("num-min").value) || 1;
-            const max = parseFloat(document.getElementById("num-max").value) || 100;
-            const count = Math.max(1, parseInt(document.getElementById("num-count").value) || 1);
-            const results = [], used = new Set();
-            while (results.length < count) {
-                const n = Math.floor(Math.random() * (max - min + 1)) + min;
-                if (count === 1 || !used.has(n)) { results.push(n); used.add(n); }
-                if (used.size >= (max - min + 1)) break;
-            }
-
-            const report = {
-                title: "Number Pick",
-                inputs: [`Range: ${min} to ${max}`, `Count: ${count}`],
-                steps: [
-                    "Formula: floor(random() * (max - min + 1)) + min",
-                    `Applied: floor(random() * (${max} - ${min} + 1)) + ${min}`,
-                    `Results: ${results.join(", ")}`
-                ],
-                result: `Picked: **${results.join(", ")}**`
-            };
-
-            const dur = animDur(1500);
-            const pc = document.getElementById("process-content");
-            pc.innerHTML = "<p class=\"big-reveal\" id=\"num-el\">…</p>";
-            const el = document.getElementById("num-el");
-            let elapsed = 0;
-            const iv = setInterval(() => {
-                el.textContent = Math.floor(Math.random() * (max - min + 1)) + min;
-                elapsed += 100;
-                if (elapsed >= dur - 200) { clearInterval(iv); el.textContent = results.join(", "); }
-            }, 100);
+        const dur = animDur(1500);
+        const pc = document.getElementById("process-content");
+        pc.innerHTML = `<div class="binary-options"><div class="binary-opt" id="bo0">${opts[0].name}</div><span class="matchup-vs">VS</span><div class="binary-opt" id="bo1">${opts[1].name}</div></div>`;
+        let flip = 0;
+        const iv = setInterval(() => {
+            document.getElementById("bo0").classList.toggle("winner", flip === 0);
+            document.getElementById("bo1").classList.toggle("winner", flip === 1);
+            flip ^= 1;
+        }, 120);
+        setTimeout(() => {
+            clearInterval(iv);
+            const wi = opts.indexOf(winner);
+            document.getElementById("bo0").classList.toggle("winner", wi === 0);
+            document.getElementById("bo1").classList.toggle("winner", wi === 1);
             setTimeout(() => showResult({
-                winner: results.join(", "), method: "random", rankings: [],
-                rationale: [`Random number${results.length > 1 ? "s" : ""} between ${min} and ${max}`],
+                winner: winner.name, winnerId: winner.id, method: "random",
+                rankings: opts.map((o, i) => ({
+                    optionId: o.id,
+                    score: ws[i] / total,
+                    rank: o === winner ? 1 : 2,
+                })),
+                rationale: [state.activeLayers.includes("weights") ? `Weighted: ${((ws[wi] / total) * 100).toFixed(0)}% chance` : "Randomly selected"],
                 sensitivityWarnings: [],
                 mathReport: report,
-            }), dur);
+            }), 500);
+        }, dur);
+    }
+
+    function resolveShuffle(opts) {
+        const ws = opts.map(o => state.weights[o.id] ?? 0.5);
+        const total = ws.reduce((a, b) => a + b, 0);
+        let acc = 0, winner = null;
+        const r = Math.random() * total;
+
+        const report = {
+            title: "Weighted Random Selection",
+            inputs: opts.map((o, i) => `${o.name}: weight ${ws[i]}`),
+            steps: [`Total weight: ${total.toFixed(2)}`, `Random roll: ${r.toFixed(4)}`],
+        };
+
+        for (let i = 0; i < opts.length; i++) {
+            const start = acc;
+            acc += ws[i];
+            const prob = (ws[i] / total * 100).toFixed(1);
+            report.steps.push(`${opts[i].name}: [${start.toFixed(2)} ➞ ${acc.toFixed(2)}) — Prob: ${prob}%`);
+            if (r < acc && !winner) winner = opts[i];
+        }
+        winner ??= opts[opts.length - 1];
+        report.result = `Roll ${r.toFixed(4)} fell into **${winner.name}**'s range.`;
+
+        const dur = animDur(2500);
+        const pc = document.getElementById("process-content");
+        const ul = document.createElement("ul");
+        ul.className = "option-list-anim";
+        opts.forEach(o => {
+            const li = document.createElement("li");
+            li.textContent = o.name;
+            li.dataset.id = o.id;
+            ul.appendChild(li);
+        });
+        pc.innerHTML = "";
+        pc.appendChild(ul);
+        let step = 0;
+        const iv = setInterval(() => {
+            ul.querySelectorAll("li").forEach((li, i) => li.classList.toggle("highlighted", i === step % opts.length));
+            step++;
+        }, 120);
+        setTimeout(() => {
+            clearInterval(iv);
+            ul.querySelectorAll("li").forEach(li => li.classList.toggle("highlighted", li.dataset.id === winner.id));
+            setTimeout(() => showResult({
+                winner: winner.name, winnerId: winner.id, method: "random",
+                rankings: opts.map((o, i) => ({
+                    optionId: o.id,
+                    score: ws[i] / total,
+                    rank: o === winner ? 1 : i + 2,
+                })).sort((a, b) => a.rank - b.rank),
+                rationale: [state.activeLayers.includes("weights") ? "Weighted random selection" : "Random selection from list"],
+                sensitivityWarnings: [],
+                mathReport: report,
+            }), 500);
+        }, dur);
+    }
+
+    function resolveNumber() {
+        const min = parseFloat(document.getElementById("num-min").value) || 1;
+        const max = parseFloat(document.getElementById("num-max").value) || 100;
+        const count = Math.max(1, parseInt(document.getElementById("num-count").value) || 1);
+        const results = [], used = new Set();
+        while (results.length < count) {
+            const n = Math.floor(Math.random() * (max - min + 1)) + min;
+            if (count === 1 || !used.has(n)) {
+                results.push(n);
+                used.add(n);
+            }
+            if (used.size >= (max - min + 1)) break;
         }
 
-        // ── Scored ──
-        function resolveScored() {
-            const opts = state.options.filter(o => o.name.trim());
-            const report = {
-                title: "Scored Resolution",
-                inputs: [
-                    state.criteria.length ? `Criteria: ${state.criteria.map(c => `${c.name} (w${c.weight})`).join(", ")}` : null,
-                    state.activeLayers.includes("proscons") ? "Pros & Cons included" : null
-                ].filter(Boolean),
-                steps: []
-            };
+        const report = {
+            title: "Number Pick",
+            inputs: [`Range: ${min} to ${max}`, `Count: ${count}`],
+            steps: [
+                "Formula: floor(random() * (max - min + 1)) + min",
+                `Applied: floor(random() * (${max} - ${min} + 1)) + ${min}`,
+                `Results: ${results.join(", ")}`,
+            ],
+            result: `Picked: **${results.join(", ")}**`,
+        };
 
-            const totals = opts.map(opt => {
-                let t = 0, maxP = 0;
-                const critCalcs = [];
+        const dur = animDur(1500);
+        const pc = document.getElementById("process-content");
+        pc.innerHTML = "<p class=\"big-reveal\" id=\"num-el\">…</p>";
+        const el = document.getElementById("num-el");
+        let elapsed = 0;
+        const iv = setInterval(() => {
+            el.textContent = Math.floor(Math.random() * (max - min + 1)) + min;
+            elapsed += 100;
+            if (elapsed >= dur - 200) {
+                clearInterval(iv);
+                el.textContent = results.join(", ");
+            }
+        }, 100);
+        setTimeout(() => showResult({
+            winner: results.join(", "), method: "random", rankings: [],
+            rationale: [`Random number${results.length > 1 ? "s" : ""} between ${min} and ${max}`],
+            sensitivityWarnings: [],
+            mathReport: report,
+        }), dur);
+    }
 
-                // 1. Criteria scores
-                state.criteria.forEach(c => {
-                    const raw = (state.scores[opt.id] || {})[c.id] || 0;
-                    const v = c.direction === "lower-better" ? (10 - raw) : raw;
-                    const weighted = v * c.weight;
-                    t += weighted; maxP += 10 * c.weight;
-                    critCalcs.push(`${c.name}: ${raw}${c.direction === "lower-better" ? "➞" + v : ""} × ${c.weight} = ${weighted}`);
-                });
+    // ── Scored ──
+    function resolveScored() {
+        const opts = state.options.filter(o => o.name.trim());
+        const report = {
+            title: "Scored Resolution",
+            inputs: [
+                state.criteria.length ? `Criteria: ${state.criteria.map(c => `${c.name} (w${c.weight})`).join(", ")}` : null,
+                state.activeLayers.includes("proscons") ? "Pros & Cons included" : null,
+            ].filter(Boolean),
+            steps: [],
+        };
 
-                // 2. Pros & Cons adjustment
-                let pcBonus = 0;
-                if (state.activeLayers.includes("proscons")) {
-                    const pc = state.proscons[opt.id] || { pros: [], cons: [] };
-                    const pSum = pc.pros.reduce((acc, p) => acc + (p.value || 1), 0);
-                    const cSum = pc.cons.reduce((acc, c) => acc + (c.value || 1), 0);
-                    pcBonus = pSum - cSum;
-                    t += pcBonus;
-                    if (pc.pros.length || pc.cons.length) {
-                        critCalcs.push(`Pros (+${pSum}) & Cons (-${cSum}) ➞ %+${pcBonus}`);
-                    }
-                }
+        const totals = opts.map(opt => {
+            let t = 0, maxP = 0;
+            const critCalcs = [];
 
-                const pct = maxP > 0 ? (t / maxP * 100) : (t > 0 ? 100 : (t < 0 ? 0 : 50));
-                report.steps.push(`**${opt.name}**:\n   ` + critCalcs.join("\n   ") + `\n   Final Score: **${t.toFixed(1)}**`);
-                return { opt, t, pct: Math.max(0, Math.min(100, Math.round(pct))) };
+            // 1. Criteria scores
+            state.criteria.forEach(c => {
+                const raw = (state.scores[opt.id] || {})[c.id] || 0;
+                const v = c.direction === "lower-better" ? (10 - raw) : raw;
+                const weighted = v * c.weight;
+                t += weighted;
+                maxP += 10 * c.weight;
+                critCalcs.push(`${c.name}: ${raw}${c.direction === "lower-better" ? "➞" + v : ""} × ${c.weight} = ${weighted}`);
             });
 
-            totals.sort((a, b) => b.t - a.t);
-            const maxT = totals[0].t;
-            const topScorers = totals.filter(it => it.t === maxT);
-            let winner = totals[0];
-            let tieNote = "";
-            if (topScorers.length > 1) {
-                winner = topScorers[Math.floor(Math.random() * topScorers.length)];
-                tieNote = ` [Random tiebreak from ${topScorers.length} options]`;
+            // 2. Pros & Cons adjustment
+            let pcBonus = 0;
+            if (state.activeLayers.includes("proscons")) {
+                const pc = state.proscons[opt.id] || { pros: [], cons: [] };
+                const pSum = pc.pros.reduce((acc, p) => acc + (p.value || 1), 0);
+                const cSum = pc.cons.reduce((acc, c) => acc + (c.value || 1), 0);
+                pcBonus = pSum - cSum;
+                t += pcBonus;
+                if (pc.pros.length || pc.cons.length) {
+                    critCalcs.push(`Pros (+${pSum}) & Cons (-${cSum}) ➞ %+${pcBonus}`);
+                }
             }
 
-            report.result = `Winner: **${winner.opt.name}** with total score **${winner.t.toFixed(1)}**${tieNote}`;
+            const pct = maxP > 0 ? (t / maxP * 100) : (t > 0 ? 100 : (t < 0 ? 0 : 50));
+            report.steps.push(`**${opt.name}**:\n   ` + critCalcs.join("\n   ") + `\n   Final Score: **${t.toFixed(1)}**`);
+            return { opt, t, pct: Math.max(0, Math.min(100, Math.round(pct))) };
+        });
 
-            const warnings = sensitivityWarnings(totals);
-            const dur = animDur(3000);
-            const pc = document.getElementById("process-content");
-            pc.innerHTML = totals.map(({ opt, pct }) => `
+        totals.sort((a, b) => b.t - a.t);
+        const maxT = totals[0].t;
+        const topScorers = totals.filter(it => it.t === maxT);
+        let winner = totals[0];
+        let tieNote = "";
+        if (topScorers.length > 1) {
+            winner = topScorers[Math.floor(Math.random() * topScorers.length)];
+            tieNote = ` [Random tiebreak from ${topScorers.length} options]`;
+        }
+
+        report.result = `Winner: **${winner.opt.name}** with total score **${winner.t.toFixed(1)}**${tieNote}`;
+
+        const warnings = sensitivityWarnings(totals);
+        const dur = animDur(3000);
+        const pc = document.getElementById("process-content");
+        pc.innerHTML = totals.map(({ opt, pct }) => `
             <div class="mb-2">
                 <div class="group gap-2"><span class="option-color" style="background:${opt.color}"></span><span class="flex-1">${opt.name}</span><span class="text-muted text-sm">${pct}/100</span></div>
                 <div class="score-bar-track"><div class="score-bar-fill" data-pct="${pct}" style="background:${opt.color}"></div></div>
             </div>`).join("");
-            setTimeout(() => pc.querySelectorAll(".score-bar-fill").forEach(b => b.style.width = b.dataset.pct + "%"), 80);
-            setTimeout(() => showResult({
-                winner: winner.opt.name, winnerId: winner.opt.id, method: "scored",
-                rankings: totals.map(({ opt, pct, t }, i) => ({ optionId: opt.id, score: t, pct, rank: i + 1 })),
-                rationale: [
-                    `Weighted score: ${winner.t.toFixed(1)}${tieNote}`,
-                    state.criteria.length ? `Top criterion: ${state.criteria.slice().sort((a, b) => b.weight - a.weight)[0].name}` : ""
-                ],
-                sensitivityWarnings: warnings,
-                mathReport: report,
-            }), dur);
-        }
+        setTimeout(() => pc.querySelectorAll(".score-bar-fill").forEach(b => b.style.width = b.dataset.pct + "%"), 80);
+        setTimeout(() => showResult({
+            winner: winner.opt.name, winnerId: winner.opt.id, method: "scored",
+            rankings: totals.map(({ opt, pct, t }, i) => ({
+                optionId: opt.id,
+                score: t,
+                pct,
+                rank: i + 1,
+            })),
+            rationale: [
+                `Weighted score: ${winner.t.toFixed(1)}${tieNote}`,
+                state.criteria.length ? `Top criterion: ${state.criteria.slice().sort((a, b) => b.weight - a.weight)[0].name}` : "",
+            ],
+            sensitivityWarnings: warnings,
+            mathReport: report,
+        }), dur);
+    }
 
-        function sensitivityWarnings(totals) {
-            if (totals.length < 2) return [];
-            const [first, second] = totals;
-            const gap = first.t - second.t;
-            for (const c of state.criteria) {
-                if (c.weight * prefs.sensitivityScoreThreshold >= gap) {
-                    return [`Changing any score by ±${prefs.sensitivityScoreThreshold} could change the winner`];
-                }
+    function sensitivityWarnings(totals) {
+        if (totals.length < 2) return [];
+        const [first, second] = totals;
+        const gap = first.t - second.t;
+        for (const c of state.criteria) {
+            if (c.weight * prefs.sensitivityScoreThreshold >= gap) {
+                return [`Changing any score by ±${prefs.sensitivityScoreThreshold} could change the winner`];
             }
-            return [];
         }
+        return [];
+    }
 
-        // ── Comparison ──
-        function resolveComparison() {
-            const opts = state.options.filter(o => o.name.trim());
-            if (!opts.length) { resolveOracle(); return; }
-            const style = document.querySelector("input[name=\"comp-style\"]:checked")?.value || "pairwise";
-            if (style === "pairwise") startPairwise(opts);
-            else if (style === "sequential") startSequential(opts);
-            else startElimination(opts);
+    // ── Comparison ──
+    function resolveComparison() {
+        const opts = state.options.filter(o => o.name.trim());
+        if (!opts.length) {
+            resolveOracle();
+            return;
         }
+        const style = document.querySelector("input[name=\"comp-style\"]:checked")?.value || "pairwise";
+        if (style === "pairwise") startPairwise(opts);
+        else if (style === "sequential") startSequential(opts);
+        else startElimination(opts);
+    }
 
-        function startPairwise(opts) {
-            const sessionId = ++_compSession;
-            const pairs = [];
-            for (let i = 0; i < opts.length; i++) for (let j = i + 1; j < opts.length; j++) pairs.push([opts[i], opts[j]]);
-            shuffle(pairs);
-            const wins = Object.fromEntries(opts.map(o => [o.id, 0]));
-            const pc = document.getElementById("process-content");
-            let idx = 0;
-            function next() {
-                if (sessionId !== _compSession) return; // stale session — a newer one started
-                if (idx >= pairs.length) {
-                    const ranked = opts.slice().sort((a, b) => wins[b.id] - wins[a.id]);
-                    return showResult({
-                        winner: ranked[0].name, winnerId: ranked[0].id, method: "comparison",
-                        rankings: ranked.map((o, i) => ({ optionId: o.id, score: wins[o.id], rank: i + 1 })),
-                        rationale: [`Most pairwise wins: ${wins[ranked[0].id]} of ${pairs.length}`],
-                        sensitivityWarnings: [],
-                    });
-                }
-                const [a, b] = pairs[idx];
-                announce(`Pairwise choice ${idx + 1} of ${pairs.length}: ${a.name} vs ${b.name}`);
-                pc.innerHTML = `
+    function startPairwise(opts) {
+        const sessionId = ++_compSession;
+        const pairs = [];
+        for (let i = 0; i < opts.length; i++) for (let j = i + 1; j < opts.length; j++) pairs.push([opts[i], opts[j]]);
+        shuffle(pairs);
+        const wins = Object.fromEntries(opts.map(o => [o.id, 0]));
+        const pc = document.getElementById("process-content");
+        let idx = 0;
+
+        function next() {
+            if (sessionId !== _compSession) return; // stale session — a newer one started
+            if (idx >= pairs.length) {
+                const ranked = opts.slice().sort((a, b) => wins[b.id] - wins[a.id]);
+                return showResult({
+                    winner: ranked[0].name, winnerId: ranked[0].id, method: "comparison",
+                    rankings: ranked.map((o, i) => ({
+                        optionId: o.id,
+                        score: wins[o.id],
+                        rank: i + 1,
+                    })),
+                    rationale: [`Most pairwise wins: ${wins[ranked[0].id]} of ${pairs.length}`],
+                    sensitivityWarnings: [],
+                });
+            }
+            const [a, b] = pairs[idx];
+            announce(`Pairwise choice ${idx + 1} of ${pairs.length}: ${a.name} vs ${b.name}`);
+            pc.innerHTML = `
                 <p class="text-muted">Which do you prefer? (${idx + 1}/${pairs.length})</p>
                 <progress value="${idx}" max="${pairs.length}"></progress>
                 <div class="matchup">
@@ -1456,609 +1611,811 @@
                     <button class="matchup-card" id="mc-b" aria-label="${b.name} (Press 2)">${b.name}</button>
                 </div>
                 <div class="group" style="justify-content:center"><button type="button" id="mc-tie" aria-label="Tie (Press 3)">Equal / Skip</button></div>`;
-                // Keyboard shortcuts: 1, 2, or 3/s for tie
-                const onKey = e => {
-                    if (sessionId !== _compSession || state.phase !== "process") { cleanup(); return; }
-                    if (e.key === "1") document.getElementById("mc-a").click();
-                    if (e.key === "2") document.getElementById("mc-b").click();
-                    if (e.key === "3" || e.key === "s") document.getElementById("mc-tie").click();
-                };
-                function cleanup() { window.removeEventListener("keydown", onKey); }
-                document.getElementById("mc-a").onclick = () => { cleanup(); wins[a.id] += 1; idx++; next(); };
-                document.getElementById("mc-b").onclick = () => { cleanup(); wins[b.id] += 1; idx++; next(); };
-                document.getElementById("mc-tie").onclick = () => { cleanup(); wins[a.id] += 0.5; wins[b.id] += 0.5; idx++; next(); };
-                window.addEventListener("keydown", onKey);
-            }
-            next();
-        }
-
-        function startSequential(opts) {
-            const sessionId = ++_compSession;
-            let remaining = opts.slice();
-            const eliminated = [];
-            function next() {
-                if (remaining.length <= 1) {
-                    const winner = remaining[0] || opts[0];
-                    return showResult({
-                        winner: winner.name, winnerId: winner.id, method: "comparison",
-                        rankings: [winner, ...eliminated.slice().reverse()].map((o, i) => ({ optionId: o.id, score: eliminated.length - i + 1, rank: i + 1 })),
-                        rationale: ["Last option standing after sequential elimination"],
-                        sensitivityWarnings: [],
-                    });
+            // Keyboard shortcuts: 1, 2, or 3/s for tie
+            const onKey = e => {
+                if (sessionId !== _compSession || state.phase !== "process") {
+                    cleanup();
+                    return;
                 }
-                const pc = document.getElementById("process-content");
-                announce(`Sequential elimination: Pick the least favorite of ${remaining.length} options.`);
-                pc.innerHTML = `<p class="text-muted">Which is your <strong>least favorite</strong>? (${remaining.length} left)</p><div id="elim-list"></div>`;
-                const container = document.getElementById("elim-list");
-                remaining.forEach((opt, ri) => {
-                    const row = document.createElement("div"); row.className = "elim-option";
-                    const dot = document.createElement("span"); dot.className = "option-color"; dot.style.background = opt.color;
-                    const name = document.createElement("span"); name.append(dot, ` ${opt.name}`);
-                    const btn = document.createElement("button"); btn.type = "button"; btn.textContent = "Eliminate";
-                    if (ri < 9) btn.setAttribute("aria-label", `Eliminate ${opt.name} (Press ${ri + 1})`);
-                    btn.onclick = () => { cleanup(); eliminated.push(opt); remaining = remaining.filter(o => o.id !== opt.id); next(); };
-                    row.append(name, btn); container.appendChild(row);
-                });
+                if (e.key === "1") document.getElementById("mc-a").click();
+                if (e.key === "2") document.getElementById("mc-b").click();
+                if (e.key === "3" || e.key === "s") document.getElementById("mc-tie").click();
+            };
 
-                const onKey = e => {
-                    if (sessionId !== _compSession || state.phase !== "process") { cleanup(); return; }
-                    const num = parseInt(e.key);
-                    if (num >= 1 && num <= remaining.length && num <= 9) {
-                        const btns = container.querySelectorAll("button");
-                        if (btns[num - 1]) btns[num - 1].click();
-                    }
-                };
-                function cleanup() { window.removeEventListener("keydown", onKey); }
-                window.addEventListener("keydown", onKey);
+            function cleanup() {
+                window.removeEventListener("keydown", onKey);
             }
-            next();
+
+            document.getElementById("mc-a").onclick = () => {
+                cleanup();
+                wins[a.id] += 1;
+                idx++;
+                next();
+            };
+            document.getElementById("mc-b").onclick = () => {
+                cleanup();
+                wins[b.id] += 1;
+                idx++;
+                next();
+            };
+            document.getElementById("mc-tie").onclick = () => {
+                cleanup();
+                wins[a.id] += 0.5;
+                wins[b.id] += 0.5;
+                idx++;
+                next();
+            };
+            window.addEventListener("keydown", onKey);
         }
 
-        function startElimination(opts) {
-            const sessionId = ++_compSession;
-            let round = shuffle(opts.slice());
-            if (round.length % 2) round.push(null); // bye
-            function doRound(bracket) {
-                const next = [];
-                let i = 0;
-                function doMatch() {
-                    if (i >= bracket.length) {
-                        if (next.length === 1) return showResult({
-                            winner: next[0].name, winnerId: next[0].id, method: "comparison",
-                            rankings: [{ optionId: next[0].id, score: 1, rank: 1 }],
-                            rationale: ["Won all bracket matches"], sensitivityWarnings: [],
-                        });
-                        if (next.length % 2) next.push(null);
-                        return doRound(next);
-                    }
-                    const a = bracket[i];
-                    const b = bracket[i + 1];
-                    const pc = document.getElementById("process-content");
-                    if (!a) { next.push(b); i += 2; doMatch(); return; }
-                    if (!b) { next.push(a); i += 2; doMatch(); return; }
-                    announce(`Matchup: ${a.name} vs ${b.name}`);
-                    pc.innerHTML = `<p class="text-muted">Pick the winner</p>
+        next();
+    }
+
+    function startSequential(opts) {
+        const sessionId = ++_compSession;
+        let remaining = opts.slice();
+        const eliminated = [];
+
+        function next() {
+            if (remaining.length <= 1) {
+                const winner = remaining[0] || opts[0];
+                return showResult({
+                    winner: winner.name, winnerId: winner.id, method: "comparison",
+                    rankings: [winner, ...eliminated.slice().reverse()].map((o, i) => ({
+                        optionId: o.id,
+                        score: eliminated.length - i + 1,
+                        rank: i + 1,
+                    })),
+                    rationale: ["Last option standing after sequential elimination"],
+                    sensitivityWarnings: [],
+                });
+            }
+            const pc = document.getElementById("process-content");
+            announce(`Sequential elimination: Pick the least favorite of ${remaining.length} options.`);
+            pc.innerHTML = `<p class="text-muted">Which is your <strong>least favorite</strong>? (${remaining.length} left)</p><div id="elim-list"></div>`;
+            const container = document.getElementById("elim-list");
+            remaining.forEach((opt, ri) => {
+                const row = document.createElement("div");
+                row.className = "elim-option";
+                const dot = document.createElement("span");
+                dot.className = "option-color";
+                dot.style.background = opt.color;
+                const name = document.createElement("span");
+                name.append(dot, ` ${opt.name}`);
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.textContent = "Eliminate";
+                if (ri < 9) btn.setAttribute("aria-label", `Eliminate ${opt.name} (Press ${ri + 1})`);
+                btn.onclick = () => {
+                    cleanup();
+                    eliminated.push(opt);
+                    remaining = remaining.filter(o => o.id !== opt.id);
+                    next();
+                };
+                row.append(name, btn);
+                container.appendChild(row);
+            });
+
+            const onKey = e => {
+                if (sessionId !== _compSession || state.phase !== "process") {
+                    cleanup();
+                    return;
+                }
+                const num = parseInt(e.key);
+                if (num >= 1 && num <= remaining.length && num <= 9) {
+                    const btns = container.querySelectorAll("button");
+                    if (btns[num - 1]) btns[num - 1].click();
+                }
+            };
+
+            function cleanup() {
+                window.removeEventListener("keydown", onKey);
+            }
+
+            window.addEventListener("keydown", onKey);
+        }
+
+        next();
+    }
+
+    function startElimination(opts) {
+        const sessionId = ++_compSession;
+        let round = shuffle(opts.slice());
+        if (round.length % 2) round.push(null); // bye
+        function doRound(bracket) {
+            const next = [];
+            let i = 0;
+
+            function doMatch() {
+                if (i >= bracket.length) {
+                    if (next.length === 1) return showResult({
+                        winner: next[0].name, winnerId: next[0].id, method: "comparison",
+                        rankings: [{ optionId: next[0].id, score: 1, rank: 1 }],
+                        rationale: ["Won all bracket matches"], sensitivityWarnings: [],
+                    });
+                    if (next.length % 2) next.push(null);
+                    return doRound(next);
+                }
+                const a = bracket[i];
+                const b = bracket[i + 1];
+                const pc = document.getElementById("process-content");
+                if (!a) {
+                    next.push(b);
+                    i += 2;
+                    doMatch();
+                    return;
+                }
+                if (!b) {
+                    next.push(a);
+                    i += 2;
+                    doMatch();
+                    return;
+                }
+                announce(`Matchup: ${a.name} vs ${b.name}`);
+                pc.innerHTML = `<p class="text-muted">Pick the winner</p>
                     <div class="matchup">
                         <button class="matchup-card" id="em-a" aria-label="${a.name} (Press 1)">${a.name}</button>
                         <span class="matchup-vs">VS</span>
                         <button class="matchup-card" id="em-b" aria-label="${b.name} (Press 2)">${b.name}</button>
                     </div>`;
-                    document.getElementById("em-a").onclick = () => { next.push(a); i += 2; cleanup(); doMatch(); };
-                    document.getElementById("em-b").onclick = () => { next.push(b); i += 2; cleanup(); doMatch(); };
+                document.getElementById("em-a").onclick = () => {
+                    next.push(a);
+                    i += 2;
+                    cleanup();
+                    doMatch();
+                };
+                document.getElementById("em-b").onclick = () => {
+                    next.push(b);
+                    i += 2;
+                    cleanup();
+                    doMatch();
+                };
 
-                    const onKey = e => {
-                        if (sessionId !== _compSession || state.phase !== "process") { cleanup(); return; }
-                        if (e.key === "1") document.getElementById("em-a").click();
-                        if (e.key === "2") document.getElementById("em-b").click();
-                    };
-                    function cleanup() { window.removeEventListener("keydown", onKey); }
-                    window.addEventListener("keydown", onKey);
+                const onKey = e => {
+                    if (sessionId !== _compSession || state.phase !== "process") {
+                        cleanup();
+                        return;
+                    }
+                    if (e.key === "1") document.getElementById("em-a").click();
+                    if (e.key === "2") document.getElementById("em-b").click();
+                };
+
+                function cleanup() {
+                    window.removeEventListener("keydown", onKey);
                 }
-                doMatch();
+
+                window.addEventListener("keydown", onKey);
             }
-            doRound(round);
+
+            doMatch();
         }
 
-        // ── Group split ──
-        function resolveGroup() {
-            const opts = state.options.filter(o => o.name.trim());
-            if (!opts.length) return;
-            const n = Math.max(2, parseInt(document.getElementById("group-count").value) || 2);
-            const shuffled = shuffle(opts.slice());
-            const groups = Array.from({ length: n }, () => []);
-            shuffled.forEach((o, i) => groups[i % n].push(o));
-            const dur = animDur(2000);
-            document.getElementById("process-content").innerHTML = "<article aria-busy=\"true\" aria-live=\"polite\">Splitting…</article>";
-            setTimeout(() => {
-                document.getElementById("process-content").innerHTML = `<div class="group-split-result">
+        doRound(round);
+    }
+
+    // ── Group split ──
+    function resolveGroup() {
+        const opts = state.options.filter(o => o.name.trim());
+        if (!opts.length) return;
+        const n = Math.max(2, parseInt(document.getElementById("group-count").value) || 2);
+        const shuffled = shuffle(opts.slice());
+        const groups = Array.from({ length: n }, () => []);
+        shuffled.forEach((o, i) => groups[i % n].push(o));
+        const dur = animDur(2000);
+        document.getElementById("process-content").innerHTML = "<article aria-busy=\"true\" aria-live=\"polite\">Splitting…</article>";
+        setTimeout(() => {
+            document.getElementById("process-content").innerHTML = `<div class="group-split-result">
                 ${groups.map((g, gi) => `<div class="group-card" style="border-top:3px solid ${PALETTE[gi % PALETTE.length]}">
                     <h4>Group ${gi + 1}</h4>
                     ${g.map(o => `<p><span class="option-color" style="background:${o.color}"></span> ${o.name}</p>`).join("")}
                 </div>`).join("")}
             </div>`;
-                showResult({
-                    winner: null, method: "group", rankings: [],
-                    rationale: [`Split ${opts.length} items into ${n} groups`],
-                    sensitivityWarnings: [],
-                    groups: groups.map((g, i) => ({ groupNumber: i + 1, optionIds: g.map(o => o.id) })),
-                });
-            }, dur);
+            showResult({
+                winner: null, method: "group", rankings: [],
+                rationale: [`Split ${opts.length} items into ${n} groups`],
+                sensitivityWarnings: [],
+                groups: groups.map((g, i) => ({ groupNumber: i + 1, optionIds: g.map(o => o.id) })),
+            });
+        }, dur);
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  SHOW RESULT
+    // ══════════════════════════════════════════════════════════
+    function showResult(result) {
+        state.phase = "result";
+        state.result = result;
+        state.resultHistory.push(result);
+        pushToHistory(result);
+        renderPhase();
+        renderActionBar();
+
+        if (result.winner) {
+            announce(`The decision is ${result.winner}`);
+        } else if (result.method === "group") {
+            announce("The group split is complete.");
         }
 
-        // ══════════════════════════════════════════════════════════
-        //  SHOW RESULT
-        // ══════════════════════════════════════════════════════════
-        function showResult(result) {
-            state.phase = "result";
-            state.result = result;
-            state.resultHistory.push(result);
-            pushToHistory(result);
-            renderPhase();
-            renderActionBar();
+        const label = document.getElementById("result-label");
+        const namEl = document.getElementById("result-winner-name");
+        if (result.winner) {
+            label.textContent = "The decision is";
+            const opt = state.options.find(o => o.name === result.winner || o.id === result.winnerId);
+            namEl.innerHTML = opt
+                ? `<span class="winner-dot" style="background:${opt.color}"></span>${result.winner}`
+                : result.winner;
+        } else {
+            label.textContent = "Groups created";
+            namEl.textContent = "";
+        }
 
-            if (result.winner) {
-                announce(`The decision is ${result.winner}`);
-            } else if (result.method === "group") {
-                announce("The group split is complete.");
-            }
+        document.getElementById("result-rationale").innerHTML =
+            (result.rationale || []).filter(Boolean).map(r => `<li>${r}</li>`).join("");
 
-            const label = document.getElementById("result-label");
-            const namEl = document.getElementById("result-winner-name");
-            if (result.winner) {
-                label.textContent = "The decision is";
-                const opt = state.options.find(o => o.name === result.winner || o.id === result.winnerId);
-                namEl.innerHTML = opt
-                    ? `<span class="winner-dot" style="background:${opt.color}"></span>${result.winner}`
-                    : result.winner;
-            } else {
-                label.textContent = "Groups created";
-                namEl.textContent = "";
-            }
-
-            document.getElementById("result-rationale").innerHTML =
-                (result.rationale || []).filter(Boolean).map(r => `<li>${r}</li>`).join("");
-
-            const rank = document.getElementById("result-ranking");
-            if (result.rankings?.length > 1) {
-                rank.innerHTML = `<table><thead><tr><th>#</th><th>Option</th><th>Score</th></tr></thead><tbody>
+        const rank = document.getElementById("result-ranking");
+        if (result.rankings?.length > 1) {
+            rank.innerHTML = `<table><thead><tr><th>#</th><th>Option</th><th>Score</th></tr></thead><tbody>
                 ${result.rankings.map(r => {
-                    const o = state.options.find(x => x.id === r.optionId);
-                    return `<tr><td>${r.rank}</td><td><span class="option-color" style="background:${o?.color}"></span> ${o?.name || r.optionId}</td><td>${typeof r.score === "number" ? r.score.toFixed(1) : r.score}</td></tr>`;
-                }).join("")}
+                const o = state.options.find(x => x.id === r.optionId);
+                return `<tr><td>${r.rank}</td><td><span class="option-color" style="background:${o?.color}"></span> ${o?.name || r.optionId}</td><td>${typeof r.score === "number" ? r.score.toFixed(1) : r.score}</td></tr>`;
+            }).join("")}
             </tbody></table>`;
-            } else { rank.innerHTML = ""; }
+        } else {
+            rank.innerHTML = "";
+        }
 
-            const sens = document.getElementById("result-sensitivity");
-            sens.innerHTML = (result.sensitivityWarnings || [])
-                .map(w => `<div class="sensitivity-note">${w}</div>`).join("");
+        const sens = document.getElementById("result-sensitivity");
+        sens.innerHTML = (result.sensitivityWarnings || [])
+            .map(w => `<div class="sensitivity-note">${w}</div>`).join("");
 
-            const groupsEl = document.getElementById("result-groups");
-            if (result.method === "group" && result.groups) {
-                groupsEl.innerHTML = `<div class="group-split-result">
+        const groupsEl = document.getElementById("result-groups");
+        if (result.method === "group" && result.groups) {
+            groupsEl.innerHTML = `<div class="group-split-result">
                 ${result.groups.map((g, gi) => `<div class="group-card" style="border-top:3px solid ${PALETTE[gi % PALETTE.length]}">
                     <h4>Group ${g.groupNumber}</h4>
                     ${g.optionIds.map(id => {
-                    const opt = state.options.find(o => o.id === id);
-                    return opt ? `<p><span class="option-color" style="background:${opt.color}"></span> ${opt.name}</p>` : "";
-                }).join("")}
+                const opt = state.options.find(o => o.id === id);
+                return opt ? `<p><span class="option-color" style="background:${opt.color}"></span> ${opt.name}</p>` : "";
+            }).join("")}
                 </div>`).join("")}
             </div>`;
-            } else {
-                groupsEl.innerHTML = "";
-            }
-
-            const reportEl = document.getElementById("result-math-report");
-            if (result.mathReport) {
-                reportEl.hidden = false;
-                document.getElementById("math-details-el").open = false;
-                document.getElementById("math-report-content").innerHTML = generateMathHTML(result.mathReport);
-            } else {
-                reportEl.hidden = true;
-            }
-
-            scheduleSave();
+        } else {
+            groupsEl.innerHTML = "";
         }
 
-        // ══════════════════════════════════════════════════════════
-        //  HELPERS
-        // ══════════════════════════════════════════════════════════
-        function shuffle(arr) {
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
+        const reportEl = document.getElementById("result-math-report");
+        if (result.mathReport) {
+            reportEl.hidden = false;
+            document.getElementById("math-details-el").open = false;
+            document.getElementById("math-report-content").innerHTML = generateMathHTML(result.mathReport);
+        } else {
+            reportEl.hidden = true;
         }
 
-        function animDur(ms) {
-            if (prefs.animationSpeed === "off" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return 0;
-            if (prefs.animationSpeed === "fast") return Math.round(ms * 0.3);
-            return ms;
+        scheduleSave();
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  HELPERS
+    // ══════════════════════════════════════════════════════════
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
         }
+        return arr;
+    }
 
-        function announce(msg) {
-            const el = document.getElementById("announcer");
-            if (el) {
-                el.textContent = "";
-                setTimeout(() => el.textContent = msg, 50);
-            }
+    function animDur(ms) {
+        if (prefs.animationSpeed === "off" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return 0;
+        if (prefs.animationSpeed === "fast") return Math.round(ms * 0.3);
+        return ms;
+    }
+
+    function announce(msg) {
+        const el = document.getElementById("announcer");
+        if (el) {
+            el.textContent = "";
+            setTimeout(() => el.textContent = msg, 50);
         }
+    }
 
-        function generateMathHTML(report) {
-            const wrapSection = (label, items) => {
-                const content = items.filter(Boolean).join("\n\n");
-                if (!content) return "";
-                return `<div class="report-section"><span class="report-label">${label}</span><div>${content}</div></div>`;
-            };
+    function generateMathHTML(report) {
+        const wrapSection = (label, items) => {
+            const content = items.filter(Boolean).join("\n\n");
+            if (!content) return "";
+            return `<div class="report-section"><span class="report-label">${label}</span><div>${content}</div></div>`;
+        };
 
-            let h = `<div style="font-size:1.15rem; margin-bottom:var(--spacing-md)"><b>${report.title}</b></div>`;
-            h += wrapSection("Inputs", report.inputs);
-            h += wrapSection("Steps", report.steps);
-            h += `<hr><div class="mt-2"><b>Result:</b> ${report.result}</div>`;
+        let h = `<div style="font-size:1.15rem; margin-bottom:var(--spacing-md)"><b>${report.title}</b></div>`;
+        h += wrapSection("Inputs", report.inputs);
+        h += wrapSection("Steps", report.steps);
+        h += `<hr><div class="mt-2"><b>Result:</b> ${report.result}</div>`;
 
-            return h.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+        return h.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+    }
+
+    function generateMathMarkdown(report) {
+        let m = `# ${report.title}\n\n`;
+        m += `## Inputs\n- ${report.inputs.filter(Boolean).join("\n- ")}\n\n`;
+        m += `## Steps\n- ${report.steps.filter(Boolean).join("\n\n- ")}\n\n`;
+        m += `---\n**Result:** ${report.result}`;
+        return m;
+    }
+
+    function addOption(name = "") {
+        pushUndo();
+        const id = mkId();
+        state.options.push({ id, name, color: PALETTE[state.options.length % PALETTE.length] });
+        if (state.activeLayers.includes("weights")) state.weights[id] = 0.5;
+        if (state.activeLayers.includes("proscons")) state.proscons[id] = { pros: [], cons: [] };
+        if (state.activeLayers.includes("criteria")) state.scores[id] = {};
+        renderOptions();
+        renderWeights();
+        renderProscons();
+        renderScoresGrid();
+        updateDecideBtn();
+        scheduleSave();
+        const inputs = document.querySelectorAll("#options-list input[type=\"text\"]");
+        inputs[inputs.length - 1]?.focus();
+    }
+
+    function activateLayer(layer) {
+        if (state.activeLayers.includes(layer)) return;
+        state.activeLayers.push(layer);
+        if (layer === "weights") state.options.forEach(o => {
+            state.weights[o.id] ??= 0.5;
+        });
+        if (layer === "proscons") state.options.forEach(o => {
+            state.proscons[o.id] ??= { pros: [], cons: [] };
+        });
+        if (layer === "criteria") {
+            state.options.forEach(o => {
+                state.scores[o.id] ??= {};
+            });
+            if (!state.criteria.length) applyCriteriaTemplate(state.contextCategory || "generic");
         }
+        renderAll();
+        scheduleSave();
+    }
 
-        function generateMathMarkdown(report) {
-            let m = `# ${report.title}\n\n`;
-            m += `## Inputs\n- ${report.inputs.filter(Boolean).join("\n- ")}\n\n`;
-            m += `## Steps\n- ${report.steps.filter(Boolean).join("\n\n- ")}\n\n`;
-            m += `---\n**Result:** ${report.result}`;
-            return m;
+    function deactivateLayer(layer) {
+        if (!state.activeLayers.includes(layer)) return;
+        pushUndo();
+        state.activeLayers = state.activeLayers.filter(l => l !== layer);
+        if (layer === "weights") state.weights = {};
+        if (layer === "proscons") state.proscons = {};
+        if (layer === "criteria") {
+            state.criteria = [];
+            state.scores = {};
         }
+        renderAll();
+        scheduleSave();
+    }
 
-        function addOption(name = "") {
-            pushUndo();
-            const id = mkId();
-            state.options.push({ id, name, color: PALETTE[state.options.length % PALETTE.length] });
-            if (state.activeLayers.includes("weights")) state.weights[id] = 0.5;
-            if (state.activeLayers.includes("proscons")) state.proscons[id] = { pros: [], cons: [] };
-            if (state.activeLayers.includes("criteria")) state.scores[id] = {};
-            renderOptions(); renderWeights(); renderProscons(); renderScoresGrid();
-            updateDecideBtn();
-            scheduleSave();
-            const inputs = document.querySelectorAll("#options-list input[type=\"text\"]");
-            inputs[inputs.length - 1]?.focus();
+    function applyCriteriaTemplate(tpl) {
+        const names = CRITERIA_PRESETS[tpl] || CRITERIA_PRESETS.generic;
+        state.criteria = names.map(name => ({
+            id: mkId(),
+            name,
+            weight: 5,
+            direction: tpl === "cost-benefit" && ["Direct Costs", "Indirect Costs", "Risk Exposure"].includes(name) ? "lower-better" : "higher-better",
+            scoreType: "numeric",
+            icon: "",
+        }));
+        state.options.forEach(o => {
+            state.scores[o.id] = {};
+        });
+        if (!state.activeLayers.includes("criteria")) state.activeLayers.push("criteria");
+        renderCriteria();
+        renderScoresGrid();
+        updateInputMode();
+        scheduleSave();
+    }
+
+    function detectCategory(q) {
+        const lower = q.toLowerCase();
+        for (const [cat, words] of Object.entries(KEYWORD_CATS)) {
+            if (words.some(w => lower.includes(w))) return cat;
         }
+        return null;
+    }
 
-        function activateLayer(layer) {
-            if (state.activeLayers.includes(layer)) return;
-            state.activeLayers.push(layer);
-            if (layer === "weights") state.options.forEach(o => { state.weights[o.id] ??= 0.5; });
-            if (layer === "proscons") state.options.forEach(o => { state.proscons[o.id] ??= { pros: [], cons: [] }; });
-            if (layer === "criteria") {
-                state.options.forEach(o => { state.scores[o.id] ??= {}; });
-                if (!state.criteria.length) applyCriteriaTemplate(state.contextCategory || "generic");
-            }
-            renderAll(); scheduleSave();
+    // ══════════════════════════════════════════════════════════
+    //  CONFIRM OVERWRITE HELPER
+    // ══════════════════════════════════════════════════════════
+    let _confirmCallback = null;
+
+    function confirmOverwrite(message, fn, verb = "Replace") {
+        document.getElementById("confirm-msg").textContent = message;
+        document.getElementById("btn-confirm-ok").textContent = verb;
+        _confirmCallback = fn;
+        document.getElementById("dialog-confirm").showModal();
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  QUICK CHIPS
+    // ══════════════════════════════════════════════════════════
+    function applyQuickChip(type) {
+        pushUndo();
+        state.optionsLocked = true;
+        if (type === "yesno") {
+            state.question = state.question || "Should I?";
+            state.options = [{ id: mkId(), name: "Yes", color: PALETTE[0] }, {
+                id: mkId(),
+                name: "No",
+                color: PALETTE[1],
+            }];
+            state.method = "auto";
+            state.chooseRandomly = true;
+        } else if (type === "number") {
+            state.method = "number";
+            state.options = [];
+        } else if (type === "sort") {
+            state.question = state.question || "Sort my priorities";
+            state.method = "auto";
+            state.chooseRandomly = false;
+            state.options = [
+                { id: mkId(), name: "", color: PALETTE[0] },
+                { id: mkId(), name: "", color: PALETTE[1] },
+                { id: mkId(), name: "", color: PALETTE[2] },
+            ];
+            document.querySelector("input[name=\"comp-style\"][value=\"sequential\"]").checked = true;
         }
+        renderAll();
+        scheduleSave();
+    }
 
-        function deactivateLayer(layer) {
-            if (!state.activeLayers.includes(layer)) return;
-            pushUndo();
-            state.activeLayers = state.activeLayers.filter(l => l !== layer);
-            if (layer === "weights") state.weights = {};
-            if (layer === "proscons") state.proscons = {};
-            if (layer === "criteria") { state.criteria = []; state.scores = {}; }
-            renderAll(); scheduleSave();
+    // ══════════════════════════════════════════════════════════
+    //  HISTORY
+    // ══════════════════════════════════════════════════════════
+    function renderHistoryList(filter = "") {
+        const el = document.getElementById("history-list");
+        const items = filter ? savedHistory.filter(h => h.question.toLowerCase().includes(filter.toLowerCase())) : savedHistory;
+        if (!items.length) {
+            el.innerHTML = "<p class=\"text-muted mt-4\">No decisions yet.</p>";
+            return;
         }
-
-        function applyCriteriaTemplate(tpl) {
-            const names = CRITERIA_PRESETS[tpl] || CRITERIA_PRESETS.generic;
-            state.criteria = names.map(name => ({
-                id: mkId(), name, weight: 5, direction: tpl === "cost-benefit" && ["Direct Costs", "Indirect Costs", "Risk Exposure"].includes(name) ? "lower-better" : "higher-better",
-                scoreType: "numeric", icon: "",
-            }));
-            state.options.forEach(o => { state.scores[o.id] = {}; });
-            if (!state.activeLayers.includes("criteria")) state.activeLayers.push("criteria");
-            renderCriteria(); renderScoresGrid(); updateInputMode();
-            scheduleSave();
-        }
-
-        function detectCategory(q) {
-            const lower = q.toLowerCase();
-            for (const [cat, words] of Object.entries(KEYWORD_CATS)) {
-                if (words.some(w => lower.includes(w))) return cat;
-            }
-            return null;
-        }
-
-        // ══════════════════════════════════════════════════════════
-        //  CONFIRM OVERWRITE HELPER
-        // ══════════════════════════════════════════════════════════
-        let _confirmCallback = null;
-        function confirmOverwrite(message, fn, verb = "Replace") {
-            document.getElementById("confirm-msg").textContent = message;
-            document.getElementById("btn-confirm-ok").textContent = verb;
-            _confirmCallback = fn;
-            document.getElementById("dialog-confirm").showModal();
-        }
-
-        // ══════════════════════════════════════════════════════════
-        //  QUICK CHIPS
-        // ══════════════════════════════════════════════════════════
-        function applyQuickChip(type) {
-            pushUndo();
-            state.optionsLocked = true;
-            if (type === "yesno") {
-                state.question = state.question || "Should I?";
-                state.options = [{ id: mkId(), name: "Yes", color: PALETTE[0] }, { id: mkId(), name: "No", color: PALETTE[1] }];
-                state.method = "auto";
-                state.chooseRandomly = true;
-            } else if (type === "number") {
-                state.method = "number"; state.options = [];
-            } else if (type === "sort") {
-                state.question = state.question || "Sort my priorities";
-                state.method = "auto";
-                state.chooseRandomly = false;
-                state.options = [
-                    { id: mkId(), name: "", color: PALETTE[0] },
-                    { id: mkId(), name: "", color: PALETTE[1] },
-                    { id: mkId(), name: "", color: PALETTE[2] },
-                ];
-                document.querySelector("input[name=\"comp-style\"][value=\"sequential\"]").checked = true;
-            }
-            renderAll(); scheduleSave();
-        }
-
-        // ══════════════════════════════════════════════════════════
-        //  HISTORY
-        // ══════════════════════════════════════════════════════════
-        function renderHistoryList(filter = "") {
-            const el = document.getElementById("history-list");
-            const items = filter ? savedHistory.filter(h => h.question.toLowerCase().includes(filter.toLowerCase())) : savedHistory;
-            if (!items.length) { el.innerHTML = "<p class=\"text-muted mt-4\">No decisions yet.</p>"; return; }
-            el.innerHTML = "";
-            items.forEach((h, i) => {
-                const row = document.createElement("div");
-                row.className = "header-row mb-2";
-                row.style.borderBottom = "1px solid var(--outline-variant)";
-                row.style.paddingBottom = "var(--spacing-sm)";
-                row.innerHTML = `
+        el.innerHTML = "";
+        items.forEach((h, i) => {
+            const row = document.createElement("div");
+            row.className = "header-row mb-2";
+            row.style.borderBottom = "1px solid var(--outline-variant)";
+            row.style.paddingBottom = "var(--spacing-sm)";
+            row.innerHTML = `
                 <div>
                     <strong>${h.question}</strong>${h.winner ? ` → <em>${h.winner}</em>` : ""}
                     <br><span class="text-muted text-xs">${new Date(h.date).toLocaleDateString()} · ${h.method}</span>
                 </div>`;
-                const btn = document.createElement("button");
-                btn.type = "button"; btn.textContent = "Load";
-                btn.addEventListener("click", () => {
-                    pushUndo();
-                    const snap = Object.assign(newState(), items[i].state);
-                    snap.undoStack = state.undoStack.slice(); snap.phase = "input";
-                    state = snap; renderAll(); scheduleSave();
-                    document.getElementById("dialog-history").close();
-                });
-                row.appendChild(btn); el.appendChild(row);
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = "Load";
+            btn.addEventListener("click", () => {
+                pushUndo();
+                const snap = Object.assign(newState(), items[i].state);
+                snap.undoStack = state.undoStack.slice();
+                snap.phase = "input";
+                state = snap;
+                renderAll();
+                scheduleSave();
+                document.getElementById("dialog-history").close();
             });
-        }
-
-        // ══════════════════════════════════════════════════════════
-        //  SHARE
-        // ══════════════════════════════════════════════════════════
-        function shareState() {
-            const copy = JSON.parse(JSON.stringify(state)); copy.undoStack = [];
-            const json = JSON.stringify(copy);
-            try {
-                const b64 = btoa(unescape(encodeURIComponent(json)));
-                const url = location.href.split("#")[0] + "#" + b64;
-                if (url.length <= 2000) {
-                    navigator.clipboard?.writeText(url).then(() => alert("Link copied!")).catch(() => prompt("Copy this link:", url));
-                } else {
-                    prompt("State JSON (copy to share - link was too long):", json);
-                }
-            } catch { prompt("State JSON:", json); }
-        }
-
-        function loadFromHash() {
-            if (!location.hash) return;
-            try {
-                const json = decodeURIComponent(escape(atob(location.hash.slice(1))));
-                const parsed = JSON.parse(json);
-                if (parsed.schemaVersion === 1) { state = Object.assign(newState(), parsed); state.phase = "input"; }
-            } catch { /* Ignore malformed hash */ }
-        }
-
-        // ══════════════════════════════════════════════════════════
-        //  EVENT WIRING
-        // ══════════════════════════════════════════════════════════
-        document.getElementById("question").addEventListener("input", e => {
-            state.question = e.target.value;
-            state.contextCategory = detectCategory(state.question);
-            // Auto-split "X or Y or Z …" — always applies so typing options in the question field works
-            const parts = state.question.replace(/\?$/, "").split(/\s+or\s+/i).map(s => s.trim()).filter(Boolean);
-            if (parts.length >= 2) {
-                state.options = parts.map((name, i) => ({ id: mkId(), name, color: PALETTE[i % PALETTE.length] }));
-                state.optionsLocked = false;
-                if (state.activeLayers.includes("weights")) state.options.forEach(o => { state.weights[o.id] ??= 0.5; });
-                if (state.activeLayers.includes("proscons")) state.options.forEach(o => { state.proscons[o.id] ??= { pros: [], cons: [] }; });
-                if (state.activeLayers.includes("criteria")) state.options.forEach(o => { state.scores[o.id] ??= {}; });
-                renderOptions(); renderWeights(); renderProscons(); renderScoresGrid();
-            } else if (!state.optionsLocked) {
-                if (/^should\s+i\b/i.test(state.question)) {
-                    // Auto "Should I…" → yes/no
-                    state.options = [{ id: mkId(), name: "Yes", color: PALETTE[0] }, { id: mkId(), name: "No", color: PALETTE[1] }];
-                    if (state.activeLayers.includes("weights")) state.options.forEach(o => { state.weights[o.id] ??= 0.5; });
-                    if (state.activeLayers.includes("proscons")) state.options.forEach(o => { state.proscons[o.id] ??= { pros: [], cons: [] }; });
-                    if (state.activeLayers.includes("criteria")) state.options.forEach(o => { state.scores[o.id] ??= {}; });
-                    renderOptions(); renderWeights(); renderProscons(); renderScoresGrid();
-                }
-            }
-            updateDecideBtn(); scheduleSave();
+            row.appendChild(btn);
+            el.appendChild(row);
         });
+    }
 
-        document.getElementById("btn-add-option").addEventListener("click", () => { state.optionsLocked = true; addOption(); });
-        document.querySelectorAll("[data-quick]").forEach(b => b.addEventListener("click", () => {
-            const type = b.dataset.quick;
-            const names = state.options.map(o => o.name.trim()).filter(Boolean);
-            const isYesNo = names.length === 2 && names.includes("Yes") && names.includes("No");
-            if (names.length > 0 && !isYesNo) {
-                confirmOverwrite("This will replace your current options.", () => applyQuickChip(type));
+    // ══════════════════════════════════════════════════════════
+    //  SHARE
+    // ══════════════════════════════════════════════════════════
+    function shareState() {
+        const copy = JSON.parse(JSON.stringify(state));
+        copy.undoStack = [];
+        const json = JSON.stringify(copy);
+        try {
+            const b64 = btoa(unescape(encodeURIComponent(json)));
+            const url = location.href.split("#")[0] + "#" + b64;
+            if (url.length <= 2000) {
+                navigator.clipboard?.writeText(url).then(() => alert("Link copied!")).catch(() => prompt("Copy this link:", url));
             } else {
-                applyQuickChip(type);
+                prompt("State JSON (copy to share - link was too long):", json);
             }
-        }));
+        } catch {
+            prompt("State JSON:", json);
+        }
+    }
 
-        document.getElementById("choose-randomly").addEventListener("change", e => {
-            pushUndo();
-            state.chooseRandomly = e.target.checked;
-            if (state.chooseRandomly) {
-                state.activeLayers = state.activeLayers.filter(l => l !== "criteria" && l !== "proscons");
+    function loadFromHash() {
+        if (!location.hash) return;
+        try {
+            const json = decodeURIComponent(escape(atob(location.hash.slice(1))));
+            const parsed = JSON.parse(json);
+            if (parsed.schemaVersion === 1) {
+                state = Object.assign(newState(), parsed);
+                state.phase = "input";
             }
-            renderAll();
-            scheduleSave();
-        });
-        document.getElementById("btn-add-proscons").addEventListener("click", () => state.activeLayers.includes("proscons") ? deactivateLayer("proscons") : activateLayer("proscons"));
-        document.getElementById("btn-add-criteria").addEventListener("click", () => state.activeLayers.includes("criteria") ? deactivateLayer("criteria") : activateLayer("criteria"));
+        } catch { /* Ignore malformed hash */
+        }
+    }
 
-        document.getElementById("criteria-template").addEventListener("change", e => {
-            if (!e.target.value) return;
-            const tpl = e.target.value;
-            e.target.value = "";
-            if (state.criteria.length) {
-                confirmOverwrite("This will replace your current criteria.", () => applyCriteriaTemplate(tpl));
-            } else {
-                applyCriteriaTemplate(tpl);
-            }
-        });
-        document.getElementById("btn-add-criterion").addEventListener("click", () => {
-            pushUndo();
-            state.criteria.push({ id: mkId(), name: "", weight: 5, direction: "higher-better", scoreType: "numeric", icon: "" });
-            state.options.forEach(o => { state.scores[o.id] ??= {}; });
-            renderCriteria(); renderScoresGrid(); scheduleSave();
-        });
-
-
-
-        document.getElementById("btn-decide").addEventListener("click", startDecide);
-        document.getElementById("btn-undo").addEventListener("click", undo);
-        document.getElementById("btn-reset").addEventListener("click", () => {
-            pushUndo();
-            const stack = state.undoStack.slice();
-            state = newState(); state.undoStack = stack;
-            renderAll(); scheduleSave();
-        });
-
-        document.getElementById("btn-add-detail").addEventListener("click", () => {
-            state.phase = "input"; renderPhase();
-            if (state.chooseRandomly) {
-                // weights are always shown in random mode; nothing extra to add
-            } else {
-                if (!state.activeLayers.includes("criteria")) activateLayer("criteria");
-            }
-        });
-
-        document.getElementById("btn-copy-math").addEventListener("click", () => {
-            if (!state.result?.mathReport) return;
-            const md = generateMathMarkdown(state.result.mathReport);
-            navigator.clipboard.writeText(md).then(() => {
-                const btn = document.getElementById("btn-copy-math");
-                const old = btn.innerHTML;
-                btn.innerHTML = "<span class=\"sym\">check</span> Copied";
-                setTimeout(() => btn.innerHTML = old, 1500);
+    // ══════════════════════════════════════════════════════════
+    //  EVENT WIRING
+    // ══════════════════════════════════════════════════════════
+    document.getElementById("question").addEventListener("input", e => {
+        state.question = e.target.value;
+        state.contextCategory = detectCategory(state.question);
+        // Auto-split "X or Y or Z …" — always applies so typing options in the question field works
+        const parts = state.question.replace(/\?$/, "").split(/\s+or\s+/i).map(s => s.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+            state.options = parts.map((name, i) => ({
+                id: mkId(),
+                name,
+                color: PALETTE[i % PALETTE.length],
+            }));
+            state.optionsLocked = false;
+            if (state.activeLayers.includes("weights")) state.options.forEach(o => {
+                state.weights[o.id] ??= 0.5;
             });
-        });
-
-        document.getElementById("btn-share").addEventListener("click", shareState);
-
-        // Confirm dialog
-        document.getElementById("btn-confirm-ok").addEventListener("click", () => {
-            document.getElementById("dialog-confirm").close();
-            if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
-        });
-        document.getElementById("btn-confirm-cancel").addEventListener("click", () => {
-            document.getElementById("dialog-confirm").close();
-            _confirmCallback = null;
-        });
-        document.getElementById("dialog-confirm").addEventListener("click", e => {
-            if (e.target === e.currentTarget) { e.currentTarget.close(); _confirmCallback = null; }
-        });
-
-        // History
-        document.getElementById("btn-history").addEventListener("click", () => {
-            renderHistoryList(); document.getElementById("dialog-history").showModal();
-        });
-        document.getElementById("history-search").addEventListener("input", e => renderHistoryList(e.target.value));
-        document.getElementById("btn-close-history").addEventListener("click", () => document.getElementById("dialog-history").close());
-        document.getElementById("dialog-history").addEventListener("click", e => {
-            if (e.target === e.currentTarget) e.currentTarget.close();
-        });
-
-        // Settings — auto-save prefs on change
-        document.getElementById("pref-anim").addEventListener("change", e => { prefs.animationSpeed = e.target.value; savePrefs(); });
-        document.getElementById("pref-sens-w").addEventListener("input", e => { prefs.sensitivityWeightThreshold = parseFloat(e.target.value); savePrefs(); });
-        document.getElementById("pref-sens-s").addEventListener("input", e => { prefs.sensitivityScoreThreshold = parseFloat(e.target.value); savePrefs(); });
-        document.getElementById("pref-hide-total").addEventListener("change", e => {
-            prefs.showTotalAfterDecide = e.target.checked;
+            if (state.activeLayers.includes("proscons")) state.options.forEach(o => {
+                state.proscons[o.id] ??= { pros: [], cons: [] };
+            });
+            if (state.activeLayers.includes("criteria")) state.options.forEach(o => {
+                state.scores[o.id] ??= {};
+            });
+            renderOptions();
+            renderWeights();
+            renderProscons();
             renderScoresGrid();
-            savePrefs();
-        });
-        document.getElementById("pref-save-history").addEventListener("click", e => {
-            if (!e.target.checked) {
-                e.preventDefault();
-                confirmOverwrite("Are you sure you want to delete previous decisions and stop saving new ones?", () => {
-                    prefs.saveHistory = false;
-                    savedHistory = [];
-                    localStorage.removeItem("decidr_history");
-                    savePrefs();
-                    renderAll();
-                }, "Delete");
-            } else {
-                prefs.saveHistory = true;
-                savePrefs();
+        } else if (!state.optionsLocked) {
+            if (/^should\s+i\b/i.test(state.question)) {
+                // Auto "Should I…" → yes/no
+                state.options = [{ id: mkId(), name: "Yes", color: PALETTE[0] }, {
+                    id: mkId(),
+                    name: "No",
+                    color: PALETTE[1],
+                }];
+                if (state.activeLayers.includes("weights")) state.options.forEach(o => {
+                    state.weights[o.id] ??= 0.5;
+                });
+                if (state.activeLayers.includes("proscons")) state.options.forEach(o => {
+                    state.proscons[o.id] ??= { pros: [], cons: [] };
+                });
+                if (state.activeLayers.includes("criteria")) state.options.forEach(o => {
+                    state.scores[o.id] ??= {};
+                });
+                renderOptions();
+                renderWeights();
+                renderProscons();
+                renderScoresGrid();
             }
-        });
+        }
+        updateDecideBtn();
+        scheduleSave();
+    });
 
-        document.getElementById("btn-export").addEventListener("click", () => {
-            const blob = new Blob([JSON.stringify({ state, history: savedHistory, prefs }, null, 2)], { type: "application/json" });
-            Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "decidr-export.json" }).click();
-        });
-        document.getElementById("btn-import").addEventListener("click", () => {
-            const inp = document.createElement("input");
-            inp.type = "file"; inp.accept = ".json,application/json";
-            inp.addEventListener("change", () => {
-                const file = inp.files[0]; if (!file) return;
-                const reader = new FileReader();
-                reader.onload = e => {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        if (data.state?.schemaVersion === 1) { state = Object.assign(newState(), data.state); state.phase = "input"; }
-                        if (data.history) { savedHistory = data.history; localStorage.setItem("decidr_history", JSON.stringify(savedHistory)); }
-                        if (data.prefs) {
-                            prefs = Object.assign(prefs, data.prefs);
-                            document.getElementById("pref-anim").value = prefs.animationSpeed;
-                            document.getElementById("pref-sens-w").value = prefs.sensitivityWeightThreshold;
-                            document.getElementById("pref-sens-s").value = prefs.sensitivityScoreThreshold;
-                            savePrefs();
-                        }
-                        renderAll(); scheduleSave();
-                    } catch { alert("Invalid JSON file."); }
-                };
-                reader.readAsText(file);
-            });
-            inp.click();
-        });
-        document.getElementById("btn-reset-all").addEventListener("click", () => {
-            if (!confirm("Reset all decisions and preferences to defaults?")) return;
-            localStorage.removeItem("decidr_state");
-            localStorage.removeItem("decidr_prefs");
-            localStorage.removeItem("decidr_history");
-            location.reload();
-        });
+    document.getElementById("btn-add-option").addEventListener("click", () => {
+        state.optionsLocked = true;
+        addOption();
+    });
+    document.querySelectorAll("[data-quick]").forEach(b => b.addEventListener("click", () => {
+        const type = b.dataset.quick;
+        const names = state.options.map(o => o.name.trim()).filter(Boolean);
+        const isYesNo = names.length === 2 && names.includes("Yes") && names.includes("No");
+        if (names.length > 0 && !isYesNo) {
+            confirmOverwrite("This will replace your current options.", () => applyQuickChip(type));
+        } else {
+            applyQuickChip(type);
+        }
+    }));
 
-        // ══════════════════════════════════════════════════════════
-        //  INIT
-        // ══════════════════════════════════════════════════════════
-        // Global shortcuts
-        window.addEventListener("keydown", e => {
-            if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                const btn = document.getElementById("btn-decide");
-                if (!btn.disabled) btn.click();
-            }
-        });
-
-        loadFromHash();
+    document.getElementById("choose-randomly").addEventListener("change", e => {
+        pushUndo();
+        state.chooseRandomly = e.target.checked;
+        if (state.chooseRandomly) {
+            state.activeLayers = state.activeLayers.filter(l => l !== "criteria" && l !== "proscons");
+        }
         renderAll();
-    </script>
+        scheduleSave();
+    });
+    document.getElementById("btn-add-proscons").addEventListener("click", () => state.activeLayers.includes("proscons") ? deactivateLayer("proscons") : activateLayer("proscons"));
+    document.getElementById("btn-add-criteria").addEventListener("click", () => state.activeLayers.includes("criteria") ? deactivateLayer("criteria") : activateLayer("criteria"));
+
+    document.getElementById("criteria-template").addEventListener("change", e => {
+        if (!e.target.value) return;
+        const tpl = e.target.value;
+        e.target.value = "";
+        if (state.criteria.length) {
+            confirmOverwrite("This will replace your current criteria.", () => applyCriteriaTemplate(tpl));
+        } else {
+            applyCriteriaTemplate(tpl);
+        }
+    });
+    document.getElementById("btn-add-criterion").addEventListener("click", () => {
+        pushUndo();
+        state.criteria.push({
+            id: mkId(),
+            name: "",
+            weight: 5,
+            direction: "higher-better",
+            scoreType: "numeric",
+            icon: "",
+        });
+        state.options.forEach(o => {
+            state.scores[o.id] ??= {};
+        });
+        renderCriteria();
+        renderScoresGrid();
+        scheduleSave();
+    });
+
+
+    document.getElementById("btn-decide").addEventListener("click", startDecide);
+    document.getElementById("btn-undo").addEventListener("click", undo);
+    document.getElementById("btn-reset").addEventListener("click", () => {
+        pushUndo();
+        const stack = state.undoStack.slice();
+        state = newState();
+        state.undoStack = stack;
+        renderAll();
+        scheduleSave();
+    });
+
+    document.getElementById("btn-add-detail").addEventListener("click", () => {
+        state.phase = "input";
+        renderPhase();
+        if (state.chooseRandomly) {
+            // weights are always shown in random mode; nothing extra to add
+        } else {
+            if (!state.activeLayers.includes("criteria")) activateLayer("criteria");
+        }
+    });
+
+    document.getElementById("btn-copy-math").addEventListener("click", () => {
+        if (!state.result?.mathReport) return;
+        const md = generateMathMarkdown(state.result.mathReport);
+        navigator.clipboard.writeText(md).then(() => {
+            const btn = document.getElementById("btn-copy-math");
+            const old = btn.innerHTML;
+            btn.innerHTML = "<span class=\"sym\">check</span> Copied";
+            setTimeout(() => btn.innerHTML = old, 1500);
+        });
+    });
+
+    document.getElementById("btn-share").addEventListener("click", shareState);
+
+    // Confirm dialog
+    document.getElementById("btn-confirm-ok").addEventListener("click", () => {
+        document.getElementById("dialog-confirm").close();
+        if (_confirmCallback) {
+            _confirmCallback();
+            _confirmCallback = null;
+        }
+    });
+    document.getElementById("btn-confirm-cancel").addEventListener("click", () => {
+        document.getElementById("dialog-confirm").close();
+        _confirmCallback = null;
+    });
+    document.getElementById("dialog-confirm").addEventListener("click", e => {
+        if (e.target === e.currentTarget) {
+            e.currentTarget.close();
+            _confirmCallback = null;
+        }
+    });
+
+    // History
+    document.getElementById("btn-history").addEventListener("click", () => {
+        renderHistoryList();
+        document.getElementById("dialog-history").showModal();
+    });
+    document.getElementById("history-search").addEventListener("input", e => renderHistoryList(e.target.value));
+    document.getElementById("btn-close-history").addEventListener("click", () => document.getElementById("dialog-history").close());
+    document.getElementById("dialog-history").addEventListener("click", e => {
+        if (e.target === e.currentTarget) e.currentTarget.close();
+    });
+
+    // Settings — auto-save prefs on change
+    document.getElementById("pref-anim").addEventListener("change", e => {
+        prefs.animationSpeed = e.target.value;
+        savePrefs();
+    });
+    document.getElementById("pref-sens-w").addEventListener("input", e => {
+        prefs.sensitivityWeightThreshold = parseFloat(e.target.value);
+        savePrefs();
+    });
+    document.getElementById("pref-sens-s").addEventListener("input", e => {
+        prefs.sensitivityScoreThreshold = parseFloat(e.target.value);
+        savePrefs();
+    });
+    document.getElementById("pref-hide-total").addEventListener("change", e => {
+        prefs.showTotalAfterDecide = e.target.checked;
+        renderScoresGrid();
+        savePrefs();
+    });
+    document.getElementById("pref-save-history").addEventListener("click", e => {
+        if (!e.target.checked) {
+            e.preventDefault();
+            confirmOverwrite("Are you sure you want to delete previous decisions and stop saving new ones?", () => {
+                prefs.saveHistory = false;
+                savedHistory = [];
+                localStorage.removeItem("decidr_history");
+                savePrefs();
+                renderAll();
+            }, "Delete");
+        } else {
+            prefs.saveHistory = true;
+            savePrefs();
+        }
+    });
+
+    document.getElementById("btn-export").addEventListener("click", () => {
+        const blob = new Blob([JSON.stringify({
+            state,
+            history: savedHistory,
+            prefs,
+        }, null, 2)], { type: "application/json" });
+        Object.assign(document.createElement("a"), {
+            href: URL.createObjectURL(blob),
+            download: "decidr-export.json",
+        }).click();
+    });
+    document.getElementById("btn-import").addEventListener("click", () => {
+        const inp = document.createElement("input");
+        inp.type = "file";
+        inp.accept = ".json,application/json";
+        inp.addEventListener("change", () => {
+            const file = inp.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.state?.schemaVersion === 1) {
+                        state = Object.assign(newState(), data.state);
+                        state.phase = "input";
+                    }
+                    if (data.history) {
+                        savedHistory = data.history;
+                        localStorage.setItem("decidr_history", JSON.stringify(savedHistory));
+                    }
+                    if (data.prefs) {
+                        prefs = Object.assign(prefs, data.prefs);
+                        document.getElementById("pref-anim").value = prefs.animationSpeed;
+                        document.getElementById("pref-sens-w").value = prefs.sensitivityWeightThreshold;
+                        document.getElementById("pref-sens-s").value = prefs.sensitivityScoreThreshold;
+                        savePrefs();
+                    }
+                    renderAll();
+                    scheduleSave();
+                } catch {
+                    alert("Invalid JSON file.");
+                }
+            };
+            reader.readAsText(file);
+        });
+        inp.click();
+    });
+    document.getElementById("btn-reset-all").addEventListener("click", () => {
+        if (!confirm("Reset all decisions and preferences to defaults?")) return;
+        localStorage.removeItem("decidr_state");
+        localStorage.removeItem("decidr_prefs");
+        localStorage.removeItem("decidr_history");
+        location.reload();
+    });
+
+    // ══════════════════════════════════════════════════════════
+    //  INIT
+    // ══════════════════════════════════════════════════════════
+    // Global shortcuts
+    window.addEventListener("keydown", e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+            const btn = document.getElementById("btn-decide");
+            if (!btn.disabled) btn.click();
+        }
+    });
+
+    loadFromHash();
+    renderAll();
+</script>
 </body>
 
 </html>

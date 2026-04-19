@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="en" class="theme-ocker layout-centered">
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <title>SVG Export</title>
-        <link rel="stylesheet" href="../one.css">
-        <style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <title>SVG Export</title>
+    <link rel="stylesheet" href="../one.css">
+    <style>
         /* --- GEOMETRIC BACKGROUNDS --- */
         .shape {
             position: fixed;
@@ -72,436 +72,437 @@
             display: none;
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <div class="shape shape-rect"></div>
-        <div class="shape shape-circle"></div>
-        <div class="shape shape-square"></div>
+<body>
+<div class="shape shape-rect"></div>
+<div class="shape shape-circle"></div>
+<div class="shape shape-square"></div>
 
-        <main class="animate-up w-full">
-            <section>
-                <header class="header-row mb-6">
-                    <h1>SVG Export</h1>
-                    <button id="reset-btn" title="Reset to defaults" class="btn-sym btn-danger" type="button">
-                        refresh
-                    </button>
-                </header>
+<main class="animate-up w-full">
+    <section>
+        <header class="header-row mb-6">
+            <h1>SVG Export</h1>
+            <button id="reset-btn" title="Reset to defaults" class="btn-sym btn-danger"
+                    type="button">
+                refresh
+            </button>
+        </header>
 
-                <div class="flex-row mb-4">
-                    <label for="width-input">
-                        Width (px)
-                        <input type="number" id="width-input" placeholder="Auto" min="1">
-                    </label>
+        <div class="flex-row mb-4">
+            <label for="width-input">
+                Width (px)
+                <input type="number" id="width-input" placeholder="Auto" min="1">
+            </label>
 
-                    <label for="height-input">
-                        Height (px)
-                        <input type="number" id="height-input" placeholder="Auto" min="1">
-                    </label>
-                </div>
+            <label for="height-input">
+                Height (px)
+                <input type="number" id="height-input" placeholder="Auto" min="1">
+            </label>
+        </div>
 
-                <label class="mb-4 d-block" for="bg-color-input">
-                    Background Color
-                    <div class="relative flex items-center">
-                        <input type="text" id="bg-color-input" placeholder="Clear for Transparent"
-                            class="input-with-preview">
-                        <div id="bg-preview" class="absolute color-preview"></div>
-                    </div>
-                </label>
+        <label class="mb-4 d-block" for="bg-color-input">
+            Background Color
+            <div class="relative flex items-center">
+                <input type="text" id="bg-color-input" placeholder="Clear for Transparent"
+                       class="input-with-preview">
+                <div id="bg-preview" class="absolute color-preview"></div>
+            </div>
+        </label>
 
-                <label class="mb-4 d-block" for="fill-color-input">
-                    Change Elements Color
-                    <div class="relative flex items-center">
-                        <input type="text" id="fill-color-input" placeholder="Leave empty for original"
-                            class="input-with-preview">
-                        <div id="fill-preview" class="absolute color-preview"></div>
-                    </div>
-                </label>
+        <label class="mb-4 d-block" for="fill-color-input">
+            Change Elements Color
+            <div class="relative flex items-center">
+                <input type="text" id="fill-color-input" placeholder="Leave empty for original"
+                       class="input-with-preview">
+                <div id="fill-preview" class="absolute color-preview"></div>
+            </div>
+        </label>
 
-                <div class="flex-row mb-4 align-end">
-                    <label for="format-input">
-                        Output Format
-                        <select id="format-input">
-                            <option value="png">PNG</option>
-                            <option value="jpeg">JPG</option>
-                            <option value="webp">WebP</option>
-                            <option value="heic">HEIC</option>
-                            <option value="avif">AVIF</option>
-                        </select>
-                    </label>
+        <div class="flex-row mb-4 align-end">
+            <label for="format-input">
+                Output Format
+                <select id="format-input">
+                    <option value="png">PNG</option>
+                    <option value="jpeg">JPG</option>
+                    <option value="webp">WebP</option>
+                    <option value="heic">HEIC</option>
+                    <option value="avif">AVIF</option>
+                </select>
+            </label>
 
-                    <label class="switch-label flex items-center gap-2" for="zip-toggle">
-                        Bundle as .zip
-                        <input type="checkbox" role="switch" id="zip-toggle" checked>
-                    </label>
+            <label class="switch-label flex items-center gap-2" for="zip-toggle">
+                Bundle as .zip
+                <input type="checkbox" role="switch" id="zip-toggle" checked>
+            </label>
 
-                    <label class="hidden" id="quality-group" for="quality-input">
-                        Quality: <span id="quality-val">90</span>%
-                        <input type="range" id="quality-input" min="1" max="100" value="90">
-                    </label>
-                </div>
+            <label class="hidden" id="quality-group" for="quality-input">
+                Quality: <span id="quality-val">90</span>%
+                <input type="range" id="quality-input" min="1" max="100" value="90">
+            </label>
+        </div>
 
-                <button type="button" id="action-btn" class="btn-primary w-full mt-4" disabled>
-                    <span class="sym">folder_open</span> Select SVGs & Download
-                </button>
+        <button type="button" id="action-btn" class="btn-primary w-full mt-4" disabled>
+            <span class="sym">folder_open</span> Select SVGs & Download
+        </button>
 
-                <input type="file" id="file-input" accept=".svg, image/svg+xml" multiple>
-                <canvas id="canvas"></canvas>
-            </section>
-        </main>
+        <input type="file" id="file-input" accept=".svg, image/svg+xml" multiple>
+        <canvas id="canvas"></canvas>
+    </section>
+</main>
 
-        <script src="../client-zip.js"></script>
+<script src="../client-zip.js"></script>
 
-        <script>
-        // --- DOM Elements ---
-        const widthInput = document.getElementById("width-input");
-        const heightInput = document.getElementById("height-input");
-        const bgColorInput = document.getElementById("bg-color-input");
-        const fillColorInput = document.getElementById("fill-color-input");
-        const formatInput = document.getElementById("format-input");
-        const qualityGroup = document.getElementById("quality-group");
-        const qualityInput = document.getElementById("quality-input");
-        const qualityVal = document.getElementById("quality-val");
-        const actionBtn = document.getElementById("action-btn");
-        const resetBtn = document.getElementById("reset-btn");
-        const fileInput = document.getElementById("file-input");
-        const canvas = document.getElementById("canvas");
-        const ctx = canvas.getContext("2d");
-        const bgPreview = document.getElementById("bg-preview");
-        const fillPreview = document.getElementById("fill-preview");
-        const zipToggle = document.getElementById("zip-toggle");
+<script>
+    // --- DOM Elements ---
+    const widthInput = document.getElementById("width-input");
+    const heightInput = document.getElementById("height-input");
+    const bgColorInput = document.getElementById("bg-color-input");
+    const fillColorInput = document.getElementById("fill-color-input");
+    const formatInput = document.getElementById("format-input");
+    const qualityGroup = document.getElementById("quality-group");
+    const qualityInput = document.getElementById("quality-input");
+    const qualityVal = document.getElementById("quality-val");
+    const actionBtn = document.getElementById("action-btn");
+    const resetBtn = document.getElementById("reset-btn");
+    const fileInput = document.getElementById("file-input");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const bgPreview = document.getElementById("bg-preview");
+    const fillPreview = document.getElementById("fill-preview");
+    const zipToggle = document.getElementById("zip-toggle");
 
-        // --- Defaults ---
-        const DEFAULT_WIDTH = 7680;
-        const DEFAULT_BG = "#FFFFFF";
-        const DEFAULT_FMT = "png";
-        const DEFAULT_QUALITY = 90;
+    // --- Defaults ---
+    const DEFAULT_WIDTH = 7680;
+    const DEFAULT_BG = "#FFFFFF";
+    const DEFAULT_FMT = "png";
+    const DEFAULT_QUALITY = 90;
 
-        // --- Init ---
-        function init() {
-            // Restore from storage or use defaults
-            const savedWidth = localStorage.getItem("svg_width");
-            const savedHeight = localStorage.getItem("svg_height");
-            const savedBg = localStorage.getItem("svg_bg");
-            const savedFill = localStorage.getItem("svg_fill");
-            const savedFmt = localStorage.getItem("svg_fmt");
-            const savedZip = localStorage.getItem("svg_zip");
+    // --- Init ---
+    function init() {
+        // Restore from storage or use defaults
+        const savedWidth = localStorage.getItem("svg_width");
+        const savedHeight = localStorage.getItem("svg_height");
+        const savedBg = localStorage.getItem("svg_bg");
+        const savedFill = localStorage.getItem("svg_fill");
+        const savedFmt = localStorage.getItem("svg_fmt");
+        const savedZip = localStorage.getItem("svg_zip");
 
-            widthInput.value = savedWidth !== null ? savedWidth : DEFAULT_WIDTH;
-            heightInput.value = savedHeight !== null ? savedHeight : "";
-            bgColorInput.value = savedBg !== null ? savedBg : DEFAULT_BG;
-            fillColorInput.value = savedFill !== null ? savedFill : "";
-            formatInput.value = savedFmt !== null ? savedFmt : DEFAULT_FMT;
+        widthInput.value = savedWidth !== null ? savedWidth : DEFAULT_WIDTH;
+        heightInput.value = savedHeight !== null ? savedHeight : "";
+        bgColorInput.value = savedBg !== null ? savedBg : DEFAULT_BG;
+        fillColorInput.value = savedFill !== null ? savedFill : "";
+        formatInput.value = savedFmt !== null ? savedFmt : DEFAULT_FMT;
 
-            if (savedZip !== null) {
-                zipToggle.checked = savedZip === "true";
-            }
-
-            validateState();
-            updatePreviews();
-            toggleQualityInput();
+        if (savedZip !== null) {
+            zipToggle.checked = savedZip === "true";
         }
 
-        // --- Validation & State ---
-        function validateState() {
-            // Button is enabled if at least ONE dimension is filled
-            const w = widthInput.value.trim();
-            const h = heightInput.value.trim();
+        validateState();
+        updatePreviews();
+        toggleQualityInput();
+    }
 
-            if ((w && parseInt(w) > 0) || (h && parseInt(h) > 0)) {
-                actionBtn.disabled = false;
-            } else {
-                actionBtn.disabled = true;
-            }
+    // --- Validation & State ---
+    function validateState() {
+        // Button is enabled if at least ONE dimension is filled
+        const w = widthInput.value.trim();
+        const h = heightInput.value.trim();
 
-            // Save state
-            localStorage.setItem("svg_width", widthInput.value);
-            localStorage.setItem("svg_height", heightInput.value);
-            localStorage.setItem("svg_bg", bgColorInput.value);
-            localStorage.setItem("svg_fill", fillColorInput.value);
-            localStorage.setItem("svg_fmt", formatInput.value);
-            localStorage.setItem("svg_zip", zipToggle.checked);
-        }
-
-        function updatePreviews() {
-            // Update the little color squares
-            bgPreview.style.backgroundColor = bgColorInput.value || "transparent";
-            fillPreview.style.backgroundColor = fillColorInput.value || "transparent";
-        }
-
-        function toggleQualityInput() {
-            const fmt = formatInput.value;
-            // PNG is lossless, others usually support quality
-            const supportsQuality = ["jpeg", "webp", "avif", "heic"].includes(fmt);
-
-            if (supportsQuality) {
-                qualityGroup.classList.remove("hidden");
-            } else {
-                qualityGroup.classList.add("hidden");
-            }
-        }
-
-        function reset() {
-            widthInput.value = DEFAULT_WIDTH;
-            heightInput.value = "";
-            bgColorInput.value = DEFAULT_BG;
-            fillColorInput.value = "";
-            formatInput.value = DEFAULT_FMT;
-            qualityInput.value = DEFAULT_QUALITY;
-            qualityVal.textContent = DEFAULT_QUALITY;
-            zipToggle.checked = true;
-
-            validateState();
-            updatePreviews();
-            toggleQualityInput();
-        }
-
-        // --- Event Listeners ---
-        widthInput.addEventListener("input", validateState);
-        heightInput.addEventListener("input", validateState);
-
-        bgColorInput.addEventListener("input", () => {
-            validateState();
-            updatePreviews();
-        });
-
-        fillColorInput.addEventListener("input", () => {
-            validateState();
-            updatePreviews();
-        });
-
-        formatInput.addEventListener("change", () => {
-            validateState();
-            toggleQualityInput();
-        });
-
-        zipToggle.addEventListener("change", validateState);
-
-        qualityInput.addEventListener("input", (e) => {
-            qualityVal.textContent = e.target.value;
-        });
-
-        resetBtn.addEventListener("click", reset);
-
-        // Trigger file selection dialog
-        actionBtn.addEventListener("click", () => fileInput.click());
-
-        // --- Core Logic ---
-
-        async function handleFiles(fileList) {
-            const files = Array.from(fileList);
-            if (files.length === 0) return;
-
-            const isZipMode = zipToggle.checked;
-
-            // UI Feedback
+        if ((w && parseInt(w) > 0) || (h && parseInt(h) > 0)) {
+            actionBtn.disabled = false;
+        } else {
             actionBtn.disabled = true;
-            actionBtn.innerText = isZipMode ? "Processing..." : "Downloading...";
-
-            try {
-                if (isZipMode) {
-                    // ZIP MODE: Process all, then download 1 zip
-                    const filePromises = files.map((file) => processFileToBlob(file));
-                    const processedFiles = await Promise.all(filePromises);
-
-                    actionBtn.innerText = "Zipping...";
-
-                    // Bundle with client-zip
-                    const blob = await downloadZip(processedFiles).blob();
-
-                    // Generate filename
-                    const timestamp = new Date().toISOString().slice(0, 10);
-                    const zipName = `converted_svgs_${timestamp}.zip`;
-
-                    downloadBlob(blob, zipName);
-                } else {
-                    // ONE BY ONE MODE: Download immediately when done
-                    for (let i = 0; i < files.length; i++) {
-                        const result = await processFileToBlob(files[i]);
-                        downloadBlob(result.input, result.name);
-                        // Small delay to prevent browser throttling downloads
-                        await new Promise((r) => setTimeout(r, 200));
-                    }
-                }
-            } catch (error) {
-                console.error(error);
-                alert("An error occurred during processing.");
-            } finally {
-                // Restore UI
-                actionBtn.innerHTML = "<span class=\"sym\">folder_open</span> Select SVGs & Download";
-                actionBtn.disabled = false;
-                fileInput.value = "";
-            }
         }
 
-        // Input Change Event
-        fileInput.addEventListener("change", (e) => handleFiles(e.target.files));
+        // Save state
+        localStorage.setItem("svg_width", widthInput.value);
+        localStorage.setItem("svg_height", heightInput.value);
+        localStorage.setItem("svg_bg", bgColorInput.value);
+        localStorage.setItem("svg_fill", fillColorInput.value);
+        localStorage.setItem("svg_fmt", formatInput.value);
+        localStorage.setItem("svg_zip", zipToggle.checked);
+    }
 
-        // --- Drag & Drop ---
-        ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
-            actionBtn.addEventListener(
-                eventName,
-                (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                },
-                false
-            );
-        });
+    function updatePreviews() {
+        // Update the little color squares
+        bgPreview.style.backgroundColor = bgColorInput.value || "transparent";
+        fillPreview.style.backgroundColor = fillColorInput.value || "transparent";
+    }
 
-        actionBtn.addEventListener("dragenter", () => {
-            if (!actionBtn.disabled) {
-                actionBtn.classList.add("drag-active");
-                actionBtn.innerText = "Drop Files Here";
+    function toggleQualityInput() {
+        const fmt = formatInput.value;
+        // PNG is lossless, others usually support quality
+        const supportsQuality = ["jpeg", "webp", "avif", "heic"].includes(fmt);
+
+        if (supportsQuality) {
+            qualityGroup.classList.remove("hidden");
+        } else {
+            qualityGroup.classList.add("hidden");
+        }
+    }
+
+    function reset() {
+        widthInput.value = DEFAULT_WIDTH;
+        heightInput.value = "";
+        bgColorInput.value = DEFAULT_BG;
+        fillColorInput.value = "";
+        formatInput.value = DEFAULT_FMT;
+        qualityInput.value = DEFAULT_QUALITY;
+        qualityVal.textContent = DEFAULT_QUALITY;
+        zipToggle.checked = true;
+
+        validateState();
+        updatePreviews();
+        toggleQualityInput();
+    }
+
+    // --- Event Listeners ---
+    widthInput.addEventListener("input", validateState);
+    heightInput.addEventListener("input", validateState);
+
+    bgColorInput.addEventListener("input", () => {
+        validateState();
+        updatePreviews();
+    });
+
+    fillColorInput.addEventListener("input", () => {
+        validateState();
+        updatePreviews();
+    });
+
+    formatInput.addEventListener("change", () => {
+        validateState();
+        toggleQualityInput();
+    });
+
+    zipToggle.addEventListener("change", validateState);
+
+    qualityInput.addEventListener("input", (e) => {
+        qualityVal.textContent = e.target.value;
+    });
+
+    resetBtn.addEventListener("click", reset);
+
+    // Trigger file selection dialog
+    actionBtn.addEventListener("click", () => fileInput.click());
+
+    // --- Core Logic ---
+
+    async function handleFiles(fileList) {
+        const files = Array.from(fileList);
+        if (files.length === 0) return;
+
+        const isZipMode = zipToggle.checked;
+
+        // UI Feedback
+        actionBtn.disabled = true;
+        actionBtn.innerText = isZipMode ? "Processing..." : "Downloading...";
+
+        try {
+            if (isZipMode) {
+                // ZIP MODE: Process all, then download 1 zip
+                const filePromises = files.map((file) => processFileToBlob(file));
+                const processedFiles = await Promise.all(filePromises);
+
+                actionBtn.innerText = "Zipping...";
+
+                // Bundle with client-zip
+                const blob = await downloadZip(processedFiles).blob();
+
+                // Generate filename
+                const timestamp = new Date().toISOString().slice(0, 10);
+                const zipName = `converted_svgs_${timestamp}.zip`;
+
+                downloadBlob(blob, zipName);
+            } else {
+                // ONE BY ONE MODE: Download immediately when done
+                for (let i = 0; i < files.length; i++) {
+                    const result = await processFileToBlob(files[i]);
+                    downloadBlob(result.input, result.name);
+                    // Small delay to prevent browser throttling downloads
+                    await new Promise((r) => setTimeout(r, 200));
+                }
             }
-        });
+        } catch (error) {
+            console.error(error);
+            alert("An error occurred during processing.");
+        } finally {
+            // Restore UI
+            actionBtn.innerHTML = "<span class=\"sym\">folder_open</span> Select SVGs & Download";
+            actionBtn.disabled = false;
+            fileInput.value = "";
+        }
+    }
 
-        actionBtn.addEventListener("dragleave", () => {
-            actionBtn.classList.remove("drag-active");
-            if (!actionBtn.disabled) {
-                actionBtn.innerHTML = "<span class=\"sym\">folder_open</span> Select SVGs & Download";
-            }
-        });
+    // Input Change Event
+    fileInput.addEventListener("change", (e) => handleFiles(e.target.files));
 
-        actionBtn.addEventListener("drop", (e) => {
-            actionBtn.classList.remove("drag-active");
-            if (actionBtn.disabled) return;
+    // --- Drag & Drop ---
+    ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        actionBtn.addEventListener(
+            eventName,
+            (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            },
+            false,
+        );
+    });
 
-            const dt = e.dataTransfer;
-            handleFiles(dt.files);
-        });
+    actionBtn.addEventListener("dragenter", () => {
+        if (!actionBtn.disabled) {
+            actionBtn.classList.add("drag-active");
+            actionBtn.innerText = "Drop Files Here";
+        }
+    });
 
-        /**
-         * Processes a single SVG file and returns a Promise resolving to
-         * an object compatible with client-zip: { name, lastModified, input: Blob }
-         */
-        function processFileToBlob(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
+    actionBtn.addEventListener("dragleave", () => {
+        actionBtn.classList.remove("drag-active");
+        if (!actionBtn.disabled) {
+            actionBtn.innerHTML = "<span class=\"sym\">folder_open</span> Select SVGs & Download";
+        }
+    });
 
-                reader.onload = function (event) {
-                    let svgString = event.target.result;
-                    const fillColor = fillColorInput.value.trim();
+    actionBtn.addEventListener("drop", (e) => {
+        actionBtn.classList.remove("drag-active");
+        if (actionBtn.disabled) return;
 
-                    // Inject Colors if needed
-                    if (fillColor) {
-                        // We parse the SVG string to check for valid XML, then modify it.
-                        // A robust way to force color is injecting a global style into the SVG.
-                        try {
-                            const parser = new DOMParser();
-                            const doc = parser.parseFromString(svgString, "image/svg+xml");
+        const dt = e.dataTransfer;
+        handleFiles(dt.files);
+    });
 
-                            // Add a style tag to force fill/stroke on shapes
-                            const style = doc.createElementNS(
-                                "http://www.w3.org/2000/svg",
-                                "style"
-                            );
-                            style.textContent = `
+    /**
+     * Processes a single SVG file and returns a Promise resolving to
+     * an object compatible with client-zip: { name, lastModified, input: Blob }
+     */
+    function processFileToBlob(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                let svgString = event.target.result;
+                const fillColor = fillColorInput.value.trim();
+
+                // Inject Colors if needed
+                if (fillColor) {
+                    // We parse the SVG string to check for valid XML, then modify it.
+                    // A robust way to force color is injecting a global style into the SVG.
+                    try {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(svgString, "image/svg+xml");
+
+                        // Add a style tag to force fill/stroke on shapes
+                        const style = doc.createElementNS(
+                            "http://www.w3.org/2000/svg",
+                            "style",
+                        );
+                        style.textContent = `
                                 path, circle, rect, polygon, polyline, ellipse, line {
                                     fill: ${fillColor} !important;
                                     stroke: ${fillColor} !important;
                                 }
                             `;
-                            doc.documentElement.prepend(style);
-                            const serializer = new XMLSerializer();
-                            svgString = serializer.serializeToString(doc);
-                        } catch (e) {
-                            console.warn("Failed to inject color", e);
-                        }
+                        doc.documentElement.prepend(style);
+                        const serializer = new XMLSerializer();
+                        svgString = serializer.serializeToString(doc);
+                    } catch (e) {
+                        console.warn("Failed to inject color", e);
+                    }
+                }
+
+                // Create Image
+                const svgBlob = new Blob([svgString], {
+                    type: "image/svg+xml;charset=utf-8",
+                });
+                const url = URL.createObjectURL(svgBlob);
+                const img = new Image();
+
+                img.onload = function() {
+                    // Aspect Ratio Logic
+                    const aspectRatio = img.width / img.height;
+                    let finalW = parseInt(widthInput.value);
+                    let finalH = parseInt(heightInput.value);
+
+                    if (finalW && !finalH) {
+                        finalH = Math.round(finalW / aspectRatio);
+                    } else if (!finalW && finalH) {
+                        finalW = Math.round(finalH * aspectRatio);
                     }
 
-                    // Create Image
-                    const svgBlob = new Blob([svgString], {
-                        type: "image/svg+xml;charset=utf-8",
-                    });
-                    const url = URL.createObjectURL(svgBlob);
-                    const img = new Image();
+                    // Draw to Canvas
+                    canvas.width = finalW;
+                    canvas.height = finalH;
+                    ctx.clearRect(0, 0, finalW, finalH);
 
-                    img.onload = function () {
-                        // Aspect Ratio Logic
-                        const aspectRatio = img.width / img.height;
-                        let finalW = parseInt(widthInput.value);
-                        let finalH = parseInt(heightInput.value);
+                    // Background Color
+                    ctx.fillStyle = bgColorInput.value.trim();
+                    if (formatInput.value === "jpeg") {
+                        // Fallback for JPG transparency issue (transparent pixels would be black)
+                        ctx.fillStyle = "#FFFFFF";
+                    }
+                    if (ctx.fillStyle) {
+                        ctx.fillRect(0, 0, finalW, finalH);
+                    }
 
-                        if (finalW && !finalH) {
-                            finalH = Math.round(finalW / aspectRatio);
-                        } else if (!finalW && finalH) {
-                            finalW = Math.round(finalH * aspectRatio);
-                        }
+                    ctx.drawImage(img, 0, 0, finalW, finalH);
 
-                        // Draw to Canvas
-                        canvas.width = finalW;
-                        canvas.height = finalH;
-                        ctx.clearRect(0, 0, finalW, finalH);
+                    // Format & Quality
+                    const format = formatInput.value; // 'png', 'jpeg', etc.
+                    const mimeType = `image/${format}`;
+                    const quality = parseInt(qualityInput.value) / 100;
 
-                        // Background Color
-                        ctx.fillStyle = bgColorInput.value.trim();
-                        if (formatInput.value === "jpeg") {
-                            // Fallback for JPG transparency issue (transparent pixels would be black)
-                            ctx.fillStyle = "#FFFFFF";
-                        }
-                        if (ctx.fillStyle) {
-                            ctx.fillRect(0, 0, finalW, finalH);
-                        }
+                    // Generate Filename
+                    const cleanName = file.name.replace(/\.svg$/i, "");
+                    const ext = format === "jpeg" ? "jpg" : format;
+                    const finalFilename = `${cleanName}_${finalW}x${finalH}.${ext}`;
 
-                        ctx.drawImage(img, 0, 0, finalW, finalH);
-
-                        // Format & Quality
-                        const format = formatInput.value; // 'png', 'jpeg', etc.
-                        const mimeType = `image/${format}`;
-                        const quality = parseInt(qualityInput.value) / 100;
-
-                        // Generate Filename
-                        const cleanName = file.name.replace(/\.svg$/i, "");
-                        const ext = format === "jpeg" ? "jpg" : format;
-                        const finalFilename = `${cleanName}_${finalW}x${finalH}.${ext}`;
-
-                        // Convert to Blob
-                        canvas.toBlob(
-                            (blob) => {
-                                URL.revokeObjectURL(url);
-                                if (blob) {
-                                    resolve({
-                                        name: finalFilename,
-                                        lastModified: new Date(),
-                                        input: blob,
-                                    });
-                                } else {
-                                    reject(new Error("Canvas toBlob failed"));
-                                }
-                            },
-                            mimeType,
-                            quality
-                        );
-                    };
-
-                    img.onerror = () => {
-                        URL.revokeObjectURL(url);
-                        reject(new Error("Failed to load SVG image"));
-                    };
-
-                    img.src = url;
+                    // Convert to Blob
+                    canvas.toBlob(
+                        (blob) => {
+                            URL.revokeObjectURL(url);
+                            if (blob) {
+                                resolve({
+                                    name: finalFilename,
+                                    lastModified: new Date(),
+                                    input: blob,
+                                });
+                            } else {
+                                reject(new Error("Canvas toBlob failed"));
+                            }
+                        },
+                        mimeType,
+                        quality,
+                    );
                 };
 
-                reader.onerror = reject;
-                reader.readAsText(file);
-            });
-        }
+                img.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    reject(new Error("Failed to load SVG image"));
+                };
 
-        function downloadBlob(blob, filename) {
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }
+                img.src = url;
+            };
 
-        // Initialize on Load
-        init();
-    </script>
-    </body>
+            reader.onerror = reject;
+            reader.readAsText(file);
+        });
+    }
+
+    function downloadBlob(blob, filename) {
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // Initialize on Load
+    init();
+</script>
+</body>
 
 </html>

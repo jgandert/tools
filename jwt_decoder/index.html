@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" class="layout-centered theme-red">
 
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="light dark">
-        <title>JWT Decoder</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <link rel="stylesheet" type="text/css" href="../one.css">
-        <style>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>JWT Decoder</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
         .layout-centered {
             padding: 0;
         }
@@ -33,137 +33,138 @@
             background-color: color-mix(in srgb, var(--surface-container-high) 85%, var(--error) 15%);
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <main>
-            <section>
-                <h1>JWT Decoder</h1>
-                <p>Safely decode and read JSON Web Tokens locally in your browser. No data is sent to a server.</p>
+<body>
+<main>
+    <section>
+        <h1>JWT Decoder</h1>
+        <p>Safely decode and read JSON Web Tokens locally in your browser. No data is sent to a
+            server.</p>
 
-                <div>
-                    <label for="jwt-input">JSON Web Token</label>
-                    <textarea id="jwt-input" rows="3"
-                        placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI...">eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6Ik1heCBNdXN0ZXJtYW5uIiwiZXhwIjoxNzcyMDA3OTc1LCJpYXQiOjE3NzIwMDc5NzV9.fG988wZP6Y4IU_v5SCrAJDfkxkO8ORhILWF17Hh2vNM</textarea>
-                </div>
+        <div>
+            <label for="jwt-input">JSON Web Token</label>
+            <textarea id="jwt-input" rows="3"
+                      placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI...">eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6Ik1heCBNdXN0ZXJtYW5uIiwiZXhwIjoxNzcyMDA3OTc1LCJpYXQiOjE3NzIwMDc5NzV9.fG988wZP6Y4IU_v5SCrAJDfkxkO8ORhILWF17Hh2vNM</textarea>
+        </div>
 
-                <div id="error-container" hidden>
-                    <p class="error-text" id="error-message"></p>
-                </div>
+        <div id="error-container" hidden>
+            <p class="error-text" id="error-message"></p>
+        </div>
 
-                <div id="decoded-container" hidden>
-                    <h3>Header (Algorithm &amp; Token Type)</h3>
-                <pre class="data-display" id="jwt-header"></pre>
+        <div id="decoded-container" hidden>
+            <h3>Header (Algorithm &amp; Token Type)</h3>
+            <pre class="data-display" id="jwt-header"></pre>
 
-                    <h3>Payload (Data)</h3>
-                <pre class="data-display" id="jwt-payload"></pre>
+            <h3>Payload (Data)</h3>
+            <pre class="data-display" id="jwt-payload"></pre>
 
-                    <small id="jwt-signature-status" class="text-muted"></small>
-                </div>
+            <small id="jwt-signature-status" class="text-muted"></small>
+        </div>
 
-                <div class="flex-row">
-                    <button type="button" id="copy-payload-btn" class="btn" hidden>Copy Payload</button>
-                </div>
-            </section>
-        </main>
+        <div class="flex-row">
+            <button type="button" id="copy-payload-btn" class="btn" hidden>Copy Payload</button>
+        </div>
+    </section>
+</main>
 
-        <script>
-        const jwtInput = document.getElementById("jwt-input");
-        const decodedContainer = document.getElementById("decoded-container");
-        const errorContainer = document.getElementById("error-container");
-        const headerEl = document.getElementById("jwt-header");
-        const payloadEl = document.getElementById("jwt-payload");
-        const errorMsg = document.getElementById("error-message");
-        const signatureStatus = document.getElementById("jwt-signature-status");
-        const copyPayloadBtn = document.getElementById("copy-payload-btn");
+<script>
+    const jwtInput = document.getElementById("jwt-input");
+    const decodedContainer = document.getElementById("decoded-container");
+    const errorContainer = document.getElementById("error-container");
+    const headerEl = document.getElementById("jwt-header");
+    const payloadEl = document.getElementById("jwt-payload");
+    const errorMsg = document.getElementById("error-message");
+    const signatureStatus = document.getElementById("jwt-signature-status");
+    const copyPayloadBtn = document.getElementById("copy-payload-btn");
 
-        function decodeBase64Url(str) {
-            let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
-            let pad = base64.length % 4;
-            if (pad) {
-                if (pad === 1) throw new Error("Invalid base64url string");
-                base64 += new Array(5 - pad).join("=");
-            }
-            const decoded = atob(base64);
-            return decodeURIComponent(Array.from(decoded).map(c =>
-                "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)
-            ).join(""));
+    function decodeBase64Url(str) {
+        let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+        let pad = base64.length % 4;
+        if (pad) {
+            if (pad === 1) throw new Error("Invalid base64url string");
+            base64 += new Array(5 - pad).join("=");
         }
+        const decoded = atob(base64);
+        return decodeURIComponent(Array.from(decoded).map(c =>
+            "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2),
+        ).join(""));
+    }
 
-        function formatJson(jsonStr) {
-            try {
-                return JSON.stringify(JSON.parse(jsonStr), null, 2);
-            } catch (e) {
-                return jsonStr; // Not valid JSON
-            }
+    function formatJson(jsonStr) {
+        try {
+            return JSON.stringify(JSON.parse(jsonStr), null, 2);
+        } catch (e) {
+            return jsonStr; // Not valid JSON
         }
+    }
 
-        function handleInput() {
-            const token = jwtInput.value.trim();
-            if (!token) {
-                decodedContainer.hidden = true;
-                errorContainer.hidden = true;
-                copyPayloadBtn.hidden = true;
-                jwtInput.removeAttribute("aria-invalid");
-                return;
-            }
-
-            const parts = token.split(".");
-            if (parts.length < 2 || parts.length > 3) {
-                showError("Invalid JWT format. Expected 2 or 3 parts separated by dots.");
-                return;
-            }
-
-            try {
-                const header = formatJson(decodeBase64Url(parts[0]));
-                const payload = formatJson(decodeBase64Url(parts[1]));
-
-                headerEl.textContent = header;
-                payloadEl.textContent = payload;
-
-                if (parts.length === 3 && parts[2]) {
-                    signatureStatus.textContent = "Signature is present. Note: This tool only decodes, it does not verify the signature.";
-                    signatureStatus.className = "text-muted";
-                } else {
-                    signatureStatus.textContent = "No signature present.";
-                    signatureStatus.className = "error-text";
-                }
-
-                decodedContainer.hidden = false;
-                errorContainer.hidden = true;
-                copyPayloadBtn.hidden = false;
-                jwtInput.removeAttribute("aria-invalid");
-            } catch (err) {
-                showError("Failed to decode the token. It might be corrupted or not valid Base64Url.");
-            }
-        }
-
-        function showError(msg) {
-            errorMsg.textContent = msg;
-            errorContainer.hidden = false;
+    function handleInput() {
+        const token = jwtInput.value.trim();
+        if (!token) {
             decodedContainer.hidden = true;
+            errorContainer.hidden = true;
             copyPayloadBtn.hidden = true;
-            jwtInput.setAttribute("aria-invalid", "true");
+            jwtInput.removeAttribute("aria-invalid");
+            return;
         }
 
-        jwtInput.addEventListener("input", handleInput);
+        const parts = token.split(".");
+        if (parts.length < 2 || parts.length > 3) {
+            showError("Invalid JWT format. Expected 2 or 3 parts separated by dots.");
+            return;
+        }
 
-        copyPayloadBtn.addEventListener("click", () => {
-            const text = payloadEl.textContent;
-            if (text) {
-                navigator.clipboard.writeText(text).then(() => {
-                    const originalText = copyPayloadBtn.textContent;
-                    copyPayloadBtn.textContent = "Copied!";
-                    setTimeout(() => {
-                        copyPayloadBtn.textContent = originalText;
-                    }, 2000);
-                });
+        try {
+            const header = formatJson(decodeBase64Url(parts[0]));
+            const payload = formatJson(decodeBase64Url(parts[1]));
+
+            headerEl.textContent = header;
+            payloadEl.textContent = payload;
+
+            if (parts.length === 3 && parts[2]) {
+                signatureStatus.textContent = "Signature is present. Note: This tool only decodes, it does not verify the signature.";
+                signatureStatus.className = "text-muted";
+            } else {
+                signatureStatus.textContent = "No signature present.";
+                signatureStatus.className = "error-text";
             }
-        });
 
-        // Initial decode if text area is pre-filled
-        handleInput();
-    </script>
-    </body>
+            decodedContainer.hidden = false;
+            errorContainer.hidden = true;
+            copyPayloadBtn.hidden = false;
+            jwtInput.removeAttribute("aria-invalid");
+        } catch (err) {
+            showError("Failed to decode the token. It might be corrupted or not valid Base64Url.");
+        }
+    }
+
+    function showError(msg) {
+        errorMsg.textContent = msg;
+        errorContainer.hidden = false;
+        decodedContainer.hidden = true;
+        copyPayloadBtn.hidden = true;
+        jwtInput.setAttribute("aria-invalid", "true");
+    }
+
+    jwtInput.addEventListener("input", handleInput);
+
+    copyPayloadBtn.addEventListener("click", () => {
+        const text = payloadEl.textContent;
+        if (text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = copyPayloadBtn.textContent;
+                copyPayloadBtn.textContent = "Copied!";
+                setTimeout(() => {
+                    copyPayloadBtn.textContent = originalText;
+                }, 2000);
+            });
+        }
+    });
+
+    // Initial decode if text area is pre-filled
+    handleInput();
+</script>
+</body>
 
 </html>

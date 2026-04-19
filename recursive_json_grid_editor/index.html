@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="en">
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <title>Recursive Grid JSON Editor</title>
-        <style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <title>Recursive Grid JSON Editor</title>
+    <style>
         /* --- VARIABLES & THEME --- */
         :root {
             /* Base Colors */
@@ -35,9 +35,8 @@
             --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.12);
             --shadow-hover: 0 4px 6px rgba(0, 0, 0, 0.15);
 
-            --font-code:
-                "JetBrains Mono NL", "JetBrains Mono", "Consolas", "Monaco", "Fira Code",
-                "Liberation Mono", monospace;
+            --font-code: "JetBrains Mono NL", "JetBrains Mono", "Consolas", "Monaco", "Fira Code",
+            "Liberation Mono", monospace;
             --radius: 4px;
         }
 
@@ -323,9 +322,8 @@
             position: relative;
             cursor: pointer;
             outline: none;
-            transition:
-                background 0.2s,
-                border-color 0.2s;
+            transition: background 0.2s,
+            border-color 0.2s;
         }
 
         .toggle-switch input::after {
@@ -337,9 +335,8 @@
             height: 12px;
             background: var(--c-null);
             border-radius: 50%;
-            transition:
-                transform 0.2s,
-                background 0.2s;
+            transition: transform 0.2s,
+            background 0.2s;
         }
 
         .toggle-switch input:checked {
@@ -415,7 +412,7 @@
             background-color: var(--focus-ring);
         }
 
-        .cell.value.complex.active-pair-val>.json-grid {
+        .cell.value.complex.active-pair-val > .json-grid {
             border-top: none;
             border-left: none;
             margin: 0;
@@ -427,7 +424,7 @@
             padding: 0;
         }
 
-        .cell.value.complex>.json-grid {
+        .cell.value.complex > .json-grid {
             border: none;
             box-shadow: none;
         }
@@ -855,260 +852,262 @@
             z-index: 220;
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <!-- ARIA Live Region for dynamic announcements -->
-        <div id="aria-status" aria-live="polite" aria-atomic="true"></div>
+<body>
+<!-- ARIA Live Region for dynamic announcements -->
+<div id="aria-status" aria-live="polite" aria-atomic="true"></div>
 
-        <header>
-            <!-- File Operations -->
-            <button type="button" id="btn-load-file" title="Ctrl + O">
-                Open <kbd>^O</kbd>
-            </button>
-            <button type="button" id="btn-download" title="Ctrl + S">
-                Save <kbd>^S</kbd>
-            </button>
-            <button type="button" id="btn-view-raw" title="Ctrl + E">
-                Raw <kbd>^E</kbd>
-            </button>
+<header>
+    <!-- File Operations -->
+    <button type="button" id="btn-load-file" title="Ctrl + O">
+        Open <kbd>^O</kbd>
+    </button>
+    <button type="button" id="btn-download" title="Ctrl + S">
+        Save <kbd>^S</kbd>
+    </button>
+    <button type="button" id="btn-view-raw" title="Ctrl + E">
+        Raw <kbd>^E</kbd>
+    </button>
 
-            <div class="separator"></div>
-            <button type="button" id="btn-undo" title="Ctrl + Z" disabled>
-                Undo <kbd>^Z</kbd>
-            </button>
-            <button type="button" id="btn-redo" title="Ctrl + Y" disabled>
-                Redo <kbd>^Y</kbd>
-            </button>
-            <div class="separator"></div>
+    <div class="separator"></div>
+    <button type="button" id="btn-undo" title="Ctrl + Z" disabled>
+        Undo <kbd>^Z</kbd>
+    </button>
+    <button type="button" id="btn-redo" title="Ctrl + Y" disabled>
+        Redo <kbd>^Y</kbd>
+    </button>
+    <div class="separator"></div>
 
-            <!-- Type Buttons with Colors -->
-            <button type="button" id="btn-add-obj" class="strict-mode-only" title="Ctrl + Shift + 1">
-                <span class="t-obj">{}</span>
-                <kbd>^⇧1</kbd>
-            </button>
-            <button type="button" id="btn-add-list" class="strict-mode-only" title="Ctrl + Shift + 2">
-                <span class="t-list">[]</span>
-                <kbd>^⇧2</kbd>
-            </button>
+    <!-- Type Buttons with Colors -->
+    <button type="button" id="btn-add-obj" class="strict-mode-only" title="Ctrl + Shift + 1">
+        <span class="t-obj">{}</span>
+        <kbd>^⇧1</kbd>
+    </button>
+    <button type="button" id="btn-add-list" class="strict-mode-only" title="Ctrl + Shift + 2">
+        <span class="t-list">[]</span>
+        <kbd>^⇧2</kbd>
+    </button>
 
-            <div class="separator strict-mode-only"></div>
+    <div class="separator strict-mode-only"></div>
 
-            <button type="button" id="btn-add-str" class="strict-mode-only" title="Ctrl + Shift + 3">
-                <span class="t-str">Str</span>
-                <kbd>^⇧3</kbd>
-            </button>
-            <button type="button" id="btn-add-num" class="strict-mode-only" title="Ctrl + Shift + 4">
-                <span class="t-num">Num</span>
-                <kbd>^⇧4</kbd>
-            </button>
-            <button type="button" id="btn-add-true" class="strict-mode-only" title="Ctrl + Shift + 5">
-                <span class="t-bool">True</span>
-                <kbd>^⇧5</kbd>
-            </button>
-            <button type="button" id="btn-add-false" class="strict-mode-only" title="Ctrl + Shift + 6">
-                <span class="t-bool">False</span>
-                <kbd>^⇧6</kbd>
-            </button>
-            <button type="button" id="btn-add-null" title="Ctrl + Shift + N">
-                <span class="t-null">Null</span>
-                <kbd>^⇧N</kbd>
-            </button>
+    <button type="button" id="btn-add-str" class="strict-mode-only" title="Ctrl + Shift + 3">
+        <span class="t-str">Str</span>
+        <kbd>^⇧3</kbd>
+    </button>
+    <button type="button" id="btn-add-num" class="strict-mode-only" title="Ctrl + Shift + 4">
+        <span class="t-num">Num</span>
+        <kbd>^⇧4</kbd>
+    </button>
+    <button type="button" id="btn-add-true" class="strict-mode-only" title="Ctrl + Shift + 5">
+        <span class="t-bool">True</span>
+        <kbd>^⇧5</kbd>
+    </button>
+    <button type="button" id="btn-add-false" class="strict-mode-only" title="Ctrl + Shift + 6">
+        <span class="t-bool">False</span>
+        <kbd>^⇧6</kbd>
+    </button>
+    <button type="button" id="btn-add-null" title="Ctrl + Shift + N">
+        <span class="t-null">Null</span>
+        <kbd>^⇧N</kbd>
+    </button>
 
-            <button type="button" id="btn-paste-escaped" title="Paste text from clipboard as escaped JSON string" class="free-mode-only">
-                Paste Escaped
-            </button>
+    <button type="button" id="btn-paste-escaped"
+            title="Paste text from clipboard as escaped JSON string" class="free-mode-only">
+        Paste Escaped
+    </button>
 
-            <div class="separator"></div>
-            <button type="button" id="btn-del-row" class="danger" title="Ctrl + Del">
-                Del <kbd>^Del</kbd>
-            </button>
-            <button type="button" id="btn-move-up" title="Ctrl + Shift + Up">
-                Up <kbd>^⇧▲</kbd>
-            </button>
-            <button type="button" id="btn-move-down" title="Ctrl + Shift + Down">
-                Down <kbd>^⇧▼</kbd>
-            </button>
-        </header>
+    <div class="separator"></div>
+    <button type="button" id="btn-del-row" class="danger" title="Ctrl + Del">
+        Del <kbd>^Del</kbd>
+    </button>
+    <button type="button" id="btn-move-up" title="Ctrl + Shift + Up">
+        Up <kbd>^⇧▲</kbd>
+    </button>
+    <button type="button" id="btn-move-down" title="Ctrl + Shift + Down">
+        Down <kbd>^⇧▼</kbd>
+    </button>
+</header>
 
-        <main>
-            <div id="editor-container">
-                <div class="empty-msg">Waiting for input...</div>
+<main>
+    <div id="editor-container">
+        <div class="empty-msg">Waiting for input...</div>
+    </div>
+    <footer>
+        <div class="footer-left">
+            made by
+            <a href="https://github.com/jgandert" target="_blank">jgandert</a>
+            <span class="footer-separator"></span>
+            <a href="https://github.com/jgandert/tools" target="_blank">repository</a>
+        </div>
+        <div class="footer-right">
+            <button type="button" id="btn-cmd-palette" title="Ctrl + K">
+                Commands <kbd>^K</kbd>
+            </button>
+            <button type="button" id="btn-zen-mode" title="Ctrl + F11">
+                Zen Mode <kbd>^F11</kbd>
+            </button>
+            <button type="button" id="btn-settings" title="Settings">
+                Settings
+            </button>
+        </div>
+    </footer>
+</main>
+
+<!-- Hidden Inputs/Modals -->
+<input type="file" id="file-input" accept=".json,application/json" class="hidden">
+
+<div id="modal" class="modal-overlay hidden" role="dialog" aria-modal="true"
+     aria-labelledby="modal-title">
+    <div class="modal-box">
+        <h2 id="modal-title" class="visually-hidden">
+            Edit Raw JSON
+        </h2>
+        <div id="modal-warning" class="modal-warning hidden">
+            The JSON input contains invalid values. The view below shows the last valid
+            state.
+        </div>
+        <div id="modal-warning-duplicate" class="modal-warning modal-warning-duplicate hidden">
+            Duplicate keys detected. When saved, only the last value for each duplicate key
+            will be preserved.
+        </div>
+        <div class="modal-body">
+            <textarea id="modal-textarea" spellcheck="false" aria-label="JSON content"></textarea>
+        </div>
+        <div class="modal-footer">
+            <div class="modal-footer-examples">
+                <span class="modal-examples-label">Examples:</span>
+                <button type="button" id="btn-ex-default">Default</button>
+                <button type="button" id="btn-ex-long">Long</button>
+                <button type="button" id="btn-ex-deep">Deep</button>
             </div>
-            <footer>
-                <div class="footer-left">
-                    made by
-                    <a href="https://github.com/jgandert" target="_blank">jgandert</a>
-                    <span class="footer-separator"></span>
-                    <a href="https://github.com/jgandert/tools" target="_blank">repository</a>
-                </div>
-                <div class="footer-right">
-                    <button type="button" id="btn-cmd-palette" title="Ctrl + K">
-                        Commands <kbd>^K</kbd>
-                    </button>
-                    <button type="button" id="btn-zen-mode" title="Ctrl + F11">
-                        Zen Mode <kbd>^F11</kbd>
-                    </button>
-                    <button type="button" id="btn-settings" title="Settings">
-                        Settings
-                    </button>
-                </div>
-            </footer>
-        </main>
+            <button type="button" id="btn-close-modal">Cancel</button>
+            <button type="button" id="btn-save-modal" class="btn-load-data">
+                Load Data
+            </button>
+        </div>
+    </div>
+</div>
 
-        <!-- Hidden Inputs/Modals -->
-        <input type="file" id="file-input" accept=".json,application/json" class="hidden">
+<div id="confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true"
+     aria-labelledby="confirm-modal-title">
+    <div class="modal-box confirm-modal-box">
+        <div class="modal-body confirm-modal-body">
+            <h3 id="confirm-modal-title" class="confirm-modal-title">
+                Unsaved Changes
+            </h3>
+            <p class="confirm-modal-text">
+                You have unsaved changes. Discard them and open a new file?
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="btn-confirm-cancel">Cancel</button>
+            <button type="button" id="btn-confirm-ok" class="btn-discard">
+                Discard
+            </button>
+        </div>
+    </div>
+</div>
 
-        <div id="modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-            <div class="modal-box">
-                <h2 id="modal-title" class="visually-hidden">
-                    Edit Raw JSON
-                </h2>
-                <div id="modal-warning" class="modal-warning hidden">
-                    The JSON input contains invalid values. The view below shows the last valid
-                    state.
-                </div>
-                <div id="modal-warning-duplicate" class="modal-warning modal-warning-duplicate hidden">
-                    Duplicate keys detected. When saved, only the last value for each duplicate key
-                    will be preserved.
-                </div>
-                <div class="modal-body">
-                    <textarea id="modal-textarea" spellcheck="false" aria-label="JSON content"></textarea>
-                </div>
-                <div class="modal-footer">
-                    <div class="modal-footer-examples">
-                        <span class="modal-examples-label">Examples:</span>
-                        <button type="button" id="btn-ex-default">Default</button>
-                        <button type="button" id="btn-ex-long">Long</button>
-                        <button type="button" id="btn-ex-deep">Deep</button>
-                    </div>
-                    <button type="button" id="btn-close-modal">Cancel</button>
-                    <button type="button" id="btn-save-modal" class="btn-load-data">
-                        Load Data
-                    </button>
+<!-- Settings Modal -->
+<div id="settings-modal" class="modal-overlay hidden">
+    <div class="settings-modal-box">
+        <h3>Settings</h3>
+
+        <div class="settings-item">
+            <div class="settings-item-info">
+                <div class="settings-label">Sort by Keys</div>
+                <div class="settings-desc">
+                    Alphabetically sort all object keys when saving or when opening the Raw
+                    view.
                 </div>
             </div>
+            <label class="toggle-switch" for="sort-keys-toggle">
+                <input type="checkbox" id="sort-keys-toggle">
+            </label>
         </div>
 
-        <div id="confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true"
-            aria-labelledby="confirm-modal-title">
-            <div class="modal-box confirm-modal-box">
-                <div class="modal-body confirm-modal-body">
-                    <h3 id="confirm-modal-title" class="confirm-modal-title">
-                        Unsaved Changes
-                    </h3>
-                    <p class="confirm-modal-text">
-                        You have unsaved changes. Discard them and open a new file?
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" id="btn-confirm-cancel">Cancel</button>
-                    <button type="button" id="btn-confirm-ok" class="btn-discard">
-                        Discard
-                    </button>
+        <div class="settings-item">
+            <div class="settings-item-info">
+                <div class="settings-label">Hide Action Bar</div>
+                <div class="settings-desc">
+                    Hides the toolbar at the top of the editor. All actions remain available
+                    via keyboard shortcuts and the Command Palette (Ctrl+K).
                 </div>
             </div>
+            <label class="toggle-switch" for="hide-toolbar-toggle">
+                <input type="checkbox" id="hide-toolbar-toggle">
+            </label>
         </div>
 
-        <!-- Settings Modal -->
-        <div id="settings-modal" class="modal-overlay hidden">
-            <div class="settings-modal-box">
-                <h3>Settings</h3>
-
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-label">Sort by Keys</div>
-                        <div class="settings-desc">
-                            Alphabetically sort all object keys when saving or when opening the Raw
-                            view.
-                        </div>
-                    </div>
-                    <label class="toggle-switch" for="sort-keys-toggle">
-                        <input type="checkbox" id="sort-keys-toggle">
-                    </label>
-                </div>
-
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-label">Hide Action Bar</div>
-                        <div class="settings-desc">
-                            Hides the toolbar at the top of the editor. All actions remain available
-                            via keyboard shortcuts and the Command Palette (Ctrl+K).
-                        </div>
-                    </div>
-                    <label class="toggle-switch" for="hide-toolbar-toggle">
-                        <input type="checkbox" id="hide-toolbar-toggle">
-                    </label>
-                </div>
-
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-label">Type-Safe (Strict) Mode</div>
-                        <div class="settings-desc">
-                            Enforces explicit JSON types. Each value is locked to its type (string,
-                            number, boolean, null). In Free mode, values are parsed as raw JSON and
-                            can be any valid expression.
-                        </div>
-                    </div>
-                    <label class="toggle-switch" for="type-safe-toggle">
-                        <input type="checkbox" id="type-safe-toggle">
-                    </label>
-                </div>
-
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-label">Save in Browser (Local Storage)</div>
-                        <div class="settings-desc">
-                            Automatically persists your data to the browser's local storage. Your
-                            work is restored when you reopen the page. Disable to avoid overwriting
-                            stored data.
-                        </div>
-                    </div>
-                    <label class="toggle-switch" for="save-local-toggle">
-                        <input type="checkbox" id="save-local-toggle">
-                    </label>
-                </div>
-
-                <div class="settings-close">
-                    <button type="button" id="btn-close-settings">Close</button>
+        <div class="settings-item">
+            <div class="settings-item-info">
+                <div class="settings-label">Type-Safe (Strict) Mode</div>
+                <div class="settings-desc">
+                    Enforces explicit JSON types. Each value is locked to its type (string,
+                    number, boolean, null). In Free mode, values are parsed as raw JSON and
+                    can be any valid expression.
                 </div>
             </div>
+            <label class="toggle-switch" for="type-safe-toggle">
+                <input type="checkbox" id="type-safe-toggle">
+            </label>
         </div>
 
-        <!-- Command Palette -->
-        <div id="cmd-palette" class="cmd-palette-overlay hidden">
-            <div class="cmd-palette">
-                <input type="text" id="cmd-palette-input" placeholder="Type a command…" autocomplete="off"
-                    spellcheck="false">
-                <div id="cmd-palette-list"></div>
+        <div class="settings-item">
+            <div class="settings-item-info">
+                <div class="settings-label">Save in Browser (Local Storage)</div>
+                <div class="settings-desc">
+                    Automatically persists your data to the browser's local storage. Your
+                    work is restored when you reopen the page. Disable to avoid overwriting
+                    stored data.
+                </div>
             </div>
+            <label class="toggle-switch" for="save-local-toggle">
+                <input type="checkbox" id="save-local-toggle">
+            </label>
         </div>
 
-        <script>
-        // --- STATE & CONFIG ---
-        let isDirty = false;
-        let lastActiveCell = null;
-        let hasInvalidCells = false; // Tracks if any cell has invalid JSON (Free Mode)
-        let clipboardData = null; // Stores copied JSON hierarchy for paste
-        const LS_JSON_DATA_KEY = "json_grid_data";
-        const LS_SAVE_IN_LS_KEY = "json_grid_autosave";
-        const LS_HIDE_ACTION_BAR_KEY = "json_grid_hidetoolbar";
-        const LS_SORT_KEYS_KEY = "json_grid_sortkeys";
+        <div class="settings-close">
+            <button type="button" id="btn-close-settings">Close</button>
+        </div>
+    </div>
+</div>
 
-        // Prevent focus stealing from current cell when clicking toolbar buttons
-        document.querySelectorAll("header button").forEach(btn => {
-            btn.addEventListener("mousedown", (e) => e.preventDefault());
-        });
-        const LS_TYPE_SAFE_KEY = "json_grid_typesafe";
+<!-- Command Palette -->
+<div id="cmd-palette" class="cmd-palette-overlay hidden">
+    <div class="cmd-palette">
+        <input type="text" id="cmd-palette-input" placeholder="Type a command…" autocomplete="off"
+               spellcheck="false">
+        <div id="cmd-palette-list"></div>
+    </div>
+</div>
 
-        const UI_DEFAULTS = {
-            SAVE_IN_BROWSER: true,
-            HIDE_ACTION_BAR: false,
-            SORT_KEYS: false,
-            TYPE_SAFE: false, // Default OFF -> Free Mode
-        };
+<script>
+    // --- STATE & CONFIG ---
+    let isDirty = false;
+    let lastActiveCell = null;
+    let hasInvalidCells = false; // Tracks if any cell has invalid JSON (Free Mode)
+    let clipboardData = null; // Stores copied JSON hierarchy for paste
+    const LS_JSON_DATA_KEY = "json_grid_data";
+    const LS_SAVE_IN_LS_KEY = "json_grid_autosave";
+    const LS_HIDE_ACTION_BAR_KEY = "json_grid_hidetoolbar";
+    const LS_SORT_KEYS_KEY = "json_grid_sortkeys";
 
-        const DEFAULT_JSON = `{
+    // Prevent focus stealing from current cell when clicking toolbar buttons
+    document.querySelectorAll("header button").forEach(btn => {
+        btn.addEventListener("mousedown", (e) => e.preventDefault());
+    });
+    const LS_TYPE_SAFE_KEY = "json_grid_typesafe";
+
+    const UI_DEFAULTS = {
+        SAVE_IN_BROWSER: true,
+        HIDE_ACTION_BAR: false,
+        SORT_KEYS: false,
+        TYPE_SAFE: false, // Default OFF -> Free Mode
+    };
+
+    const DEFAULT_JSON = `{
   "project": "Recursive Grid JSON Editor",
   "theme": {
     "primary": "purple",
@@ -1130,234 +1129,234 @@
   "empty_object_key": {}
 }`;
 
-        // History State
-        const MAX_HISTORY = 50;
-        let undoStack = [];
-        let redoStack = [];
-        let currentStateStr = "";
+    // History State
+    const MAX_HISTORY = 50;
+    let undoStack = [];
+    let redoStack = [];
+    let currentStateStr = "";
 
-        const dom = {
-            container: document.getElementById("editor-container"),
-            fileInput: document.getElementById("file-input"),
-            modal: document.getElementById("modal"),
-            modalText: document.getElementById("modal-textarea"),
-            bUndo: document.getElementById("btn-undo"),
-            bRedo: document.getElementById("btn-redo"),
-            header: document.querySelector("header"),
-        };
+    const dom = {
+        container: document.getElementById("editor-container"),
+        fileInput: document.getElementById("file-input"),
+        modal: document.getElementById("modal"),
+        modalText: document.getElementById("modal-textarea"),
+        bUndo: document.getElementById("btn-undo"),
+        bRedo: document.getElementById("btn-redo"),
+        header: document.querySelector("header"),
+    };
 
-        // --- GLOBAL EVENT LISTENERS ---
+    // --- GLOBAL EVENT LISTENERS ---
 
-        // Focus Tracking & Text Edit History
-        dom.container.addEventListener("focusin", (e) => {
-            const cell = e.target.closest(".cell");
-            if (!cell) return;
-            lastActiveCell = cell;
+    // Focus Tracking & Text Edit History
+    dom.container.addEventListener("focusin", (e) => {
+        const cell = e.target.closest(".cell");
+        if (!cell) return;
+        lastActiveCell = cell;
+        clearHighlights();
+
+        // Do not highlight pair if focusing a container wrapper
+        if (!cell.classList.contains("complex")) {
+            highlightPair(cell);
+        }
+
+        // Select all text on focus for primitives
+        if (e.target.isContentEditable) {
+            // Store state before edit begins
+            e.target.dataset.beforeInput = e.target.innerText;
+
+            requestAnimationFrame(() => {
+                const range = document.createRange();
+                range.selectNodeContents(e.target);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            });
+        }
+    });
+
+    // Capture text changes on blur
+    dom.container.addEventListener("focusout", (e) => {
+        if (e.target.isContentEditable) {
+            const oldVal = e.target.dataset.beforeInput;
+            const newVal = e.target.innerText;
+            // If content changed and the change wasn't already captured by a structural update
+            if (oldVal !== undefined && oldVal !== newVal) {
+                recordAction(currentStateStr);
+                // Update the dataset to match new value so we don't trigger again
+                e.target.dataset.beforeInput = newVal;
+                saveToLocalStorage();
+            }
+        }
+        // Free Mode: validate on blur
+        handleFreeModeBlur(e);
+    });
+
+    // Persist native paste (browser Ctrl+V into contenteditable cells).
+    // The paste event fires before the DOM is updated, so we defer
+    // the snapshot to the next microtask.
+    dom.container.addEventListener("paste", (e) => {
+        const target = e.target;
+        if (!target.isContentEditable) return;
+
+        const oldState = currentStateStr;
+        setTimeout(() => {
+            // Update beforeInput so focusout doesn't double-record
+            target.dataset.beforeInput = target.innerText;
+            recordAction(oldState);
+        }, 0);
+    });
+
+    // Free Mode: Track input for live validation
+    dom.container.addEventListener("input", (e) => {
+        handleFreeModeInput(e);
+    });
+
+    // Click on cells to properly focus editable elements
+    dom.container.addEventListener("click", (e) => {
+        const cell = e.target.closest(".cell");
+        if (!cell) return;
+
+        // If clicking on a key cell, focus the editable span inside
+        if (cell.classList.contains("key") && !cell.classList.contains("is-index")) {
+            const span = cell.querySelector("span[contenteditable]");
+            if (span && e.target !== span) {
+                span.focus();
+            }
+        }
+        // If clicking on a value cell that's editable, ensure it gets focus
+        else if (cell.classList.contains("value") && cell.isContentEditable) {
+            if (document.activeElement !== cell) {
+                cell.focus();
+            }
+        }
+    });
+
+    // Click outside clears highlight
+    document.addEventListener("click", (e) => {
+        if (!dom.container.contains(e.target) && !e.target.closest("button")) {
             clearHighlights();
+        }
+    });
 
-            // Do not highlight pair if focusing a container wrapper
-            if (!cell.classList.contains("complex")) {
-                highlightPair(cell);
-            }
+    // Tab Navigation Override (Skip complex containers when tabbing from key)
+    dom.container.addEventListener("keydown", (e) => {
+        if (e.key === "Tab") {
+            const active = document.activeElement;
+            const cell = active.closest(".cell");
 
-            // Select all text on focus for primitives
-            if (e.target.isContentEditable) {
-                // Store state before edit begins
-                e.target.dataset.beforeInput = e.target.innerText;
-
-                requestAnimationFrame(() => {
-                    const range = document.createRange();
-                    range.selectNodeContents(e.target);
-                    const sel = window.getSelection();
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                });
-            }
-        });
-
-        // Capture text changes on blur
-        dom.container.addEventListener("focusout", (e) => {
-            if (e.target.isContentEditable) {
-                const oldVal = e.target.dataset.beforeInput;
-                const newVal = e.target.innerText;
-                // If content changed and the change wasn't already captured by a structural update
-                if (oldVal !== undefined && oldVal !== newVal) {
-                    recordAction(currentStateStr);
-                    // Update the dataset to match new value so we don't trigger again
-                    e.target.dataset.beforeInput = newVal;
-                    saveToLocalStorage();
+            if (cell && cell.classList.contains("key") && !e.shiftKey) {
+                // Forward Tab: skip from key directly to complex value wrapper
+                const next = cell.nextElementSibling;
+                if (next && next.classList.contains("complex")) {
+                    e.preventDefault();
+                    window.getSelection().removeAllRanges();
+                    next.focus(); // Focus the wrapper div
                 }
-            }
-            // Free Mode: validate on blur
-            handleFreeModeBlur(e);
-        });
-
-        // Persist native paste (browser Ctrl+V into contenteditable cells).
-        // The paste event fires before the DOM is updated, so we defer
-        // the snapshot to the next microtask.
-        dom.container.addEventListener("paste", (e) => {
-            const target = e.target;
-            if (!target.isContentEditable) return;
-
-            const oldState = currentStateStr;
-            setTimeout(() => {
-                // Update beforeInput so focusout doesn't double-record
-                target.dataset.beforeInput = target.innerText;
-                recordAction(oldState);
-            }, 0);
-        });
-
-        // Free Mode: Track input for live validation
-        dom.container.addEventListener("input", (e) => {
-            handleFreeModeInput(e);
-        });
-
-        // Click on cells to properly focus editable elements
-        dom.container.addEventListener("click", (e) => {
-            const cell = e.target.closest(".cell");
-            if (!cell) return;
-
-            // If clicking on a key cell, focus the editable span inside
-            if (cell.classList.contains("key") && !cell.classList.contains("is-index")) {
-                const span = cell.querySelector("span[contenteditable]");
-                if (span && e.target !== span) {
-                    span.focus();
-                }
-            }
-            // If clicking on a value cell that's editable, ensure it gets focus
-            else if (cell.classList.contains("value") && cell.isContentEditable) {
-                if (document.activeElement !== cell) {
-                    cell.focus();
-                }
-            }
-        });
-
-        // Click outside clears highlight
-        document.addEventListener("click", (e) => {
-            if (!dom.container.contains(e.target) && !e.target.closest("button")) {
-                clearHighlights();
-            }
-        });
-
-        // Tab Navigation Override (Skip complex containers when tabbing from key)
-        dom.container.addEventListener("keydown", (e) => {
-            if (e.key === "Tab") {
-                const active = document.activeElement;
-                const cell = active.closest(".cell");
-
-                if (cell && cell.classList.contains("key") && !e.shiftKey) {
-                    // Forward Tab: skip from key directly to complex value wrapper
-                    const next = cell.nextElementSibling;
-                    if (next && next.classList.contains("complex")) {
+            } else if (cell && cell.classList.contains("key") && e.shiftKey) {
+                // Shift+Tab: only intercept for empty complex cells to clear text selection.
+                // Non-empty complex cells: let browser naturally tab into their contents.
+                const prevVal = cell.previousElementSibling;
+                if (prevVal && prevVal.classList.contains("complex")) {
+                    const innerGrid = prevVal.querySelector(".json-grid");
+                    if (innerGrid && innerGrid.children.length === 0) {
                         e.preventDefault();
                         window.getSelection().removeAllRanges();
-                        next.focus(); // Focus the wrapper div
-                    }
-                } else if (cell && cell.classList.contains("key") && e.shiftKey) {
-                    // Shift+Tab: only intercept for empty complex cells to clear text selection.
-                    // Non-empty complex cells: let browser naturally tab into their contents.
-                    const prevVal = cell.previousElementSibling;
-                    if (prevVal && prevVal.classList.contains("complex")) {
-                        const innerGrid = prevVal.querySelector(".json-grid");
-                        if (innerGrid && innerGrid.children.length === 0) {
-                            e.preventDefault();
-                            window.getSelection().removeAllRanges();
-                            prevVal.focus();
-                        }
+                        prevVal.focus();
                     }
                 }
             }
-        });
+        }
+    });
 
-        // --- KEYBOARD SHORTCUTS ---
-        document.addEventListener("keydown", (e) => {
-            // Raw Modal Close
-            if (e.key === "Escape") {
-                dom.modal.classList.add("hidden");
-                document.getElementById("confirm-modal").classList.add("hidden");
-                document.getElementById("settings-modal").classList.add("hidden");
-                closeCommandPalette();
-                refreshSortedView();
-            }
+    // --- KEYBOARD SHORTCUTS ---
+    document.addEventListener("keydown", (e) => {
+        // Raw Modal Close
+        if (e.key === "Escape") {
+            dom.modal.classList.add("hidden");
+            document.getElementById("confirm-modal").classList.add("hidden");
+            document.getElementById("settings-modal").classList.add("hidden");
+            closeCommandPalette();
+            refreshSortedView();
+        }
 
-            const ctrl = e.ctrlKey || e.metaKey;
+        const ctrl = e.ctrlKey || e.metaKey;
 
-            // Undo / Redo
-            if (ctrl && !e.shiftKey && e.key.toLowerCase() === "z") {
+        // Undo / Redo
+        if (ctrl && !e.shiftKey && e.key.toLowerCase() === "z") {
+            e.preventDefault();
+            performUndo();
+            return;
+        }
+        if (
+            (ctrl && e.key.toLowerCase() === "y") ||
+            (ctrl && e.shiftKey && e.key.toLowerCase() === "z")
+        ) {
+            e.preventDefault();
+            performRedo();
+            return;
+        }
+
+        // File / Raw Shortcuts
+        if (ctrl && !e.shiftKey && e.key.toLowerCase() === "s") {
+            e.preventDefault();
+            downloadJSON();
+            return;
+        }
+        if (ctrl && !e.shiftKey && e.key.toLowerCase() === "o") {
+            e.preventDefault();
+            requestOpenFile();
+            return;
+        }
+        if (ctrl && !e.shiftKey && e.key.toLowerCase() === "e") {
+            e.preventDefault();
+            openRawModal();
+            return;
+        }
+        if (ctrl && !e.shiftKey && e.key.toLowerCase() === "k") {
+            e.preventDefault();
+            openCommandPalette();
+            return;
+        }
+        if (ctrl && e.key === "F11") {
+            e.preventDefault();
+            toggleZenMode();
+            return;
+        }
+
+        // Editor Shortcuts (Active Grid)
+        const active = document.activeElement;
+        const insideGrid = dom.container.contains(active);
+
+        // Copy hierarchy (Ctrl+C on complex cells)
+        if (ctrl && !e.shiftKey && e.key.toLowerCase() === "c" && insideGrid) {
+            if (copyHierarchy(active)) {
                 e.preventDefault();
-                performUndo();
                 return;
             }
-            if (
-                (ctrl && e.key.toLowerCase() === "y") ||
-                (ctrl && e.shiftKey && e.key.toLowerCase() === "z")
-            ) {
+        }
+
+        // Paste hierarchy (Ctrl+V on complex cells)
+        if (ctrl && !e.shiftKey && e.key.toLowerCase() === "v" && insideGrid) {
+            const cell = active.closest(".cell");
+            if (cell && cell.classList.contains("complex")) {
                 e.preventDefault();
-                performRedo();
+                pasteHierarchy(active);
+                return;
+            }
+        }
+
+        if (insideGrid) {
+            // Delete shortcut (Ctrl+Delete, no Shift required)
+            if (ctrl && !e.shiftKey && (e.key === "Delete" || e.key === "Backspace")) {
+                e.preventDefault();
+                commitAndExecute(() => deleteRow(active));
                 return;
             }
 
-            // File / Raw Shortcuts
-            if (ctrl && !e.shiftKey && e.key.toLowerCase() === "s") {
-                e.preventDefault();
-                downloadJSON();
-                return;
-            }
-            if (ctrl && !e.shiftKey && e.key.toLowerCase() === "o") {
-                e.preventDefault();
-                requestOpenFile();
-                return;
-            }
-            if (ctrl && !e.shiftKey && e.key.toLowerCase() === "e") {
-                e.preventDefault();
-                openRawModal();
-                return;
-            }
-            if (ctrl && !e.shiftKey && e.key.toLowerCase() === "k") {
-                e.preventDefault();
-                openCommandPalette();
-                return;
-            }
-            if (ctrl && e.key === "F11") {
-                e.preventDefault();
-                toggleZenMode();
-                return;
-            }
-
-            // Editor Shortcuts (Active Grid)
-            const active = document.activeElement;
-            const insideGrid = dom.container.contains(active);
-
-            // Copy hierarchy (Ctrl+C on complex cells)
-            if (ctrl && !e.shiftKey && e.key.toLowerCase() === "c" && insideGrid) {
-                if (copyHierarchy(active)) {
-                    e.preventDefault();
-                    return;
-                }
-            }
-
-            // Paste hierarchy (Ctrl+V on complex cells)
-            if (ctrl && !e.shiftKey && e.key.toLowerCase() === "v" && insideGrid) {
-                const cell = active.closest(".cell");
-                if (cell && cell.classList.contains("complex")) {
-                    e.preventDefault();
-                    pasteHierarchy(active);
-                    return;
-                }
-            }
-
-            if (insideGrid) {
-                // Delete shortcut (Ctrl+Delete, no Shift required)
-                if (ctrl && !e.shiftKey && (e.key === "Delete" || e.key === "Backspace")) {
-                    e.preventDefault();
-                    commitAndExecute(() => deleteRow(active));
-                    return;
-                }
-
-                // Type coercion shortcuts (Ctrl+Shift+Number/Arrow)
-                // Uses e.code to ignore keyboard layout differences (e.g. QWERTZ vs. QWERTY)
-                if (ctrl && e.shiftKey) {
-                    switch (e.code) {
+            // Type coercion shortcuts (Ctrl+Shift+Number/Arrow)
+            // Uses e.code to ignore keyboard layout differences (e.g. QWERTZ vs. QWERTY)
+            if (ctrl && e.shiftKey) {
+                switch (e.code) {
                     case "ArrowUp":
                         e.preventDefault();
                         commitAndExecute(() => dispatchMove(active, -1));
@@ -1395,258 +1394,270 @@
                         e.preventDefault();
                         commitAndExecute(() => insertRow(active, null));
                         return;
-                    }
                 }
             }
-        });
+        }
+    });
 
-        // --- BUTTON BINDINGS ---
-        const bindBtn = (id, fn) => {
-            const el = document.getElementById(id);
-            if (el)
-                el.addEventListener("click", () => {
-                    const target = dom.container.contains(document.activeElement)
-                        ? document.activeElement
-                        : lastActiveCell;
-                    if (target) fn(target);
-                });
-        };
-
-        // Wrap actions in commitAndExecute
-        const withCommit = (fn) => (el) => commitAndExecute(() => fn(el));
-
-        bindBtn(
-            "btn-add-obj",
-            withCommit((el) => insertRow(el, {}))
-        );
-        bindBtn(
-            "btn-add-list",
-            withCommit((el) => insertRow(el, []))
-        );
-        bindBtn(
-            "btn-add-str",
-            withCommit((el) => insertRow(el, ""))
-        );
-        bindBtn(
-            "btn-add-num",
-            withCommit((el) => insertRow(el, 0))
-        );
-        bindBtn(
-            "btn-add-true",
-            withCommit((el) => insertRow(el, true))
-        );
-        bindBtn(
-            "btn-add-false",
-            withCommit((el) => insertRow(el, false))
-        );
-        bindBtn(
-            "btn-add-null",
-            withCommit((el) => insertRow(el, null))
-        );
-        bindBtn(
-            "btn-move-up",
-            withCommit((el) => dispatchMove(el, -1))
-        );
-        bindBtn(
-            "btn-move-down",
-            withCommit((el) => dispatchMove(el, 1))
-        );
-        bindBtn(
-            "btn-del-row",
-            withCommit((el) => deleteRow(el))
-        );
-
-        // Paste Escaped: Read clipboard and paste as escaped JSON string
-        document.getElementById("btn-paste-escaped").addEventListener("click", async () => {
-            try {
-                const text = await navigator.clipboard.readText();
+    // --- BUTTON BINDINGS ---
+    const bindBtn = (id, fn) => {
+        const el = document.getElementById(id);
+        if (el)
+            el.addEventListener("click", () => {
                 const target = dom.container.contains(document.activeElement)
                     ? document.activeElement
                     : lastActiveCell;
+                if (target) fn(target);
+            });
+    };
 
-                if (!target) {
-                    alert("No cell selected. Click on a cell first.");
-                    return;
-                }
+    // Wrap actions in commitAndExecute
+    const withCommit = (fn) => (el) => commitAndExecute(() => fn(el));
 
-                // Find the value cell to paste into
-                let valueCell = target;
-                if (target.closest(".cell.key")) {
-                    valueCell = target.closest(".cell.key").nextElementSibling;
-                } else if (!target.closest(".cell.value")) {
-                    valueCell = target.closest(".cell")?.nextElementSibling;
-                }
+    bindBtn(
+        "btn-add-obj",
+        withCommit((el) => insertRow(el, {})),
+    );
+    bindBtn(
+        "btn-add-list",
+        withCommit((el) => insertRow(el, [])),
+    );
+    bindBtn(
+        "btn-add-str",
+        withCommit((el) => insertRow(el, "")),
+    );
+    bindBtn(
+        "btn-add-num",
+        withCommit((el) => insertRow(el, 0)),
+    );
+    bindBtn(
+        "btn-add-true",
+        withCommit((el) => insertRow(el, true)),
+    );
+    bindBtn(
+        "btn-add-false",
+        withCommit((el) => insertRow(el, false)),
+    );
+    bindBtn(
+        "btn-add-null",
+        withCommit((el) => insertRow(el, null)),
+    );
+    bindBtn(
+        "btn-move-up",
+        withCommit((el) => dispatchMove(el, -1)),
+    );
+    bindBtn(
+        "btn-move-down",
+        withCommit((el) => dispatchMove(el, 1)),
+    );
+    bindBtn(
+        "btn-del-row",
+        withCommit((el) => deleteRow(el)),
+    );
 
-                if (
-                    !valueCell ||
-                    !valueCell.classList.contains("value") ||
-                    valueCell.classList.contains("complex")
-                ) {
-                    alert("Cannot paste into this cell. Select a primitive value cell.");
-                    return;
-                }
+    // Paste Escaped: Read clipboard and paste as escaped JSON string
+    document.getElementById("btn-paste-escaped").addEventListener("click", async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            const target = dom.container.contains(document.activeElement)
+                ? document.activeElement
+                : lastActiveCell;
 
-                // Record for undo
-                commitAndExecute(() => {
-                    // In Free Mode, display as JSON string representation
-                    if (!isTypeSafeMode()) {
-                        valueCell.textContent = JSON.stringify(text);
-                    } else {
-                        // In Strict Mode, just set the text content directly
-                        valueCell.textContent = text;
-                    }
-                    stylePrimitive(valueCell, "string"); // Apply string styling
-                    // Override explicit type in case it matters for logic
-                    valueCell.dataset.explicitType = "string";
-                    setDirty(true);
-                });
-
-                valueCell.focus();
-                announce("Pasted escaped string into cell.");
-            } catch (e) {
-                alert("Could not read clipboard. Please check permissions.");
-                console.error("Clipboard read failed:", e);
-            }
-        });
-
-        document.getElementById("btn-undo").addEventListener("click", performUndo);
-        document.getElementById("btn-redo").addEventListener("click", performRedo);
-
-        // --- LOGIC: HISTORY MANAGEMENT ---
-
-        function getSnapshot() {
-            return JSON.stringify(scrapeJSON(), null, 2);
-        }
-
-        // Used for text edits where the "old" state is already known (before edit)
-        function recordAction(oldStateStr) {
-            undoStack.push({ state: oldStateStr, focusInfo: getFocusPath() });
-            if (undoStack.length > MAX_HISTORY) undoStack.shift();
-            redoStack = [];
-            currentStateStr = getSnapshot(); // Update current to new state
-            updateHistoryBtns();
-            setDirty(true);
-            saveToLocalStorage();
-        }
-
-        // Used for structural changes (insert/delete/move) where we snapshot *now* then execute
-        function commitAndExecute(actionFn) {
-            const stateBefore = getSnapshot();
-            const focusInfo = getFocusPath();
-            undoStack.push({ state: stateBefore, focusInfo });
-            if (undoStack.length > MAX_HISTORY) undoStack.shift();
-            redoStack = [];
-
-            actionFn(); // Perform DOM change
-
-            currentStateStr = getSnapshot(); // Update current
-            updateHistoryBtns();
-            saveToLocalStorage();
-        }
-
-        function performUndo() {
-            if (undoStack.length === 0) return;
-
-            redoStack.push({ state: currentStateStr, focusInfo: getFocusPath() });
-            const entry = undoStack.pop();
-            render(JSON.parse(entry.state), true);
-
-            currentStateStr = entry.state;
-            updateHistoryBtns();
-            setDirty(true);
-            saveToLocalStorage();
-            requestAnimationFrame(() => restoreFocusPath(entry.focusInfo));
-            announce("Undo performed. " + undoStack.length + " steps remaining.");
-        }
-
-        function performRedo() {
-            if (redoStack.length === 0) return;
-
-            undoStack.push({ state: currentStateStr, focusInfo: getFocusPath() });
-            const entry = redoStack.pop();
-            render(JSON.parse(entry.state), true);
-
-            currentStateStr = entry.state;
-            updateHistoryBtns();
-            setDirty(true);
-            saveToLocalStorage();
-            requestAnimationFrame(() => restoreFocusPath(entry.focusInfo));
-            announce("Redo performed. " + redoStack.length + " steps remaining.");
-        }
-
-        function updateHistoryBtns() {
-            const canUndo = undoStack.length > 0;
-            const canRedo = redoStack.length > 0;
-
-            dom.bUndo.disabled = !canUndo;
-            dom.bRedo.disabled = !canRedo;
-
-            dom.bUndo.style.opacity = canUndo ? 1 : 0.5;
-            dom.bRedo.style.opacity = canRedo ? 1 : 0.5;
-        }
-
-        // --- LOGIC: HELPER FUNCTIONS ---
-
-        function clearHighlights() {
-            dom.container
-                .querySelectorAll(".active-pair-key, .active-pair-val")
-                .forEach((el) => {
-                    el.classList.remove("active-pair-key");
-                    el.classList.remove("active-pair-val");
-                });
-        }
-
-        function highlightPair(cell) {
-            let key, val;
-            if (cell.classList.contains("key")) {
-                key = cell;
-                val = cell.nextElementSibling;
-            } else if (cell.classList.contains("value")) {
-                val = cell;
-                key = cell.previousElementSibling;
-            }
-            if (key) key.classList.add("active-pair-key");
-            if (val) val.classList.add("active-pair-val");
-        }
-
-        function setDirty(state) {
-            isDirty = state;
-            if (state) document.body.classList.add("is-dirty");
-            else document.body.classList.remove("is-dirty");
-        }
-
-        // --- FOCUS PATH: Save and restore focus across DOM rebuilds ---
-
-        // Record the path of child indices from the editor container to the focused element.
-        function getFocusPath() {
-            const active = document.activeElement;
-            if (!dom.container.contains(active)) return null;
-
-            const path = [];
-            let current = active;
-
-            // Walk up the DOM tree, recording each child index
-            while (current && current !== dom.container) {
-                const parent = current.parentElement;
-                if (!parent) break;
-                const index = Array.from(parent.children).indexOf(current);
-                path.unshift(index);
-                if (parent === dom.container) break;
-                current = parent;
+            if (!target) {
+                alert("No cell selected. Click on a cell first.");
+                return;
             }
 
-            // Track whether focus was on a contenteditable span inside a key cell
-            const cell = active.closest(".cell");
-            const isKeySpan =
-                active.tagName === "SPAN" && cell && cell.classList.contains("key");
+            // Find the value cell to paste into
+            let valueCell = target;
+            if (target.closest(".cell.key")) {
+                valueCell = target.closest(".cell.key").nextElementSibling;
+            } else if (!target.closest(".cell.value")) {
+                valueCell = target.closest(".cell")?.nextElementSibling;
+            }
 
-            return { path, isKeySpan };
+            if (
+                !valueCell ||
+                !valueCell.classList.contains("value") ||
+                valueCell.classList.contains("complex")
+            ) {
+                alert("Cannot paste into this cell. Select a primitive value cell.");
+                return;
+            }
+
+            // Record for undo
+            commitAndExecute(() => {
+                // In Free Mode, display as JSON string representation
+                if (!isTypeSafeMode()) {
+                    valueCell.textContent = JSON.stringify(text);
+                } else {
+                    // In Strict Mode, just set the text content directly
+                    valueCell.textContent = text;
+                }
+                stylePrimitive(valueCell, "string"); // Apply string styling
+                // Override explicit type in case it matters for logic
+                valueCell.dataset.explicitType = "string";
+                setDirty(true);
+            });
+
+            valueCell.focus();
+            announce("Pasted escaped string into cell.");
+        } catch (e) {
+            alert("Could not read clipboard. Please check permissions.");
+            console.error("Clipboard read failed:", e);
+        }
+    });
+
+    document.getElementById("btn-undo").addEventListener("click", performUndo);
+    document.getElementById("btn-redo").addEventListener("click", performRedo);
+
+    // --- LOGIC: HISTORY MANAGEMENT ---
+
+    function getSnapshot() {
+        return JSON.stringify(scrapeJSON(), null, 2);
+    }
+
+    // Used for text edits where the "old" state is already known (before edit)
+    function recordAction(oldStateStr) {
+        undoStack.push({ state: oldStateStr, focusInfo: getFocusPath() });
+        if (undoStack.length > MAX_HISTORY) undoStack.shift();
+        redoStack = [];
+        currentStateStr = getSnapshot(); // Update current to new state
+        updateHistoryBtns();
+        setDirty(true);
+        saveToLocalStorage();
+    }
+
+    // Used for structural changes (insert/delete/move) where we snapshot *now* then execute
+    function commitAndExecute(actionFn) {
+        const stateBefore = getSnapshot();
+        const focusInfo = getFocusPath();
+        undoStack.push({ state: stateBefore, focusInfo });
+        if (undoStack.length > MAX_HISTORY) undoStack.shift();
+        redoStack = [];
+
+        actionFn(); // Perform DOM change
+
+        currentStateStr = getSnapshot(); // Update current
+        updateHistoryBtns();
+        saveToLocalStorage();
+    }
+
+    function performUndo() {
+        if (undoStack.length === 0) return;
+
+        redoStack.push({ state: currentStateStr, focusInfo: getFocusPath() });
+        const entry = undoStack.pop();
+        render(JSON.parse(entry.state), true);
+
+        currentStateStr = entry.state;
+        updateHistoryBtns();
+        setDirty(true);
+        saveToLocalStorage();
+        requestAnimationFrame(() => restoreFocusPath(entry.focusInfo));
+        announce("Undo performed. " + undoStack.length + " steps remaining.");
+    }
+
+    function performRedo() {
+        if (redoStack.length === 0) return;
+
+        undoStack.push({ state: currentStateStr, focusInfo: getFocusPath() });
+        const entry = redoStack.pop();
+        render(JSON.parse(entry.state), true);
+
+        currentStateStr = entry.state;
+        updateHistoryBtns();
+        setDirty(true);
+        saveToLocalStorage();
+        requestAnimationFrame(() => restoreFocusPath(entry.focusInfo));
+        announce("Redo performed. " + redoStack.length + " steps remaining.");
+    }
+
+    function updateHistoryBtns() {
+        const canUndo = undoStack.length > 0;
+        const canRedo = redoStack.length > 0;
+
+        dom.bUndo.disabled = !canUndo;
+        dom.bRedo.disabled = !canRedo;
+
+        dom.bUndo.style.opacity = canUndo ? 1 : 0.5;
+        dom.bRedo.style.opacity = canRedo ? 1 : 0.5;
+    }
+
+    // --- LOGIC: HELPER FUNCTIONS ---
+
+    function clearHighlights() {
+        dom.container
+            .querySelectorAll(".active-pair-key, .active-pair-val")
+            .forEach((el) => {
+                el.classList.remove("active-pair-key");
+                el.classList.remove("active-pair-val");
+            });
+    }
+
+    function highlightPair(cell) {
+        let key, val;
+        if (cell.classList.contains("key")) {
+            key = cell;
+            val = cell.nextElementSibling;
+        } else if (cell.classList.contains("value")) {
+            val = cell;
+            key = cell.previousElementSibling;
+        }
+        if (key) key.classList.add("active-pair-key");
+        if (val) val.classList.add("active-pair-val");
+    }
+
+    function setDirty(state) {
+        isDirty = state;
+        if (state) document.body.classList.add("is-dirty");
+        else document.body.classList.remove("is-dirty");
+    }
+
+    // --- FOCUS PATH: Save and restore focus across DOM rebuilds ---
+
+    // Record the path of child indices from the editor container to the focused element.
+    function getFocusPath() {
+        const active = document.activeElement;
+        if (!dom.container.contains(active)) return null;
+
+        const path = [];
+        let current = active;
+
+        // Walk up the DOM tree, recording each child index
+        while (current && current !== dom.container) {
+            const parent = current.parentElement;
+            if (!parent) break;
+            const index = Array.from(parent.children).indexOf(current);
+            path.unshift(index);
+            if (parent === dom.container) break;
+            current = parent;
         }
 
-        // Walk the saved path in the new DOM and restore focus to the equivalent element.
-        function restoreFocusPath(focusInfo) {
-            if (!focusInfo || !focusInfo.path.length) {
-                // Fallback: focus first focusable element
+        // Track whether focus was on a contenteditable span inside a key cell
+        const cell = active.closest(".cell");
+        const isKeySpan =
+            active.tagName === "SPAN" && cell && cell.classList.contains("key");
+
+        return { path, isKeySpan };
+    }
+
+    // Walk the saved path in the new DOM and restore focus to the equivalent element.
+    function restoreFocusPath(focusInfo) {
+        if (!focusInfo || !focusInfo.path.length) {
+            // Fallback: focus first focusable element
+            const first =
+                dom.container.querySelector(".cell.key span[contenteditable]") ||
+                dom.container.querySelector(".cell.value[contenteditable]") ||
+                dom.container.querySelector(".cell.value.complex");
+            if (first) first.focus();
+            return;
+        }
+
+        let current = dom.container;
+        for (const index of focusInfo.path) {
+            if (!current.children || !current.children[index]) {
+                // Path is invalid in rebuilt DOM, fall back
                 const first =
                     dom.container.querySelector(".cell.key span[contenteditable]") ||
                     dom.container.querySelector(".cell.value[contenteditable]") ||
@@ -1654,1592 +1665,1588 @@
                 if (first) first.focus();
                 return;
             }
-
-            let current = dom.container;
-            for (const index of focusInfo.path) {
-                if (!current.children || !current.children[index]) {
-                    // Path is invalid in rebuilt DOM, fall back
-                    const first =
-                        dom.container.querySelector(".cell.key span[contenteditable]") ||
-                        dom.container.querySelector(".cell.value[contenteditable]") ||
-                        dom.container.querySelector(".cell.value.complex");
-                    if (first) first.focus();
-                    return;
-                }
-                current = current.children[index];
-            }
-
-            if (focusInfo.isKeySpan) {
-                const span = current.querySelector("span[contenteditable]");
-                if (span) {
-                    span.focus();
-                    return;
-                }
-            }
-
-            if (current.focus) current.focus();
+            current = current.children[index];
         }
 
-        // --- ACCESSIBILITY: ARIA ANNOUNCEMENTS ---
-        function announce(message) {
-            const status = document.getElementById("aria-status");
-            if (status) {
-                status.textContent = "";
-                // Small delay to ensure screen readers pick up the change
-                setTimeout(() => {
-                    status.textContent = message;
-                }, 50);
+        if (focusInfo.isKeySpan) {
+            const span = current.querySelector("span[contenteditable]");
+            if (span) {
+                span.focus();
+                return;
             }
         }
 
-        // --- COPY / PASTE HIERARCHY ---
+        if (current.focus) current.focus();
+    }
 
-        // Copy the JSON subtree of a focused complex cell.
-        // Returns true if a hierarchy was copied, false otherwise.
-        function copyHierarchy(activeEl) {
-            const cell = activeEl.closest(".cell.value.complex");
-            if (!cell) return false;
+    // --- ACCESSIBILITY: ARIA ANNOUNCEMENTS ---
+    function announce(message) {
+        const status = document.getElementById("aria-status");
+        if (status) {
+            status.textContent = "";
+            // Small delay to ensure screen readers pick up the change
+            setTimeout(() => {
+                status.textContent = message;
+            }, 50);
+        }
+    }
 
-            const innerGrid = cell.querySelector(".json-grid");
-            if (!innerGrid) return false;
+    // --- COPY / PASTE HIERARCHY ---
 
-            const data = parseGrid(innerGrid);
-            clipboardData = JSON.parse(JSON.stringify(data)); // Deep clone
+    // Copy the JSON subtree of a focused complex cell.
+    // Returns true if a hierarchy was copied, false otherwise.
+    function copyHierarchy(activeEl) {
+        const cell = activeEl.closest(".cell.value.complex");
+        if (!cell) return false;
 
-            // Also write to system clipboard for external use
-            try {
-                navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-            } catch {
-                // Silently fail if clipboard API unavailable
-            }
+        const innerGrid = cell.querySelector(".json-grid");
+        if (!innerGrid) return false;
 
-            // Visual feedback: flash animation
-            cell.classList.remove("copy-flash");
-            void cell.offsetWidth; // Force reflow to restart animation
-            cell.classList.add("copy-flash");
-            cell.addEventListener("animationend", () => cell.classList.remove("copy-flash"), {
-                once: true,
-            });
+        const data = parseGrid(innerGrid);
+        clipboardData = JSON.parse(JSON.stringify(data)); // Deep clone
 
-            const typeLabel = Array.isArray(data) ? "array" : "object";
-            announce("Copied " + typeLabel + " to clipboard.");
-            return true;
+        // Also write to system clipboard for external use
+        try {
+            navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+        } catch {
+            // Silently fail if clipboard API unavailable
         }
 
-        // Paste the previously copied hierarchy after the current row.
-        // Prefers the system clipboard; falls back to internal clipboardData.
-        async function pasteHierarchy(activeEl) {
-            const cell = activeEl.closest(".cell");
-            if (!cell) return;
+        // Visual feedback: flash animation
+        cell.classList.remove("copy-flash");
+        void cell.offsetWidth; // Force reflow to restart animation
+        cell.classList.add("copy-flash");
+        cell.addEventListener("animationend", () => cell.classList.remove("copy-flash"), {
+            once: true,
+        });
 
-            let pastedValue = null;
+        const typeLabel = Array.isArray(data) ? "array" : "object";
+        announce("Copied " + typeLabel + " to clipboard.");
+        return true;
+    }
 
-            // 1. Try system clipboard
-            try {
-                const text = await navigator.clipboard.readText();
-                const parsed = JSON.parse(text);
-                if (parsed !== null && typeof parsed === "object") {
-                    pastedValue = parsed;
-                }
-            } catch {
-                // Permission denied, empty clipboard, or not valid JSON
+    // Paste the previously copied hierarchy after the current row.
+    // Prefers the system clipboard; falls back to internal clipboardData.
+    async function pasteHierarchy(activeEl) {
+        const cell = activeEl.closest(".cell");
+        if (!cell) return;
+
+        let pastedValue = null;
+
+        // 1. Try system clipboard
+        try {
+            const text = await navigator.clipboard.readText();
+            const parsed = JSON.parse(text);
+            if (parsed !== null && typeof parsed === "object") {
+                pastedValue = parsed;
             }
-
-            // 2. Fall back to internal clipboard
-            if (pastedValue === null && clipboardData !== null) {
-                pastedValue = JSON.parse(JSON.stringify(clipboardData));
-            }
-
-            if (pastedValue === null) return;
-
-            commitAndExecute(() => insertRow(activeEl, pastedValue));
-
-            const typeLabel = Array.isArray(pastedValue) ? "array" : "object";
-            announce("Pasted " + typeLabel + " from clipboard.");
+        } catch {
+            // Permission denied, empty clipboard, or not valid JSON
         }
 
-        // --- LOGIC: RENDERER ---
-
-        function render(data, skipAutoFocus = false) {
-            dom.container.innerHTML = "";
-            if (typeof data !== "object" || data === null) {
-                // Root is primitive
-                const grid = document.createElement("div");
-                grid.className = "json-grid";
-                grid.innerHTML = "<div class=\"cell key\">root</div>";
-                const valCell = createValCell(data);
-                grid.appendChild(valCell);
-                dom.container.appendChild(grid);
-            } else {
-                dom.container.appendChild(buildGrid(data));
-            }
-            setDirty(false);
-            lastActiveCell = null;
-            currentStateStr = getSnapshot();
-
-            requestAnimationFrame(() => {
-                // Update all duplicate key highlighting after DOM is ready
-                updateAllDuplicateKeys();
-
-                // Auto-focus first focusable element (skipped during undo/redo)
-                if (!skipAutoFocus) {
-                    const firstKey = dom.container.querySelector(
-                        ".cell.key span[contenteditable]"
-                    );
-                    const firstVal = dom.container.querySelector(
-                        ".cell.value[contenteditable]"
-                    );
-                    const firstComplex = dom.container.querySelector(".cell.value.complex");
-                    const target = firstKey || firstVal || firstComplex;
-                    if (target) {
-                        target.focus();
-                        announce("JSON data loaded. Focus is on the first element.");
-                    }
-                }
-            });
+        // 2. Fall back to internal clipboard
+        if (pastedValue === null && clipboardData !== null) {
+            pastedValue = JSON.parse(JSON.stringify(clipboardData));
         }
 
-        function buildGrid(item) {
+        if (pastedValue === null) return;
+
+        commitAndExecute(() => insertRow(activeEl, pastedValue));
+
+        const typeLabel = Array.isArray(pastedValue) ? "array" : "object";
+        announce("Pasted " + typeLabel + " from clipboard.");
+    }
+
+    // --- LOGIC: RENDERER ---
+
+    function render(data, skipAutoFocus = false) {
+        dom.container.innerHTML = "";
+        if (typeof data !== "object" || data === null) {
+            // Root is primitive
             const grid = document.createElement("div");
             grid.className = "json-grid";
-            const isArray = Array.isArray(item);
-            grid.dataset.type = isArray ? "array" : "object";
-
-            // ARIA: Set role and label for accessibility
-            grid.setAttribute("role", "grid");
-            grid.setAttribute(
-                "aria-label",
-                isArray
-                    ? "Array with " + Object.keys(item).length + " items"
-                    : "Object with " + Object.keys(item).length + " properties"
-            );
-
-            Object.keys(item).forEach((key) => {
-                appendRow(grid, key, item[key], isArray);
-            });
-
-            // Check for duplicate keys after all rows are added
-            if (!isArray) {
-                updateDuplicateKeys(grid);
-            }
-
-            return grid;
+            grid.innerHTML = "<div class=\"cell key\">root</div>";
+            const valCell = createValCell(data);
+            grid.appendChild(valCell);
+            dom.container.appendChild(grid);
+        } else {
+            dom.container.appendChild(buildGrid(data));
         }
+        setDirty(false);
+        lastActiveCell = null;
+        currentStateStr = getSnapshot();
 
-        function appendRow(grid, key, val, isArray) {
-            // 1. Key Cell
-            const keyCell = document.createElement("div");
-            keyCell.className = "cell key";
+        requestAnimationFrame(() => {
+            // Update all duplicate key highlighting after DOM is ready
+            updateAllDuplicateKeys();
 
-            if (isArray) {
-                keyCell.classList.add("is-index");
-            }
-
-            const keySpan = document.createElement("span");
-            keySpan.textContent = key;
-            if (!isArray) {
-                keySpan.contentEditable = true;
-                keySpan.addEventListener("input", function () {
-                    setDirty(true);
-                    // Find parent grid dynamically to avoid stale closure reference
-                    const parentGrid = this.closest(".json-grid");
-                    updateDuplicateKeys(parentGrid);
-                });
-            }
-            keyCell.appendChild(keySpan);
-            keyCell.setAttribute("role", "gridcell");
-            keyCell.setAttribute("aria-label", isArray ? "Index " + key : "Property: " + key);
-            grid.appendChild(keyCell);
-
-            // 2. Value Cell
-            if (val !== null && typeof val === "object") {
-                const valCell = document.createElement("div");
-                valCell.className = "cell value complex";
-                valCell.tabIndex = 0; // Allow focus for keyboard navigation
-                valCell.setAttribute("role", "gridcell");
-                valCell.setAttribute(
-                    "aria-label",
-                    Array.isArray(val) ? "Nested array" : "Nested object"
+            // Auto-focus first focusable element (skipped during undo/redo)
+            if (!skipAutoFocus) {
+                const firstKey = dom.container.querySelector(
+                    ".cell.key span[contenteditable]",
                 );
-                valCell.appendChild(buildGrid(val));
-                grid.appendChild(valCell);
-            } else {
-                grid.appendChild(createValCell(val));
-            }
-
-            // Check for duplicate keys after adding row (only for objects)
-            if (!isArray) {
-                updateDuplicateKeys(grid);
-            }
-        }
-
-        // Update duplicate key highlighting for all keys in a grid
-        function updateDuplicateKeys(grid) {
-            if (!grid || grid.dataset.type === "array") return;
-
-            // Get direct child key cells only
-            const keyCells = Array.from(grid.children).filter(
-                (el) => el.classList.contains("key") && !el.classList.contains("is-index")
-            );
-            const keyMap = new Map();
-
-            // Count occurrences of each key
-            keyCells.forEach((cell) => {
-                const keyText = cell.querySelector("span")?.textContent || "";
-                if (!keyMap.has(keyText)) {
-                    keyMap.set(keyText, []);
+                const firstVal = dom.container.querySelector(
+                    ".cell.value[contenteditable]",
+                );
+                const firstComplex = dom.container.querySelector(".cell.value.complex");
+                const target = firstKey || firstVal || firstComplex;
+                if (target) {
+                    target.focus();
+                    announce("JSON data loaded. Focus is on the first element.");
                 }
-                keyMap.get(keyText).push(cell);
-            });
+            }
+        });
+    }
 
-            // Mark/unmark duplicates
-            keyCells.forEach((cell) => {
-                const keyText = cell.querySelector("span")?.textContent || "";
-                const occurrences = keyMap.get(keyText) || [];
-                if (occurrences.length > 1) {
-                    cell.classList.add("duplicate-key");
-                } else {
-                    cell.classList.remove("duplicate-key");
-                }
-            });
+    function buildGrid(item) {
+        const grid = document.createElement("div");
+        grid.className = "json-grid";
+        const isArray = Array.isArray(item);
+        grid.dataset.type = isArray ? "array" : "object";
+
+        // ARIA: Set role and label for accessibility
+        grid.setAttribute("role", "grid");
+        grid.setAttribute(
+            "aria-label",
+            isArray
+                ? "Array with " + Object.keys(item).length + " items"
+                : "Object with " + Object.keys(item).length + " properties",
+        );
+
+        Object.keys(item).forEach((key) => {
+            appendRow(grid, key, item[key], isArray);
+        });
+
+        // Check for duplicate keys after all rows are added
+        if (!isArray) {
+            updateDuplicateKeys(grid);
         }
 
-        // Update duplicate keys for all object grids in the container
-        function updateAllDuplicateKeys() {
-            const grids = dom.container.querySelectorAll(".json-grid[data-type=\"object\"]");
-            grids.forEach((grid) => updateDuplicateKeys(grid));
+        return grid;
+    }
+
+    function appendRow(grid, key, val, isArray) {
+        // 1. Key Cell
+        const keyCell = document.createElement("div");
+        keyCell.className = "cell key";
+
+        if (isArray) {
+            keyCell.classList.add("is-index");
         }
 
-        function createValCell(val) {
+        const keySpan = document.createElement("span");
+        keySpan.textContent = key;
+        if (!isArray) {
+            keySpan.contentEditable = true;
+            keySpan.addEventListener("input", function() {
+                setDirty(true);
+                // Find parent grid dynamically to avoid stale closure reference
+                const parentGrid = this.closest(".json-grid");
+                updateDuplicateKeys(parentGrid);
+            });
+        }
+        keyCell.appendChild(keySpan);
+        keyCell.setAttribute("role", "gridcell");
+        keyCell.setAttribute("aria-label", isArray ? "Index " + key : "Property: " + key);
+        grid.appendChild(keyCell);
+
+        // 2. Value Cell
+        if (val !== null && typeof val === "object") {
             const valCell = document.createElement("div");
-            valCell.className = "cell value";
-
-            // In Free Mode, display strings with JSON representation (with quotes)
-            let displayVal = val;
-            if (!isTypeSafeMode() && typeof val === "string") {
-                displayVal = JSON.stringify(val); // This adds quotes and escapes properly
-            }
-
-            // Convert newlines to <br> for proper display in contenteditable
-            let html = escapeHtml(String(displayVal)).replace(/\n/g, "<br>");
-            // Add extra <br> if content ends with newline - browsers collapse trailing <br>
-            // When scraping, we remove this trailing <br>, so round-trip is preserved
-            if (String(displayVal).endsWith("\n")) {
-                html += "<br>";
-            }
-            valCell.innerHTML = html;
-            valCell.contentEditable = true;
+            valCell.className = "cell value complex";
+            valCell.tabIndex = 0; // Allow focus for keyboard navigation
             valCell.setAttribute("role", "gridcell");
-
-            stylePrimitive(valCell, val);
-
-            // Input Listeners
-            valCell.addEventListener("input", () => setDirty(true));
-            valCell.addEventListener("keydown", handleValueKeydown);
-
-            return valCell;
+            valCell.setAttribute(
+                "aria-label",
+                Array.isArray(val) ? "Nested array" : "Nested object",
+            );
+            valCell.appendChild(buildGrid(val));
+            grid.appendChild(valCell);
+        } else {
+            grid.appendChild(createValCell(val));
         }
 
-        // Escape HTML special characters
-        function escapeHtml(str) {
-            const div = document.createElement("div");
-            div.textContent = str;
-            return div.innerHTML;
+        // Check for duplicate keys after adding row (only for objects)
+        if (!isArray) {
+            updateDuplicateKeys(grid);
         }
+    }
 
-        // Convert HTML content from contenteditable back to plain text
-        // Browser behavior: A trailing <br> in contenteditable is a cursor placeholder, not an extra line
-        function htmlToText(el) {
-            // Clone to avoid modifying the original
-            const clone = el.cloneNode(true);
+    // Update duplicate key highlighting for all keys in a grid
+    function updateDuplicateKeys(grid) {
+        if (!grid || grid.dataset.type === "array") return;
 
-            // Remove ONE trailing <br> - it's just a cursor placeholder added by the browser
-            // When you press Enter at end of line, browser adds TWO <br>: one for the newline, one for cursor
-            const lastChild = clone.lastChild;
-            if (lastChild && lastChild.nodeName === "BR") {
-                lastChild.remove();
+        // Get direct child key cells only
+        const keyCells = Array.from(grid.children).filter(
+            (el) => el.classList.contains("key") && !el.classList.contains("is-index"),
+        );
+        const keyMap = new Map();
+
+        // Count occurrences of each key
+        keyCells.forEach((cell) => {
+            const keyText = cell.querySelector("span")?.textContent || "";
+            if (!keyMap.has(keyText)) {
+                keyMap.set(keyText, []);
             }
+            keyMap.get(keyText).push(cell);
+        });
 
-            // Handle block elements (div, p) - browser may wrap lines in these
-            clone.querySelectorAll("div, p").forEach((block) => {
-                // Remove placeholder <br> that's the only child of a block
-                if (block.childNodes.length === 1 && block.firstChild.nodeName === "BR") {
-                    block.firstChild.remove();
-                }
-                // Add newline before the block only if previous sibling is NOT a <br>
-                // (if it's a <br>, that already represents the line break)
-                const prev = block.previousSibling;
-                if (prev && prev.nodeName !== "BR") {
-                    block.insertAdjacentText("beforebegin", "\n");
-                }
-            });
-
-            // Replace remaining <br> with newlines
-            clone.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
-
-            return clone.textContent;
-        }
-
-        function stylePrimitive(cell, val) {
-            // Remove all type classes first
-            cell.classList.remove("type-null", "type-num", "type-bool", "type-str");
-
-            if (val === null) {
-                cell.classList.add("type-null");
-                cell.dataset.explicitType = "null";
-            } else if (typeof val === "number") {
-                cell.classList.add("type-num");
-                cell.dataset.explicitType = "number";
-            } else if (typeof val === "boolean") {
-                cell.classList.add("type-bool");
-                cell.dataset.explicitType = "boolean";
+        // Mark/unmark duplicates
+        keyCells.forEach((cell) => {
+            const keyText = cell.querySelector("span")?.textContent || "";
+            const occurrences = keyMap.get(keyText) || [];
+            if (occurrences.length > 1) {
+                cell.classList.add("duplicate-key");
             } else {
-                // Default to string for any other type
-                cell.classList.add("type-str");
-                cell.dataset.explicitType = "string";
+                cell.classList.remove("duplicate-key");
             }
+        });
+    }
+
+    // Update duplicate keys for all object grids in the container
+    function updateAllDuplicateKeys() {
+        const grids = dom.container.querySelectorAll(".json-grid[data-type=\"object\"]");
+        grids.forEach((grid) => updateDuplicateKeys(grid));
+    }
+
+    function createValCell(val) {
+        const valCell = document.createElement("div");
+        valCell.className = "cell value";
+
+        // In Free Mode, display strings with JSON representation (with quotes)
+        let displayVal = val;
+        if (!isTypeSafeMode() && typeof val === "string") {
+            displayVal = JSON.stringify(val); // This adds quotes and escapes properly
         }
 
-        // --- LOGIC: INPUT VALIDATION & TRAPS ---
+        // Convert newlines to <br> for proper display in contenteditable
+        let html = escapeHtml(String(displayVal)).replace(/\n/g, "<br>");
+        // Add extra <br> if content ends with newline - browsers collapse trailing <br>
+        // When scraping, we remove this trailing <br>, so round-trip is preserved
+        if (String(displayVal).endsWith("\n")) {
+            html += "<br>";
+        }
+        valCell.innerHTML = html;
+        valCell.contentEditable = true;
+        valCell.setAttribute("role", "gridcell");
 
-        // Override for isTypeSafeMode() during mode switching.
-        // null = use toggle, true/false = force specific mode.
-        let _typeSafeModeOverride = null;
+        stylePrimitive(valCell, val);
 
-        // Check if we're in Type-Safe (Strict) mode
-        function isTypeSafeMode() {
-            if (_typeSafeModeOverride !== null) return _typeSafeModeOverride;
-            const toggle = document.getElementById("type-safe-toggle");
-            return toggle && toggle.checked;
+        // Input Listeners
+        valCell.addEventListener("input", () => setDirty(true));
+        valCell.addEventListener("keydown", handleValueKeydown);
+
+        return valCell;
+    }
+
+    // Escape HTML special characters
+    function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // Convert HTML content from contenteditable back to plain text
+    // Browser behavior: A trailing <br> in contenteditable is a cursor placeholder, not an extra line
+    function htmlToText(el) {
+        // Clone to avoid modifying the original
+        const clone = el.cloneNode(true);
+
+        // Remove ONE trailing <br> - it's just a cursor placeholder added by the browser
+        // When you press Enter at end of line, browser adds TWO <br>: one for the newline, one for cursor
+        const lastChild = clone.lastChild;
+        if (lastChild && lastChild.nodeName === "BR") {
+            lastChild.remove();
         }
 
-        function handleValueKeydown(e) {
-            const txt = e.target.innerText;
-            const explicitType = e.target.dataset.explicitType;
-            const isBool = txt === "true" || txt === "false";
-            const isNull = txt === "null";
+        // Handle block elements (div, p) - browser may wrap lines in these
+        clone.querySelectorAll("div, p").forEach((block) => {
+            // Remove placeholder <br> that's the only child of a block
+            if (block.childNodes.length === 1 && block.firstChild.nodeName === "BR") {
+                block.firstChild.remove();
+            }
+            // Add newline before the block only if previous sibling is NOT a <br>
+            // (if it's a <br>, that already represents the line break)
+            const prev = block.previousSibling;
+            if (prev && prev.nodeName !== "BR") {
+                block.insertAdjacentText("beforebegin", "\n");
+            }
+        });
 
-            // Allow shortcuts (Ctrl+Shift+Num) to always pass to change type
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey) return;
+        // Replace remaining <br> with newlines
+        clone.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
 
-            // Allow navigation (but Enter only for strings in Strict mode)
+        return clone.textContent;
+    }
+
+    function stylePrimitive(cell, val) {
+        // Remove all type classes first
+        cell.classList.remove("type-null", "type-num", "type-bool", "type-str");
+
+        if (val === null) {
+            cell.classList.add("type-null");
+            cell.dataset.explicitType = "null";
+        } else if (typeof val === "number") {
+            cell.classList.add("type-num");
+            cell.dataset.explicitType = "number";
+        } else if (typeof val === "boolean") {
+            cell.classList.add("type-bool");
+            cell.dataset.explicitType = "boolean";
+        } else {
+            // Default to string for any other type
+            cell.classList.add("type-str");
+            cell.dataset.explicitType = "string";
+        }
+    }
+
+    // --- LOGIC: INPUT VALIDATION & TRAPS ---
+
+    // Override for isTypeSafeMode() during mode switching.
+    // null = use toggle, true/false = force specific mode.
+    let _typeSafeModeOverride = null;
+
+    // Check if we're in Type-Safe (Strict) mode
+    function isTypeSafeMode() {
+        if (_typeSafeModeOverride !== null) return _typeSafeModeOverride;
+        const toggle = document.getElementById("type-safe-toggle");
+        return toggle && toggle.checked;
+    }
+
+    function handleValueKeydown(e) {
+        const txt = e.target.innerText;
+        const explicitType = e.target.dataset.explicitType;
+        const isBool = txt === "true" || txt === "false";
+        const isNull = txt === "null";
+
+        // Allow shortcuts (Ctrl+Shift+Num) to always pass to change type
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) return;
+
+        // Allow navigation (but Enter only for strings in Strict mode)
+        if (
+            ["Tab", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Escape"].includes(
+                e.key,
+            )
+        )
+            return;
+
+        // FREE MODE: Allow all input, we'll validate on blur/input
+        if (!isTypeSafeMode()) {
+            // In Free Mode, allow Enter key in all cells (except for multi-line handling)
+            return;
+        }
+
+        // STRICT MODE BELOW
+
+        // Enter: only allow for strings
+        if (e.key === "Enter" && explicitType !== "string") {
+            e.preventDefault();
+            return;
+        }
+
+        // Strict Trap for Boolean and Null
+        if (isBool || isNull) {
+            e.preventDefault();
+            // Allow toggling booleans with T/F
+            if (isBool) {
+                if (e.key.toLowerCase() === "t") {
+                    commitAndExecute(() => updatePrimitive(e.target, true));
+                }
+                if (e.key.toLowerCase() === "f") {
+                    commitAndExecute(() => updatePrimitive(e.target, false));
+                }
+            }
+            // Allow resetting null with N
+            if (isNull && e.key.toLowerCase() === "n") {
+                commitAndExecute(() => updatePrimitive(e.target, null));
+            }
+            return;
+        }
+
+        // Strict Trap for Numbers (only if explicitly typed as number)
+        if (explicitType === "number") {
+            // Allow: Backspace, Delete
+            if (["Backspace", "Delete"].includes(e.key)) return;
+
+            // Allow: Ctrl+A/C/V/X/Z
             if (
-                ["Tab", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Escape"].includes(
-                    e.key
-                )
+                (e.ctrlKey || e.metaKey) &&
+                ["a", "c", "v", "x", "z"].includes(e.key.toLowerCase())
             )
                 return;
 
-            // FREE MODE: Allow all input, we'll validate on blur/input
-            if (!isTypeSafeMode()) {
-                // In Free Mode, allow Enter key in all cells (except for multi-line handling)
-                return;
-            }
+            // Allow: Numbers 0-9
+            if (/^[0-9]$/.test(e.key)) return;
 
-            // STRICT MODE BELOW
+            // Contextual keys: validate against current content to prevent corrupt states.
+            // cur is the text before this keystroke (cursor position is not tracked, so
+            // these checks are conservative but guarantee no invalid data is silently produced).
+            const cur = e.target.innerText.trim();
+            // "." only once and only before any exponent
+            if (e.key === "." && /^-?[0-9]+$/.test(cur)) return;
+            // "e"/"E" only once and only after a complete integer or decimal
+            if ((e.key === "e" || e.key === "E") && /^-?[0-9]+(\.[0-9]+)?$/.test(cur)) return;
+            // "-" as leading sign on empty cell, or immediately after "e"/"E"
+            if (e.key === "-" && (cur === "" || /[eE]$/.test(cur))) return;
+            // "+" only as exponent sign immediately after "e"/"E"
+            if (e.key === "+" && /[eE]$/.test(cur)) return;
 
-            // Enter: only allow for strings
-            if (e.key === "Enter" && explicitType !== "string") {
-                e.preventDefault();
-                return;
-            }
+            e.preventDefault();
+        }
+    }
 
-            // Strict Trap for Boolean and Null
-            if (isBool || isNull) {
-                e.preventDefault();
-                // Allow toggling booleans with T/F
-                if (isBool) {
-                    if (e.key.toLowerCase() === "t") {
-                        commitAndExecute(() => updatePrimitive(e.target, true));
-                    }
-                    if (e.key.toLowerCase() === "f") {
-                        commitAndExecute(() => updatePrimitive(e.target, false));
-                    }
-                }
-                // Allow resetting null with N
-                if (isNull && e.key.toLowerCase() === "n") {
-                    commitAndExecute(() => updatePrimitive(e.target, null));
-                }
-                return;
-            }
+    // --- FREE MODE: Auto-conversion and validation ---
 
-            // Strict Trap for Numbers (only if explicitly typed as number)
-            if (explicitType === "number") {
-                // Allow: Backspace, Delete
-                if (["Backspace", "Delete"].includes(e.key)) return;
+    function tryParseFreeModeValue(text) {
+        // Try to parse as JSON
+        const trimmed = text.trim();
 
-                // Allow: Ctrl+A/C/V/X/Z
-                if (
-                    (e.ctrlKey || e.metaKey) &&
-                    ["a", "c", "v", "x", "z"].includes(e.key.toLowerCase())
-                )
-                    return;
+        // Handle special cases
+        if (trimmed === "null") return { valid: true, value: null, type: "null" };
+        if (trimmed === "true") return { valid: true, value: true, type: "boolean" };
+        if (trimmed === "false") return { valid: true, value: false, type: "boolean" };
 
-                // Allow: Numbers 0-9
-                if (/^[0-9]$/.test(e.key)) return;
-
-                // Contextual keys: validate against current content to prevent corrupt states.
-                // cur is the text before this keystroke (cursor position is not tracked, so
-                // these checks are conservative but guarantee no invalid data is silently produced).
-                const cur = e.target.innerText.trim();
-                // "." only once and only before any exponent
-                if (e.key === "." && /^-?[0-9]+$/.test(cur)) return;
-                // "e"/"E" only once and only after a complete integer or decimal
-                if ((e.key === "e" || e.key === "E") && /^-?[0-9]+(\.[0-9]+)?$/.test(cur)) return;
-                // "-" as leading sign on empty cell, or immediately after "e"/"E"
-                if (e.key === "-" && (cur === "" || /[eE]$/.test(cur))) return;
-                // "+" only as exponent sign immediately after "e"/"E"
-                if (e.key === "+" && /[eE]$/.test(cur)) return;
-
-                e.preventDefault();
+        // Try number (integers, floats, and scientific notation)
+        if (/^-?[0-9]/.test(trimmed)) {
+            try {
+                const parsed = JSON.parse(trimmed);
+                if (typeof parsed === "number") return {
+                    valid: true,
+                    value: parsed,
+                    type: "number",
+                };
+            } catch (e) {
+                // Not a valid JSON number
             }
         }
 
-        // --- FREE MODE: Auto-conversion and validation ---
-
-        function tryParseFreeModeValue(text) {
-            // Try to parse as JSON
-            const trimmed = text.trim();
-
-            // Handle special cases
-            if (trimmed === "null") return { valid: true, value: null, type: "null" };
-            if (trimmed === "true") return { valid: true, value: true, type: "boolean" };
-            if (trimmed === "false") return { valid: true, value: false, type: "boolean" };
-
-            // Try number (integers, floats, and scientific notation)
-            if (/^-?[0-9]/.test(trimmed)) {
-                try {
-                    const parsed = JSON.parse(trimmed);
-                    if (typeof parsed === "number") return { valid: true, value: parsed, type: "number" };
-                } catch (e) {
-                    // Not a valid JSON number
+        // Try string (must be wrapped in double quotes)
+        if (trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
+            try {
+                const parsed = JSON.parse(trimmed);
+                if (typeof parsed === "string") {
+                    return { valid: true, value: parsed, type: "string" };
                 }
+            } catch (e) {
+                // Invalid escape sequences, etc.
+                return { valid: false };
             }
-
-            // Try string (must be wrapped in double quotes)
-            if (trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
-                try {
-                    const parsed = JSON.parse(trimmed);
-                    if (typeof parsed === "string") {
-                        return { valid: true, value: parsed, type: "string" };
-                    }
-                } catch (e) {
-                    // Invalid escape sequences, etc.
-                    return { valid: false };
-                }
-            }
-
-            // Try array or object
-            if (
-                (trimmed.startsWith("[") && trimmed.endsWith("]")) ||
-                (trimmed.startsWith("{") && trimmed.endsWith("}"))
-            ) {
-                try {
-                    const parsed = JSON.parse(trimmed);
-                    const type = Array.isArray(parsed) ? "array" : "object";
-                    return { valid: true, value: parsed, type: type };
-                } catch (e) {
-                    return { valid: false };
-                }
-            }
-
-            // Not valid JSON
-            return { valid: false };
         }
 
-        function handleFreeModeInput(e) {
-            if (isTypeSafeMode()) return;
+        // Try array or object
+        if (
+            (trimmed.startsWith("[") && trimmed.endsWith("]")) ||
+            (trimmed.startsWith("{") && trimmed.endsWith("}"))
+        ) {
+            try {
+                const parsed = JSON.parse(trimmed);
+                const type = Array.isArray(parsed) ? "array" : "object";
+                return { valid: true, value: parsed, type: type };
+            } catch (e) {
+                return { valid: false };
+            }
+        }
 
-            const cell = e.target;
-            if (!cell.classList.contains("value") || cell.classList.contains("complex")) return;
+        // Not valid JSON
+        return { valid: false };
+    }
 
-            const text = cell.innerText;
-            const result = tryParseFreeModeValue(text);
+    function handleFreeModeInput(e) {
+        if (isTypeSafeMode()) return;
 
-            if (result.valid) {
-                cell.classList.remove("invalid-json");
+        const cell = e.target;
+        if (!cell.classList.contains("value") || cell.classList.contains("complex")) return;
 
-                // If it's a complex type (array/object), we need to replace the cell
-                if (result.type === "array" || result.type === "object") {
-                    // Don't replace immediately on every keystroke - check if complete
-                    // This happens when the closing bracket is entered
-                    replaceWithComplexType(cell, result.value);
-                    return;
+        const text = cell.innerText;
+        const result = tryParseFreeModeValue(text);
+
+        if (result.valid) {
+            cell.classList.remove("invalid-json");
+
+            // If it's a complex type (array/object), we need to replace the cell
+            if (result.type === "array" || result.type === "object") {
+                // Don't replace immediately on every keystroke - check if complete
+                // This happens when the closing bracket is entered
+                replaceWithComplexType(cell, result.value);
+                return;
+            }
+
+            // Update styling for primitives without replacing content
+            stylePrimitive(cell, result.value);
+        } else {
+            // Mark as invalid
+            cell.classList.add("invalid-json");
+        }
+
+        updateInvalidCellState();
+    }
+
+    function handleFreeModeBlur(e) {
+        if (isTypeSafeMode()) return;
+
+        const cell = e.target;
+        if (!cell.classList.contains("value") || cell.classList.contains("complex")) return;
+
+        const text = cell.innerText;
+        const result = tryParseFreeModeValue(text);
+
+        if (result.valid) {
+            cell.classList.remove("invalid-json");
+
+            // Update explicit type for scraping
+            if (result.type === "null") {
+                cell.dataset.explicitType = "null";
+            } else if (result.type === "boolean") {
+                cell.dataset.explicitType = "boolean";
+            } else if (result.type === "number") {
+                cell.dataset.explicitType = "number";
+            } else if (result.type === "string") {
+                cell.dataset.explicitType = "string";
+                // Keep the JSON representation with quotes - don't strip them
+            }
+
+            stylePrimitive(cell, result.value);
+        }
+
+        updateInvalidCellState();
+    }
+
+    function replaceWithComplexType(cell, value) {
+        const grid = cell.parentElement;
+
+        // Create new value cell with the complex type
+        const newValCell = document.createElement("div");
+        newValCell.className = "cell value complex";
+        newValCell.tabIndex = 0;
+        newValCell.setAttribute("role", "gridcell");
+        newValCell.setAttribute(
+            "aria-label",
+            Array.isArray(value) ? "Nested array" : "Nested object",
+        );
+        newValCell.appendChild(buildGrid(value));
+
+        // Replace the old cell
+        grid.insertBefore(newValCell, cell.nextSibling);
+        cell.remove();
+
+        // Check if the new structure is empty
+        const innerGrid = newValCell.querySelector(".json-grid");
+        const isEmpty = innerGrid && innerGrid.children.length === 0;
+
+        if (isEmpty) {
+            // Focus the new empty complex cell itself
+            newValCell.focus();
+        } else {
+            // Focus the next row after the new structure
+            // Find the next key cell after our new value cell
+            const nextKey = newValCell.nextElementSibling;
+            if (nextKey && nextKey.classList.contains("key")) {
+                const nextVal = nextKey.nextElementSibling;
+                if (nextVal) {
+                    nextVal.focus();
                 }
-
-                // Update styling for primitives without replacing content
-                stylePrimitive(cell, result.value);
             } else {
-                // Mark as invalid
-                cell.classList.add("invalid-json");
-            }
-
-            updateInvalidCellState();
-        }
-
-        function handleFreeModeBlur(e) {
-            if (isTypeSafeMode()) return;
-
-            const cell = e.target;
-            if (!cell.classList.contains("value") || cell.classList.contains("complex")) return;
-
-            const text = cell.innerText;
-            const result = tryParseFreeModeValue(text);
-
-            if (result.valid) {
-                cell.classList.remove("invalid-json");
-
-                // Update explicit type for scraping
-                if (result.type === "null") {
-                    cell.dataset.explicitType = "null";
-                } else if (result.type === "boolean") {
-                    cell.dataset.explicitType = "boolean";
-                } else if (result.type === "number") {
-                    cell.dataset.explicitType = "number";
-                } else if (result.type === "string") {
-                    cell.dataset.explicitType = "string";
-                    // Keep the JSON representation with quotes - don't strip them
-                }
-
-                stylePrimitive(cell, result.value);
-            }
-
-            updateInvalidCellState();
-        }
-
-        function replaceWithComplexType(cell, value) {
-            const grid = cell.parentElement;
-
-            // Create new value cell with the complex type
-            const newValCell = document.createElement("div");
-            newValCell.className = "cell value complex";
-            newValCell.tabIndex = 0;
-            newValCell.setAttribute("role", "gridcell");
-            newValCell.setAttribute(
-                "aria-label",
-                Array.isArray(value) ? "Nested array" : "Nested object"
-            );
-            newValCell.appendChild(buildGrid(value));
-
-            // Replace the old cell
-            grid.insertBefore(newValCell, cell.nextSibling);
-            cell.remove();
-
-            // Check if the new structure is empty
-            const innerGrid = newValCell.querySelector(".json-grid");
-            const isEmpty = innerGrid && innerGrid.children.length === 0;
-
-            if (isEmpty) {
-                // Focus the new empty complex cell itself
+                // Focus the new complex cell itself
                 newValCell.focus();
-            } else {
-                // Focus the next row after the new structure
-                // Find the next key cell after our new value cell
-                const nextKey = newValCell.nextElementSibling;
-                if (nextKey && nextKey.classList.contains("key")) {
-                    const nextVal = nextKey.nextElementSibling;
-                    if (nextVal) {
-                        nextVal.focus();
-                    }
-                } else {
-                    // Focus the new complex cell itself
-                    newValCell.focus();
-                }
-            }
-
-            setDirty(true);
-            updateInvalidCellState();
-        }
-
-        function updateInvalidCellState() {
-            const invalidCells = dom.container.querySelectorAll(".cell.invalid-json");
-            hasInvalidCells = invalidCells.length > 0;
-
-            const downloadBtn = document.getElementById("btn-download");
-            const modalWarning = document.getElementById("modal-warning");
-
-            if (hasInvalidCells) {
-                downloadBtn.classList.add("save-blocked");
-                if (modalWarning) modalWarning.classList.remove("hidden");
-            } else {
-                downloadBtn.classList.remove("save-blocked");
-                if (modalWarning) modalWarning.classList.add("hidden");
             }
         }
 
-        function updatePrimitive(cell, newVal) {
-            cell.innerText = String(newVal);
-            cell.dataset.beforeInput = cell.innerText;
-            stylePrimitive(cell, newVal);
-            setDirty(true);
-            saveToLocalStorage();
+        setDirty(true);
+        updateInvalidCellState();
+    }
+
+    function updateInvalidCellState() {
+        const invalidCells = dom.container.querySelectorAll(".cell.invalid-json");
+        hasInvalidCells = invalidCells.length > 0;
+
+        const downloadBtn = document.getElementById("btn-download");
+        const modalWarning = document.getElementById("modal-warning");
+
+        if (hasInvalidCells) {
+            downloadBtn.classList.add("save-blocked");
+            if (modalWarning) modalWarning.classList.remove("hidden");
+        } else {
+            downloadBtn.classList.remove("save-blocked");
+            if (modalWarning) modalWarning.classList.add("hidden");
+        }
+    }
+
+    function updatePrimitive(cell, newVal) {
+        cell.innerText = String(newVal);
+        cell.dataset.beforeInput = cell.innerText;
+        stylePrimitive(cell, newVal);
+        setDirty(true);
+        saveToLocalStorage();
+    }
+
+    function insertRow(activeEl, presetValue) {
+        const cell = activeEl.closest(".cell");
+        if (!cell) return;
+
+        // Handle insertion inside empty complex object
+        if (cell.classList.contains("complex")) {
+            const innerGrid = cell.querySelector(".json-grid");
+            if (innerGrid && innerGrid.children.length === 0) {
+                const isArr = innerGrid.dataset.type === "array";
+                const newKey = isArr ? "0" : "key";
+                const newVal = presetValue !== undefined ? presetValue : null;
+                appendRow(innerGrid, newKey, newVal, isArr);
+
+                // Focus new element
+                const newRowV = innerGrid.lastElementChild; // Value
+                const newRowK = newRowV.previousElementSibling; // Key
+
+                if (isArr) newRowV.focus();
+                else newRowK.querySelector("span").focus();
+
+                setDirty(true);
+                updateAllDuplicateKeys();
+                return;
+            }
         }
 
-        function insertRow(activeEl, presetValue) {
-            const cell = activeEl.closest(".cell");
-            if (!cell) return;
+        const grid = cell.parentElement;
+        const isArray = grid.dataset.type === "array";
 
-            // Handle insertion inside empty complex object
-            if (cell.classList.contains("complex")) {
-                const innerGrid = cell.querySelector(".json-grid");
-                if (innerGrid && innerGrid.children.length === 0) {
-                    const isArr = innerGrid.dataset.type === "array";
-                    const newKey = isArr ? "0" : "key";
-                    const newVal = presetValue !== undefined ? presetValue : null;
-                    appendRow(innerGrid, newKey, newVal, isArr);
+        // Determine insertion point
+        let refNode;
+        if (cell.classList.contains("key"))
+            refNode = cell.nextElementSibling.nextElementSibling;
+        else refNode = cell.nextElementSibling;
 
-                    // Focus new element
-                    const newRowV = innerGrid.lastElementChild; // Value
-                    const newRowK = newRowV.previousElementSibling; // Key
+        const newKey = isArray ? "0" : "key";
+        const newVal = presetValue !== undefined ? presetValue : null;
 
-                    if (isArr) newRowV.focus();
-                    else newRowK.querySelector("span").focus();
+        // Create temp container to generate nodes
+        const tempGrid = document.createElement("div");
+        appendRow(tempGrid, newKey, newVal, isArray);
 
-                    setDirty(true);
-                    updateAllDuplicateKeys();
-                    return;
-                }
-            }
+        const k = tempGrid.children[0];
+        const v = tempGrid.children[1];
 
-            const grid = cell.parentElement;
-            const isArray = grid.dataset.type === "array";
+        grid.insertBefore(k, refNode);
+        grid.insertBefore(v, refNode);
 
-            // Determine insertion point
-            let refNode;
-            if (cell.classList.contains("key"))
-                refNode = cell.nextElementSibling.nextElementSibling;
-            else refNode = cell.nextElementSibling;
-
-            const newKey = isArray ? "0" : "key";
-            const newVal = presetValue !== undefined ? presetValue : null;
-
-            // Create temp container to generate nodes
-            const tempGrid = document.createElement("div");
-            appendRow(tempGrid, newKey, newVal, isArray);
-
-            const k = tempGrid.children[0];
-            const v = tempGrid.children[1];
-
-            grid.insertBefore(k, refNode);
-            grid.insertBefore(v, refNode);
-
-            if (isArray) {
-                reindexArray(grid);
-                v.focus();
-            } else {
-                const s = k.querySelector("span");
-                if (s) {
-                    s.focus();
-                    document.execCommand("selectAll", false, null);
-                }
-            }
-            setDirty(true);
-            updateAllDuplicateKeys();
-        }
-
-        function deleteRow(activeEl) {
-            const cell = activeEl.closest(".cell");
-            if (!cell) return;
-            const grid = cell.parentElement;
-            const isArray = grid.dataset.type === "array";
-
-            // Identify pair
-            let currKey, currVal;
-            if (cell.classList.contains("key")) {
-                currKey = cell;
-                currVal = cell.nextElementSibling;
-            } else {
-                currVal = cell;
-                currKey = cell.previousElementSibling;
-            }
-
-            // Calculate focus target before removal
-            let targetEl = null;
-            const isKeyColumn = cell.classList.contains("key");
-            const nextKey = currVal.nextElementSibling;
-
-            if (nextKey) {
-                targetEl = isKeyColumn ? nextKey : nextKey.nextElementSibling;
-            } else {
-                const prevVal = currKey.previousElementSibling;
-                if (prevVal) {
-                    targetEl = isKeyColumn ? prevVal.previousElementSibling : prevVal;
-                } else {
-                    // Fallback to parent container
-                    const parentVal = grid.closest(".cell.value");
-                    if (parentVal) targetEl = parentVal;
-                }
-            }
-
-            currKey.remove();
-            currVal.remove();
-
-            if (isArray) reindexArray(grid);
-
-            // Focus the target, resolving key cell divs to their editable span
-            if (targetEl) {
-                if (
-                    targetEl.classList.contains("key") &&
-                    !targetEl.classList.contains("is-index")
-                ) {
-                    const span = targetEl.querySelector("span[contenteditable]");
-                    if (span) span.focus();
-                    else targetEl.focus();
-                } else {
-                    targetEl.focus();
-                }
-            }
-            setDirty(true);
-        }
-
-        function moveRow(keyCell, dir) {
-            const valCell = keyCell.nextElementSibling;
-            const grid = keyCell.parentElement;
-
-            // Need at least 2 rows (4 elements) to move
-            if (grid.children.length < 4) return;
-
-            // Capture focus state
-            const active = document.activeElement;
-            const isDescendant = keyCell.contains(active) || valCell.contains(active);
-
-            if (dir === -1) {
-                // Up
-                const prevVal = keyCell.previousElementSibling;
-                if (prevVal) {
-                    const prevKey = prevVal.previousElementSibling;
-                    grid.insertBefore(keyCell, prevKey);
-                    grid.insertBefore(valCell, prevKey);
-                } else {
-                    // Already at top, wrap to bottom
-                    grid.appendChild(keyCell);
-                    grid.appendChild(valCell);
-                }
-            } else if (dir === 1) {
-                // Down
-                const nextKey = valCell.nextElementSibling;
-                if (nextKey) {
-                    const nextVal = nextKey.nextElementSibling;
-                    const ref = nextVal.nextElementSibling;
-                    grid.insertBefore(keyCell, ref);
-                    grid.insertBefore(valCell, ref);
-                } else {
-                    // Already at bottom, wrap to top
-                    // Insert at the very beginning (before all children)
-                    const firstChild = grid.firstElementChild;
-                    grid.insertBefore(valCell, firstChild);
-                    grid.insertBefore(keyCell, valCell);
-                }
-            }
+        if (isArray) {
             reindexArray(grid);
-
-            // Restore focus if it was within the moved row
-            if (isDescendant) {
-                active.focus();
-            }
-            setDirty(true);
-        }
-
-        function dispatchMove(activeEl, dir) {
-            const cell = activeEl.closest(".cell");
-            if (!cell) return;
-
-            let keyCell;
-            if (cell.classList.contains("key")) keyCell = cell;
-            else keyCell = cell.previousElementSibling;
-
-            if (keyCell && keyCell.classList.contains("key")) {
-                moveRow(keyCell, dir);
+            v.focus();
+        } else {
+            const s = k.querySelector("span");
+            if (s) {
+                s.focus();
+                document.execCommand("selectAll", false, null);
             }
         }
+        setDirty(true);
+        updateAllDuplicateKeys();
+    }
 
-        function reindexArray(grid) {
-            if (grid.dataset.type !== "array") return;
-            const keys = Array.from(grid.querySelectorAll(":scope > .cell.key"));
-            keys.forEach((cell, idx) => {
-                const span = cell.querySelector("span");
-                if (span) span.textContent = idx;
-            });
+    function deleteRow(activeEl) {
+        const cell = activeEl.closest(".cell");
+        if (!cell) return;
+        const grid = cell.parentElement;
+        const isArray = grid.dataset.type === "array";
+
+        // Identify pair
+        let currKey, currVal;
+        if (cell.classList.contains("key")) {
+            currKey = cell;
+            currVal = cell.nextElementSibling;
+        } else {
+            currVal = cell;
+            currKey = cell.previousElementSibling;
         }
 
-        // --- DATA PARSING ---
+        // Calculate focus target before removal
+        let targetEl = null;
+        const isKeyColumn = cell.classList.contains("key");
+        const nextKey = currVal.nextElementSibling;
 
-        function parseExplicitType(str, type) {
-            // In Free Mode, strings are displayed with JSON representation (quotes)
-            // So we need to parse them properly
-            if (type === "string") {
-                if (!isTypeSafeMode()) {
-                    // Free Mode: string should be in JSON format with quotes
-                    const trimmed = str.trim();
-                    if (trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
-                        try {
-                            return JSON.parse(trimmed);
-                        } catch (e) {
-                            // If parsing fails, return as-is (might be invalid)
-                            return str;
-                        }
+        if (nextKey) {
+            targetEl = isKeyColumn ? nextKey : nextKey.nextElementSibling;
+        } else {
+            const prevVal = currKey.previousElementSibling;
+            if (prevVal) {
+                targetEl = isKeyColumn ? prevVal.previousElementSibling : prevVal;
+            } else {
+                // Fallback to parent container
+                const parentVal = grid.closest(".cell.value");
+                if (parentVal) targetEl = parentVal;
+            }
+        }
+
+        currKey.remove();
+        currVal.remove();
+
+        if (isArray) reindexArray(grid);
+
+        // Focus the target, resolving key cell divs to their editable span
+        if (targetEl) {
+            if (
+                targetEl.classList.contains("key") &&
+                !targetEl.classList.contains("is-index")
+            ) {
+                const span = targetEl.querySelector("span[contenteditable]");
+                if (span) span.focus();
+                else targetEl.focus();
+            } else {
+                targetEl.focus();
+            }
+        }
+        setDirty(true);
+    }
+
+    function moveRow(keyCell, dir) {
+        const valCell = keyCell.nextElementSibling;
+        const grid = keyCell.parentElement;
+
+        // Need at least 2 rows (4 elements) to move
+        if (grid.children.length < 4) return;
+
+        // Capture focus state
+        const active = document.activeElement;
+        const isDescendant = keyCell.contains(active) || valCell.contains(active);
+
+        if (dir === -1) {
+            // Up
+            const prevVal = keyCell.previousElementSibling;
+            if (prevVal) {
+                const prevKey = prevVal.previousElementSibling;
+                grid.insertBefore(keyCell, prevKey);
+                grid.insertBefore(valCell, prevKey);
+            } else {
+                // Already at top, wrap to bottom
+                grid.appendChild(keyCell);
+                grid.appendChild(valCell);
+            }
+        } else if (dir === 1) {
+            // Down
+            const nextKey = valCell.nextElementSibling;
+            if (nextKey) {
+                const nextVal = nextKey.nextElementSibling;
+                const ref = nextVal.nextElementSibling;
+                grid.insertBefore(keyCell, ref);
+                grid.insertBefore(valCell, ref);
+            } else {
+                // Already at bottom, wrap to top
+                // Insert at the very beginning (before all children)
+                const firstChild = grid.firstElementChild;
+                grid.insertBefore(valCell, firstChild);
+                grid.insertBefore(keyCell, valCell);
+            }
+        }
+        reindexArray(grid);
+
+        // Restore focus if it was within the moved row
+        if (isDescendant) {
+            active.focus();
+        }
+        setDirty(true);
+    }
+
+    function dispatchMove(activeEl, dir) {
+        const cell = activeEl.closest(".cell");
+        if (!cell) return;
+
+        let keyCell;
+        if (cell.classList.contains("key")) keyCell = cell;
+        else keyCell = cell.previousElementSibling;
+
+        if (keyCell && keyCell.classList.contains("key")) {
+            moveRow(keyCell, dir);
+        }
+    }
+
+    function reindexArray(grid) {
+        if (grid.dataset.type !== "array") return;
+        const keys = Array.from(grid.querySelectorAll(":scope > .cell.key"));
+        keys.forEach((cell, idx) => {
+            const span = cell.querySelector("span");
+            if (span) span.textContent = idx;
+        });
+    }
+
+    // --- DATA PARSING ---
+
+    function parseExplicitType(str, type) {
+        // In Free Mode, strings are displayed with JSON representation (quotes)
+        // So we need to parse them properly
+        if (type === "string") {
+            if (!isTypeSafeMode()) {
+                // Free Mode: string should be in JSON format with quotes
+                const trimmed = str.trim();
+                if (trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
+                    try {
+                        return JSON.parse(trimmed);
+                    } catch (e) {
+                        // If parsing fails, return as-is (might be invalid)
+                        return str;
                     }
                 }
-                return str;
             }
-            if (type === "number") {
-                const n = parseFloat(str);
-                return isNaN(n) ? 0 : n;
-            }
-            if (type === "boolean") return str === "true";
-            if (type === "null") return null;
             return str;
         }
-
-        function scrapeJSON() {
-            const root = dom.container.querySelector(".json-grid");
-            if (!root) return null;
-            return parseGrid(root);
+        if (type === "number") {
+            const n = parseFloat(str);
+            return isNaN(n) ? 0 : n;
         }
+        if (type === "boolean") return str === "true";
+        if (type === "null") return null;
+        return str;
+    }
 
-        function parseGrid(grid) {
-            const isArray = grid.dataset.type === "array";
-            const result = isArray ? [] : {};
-            const children = Array.from(grid.children);
+    function scrapeJSON() {
+        const root = dom.container.querySelector(".json-grid");
+        if (!root) return null;
+        return parseGrid(root);
+    }
 
-            for (let i = 0; i < children.length; i += 2) {
-                const kCell = children[i];
-                const vCell = children[i + 1];
+    function parseGrid(grid) {
+        const isArray = grid.dataset.type === "array";
+        const result = isArray ? [] : {};
+        const children = Array.from(grid.children);
 
-                // Skip if we don't have a valid key-value pair
-                if (!kCell || !vCell) continue;
-                if (!kCell.classList.contains("key") || !vCell.classList.contains("value"))
-                    continue;
+        for (let i = 0; i < children.length; i += 2) {
+            const kCell = children[i];
+            const vCell = children[i + 1];
 
-                const kSpan = kCell.querySelector(":scope > span");
-                const key = kSpan ? kSpan.textContent : "";
+            // Skip if we don't have a valid key-value pair
+            if (!kCell || !vCell) continue;
+            if (!kCell.classList.contains("key") || !vCell.classList.contains("value"))
+                continue;
 
-                let val;
-                if (vCell.classList.contains("complex")) {
-                    val = parseGrid(vCell.querySelector(".json-grid"));
-                } else {
-                    val = parseExplicitType(htmlToText(vCell), vCell.dataset.explicitType);
-                }
+            const kSpan = kCell.querySelector(":scope > span");
+            const key = kSpan ? kSpan.textContent : "";
 
-                if (isArray) result.push(val);
-                else result[key] = val;
-            }
-            return result;
-        }
-
-        // --- LOCAL STORAGE ---
-        function saveToLocalStorage() {
-            const toggle = document.getElementById("save-local-toggle");
-            // Don't save if there are invalid cells (Free Mode)
-            if (hasInvalidCells) return;
-            if (toggle && toggle.checked) {
-                localStorage.setItem(LS_JSON_DATA_KEY, currentStateStr || getSnapshot());
-            }
-        }
-
-        function loadFromLocalStorage() {
-            const saved = localStorage.getItem(LS_JSON_DATA_KEY);
-            if (saved) {
-                try {
-                    safeLoad(saved);
-                    setDirty(true);
-                    return true;
-                } catch (e) {
-                    console.error("Failed to load from LS", e);
-                }
-            }
-            return false;
-        }
-
-        // --- FILE I/O ---
-        function requestOpenFile() {
-            if (!isDirty) {
-                dom.fileInput.click();
+            let val;
+            if (vCell.classList.contains("complex")) {
+                val = parseGrid(vCell.querySelector(".json-grid"));
             } else {
-                document.getElementById("confirm-modal").classList.remove("hidden");
-                document.getElementById("btn-confirm-ok").focus();
+                val = parseExplicitType(htmlToText(vCell), vCell.dataset.explicitType);
             }
+
+            if (isArray) result.push(val);
+            else result[key] = val;
         }
+        return result;
+    }
 
-        function safeLoad(json, recordHistory = false) {
+    // --- LOCAL STORAGE ---
+    function saveToLocalStorage() {
+        const toggle = document.getElementById("save-local-toggle");
+        // Don't save if there are invalid cells (Free Mode)
+        if (hasInvalidCells) return;
+        if (toggle && toggle.checked) {
+            localStorage.setItem(LS_JSON_DATA_KEY, currentStateStr || getSnapshot());
+        }
+    }
+
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem(LS_JSON_DATA_KEY);
+        if (saved) {
             try {
-                let data = JSON.parse(json);
-                const sortToggle = document.getElementById("sort-keys-toggle");
-                if (sortToggle && sortToggle.checked) {
-                    data = sortKeysRecursively(data);
-                }
-
-                if (recordHistory) {
-                    commitAndExecute(() => render(data));
-                } else {
-                    render(data);
-                }
-
+                safeLoad(saved);
+                setDirty(true);
                 return true;
             } catch (e) {
-                alert("Invalid JSON");
-                return false;
+                console.error("Failed to load from LS", e);
             }
         }
+        return false;
+    }
 
-        function downloadJSON() {
-            // Block download if there are invalid cells
-            if (hasInvalidCells) {
-                alert("Cannot save: some cells contain invalid JSON. Please fix them first.");
-                return;
-            }
+    // --- FILE I/O ---
+    function requestOpenFile() {
+        if (!isDirty) {
+            dom.fileInput.click();
+        } else {
+            document.getElementById("confirm-modal").classList.remove("hidden");
+            document.getElementById("btn-confirm-ok").focus();
+        }
+    }
+
+    function safeLoad(json, recordHistory = false) {
+        try {
+            let data = JSON.parse(json);
             const sortToggle = document.getElementById("sort-keys-toggle");
-            let data = scrapeJSON();
             if (sortToggle && sortToggle.checked) {
                 data = sortKeysRecursively(data);
             }
-            const blob = new Blob([JSON.stringify(data, null, 4)], {
-                type: "application/json",
-            });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "data.json";
-            a.click();
-            URL.revokeObjectURL(url);
-            setDirty(false);
-        }
 
-        function openRawModal() {
-            const sortToggle = document.getElementById("sort-keys-toggle");
-            const modalWarning = document.getElementById("modal-warning");
-            const modalWarningDuplicate = document.getElementById("modal-warning-duplicate");
-
-            // Show/hide warning based on invalid cells
-            if (hasInvalidCells) {
-                if (modalWarning) modalWarning.classList.remove("hidden");
+            if (recordHistory) {
+                commitAndExecute(() => render(data));
             } else {
-                if (modalWarning) modalWarning.classList.add("hidden");
+                render(data);
             }
 
-            // Show/hide duplicate key warning
-            const hasDuplicates = checkForDuplicateKeys();
-            if (hasDuplicates) {
-                if (modalWarningDuplicate) modalWarningDuplicate.classList.remove("hidden");
-            } else {
-                if (modalWarningDuplicate) modalWarningDuplicate.classList.add("hidden");
-            }
-
-            let data = scrapeJSON();
-            if (sortToggle && sortToggle.checked) {
-                data = sortKeysRecursively(data);
-            }
-            dom.modalText.value = JSON.stringify(data, null, 4);
-            dom.modal.classList.remove("hidden");
-            dom.modalText.focus();
-        }
-
-        // Check if any object in the grid has duplicate keys
-        function checkForDuplicateKeys() {
-            const grids = dom.container.querySelectorAll(".json-grid[data-type=\"object\"]");
-            for (const grid of grids) {
-                const keyCells = grid.querySelectorAll(":scope > .cell.key:not(.is-index)");
-                const keyNames = new Set();
-                for (const cell of keyCells) {
-                    const keyText = cell.querySelector("span")?.textContent || "";
-                    if (keyNames.has(keyText)) {
-                        return true;
-                    }
-                    keyNames.add(keyText);
-                }
-            }
+            return true;
+        } catch (e) {
+            alert("Invalid JSON");
             return false;
         }
+    }
 
-        // Recursively sort object keys alphabetically
-        function sortKeysRecursively(obj) {
-            if (Array.isArray(obj)) {
-                return obj.map((item) => sortKeysRecursively(item));
-            } else if (obj !== null && typeof obj === "object") {
-                const sorted = {};
-                Object.keys(obj)
-                    .sort()
-                    .forEach((key) => {
-                        sorted[key] = sortKeysRecursively(obj[key]);
-                    });
-                return sorted;
-            }
-            return obj;
+    function downloadJSON() {
+        // Block download if there are invalid cells
+        if (hasInvalidCells) {
+            alert("Cannot save: some cells contain invalid JSON. Please fix them first.");
+            return;
+        }
+        const sortToggle = document.getElementById("sort-keys-toggle");
+        let data = scrapeJSON();
+        if (sortToggle && sortToggle.checked) {
+            data = sortKeysRecursively(data);
+        }
+        const blob = new Blob([JSON.stringify(data, null, 4)], {
+            type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "data.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        setDirty(false);
+    }
+
+    function openRawModal() {
+        const sortToggle = document.getElementById("sort-keys-toggle");
+        const modalWarning = document.getElementById("modal-warning");
+        const modalWarningDuplicate = document.getElementById("modal-warning-duplicate");
+
+        // Show/hide warning based on invalid cells
+        if (hasInvalidCells) {
+            if (modalWarning) modalWarning.classList.remove("hidden");
+        } else {
+            if (modalWarning) modalWarning.classList.add("hidden");
         }
 
-        function refreshSortedView() {
-            const sortToggle = document.getElementById("sort-keys-toggle");
-            if (sortToggle && sortToggle.checked) {
-                const data = scrapeJSON();
-                render(sortKeysRecursively(data));
-            }
+        // Show/hide duplicate key warning
+        const hasDuplicates = checkForDuplicateKeys();
+        if (hasDuplicates) {
+            if (modalWarningDuplicate) modalWarningDuplicate.classList.remove("hidden");
+        } else {
+            if (modalWarningDuplicate) modalWarningDuplicate.classList.add("hidden");
         }
 
-        // Event Bindings
-        document.getElementById("btn-load-file").addEventListener("click", requestOpenFile);
+        let data = scrapeJSON();
+        if (sortToggle && sortToggle.checked) {
+            data = sortKeysRecursively(data);
+        }
+        dom.modalText.value = JSON.stringify(data, null, 4);
+        dom.modal.classList.remove("hidden");
+        dom.modalText.focus();
+    }
 
-        document.getElementById("btn-confirm-ok").addEventListener("click", () => {
-            document.getElementById("confirm-modal").classList.add("hidden");
-            dom.fileInput.click();
-        });
-
-        document.getElementById("btn-confirm-cancel").addEventListener("click", () => {
-            document.getElementById("confirm-modal").classList.add("hidden");
-        });
-        dom.fileInput.addEventListener("change", (e) => {
-            const f = e.target.files[0];
-            if (f) {
-                const r = new FileReader();
-                r.onload = (ev) => safeLoad(ev.target.result);
-                r.readAsText(f);
-                dom.fileInput.value = "";
+    // Check if any object in the grid has duplicate keys
+    function checkForDuplicateKeys() {
+        const grids = dom.container.querySelectorAll(".json-grid[data-type=\"object\"]");
+        for (const grid of grids) {
+            const keyCells = grid.querySelectorAll(":scope > .cell.key:not(.is-index)");
+            const keyNames = new Set();
+            for (const cell of keyCells) {
+                const keyText = cell.querySelector("span")?.textContent || "";
+                if (keyNames.has(keyText)) {
+                    return true;
+                }
+                keyNames.add(keyText);
             }
-        });
-        document.getElementById("btn-view-raw").addEventListener("click", openRawModal);
-        document.getElementById("btn-close-modal").addEventListener("click", () => {
+        }
+        return false;
+    }
+
+    // Recursively sort object keys alphabetically
+    function sortKeysRecursively(obj) {
+        if (Array.isArray(obj)) {
+            return obj.map((item) => sortKeysRecursively(item));
+        } else if (obj !== null && typeof obj === "object") {
+            const sorted = {};
+            Object.keys(obj)
+                .sort()
+                .forEach((key) => {
+                    sorted[key] = sortKeysRecursively(obj[key]);
+                });
+            return sorted;
+        }
+        return obj;
+    }
+
+    function refreshSortedView() {
+        const sortToggle = document.getElementById("sort-keys-toggle");
+        if (sortToggle && sortToggle.checked) {
+            const data = scrapeJSON();
+            render(sortKeysRecursively(data));
+        }
+    }
+
+    // Event Bindings
+    document.getElementById("btn-load-file").addEventListener("click", requestOpenFile);
+
+    document.getElementById("btn-confirm-ok").addEventListener("click", () => {
+        document.getElementById("confirm-modal").classList.add("hidden");
+        dom.fileInput.click();
+    });
+
+    document.getElementById("btn-confirm-cancel").addEventListener("click", () => {
+        document.getElementById("confirm-modal").classList.add("hidden");
+    });
+    dom.fileInput.addEventListener("change", (e) => {
+        const f = e.target.files[0];
+        if (f) {
+            const r = new FileReader();
+            r.onload = (ev) => safeLoad(ev.target.result);
+            r.readAsText(f);
+            dom.fileInput.value = "";
+        }
+    });
+    document.getElementById("btn-view-raw").addEventListener("click", openRawModal);
+    document.getElementById("btn-close-modal").addEventListener("click", () => {
+        dom.modal.classList.add("hidden");
+        refreshSortedView();
+    });
+    document.getElementById("btn-save-modal").addEventListener("click", () => {
+        if (safeLoad(dom.modalText.value, true)) {
             dom.modal.classList.add("hidden");
-            refreshSortedView();
-        });
-        document.getElementById("btn-save-modal").addEventListener("click", () => {
-            if (safeLoad(dom.modalText.value, true)) {
-                dom.modal.classList.add("hidden");
-            }
-        });
-        document.getElementById("btn-download").addEventListener("click", downloadJSON);
+        }
+    });
+    document.getElementById("btn-download").addEventListener("click", downloadJSON);
 
-        // Examples Logic
-        const loadExample = (text) => {
-            dom.modalText.value = text;
-            try {
-                const parsed = JSON.parse(text);
-                dom.modalText.value = JSON.stringify(parsed, null, 4);
-            } catch {
-                // Fallback: If text was slightly malformed JSON, maybe user meant it as-is.
-            }
-            dom.modalText.focus();
-        };
+    // Examples Logic
+    const loadExample = (text) => {
+        dom.modalText.value = text;
+        try {
+            const parsed = JSON.parse(text);
+            dom.modalText.value = JSON.stringify(parsed, null, 4);
+        } catch {
+            // Fallback: If text was slightly malformed JSON, maybe user meant it as-is.
+        }
+        dom.modalText.focus();
+    };
 
-        document.getElementById("btn-ex-default").addEventListener("click", () => {
-            loadExample(DEFAULT_JSON);
-        });
+    document.getElementById("btn-ex-default").addEventListener("click", () => {
+        loadExample(DEFAULT_JSON);
+    });
 
-        document.getElementById("btn-ex-long").addEventListener("click", () => {
-            fetch("long.json")
-                .then((res) => res.text())
-                .then((text) => loadExample(text))
-                .catch((err) => console.error("Could not load long.json: " + err));
-        });
+    document.getElementById("btn-ex-long").addEventListener("click", () => {
+        fetch("long.json")
+            .then((res) => res.text())
+            .then((text) => loadExample(text))
+            .catch((err) => console.error("Could not load long.json: " + err));
+    });
 
-        document.getElementById("btn-ex-deep").addEventListener("click", () => {
-            fetch("deep.json")
-                .then((res) => res.text())
-                .then((text) => loadExample(text))
-                .catch((err) => alert("Could not load deep.json: " + err));
-        });
+    document.getElementById("btn-ex-deep").addEventListener("click", () => {
+        fetch("deep.json")
+            .then((res) => res.text())
+            .then((text) => loadExample(text))
+            .catch((err) => alert("Could not load deep.json: " + err));
+    });
 
-        // Toggle Logic
-        const lsToggle = document.getElementById("save-local-toggle");
-        // Restore Toggle State
-        const savedAutoSave = localStorage.getItem(LS_SAVE_IN_LS_KEY);
-        lsToggle.checked =
-            savedAutoSave !== null ? savedAutoSave === "true" : UI_DEFAULTS.SAVE_IN_BROWSER;
+    // Toggle Logic
+    const lsToggle = document.getElementById("save-local-toggle");
+    // Restore Toggle State
+    const savedAutoSave = localStorage.getItem(LS_SAVE_IN_LS_KEY);
+    lsToggle.checked =
+        savedAutoSave !== null ? savedAutoSave === "true" : UI_DEFAULTS.SAVE_IN_BROWSER;
 
-        lsToggle.addEventListener("change", () => {
-            localStorage.setItem(LS_SAVE_IN_LS_KEY, lsToggle.checked);
-            if (lsToggle.checked) {
-                saveToLocalStorage();
-            } else {
-                localStorage.removeItem(LS_JSON_DATA_KEY);
-                setDirty(true);
-            }
-        });
+    lsToggle.addEventListener("change", () => {
+        localStorage.setItem(LS_SAVE_IN_LS_KEY, lsToggle.checked);
+        if (lsToggle.checked) {
+            saveToLocalStorage();
+        } else {
+            localStorage.removeItem(LS_JSON_DATA_KEY);
+            setDirty(true);
+        }
+    });
 
-        // Warn on tab close if unsaved and not auto-saving
-        window.addEventListener("beforeunload", (e) => {
-            if (isDirty && !lsToggle.checked) {
-                e.preventDefault();
-                e.returnValue = "";
-            }
-        });
+    // Warn on tab close if unsaved and not auto-saving
+    window.addEventListener("beforeunload", (e) => {
+        if (isDirty && !lsToggle.checked) {
+            e.preventDefault();
+            e.returnValue = "";
+        }
+    });
 
-        // Hide Toolbar Logic
-        const toolbarToggle = document.getElementById("hide-toolbar-toggle");
-        const savedHideToolbar = localStorage.getItem(LS_HIDE_ACTION_BAR_KEY);
+    // Hide Toolbar Logic
+    const toolbarToggle = document.getElementById("hide-toolbar-toggle");
+    const savedHideToolbar = localStorage.getItem(LS_HIDE_ACTION_BAR_KEY);
 
-        toolbarToggle.checked =
-            savedHideToolbar !== null
-                ? savedHideToolbar === "true"
-                : UI_DEFAULTS.HIDE_ACTION_BAR;
+    toolbarToggle.checked =
+        savedHideToolbar !== null
+            ? savedHideToolbar === "true"
+            : UI_DEFAULTS.HIDE_ACTION_BAR;
 
+    if (toolbarToggle.checked) {
+        dom.header.classList.add("hidden");
+    }
+
+    toolbarToggle.addEventListener("change", () => {
         if (toolbarToggle.checked) {
             dom.header.classList.add("hidden");
+        } else {
+            dom.header.classList.remove("hidden");
         }
+        localStorage.setItem(LS_HIDE_ACTION_BAR_KEY, toolbarToggle.checked);
+    });
 
-        toolbarToggle.addEventListener("change", () => {
-            if (toolbarToggle.checked) {
-                dom.header.classList.add("hidden");
-            } else {
-                dom.header.classList.remove("hidden");
-            }
-            localStorage.setItem(LS_HIDE_ACTION_BAR_KEY, toolbarToggle.checked);
-        });
+    // Sort Keys Toggle Logic
+    const sortKeysToggle = document.getElementById("sort-keys-toggle");
+    const savedSortKeys = localStorage.getItem(LS_SORT_KEYS_KEY);
 
-        // Sort Keys Toggle Logic
-        const sortKeysToggle = document.getElementById("sort-keys-toggle");
-        const savedSortKeys = localStorage.getItem(LS_SORT_KEYS_KEY);
+    sortKeysToggle.checked =
+        savedSortKeys !== null ? savedSortKeys === "true" : UI_DEFAULTS.SORT_KEYS;
 
-        sortKeysToggle.checked =
-            savedSortKeys !== null ? savedSortKeys === "true" : UI_DEFAULTS.SORT_KEYS;
+    sortKeysToggle.addEventListener("change", () => {
+        localStorage.setItem(LS_SORT_KEYS_KEY, sortKeysToggle.checked);
+        // Re-render grid with sorted/unsorted keys
+        const currentData = scrapeJSON();
+        if (sortKeysToggle.checked) {
+            render(sortKeysRecursively(currentData));
+        } else {
+            render(currentData);
+        }
+    });
 
-        sortKeysToggle.addEventListener("change", () => {
-            localStorage.setItem(LS_SORT_KEYS_KEY, sortKeysToggle.checked);
-            // Re-render grid with sorted/unsorted keys
-            const currentData = scrapeJSON();
-            if (sortKeysToggle.checked) {
-                render(sortKeysRecursively(currentData));
-            } else {
-                render(currentData);
-            }
-        });
+    // Type-Safe (Strict Mode) Toggle Logic
+    const typeSafeToggle = document.getElementById("type-safe-toggle");
+    const savedTypeSafe = localStorage.getItem(LS_TYPE_SAFE_KEY);
 
-        // Type-Safe (Strict Mode) Toggle Logic
-        const typeSafeToggle = document.getElementById("type-safe-toggle");
-        const savedTypeSafe = localStorage.getItem(LS_TYPE_SAFE_KEY);
+    typeSafeToggle.checked =
+        savedTypeSafe !== null ? savedTypeSafe === "true" : UI_DEFAULTS.TYPE_SAFE;
 
-        typeSafeToggle.checked =
-            savedTypeSafe !== null ? savedTypeSafe === "true" : UI_DEFAULTS.TYPE_SAFE;
+    // Apply initial mode
+    if (typeSafeToggle.checked) {
+        document.body.classList.add("type-safe-mode");
+    } else {
+        document.body.classList.remove("type-safe-mode");
+    }
 
-        // Apply initial mode
+    typeSafeToggle.addEventListener("change", () => {
+        localStorage.setItem(LS_TYPE_SAFE_KEY, typeSafeToggle.checked);
+
+        // Scrape using the OLD mode (toggle already flipped, so invert it)
+        _typeSafeModeOverride = !typeSafeToggle.checked;
+        const currentData = scrapeJSON();
+        _typeSafeModeOverride = null;
+
         if (typeSafeToggle.checked) {
             document.body.classList.add("type-safe-mode");
+            // Clear any invalid cell markers when switching to strict mode
+            hasInvalidCells = false;
+            updateInvalidCellState();
         } else {
             document.body.classList.remove("type-safe-mode");
         }
 
-        typeSafeToggle.addEventListener("change", () => {
-            localStorage.setItem(LS_TYPE_SAFE_KEY, typeSafeToggle.checked);
-
-            // Scrape using the OLD mode (toggle already flipped, so invert it)
-            _typeSafeModeOverride = !typeSafeToggle.checked;
-            const currentData = scrapeJSON();
-            _typeSafeModeOverride = null;
-
-            if (typeSafeToggle.checked) {
-                document.body.classList.add("type-safe-mode");
-                // Clear any invalid cell markers when switching to strict mode
-                hasInvalidCells = false;
-                updateInvalidCellState();
-            } else {
-                document.body.classList.remove("type-safe-mode");
-            }
-
-            // Re-render to update string display format (quotes in Free Mode, no quotes in Strict)
-            const sortToggle = document.getElementById("sort-keys-toggle");
-            if (sortToggle && sortToggle.checked) {
-                render(sortKeysRecursively(currentData));
-            } else {
-                render(currentData);
-            }
-        });
-
-        // Zen Mode (Fullscreen) Logic
-        function toggleZenMode() {
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
-            } else {
-                document.body.requestFullscreen().catch((err) => {
-                    console.error("Fullscreen error:", err);
-                });
-            }
+        // Re-render to update string display format (quotes in Free Mode, no quotes in Strict)
+        const sortToggle = document.getElementById("sort-keys-toggle");
+        if (sortToggle && sortToggle.checked) {
+            render(sortKeysRecursively(currentData));
+        } else {
+            render(currentData);
         }
-        document.addEventListener("fullscreenchange", () => {
-            document.body.classList.toggle("zen-mode", !!document.fullscreenElement);
-        });
-        document.getElementById("btn-zen-mode").addEventListener("click", toggleZenMode);
-        document
-            .getElementById("btn-cmd-palette")
-            .addEventListener("click", openCommandPalette);
+    });
 
-        // Settings Modal
-        document.getElementById("btn-settings").addEventListener("click", () => {
-            document.getElementById("settings-modal").classList.remove("hidden");
-        });
-        document.getElementById("btn-close-settings").addEventListener("click", () => {
-            document.getElementById("settings-modal").classList.add("hidden");
-        });
-        document.getElementById("settings-modal").addEventListener("mousedown", (e) => {
-            if (e.target.id === "settings-modal") e.target.classList.add("hidden");
-        });
-
-        // --- COMMAND PALETTE ---
-        const COMMANDS = [
-            // File Operations
-            { name: "Open File", kbd: "^O", mode: null, action: () => requestOpenFile() },
-            { name: "Save File", kbd: "^S", mode: null, action: () => downloadJSON() },
-            { name: "Edit Raw JSON", kbd: "^E", mode: null, action: () => openRawModal() },
-            // History
-            { name: "Undo", kbd: "^Z", mode: null, action: () => performUndo() },
-            { name: "Redo", kbd: "^Y", mode: null, action: () => performRedo() },
-            // Insert (Strict Mode)
-            {
-                name: "Insert Object {}",
-                kbd: "^⇧1",
-                mode: "strict",
-                action: () => {
-                    const t = getActiveTarget();
-                    if (t) commitAndExecute(() => insertRow(t, {}));
-                },
-            },
-            {
-                name: "Insert Array []",
-                kbd: "^⇧2",
-                mode: "strict",
-                action: () => {
-                    const t = getActiveTarget();
-                    if (t) commitAndExecute(() => insertRow(t, []));
-                },
-            },
-            {
-                name: "Insert String",
-                kbd: "^⇧3",
-                mode: "strict",
-                action: () => {
-                    const t = getActiveTarget();
-                    if (t) commitAndExecute(() => insertRow(t, ""));
-                },
-            },
-            {
-                name: "Insert Number",
-                kbd: "^⇧4",
-                mode: "strict",
-                action: () => {
-                    const t = getActiveTarget();
-                    if (t) commitAndExecute(() => insertRow(t, 0));
-                },
-            },
-            {
-                name: "Insert True",
-                kbd: "^⇧5",
-                mode: "strict",
-                action: () => {
-                    const t = getActiveTarget();
-                    if (t) commitAndExecute(() => insertRow(t, true));
-                },
-            },
-            {
-                name: "Insert False",
-                kbd: "^⇧6",
-                mode: "strict",
-                action: () => {
-                    const t = getActiveTarget();
-                    if (t) commitAndExecute(() => insertRow(t, false));
-                },
-            },
-            {
-                name: "Insert Null",
-                kbd: "^⇧N",
-                action: () => {
-                    const t = getActiveTarget();
-                    if (t) commitAndExecute(() => insertRow(t, null));
-                },
-            },
-            // Copy / Paste
-            {
-                name: "Copy Hierarchy",
-                kbd: "^C",
-                mode: null,
-                action: () => {
-                    const t = getActiveTarget();
-                    if (t) copyHierarchy(t);
-                },
-            },
-            {
-                name: "Paste Hierarchy",
-                kbd: "^V",
-                mode: null,
-                action: () => {
-                    const t = getActiveTarget();
-                    if (t) pasteHierarchy(t);
-                },
-            },
-            {
-                name: "Paste Escaped",
-                kbd: null,
-                mode: null,
-                action: () => document.getElementById("btn-paste-escaped").click(),
-            },
-            // Row manipulation
-            {
-                name: "Delete Row",
-                kbd: "^Del",
-                mode: null,
-                action: () => {
-                    const t = getActiveTarget();
-                    if (t) commitAndExecute(() => deleteRow(t));
-                },
-            },
-            {
-                name: "Move Row Up",
-                kbd: "^⇧▲",
-                mode: null,
-                action: () => {
-                    const t = getActiveTarget();
-                    if (t) commitAndExecute(() => dispatchMove(t, -1));
-                },
-            },
-            {
-                name: "Move Row Down",
-                kbd: "^⇧▼",
-                mode: null,
-                action: () => {
-                    const t = getActiveTarget();
-                    if (t) commitAndExecute(() => dispatchMove(t, 1));
-                },
-            },
-            // View
-            {
-                name: "Zen Mode (Fullscreen)",
-                kbd: "^F11",
-                mode: null,
-                action: () => toggleZenMode(),
-            },
-            // Toggles
-            {
-                name: "Toggle Sort by Keys",
-                kbd: null,
-                mode: null,
-                action: () => {
-                    const t = document.getElementById("sort-keys-toggle");
-                    t.checked = !t.checked;
-                    t.dispatchEvent(new Event("change"));
-                },
-            },
-            {
-                name: "Toggle Hide Action Bar",
-                kbd: null,
-                mode: null,
-                action: () => {
-                    const t = document.getElementById("hide-toolbar-toggle");
-                    t.checked = !t.checked;
-                    t.dispatchEvent(new Event("change"));
-                },
-            },
-            {
-                name: "Toggle Type-Safe (Strict) Mode",
-                kbd: null,
-                mode: null,
-                action: () => {
-                    const t = document.getElementById("type-safe-toggle");
-                    t.checked = !t.checked;
-                    t.dispatchEvent(new Event("change"));
-                },
-            },
-            {
-                name: "Toggle Save in Browser",
-                kbd: null,
-                mode: null,
-                action: () => {
-                    const t = document.getElementById("save-local-toggle");
-                    t.checked = !t.checked;
-                    t.dispatchEvent(new Event("change"));
-                },
-            },
-            // Palette itself
-            {
-                name: "Open Settings",
-                kbd: null,
-                mode: null,
-                action: () =>
-                    document.getElementById("settings-modal").classList.remove("hidden"),
-            },
-            { name: "Command Palette", kbd: "^K", mode: null, action: () => { } },
-        ];
-
-        function getActiveTarget() {
-            return dom.container.contains(document.activeElement)
-                ? document.activeElement
-                : lastActiveCell;
-        }
-
-        function fuzzyMatch(query, text) {
-            query = query.toLowerCase();
-            text = text.toLowerCase();
-
-            // Exact match
-            if (text === query) return 10000;
-
-            // Substring match — score by position (earlier = better)
-            const subIdx = text.indexOf(query);
-            if (subIdx !== -1) {
-                // Bonus if it lands on a word boundary
-                const wordBoundary = subIdx === 0 || text[subIdx - 1] === " ";
-                return 5000 - subIdx + (wordBoundary ? 1000 : 0);
-            }
-
-            // Word-initials match: e.g. "ts" matches "Type-Safe"
-            const words = text.split(/[\s\-_(){}[\]]+/);
-            const initials = words.map((w) => w[0] || "").join("");
-            if (initials.includes(query)) {
-                return 3000;
-            }
-
-            // Character-sequence (scattered) match — score by tightness
-            let qi = 0;
-            let firstIdx = -1;
-            let lastIdx = -1;
-            for (let i = 0; i < text.length && qi < query.length; i++) {
-                if (text[i] === query[qi]) {
-                    if (firstIdx === -1) firstIdx = i;
-                    lastIdx = i;
-                    qi++;
-                }
-            }
-            if (qi === query.length) {
-                // Tighter span = better; earlier start = better
-                const span = lastIdx - firstIdx + 1;
-                return 1000 - span * 10 - firstIdx;
-            }
-
-            return 0; // no match
-        }
-
-        const cmdPaletteOverlay = document.getElementById("cmd-palette");
-        const cmdPaletteInput = document.getElementById("cmd-palette-input");
-        const cmdPaletteList = document.getElementById("cmd-palette-list");
-        let cmdActiveIndex = 0;
-
-        function openCommandPalette() {
-            cmdPaletteInput.value = "";
-            renderCommandList("");
-            cmdPaletteOverlay.classList.remove("hidden");
-            cmdPaletteInput.focus();
-        }
-
-        function closeCommandPalette() {
-            cmdPaletteOverlay.classList.add("hidden");
-        }
-
-        function renderCommandList(query) {
-            cmdPaletteList.innerHTML = "";
-            let items = [];
-
-            // Collect matching commands with scores
-            let scored = [];
-            COMMANDS.forEach((cmd) => {
-                if (query) {
-                    const score = fuzzyMatch(query, cmd.name);
-                    if (score <= 0) return;
-                    scored.push({ cmd, score });
-                } else {
-                    scored.push({ cmd, score: 0 });
-                }
+    // Zen Mode (Fullscreen) Logic
+    function toggleZenMode() {
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            document.body.requestFullscreen().catch((err) => {
+                console.error("Fullscreen error:", err);
             });
+        }
+    }
 
-            // Sort by score descending (stable: original order preserved for ties)
+    document.addEventListener("fullscreenchange", () => {
+        document.body.classList.toggle("zen-mode", !!document.fullscreenElement);
+    });
+    document.getElementById("btn-zen-mode").addEventListener("click", toggleZenMode);
+    document
+        .getElementById("btn-cmd-palette")
+        .addEventListener("click", openCommandPalette);
+
+    // Settings Modal
+    document.getElementById("btn-settings").addEventListener("click", () => {
+        document.getElementById("settings-modal").classList.remove("hidden");
+    });
+    document.getElementById("btn-close-settings").addEventListener("click", () => {
+        document.getElementById("settings-modal").classList.add("hidden");
+    });
+    document.getElementById("settings-modal").addEventListener("mousedown", (e) => {
+        if (e.target.id === "settings-modal") e.target.classList.add("hidden");
+    });
+
+    // --- COMMAND PALETTE ---
+    const COMMANDS = [
+        // File Operations
+        { name: "Open File", kbd: "^O", mode: null, action: () => requestOpenFile() },
+        { name: "Save File", kbd: "^S", mode: null, action: () => downloadJSON() },
+        { name: "Edit Raw JSON", kbd: "^E", mode: null, action: () => openRawModal() },
+        // History
+        { name: "Undo", kbd: "^Z", mode: null, action: () => performUndo() },
+        { name: "Redo", kbd: "^Y", mode: null, action: () => performRedo() },
+        // Insert (Strict Mode)
+        {
+            name: "Insert Object {}",
+            kbd: "^⇧1",
+            mode: "strict",
+            action: () => {
+                const t = getActiveTarget();
+                if (t) commitAndExecute(() => insertRow(t, {}));
+            },
+        },
+        {
+            name: "Insert Array []",
+            kbd: "^⇧2",
+            mode: "strict",
+            action: () => {
+                const t = getActiveTarget();
+                if (t) commitAndExecute(() => insertRow(t, []));
+            },
+        },
+        {
+            name: "Insert String",
+            kbd: "^⇧3",
+            mode: "strict",
+            action: () => {
+                const t = getActiveTarget();
+                if (t) commitAndExecute(() => insertRow(t, ""));
+            },
+        },
+        {
+            name: "Insert Number",
+            kbd: "^⇧4",
+            mode: "strict",
+            action: () => {
+                const t = getActiveTarget();
+                if (t) commitAndExecute(() => insertRow(t, 0));
+            },
+        },
+        {
+            name: "Insert True",
+            kbd: "^⇧5",
+            mode: "strict",
+            action: () => {
+                const t = getActiveTarget();
+                if (t) commitAndExecute(() => insertRow(t, true));
+            },
+        },
+        {
+            name: "Insert False",
+            kbd: "^⇧6",
+            mode: "strict",
+            action: () => {
+                const t = getActiveTarget();
+                if (t) commitAndExecute(() => insertRow(t, false));
+            },
+        },
+        {
+            name: "Insert Null",
+            kbd: "^⇧N",
+            action: () => {
+                const t = getActiveTarget();
+                if (t) commitAndExecute(() => insertRow(t, null));
+            },
+        },
+        // Copy / Paste
+        {
+            name: "Copy Hierarchy",
+            kbd: "^C",
+            mode: null,
+            action: () => {
+                const t = getActiveTarget();
+                if (t) copyHierarchy(t);
+            },
+        },
+        {
+            name: "Paste Hierarchy",
+            kbd: "^V",
+            mode: null,
+            action: () => {
+                const t = getActiveTarget();
+                if (t) pasteHierarchy(t);
+            },
+        },
+        {
+            name: "Paste Escaped",
+            kbd: null,
+            mode: null,
+            action: () => document.getElementById("btn-paste-escaped").click(),
+        },
+        // Row manipulation
+        {
+            name: "Delete Row",
+            kbd: "^Del",
+            mode: null,
+            action: () => {
+                const t = getActiveTarget();
+                if (t) commitAndExecute(() => deleteRow(t));
+            },
+        },
+        {
+            name: "Move Row Up",
+            kbd: "^⇧▲",
+            mode: null,
+            action: () => {
+                const t = getActiveTarget();
+                if (t) commitAndExecute(() => dispatchMove(t, -1));
+            },
+        },
+        {
+            name: "Move Row Down",
+            kbd: "^⇧▼",
+            mode: null,
+            action: () => {
+                const t = getActiveTarget();
+                if (t) commitAndExecute(() => dispatchMove(t, 1));
+            },
+        },
+        // View
+        {
+            name: "Zen Mode (Fullscreen)",
+            kbd: "^F11",
+            mode: null,
+            action: () => toggleZenMode(),
+        },
+        // Toggles
+        {
+            name: "Toggle Sort by Keys",
+            kbd: null,
+            mode: null,
+            action: () => {
+                const t = document.getElementById("sort-keys-toggle");
+                t.checked = !t.checked;
+                t.dispatchEvent(new Event("change"));
+            },
+        },
+        {
+            name: "Toggle Hide Action Bar",
+            kbd: null,
+            mode: null,
+            action: () => {
+                const t = document.getElementById("hide-toolbar-toggle");
+                t.checked = !t.checked;
+                t.dispatchEvent(new Event("change"));
+            },
+        },
+        {
+            name: "Toggle Type-Safe (Strict) Mode",
+            kbd: null,
+            mode: null,
+            action: () => {
+                const t = document.getElementById("type-safe-toggle");
+                t.checked = !t.checked;
+                t.dispatchEvent(new Event("change"));
+            },
+        },
+        {
+            name: "Toggle Save in Browser",
+            kbd: null,
+            mode: null,
+            action: () => {
+                const t = document.getElementById("save-local-toggle");
+                t.checked = !t.checked;
+                t.dispatchEvent(new Event("change"));
+            },
+        },
+        // Palette itself
+        {
+            name: "Open Settings",
+            kbd: null,
+            mode: null,
+            action: () =>
+                document.getElementById("settings-modal").classList.remove("hidden"),
+        },
+        {
+            name: "Command Palette", kbd: "^K", mode: null, action: () => {
+            },
+        },
+    ];
+
+    function getActiveTarget() {
+        return dom.container.contains(document.activeElement)
+            ? document.activeElement
+            : lastActiveCell;
+    }
+
+    function fuzzyMatch(query, text) {
+        query = query.toLowerCase();
+        text = text.toLowerCase();
+
+        // Exact match
+        if (text === query) return 10000;
+
+        // Substring match — score by position (earlier = better)
+        const subIdx = text.indexOf(query);
+        if (subIdx !== -1) {
+            // Bonus if it lands on a word boundary
+            const wordBoundary = subIdx === 0 || text[subIdx - 1] === " ";
+            return 5000 - subIdx + (wordBoundary ? 1000 : 0);
+        }
+
+        // Word-initials match: e.g. "ts" matches "Type-Safe"
+        const words = text.split(/[\s\-_(){}[\]]+/);
+        const initials = words.map((w) => w[0] || "").join("");
+        if (initials.includes(query)) {
+            return 3000;
+        }
+
+        // Character-sequence (scattered) match — score by tightness
+        let qi = 0;
+        let firstIdx = -1;
+        let lastIdx = -1;
+        for (let i = 0; i < text.length && qi < query.length; i++) {
+            if (text[i] === query[qi]) {
+                if (firstIdx === -1) firstIdx = i;
+                lastIdx = i;
+                qi++;
+            }
+        }
+        if (qi === query.length) {
+            // Tighter span = better; earlier start = better
+            const span = lastIdx - firstIdx + 1;
+            return 1000 - span * 10 - firstIdx;
+        }
+
+        return 0; // no match
+    }
+
+    const cmdPaletteOverlay = document.getElementById("cmd-palette");
+    const cmdPaletteInput = document.getElementById("cmd-palette-input");
+    const cmdPaletteList = document.getElementById("cmd-palette-list");
+    let cmdActiveIndex = 0;
+
+    function openCommandPalette() {
+        cmdPaletteInput.value = "";
+        renderCommandList("");
+        cmdPaletteOverlay.classList.remove("hidden");
+        cmdPaletteInput.focus();
+    }
+
+    function closeCommandPalette() {
+        cmdPaletteOverlay.classList.add("hidden");
+    }
+
+    function renderCommandList(query) {
+        cmdPaletteList.innerHTML = "";
+        let items = [];
+
+        // Collect matching commands with scores
+        let scored = [];
+        COMMANDS.forEach((cmd) => {
             if (query) {
-                scored.sort((a, b) => b.score - a.score);
+                const score = fuzzyMatch(query, cmd.name);
+                if (score <= 0) return;
+                scored.push({ cmd, score });
+            } else {
+                scored.push({ cmd, score: 0 });
             }
-
-            scored.forEach(({ cmd }, visibleIndex) => {
-                const item = document.createElement("div");
-                item.className = "cmd-palette-item";
-                item.dataset.index = visibleIndex;
-
-                // Label
-                const label = document.createElement("div");
-                label.className = "cmd-palette-label";
-                const nameSpan = document.createElement("span");
-                nameSpan.className = "cmd-name";
-                nameSpan.textContent = cmd.name;
-                label.appendChild(nameSpan);
-
-                item.appendChild(label);
-
-                // Kbd
-                if (cmd.kbd) {
-                    const kbdWrap = document.createElement("div");
-                    kbdWrap.className = "cmd-palette-kbd";
-                    const kbd = document.createElement("kbd");
-                    kbd.textContent = cmd.kbd;
-                    kbdWrap.appendChild(kbd);
-                    item.appendChild(kbdWrap);
-                }
-
-                item.addEventListener("click", () => {
-                    closeCommandPalette();
-                    cmd.action();
-                });
-
-                item.addEventListener("mouseenter", () => {
-                    cmdActiveIndex = parseInt(item.dataset.index);
-                    updateActiveItem();
-                });
-
-                cmdPaletteList.appendChild(item);
-                items.push(item);
-            });
-
-            if (items.length === 0) {
-                const empty = document.createElement("div");
-                empty.className = "cmd-palette-empty";
-                empty.textContent = "No matching commands";
-                cmdPaletteList.appendChild(empty);
-            }
-
-            cmdActiveIndex = 0;
-            updateActiveItem();
-        }
-
-        function updateActiveItem() {
-            const items = cmdPaletteList.querySelectorAll(".cmd-palette-item");
-            items.forEach((el, i) => {
-                el.classList.toggle("active", i === cmdActiveIndex);
-            });
-            // Scroll into view
-            const active = items[cmdActiveIndex];
-            if (active) active.scrollIntoView({ block: "nearest" });
-        }
-
-        function executeActiveCommand() {
-            const items = cmdPaletteList.querySelectorAll(".cmd-palette-item");
-            const active = items[cmdActiveIndex];
-            if (active) active.click();
-        }
-
-        cmdPaletteInput.addEventListener("input", () => {
-            renderCommandList(cmdPaletteInput.value.trim());
         });
 
-        cmdPaletteInput.addEventListener("keydown", (e) => {
-            const items = cmdPaletteList.querySelectorAll(".cmd-palette-item");
-            if (e.key === "ArrowDown") {
-                e.preventDefault();
-                cmdActiveIndex = Math.min(cmdActiveIndex + 1, items.length - 1);
-                updateActiveItem();
-            } else if (e.key === "ArrowUp") {
-                e.preventDefault();
-                cmdActiveIndex = Math.max(cmdActiveIndex - 1, 0);
-                updateActiveItem();
-            } else if (e.key === "Enter") {
-                e.preventDefault();
-                executeActiveCommand();
-            } else if (e.key === "Escape") {
-                e.preventDefault();
+        // Sort by score descending (stable: original order preserved for ties)
+        if (query) {
+            scored.sort((a, b) => b.score - a.score);
+        }
+
+        scored.forEach(({ cmd }, visibleIndex) => {
+            const item = document.createElement("div");
+            item.className = "cmd-palette-item";
+            item.dataset.index = visibleIndex;
+
+            // Label
+            const label = document.createElement("div");
+            label.className = "cmd-palette-label";
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "cmd-name";
+            nameSpan.textContent = cmd.name;
+            label.appendChild(nameSpan);
+
+            item.appendChild(label);
+
+            // Kbd
+            if (cmd.kbd) {
+                const kbdWrap = document.createElement("div");
+                kbdWrap.className = "cmd-palette-kbd";
+                const kbd = document.createElement("kbd");
+                kbd.textContent = cmd.kbd;
+                kbdWrap.appendChild(kbd);
+                item.appendChild(kbdWrap);
+            }
+
+            item.addEventListener("click", () => {
                 closeCommandPalette();
-            }
+                cmd.action();
+            });
+
+            item.addEventListener("mouseenter", () => {
+                cmdActiveIndex = parseInt(item.dataset.index);
+                updateActiveItem();
+            });
+
+            cmdPaletteList.appendChild(item);
+            items.push(item);
         });
 
-        // Close on overlay click
-        cmdPaletteOverlay.addEventListener("mousedown", (e) => {
-            if (e.target === cmdPaletteOverlay) closeCommandPalette();
-        });
-
-        // --- INITIALIZATION ---
-        // Try LS first, else default
-        if (!lsToggle.checked || !loadFromLocalStorage()) {
-            safeLoad(DEFAULT_JSON);
+        if (items.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "cmd-palette-empty";
+            empty.textContent = "No matching commands";
+            cmdPaletteList.appendChild(empty);
         }
-    </script>
-    </body>
+
+        cmdActiveIndex = 0;
+        updateActiveItem();
+    }
+
+    function updateActiveItem() {
+        const items = cmdPaletteList.querySelectorAll(".cmd-palette-item");
+        items.forEach((el, i) => {
+            el.classList.toggle("active", i === cmdActiveIndex);
+        });
+        // Scroll into view
+        const active = items[cmdActiveIndex];
+        if (active) active.scrollIntoView({ block: "nearest" });
+    }
+
+    function executeActiveCommand() {
+        const items = cmdPaletteList.querySelectorAll(".cmd-palette-item");
+        const active = items[cmdActiveIndex];
+        if (active) active.click();
+    }
+
+    cmdPaletteInput.addEventListener("input", () => {
+        renderCommandList(cmdPaletteInput.value.trim());
+    });
+
+    cmdPaletteInput.addEventListener("keydown", (e) => {
+        const items = cmdPaletteList.querySelectorAll(".cmd-palette-item");
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            cmdActiveIndex = Math.min(cmdActiveIndex + 1, items.length - 1);
+            updateActiveItem();
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            cmdActiveIndex = Math.max(cmdActiveIndex - 1, 0);
+            updateActiveItem();
+        } else if (e.key === "Enter") {
+            e.preventDefault();
+            executeActiveCommand();
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            closeCommandPalette();
+        }
+    });
+
+    // Close on overlay click
+    cmdPaletteOverlay.addEventListener("mousedown", (e) => {
+        if (e.target === cmdPaletteOverlay) closeCommandPalette();
+    });
+
+    // --- INITIALIZATION ---
+    // Try LS first, else default
+    if (!lsToggle.checked || !loadFromLocalStorage()) {
+        safeLoad(DEFAULT_JSON);
+    }
+</script>
+</body>
 
 </html>

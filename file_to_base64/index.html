@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" class="layout-centered">
 
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="light dark">
-        <title>File to Base64</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <link rel="stylesheet" type="text/css" href="../one.css">
-        <style>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>File to Base64</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
         .textarea-container {
             display: flex;
             flex-direction: column;
@@ -36,163 +36,169 @@
             margin-bottom: 0;
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <main>
-            <section>
-                <h2>File to Base64</h2>
-                <p>Convert binary files to base64 strings or media HTML tags inline. Drag & drop or select files.</p>
+<body>
+<main>
+    <section>
+        <h2>File to Base64</h2>
+        <p>Convert binary files to base64 strings or media HTML tags inline. Drag & drop or select
+            files.</p>
 
-                <div class="add-string-container">
-                    <label for="string-input" class="sr-only">Add string</label>
-                    <input type="text" id="string-input" placeholder="Enter string to add to output...">
-                    <button type="button" id="add-string-btn" class="btn-sym" title="Add string" aria-label="Add string">
-                        add
-                    </button>
-                </div>
+        <div class="add-string-container">
+            <label for="string-input" class="sr-only">Add string</label>
+            <input type="text" id="string-input" placeholder="Enter string to add to output...">
+            <button type="button" id="add-string-btn" class="btn-sym" title="Add string"
+                    aria-label="Add string">
+                add
+            </button>
+        </div>
 
-                <div class="file-drop-area" id="drop-area">
-                    <label for="file-input">Drop files or click to upload</label>
-                    <input type="file" id="file-input" multiple hidden>
-                </div>
+        <div class="file-drop-area" id="drop-area">
+            <label for="file-input">Drop files or click to upload</label>
+            <input type="file" id="file-input" multiple hidden>
+        </div>
 
-                <div class="textarea-container">
-                    <label for="output-textarea">Output:</label>
-                    <textarea id="output-textarea" readonly></textarea>
-                    <div class="flex-row">
-                        <button type="button" id="copy-btn">Copy Output</button>
-                        <button type="button" id="clear-btn" class="btn">Clear Output</button>
-                    </div>
-                </div>
-            </section>
-        </main>
+        <div class="textarea-container">
+            <label for="output-textarea">Output:</label>
+            <textarea id="output-textarea" readonly></textarea>
+            <div class="flex-row">
+                <button type="button" id="copy-btn">Copy Output</button>
+                <button type="button" id="clear-btn" class="btn">Clear Output</button>
+            </div>
+        </div>
+    </section>
+</main>
 
-        <script>
-        const dropArea = document.getElementById("drop-area");
-        const fileInput = document.getElementById("file-input");
-        const outputTextarea = document.getElementById("output-textarea");
-        const stringInput = document.getElementById("string-input");
-        const addStringBtn = document.getElementById("add-string-btn");
-        const copyBtn = document.getElementById("copy-btn");
-        const clearBtn = document.getElementById("clear-btn");
+<script>
+    const dropArea = document.getElementById("drop-area");
+    const fileInput = document.getElementById("file-input");
+    const outputTextarea = document.getElementById("output-textarea");
+    const stringInput = document.getElementById("string-input");
+    const addStringBtn = document.getElementById("add-string-btn");
+    const copyBtn = document.getElementById("copy-btn");
+    const clearBtn = document.getElementById("clear-btn");
 
-        function appendToOutput(text) {
-            if (outputTextarea.value) {
-                outputTextarea.value += "\n\n" + text;
-            } else {
-                outputTextarea.value = text;
-            }
-            outputTextarea.scrollTop = outputTextarea.scrollHeight;
+    function appendToOutput(text) {
+        if (outputTextarea.value) {
+            outputTextarea.value += "\n\n" + text;
+        } else {
+            outputTextarea.value = text;
         }
+        outputTextarea.scrollTop = outputTextarea.scrollHeight;
+    }
 
-        addStringBtn.addEventListener("click", () => {
-            if (stringInput.value) {
-                try {
-                    // Base64 encode the string (handling UTF-8)
-                    const base64 = btoa(unescape(encodeURIComponent(stringInput.value)));
-                    appendToOutput(base64);
-                    stringInput.value = "";
-                } catch (e) {
-                    console.error("Failed to encode string to base64:", e);
-                }
+    addStringBtn.addEventListener("click", () => {
+        if (stringInput.value) {
+            try {
+                // Base64 encode the string (handling UTF-8)
+                const base64 = btoa(unescape(encodeURIComponent(stringInput.value)));
+                appendToOutput(base64);
+                stringInput.value = "";
+            } catch (e) {
+                console.error("Failed to encode string to base64:", e);
             }
-        });
+        }
+    });
 
-        stringInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                addStringBtn.click();
-            }
-        });
-
-        // Allow click to trigger the input regardless
-        dropArea.addEventListener("click", () => fileInput.click());
-
-        // Handle drag events to highlight the drop area
-        ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
-            dropArea.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
+    stringInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
             e.preventDefault();
-            e.stopPropagation();
+            addStringBtn.click();
         }
+    });
 
-        ["dragenter", "dragover"].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => dropArea.classList.add("drag-over"), false);
-        });
+    // Allow click to trigger the input regardless
+    dropArea.addEventListener("click", () => fileInput.click());
 
-        ["dragleave", "drop"].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => dropArea.classList.remove("drag-over"), false);
-        });
+    // Handle drag events to highlight the drop area
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
 
-        // Handle file drop 
-        dropArea.addEventListener("drop", handleDrop, false);
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
 
-        function handleDrop(e) {
-            let dt = e.dataTransfer;
-            let files = dt.files;
-            if (files.length) {
-                processFiles(files);
-            }
+    ["dragenter", "dragover"].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => dropArea.classList.add("drag-over"), false);
+    });
+
+    ["dragleave", "drop"].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => dropArea.classList.remove("drag-over"), false);
+    });
+
+    // Handle file drop
+    dropArea.addEventListener("drop", handleDrop, false);
+
+    function handleDrop(e) {
+        let dt = e.dataTransfer;
+        let files = dt.files;
+        if (files.length) {
+            processFiles(files);
         }
+    }
 
-        // Handle normal file selection
-        fileInput.addEventListener("change", () => {
-            if (fileInput.files && fileInput.files.length > 0) {
-                processFiles(fileInput.files);
-                // Reset to allow selecting same files again
-                fileInput.value = "";
-            }
-        });
-
-        function processFiles(files) {
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const dataUrl = e.target.result;
-                    let toAppend = "";
-
-                    if (file.type.startsWith("image/")) {
-                        toAppend = `<img src="${dataUrl}" alt="${file.name}" />`;
-                    } else if (file.type.startsWith("video/")) {
-                        toAppend = `<video controls src="${dataUrl}"></video>`;
-                    } else if (file.type.startsWith("audio/")) {
-                        toAppend = `<audio controls src="${dataUrl}"></audio>`;
-                    } else {
-                        // Just the base64 string
-                        const parts = dataUrl.split(",");
-                        toAppend = parts.length > 1 ? parts[1] : dataUrl;
-                    }
-
-                    appendToOutput(toAppend);
-                };
-                reader.readAsDataURL(file);
-            });
+    // Handle normal file selection
+    fileInput.addEventListener("change", () => {
+        if (fileInput.files && fileInput.files.length > 0) {
+            processFiles(fileInput.files);
+            // Reset to allow selecting same files again
+            fileInput.value = "";
         }
+    });
 
-        copyBtn.addEventListener("click", () => {
-            const originalText = copyBtn.innerText;
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(outputTextarea.value).then(() => {
-                    copyBtn.innerText = "Copied!";
-                    setTimeout(() => { copyBtn.innerText = originalText; }, 2000);
-                });
-            } else {
-                outputTextarea.select();
-                document.execCommand("copy");
+    function processFiles(files) {
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+                let toAppend = "";
+
+                if (file.type.startsWith("image/")) {
+                    toAppend = `<img src="${dataUrl}" alt="${file.name}" />`;
+                } else if (file.type.startsWith("video/")) {
+                    toAppend = `<video controls src="${dataUrl}"></video>`;
+                } else if (file.type.startsWith("audio/")) {
+                    toAppend = `<audio controls src="${dataUrl}"></audio>`;
+                } else {
+                    // Just the base64 string
+                    const parts = dataUrl.split(",");
+                    toAppend = parts.length > 1 ? parts[1] : dataUrl;
+                }
+
+                appendToOutput(toAppend);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    copyBtn.addEventListener("click", () => {
+        const originalText = copyBtn.innerText;
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(outputTextarea.value).then(() => {
                 copyBtn.innerText = "Copied!";
-                setTimeout(() => { copyBtn.innerText = originalText; }, 2000);
-            }
-        });
+                setTimeout(() => {
+                    copyBtn.innerText = originalText;
+                }, 2000);
+            });
+        } else {
+            outputTextarea.select();
+            document.execCommand("copy");
+            copyBtn.innerText = "Copied!";
+            setTimeout(() => {
+                copyBtn.innerText = originalText;
+            }, 2000);
+        }
+    });
 
-        clearBtn.addEventListener("click", () => {
-            outputTextarea.value = "";
-            dropArea.removeAttribute("data-file-name");
-        });
-    </script>
-    </body>
+    clearBtn.addEventListener("click", () => {
+        outputTextarea.value = "";
+        dropArea.removeAttribute("data-file-name");
+    });
+</script>
+</body>
 
 </html>

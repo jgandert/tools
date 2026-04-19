@@ -239,1459 +239,1550 @@
 
 <body>
 
-    <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
 
-    <header>
-        <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
-        <hgroup>
-            <h1>Visual Regex Builder & Tester</h1>
-            <p>Edit the structure tree to generate regex, or paste regex below.</p>
-        </hgroup>
-    </header>
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Visual Regex Builder & Tester</h1>
+        <p>Edit the structure tree to generate regex, or paste regex below.</p>
+    </hgroup>
+</header>
 
-    <main id="content">
-        <section id="regex-controls">
-            <form onsubmit="return false;">
-                <label for="regex-out">
-                    Regular Expression
-                    <input type="text" id="regex-out" placeholder="Type regex here (e.g. ^[a-z]+(\d{3}))$"
-                        autocomplete="off" class="regex-input">
-                </label>
-                <label for="join-literals">
-                    <input type="checkbox" id="join-literals" checked onchange="updateASTFromInput()">
-                    Join successive Literals in Structure Tree
-                </label>
-                <div id="error-msg" class="error-message" hidden></div>
-            </form>
-        </section>
-
-        <section id="structure-tree">
-            <h2>Structure Tree</h2>
-            <div id="tree-root"></div>
-        </section>
-
-        <section id="test-section">
-            <h2 class="header-row">
-                Test <button type="button" id="generate-btn" onclick="generateTestStrings()">
-                    <span class="sym">casino</span> Generate
-                </button>
-            </h2>
-            <p class="description">Each line is tested independently against the current regex.</p>
-            <label for="test-input">
-                Test strings (one per line)
-                <textarea id="test-input" rows="6"></textarea>
+<main id="content">
+    <section id="regex-controls">
+        <form onsubmit="return false;">
+            <label for="regex-out">
+                Regular Expression
+                <input type="text" id="regex-out"
+                       placeholder="Type regex here (e.g. ^[a-z]+(\d{3}))$"
+                       autocomplete="off" class="regex-input">
             </label>
-            <div id="test-results"></div>
-        </section>
-    </main>
+            <label for="join-literals">
+                <input type="checkbox" id="join-literals" checked onchange="updateASTFromInput()">
+                Join successive Literals in Structure Tree
+            </label>
+            <div id="error-msg" class="error-message" hidden></div>
+        </form>
+    </section>
 
-    <aside>
-        <h2>Glossary</h2>
-        <ul>
-            <li>
-                <dfn>Literal</dfn>: Matches exact text characters.
-            </li>
-            <li>
-                <dfn>Set</dfn>: Matches any single character from a set or range.
-            </li>
-            <li>
-                <dfn>Group</dfn>: Groups tokens together, useful for capturing or quantifiers.
-            </li>
-            <li>
-                <dfn>Named Group</dfn>
-                : A capturing group with a name, e.g. <code>(?P&lt;name&gt;...)</code>
-                (Python-style).
-            </li>
-            <li>
-                <dfn>Positive Lookahead</dfn>
-                <code>(?=...)</code>
-                : Checks that what comes <em>next</em>
-                matches, without consuming it. E.g. <code>\d+(?= USD)</code>
-                matches <code>100</code> in
-                "100 USD" but not in "100 EUR".
-            </li>
-            <li>
-                <dfn>Negative Lookahead</dfn>
-                <code>(?!...)</code>
-                : Checks that what comes <em>next does
-                    not</em>
-                match. E.g. <code>\d+(?! USD)</code>
-                matches <code>100</code> in "100 EUR" but
-                not in "100 USD".
-            </li>
-            <li>
-                <dfn>Positive Lookbehind</dfn>
-                <code>(?&lt;=...)</code>
-                : Checks that what comes <em>before</em>
-                matches, without consuming it. E.g. <code>(?&lt;=\$)\d+</code>
-                matches <code>50</code> in
-                "$50" but not in "€50".
-            </li>
-            <li>
-                <dfn>Negative Lookbehind</dfn>
-                <code>(?&lt;!...)</code>
-                : Checks that what comes <em>before
-                    does not</em>
-                match. E.g. <code>(?&lt;!\$)\d+</code>
-                matches <code>50</code> in "€50"
-                but not in "$50".
-            </li>
-            <li>
-                <dfn>Backreference</dfn>
-                : Matches the same text as previously matched by a group (e.g. <code>\1</code>
-                or <code>\k&lt;name&gt;</code>).
-            </li>
-            <li>
-                <dfn>Branch (OR)</dfn>
-                : Matches the expression before or after the <code>|</code>.
-            </li>
-            <li>
-                <dfn>Anchor</dfn>
-                : Matches a position like the start (<code>^</code>
-                ) or end (<code>$</code>) of a line.
-            </li>
-            <li>
-                <dfn>Any (.)</dfn>: Matches any single character except newline.
-            </li>
-            <li>
-                <dfn>Flags</dfn>
-                : Inline modifiers like <code>(?i)</code>
-                for case-insensitive or <code>(?x)</code> for
-                extended mode.
-            </li>
-        </ul>
-        <hr>
-        <button type="button" id="restore-default-btn" class="btn">
-            <span class="sym">history</span> Restore Default Example
-        </button>
-    </aside>
+    <section id="structure-tree">
+        <h2>Structure Tree</h2>
+        <div id="tree-root"></div>
+    </section>
 
-    <script>
-        /**
-         * REVERSE REGEX BUILDER
-         * * Architecture:
-         * 1. AST: A JSON tree representing the Regex.
-         * 2. Parser: String -> AST.
-         * 3. Generator: AST -> String.
-         * 4. Renderer: AST -> DOM (Reactive).
-         */
+    <section id="test-section">
+        <h2 class="header-row">
+            Test
+            <button type="button" id="generate-btn" onclick="generateTestStrings()">
+                <span class="sym">casino</span> Generate
+            </button>
+        </h2>
+        <p class="description">Each line is tested independently against the current regex.</p>
+        <label for="test-input">
+            Test strings (one per line)
+            <textarea id="test-input" rows="6"></textarea>
+        </label>
+        <div id="test-results"></div>
+    </section>
+</main>
 
-        /* --- 1. Constants & AST Node Definitions --- */
+<aside>
+    <h2>Glossary</h2>
+    <ul>
+        <li>
+            <dfn>Literal</dfn>: Matches exact text characters.
+        </li>
+        <li>
+            <dfn>Set</dfn>: Matches any single character from a set or range.
+        </li>
+        <li>
+            <dfn>Group</dfn>: Groups tokens together, useful for capturing or quantifiers.
+        </li>
+        <li>
+            <dfn>Named Group</dfn>
+            : A capturing group with a name, e.g. <code>(?P&lt;name&gt;...)</code>
+            (Python-style).
+        </li>
+        <li>
+            <dfn>Positive Lookahead</dfn>
+            <code>(?=...)</code>
+            : Checks that what comes <em>next</em>
+            matches, without consuming it. E.g. <code>\d+(?= USD)</code>
+            matches <code>100</code> in
+            "100 USD" but not in "100 EUR".
+        </li>
+        <li>
+            <dfn>Negative Lookahead</dfn>
+            <code>(?!...)</code>
+            : Checks that what comes <em>next does
+            not</em>
+            match. E.g. <code>\d+(?! USD)</code>
+            matches <code>100</code> in "100 EUR" but
+            not in "100 USD".
+        </li>
+        <li>
+            <dfn>Positive Lookbehind</dfn>
+            <code>(?&lt;=...)</code>
+            : Checks that what comes <em>before</em>
+            matches, without consuming it. E.g. <code>(?&lt;=\$)\d+</code>
+            matches <code>50</code> in
+            "$50" but not in "€50".
+        </li>
+        <li>
+            <dfn>Negative Lookbehind</dfn>
+            <code>(?&lt;!...)</code>
+            : Checks that what comes <em>before
+            does not</em>
+            match. E.g. <code>(?&lt;!\$)\d+</code>
+            matches <code>50</code> in "€50"
+            but not in "$50".
+        </li>
+        <li>
+            <dfn>Backreference</dfn>
+            : Matches the same text as previously matched by a group (e.g. <code>\1</code>
+            or <code>\k&lt;name&gt;</code>).
+        </li>
+        <li>
+            <dfn>Branch (OR)</dfn>
+            : Matches the expression before or after the <code>|</code>.
+        </li>
+        <li>
+            <dfn>Anchor</dfn>
+            : Matches a position like the start (<code>^</code>
+            ) or end (<code>$</code>) of a line.
+        </li>
+        <li>
+            <dfn>Any (.)</dfn>: Matches any single character except newline.
+        </li>
+        <li>
+            <dfn>Flags</dfn>
+            : Inline modifiers like <code>(?i)</code>
+            for case-insensitive or <code>(?x)</code> for
+            extended mode.
+        </li>
+    </ul>
+    <hr>
+    <button type="button" id="restore-default-btn" class="btn">
+        <span class="sym">history</span> Restore Default Example
+    </button>
+</aside>
 
-        const TYPES = {
-            ROOT: "ROOT",
-            LITERAL: "LITERAL",     // Normal text
-            SET: "SET",             // [a-z] or \d
-            GROUP: "GROUP",         // (...)
-            BRANCH: "BRANCH",       // | (Alternation)
-            ANCHOR: "ANCHOR",       // ^ $ \b
-            DOT: "DOT",             // .
-            FLAGS: "FLAGS",          // (?ix) inline flags
-            BACKREF: "BACKREF"      // \1, \2...
-        };
+<script>
+    /**
+     * REVERSE REGEX BUILDER
+     * * Architecture:
+     * 1. AST: A JSON tree representing the Regex.
+     * 2. Parser: String -> AST.
+     * 3. Generator: AST -> String.
+     * 4. Renderer: AST -> DOM (Reactive).
+     */
 
-        // Creates a default unique ID for nodes to help with DOM diffing/event handling
-        const uid = () => Math.random().toString(36).substr(2, 9);
+    /* --- 1. Constants & AST Node Definitions --- */
 
-        /* --- 2. The Parser (Recursive Descent) --- */
+    const TYPES = {
+        ROOT: "ROOT",
+        LITERAL: "LITERAL",     // Normal text
+        SET: "SET",             // [a-z] or \d
+        GROUP: "GROUP",         // (...)
+        BRANCH: "BRANCH",       // | (Alternation)
+        ANCHOR: "ANCHOR",       // ^ $ \b
+        DOT: "DOT",             // .
+        FLAGS: "FLAGS",          // (?ix) inline flags
+        BACKREF: "BACKREF",      // \1, \2...
+    };
 
-        class RegexParser {
-            constructor(pattern) {
-                this.pattern = pattern;
-                this.pos = 0;
-                this.len = pattern.length;
+    // Creates a default unique ID for nodes to help with DOM diffing/event handling
+    const uid = () => Math.random().toString(36).substr(2, 9);
+
+    /* --- 2. The Parser (Recursive Descent) --- */
+
+    class RegexParser {
+        constructor(pattern) {
+            this.pattern = pattern;
+            this.pos = 0;
+            this.len = pattern.length;
+        }
+
+        peek() {
+            return this.pos < this.len ? this.pattern[this.pos] : null;
+        }
+
+        consume() {
+            return this.pos < this.len ? this.pattern[this.pos++] : null;
+        }
+
+        match(char) {
+            if (this.peek() === char) {
+                this.pos++;
+                return true;
             }
+            return false;
+        }
 
-            peek() {
-                return this.pos < this.len ? this.pattern[this.pos] : null;
+        // Match an exact substring at the current position
+        matchStr(str) {
+            if (this.pattern.substring(this.pos, this.pos + str.length) === str) {
+                this.pos += str.length;
+                return true;
             }
+            return false;
+        }
 
-            consume() {
-                return this.pos < this.len ? this.pattern[this.pos++] : null;
-            }
+        error(msg) {
+            throw new Error(`${msg} at position ${this.pos}`);
+        }
 
-            match(char) {
-                if (this.peek() === char) {
-                    this.pos++;
-                    return true;
-                }
-                return false;
-            }
+        parse() {
+            const root = { type: TYPES.ROOT, children: [], id: uid() };
+            const sequence = this.parseAlternation();
+            root.children = sequence;
+            return root;
+        }
 
-            // Match an exact substring at the current position
-            matchStr(str) {
-                if (this.pattern.substring(this.pos, this.pos + str.length) === str) {
-                    this.pos += str.length;
-                    return true;
-                }
-                return false;
-            }
+        // Handles a | b | c
+        parseAlternation() {
+            const options = [];
+            let currentSequence = [];
 
-            error(msg) {
-                throw new Error(`${msg} at position ${this.pos}`);
-            }
-
-            parse() {
-                const root = { type: TYPES.ROOT, children: [], id: uid() };
-                const sequence = this.parseAlternation();
-                root.children = sequence;
-                return root;
-            }
-
-            // Handles a | b | c
-            parseAlternation() {
-                const options = [];
-                let currentSequence = [];
-
-                while (this.pos < this.len && this.peek() !== ")") {
-                    if (this.match("|")) {
-                        options.push(currentSequence);
-                        currentSequence = [];
-                    } else {
-                        const atom = this.parseAtom();
-                        if (atom) {
-                            // Flags nodes cannot have quantifiers
-                            const quantified = atom.type === TYPES.FLAGS ? atom : this.parseQuantifier(atom);
-                            currentSequence.push(quantified);
-                        } else {
-                            break;
-                        }
-                    }
-                }
-
-                options.push(currentSequence);
-
-                if (options.length > 1) {
-                    return [{
-                        type: TYPES.BRANCH,
-                        branches: options,
-                        id: uid()
-                    }];
+            while (this.pos < this.len && this.peek() !== ")") {
+                if (this.match("|")) {
+                    options.push(currentSequence);
+                    currentSequence = [];
                 } else {
-                    return currentSequence;
+                    const atom = this.parseAtom();
+                    if (atom) {
+                        // Flags nodes cannot have quantifiers
+                        const quantified = atom.type === TYPES.FLAGS ? atom : this.parseQuantifier(atom);
+                        currentSequence.push(quantified);
+                    } else {
+                        break;
+                    }
                 }
             }
 
-            // Check if the substring at current pos (after '(?') is a flags-only group
-            // e.g. (?ix), (?i), etc. — no content, just flags followed by ')'
-            isInlineFlagsOnly() {
-                const saved = this.pos;
-                let flags = "";
-                while (this.pos < this.len && /[aimsux]/.test(this.peek())) {
-                    flags += this.consume();
-                }
-                if (flags.length > 0 && this.peek() === ")") {
-                    // It's a flags-only group like (?ix)
-                    this.pos = saved;
-                    return true;
-                }
+            options.push(currentSequence);
+
+            if (options.length > 1) {
+                return [{
+                    type: TYPES.BRANCH,
+                    branches: options,
+                    id: uid(),
+                }];
+            } else {
+                return currentSequence;
+            }
+        }
+
+        // Check if the substring at current pos (after '(?') is a flags-only group
+        // e.g. (?ix), (?i), etc. — no content, just flags followed by ')'
+        isInlineFlagsOnly() {
+            const saved = this.pos;
+            let flags = "";
+            while (this.pos < this.len && /[aimsux]/.test(this.peek())) {
+                flags += this.consume();
+            }
+            if (flags.length > 0 && this.peek() === ")") {
+                // It's a flags-only group like (?ix)
                 this.pos = saved;
-                return false;
+                return true;
             }
+            this.pos = saved;
+            return false;
+        }
 
-            parseAtom() {
-                const char = this.peek();
-                if (char === null) return null;
+        parseAtom() {
+            const char = this.peek();
+            if (char === null) return null;
 
-                // End of group
-                if (char === ")" || char === "|") return null;
+            // End of group
+            if (char === ")" || char === "|") return null;
 
-                // Group
-                if (this.match("(")) {
-                    let capturing = true;
-                    let name = null;
+            // Group
+            if (this.match("(")) {
+                let capturing = true;
+                let name = null;
 
-                    if (this.match("?")) {
-                        // Inline flags only: (?ix)
-                        if (this.isInlineFlagsOnly()) {
-                            let flags = "";
-                            while (this.pos < this.len && /[aimsux]/.test(this.peek())) {
-                                flags += this.consume();
-                            }
-                            if (!this.match(")")) this.error("Expected ) after inline flags");
-                            return {
-                                type: TYPES.FLAGS,
-                                flags: flags,
-                                id: uid()
-                            };
+                if (this.match("?")) {
+                    // Inline flags only: (?ix)
+                    if (this.isInlineFlagsOnly()) {
+                        let flags = "";
+                        while (this.pos < this.len && /[aimsux]/.test(this.peek())) {
+                            flags += this.consume();
                         }
-                        // Lookahead/lookbehind: (?=...) (?!...) (?<=...) (?<!...)
-                        else if ("=!".includes(this.peek()) || (this.peek() === "<" && this.pos + 1 < this.len && "=!".includes(this.pattern[this.pos + 1]))) {
-                            let lookType = "";
-                            if (this.match("<")) {
-                                lookType = "<" + this.consume(); // <= or <!
-                            } else {
-                                lookType = this.consume(); // = or !
-                            }
-                            const children = this.parseAlternation();
-                            if (!this.match(")")) this.error("Unclosed lookaround group");
-                            return {
-                                type: TYPES.GROUP,
-                                capturing: false,
-                                lookType: "?" + lookType,
-                                children: children,
-                                id: uid()
-                            };
-                        }
-                        // Atomic group: (?>...)
-                        else if (this.match(">")) {
-                            const children = this.parseAlternation();
-                            if (!this.match(")")) this.error("Unclosed atomic group");
-                            return {
-                                type: TYPES.GROUP,
-                                capturing: false,
-                                lookType: "?>",
-                                children: children,
-                                id: uid()
-                            };
-                        }
-                        // Named group: (?P<name>...) or (?<name>...)
-                        else if (this.matchStr("P<") || this.match("<")) {
-                            name = "";
-                            while (this.pos < this.len && this.peek() !== ">") {
-                                name += this.consume();
-                            }
-                            if (!this.match(">")) this.error("Expected > after group name");
-                            capturing = true;
-                        }
-                        // Python style named backreference: (?P=name)
-                        else if (this.matchStr("P=")) {
-                            let name = "";
-                            while (this.pos < this.len && this.peek() !== ")") {
-                                name += this.consume();
-                            }
-                            if (!this.match(")")) this.error("Expected ) after named backref");
-                            return {
-                                type: TYPES.BACKREF,
-                                named: true,
-                                value: name,
-                                id: uid()
-                            };
-                        }
-                        // Non-capturing: (?:...)
-                        else if (this.match(":")) {
-                            capturing = false;
-                        }
+                        if (!this.match(")")) this.error("Expected ) after inline flags");
+                        return {
+                            type: TYPES.FLAGS,
+                            flags: flags,
+                            id: uid(),
+                        };
                     }
-
-                    const children = this.parseAlternation();
-                    if (!this.match(")")) this.error("Unclosed group");
-
-                    return {
-                        type: TYPES.GROUP,
-                        capturing: capturing,
-                        name: name,
-                        children: children,
-                        id: uid()
-                    };
+                    // Lookahead/lookbehind: (?=...) (?!...) (?<=...) (?<!...)
+                    else if ("=!".includes(this.peek()) || (this.peek() === "<" && this.pos + 1 < this.len && "=!".includes(this.pattern[this.pos + 1]))) {
+                        let lookType = "";
+                        if (this.match("<")) {
+                            lookType = "<" + this.consume(); // <= or <!
+                        } else {
+                            lookType = this.consume(); // = or !
+                        }
+                        const children = this.parseAlternation();
+                        if (!this.match(")")) this.error("Unclosed lookaround group");
+                        return {
+                            type: TYPES.GROUP,
+                            capturing: false,
+                            lookType: "?" + lookType,
+                            children: children,
+                            id: uid(),
+                        };
+                    }
+                    // Atomic group: (?>...)
+                    else if (this.match(">")) {
+                        const children = this.parseAlternation();
+                        if (!this.match(")")) this.error("Unclosed atomic group");
+                        return {
+                            type: TYPES.GROUP,
+                            capturing: false,
+                            lookType: "?>",
+                            children: children,
+                            id: uid(),
+                        };
+                    }
+                    // Named group: (?P<name>...) or (?<name>...)
+                    else if (this.matchStr("P<") || this.match("<")) {
+                        name = "";
+                        while (this.pos < this.len && this.peek() !== ">") {
+                            name += this.consume();
+                        }
+                        if (!this.match(">")) this.error("Expected > after group name");
+                        capturing = true;
+                    }
+                    // Python style named backreference: (?P=name)
+                    else if (this.matchStr("P=")) {
+                        let name = "";
+                        while (this.pos < this.len && this.peek() !== ")") {
+                            name += this.consume();
+                        }
+                        if (!this.match(")")) this.error("Expected ) after named backref");
+                        return {
+                            type: TYPES.BACKREF,
+                            named: true,
+                            value: name,
+                            id: uid(),
+                        };
+                    }
+                    // Non-capturing: (?:...)
+                    else if (this.match(":")) {
+                        capturing = false;
+                    }
                 }
 
-                // Set [...]
-                if (this.match("[")) {
-                    let content = "";
-                    let negated = false;
-                    if (this.match("^")) {
-                        negated = true;
-                    }
+                const children = this.parseAlternation();
+                if (!this.match(")")) this.error("Unclosed group");
 
-                    // Proper set content parsing that handles escape sequences
-                    while (this.pos < this.len) {
-                        if (this.peek() === "\\") {
-                            // Consume the backslash and the next char as a pair
-                            content += this.consume(); // backslash
-                            if (this.pos < this.len) content += this.consume(); // escaped char
-                        } else if (this.peek() === "]") {
-                            this.consume();
-                            break;
-                        } else {
-                            content += this.consume();
-                        }
-                    }
+                return {
+                    type: TYPES.GROUP,
+                    capturing: capturing,
+                    name: name,
+                    children: children,
+                    id: uid(),
+                };
+            }
 
+            // Set [...]
+            if (this.match("[")) {
+                let content = "";
+                let negated = false;
+                if (this.match("^")) {
+                    negated = true;
+                }
+
+                // Proper set content parsing that handles escape sequences
+                while (this.pos < this.len) {
+                    if (this.peek() === "\\") {
+                        // Consume the backslash and the next char as a pair
+                        content += this.consume(); // backslash
+                        if (this.pos < this.len) content += this.consume(); // escaped char
+                    } else if (this.peek() === "]") {
+                        this.consume();
+                        break;
+                    } else {
+                        content += this.consume();
+                    }
+                }
+
+                return {
+                    type: TYPES.SET,
+                    content: content,
+                    negated: negated,
+                    id: uid(),
+                };
+            }
+
+            // Anchors
+            if (this.match("^")) return {
+                type: TYPES.ANCHOR,
+                kind: "Start",
+                value: "^",
+                id: uid(),
+            };
+            if (this.match("$")) return { type: TYPES.ANCHOR, kind: "End", value: "$", id: uid() };
+            if (this.match(".")) return { type: TYPES.DOT, id: uid() };
+
+            // Escapes
+            if (this.match("\\")) {
+                const esc = this.consume();
+                // Backreference \1, \2...
+                if (/[1-9]/.test(esc)) {
+                    let val = esc;
+                    while (this.pos < this.len && /[0-9]/.test(this.peek())) {
+                        val += this.consume();
+                    }
+                    return { type: TYPES.BACKREF, value: val, id: uid() };
+                }
+                // Predefined sets
+                if ("dDwWsS".includes(esc)) {
                     return {
                         type: TYPES.SET,
-                        content: content,
-                        negated: negated,
-                        id: uid()
+                        predefined: "\\" + esc,
+                        id: uid(),
                     };
                 }
-
-                // Anchors
-                if (this.match("^")) return { type: TYPES.ANCHOR, kind: "Start", value: "^", id: uid() };
-                if (this.match("$")) return { type: TYPES.ANCHOR, kind: "End", value: "$", id: uid() };
-                if (this.match(".")) return { type: TYPES.DOT, id: uid() };
-
-                // Escapes
-                if (this.match("\\")) {
-                    const esc = this.consume();
-                    // Backreference \1, \2...
-                    if (/[1-9]/.test(esc)) {
-                        let val = esc;
-                        while (this.pos < this.len && /[0-9]/.test(this.peek())) {
-                            val += this.consume();
-                        }
-                        return { type: TYPES.BACKREF, value: val, id: uid() };
-                    }
-                    // Predefined sets
-                    if ("dDwWsS".includes(esc)) {
-                        return {
-                            type: TYPES.SET,
-                            predefined: "\\" + esc,
-                            id: uid()
-                        };
-                    }
-                    // Anchor \b \B
-                    if ("bB".includes(esc)) {
-                        return {
-                            type: TYPES.ANCHOR,
-                            kind: "Boundary",
-                            value: "\\" + esc,
-                            id: uid()
-                        };
-                    }
-                    // Escaped literal (e.g. \. \* \+ etc.)
+                // Anchor \b \B
+                if ("bB".includes(esc)) {
                     return {
-                        type: TYPES.LITERAL,
-                        value: esc,
-                        escaped: true,
-                        id: uid()
+                        type: TYPES.ANCHOR,
+                        kind: "Boundary",
+                        value: "\\" + esc,
+                        id: uid(),
                     };
                 }
-
-                // Literal
-                const val = this.consume();
-                if ("*+?{}".includes(val)) this.error(`Unexpected quantifier ${val}`);
-
-                return { type: TYPES.LITERAL, value: val, id: uid() };
+                // Escaped literal (e.g. \. \* \+ etc.)
+                return {
+                    type: TYPES.LITERAL,
+                    value: esc,
+                    escaped: true,
+                    id: uid(),
+                };
             }
 
-            parseQuantifier(atom) {
-                let min = 1, max = 1;
-                let greedy = true;
-                let quantified = false;
+            // Literal
+            const val = this.consume();
+            if ("*+?{}".includes(val)) this.error(`Unexpected quantifier ${val}`);
 
-                if (this.match("*")) { min = 0; max = Infinity; quantified = true; }
-                else if (this.match("+")) { min = 1; max = Infinity; quantified = true; }
-                else if (this.match("?")) { min = 0; max = 1; quantified = true; }
-                else if (this.match("{")) {
-                    const start = this.pos;
-                    while (this.pos < this.len && this.peek() !== "}") this.pos++;
-                    const content = this.pattern.substring(start, this.pos);
-                    this.consume(); // }
-
-                    const parts = content.split(",");
-                    min = parseInt(parts[0], 10) || 0;
-                    if (parts.length === 1) max = min;
-                    else max = parts[1] === "" ? Infinity : parseInt(parts[1], 10);
-                    quantified = true;
-                }
-
-                if (quantified) {
-                    if (this.match("?")) greedy = false;
-                    atom.quantifier = { min, max, greedy };
-                }
-
-                return atom;
-            }
+            return { type: TYPES.LITERAL, value: val, id: uid() };
         }
 
-        /* --- 3. The Generator (AST -> String) --- */
+        parseQuantifier(atom) {
+            let min = 1, max = 1;
+            let greedy = true;
+            let quantified = false;
 
-        const SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/;
+            if (this.match("*")) {
+                min = 0;
+                max = Infinity;
+                quantified = true;
+            } else if (this.match("+")) {
+                min = 1;
+                max = Infinity;
+                quantified = true;
+            } else if (this.match("?")) {
+                min = 0;
+                max = 1;
+                quantified = true;
+            } else if (this.match("{")) {
+                const start = this.pos;
+                while (this.pos < this.len && this.peek() !== "}") this.pos++;
+                const content = this.pattern.substring(start, this.pos);
+                this.consume(); // }
 
-        const Generator = {
-            generate(node) {
-                if (Array.isArray(node)) return node.map(n => Generator.generate(n)).join("");
-
-                let out = "";
-
-                switch (node.type) {
-                    case TYPES.ROOT:
-                        out = Generator.generate(node.children);
-                        break;
-                    case TYPES.LITERAL:
-                        // Escape special chars, but preserve already-escaped literals
-                        if (node.escaped) {
-                            out = "\\" + node.value;
-                        } else {
-                            out = node.value.split('').map(c => SPECIAL_CHARS.test(c) ? "\\" + c : c).join("");
-                        }
-                        break;
-                    case TYPES.DOT:
-                        out = ".";
-                        break;
-                    case TYPES.ANCHOR:
-                        out = node.value;
-                        break;
-                    case TYPES.SET:
-                        if (node.predefined) {
-                            out = node.predefined;
-                        } else {
-                            out = `[${node.negated ? "^" : ""}${node.content}]`;
-                        }
-                        break;
-                    case TYPES.GROUP: {
-                        const inner = Generator.generate(node.children);
-                        if (node.lookType) {
-                            out = `(${node.lookType}${inner})`;
-                        } else if (node.name) {
-                            out = `(?P<${node.name}>${inner})`;
-                        } else if (node.capturing) {
-                            out = `(${inner})`;
-                        } else {
-                            out = `(?:${inner})`;
-                        }
-                        break;
-                    }
-                    case TYPES.BRANCH:
-                        out = node.branches.map(b => Generator.generate(b)).join("|");
-                        break;
-                    case TYPES.FLAGS:
-                        out = `(?${node.flags})`;
-                        break;
-                    case TYPES.BACKREF:
-                        if (node.named) {
-                            out = `(?P=${node.value})`;
-                        } else {
-                            out = "\\" + node.value;
-                        }
-                        break;
-                }
-
-                // Append quantifier
-                if (node.quantifier) {
-                    const { min, max, greedy } = node.quantifier;
-                    if (min === 0 && max === Infinity) out += "*";
-                    else if (min === 1 && max === Infinity) out += "+";
-                    else if (min === 0 && max === 1) out += "?";
-                    else if (min === max) out += `{${min}}`;
-                    else out += `{${min},${max === Infinity ? "" : max}}`;
-
-                    if (!greedy) out += "?";
-                }
-
-                return out;
+                const parts = content.split(",");
+                min = parseInt(parts[0], 10) || 0;
+                if (parts.length === 1) max = min;
+                else max = parts[1] === "" ? Infinity : parseInt(parts[1], 10);
+                quantified = true;
             }
-        };
 
-        /* --- 4. State Management --- */
+            if (quantified) {
+                if (this.match("?")) greedy = false;
+                atom.quantifier = { min, max, greedy };
+            }
 
-        let state = {
-            ast: { type: TYPES.ROOT, children: [], id: uid() }
-        };
+            return atom;
+        }
+    }
 
-        const setError = (msg) => {
-            const el = document.getElementById("error-msg");
-            el.textContent = msg || "";
-            el.hidden = !msg;
-        };
+    /* --- 3. The Generator (AST -> String) --- */
 
-        const updateRegexInput = () => {
-            const regexStr = Generator.generate(state.ast);
-            document.getElementById("regex-out").value = regexStr;
+    const SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/;
+
+    const Generator = {
+        generate(node) {
+            if (Array.isArray(node)) return node.map(n => Generator.generate(n)).join("");
+
+            let out = "";
+
+            switch (node.type) {
+                case TYPES.ROOT:
+                    out = Generator.generate(node.children);
+                    break;
+                case TYPES.LITERAL:
+                    // Escape special chars, but preserve already-escaped literals
+                    if (node.escaped) {
+                        out = "\\" + node.value;
+                    } else {
+                        out = node.value.split("").map(c => SPECIAL_CHARS.test(c) ? "\\" + c : c).join("");
+                    }
+                    break;
+                case TYPES.DOT:
+                    out = ".";
+                    break;
+                case TYPES.ANCHOR:
+                    out = node.value;
+                    break;
+                case TYPES.SET:
+                    if (node.predefined) {
+                        out = node.predefined;
+                    } else {
+                        out = `[${node.negated ? "^" : ""}${node.content}]`;
+                    }
+                    break;
+                case TYPES.GROUP: {
+                    const inner = Generator.generate(node.children);
+                    if (node.lookType) {
+                        out = `(${node.lookType}${inner})`;
+                    } else if (node.name) {
+                        out = `(?P<${node.name}>${inner})`;
+                    } else if (node.capturing) {
+                        out = `(${inner})`;
+                    } else {
+                        out = `(?:${inner})`;
+                    }
+                    break;
+                }
+                case TYPES.BRANCH:
+                    out = node.branches.map(b => Generator.generate(b)).join("|");
+                    break;
+                case TYPES.FLAGS:
+                    out = `(?${node.flags})`;
+                    break;
+                case TYPES.BACKREF:
+                    if (node.named) {
+                        out = `(?P=${node.value})`;
+                    } else {
+                        out = "\\" + node.value;
+                    }
+                    break;
+            }
+
+            // Append quantifier
+            if (node.quantifier) {
+                const { min, max, greedy } = node.quantifier;
+                if (min === 0 && max === Infinity) out += "*";
+                else if (min === 1 && max === Infinity) out += "+";
+                else if (min === 0 && max === 1) out += "?";
+                else if (min === max) out += `{${min}}`;
+                else out += `{${min},${max === Infinity ? "" : max}}`;
+
+                if (!greedy) out += "?";
+            }
+
+            return out;
+        },
+    };
+
+    /* --- 4. State Management --- */
+
+    let state = {
+        ast: { type: TYPES.ROOT, children: [], id: uid() },
+    };
+
+    const setError = (msg) => {
+        const el = document.getElementById("error-msg");
+        el.textContent = msg || "";
+        el.hidden = !msg;
+    };
+
+    const updateRegexInput = () => {
+        const regexStr = Generator.generate(state.ast);
+        document.getElementById("regex-out").value = regexStr;
+        setError("");
+        saveState();
+    };
+
+    const updateASTFromInput = () => {
+        const input = document.getElementById("regex-out").value;
+        try {
+            if (!input) {
+                state.ast = { type: TYPES.ROOT, children: [], id: uid() };
+            } else {
+                const parser = new RegexParser(input);
+                state.ast = parser.parse();
+            }
+
+            const joinCheck = document.getElementById("join-literals");
+            if (joinCheck && joinCheck.checked) {
+                joinLiteralsInAST(state.ast);
+            }
+
+            numberGroups(state.ast);
             setError("");
-            saveState();
-        };
+            render();
+        } catch (e) {
+            setError("Invalid Regex: " + e.message);
+        }
+    };
 
-        const updateASTFromInput = () => {
-            const input = document.getElementById("regex-out").value;
-            try {
-                if (!input) {
-                    state.ast = { type: TYPES.ROOT, children: [], id: uid() };
-                } else {
-                    const parser = new RegexParser(input);
-                    state.ast = parser.parse();
-                }
-
-                const joinCheck = document.getElementById("join-literals");
-                if (joinCheck && joinCheck.checked) {
-                    joinLiteralsInAST(state.ast);
-                }
-
-                numberGroups(state.ast);
-                setError("");
-                render();
-            } catch (e) {
-                setError("Invalid Regex: " + e.message);
-            }
-        };
-
-        function joinLiteralsInAST(node) {
-            if (!node || typeof node !== 'object') return;
-            if (node.children) {
-                node.children = joinLiteralsInArray(node.children);
-                node.children.forEach(joinLiteralsInAST);
-            }
-            if (node.branches) {
-                for (let i = 0; i < node.branches.length; i++) {
-                    node.branches[i] = joinLiteralsInArray(node.branches[i]);
-                    node.branches[i].forEach(joinLiteralsInAST);
-                }
+    function joinLiteralsInAST(node) {
+        if (!node || typeof node !== "object") return;
+        if (node.children) {
+            node.children = joinLiteralsInArray(node.children);
+            node.children.forEach(joinLiteralsInAST);
+        }
+        if (node.branches) {
+            for (let i = 0; i < node.branches.length; i++) {
+                node.branches[i] = joinLiteralsInArray(node.branches[i]);
+                node.branches[i].forEach(joinLiteralsInAST);
             }
         }
+    }
 
-        function joinLiteralsInArray(arr) {
-            const result = [];
-            for (let i = 0; i < arr.length; i++) {
-                const current = arr[i];
-                if (result.length > 0 && current.type === TYPES.LITERAL) {
-                    const prev = result[result.length - 1];
-                    if (prev.type === TYPES.LITERAL) {
-                        const prevQuant = prev.quantifier ? JSON.stringify(prev.quantifier) : null;
-                        const currQuant = current.quantifier ? JSON.stringify(current.quantifier) : null;
-                        if (prevQuant === currQuant) {
-                            prev.value += current.value;
-                            delete prev.escaped;
-                            continue;
-                        }
+    function joinLiteralsInArray(arr) {
+        const result = [];
+        for (let i = 0; i < arr.length; i++) {
+            const current = arr[i];
+            if (result.length > 0 && current.type === TYPES.LITERAL) {
+                const prev = result[result.length - 1];
+                if (prev.type === TYPES.LITERAL) {
+                    const prevQuant = prev.quantifier ? JSON.stringify(prev.quantifier) : null;
+                    const currQuant = current.quantifier ? JSON.stringify(current.quantifier) : null;
+                    if (prevQuant === currQuant) {
+                        prev.value += current.value;
+                        delete prev.escaped;
+                        continue;
                     }
                 }
-                result.push(current);
             }
-            return result;
+            result.push(current);
         }
+        return result;
+    }
 
-        /* --- 5. Rendering & Interaction --- */
+    /* --- 5. Rendering & Interaction --- */
 
-        function tip(el, text) {
-            el.title = text;
-            el.setAttribute("data-tooltip", text);
-            return el;
-        }
+    function tip(el, text) {
+        el.title = text;
+        el.setAttribute("data-tooltip", text);
+        return el;
+    }
 
-        function createEl(tag, className, text, icon) {
-            const el = document.createElement(tag);
-            if (tag.toLowerCase() === "button") el.type = "button";
-            if (className) {
-                const cleanClasses = className.split(" ").filter(c => c !== "btn" && c !== "btn-add");
-                if (icon && !text && className.includes("btn-sym")) {
-                    el.textContent = icon;
-                } else if (icon) {
-                    const span = document.createElement("span");
-                    span.className = "sym";
-                    span.textContent = icon;
-                    el.appendChild(span);
-                    if (text) {
-                        const txt = document.createTextNode(" " + text);
-                        el.appendChild(txt);
-                    }
-                } else if (text) {
-                    el.textContent = text;
+    function createEl(tag, className, text, icon) {
+        const el = document.createElement(tag);
+        if (tag.toLowerCase() === "button") el.type = "button";
+        if (className) {
+            const cleanClasses = className.split(" ").filter(c => c !== "btn" && c !== "btn-add");
+            if (icon && !text && className.includes("btn-sym")) {
+                el.textContent = icon;
+            } else if (icon) {
+                const span = document.createElement("span");
+                span.className = "sym";
+                span.textContent = icon;
+                el.appendChild(span);
+                if (text) {
+                    const txt = document.createTextNode(" " + text);
+                    el.appendChild(txt);
                 }
-                if (cleanClasses.length > 0) el.className = cleanClasses.join(" ");
             } else if (text) {
                 el.textContent = text;
             }
-            return el;
+            if (cleanClasses.length > 0) el.className = cleanClasses.join(" ");
+        } else if (text) {
+            el.textContent = text;
+        }
+        return el;
+    }
+
+    // Helper to update a node in the tree by ID
+    const triggerUpdate = () => {
+        numberGroups(state.ast);
+        updateRegexInput();
+        render();
+    };
+
+    function renderQuantifierInputs(node, container) {
+        if (!node.quantifier) {
+            const btn = tip(createEl("button", "btn-sym", "", "autorenew"), "Add Repetitions");
+            btn.onclick = () => {
+                node.quantifier = { min: 1, max: 1, greedy: true };
+                triggerUpdate();
+            };
+            container.appendChild(btn);
+            return;
         }
 
-        // Helper to update a node in the tree by ID
-        const triggerUpdate = () => {
-            numberGroups(state.ast);
-            updateRegexInput();
-            render();
+        const wrapper = createEl("span", "repeat-group");
+        wrapper.setAttribute("role", "group");
+        wrapper.appendChild(createEl("span", "sym", "repeat"));
+
+        // Min
+        const minIn = createEl("input", "node-input short");
+        minIn.type = "number";
+        minIn.min = 0;
+        minIn.value = node.quantifier.min;
+        minIn.onchange = (e) => {
+            node.quantifier.min = parseInt(e.target.value);
+            triggerUpdate();
         };
 
-        function renderQuantifierInputs(node, container) {
-            if (!node.quantifier) {
-                const btn = tip(createEl("button", "btn-sym", "", "autorenew"), "Add Repetitions");
-                btn.onclick = () => {
-                    node.quantifier = { min: 1, max: 1, greedy: true };
-                    triggerUpdate();
-                };
-                container.appendChild(btn);
-                return;
-            }
+        wrapper.appendChild(minIn);
+        wrapper.appendChild(document.createTextNode("–"));
 
-            const wrapper = createEl("span", "repeat-group");
-            wrapper.setAttribute("role", "group");
-            wrapper.appendChild(createEl("span", "sym", "repeat"));
+        // Max
+        const maxIn = createEl("input", "node-input short");
+        maxIn.type = "text"; // text to allow empty or Infinity symbol
+        maxIn.value = node.quantifier.max === Infinity ? "∞" : node.quantifier.max;
+        maxIn.onchange = (e) => {
+            const val = e.target.value;
+            node.quantifier.max = (val === "∞" || val === "") ? Infinity : parseInt(val);
+            triggerUpdate();
+        };
 
-            // Min
-            const minIn = createEl("input", "node-input short");
-            minIn.type = "number";
-            minIn.min = 0;
-            minIn.value = node.quantifier.min;
-            minIn.onchange = (e) => {
-                node.quantifier.min = parseInt(e.target.value);
-                triggerUpdate();
+        wrapper.appendChild(maxIn);
+
+        // Remove Quantifier
+        const removeBtn = tip(createEl("button", "btn-sym btn-danger", "", "close"), "Remove repetitions");
+        removeBtn.onclick = () => {
+            delete node.quantifier;
+            triggerUpdate();
+        };
+        wrapper.appendChild(removeBtn);
+
+        container.appendChild(wrapper);
+    }
+
+    function renderNode(node, parentArray, index) {
+        const el = createEl("div", `node type-${node.type}`);
+
+        // Header
+        const header = createEl("div", "node-header");
+        const typeLabel = createEl("span", "node-type", node.type);
+        header.appendChild(typeLabel);
+
+        const contentDiv = createEl("div", "node-content");
+
+        // Node Specific Inputs
+        if (node.type === TYPES.LITERAL) {
+            const input = createEl("input", "node-input text");
+            input.value = node.value;
+            input.oninput = (e) => {
+                node.value = e.target.value;
+                updateRegexInput();
             };
-
-            wrapper.appendChild(minIn);
-            wrapper.appendChild(document.createTextNode("–"));
-
-            // Max
-            const maxIn = createEl("input", "node-input short");
-            maxIn.type = "text"; // text to allow empty or Infinity symbol
-            maxIn.value = node.quantifier.max === Infinity ? "∞" : node.quantifier.max;
-            maxIn.onchange = (e) => {
-                const val = e.target.value;
-                node.quantifier.max = (val === "∞" || val === "") ? Infinity : parseInt(val);
-                triggerUpdate();
+            const prefix = node.escaped ? "Escaped: \\" : "Matches \"";
+            const suffix = node.escaped ? "" : "\"";
+            contentDiv.appendChild(document.createTextNode(prefix));
+            contentDiv.appendChild(input);
+            if (suffix) contentDiv.appendChild(document.createTextNode(suffix));
+        } else if (node.type === TYPES.DOT) {
+            contentDiv.appendChild(document.createTextNode("Any character (except newline)"));
+        } else if (node.type === TYPES.FLAGS) {
+            contentDiv.appendChild(document.createTextNode("Flags: "));
+            const input = createEl("input", "node-input short");
+            input.value = node.flags;
+            tip(input, "i = case-insensitive, x = extended, m = multiline, s = dotall");
+            input.oninput = (e) => {
+                node.flags = e.target.value;
+                updateRegexInput();
             };
-
-            wrapper.appendChild(maxIn);
-
-            // Remove Quantifier
-            const removeBtn = tip(createEl("button", "btn-sym btn-danger", "", "close"), "Remove repetitions");
-            removeBtn.onclick = () => {
-                delete node.quantifier;
-                triggerUpdate();
-            };
-            wrapper.appendChild(removeBtn);
-
-            container.appendChild(wrapper);
-        }
-
-        function renderNode(node, parentArray, index) {
-            const el = createEl("div", `node type-${node.type}`);
-
-            // Header
-            const header = createEl("div", "node-header");
-            const typeLabel = createEl("span", "node-type", node.type);
-            header.appendChild(typeLabel);
-
-            const contentDiv = createEl("div", "node-content");
-
-            // Node Specific Inputs
-            if (node.type === TYPES.LITERAL) {
-                const input = createEl("input", "node-input text");
-                input.value = node.value;
-                input.oninput = (e) => { node.value = e.target.value; updateRegexInput(); };
-                const prefix = node.escaped ? "Escaped: \\" : "Matches \"";
-                const suffix = node.escaped ? "" : "\"";
-                contentDiv.appendChild(document.createTextNode(prefix));
-                contentDiv.appendChild(input);
-                if (suffix) contentDiv.appendChild(document.createTextNode(suffix));
-            }
-            else if (node.type === TYPES.DOT) {
-                contentDiv.appendChild(document.createTextNode("Any character (except newline)"));
-            }
-            else if (node.type === TYPES.FLAGS) {
-                contentDiv.appendChild(document.createTextNode("Flags: "));
-                const input = createEl("input", "node-input short");
-                input.value = node.flags;
-                tip(input, "i = case-insensitive, x = extended, m = multiline, s = dotall");
-                input.oninput = (e) => { node.flags = e.target.value; updateRegexInput(); };
-                contentDiv.appendChild(input);
-            }
-            else if (node.type === TYPES.SET) {
-                const switchBtn = createEl("button", "btn-sym", "", "shuffle");
-                const updateSwitchTip = () => tip(switchBtn, node.predefined ? "Switch to custom set" : "Switch to predefined set");
-                updateSwitchTip();
-                switchBtn.onclick = () => {
-                    if (node.predefined) {
-                        node.content = "a-z";
-                        delete node.predefined;
-                    } else {
-                        node.predefined = "\\d";
-                        delete node.content;
-                        delete node.negated;
-                    }
-                    triggerUpdate();
-                };
-                contentDiv.appendChild(switchBtn);
-
+            contentDiv.appendChild(input);
+        } else if (node.type === TYPES.SET) {
+            const switchBtn = createEl("button", "btn-sym", "", "shuffle");
+            const updateSwitchTip = () => tip(switchBtn, node.predefined ? "Switch to custom set" : "Switch to predefined set");
+            updateSwitchTip();
+            switchBtn.onclick = () => {
                 if (node.predefined) {
-                    const select = createEl("select", "node-input");
-                    ["\\d", "\\D", "\\w", "\\W", "\\s", "\\S"].forEach(opt => {
-                        const o = createEl("option", "", opt);
-                        o.selected = node.predefined === opt;
-                        select.appendChild(o);
-                    });
-                    select.onchange = (e) => { node.predefined = e.target.value; triggerUpdate(); };
-                    contentDiv.appendChild(select);
+                    node.content = "a-z";
+                    delete node.predefined;
                 } else {
-                    const chkId = `not-${node.id}`;
-                    const notCheck = createEl("input");
-                    notCheck.id = chkId;
-                    notCheck.type = "checkbox";
-                    notCheck.role = "switch";
-                    notCheck.checked = node.negated;
-                    notCheck.onchange = (e) => { node.negated = e.target.checked; triggerUpdate(); };
-
-                    const notLabel = createEl("label", "", "Not");
-                    notLabel.setAttribute("for", chkId);
-
-                    contentDiv.appendChild(notLabel);
-                    contentDiv.appendChild(notCheck);
-
-                    contentDiv.appendChild(document.createTextNode(" ["));
-                    const input = createEl("input", "node-input text");
-                    input.value = node.content;
-                    input.oninput = (e) => { node.content = e.target.value; updateRegexInput(); };
-                    contentDiv.appendChild(input);
-                    contentDiv.appendChild(document.createTextNode("]"));
+                    node.predefined = "\\d";
+                    delete node.content;
+                    delete node.negated;
                 }
-            }
-            else if (node.type === TYPES.ANCHOR) {
+                triggerUpdate();
+            };
+            contentDiv.appendChild(switchBtn);
+
+            if (node.predefined) {
                 const select = createEl("select", "node-input");
-                [["^", "Start Line"], ["$", "End Line"], ["\\b", "Word Boundary"]].forEach(([val, txt]) => {
-                    const o = createEl("option", "", txt);
-                    o.value = val;
-                    o.selected = node.value === val;
+                ["\\d", "\\D", "\\w", "\\W", "\\s", "\\S"].forEach(opt => {
+                    const o = createEl("option", "", opt);
+                    o.selected = node.predefined === opt;
                     select.appendChild(o);
                 });
-                select.onchange = (e) => { node.value = e.target.value; triggerUpdate(); };
+                select.onchange = (e) => {
+                    node.predefined = e.target.value;
+                    triggerUpdate();
+                };
                 contentDiv.appendChild(select);
-            }
-            else if (node.type === TYPES.GROUP) {
-                if (node.lookType) {
-                    const select = createEl("select", "node-input");
-                    [["?=", "Lookahead"], ["?!", "Neg. Lookahead"], ["?<=", "Lookbehind"], ["?<!", "Neg. Lookbehind"], ["?>", "Atomic Group"]].forEach(([val, txt]) => {
-                        const o = createEl("option", "", txt);
-                        o.value = val;
-                        o.selected = node.lookType === val;
-                        select.appendChild(o);
-                    });
-                    select.onchange = (e) => { node.lookType = e.target.value; triggerUpdate(); };
-                    contentDiv.appendChild(select);
-                } else {
-                    const label = createEl("span", "description", node.capturing ? "Capturing" : "Non-capturing");
-                    contentDiv.appendChild(label);
-                }
-
-                if (node.name) {
-                    const nameLabel = createEl("span", "description", " (Named) ");
-                    contentDiv.appendChild(nameLabel);
-                    const nameInput = createEl("input", "node-input text");
-                    nameInput.value = node.name;
-                    nameInput.placeholder = "group_name";
-                    nameInput.oninput = (e) => { node.name = e.target.value; updateRegexInput(); };
-                    contentDiv.appendChild(nameInput);
-                }
-
-                if (!node.lookType) {
-                    const toggleBtn = createEl("button", "btn", node.name ? "Remove Name" : "Toggle Capture");
-                    toggleBtn.onclick = () => {
-                        if (node.name) {
-                            node.name = null;
-                        } else if (node.capturing) {
-                            node.capturing = false;
-                        } else {
-                            node.capturing = true;
-                        }
-                        triggerUpdate();
-                    };
-                    contentDiv.appendChild(toggleBtn);
-
-                    if (!node.name && node.capturing) {
-                        const nameBtn = createEl("button", "btn", "Add Name");
-                        nameBtn.onclick = () => {
-                            node.name = "name";
-                            triggerUpdate();
-                        };
-                        contentDiv.appendChild(nameBtn);
-                    }
-                }
-            }
-            else if (node.type === TYPES.BACKREF) {
-                const switchBtn = createEl("button", "btn-sym", "", "shuffle");
-                const updateSwitchTip = () => tip(switchBtn, node.named ? "Switch to numeric backref" : "Switch to named backref");
-                updateSwitchTip();
-                switchBtn.onclick = () => {
-                    node.named = !node.named;
-                    node.value = node.named ? "name" : "1";
-                    triggerUpdate();
-                };
-                contentDiv.appendChild(switchBtn);
-
-                contentDiv.appendChild(createEl("span", "description", node.named ? "Backref: (?P=" : "Backref: \\"));
-                const input = createEl("input", "node-input short");
-                input.type = "text";
-                input.value = node.value;
-                input.placeholder = node.named ? "name" : "1";
-                input.oninput = (e) => { node.value = e.target.value; updateRegexInput(); };
-                contentDiv.appendChild(input);
-                if (node.named) contentDiv.appendChild(createEl("span", "description", ")"));
-            }
-
-            if (node.type === TYPES.LITERAL && node.value.length > 1) {
-                const splitBtn = tip(createEl("button", "btn-sym", "", "content_cut"), "Split into individual characters");
-                splitBtn.onclick = () => {
-                    const chars = node.value.split('');
-                    const newNodes = chars.map(c => {
-                        const newNode = { type: TYPES.LITERAL, value: c, id: uid() };
-                        if (node.quantifier) newNode.quantifier = JSON.parse(JSON.stringify(node.quantifier));
-                        return newNode;
-                    });
-                    parentArray.splice(index, 1, ...newNodes);
-                    triggerUpdate();
-                };
-                contentDiv.appendChild(splitBtn);
-            }
-
-            // Quantifier UI (Literal, Group, Set, Dot can be repeated)
-            if ([TYPES.LITERAL, TYPES.SET, TYPES.GROUP, TYPES.DOT].includes(node.type)) {
-                renderQuantifierInputs(node, contentDiv);
-            }
-
-            // Movement and Delete Buttons
-            const actions = createEl("div", "");
-            actions.style.marginLeft = "auto";
-            actions.style.display = "flex";
-            actions.style.gap = "4px";
-
-            // Move Up
-            const moveUpBtn = tip(createEl("button", "btn-sym", "", "arrow_upward"), "Move up");
-            moveUpBtn.disabled = index === 0;
-            moveUpBtn.onclick = () => {
-                [parentArray[index - 1], parentArray[index]] = [parentArray[index], parentArray[index - 1]];
-                triggerUpdate();
-            };
-            actions.appendChild(moveUpBtn);
-
-            // Move Down
-            const moveDownBtn = tip(createEl("button", "btn-sym", "", "arrow_downward"), "Move down");
-            moveDownBtn.disabled = index === parentArray.length - 1;
-            moveDownBtn.onclick = () => {
-                [parentArray[index + 1], parentArray[index]] = [parentArray[index], parentArray[index + 1]];
-                triggerUpdate();
-            };
-            actions.appendChild(moveDownBtn);
-
-            // Delete Button
-            const delBtn = tip(createEl("button", "btn-danger btn-sym", "", "delete"), "Delete node");
-            delBtn.onclick = () => {
-                parentArray.splice(index, 1);
-                triggerUpdate();
-            };
-            actions.appendChild(delBtn);
-
-            contentDiv.appendChild(actions);
-
-            header.appendChild(contentDiv);
-            el.appendChild(header);
-
-            // Children (for Group and Branch)
-            if (node.type === TYPES.GROUP) {
-                const childrenContainer = createEl("div", "node-children");
-                node.children.forEach((child, i) => {
-                    childrenContainer.appendChild(renderNode(child, node.children, i));
-                });
-                childrenContainer.appendChild(renderToolbox(node.children));
-                el.appendChild(childrenContainer);
-            }
-            else if (node.type === TYPES.BRANCH) {
-                const childrenContainer = createEl("div", "node-children");
-                node.branches.forEach((branchArr, i) => {
-                    const branchWrapper = createEl("div", "node");
-                    branchWrapper.style.borderLeft = "4px solid orange";
-                    branchWrapper.innerHTML = `<strong>Option ${i + 1}</strong>`;
-
-                    const btnRemove = tip(createEl("button", "btn-danger btn-sym", "", "delete"), "Remove Option");
-                    btnRemove.style.float = "right";
-                    btnRemove.onclick = () => {
-                        node.branches.splice(i, 1);
-                        if (node.branches.length === 0) {
-                            parentArray.splice(index, 1);
-                        }
-                        triggerUpdate();
-                    };
-                    branchWrapper.appendChild(btnRemove);
-
-                    const branchContent = createEl("div", "node-children");
-                    branchArr.forEach((child, j) => {
-                        branchContent.appendChild(renderNode(child, branchArr, j));
-                    });
-                    branchContent.appendChild(renderToolbox(branchArr));
-
-                    branchWrapper.appendChild(branchContent);
-                    childrenContainer.appendChild(branchWrapper);
-                });
-
-                const addBranchBtn = createEl("button", "btn btn-add", "+ Add Option");
-                addBranchBtn.onclick = () => {
-                    node.branches.push([]);
-                    triggerUpdate();
-                };
-                childrenContainer.appendChild(addBranchBtn);
-
-                el.appendChild(childrenContainer);
-            }
-
-            return el;
-        }
-
-        function renderToolbox(targetArray) {
-            const box = createEl("div", "toolbox");
-            box.style.alignItems = "center";
-
-            const select = createEl("select", "node-input");
-            const placeholder = createEl("option", "", "+ Add token...");
-            placeholder.value = "";
-            select.appendChild(placeholder);
-
-            const options = [
-                { label: "Text", factory: () => ({ type: TYPES.LITERAL, value: "abc", id: uid() }) },
-                { label: "Predefined Set", factory: () => ({ type: TYPES.SET, predefined: "\\d", id: uid() }) },
-                { label: "Character Set", factory: () => ({ type: TYPES.SET, content: "a-z", id: uid() }) },
-                { label: "Any (.)", factory: () => ({ type: TYPES.DOT, id: uid() }) },
-                { label: "Group", factory: () => ({ type: TYPES.GROUP, capturing: true, children: [], id: uid() }) },
-                { label: "Non-capturing Group", factory: () => ({ type: TYPES.GROUP, capturing: false, children: [], id: uid() }) },
-                { label: "Lookahead/behind", factory: () => ({ type: TYPES.GROUP, capturing: false, lookType: "?=", children: [], id: uid() }) },
-                { label: "Named Group", factory: () => ({ type: TYPES.GROUP, capturing: true, name: "name", children: [], id: uid() }) },
-                { label: "OR (Branch)", factory: () => ({ type: TYPES.BRANCH, branches: [[], []], id: uid() }) },
-                { label: "Anchor", factory: () => ({ type: TYPES.ANCHOR, value: "^", id: uid() }) },
-                { label: "Flags", factory: () => ({ type: TYPES.FLAGS, flags: "i", id: uid() }) },
-                { label: "Backref", factory: () => ({ type: TYPES.BACKREF, value: "1", id: uid() }) }
-            ];
-
-            options.forEach((opt, idx) => {
-                const optionEl = createEl("option", "", opt.label);
-                optionEl.value = idx;
-                select.appendChild(optionEl);
-            });
-
-            select.onchange = () => {
-                if (select.value === "") return;
-                const selectedFactory = options[select.value].factory;
-                targetArray.push(selectedFactory());
-                select.value = "";
-                triggerUpdate();
-            };
-
-            box.appendChild(select);
-
-            return box;
-        }
-
-        function render() {
-            const rootEl = document.getElementById("tree-root");
-            rootEl.innerHTML = "";
-
-            if (!state.ast.children || state.ast.children.length === 0) {
-                rootEl.innerHTML = "<p class=\"description\">Empty pattern. Add blocks to build your regex visually.</p>";
-                rootEl.appendChild(renderToolbox(state.ast.children));
             } else {
-                // Root is treated as a sequence container
-                state.ast.children.forEach((child, i) => {
-                    rootEl.appendChild(renderNode(child, state.ast.children, i));
-                });
-                rootEl.appendChild(renderToolbox(state.ast.children));
+                const chkId = `not-${node.id}`;
+                const notCheck = createEl("input");
+                notCheck.id = chkId;
+                notCheck.type = "checkbox";
+                notCheck.role = "switch";
+                notCheck.checked = node.negated;
+                notCheck.onchange = (e) => {
+                    node.negated = e.target.checked;
+                    triggerUpdate();
+                };
+
+                const notLabel = createEl("label", "", "Not");
+                notLabel.setAttribute("for", chkId);
+
+                contentDiv.appendChild(notLabel);
+                contentDiv.appendChild(notCheck);
+
+                contentDiv.appendChild(document.createTextNode(" ["));
+                const input = createEl("input", "node-input text");
+                input.value = node.content;
+                input.oninput = (e) => {
+                    node.content = e.target.value;
+                    updateRegexInput();
+                };
+                contentDiv.appendChild(input);
+                contentDiv.appendChild(document.createTextNode("]"));
             }
-        }
-
-        /* --- 6. Test String Generator --- */
-
-        /** Expand set content like "a-zA-Z0-9" into an array of individual characters */
-        function expandSetContent(content) {
-            const chars = [];
-            let i = 0;
-            while (i < content.length) {
-                if (content[i] === "\\" && i + 1 < content.length) {
-                    const esc = content[i + 1];
-                    if (esc === "d") { for (let c = 48; c <= 57; c++) chars.push(String.fromCharCode(c)); }
-                    else if (esc === "w") {
-                        for (let c = 48; c <= 57; c++) chars.push(String.fromCharCode(c));
-                        for (let c = 65; c <= 90; c++) chars.push(String.fromCharCode(c));
-                        for (let c = 97; c <= 122; c++) chars.push(String.fromCharCode(c));
-                        chars.push("_");
-                    }
-                    else if (esc === "s") { chars.push(" ", "\t"); }
-                    else chars.push(esc);
-                    i += 2;
-                } else if (i + 2 < content.length && content[i + 1] === "-") {
-                    const from = content.charCodeAt(i);
-                    const to = content.charCodeAt(i + 2);
-                    for (let c = from; c <= to; c++) chars.push(String.fromCharCode(c));
-                    i += 3;
-                } else {
-                    chars.push(content[i]);
-                    i++;
-                }
-            }
-            return chars;
-        }
-
-        const _pick = arr => arr[Math.floor(Math.random() * arr.length)];
-        const _randInt = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
-
-        /**
-         * Assigns sequential .groupNumber to all capturing groups by walking the
-         * AST in left-to-right order (matching how regex engines number groups).
-         */
-        function numberGroups(node, counter) {
-            if (!counter) counter = { n: 0 };
-            if (Array.isArray(node)) { node.forEach(c => numberGroups(c, counter)); return; }
-            if (!node || !node.type) return;
-            // Capturing groups (not lookarounds) get a number
-            if (node.type === TYPES.GROUP && node.capturing && !node.lookType) {
-                counter.n++;
-                node.groupNumber = counter.n;
-            }
-            if (node.children) numberGroups(node.children, counter);
-            if (node.branches) node.branches.forEach(b => numberGroups(b, counter));
-        }
-
-        /**
-         * Walks the AST and generates a string that should match the pattern.
-         * - `captures` tracks values produced by capturing groups so backrefs work.
-         * - Positive lookarounds generate their content as context (prefix/suffix).
-         * - Negative lookarounds are skipped (the regex validation filters bad candidates).
-         */
-        function generateFromAST(node, captures) {
-            if (!captures) captures = {};
-            if (Array.isArray(node)) return node.map(n => generateFromAST(n, captures)).join("");
-
-            // Determine repetition count from quantifier
-            let count = 1;
-            if (node.quantifier) {
-                const { min, max } = node.quantifier;
-                const effectiveMax = max === Infinity ? min + 3 : max;
-                count = _randInt(min, effectiveMax);
-            }
-
-            let out = "";
-            for (let r = 0; r < count; r++) {
-                switch (node.type) {
-                    case TYPES.ROOT:
-                        out += generateFromAST(node.children, captures);
-                        break;
-
-                    case TYPES.LITERAL:
-                        out += node.value;
-                        break;
-
-                    case TYPES.DOT:
-                        out += _pick("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
-                        break;
-
-                    case TYPES.ANCHOR:
-                    case TYPES.FLAGS:
-                        break; // produce no characters
-
-                    case TYPES.SET:
-                        if (node.predefined) {
-                            switch (node.predefined) {
-                                case "\\d": out += String(Math.floor(Math.random() * 10)); break;
-                                case "\\D": out += _pick("abcABC!@# "); break;
-                                case "\\w": out += _pick("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"); break;
-                                case "\\W": out += _pick(" !@#$%^&*"); break;
-                                case "\\s": out += _pick(" \t"); break;
-                                case "\\S": out += _pick("abcABC123!@#"); break;
-                                default: out += "x";
-                            }
-                        } else {
-                            const chars = expandSetContent(node.content);
-                            if (node.negated) {
-                                const all = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-";
-                                const available = [...all].filter(c => !chars.includes(c));
-                                out += available.length > 0 ? _pick(available) : "!";
-                            } else {
-                                out += chars.length > 0 ? _pick(chars) : "a";
-                            }
-                        }
-                        break;
-
-                    case TYPES.GROUP:
-                        if (node.lookType) {
-                            // Positive lookbehind: generate content as prefix
-                            // (it must appear before the match in the input string)
-                            if (node.lookType === "?<=") {
-                                out += generateFromAST(node.children, captures);
-                            }
-                            // Positive lookahead (?=): skip — the later parts of the
-                            // pattern already produce the text the lookahead asserts.
-                            // Negative lookarounds (?!, ?<!): skip, rely on validation.
-                        } else {
-                            const content = generateFromAST(node.children, captures);
-                            // Store capture for backreferences
-                            if (node.capturing && node.groupNumber) {
-                                captures[node.groupNumber] = content;
-                                if (node.name) captures[node.name] = content;
-                            }
-                            out += content;
-                        }
-                        break;
-
-                    case TYPES.BRANCH:
-                        out += generateFromAST(
-                            node.branches[Math.floor(Math.random() * node.branches.length)],
-                            captures
-                        );
-                        break;
-
-                    case TYPES.BACKREF: {
-                        // Replay what the referenced group captured
-                        const key = node.named ? node.value : parseInt(node.value, 10);
-                        out += captures[key] || "";
-                        break;
-                    }
-                }
-            }
-            return out;
-        }
-
-        /** Create a near-miss non-matching string by mutating a valid one */
-        function generateNonMatchingString(ast) {
-            const s = generateFromAST(ast);
-            switch (Math.floor(Math.random() * 9)) {
-                case 0: // Truncate from end
-                    return s.length < 2 ? s + "!!!" : s.slice(0, -_randInt(1, Math.min(s.length - 1, 5)));
-                case 1: // Truncate from start
-                    return s.length < 2 ? "???" + s : s.slice(_randInt(1, Math.min(s.length - 1, 5)));
-                case 2: { // Insert junk char
-                    const pos = Math.floor(Math.random() * (s.length + 1));
-                    return s.slice(0, pos) + _pick("!@#$%^&*()[]{}|~`") + s.slice(pos);
-                }
-                case 3: { // Replace a char
-                    if (!s.length) return "???";
-                    const pos = Math.floor(Math.random() * s.length);
-                    return s.slice(0, pos) + _pick("!@#$%^☺★♦") + s.slice(pos + 1);
-                }
-                case 4: { // Swap adjacent chars
-                    if (s.length < 2) return s + "???";
-                    const pos = Math.floor(Math.random() * (s.length - 1));
-                    return s.slice(0, pos) + s[pos + 1] + s[pos] + s.slice(pos + 2);
-                }
-                case 5: { // Fully random string
-                    const pool = "abcdefghijklmnopqrstuvwxyz0123456789 !@#";
-                    return Array.from({ length: _randInt(3, 17) }, () => _pick(pool)).join("");
-                }
-                case 6: return s + s; // Double
-                case 7: return ">>> " + s; // Prefix
-                case 8: return Math.random() > 0.5 ? s.toUpperCase() : s.toLowerCase(); // Case flip
-            }
-        }
-
-        let _generateAbort = null;
-
-        async function generateTestStrings() {
-            // Abort any previous generation in progress
-            if (_generateAbort) _generateAbort.abort = true;
-            const token = { abort: false };
-            _generateAbort = token;
-
-            const btn = document.getElementById("generate-btn");
-            const origHTML = btn.innerHTML;
-            const setProgress = (match, noMatch) => {
-                btn.textContent = `✓${match} ✗${noMatch}`;
-            };
-
-            const pattern = document.getElementById("regex-out").value;
-            if (!pattern) return;
-
-            let re;
-            try {
-                re = buildTestRegex(pattern);
-            } catch {
-                return;
-            }
-
-            const matchingLines = new Set();
-            const nonMatchingLines = new Set();
-            const maxAttempts = 300;
-            const batchSize = 5;
-
-            // Generate matching strings in async batches
-            for (let i = 0; i < maxAttempts && matchingLines.size < 20; i += batchSize) {
-                if (token.abort) return;
-                for (let j = 0; j < batchSize && matchingLines.size < 20; j++) {
-                    try {
-                        const s = generateFromAST(state.ast);
-                        re.lastIndex = 0;
-                        if (s && re.test(s)) matchingLines.add(s);
-                    } catch { /* skip failed attempts */ }
-                }
-                setProgress(matchingLines.size, nonMatchingLines.size);
-                await new Promise(r => setTimeout(r, 0)); // yield to UI
-            }
-
-            // Generate non-matching strings in async batches
-            for (let i = 0; i < maxAttempts && nonMatchingLines.size < 20; i += batchSize) {
-                if (token.abort) return;
-                for (let j = 0; j < batchSize && nonMatchingLines.size < 20; j++) {
-                    try {
-                        const s = generateNonMatchingString(state.ast);
-                        re.lastIndex = 0;
-                        if (s && !re.test(s)) nonMatchingLines.add(s);
-                        re.lastIndex = 0;
-                    } catch { /* skip */ }
-                }
-                setProgress(matchingLines.size, nonMatchingLines.size);
-                await new Promise(r => setTimeout(r, 0));
-            }
-
-            if (token.abort) return;
-            _generateAbort = null;
-
-            // Interleave matching and non-matching
-            const matchArr = [...matchingLines];
-            const noMatchArr = [...nonMatchingLines];
-            const combined = [];
-            const maxLen = Math.max(matchArr.length, noMatchArr.length);
-            for (let i = 0; i < maxLen; i++) {
-                if (i < matchArr.length) combined.push(matchArr[i]);
-                if (i < noMatchArr.length) combined.push(noMatchArr[i]);
-            }
-
-            testInput.value = combined.join("\n");
-            btn.innerHTML = origHTML;
-            runTests();
-        }
-
-        /* --- 7. Test Runner --- */
-
-        const testInput = document.getElementById("test-input");
-        const testResults = document.getElementById("test-results");
-
-        // Convert the visual regex pattern string into a usable JS RegExp.
-        // Handles (?P<name>...) → (?<name>...) and inline flags (?ix) → flag extraction.
-        function buildTestRegex(pattern) {
-            // Extract inline flags like (?ix) at the start
-            let flags = "";
-            let src = pattern.replace(/^\(\?([aimsux]+)\)/, (_, f) => {
-                flags = f.replace(/[xas]/g, ""); // JS only supports i, m, u
-                return "";
+        } else if (node.type === TYPES.ANCHOR) {
+            const select = createEl("select", "node-input");
+            [["^", "Start Line"], ["$", "End Line"], ["\\b", "Word Boundary"]].forEach(([val, txt]) => {
+                const o = createEl("option", "", txt);
+                o.value = val;
+                o.selected = node.value === val;
+                select.appendChild(o);
             });
-            // Convert Python-style named groups to JS-style
-            src = src.replace(/\(\?P</g, "(?<");
-            // Convert Python-style named backreferences to JS-style
-            src = src.replace(/\(\?P=([a-zA-Z0-9_]+)\)/g, "\\k<$1>");
-            // Fake atomic groups as non-capturing groups for basic JS testing compatibility
-            src = src.replace(/\(\?>/g, "(?:");
-            // Fix "lazy" quantifiers like {,n} or {,} which Python supports but JS doesn't
-            src = src.replace(/\{,(\d*)\}/g, "{0,$1}");
-            // Use 'g' flag to find all matches for highlighting, plus user flags
-            const finalFlags = flags.includes("g") ? flags : flags + "g";
-            return new RegExp(src, finalFlags);
-        }
-
-        function runTests() {
-            const lines = testInput.value.split("\n");
-            const pattern = document.getElementById("regex-out").value;
-            testResults.innerHTML = "";
-
-            if (!pattern) return;
-
-            let re;
-            try {
-                re = buildTestRegex(pattern);
-            } catch (e) {
-                testResults.innerHTML = `<p class="description">Invalid regex: ${e.message}</p>`;
-                return;
+            select.onchange = (e) => {
+                node.value = e.target.value;
+                triggerUpdate();
+            };
+            contentDiv.appendChild(select);
+        } else if (node.type === TYPES.GROUP) {
+            if (node.lookType) {
+                const select = createEl("select", "node-input");
+                [["?=", "Lookahead"], ["?!", "Neg. Lookahead"], ["?<=", "Lookbehind"], ["?<!", "Neg. Lookbehind"], ["?>", "Atomic Group"]].forEach(([val, txt]) => {
+                    const o = createEl("option", "", txt);
+                    o.value = val;
+                    o.selected = node.lookType === val;
+                    select.appendChild(o);
+                });
+                select.onchange = (e) => {
+                    node.lookType = e.target.value;
+                    triggerUpdate();
+                };
+                contentDiv.appendChild(select);
+            } else {
+                const label = createEl("span", "description", node.capturing ? "Capturing" : "Non-capturing");
+                contentDiv.appendChild(label);
             }
 
-            for (const line of lines) {
-                if (line === "") continue;
+            if (node.name) {
+                const nameLabel = createEl("span", "description", " (Named) ");
+                contentDiv.appendChild(nameLabel);
+                const nameInput = createEl("input", "node-input text");
+                nameInput.value = node.name;
+                nameInput.placeholder = "group_name";
+                nameInput.oninput = (e) => {
+                    node.name = e.target.value;
+                    updateRegexInput();
+                };
+                contentDiv.appendChild(nameInput);
+            }
 
-                const row = document.createElement("div");
-                row.className = "test-line";
-
-                // We use matchAll to get all match locations for highlighting
-                const matches = [...line.matchAll(re)];
-                const indicator = document.createElement("span");
-                indicator.className = "test-indicator";
-                indicator.textContent = matches.length > 0 ? "✓" : "✗";
-                indicator.style.color = matches.length > 0 ? "var(--success, #22c55e)" : "var(--error, #ef4444)";
-                row.appendChild(indicator);
-
-                const body = document.createElement("div");
-                const text = document.createElement("div");
-                text.className = "test-text";
-
-                // Build highlighted string
-                if (matches.length > 0) {
-                    let lastIdx = 0;
-                    matches.forEach(m => {
-                        // Skip empty matches that don't advance (to avoid infinite loops, though matchAll handles this)
-                        if (m[0] === "" && m.index === lastIdx && lastIdx !== 0) return;
-
-                        text.appendChild(document.createTextNode(line.substring(lastIdx, m.index)));
-                        const mark = document.createElement("mark");
-                        mark.textContent = m[0] || "ε"; // Show epsilon for empty matches
-                        if (m[0] === "") tip(mark, "Empty match");
-                        text.appendChild(mark);
-                        lastIdx = m.index + (m[0].length || 1);
-                    });
-                    text.appendChild(document.createTextNode(line.substring(lastIdx)));
-                } else {
-                    text.textContent = line;
-                }
-                body.appendChild(text);
-
-                // Show named groups for the first match if available
-                if (matches.length > 0 && matches[0].groups && Object.keys(matches[0].groups).length > 0) {
-                    const groups = document.createElement("div");
-                    groups.className = "test-groups";
-                    for (const [k, v] of Object.entries(matches[0].groups)) {
-                        if (v === undefined) continue;
-                        const span = document.createElement("span");
-                        span.innerHTML = `<strong>${k}</strong>: ${v}`;
-                        groups.appendChild(span);
+            if (!node.lookType) {
+                const toggleBtn = createEl("button", "btn", node.name ? "Remove Name" : "Toggle Capture");
+                toggleBtn.onclick = () => {
+                    if (node.name) {
+                        node.name = null;
+                    } else if (node.capturing) {
+                        node.capturing = false;
+                    } else {
+                        node.capturing = true;
                     }
-                    body.appendChild(groups);
-                }
+                    triggerUpdate();
+                };
+                contentDiv.appendChild(toggleBtn);
 
-                row.appendChild(body);
-                testResults.appendChild(row);
+                if (!node.name && node.capturing) {
+                    const nameBtn = createEl("button", "btn", "Add Name");
+                    nameBtn.onclick = () => {
+                        node.name = "name";
+                        triggerUpdate();
+                    };
+                    contentDiv.appendChild(nameBtn);
+                }
             }
+        } else if (node.type === TYPES.BACKREF) {
+            const switchBtn = createEl("button", "btn-sym", "", "shuffle");
+            const updateSwitchTip = () => tip(switchBtn, node.named ? "Switch to numeric backref" : "Switch to named backref");
+            updateSwitchTip();
+            switchBtn.onclick = () => {
+                node.named = !node.named;
+                node.value = node.named ? "name" : "1";
+                triggerUpdate();
+            };
+            contentDiv.appendChild(switchBtn);
+
+            contentDiv.appendChild(createEl("span", "description", node.named ? "Backref: (?P=" : "Backref: \\"));
+            const input = createEl("input", "node-input short");
+            input.type = "text";
+            input.value = node.value;
+            input.placeholder = node.named ? "name" : "1";
+            input.oninput = (e) => {
+                node.value = e.target.value;
+                updateRegexInput();
+            };
+            contentDiv.appendChild(input);
+            if (node.named) contentDiv.appendChild(createEl("span", "description", ")"));
         }
 
-        testInput.addEventListener("input", () => {
-            runTests();
-            saveState();
+        if (node.type === TYPES.LITERAL && node.value.length > 1) {
+            const splitBtn = tip(createEl("button", "btn-sym", "", "content_cut"), "Split into individual characters");
+            splitBtn.onclick = () => {
+                const chars = node.value.split("");
+                const newNodes = chars.map(c => {
+                    const newNode = { type: TYPES.LITERAL, value: c, id: uid() };
+                    if (node.quantifier) newNode.quantifier = JSON.parse(JSON.stringify(node.quantifier));
+                    return newNode;
+                });
+                parentArray.splice(index, 1, ...newNodes);
+                triggerUpdate();
+            };
+            contentDiv.appendChild(splitBtn);
+        }
+
+        // Quantifier UI (Literal, Group, Set, Dot can be repeated)
+        if ([TYPES.LITERAL, TYPES.SET, TYPES.GROUP, TYPES.DOT].includes(node.type)) {
+            renderQuantifierInputs(node, contentDiv);
+        }
+
+        // Movement and Delete Buttons
+        const actions = createEl("div", "");
+        actions.style.marginLeft = "auto";
+        actions.style.display = "flex";
+        actions.style.gap = "4px";
+
+        // Move Up
+        const moveUpBtn = tip(createEl("button", "btn-sym", "", "arrow_upward"), "Move up");
+        moveUpBtn.disabled = index === 0;
+        moveUpBtn.onclick = () => {
+            [parentArray[index - 1], parentArray[index]] = [parentArray[index], parentArray[index - 1]];
+            triggerUpdate();
+        };
+        actions.appendChild(moveUpBtn);
+
+        // Move Down
+        const moveDownBtn = tip(createEl("button", "btn-sym", "", "arrow_downward"), "Move down");
+        moveDownBtn.disabled = index === parentArray.length - 1;
+        moveDownBtn.onclick = () => {
+            [parentArray[index + 1], parentArray[index]] = [parentArray[index], parentArray[index + 1]];
+            triggerUpdate();
+        };
+        actions.appendChild(moveDownBtn);
+
+        // Delete Button
+        const delBtn = tip(createEl("button", "btn-danger btn-sym", "", "delete"), "Delete node");
+        delBtn.onclick = () => {
+            parentArray.splice(index, 1);
+            triggerUpdate();
+        };
+        actions.appendChild(delBtn);
+
+        contentDiv.appendChild(actions);
+
+        header.appendChild(contentDiv);
+        el.appendChild(header);
+
+        // Children (for Group and Branch)
+        if (node.type === TYPES.GROUP) {
+            const childrenContainer = createEl("div", "node-children");
+            node.children.forEach((child, i) => {
+                childrenContainer.appendChild(renderNode(child, node.children, i));
+            });
+            childrenContainer.appendChild(renderToolbox(node.children));
+            el.appendChild(childrenContainer);
+        } else if (node.type === TYPES.BRANCH) {
+            const childrenContainer = createEl("div", "node-children");
+            node.branches.forEach((branchArr, i) => {
+                const branchWrapper = createEl("div", "node");
+                branchWrapper.style.borderLeft = "4px solid orange";
+                branchWrapper.innerHTML = `<strong>Option ${i + 1}</strong>`;
+
+                const btnRemove = tip(createEl("button", "btn-danger btn-sym", "", "delete"), "Remove Option");
+                btnRemove.style.float = "right";
+                btnRemove.onclick = () => {
+                    node.branches.splice(i, 1);
+                    if (node.branches.length === 0) {
+                        parentArray.splice(index, 1);
+                    }
+                    triggerUpdate();
+                };
+                branchWrapper.appendChild(btnRemove);
+
+                const branchContent = createEl("div", "node-children");
+                branchArr.forEach((child, j) => {
+                    branchContent.appendChild(renderNode(child, branchArr, j));
+                });
+                branchContent.appendChild(renderToolbox(branchArr));
+
+                branchWrapper.appendChild(branchContent);
+                childrenContainer.appendChild(branchWrapper);
+            });
+
+            const addBranchBtn = createEl("button", "btn btn-add", "+ Add Option");
+            addBranchBtn.onclick = () => {
+                node.branches.push([]);
+                triggerUpdate();
+            };
+            childrenContainer.appendChild(addBranchBtn);
+
+            el.appendChild(childrenContainer);
+        }
+
+        return el;
+    }
+
+    function renderToolbox(targetArray) {
+        const box = createEl("div", "toolbox");
+        box.style.alignItems = "center";
+
+        const select = createEl("select", "node-input");
+        const placeholder = createEl("option", "", "+ Add token...");
+        placeholder.value = "";
+        select.appendChild(placeholder);
+
+        const options = [
+            { label: "Text", factory: () => ({ type: TYPES.LITERAL, value: "abc", id: uid() }) },
+            {
+                label: "Predefined Set",
+                factory: () => ({ type: TYPES.SET, predefined: "\\d", id: uid() }),
+            },
+            {
+                label: "Character Set",
+                factory: () => ({ type: TYPES.SET, content: "a-z", id: uid() }),
+            },
+            { label: "Any (.)", factory: () => ({ type: TYPES.DOT, id: uid() }) },
+            {
+                label: "Group",
+                factory: () => ({ type: TYPES.GROUP, capturing: true, children: [], id: uid() }),
+            },
+            {
+                label: "Non-capturing Group",
+                factory: () => ({ type: TYPES.GROUP, capturing: false, children: [], id: uid() }),
+            },
+            {
+                label: "Lookahead/behind",
+                factory: () => ({
+                    type: TYPES.GROUP,
+                    capturing: false,
+                    lookType: "?=",
+                    children: [],
+                    id: uid(),
+                }),
+            },
+            {
+                label: "Named Group",
+                factory: () => ({
+                    type: TYPES.GROUP,
+                    capturing: true,
+                    name: "name",
+                    children: [],
+                    id: uid(),
+                }),
+            },
+            {
+                label: "OR (Branch)",
+                factory: () => ({ type: TYPES.BRANCH, branches: [[], []], id: uid() }),
+            },
+            { label: "Anchor", factory: () => ({ type: TYPES.ANCHOR, value: "^", id: uid() }) },
+            { label: "Flags", factory: () => ({ type: TYPES.FLAGS, flags: "i", id: uid() }) },
+            { label: "Backref", factory: () => ({ type: TYPES.BACKREF, value: "1", id: uid() }) },
+        ];
+
+        options.forEach((opt, idx) => {
+            const optionEl = createEl("option", "", opt.label);
+            optionEl.value = idx;
+            select.appendChild(optionEl);
         });
 
-        // Default pattern: US address parser with named groups and flags
-        const DEFAULT_PATTERN = "(?ix)^(?P<number>\\d{1,6})\\s+(?P<predir>N|S|E|W|NE|NW|SE|SW)?\\s*(?P<street>[A-Za-z0-9]+(?:['-]?[A-Za-z0-9]+)*)\\s+(?P<type>Ave|Avenue|St|Street|Rd|Road|Blvd|Boulevard|Ln|Lane|Dr|Drive|Ct|Court|Pl|Place)\\.?(?:\\s+(?P<postdir>N|S|E|W|NE|NW|SE|SW))?(?:\\s*,?\\s*(?:Apt|Unit|#)\\s*(?P<unit>[A-Za-z0-9\\-]+))?(?:\\s*,?\\s*(?P<city>[A-Za-z][A-Za-z\\s\\-]+))?(?:\\s*,?\\s*(?P<state>[A-Z]{2}))?(?:\\s*,?\\s*(?P<zip>\\d{5}(?:-\\d{4})?))?$";
-        const DEFAULT_TESTS = [
-            "123 N Main St, Apt 4B, Springfield, IL 62704-1234",
-            "4520 SE Oak Avenue, Portland, OR 97215",
-            "8 W Elm Rd",
-            "999999 NW Grand Blvd., Unit 12, Miami, FL 33101",
-            "42 Maple Lane",
-            "not an address at all",
-            "77 S King Dr NE, #3C, Austin, TX 78701",
-        ].join("\n");
-
-        const storageKey = "visual_regex_state";
-
-        function saveState() {
-            localStorage.setItem(storageKey, JSON.stringify({
-                pattern: document.getElementById("regex-out").value,
-                tests: testInput.value
-            }));
-        }
-
-        function loadState() {
-            const saved = localStorage.getItem(storageKey);
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    if (parsed.pattern !== undefined) document.getElementById("regex-out").value = parsed.pattern;
-                    if (parsed.tests !== undefined) testInput.value = parsed.tests;
-                } catch (e) {
-                    console.error("Failed to load state", e);
-                }
-            } else {
-                document.getElementById("regex-out").value = DEFAULT_PATTERN;
-                testInput.value = DEFAULT_TESTS;
-            }
-        }
-
-        document.getElementById("restore-default-btn").onclick = () => {
-            if (confirm("Restore default example? Current pattern will be lost.")) {
-                document.getElementById("regex-out").value = DEFAULT_PATTERN;
-                testInput.value = DEFAULT_TESTS;
-                updateASTFromInput();
-                runTests();
-                saveState();
-            }
+        select.onchange = () => {
+            if (select.value === "") return;
+            const selectedFactory = options[select.value].factory;
+            targetArray.push(selectedFactory());
+            select.value = "";
+            triggerUpdate();
         };
 
-        // Initialization
-        document.getElementById("regex-out").addEventListener("input", () => {
+        box.appendChild(select);
+
+        return box;
+    }
+
+    function render() {
+        const rootEl = document.getElementById("tree-root");
+        rootEl.innerHTML = "";
+
+        if (!state.ast.children || state.ast.children.length === 0) {
+            rootEl.innerHTML = "<p class=\"description\">Empty pattern. Add blocks to build your regex visually.</p>";
+            rootEl.appendChild(renderToolbox(state.ast.children));
+        } else {
+            // Root is treated as a sequence container
+            state.ast.children.forEach((child, i) => {
+                rootEl.appendChild(renderNode(child, state.ast.children, i));
+            });
+            rootEl.appendChild(renderToolbox(state.ast.children));
+        }
+    }
+
+    /* --- 6. Test String Generator --- */
+
+    /** Expand set content like "a-zA-Z0-9" into an array of individual characters */
+    function expandSetContent(content) {
+        const chars = [];
+        let i = 0;
+        while (i < content.length) {
+            if (content[i] === "\\" && i + 1 < content.length) {
+                const esc = content[i + 1];
+                if (esc === "d") {
+                    for (let c = 48; c <= 57; c++) chars.push(String.fromCharCode(c));
+                } else if (esc === "w") {
+                    for (let c = 48; c <= 57; c++) chars.push(String.fromCharCode(c));
+                    for (let c = 65; c <= 90; c++) chars.push(String.fromCharCode(c));
+                    for (let c = 97; c <= 122; c++) chars.push(String.fromCharCode(c));
+                    chars.push("_");
+                } else if (esc === "s") {
+                    chars.push(" ", "\t");
+                } else chars.push(esc);
+                i += 2;
+            } else if (i + 2 < content.length && content[i + 1] === "-") {
+                const from = content.charCodeAt(i);
+                const to = content.charCodeAt(i + 2);
+                for (let c = from; c <= to; c++) chars.push(String.fromCharCode(c));
+                i += 3;
+            } else {
+                chars.push(content[i]);
+                i++;
+            }
+        }
+        return chars;
+    }
+
+    const _pick = arr => arr[Math.floor(Math.random() * arr.length)];
+    const _randInt = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+
+    /**
+     * Assigns sequential .groupNumber to all capturing groups by walking the
+     * AST in left-to-right order (matching how regex engines number groups).
+     */
+    function numberGroups(node, counter) {
+        if (!counter) counter = { n: 0 };
+        if (Array.isArray(node)) {
+            node.forEach(c => numberGroups(c, counter));
+            return;
+        }
+        if (!node || !node.type) return;
+        // Capturing groups (not lookarounds) get a number
+        if (node.type === TYPES.GROUP && node.capturing && !node.lookType) {
+            counter.n++;
+            node.groupNumber = counter.n;
+        }
+        if (node.children) numberGroups(node.children, counter);
+        if (node.branches) node.branches.forEach(b => numberGroups(b, counter));
+    }
+
+    /**
+     * Walks the AST and generates a string that should match the pattern.
+     * - `captures` tracks values produced by capturing groups so backrefs work.
+     * - Positive lookarounds generate their content as context (prefix/suffix).
+     * - Negative lookarounds are skipped (the regex validation filters bad candidates).
+     */
+    function generateFromAST(node, captures) {
+        if (!captures) captures = {};
+        if (Array.isArray(node)) return node.map(n => generateFromAST(n, captures)).join("");
+
+        // Determine repetition count from quantifier
+        let count = 1;
+        if (node.quantifier) {
+            const { min, max } = node.quantifier;
+            const effectiveMax = max === Infinity ? min + 3 : max;
+            count = _randInt(min, effectiveMax);
+        }
+
+        let out = "";
+        for (let r = 0; r < count; r++) {
+            switch (node.type) {
+                case TYPES.ROOT:
+                    out += generateFromAST(node.children, captures);
+                    break;
+
+                case TYPES.LITERAL:
+                    out += node.value;
+                    break;
+
+                case TYPES.DOT:
+                    out += _pick("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
+                    break;
+
+                case TYPES.ANCHOR:
+                case TYPES.FLAGS:
+                    break; // produce no characters
+
+                case TYPES.SET:
+                    if (node.predefined) {
+                        switch (node.predefined) {
+                            case "\\d":
+                                out += String(Math.floor(Math.random() * 10));
+                                break;
+                            case "\\D":
+                                out += _pick("abcABC!@# ");
+                                break;
+                            case "\\w":
+                                out += _pick("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_");
+                                break;
+                            case "\\W":
+                                out += _pick(" !@#$%^&*");
+                                break;
+                            case "\\s":
+                                out += _pick(" \t");
+                                break;
+                            case "\\S":
+                                out += _pick("abcABC123!@#");
+                                break;
+                            default:
+                                out += "x";
+                        }
+                    } else {
+                        const chars = expandSetContent(node.content);
+                        if (node.negated) {
+                            const all = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-";
+                            const available = [...all].filter(c => !chars.includes(c));
+                            out += available.length > 0 ? _pick(available) : "!";
+                        } else {
+                            out += chars.length > 0 ? _pick(chars) : "a";
+                        }
+                    }
+                    break;
+
+                case TYPES.GROUP:
+                    if (node.lookType) {
+                        // Positive lookbehind: generate content as prefix
+                        // (it must appear before the match in the input string)
+                        if (node.lookType === "?<=") {
+                            out += generateFromAST(node.children, captures);
+                        }
+                        // Positive lookahead (?=): skip — the later parts of the
+                        // pattern already produce the text the lookahead asserts.
+                        // Negative lookarounds (?!, ?<!): skip, rely on validation.
+                    } else {
+                        const content = generateFromAST(node.children, captures);
+                        // Store capture for backreferences
+                        if (node.capturing && node.groupNumber) {
+                            captures[node.groupNumber] = content;
+                            if (node.name) captures[node.name] = content;
+                        }
+                        out += content;
+                    }
+                    break;
+
+                case TYPES.BRANCH:
+                    out += generateFromAST(
+                        node.branches[Math.floor(Math.random() * node.branches.length)],
+                        captures,
+                    );
+                    break;
+
+                case TYPES.BACKREF: {
+                    // Replay what the referenced group captured
+                    const key = node.named ? node.value : parseInt(node.value, 10);
+                    out += captures[key] || "";
+                    break;
+                }
+            }
+        }
+        return out;
+    }
+
+    /** Create a near-miss non-matching string by mutating a valid one */
+    function generateNonMatchingString(ast) {
+        const s = generateFromAST(ast);
+        switch (Math.floor(Math.random() * 9)) {
+            case 0: // Truncate from end
+                return s.length < 2 ? s + "!!!" : s.slice(0, -_randInt(1, Math.min(s.length - 1, 5)));
+            case 1: // Truncate from start
+                return s.length < 2 ? "???" + s : s.slice(_randInt(1, Math.min(s.length - 1, 5)));
+            case 2: { // Insert junk char
+                const pos = Math.floor(Math.random() * (s.length + 1));
+                return s.slice(0, pos) + _pick("!@#$%^&*()[]{}|~`") + s.slice(pos);
+            }
+            case 3: { // Replace a char
+                if (!s.length) return "???";
+                const pos = Math.floor(Math.random() * s.length);
+                return s.slice(0, pos) + _pick("!@#$%^☺★♦") + s.slice(pos + 1);
+            }
+            case 4: { // Swap adjacent chars
+                if (s.length < 2) return s + "???";
+                const pos = Math.floor(Math.random() * (s.length - 1));
+                return s.slice(0, pos) + s[pos + 1] + s[pos] + s.slice(pos + 2);
+            }
+            case 5: { // Fully random string
+                const pool = "abcdefghijklmnopqrstuvwxyz0123456789 !@#";
+                return Array.from({ length: _randInt(3, 17) }, () => _pick(pool)).join("");
+            }
+            case 6:
+                return s + s; // Double
+            case 7:
+                return ">>> " + s; // Prefix
+            case 8:
+                return Math.random() > 0.5 ? s.toUpperCase() : s.toLowerCase(); // Case flip
+        }
+    }
+
+    let _generateAbort = null;
+
+    async function generateTestStrings() {
+        // Abort any previous generation in progress
+        if (_generateAbort) _generateAbort.abort = true;
+        const token = { abort: false };
+        _generateAbort = token;
+
+        const btn = document.getElementById("generate-btn");
+        const origHTML = btn.innerHTML;
+        const setProgress = (match, noMatch) => {
+            btn.textContent = `✓${match} ✗${noMatch}`;
+        };
+
+        const pattern = document.getElementById("regex-out").value;
+        if (!pattern) return;
+
+        let re;
+        try {
+            re = buildTestRegex(pattern);
+        } catch {
+            return;
+        }
+
+        const matchingLines = new Set();
+        const nonMatchingLines = new Set();
+        const maxAttempts = 300;
+        const batchSize = 5;
+
+        // Generate matching strings in async batches
+        for (let i = 0; i < maxAttempts && matchingLines.size < 20; i += batchSize) {
+            if (token.abort) return;
+            for (let j = 0; j < batchSize && matchingLines.size < 20; j++) {
+                try {
+                    const s = generateFromAST(state.ast);
+                    re.lastIndex = 0;
+                    if (s && re.test(s)) matchingLines.add(s);
+                } catch { /* skip failed attempts */
+                }
+            }
+            setProgress(matchingLines.size, nonMatchingLines.size);
+            await new Promise(r => setTimeout(r, 0)); // yield to UI
+        }
+
+        // Generate non-matching strings in async batches
+        for (let i = 0; i < maxAttempts && nonMatchingLines.size < 20; i += batchSize) {
+            if (token.abort) return;
+            for (let j = 0; j < batchSize && nonMatchingLines.size < 20; j++) {
+                try {
+                    const s = generateNonMatchingString(state.ast);
+                    re.lastIndex = 0;
+                    if (s && !re.test(s)) nonMatchingLines.add(s);
+                    re.lastIndex = 0;
+                } catch { /* skip */
+                }
+            }
+            setProgress(matchingLines.size, nonMatchingLines.size);
+            await new Promise(r => setTimeout(r, 0));
+        }
+
+        if (token.abort) return;
+        _generateAbort = null;
+
+        // Interleave matching and non-matching
+        const matchArr = [...matchingLines];
+        const noMatchArr = [...nonMatchingLines];
+        const combined = [];
+        const maxLen = Math.max(matchArr.length, noMatchArr.length);
+        for (let i = 0; i < maxLen; i++) {
+            if (i < matchArr.length) combined.push(matchArr[i]);
+            if (i < noMatchArr.length) combined.push(noMatchArr[i]);
+        }
+
+        testInput.value = combined.join("\n");
+        btn.innerHTML = origHTML;
+        runTests();
+    }
+
+    /* --- 7. Test Runner --- */
+
+    const testInput = document.getElementById("test-input");
+    const testResults = document.getElementById("test-results");
+
+    // Convert the visual regex pattern string into a usable JS RegExp.
+    // Handles (?P<name>...) → (?<name>...) and inline flags (?ix) → flag extraction.
+    function buildTestRegex(pattern) {
+        // Extract inline flags like (?ix) at the start
+        let flags = "";
+        let src = pattern.replace(/^\(\?([aimsux]+)\)/, (_, f) => {
+            flags = f.replace(/[xas]/g, ""); // JS only supports i, m, u
+            return "";
+        });
+        // Convert Python-style named groups to JS-style
+        src = src.replace(/\(\?P</g, "(?<");
+        // Convert Python-style named backreferences to JS-style
+        src = src.replace(/\(\?P=([a-zA-Z0-9_]+)\)/g, "\\k<$1>");
+        // Fake atomic groups as non-capturing groups for basic JS testing compatibility
+        src = src.replace(/\(\?>/g, "(?:");
+        // Fix "lazy" quantifiers like {,n} or {,} which Python supports but JS doesn't
+        src = src.replace(/\{,(\d*)\}/g, "{0,$1}");
+        // Use 'g' flag to find all matches for highlighting, plus user flags
+        const finalFlags = flags.includes("g") ? flags : flags + "g";
+        return new RegExp(src, finalFlags);
+    }
+
+    function runTests() {
+        const lines = testInput.value.split("\n");
+        const pattern = document.getElementById("regex-out").value;
+        testResults.innerHTML = "";
+
+        if (!pattern) return;
+
+        let re;
+        try {
+            re = buildTestRegex(pattern);
+        } catch (e) {
+            testResults.innerHTML = `<p class="description">Invalid regex: ${e.message}</p>`;
+            return;
+        }
+
+        for (const line of lines) {
+            if (line === "") continue;
+
+            const row = document.createElement("div");
+            row.className = "test-line";
+
+            // We use matchAll to get all match locations for highlighting
+            const matches = [...line.matchAll(re)];
+            const indicator = document.createElement("span");
+            indicator.className = "test-indicator";
+            indicator.textContent = matches.length > 0 ? "✓" : "✗";
+            indicator.style.color = matches.length > 0 ? "var(--success, #22c55e)" : "var(--error, #ef4444)";
+            row.appendChild(indicator);
+
+            const body = document.createElement("div");
+            const text = document.createElement("div");
+            text.className = "test-text";
+
+            // Build highlighted string
+            if (matches.length > 0) {
+                let lastIdx = 0;
+                matches.forEach(m => {
+                    // Skip empty matches that don't advance (to avoid infinite loops, though matchAll handles this)
+                    if (m[0] === "" && m.index === lastIdx && lastIdx !== 0) return;
+
+                    text.appendChild(document.createTextNode(line.substring(lastIdx, m.index)));
+                    const mark = document.createElement("mark");
+                    mark.textContent = m[0] || "ε"; // Show epsilon for empty matches
+                    if (m[0] === "") tip(mark, "Empty match");
+                    text.appendChild(mark);
+                    lastIdx = m.index + (m[0].length || 1);
+                });
+                text.appendChild(document.createTextNode(line.substring(lastIdx)));
+            } else {
+                text.textContent = line;
+            }
+            body.appendChild(text);
+
+            // Show named groups for the first match if available
+            if (matches.length > 0 && matches[0].groups && Object.keys(matches[0].groups).length > 0) {
+                const groups = document.createElement("div");
+                groups.className = "test-groups";
+                for (const [k, v] of Object.entries(matches[0].groups)) {
+                    if (v === undefined) continue;
+                    const span = document.createElement("span");
+                    span.innerHTML = `<strong>${k}</strong>: ${v}`;
+                    groups.appendChild(span);
+                }
+                body.appendChild(groups);
+            }
+
+            row.appendChild(body);
+            testResults.appendChild(row);
+        }
+    }
+
+    testInput.addEventListener("input", () => {
+        runTests();
+        saveState();
+    });
+
+    // Default pattern: US address parser with named groups and flags
+    const DEFAULT_PATTERN = "(?ix)^(?P<number>\\d{1,6})\\s+(?P<predir>N|S|E|W|NE|NW|SE|SW)?\\s*(?P<street>[A-Za-z0-9]+(?:['-]?[A-Za-z0-9]+)*)\\s+(?P<type>Ave|Avenue|St|Street|Rd|Road|Blvd|Boulevard|Ln|Lane|Dr|Drive|Ct|Court|Pl|Place)\\.?(?:\\s+(?P<postdir>N|S|E|W|NE|NW|SE|SW))?(?:\\s*,?\\s*(?:Apt|Unit|#)\\s*(?P<unit>[A-Za-z0-9\\-]+))?(?:\\s*,?\\s*(?P<city>[A-Za-z][A-Za-z\\s\\-]+))?(?:\\s*,?\\s*(?P<state>[A-Z]{2}))?(?:\\s*,?\\s*(?P<zip>\\d{5}(?:-\\d{4})?))?$";
+    const DEFAULT_TESTS = [
+        "123 N Main St, Apt 4B, Springfield, IL 62704-1234",
+        "4520 SE Oak Avenue, Portland, OR 97215",
+        "8 W Elm Rd",
+        "999999 NW Grand Blvd., Unit 12, Miami, FL 33101",
+        "42 Maple Lane",
+        "not an address at all",
+        "77 S King Dr NE, #3C, Austin, TX 78701",
+    ].join("\n");
+
+    const storageKey = "visual_regex_state";
+
+    function saveState() {
+        localStorage.setItem(storageKey, JSON.stringify({
+            pattern: document.getElementById("regex-out").value,
+            tests: testInput.value,
+        }));
+    }
+
+    function loadState() {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed.pattern !== undefined) document.getElementById("regex-out").value = parsed.pattern;
+                if (parsed.tests !== undefined) testInput.value = parsed.tests;
+            } catch (e) {
+                console.error("Failed to load state", e);
+            }
+        } else {
+            document.getElementById("regex-out").value = DEFAULT_PATTERN;
+            testInput.value = DEFAULT_TESTS;
+        }
+    }
+
+    document.getElementById("restore-default-btn").onclick = () => {
+        if (confirm("Restore default example? Current pattern will be lost.")) {
+            document.getElementById("regex-out").value = DEFAULT_PATTERN;
+            testInput.value = DEFAULT_TESTS;
             updateASTFromInput();
             runTests();
             saveState();
-        });
+        }
+    };
 
-        loadState();
+    // Initialization
+    document.getElementById("regex-out").addEventListener("input", () => {
         updateASTFromInput();
         runTests();
-    </script>
+        saveState();
+    });
+
+    loadState();
+    updateASTFromInput();
+    runTests();
+</script>
 </body>
 
 </html>

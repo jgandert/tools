@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
     <meta name="description"
-        content="README and showcase for one.css: A class-lite, semantic CSS framework for web tools.">
+          content="README and showcase for one.css: A class-lite, semantic CSS framework for web tools.">
     <title>one.css — Classless Semantic Stylesheet</title>
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
@@ -63,450 +63,471 @@
 </head>
 
 <body>
-    <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
 
-    <header>
-        <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
-        <hgroup>
-            <h1>one.css</h1>
-            <p>The one class-lite, semantic stylesheet for modern web tools.</p>
-        </hgroup>
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>one.css</h1>
+        <p>The one class-lite, semantic stylesheet for modern web tools.</p>
+    </hgroup>
 
-        <nav aria-label="Primary">
-            <ul>
-                <li>
-                    <a href="#about">About</a>
-                </li>
-                <li>
-                    <a href="#typography">Typography</a>
-                </li>
-                <li>
-                    <a href="#processing">Progress & Modal Dialog</a>
-                </li>
-                <li>
-                    <a href="#controls">Color Picker & Buttons</a>
-                </li>
-            </ul>
-        </nav>
-    </header>
+    <nav aria-label="Primary">
+        <ul>
+            <li>
+                <a href="#about">About</a>
+            </li>
+            <li>
+                <a href="#typography">Typography</a>
+            </li>
+            <li>
+                <a href="#processing">Progress & Modal Dialog</a>
+            </li>
+            <li>
+                <a href="#controls">Color Picker & Buttons</a>
+            </li>
+        </ul>
+    </nav>
+</header>
 
-    <main id="content">
+<main id="content">
 
-        <section id="about">
-            <img src="icon.svg"
-                alt="one.css logo featuring a black ring with 'one.css' in white at the top and 'semantic stylesheet' in black script at the bottom"
-                class="about-icon">
-            <h2>About one.css</h2>
-            <p>
-                <strong>one.css</strong> is designed to provide a premium, modern look for web tools with
-                minimal effort. It leverages <strong>semantic HTML</strong> to create high-quality
-                interfaces without the need for complex class name systems.
-            </p>
+    <section id="about">
+        <img src="icon.svg"
+             alt="one.css logo featuring a black ring with 'one.css' in white at the top and 'semantic stylesheet' in black script at the bottom"
+             class="about-icon">
+        <h2>About one.css</h2>
+        <p>
+            <strong>one.css</strong> is designed to provide a premium, modern look for web tools
+            with
+            minimal effort. It leverages <strong>semantic HTML</strong> to create high-quality
+            interfaces without the need for complex class name systems.
+        </p>
 
-            <h3>Why one.css?</h3>
-            <ul>
-                <li>
-                    <strong>Classless by default:</strong> Style standard HTML elements directly.
-                </li>
-                <li>
-                    <strong>Dark Mode &amp; Themes:</strong>
-                    Built-in <code>light dark</code> support. Change the whole
-                    color scheme by adding a single class (e.g., <code>.blue</code>
-                    ) to the <code>&lt;body&gt;</code>.
-                </li>
-                <li>
-                    <strong>Premium Aesthetics:</strong> Modern typography (Inter), smooth transitions, and a curated
-                    color palette.
-                </li>
-                <li>
-                    <strong>Responsive:</strong>
-                    A robust grid system that handles sidebar overlays and <a href="index.centered.html">centered
-                        layouts</a>.
-                </li>
-                <li>
-                    <strong><a href="grid_output.png">256 Icons</a> Included:</strong> Hand-picked Material Symbols,
-                    covering 99% of web
-                    tool use cases.
-                </li>
-            </ul>
+        <h3>Why one.css?</h3>
+        <ul>
+            <li>
+                <strong>Classless by default:</strong> Style standard HTML elements directly.
+            </li>
+            <li>
+                <strong>Dark Mode &amp; Themes:</strong>
+                Built-in <code>light dark</code> support. Change the whole
+                color scheme by adding a single class (e.g., <code>.blue</code>
+                ) to the <code>&lt;body&gt;</code>.
+            </li>
+            <li>
+                <strong>Premium Aesthetics:</strong> Modern typography (Inter), smooth transitions,
+                and a curated
+                color palette.
+            </li>
+            <li>
+                <strong>Responsive:</strong>
+                A robust grid system that handles sidebar overlays and <a
+                href="index.centered.html">centered
+                layouts</a>.
+            </li>
+            <li>
+                <strong><a href="grid_output.png">256 Icons</a> Included:</strong> Hand-picked
+                Material Symbols,
+                covering 99% of web
+                tool use cases.
+            </li>
+        </ul>
 
-            <h3>Semantic Power</h3>
-            <p>
-                By using elements like <code>&lt;header&gt;</code>
-                , <code>&lt;main&gt;</code>,
-                <code>&lt;aside&gt;</code>,
-                and <code>&lt;footer&gt;</code>, you get a full-featured app layout for free. Form elements like
-                <code>&lt;fieldset&gt;</code>
-                and <code>&lt;legend&gt;</code> are beautifully styled, and advanced
-                components like <code>&lt;dialog&gt;</code>
-                and <code>&lt;progress&gt;</code> follow a consistent
-                design language.
-            </p>
+        <h3>Semantic Power</h3>
+        <p>
+            By using elements like <code>&lt;header&gt;</code>
+            , <code>&lt;main&gt;</code>,
+            <code>&lt;aside&gt;</code>,
+            and <code>&lt;footer&gt;</code>, you get a full-featured app layout for free. Form
+            elements like
+            <code>&lt;fieldset&gt;</code>
+            and <code>&lt;legend&gt;</code> are beautifully styled, and advanced
+            components like <code>&lt;dialog&gt;</code>
+            and <code>&lt;progress&gt;</code> follow a consistent
+            design language.
+        </p>
 
-            <p>
-                <em>This page itself is the primary showcase and documentation for one.css.</em>
-            </p>
+        <p>
+            <em>This page itself is the primary showcase and documentation for one.css.</em>
+        </p>
 
 
-            <h3>Installation</h3>
-            <p>
-                To use <a href="../one.css">one CSS file</a>, download it and add the following line to the
-                <code>&lt;head&gt;</code> section of
-                your HTML
-                file:
-            </p>
-            <pre>
+        <h3>Installation</h3>
+        <p>
+            To use <a href="../one.css">one CSS file</a>, download it and add the following line to
+            the
+            <code>&lt;head&gt;</code> section of
+            your HTML
+            file:
+        </p>
+        <pre>
 <code>&lt;link rel="stylesheet" type="text/css" href="one.css"&gt;</code>
 </pre>
-            <p>
-                Then place the <a href="../Inter-VariableFont_opsz,wght.ttf">Inter font</a>
-                and <a href="../material-symbols.woff2">Material Symbols font</a> in the same folder.</p>
+        <p>
+            Then place the <a href="../Inter-VariableFont_opsz,wght.ttf">Inter font</a>
+            and <a href="../material-symbols.woff2">Material Symbols font</a> in the same folder.
+        </p>
 
 
-            <h3>License</h3>
-            <p>
-                one.css and Material Symbols are released under the <a
-                    href="https://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.
-            </p>
-            <p>
-                The Inter font is released under the <a
-                    href="https://openfontlicense.org/open-font-license-official-text/">SIL
-                    OPEN FONT LICENSE Version 1.1</a>.
-            </p>
-        </section>
+        <h3>License</h3>
+        <p>
+            one.css and Material Symbols are released under the <a
+            href="https://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.
+        </p>
+        <p>
+            The Inter font is released under the <a
+            href="https://openfontlicense.org/open-font-license-official-text/">SIL
+            OPEN FONT LICENSE Version 1.1</a>.
+        </p>
+    </section>
 
-        <section id="typography">
-            <h2>Typography — Inter Font Stack</h2>
-            <p>
-                Body copy is now rendered in <strong>Inter</strong> (variable font, loaded locally from
-                <code>Inter-VariableFont_opsz,wght.ttf</code>), with a full system-font fallback chain.
-                Font smoothing (<code>-webkit-font-smoothing: antialiased</code> /
-                <code>-moz-osx-font-smoothing: grayscale</code>) is applied globally so text looks
-                crisp on every platform, including macOS retina screens.
-            </p>
+    <section id="typography">
+        <h2>Typography — Inter Font Stack</h2>
+        <p>
+            Body copy is now rendered in <strong>Inter</strong> (variable font, loaded locally from
+            <code>Inter-VariableFont_opsz,wght.ttf</code>), with a full system-font fallback chain.
+            Font smoothing (<code>-webkit-font-smoothing: antialiased</code> /
+            <code>-moz-osx-font-smoothing: grayscale</code>) is applied globally so text looks
+            crisp on every platform, including macOS retina screens.
+        </p>
 
-            <h3>Weight Spectrum</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>CSS Weight</th>
-                        <th>Name</th>
-                        <th>Sample</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-                            <code>100</code>
-                        </td>
-                        <td>Thin</td>
-                        <td class="demo-fw-100">The quick brown fox jumps over the lazy dog</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <code>300</code>
-                        </td>
-                        <td>Light</td>
-                        <td class="demo-fw-300">The quick brown fox jumps over the lazy dog</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <code>400</code>
-                        </td>
-                        <td>Regular</td>
-                        <td class="demo-fw-400">The quick brown fox jumps over the lazy dog</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <code>500</code>
-                        </td>
-                        <td>Medium</td>
-                        <td class="demo-fw-500">The quick brown fox jumps over the lazy dog</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <code>600</code>
-                        </td>
-                        <td>SemiBold</td>
-                        <td class="demo-fw-600">The quick brown fox jumps over the lazy dog</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <code>700</code>
-                        </td>
-                        <td>Bold</td>
-                        <td class="demo-fw-700">The quick brown fox jumps over the lazy dog</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <code>900</code>
-                        </td>
-                        <td>Black</td>
-                        <td class="demo-fw-900">The quick brown fox jumps over the lazy dog</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h3>Weight Spectrum</h3>
+        <table>
+            <thead>
+            <tr>
+                <th>CSS Weight</th>
+                <th>Name</th>
+                <th>Sample</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>
+                    <code>100</code>
+                </td>
+                <td>Thin</td>
+                <td class="demo-fw-100">The quick brown fox jumps over the lazy dog</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>300</code>
+                </td>
+                <td>Light</td>
+                <td class="demo-fw-300">The quick brown fox jumps over the lazy dog</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>400</code>
+                </td>
+                <td>Regular</td>
+                <td class="demo-fw-400">The quick brown fox jumps over the lazy dog</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>500</code>
+                </td>
+                <td>Medium</td>
+                <td class="demo-fw-500">The quick brown fox jumps over the lazy dog</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>600</code>
+                </td>
+                <td>SemiBold</td>
+                <td class="demo-fw-600">The quick brown fox jumps over the lazy dog</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>700</code>
+                </td>
+                <td>Bold</td>
+                <td class="demo-fw-700">The quick brown fox jumps over the lazy dog</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>900</code>
+                </td>
+                <td>Black</td>
+                <td class="demo-fw-900">The quick brown fox jumps over the lazy dog</td>
+            </tr>
+            </tbody>
+        </table>
 
-            <h3>Scale</h3>
-            <p class="demo-display-h1">one.css</p>
-            <h2 class="demo-no-margin">Heading 2 — Title</h2>
-            <h3 class="demo-no-margin">Heading 3 — Section</h3>
-            <p>
-                Body text at <code>1rem</code>. Inter features optical-size axis support, excellent
-                legibility at small sizes, and OpenType alternates (slashed zero, tabular figures).
-                Links like <a href="#">this one</a> benefit from the medium-weight baseline the
-                new font stack provides.</p>
-            <p class="text-muted">
-                Small / muted text at <code>0.875rem</code> — still fully legible because Inter's
-                letterforms are optimized for on-screen rendering.
-            </p>
+        <h3>Scale</h3>
+        <p class="demo-display-h1">one.css</p>
+        <h2 class="demo-no-margin">Heading 2 — Title</h2>
+        <h3 class="demo-no-margin">Heading 3 — Section</h3>
+        <p>
+            Body text at <code>1rem</code>. Inter features optical-size axis support, excellent
+            legibility at small sizes, and OpenType alternates (slashed zero, tabular figures).
+            Links like <a href="#">this one</a> benefit from the medium-weight baseline the
+            new font stack provides.</p>
+        <p class="text-muted">
+            Small / muted text at <code>0.875rem</code> — still fully legible because Inter's
+            letterforms are optimized for on-screen rendering.
+        </p>
 
-            <h3>Process Steps</h3>
-            <ol class="steps">
-                <li>Initialize the system and check for configuration updates.</li>
-                <li>Load the data into memory, ensuring that all records are correctly parsed and validated before
-                    proceeding to the next stage.</li>
-                <li>Write the processed results to the local storage interface.</li>
-            </ol>
+        <h3>Process Steps</h3>
+        <ol class="steps">
+            <li>Initialize the system and check for configuration updates.</li>
+            <li>Load the data into memory, ensuring that all records are correctly parsed and
+                validated before
+                proceeding to the next stage.
+            </li>
+            <li>Write the processed results to the local storage interface.</li>
+        </ol>
 
-        </section>
+    </section>
 
-        <section id="processing">
-            <h2>Processing Status</h2>
-            <p>This is a paragraph about processing status. It should have a nice, consistent margin at the bottom
-                because of the margin-bottom reset we just applied.</p>
-            <p>Here is another paragraph that follows the first one. Notice the vertical space between this paragraph
-                and the one above it. This vertical rhythm is important for readability.</p>
-            <p>
-                Press <kbd>Ctrl</kbd>
-                + <kbd>Shift</kbd>
-                + <kbd>Esc</kbd> to open the task manager.
-            </p>
+    <section id="processing">
+        <h2>Processing Status</h2>
+        <p>This is a paragraph about processing status. It should have a nice, consistent margin at
+            the bottom
+            because of the margin-bottom reset we just applied.</p>
+        <p>Here is another paragraph that follows the first one. Notice the vertical space between
+            this paragraph
+            and the one above it. This vertical rhythm is important for readability.</p>
+        <p>
+            Press <kbd>Ctrl</kbd>
+            + <kbd>Shift</kbd>
+            + <kbd>Esc</kbd> to open the task manager.
+        </p>
 
-            <details>
-                <summary>View debug logs</summary>
-                <pre>
+        <details>
+            <summary>View debug logs</summary>
+            <pre>
 <code>
 Init local processing...
 Loading configuration...
 Processing data...
 Done!
                 </code></pre>
-            </details>
+        </details>
 
-            <h3>System Status</h3>
-            <progress id="progress-1" value="25" max="100">25%</progress>
+        <h3>System Status</h3>
+        <progress id="progress-1" value="25" max="100">25%</progress>
 
-            <article aria-busy="true" aria-live="polite">
-                Processing local data...
-            </article>
+        <article aria-busy="true" aria-live="polite">
+            Processing local data...
+        </article>
 
-            <button type="button" aria-busy="true">Loading...</button>
+        <button type="button" aria-busy="true">Loading...</button>
 
-            <h3>Search Data</h3>
-            <div role="search">
-                <input type="search" placeholder="Search processing logs..." aria-label="Search processing logs">
-                <button type="button">
-                    <span class="sym">search</span>
-                </button>
-            </div>
-
-            <h3>Modals</h3>
-            <button type="button" id="open-modal" aria-haspopup="dialog" aria-controls="modal-example">
-                Clear Local Data
+        <h3>Search Data</h3>
+        <div role="search">
+            <input type="search" placeholder="Search processing logs..."
+                   aria-label="Search processing logs">
+            <button type="button">
+                <span class="sym">search</span>
             </button>
-        </section>
+        </div>
 
-        <section id="controls">
-            <h2>Controls</h2>
+        <h3>Modals</h3>
+        <button type="button" id="open-modal" aria-haspopup="dialog" aria-controls="modal-example">
+            Clear Local Data
+        </button>
+    </section>
 
-            <h3>N-way Switch</h3>
+    <section id="controls">
+        <h2>Controls</h2>
 
-            <div class="segmented-control" role="group" aria-label="Difficulty Level">
-                <input type="radio" name="difficulty" id="diff-easy" value="easy">
-                <label for="diff-easy">Easy</label>
+        <h3>N-way Switch</h3>
 
-                <input type="radio" name="difficulty" id="diff-normal" value="normal" checked>
-                <label for="diff-normal">Normal</label>
+        <div class="segmented-control" role="group" aria-label="Difficulty Level">
+            <input type="radio" name="difficulty" id="diff-easy" value="easy">
+            <label for="diff-easy">Easy</label>
 
-                <input type="radio" name="difficulty" id="diff-hard" value="hard">
-                <label for="diff-hard">Hard</label>
-            </div>
+            <input type="radio" name="difficulty" id="diff-normal" value="normal" checked>
+            <label for="diff-normal">Normal</label>
 
-            <h3>
-                Color Picker (<code>input[type="color"]</code>)
-            </h3>
-            <p>Styled with the same filled-field language as every other input: themed background,
-                bottom-border underline, and a clean rounded swatch (no browser-default double border).</p>
+            <input type="radio" name="difficulty" id="diff-hard" value="hard">
+            <label for="diff-hard">Hard</label>
+        </div>
+
+        <h3>
+            Color Picker (<code>input[type="color"]</code>)
+        </h3>
+        <p>Styled with the same filled-field language as every other input: themed background,
+            bottom-border underline, and a clean rounded swatch (no browser-default double
+            border).</p>
+        <label>
+            Accent Color
+            <input type="color" name="accent" value="#6750a4">
+        </label>
+        <label>
+            Highlight Color
+            <input type="color" name="highlight" value="#4fd8d8">
+        </label>
+
+        <h3>
+            <code>.btn-danger</code> Class
+        </h3>
+        <p>An outline-danger variant for destructive actions that cannot use
+            <code>type="submit"</code> or a semantic attribute.
+        </p>
+        <div class="group mt-2">
+            <button type="button">Secondary (default)</button>
+            <button type="submit">Primary (submit)</button>
+            <button type="button" class="btn-danger">Delete Account</button>
+            <button type="button" class="btn-danger" disabled>Delete (disabled)</button>
+        </div>
+        <div class="group mt-2">
+            Icon button:
+            <button type="button" class="btn-sym">folder_open</button>
+            /
+            Button with icon:
+            <button type="button">
+                <span class="sym">folder_open</span> Open
+            </button>
+        </div>
+    </section>
+
+</main>
+
+<aside>
+    <h2>Tool Glossary</h2>
+    <ul>
+        <li>
+            <dfn>Threads</dfn>: The number of concurrent local workers.
+        </li>
+        <li>
+            <abbr title="Application Programming Interface">API</abbr>: A set of rules for
+            interacting with the
+            tool.
+        </li>
+        <li>
+            <a href="mailto:support@example.com" data-tooltip="Click to send us an email">Support
+                Team</a>
+        </li>
+        <li>
+            <a href="tel:+1234567890">Call us: +1 (234) 567-890</a>
+        </li>
+    </ul>
+    <form id="config-form">
+        <fieldset>
+            <legend>Processing Settings</legend>
+
             <label>
-                Accent Color
-                <input type="color" name="accent" value="#6750a4">
+                Project Name
+                <input type="text" name="project" autocomplete="off" required>
             </label>
+
             <label>
-                Highlight Color
-                <input type="color" name="highlight" value="#4fd8d8">
+                Thread Count (Max 8)
+                <input type="number" name="threads" value="12" aria-invalid="true"
+                       aria-errormessage="threads-error"
+                       aria-describedby="threads-error" required>
+                <small id="threads-error">Error: Thread count cannot exceed 8.</small>
             </label>
 
-            <h3>
-                <code>.btn-danger</code> Class
-            </h3>
-            <p>An outline-danger variant for destructive actions that cannot use
-                <code>type="submit"</code> or a semantic attribute.
-            </p>
-            <div class="group mt-2">
-                <button type="button">Secondary (default)</button>
-                <button type="submit">Primary (submit)</button>
-                <button type="button" class="btn-danger">Delete Account</button>
-                <button type="button" class="btn-danger" disabled>Delete (disabled)</button>
-            </div>
-            <div class="group mt-2">
-                Icon button: <button type="button" class="btn-sym">folder_open</button> /
-                Button with icon: <button type="button">
-                    <span class="sym">folder_open</span> Open
-                </button>
-            </div>
-        </section>
 
-    </main>
+            <label>
+                Execution Mode
+                <select name="mode">
+                    <option value="sequential">Sequential</option>
+                    <option value="parallel" selected>Parallel</option>
+                    <option value="distant">Distant (Cluster)</option>
+                </select>
+            </label>
 
-    <aside>
-        <h2>Tool Glossary</h2>
-        <ul>
-            <li>
-                <dfn>Threads</dfn>: The number of concurrent local workers.
-            </li>
-            <li>
-                <abbr title="Application Programming Interface">API</abbr>: A set of rules for interacting with the
-                tool.
-            </li>
-            <li>
-                <a href="mailto:support@example.com" data-tooltip="Click to send us an email">Support Team</a>
-            </li>
-            <li>
-                <a href="tel:+1234567890">Call us: +1 (234) 567-890</a>
-            </li>
-        </ul>
-        <form id="config-form">
-            <fieldset>
-                <legend>Processing Settings</legend>
+            <label>
+                Optimization Level
+                <input type="range" name="optimization" min="1" max="5" value="3">
+            </label>
 
-                <label>
-                    Project Name
-                    <input type="text" name="project" autocomplete="off" required>
-                </label>
+            <label>
+                Enable Cloud Sync
+                <input type="checkbox" role="switch" name="cloud-sync" checked>
+            </label>
+        </fieldset>
 
-                <label>
-                    Thread Count (Max 8)
-                    <input type="number" name="threads" value="12" aria-invalid="true" aria-errormessage="threads-error"
-                        aria-describedby="threads-error" required>
-                    <small id="threads-error">Error: Thread count cannot exceed 8.</small>
-                </label>
+        <fieldset>
+            <legend>Theme Color</legend>
+            <label>
+                Color Theme
+                <select name="color" id="color-selector">
+                    <option value="" selected>Default (Purple-Green)</option>
+                    <option value="blue">Blue</option>
+                    <option value="green">Green</option>
+                    <option value="turquoise">Turquoise</option>
+                    <option value="ocker">Ocker</option>
+                    <option value="orange">Orange</option>
+                    <option value="pink">Pink</option>
+                    <option value="purple">Purple</option>
+                    <option value="red">Red</option>
+                </select>
+            </label>
+        </fieldset>
 
-
-                <label>
-                    Execution Mode
-                    <select name="mode">
-                        <option value="sequential">Sequential</option>
-                        <option value="parallel" selected>Parallel</option>
-                        <option value="distant">Distant (Cluster)</option>
-                    </select>
-                </label>
-
-                <label>
-                    Optimization Level
-                    <input type="range" name="optimization" min="1" max="5" value="3">
-                </label>
-
-                <label>
-                    Enable Cloud Sync
-                    <input type="checkbox" role="switch" name="cloud-sync" checked>
-                </label>
-            </fieldset>
-
-            <fieldset>
-                <legend>Theme Color</legend>
-                <label>
-                    Color Theme
-                    <select name="color" id="color-selector">
-                        <option value="" selected>Default (Purple-Green)</option>
-                        <option value="blue">Blue</option>
-                        <option value="green">Green</option>
-                        <option value="turquoise">Turquoise</option>
-                        <option value="ocker">Ocker</option>
-                        <option value="orange">Orange</option>
-                        <option value="pink">Pink</option>
-                        <option value="purple">Purple</option>
-                        <option value="red">Red</option>
-                    </select>
-                </label>
-            </fieldset>
-
-            <div class="form-actions">
-                <button type="submit">
-                    Save <span class="hide-mobile">
+        <div class="form-actions">
+            <button type="submit">
+                Save <span class="hide-mobile">
                         Settings <kbd>
                             <span class="sym">keyboard_command_key</span>S</kbd></span></button>
-                <button type="reset">
-                    Reset <span class="hide-mobile">
+            <button type="reset">
+                Reset <span class="hide-mobile">
                         <kbd>
                             <span class="sym">keyboard_return</span></kbd></span></button>
-            </div>
-        </form>
-    </aside>
+        </div>
+    </form>
+</aside>
 
-    <footer>
-        <p>
-            one.css is licensed under the <strong>Apache License, Version 2.0</strong>.
-        </p>
-    </footer>
+<footer>
+    <p>
+        one.css is licensed under the <strong>Apache License, Version 2.0</strong>.
+    </p>
+</footer>
 
-    <dialog id="modal-example" aria-labelledby="dialog-title" aria-describedby="dialog-desc" aria-modal="true">
-        <article>
-            <header>
-                <h3 id="dialog-title">Confirm Action</h3>
-            </header>
+<dialog id="modal-example" aria-labelledby="dialog-title" aria-describedby="dialog-desc"
+        aria-modal="true">
+    <article>
+        <header>
+            <h3 id="dialog-title">Confirm Action</h3>
+        </header>
 
-            <p id="dialog-desc">Are you sure you want to clear all local tool data? This cannot be undone.</p>
+        <p id="dialog-desc">Are you sure you want to clear all local tool data? This cannot be
+            undone.</p>
 
-            <footer>
-                <button type="button" data-action="cancel">Cancel</button>
-                <button type="button" data-action="confirm" autofocus>Confirm</button>
-            </footer>
-        </article>
-    </dialog>
+        <footer>
+            <button type="button" data-action="cancel">Cancel</button>
+            <button type="button" data-action="confirm" autofocus>Confirm</button>
+        </footer>
+    </article>
+</dialog>
 
-    <script>
-        // --- Modal Logic ---
-        const dialog = document.getElementById("modal-example");
-        document.getElementById("open-modal").addEventListener("click", () => dialog?.showModal?.());
-        dialog.addEventListener("click", (e) => {
-            if (e.target === dialog || e.target.closest("#close-modal,[data-action='cancel'],[data-action='confirm']")) {
-                dialog.close();
-            }
-        });
+<script>
+    // --- Modal Logic ---
+    const dialog = document.getElementById("modal-example");
+    document.getElementById("open-modal").addEventListener("click", () => dialog?.showModal?.());
+    dialog.addEventListener("click", (e) => {
+        if (e.target === dialog || e.target.closest("#close-modal,[data-action='cancel'],[data-action='confirm']")) {
+            dialog.close();
+        }
+    });
 
-        // --- Local Tool Form Logic ---
-        const configForm = document.getElementById("config-form");
-        configForm.addEventListener("submit", (event) => {
-            // This single line stops the browser from trying to send data to a server or refreshing the page.
-            event.preventDefault();
+    // --- Local Tool Form Logic ---
+    const configForm = document.getElementById("config-form");
+    configForm.addEventListener("submit", (event) => {
+        // This single line stops the browser from trying to send data to a server or refreshing the page.
+        event.preventDefault();
 
-            // You would run your local JavaScript tool logic here!
-            console.log("Local tool settings saved, processing data...");
-        });
-        // --- Color Toggle Logic ---
-        const colorSelector = document.getElementById("color-selector");
-        colorSelector.addEventListener("change", (e) => {
-            const color = e.target.value;
-            // Remove all specific color classes
-            const themes = [...colorSelector.options].map(o => o.value).filter(Boolean);
-            document.documentElement.classList.remove(...themes.map(t => "theme-" + t));
-            // Add the selected color class if not default
-            if (color) {
-                document.documentElement.classList.add("theme-" + color);
-            }
-        });
-    </script>
+        // You would run your local JavaScript tool logic here!
+        console.log("Local tool settings saved, processing data...");
+    });
+    // --- Color Toggle Logic ---
+    const colorSelector = document.getElementById("color-selector");
+    colorSelector.addEventListener("change", (e) => {
+        const color = e.target.value;
+        // Remove all specific color classes
+        const themes = [...colorSelector.options].map(o => o.value).filter(Boolean);
+        document.documentElement.classList.remove(...themes.map(t => "theme-" + t));
+        // Add the selected color class if not default
+        if (color) {
+            document.documentElement.classList.add("theme-" + color);
+        }
+    });
+</script>
 
 </body>
 

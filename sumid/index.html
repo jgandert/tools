@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
     <meta name="description"
-        content="sumid — a 256-bit, sequential, base-50 UUID. Documentation, generator, converter, and analysis tools.">
+          content="sumid — a 256-bit, sequential, base-50 UUID. Documentation, generator, converter, and analysis tools.">
     <title>sumid — Sequential Universally-Unique & Mergeable ID</title>
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
@@ -26,13 +26,13 @@
             line-height: 2.4;
         }
 
-        .bit-layout>span:first-child {
+        .bit-layout > span:first-child {
             flex: 96;
             background: var(--primary);
             color: var(--on-primary);
         }
 
-        .bit-layout>span:last-child {
+        .bit-layout > span:last-child {
             flex: 160;
             background: var(--secondary);
             color: var(--on-secondary);
@@ -84,1030 +84,1048 @@
 </head>
 
 <body>
-    <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
 
-    <header>
-        <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
-        <hgroup>
-            <h1>sumid</h1>
-            <p>Sequential Universally-Unique &amp; Mergeable ID</p>
-        </hgroup>
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>sumid</h1>
+        <p>Sequential Universally-Unique &amp; Mergeable ID</p>
+    </hgroup>
 
-        <nav aria-label="Primary">
-            <ul>
-                <li>
-                    <a href="#overview">Overview</a>
-                </li>
-                <li>
-                    <a href="#alphabet">Alphabet</a>
-                </li>
-                <li>
-                    <a href="#exclusions">Excluded Characters</a>
-                </li>
-                <li>
-                    <a href="#structure">Bit Structure</a>
-                </li>
-                <li>
-                    <a href="#faq">FAQ</a>
-                </li>
-            </ul>
-        </nav>
-    </header>
+    <nav aria-label="Primary">
+        <ul>
+            <li>
+                <a href="#overview">Overview</a>
+            </li>
+            <li>
+                <a href="#alphabet">Alphabet</a>
+            </li>
+            <li>
+                <a href="#exclusions">Excluded Characters</a>
+            </li>
+            <li>
+                <a href="#structure">Bit Structure</a>
+            </li>
+            <li>
+                <a href="#faq">FAQ</a>
+            </li>
+        </ul>
+    </nav>
+</header>
 
-    <main id="content">
+<main id="content">
 
-        <section id="overview">
-            <img src="icon.svg"
-                alt="sumid logo featuring a dark teal Greek letter sigma (summation symbol) on the left and an orange hourglass on the right"
-                class="about-icon">
-            <h2>What is a sumid?</h2>
-            <p>
-                A <strong>sumid</strong>
-                is a <strong>256-bit, base-50-encoded, sequential UUID</strong> built from
-                nanosecond-precision timestamps. With 160 bits of randomness per time slot,
-                collisions are negligible.
-            </p>
-            <p>
-                The name stands for <strong>S</strong>&#x2060;equential <strong>U</strong>&#x2060;niversally-Unique &amp; Mergeable
-                <strong>ID</strong>.
-            </p>
+    <section id="overview">
+        <img src="icon.svg"
+             alt="sumid logo featuring a dark teal Greek letter sigma (summation symbol) on the left and an orange hourglass on the right"
+             class="about-icon">
+        <h2>What is a sumid?</h2>
+        <p>
+            A <strong>sumid</strong>
+            is a <strong>256-bit, base-50-encoded, sequential UUID</strong> built from
+            nanosecond-precision timestamps. With 160 bits of randomness per time slot,
+            collisions are negligible.
+        </p>
+        <p>
+            The name stands for <strong>S</strong>&#x2060;equential <strong>U</strong>&#x2060;niversally-Unique
+            &amp; Mergeable
+            <strong>ID</strong>.
+        </p>
 
-            <p>
-                The canonical <a href="sumid.py">reference implementation</a> is written in Python.
-            </p>
+        <p>
+            The canonical <a href="sumid.py">reference implementation</a> is written in Python.
+        </p>
 
-            <h3>Key Properties</h3>
-            <ul>
-                <li>
-                    <strong>Sequential:</strong> IDs generated later sort after earlier ones (monotonic ordering).
-                </li>
-                <li>
-                    <strong>Unique:</strong> 160 bits of entropy make accidental collisions negligible.
-                </li>
-                <li>
-                    <strong>Mergeable:</strong> Two IDs can be merged to produce a new ID that sorts between them
-                    — useful for ordered insertion.
-                </li>
-                <li>
-                    <strong>Human-Readable:</strong> The 50-character alphabet avoids visually ambiguous glyphs, and
-                    tolerant decoding accepts common lookalikes.
-                </li>
-                <li>
-                    <strong>Technically Safe:</strong> Every character is safe for URLs, file paths, and unquoted
-                    shell arguments.
-                </li>
-            </ul>
-        </section>
+        <h3>Key Properties</h3>
+        <ul>
+            <li>
+                <strong>Sequential:</strong> IDs generated later sort after earlier ones (monotonic
+                ordering).
+            </li>
+            <li>
+                <strong>Unique:</strong> 160 bits of entropy make accidental collisions negligible.
+            </li>
+            <li>
+                <strong>Mergeable:</strong> Two IDs can be merged to produce a new ID that sorts
+                between them
+                — useful for ordered insertion.
+            </li>
+            <li>
+                <strong>Human-Readable:</strong> The 50-character alphabet avoids visually ambiguous
+                glyphs, and
+                tolerant decoding accepts common lookalikes.
+            </li>
+            <li>
+                <strong>Technically Safe:</strong> Every character is safe for URLs, file paths, and
+                unquoted
+                shell arguments.
+            </li>
+        </ul>
+    </section>
 
-        <section id="alphabet">
-            <h2>The Alphabet</h2>
-            <p>
-                The sumid uses a curated, <strong>sorted</strong> 50-character alphabet. Sorting order of the characters
-                matches ASCII order, which means lexicographic string comparison preserves chronological order.
-            </p>
-            <p>
-                In formal language theory, a finite alphabet is traditionally denoted by the Greek letter
-                <strong>Σ</strong> (Sigma) — hence the Σ in the sumid logo. Where a binary system
-                uses Σ&nbsp;=&nbsp;{0,&nbsp;1}, a sumid uses an alphabet optimised for
-                human readability and technical safety.
-            </p>
-            <pre>
+    <section id="alphabet">
+        <h2>The Alphabet</h2>
+        <p>
+            The sumid uses a curated, <strong>sorted</strong> 50-character alphabet. Sorting order
+            of the characters
+            matches ASCII order, which means lexicographic string comparison preserves chronological
+            order.
+        </p>
+        <p>
+            In formal language theory, a finite alphabet is traditionally denoted by the Greek
+            letter
+            <strong>Σ</strong> (Sigma) — hence the Σ in the sumid logo. Where a binary system
+            uses Σ&nbsp;=&nbsp;{0,&nbsp;1}, a sumid uses an alphabet optimised for
+            human readability and technical safety.
+        </p>
+        <pre>
 <code>467ACDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz</code>
 </pre>
-            <p>
-                This gives a base of <strong>50</strong>. A 256-bit value encodes into at most
-                <strong>46 characters</strong>.
-            </p>
+        <p>
+            This gives a base of <strong>50</strong>. A 256-bit value encodes into at most
+            <strong>46 characters</strong>.
+        </p>
 
-            <h3>Tolerant Decoding</h3>
-            <p>
-                When <em>decoding</em>, visually ambiguous substitutes are silently accepted
-                and mapped to their canonical character. Encoding always produces the canonical form.
-            </p>
+        <h3>Tolerant Decoding</h3>
+        <p>
+            When <em>decoding</em>, visually ambiguous substitutes are silently accepted
+            and mapped to their canonical character. Encoding always produces the canonical form.
+        </p>
+        <table>
+            <thead>
+            <tr>
+                <th>If you type</th>
+                <th>Decoded as</th>
+                <th>Why</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>
+                    <code>5</code>
+                </td>
+                <td>
+                    <code>S</code>
+                </td>
+                <td>Confused in handwriting and small print</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>2</code>
+                </td>
+                <td>
+                    <code>Z</code>
+                </td>
+                <td>Confused in handwriting and small print</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>9</code>
+                </td>
+                <td>
+                    <code>g</code>
+                </td>
+                <td>Confused in handwriting</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>3</code>
+                </td>
+                <td>
+                    <code>E</code>
+                </td>
+                <td>Confused in handwriting and pixelated displays</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="exclusions">
+        <h2>Excluded Characters &amp; Rationale</h2>
+        <p>Every printable ASCII character not in the alphabet was excluded for a specific reason.
+            The exclusions fall into two categories.</p>
+
+        <h3>1. Visual Ambiguity</h3>
+        <p>These characters were removed because all members of the group are too easily confused
+            with each other — no single canonical pick is reliable. (For pairs where one character
+            <em>is</em>
+            clearly more recognizable, see <a href="#alphabet">Tolerant Decoding</a> instead.)
+        </p>
+        <table>
+            <thead>
+            <tr>
+                <th>Removed</th>
+                <th>Confused With</th>
+                <th>Reason</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>
+                    <code>0 O o</code>
+                </td>
+                <td>Each other</td>
+                <td>Zero, uppercase O, and lowercase o are often indistinguishable.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>1 I l</code>
+                </td>
+                <td>Each other</td>
+                <td>One, uppercase I, and lowercase l look identical in many sans-serif fonts.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>B 8</code>
+                </td>
+                <td>Each other</td>
+                <td>Can blur together in poor print quality.</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <h3>2. Technical Constraints</h3>
+        <p>These characters have special meanings in shells, URLs, or file systems.</p>
+
+        <details>
+            <summary>Shell &amp; Command Line</summary>
             <table>
                 <thead>
-                    <tr>
-                        <th>If you type</th>
-                        <th>Decoded as</th>
-                        <th>Why</th>
-                    </tr>
+                <tr>
+                    <th>Character</th>
+                    <th>Role</th>
+                </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>
-                            <code>5</code>
-                        </td>
-                        <td>
-                            <code>S</code>
-                        </td>
-                        <td>Confused in handwriting and small print</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <code>2</code>
-                        </td>
-                        <td>
-                            <code>Z</code>
-                        </td>
-                        <td>Confused in handwriting and small print</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <code>9</code>
-                        </td>
-                        <td>
-                            <code>g</code>
-                        </td>
-                        <td>Confused in handwriting</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <code>3</code>
-                        </td>
-                        <td>
-                            <code>E</code>
-                        </td>
-                        <td>Confused in handwriting and pixelated displays</td>
-                    </tr>
+                <tr>
+                    <td>
+                        <code>$</code>
+                    </td>
+                    <td>Variable expansion</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>#</code>
+                    </td>
+                    <td>Comment marker</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>!</code>
+                    </td>
+                    <td>History expansion (Bash)</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>~</code>
+                    </td>
+                    <td>Home directory expansion</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp; | ;</code>
+                    </td>
+                    <td>Control operators</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>( ) { } &lt; &gt;</code>
+                    </td>
+                    <td>Grouping &amp; redirection</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>* ? [ ]</code>
+                    </td>
+                    <td>Globbing wildcards</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>`</code>
+                    </td>
+                    <td>Command substitution</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>-</code>
+                    </td>
+                    <td>
+                        Option/flag prefix (<code>--foo</code>)
+                    </td>
+                </tr>
                 </tbody>
             </table>
-        </section>
+        </details>
 
-        <section id="exclusions">
-            <h2>Excluded Characters &amp; Rationale</h2>
-            <p>Every printable ASCII character not in the alphabet was excluded for a specific reason.
-                The exclusions fall into two categories.</p>
-
-            <h3>1. Visual Ambiguity</h3>
-            <p>These characters were removed because all members of the group are too easily confused
-                with each other — no single canonical pick is reliable. (For pairs where one character
-                <em>is</em>
-                clearly more recognizable, see <a href="#alphabet">Tolerant Decoding</a> instead.)
-            </p>
+        <details>
+            <summary>URL &amp; Web Standards</summary>
             <table>
                 <thead>
-                    <tr>
-                        <th>Removed</th>
-                        <th>Confused With</th>
-                        <th>Reason</th>
-                    </tr>
+                <tr>
+                    <th>Character</th>
+                    <th>Role</th>
+                </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>
-                            <code>0 O o</code>
-                        </td>
-                        <td>Each other</td>
-                        <td>Zero, uppercase O, and lowercase o are often indistinguishable.</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <code>1 I l</code>
-                        </td>
-                        <td>Each other</td>
-                        <td>One, uppercase I, and lowercase l look identical in many sans-serif fonts.</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <code>B 8</code>
-                        </td>
-                        <td>Each other</td>
-                        <td>Can blur together in poor print quality.</td>
-                    </tr>
+                <tr>
+                    <td>
+                        <code>%</code>
+                    </td>
+                    <td>URL escape character</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>+</code>
+                    </td>
+                    <td>Space in query strings</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>@</code>
+                    </td>
+                    <td>Auth separator</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>=</code>
+                    </td>
+                    <td>Key-value separator</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;</code>
+                    </td>
+                    <td>Parameter separator</td>
+                </tr>
                 </tbody>
             </table>
+        </details>
 
-            <h3>2. Technical Constraints</h3>
-            <p>These characters have special meanings in shells, URLs, or file systems.</p>
+        <details>
+            <summary>File Systems &amp; Paths</summary>
+            <table>
+                <thead>
+                <tr>
+                    <th>Character</th>
+                    <th>Role</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>
+                        <code>/</code>
+                    </td>
+                    <td>Unix directory separator</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>\</code>
+                    </td>
+                    <td>Windows separator / escape character</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>:</code>
+                    </td>
+                    <td>Drive separator (Windows)</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>.</code>
+                    </td>
+                    <td>Hidden file prefix / directory traversal</td>
+                </tr>
+                </tbody>
+            </table>
+        </details>
 
-            <details>
-                <summary>Shell &amp; Command Line</summary>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Character</th>
-                            <th>Role</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <code>$</code>
-                            </td>
-                            <td>Variable expansion</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>#</code>
-                            </td>
-                            <td>Comment marker</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>!</code>
-                            </td>
-                            <td>History expansion (Bash)</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>~</code>
-                            </td>
-                            <td>Home directory expansion</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>&amp; | ;</code>
-                            </td>
-                            <td>Control operators</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>( ) { } &lt; &gt;</code>
-                            </td>
-                            <td>Grouping &amp; redirection</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>* ? [ ]</code>
-                            </td>
-                            <td>Globbing wildcards</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>`</code>
-                            </td>
-                            <td>Command substitution</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>-</code>
-                            </td>
-                            <td>
-                                Option/flag prefix (<code>--foo</code>)
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </details>
+        <details>
+            <summary>Quoting &amp; Syntax</summary>
+            <table>
+                <thead>
+                <tr>
+                    <th>Character</th>
+                    <th>Role</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>
+                        <code>" '</code>
+                    </td>
+                    <td>String delimiters</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>,</code>
+                    </td>
+                    <td>CSV / JSON delimiter</td>
+                </tr>
+                <tr>
+                    <td>
+                        <kbd>Space</kbd>
+                    </td>
+                    <td>Argument separator / requires URL encoding</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>_</code>
+                    </td>
+                    <td>
+                        Regex word boundary (<code>\b</code>) / breaks double-click selection
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </details>
+    </section>
 
-            <details>
-                <summary>URL &amp; Web Standards</summary>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Character</th>
-                            <th>Role</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <code>%</code>
-                            </td>
-                            <td>URL escape character</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>+</code>
-                            </td>
-                            <td>Space in query strings</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>@</code>
-                            </td>
-                            <td>Auth separator</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>=</code>
-                            </td>
-                            <td>Key-value separator</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>&amp;</code>
-                            </td>
-                            <td>Parameter separator</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </details>
+    <section id="structure">
+        <h2>Bit Structure (256 bits total)</h2>
 
-            <details>
-                <summary>File Systems &amp; Paths</summary>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Character</th>
-                            <th>Role</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <code>/</code>
-                            </td>
-                            <td>Unix directory separator</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>\</code>
-                            </td>
-                            <td>Windows separator / escape character</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>:</code>
-                            </td>
-                            <td>Drive separator (Windows)</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>.</code>
-                            </td>
-                            <td>Hidden file prefix / directory traversal</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </details>
+        <div class="bit-layout">
+            <span>96 bits — Time (ns)</span>
+            <span>160 bits — Entropy</span>
+        </div>
 
-            <details>
-                <summary>Quoting &amp; Syntax</summary>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Character</th>
-                            <th>Role</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <code>" '</code>
-                            </td>
-                            <td>String delimiters</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>,</code>
-                            </td>
-                            <td>CSV / JSON delimiter</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <kbd>Space</kbd>
-                            </td>
-                            <td>Argument separator / requires URL encoding</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <code>_</code>
-                            </td>
-                            <td>
-                                Regex word boundary (<code>\b</code>) / breaks double-click selection
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </details>
-        </section>
-
-        <section id="structure">
-            <h2>Bit Structure (256 bits total)</h2>
-
-            <div class="bit-layout">
-                <span>96 bits — Time (ns)</span>
-                <span>160 bits — Entropy</span>
-            </div>
-
-            <h3>Time Component (96 bits)</h3>
-            <p>
-                The most significant 96 bits store the <strong>nanoseconds since the Unix Epoch (UTC)</strong>.
-                This is large enough to represent roughly <strong>2.5 trillion years</strong>
-                — enough to track the entire history of the universe roughly 180 times over.
-            </p>
-            <pre>
+        <h3>Time Component (96 bits)</h3>
+        <p>
+            The most significant 96 bits store the <strong>nanoseconds since the Unix Epoch
+            (UTC)</strong>.
+            This is large enough to represent roughly <strong>2.5 trillion years</strong>
+            — enough to track the entire history of the universe roughly 180 times over.
+        </p>
+        <pre>
 <code>2<sup>96</sup> / (365.25 × 24 × 3600 × 10<sup>9</sup>) ≈ 2,512,308,552,583 years</code>
 </pre>
 
-            <h3>Entropy Component (160 bits)</h3>
-            <p>
-                The remaining 160 bits are filled with cryptographic-quality random data,
-                making collisions negligible even at extreme generation rates.
-            </p>
-
-            <h3>Merging</h3>
-            <p>
-                When two sumids are merged, the result sorts <strong>between</strong> them. Its position
-                within that range encodes <em>when</em> the merge happened using <strong>logarithmic
-                compression</strong>: merges soon after creation get far more resolution than merges
-                in the distant future, matching the real-world likelihood of when merges occur.
-            </p>
-            <p>
-                18 overflow bits are borrowed from the most-significant end of the entropy section
-                to provide sub-slot precision, so repeated merges of the same pair sort
-                chronologically. The remaining <strong>142 random bits</strong> still exceed UUID v4's 122.
-                The approximate merge time can be recovered given both parents and the merged result.
-            </p>
-        </section>
-
-        <section id="faq">
-            <h2>FAQ</h2>
-
-            <h3>When would I actually use merging?</h3>
-            <p>
-                Merging lets you insert an item between two existing items without renumbering anything.
-                If you maintain a sorted list — tasks in a to-do app, pages in a document, rows in a
-                spreadsheet — and a user drags something between two neighbors, you merge those
-                neighbors' IDs to get a new ID that sorts right where you need it. No index shuffling,
-                no fractional positions, no coordination with a server.
-            </p>
-            <p>
-                It also works for <strong>offline collaboration</strong>: two users can independently
-                insert between the same pair of items while disconnected. When they sync, the
-                embedded merge timestamps give each insertion a distinct sort position automatically.
-                Your application still needs to handle semantic conflicts, but ordering is taken care of.
-            </p>
-            <p>
-                Beyond lists, merging applies to any ordered dimension.
-                A design tool can place a layer between two existing z-indices by merging their IDs;
-                repeated merges of the same pair stay chronologically ordered thanks to the overflow
-                bits.
-            </p>
-
-            <h3>How does this compare to UUIDv7?</h3>
-            <p>
-                UUIDv7 gives you 48 bits of millisecond time and 74 bits of randomness in 128 bits total.
-                A sumid gives you 96 bits of nanosecond time and 160 bits of randomness in 256 bits.
-                That means better ordering resolution, fewer collisions, and the ability to merge —
-                at the cost of twice the bits (46 characters vs. 36).
-            </p>
-
-            <h3>Is 46 characters too long?</h3>
-            <p>
-                It depends on your constraints. If you're storing IDs in a database column or passing them
-                in URLs, 46 characters is comparable to a base64-encoded 256-bit hash. If your system
-                is tight on space, a shorter ID format may be a better fit.
-            </p>
-
-            <h3>Can I extract the creation time from a sumid?</h3>
-            <p>
-                Yes — right-shift the integer value by 160 and you have the timestamp in nanoseconds.
-                The <a href="#content">Validate &amp; Decode</a> tool in the sidebar does this automatically.
-            </p>
-
-            <h3>What happens if two machines generate IDs at the same nanosecond?</h3>
-            <p>
-                They share the same time prefix but differ in the random portion.
-                A collision requires matching all 160 random bits — probability
-                1&nbsp;in&nbsp;2<sup>160</sup> (roughly 10<sup>48</sup>).
-            </p>
-
-            <h3>Why base 50 instead of base 62 or base 64?</h3>
-            <p>
-                Honestly, in most cases it wouldn't matter — IDs are copied and pasted, not
-                read aloud or typed by hand. A larger base would shave off about three characters.
-                But when an ID <em>does</em> end up in a screenshot, a log file, or a
-                support ticket, having no ambiguous glyphs and no shell-unsafe characters removes
-                an entire class of "wait, is that a zero or an O?" moments. The cost is small
-                (46 characters instead of ~43); the payoff is that every character is safe everywhere
-                without escaping or squinting.
-            </p>
-
-            <h3>Do sumids work as database primary keys?</h3>
-            <p>
-                Yes. They're sequential, so B-tree inserts stay roughly append-only — you avoid the
-                random-write penalty that plagues UUIDv4. Store them as a fixed-length string column
-                or as a 256-bit integer, depending on your database.
-            </p>
-
-            <h3>Is the nanosecond timestamp actually nanosecond-precise?</h3>
-            <p>
-                It depends on the platform. Most OSes top out at microsecond precision; browsers
-                at milliseconds. The 96-bit field has room for true nanoseconds, but actual
-                precision is whatever your runtime provides.
-            </p>
-        </section>
-
-    </main>
-
-    <aside>
-        <h2>Tools</h2>
-
-        <form id="generate-form">
-            <fieldset>
-                <legend>Generate</legend>
-                <p>Create a sumid using the current time and random entropy.</p>
-                <button type="submit">
-                    <span class="sym">casino</span> Generate
-                </button>
-                <output id="generated-id" class="id-output" for="generate-form"></output>
-                <small class="ts-hint" id="generated-id-ts"></small>
-            </fieldset>
-        </form>
-
-        <form id="validate-form">
-            <fieldset>
-                <legend>Validate &amp; Decode</legend>
-                <label for="validate-input">sumid</label>
-                <input type="text" id="validate-input" name="sum-id" value="sumid" autocomplete="off"
-                    placeholder="Paste a sumid…">
-                <small class="ts-hint" id="validate-input-ts"></small>
-                <output id="validate-result" class="id-output" for="validate-input"></output>
-            </fieldset>
-        </form>
-
-        <form id="int-to-sum-id-form">
-            <fieldset>
-                <legend>Integer → sumid</legend>
-                <label for="int-to-sum-id-input">Integer</label>
-                <input type="text" id="int-to-sum-id-input" name="value" autocomplete="off"
-                    placeholder="Enter an integer…" inputmode="numeric">
-                <output id="int-to-sum-id-result" class="id-output" for="int-to-sum-id-input"></output>
-                <small class="ts-hint" id="int-to-sum-id-result-ts"></small>
-            </fieldset>
-        </form>
-
-        <form id="sum-id-to-int-form">
-            <fieldset>
-                <legend>sumid → Integer</legend>
-                <label for="sum-id-to-int-input">sumid</label>
-                <input type="text" id="sum-id-to-int-input" name="value" autocomplete="off"
-                    placeholder="Paste a sumid…">
-                <small class="ts-hint" id="sum-id-to-int-input-ts"></small>
-                <output id="sum-id-to-int-result" class="id-output" for="sum-id-to-int-input"></output>
-            </fieldset>
-        </form>
-
-        <form id="merge-form">
-            <fieldset>
-                <legend>Merge Two IDs</legend>
-                <label for="merge-input-a">sumid A</label>
-                <input type="text" id="merge-input-a" name="sum-id-a" autocomplete="off" placeholder="First sumid…">
-                <small class="ts-hint" id="merge-input-a-ts"></small>
-                <label for="merge-input-b">sumid B</label>
-                <input type="text" id="merge-input-b" name="sum-id-b" autocomplete="off" placeholder="Second sumid…">
-                <small class="ts-hint" id="merge-input-b-ts"></small>
-                <output id="merge-result" class="id-output" for="merge-input-a"></output>
-                <small class="ts-hint" id="merge-result-ts"></small>
-            </fieldset>
-        </form>
-
-        <form id="extract-merge-time-form">
-            <fieldset>
-                <legend>Extract Merge Time</legend>
-                <p>Recover the approximate wall-clock time at which a merge was performed, given both parents and the
-                    result.</p>
-                <label for="extract-input-a">Parent A</label>
-                <input type="text" id="extract-input-a" name="sum-id-a" autocomplete="off"
-                    placeholder="First parent sumid…">
-                <small class="ts-hint" id="extract-input-a-ts"></small>
-                <label for="extract-input-b">Parent B</label>
-                <input type="text" id="extract-input-b" name="sum-id-b" autocomplete="off"
-                    placeholder="Second parent sumid…">
-                <small class="ts-hint" id="extract-input-b-ts"></small>
-                <label for="extract-input-merged">Merged</label>
-                <input type="text" id="extract-input-merged" name="sum-id-merged" autocomplete="off"
-                    placeholder="Merged sumid…">
-                <small class="ts-hint" id="extract-input-merged-ts"></small>
-                <output id="extract-result" class="id-output" for="extract-input-a"></output>
-            </fieldset>
-        </form>
-    </aside>
-
-    <footer>
+        <h3>Entropy Component (160 bits)</h3>
         <p>
-            sumid — <strong>S</strong>&#x2060;equential <strong>U</strong>&#x2060;niversally-Unique &amp;
-            <strong>M</strong>&#x2060;ergeable <strong>ID</strong>
+            The remaining 160 bits are filled with cryptographic-quality random data,
+            making collisions negligible even at extreme generation rates.
         </p>
-    </footer>
 
-    <script>
-        // ===================================================================
-        // sumid core — faithful port of sumid.py using native BigInt
-        // ===================================================================
+        <h3>Merging</h3>
+        <p>
+            When two sumids are merged, the result sorts <strong>between</strong> them. Its position
+            within that range encodes <em>when</em> the merge happened using <strong>logarithmic
+            compression</strong>: merges soon after creation get far more resolution than merges
+            in the distant future, matching the real-world likelihood of when merges occur.
+        </p>
+        <p>
+            18 overflow bits are borrowed from the most-significant end of the entropy section
+            to provide sub-slot precision, so repeated merges of the same pair sort
+            chronologically. The remaining <strong>142 random bits</strong> still exceed UUID v4's
+            122.
+            The approximate merge time can be recovered given both parents and the merged result.
+        </p>
+    </section>
 
-        const SORTED_ALPHABET = "467ACDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
-        const BASE = BigInt(SORTED_ALPHABET.length); // 50n
+    <section id="faq">
+        <h2>FAQ</h2>
 
-        const CHAR_TO_INDEX = new Map();
-        for (let i = 0; i < SORTED_ALPHABET.length; i++) {
-            CHAR_TO_INDEX.set(SORTED_ALPHABET[i], BigInt(i));
+        <h3>When would I actually use merging?</h3>
+        <p>
+            Merging lets you insert an item between two existing items without renumbering anything.
+            If you maintain a sorted list — tasks in a to-do app, pages in a document, rows in a
+            spreadsheet — and a user drags something between two neighbors, you merge those
+            neighbors' IDs to get a new ID that sorts right where you need it. No index shuffling,
+            no fractional positions, no coordination with a server.
+        </p>
+        <p>
+            It also works for <strong>offline collaboration</strong>: two users can independently
+            insert between the same pair of items while disconnected. When they sync, the
+            embedded merge timestamps give each insertion a distinct sort position automatically.
+            Your application still needs to handle semantic conflicts, but ordering is taken care
+            of.
+        </p>
+        <p>
+            Beyond lists, merging applies to any ordered dimension.
+            A design tool can place a layer between two existing z-indices by merging their IDs;
+            repeated merges of the same pair stay chronologically ordered thanks to the overflow
+            bits.
+        </p>
+
+        <h3>How does this compare to UUIDv7?</h3>
+        <p>
+            UUIDv7 gives you 48 bits of millisecond time and 74 bits of randomness in 128 bits
+            total.
+            A sumid gives you 96 bits of nanosecond time and 160 bits of randomness in 256 bits.
+            That means better ordering resolution, fewer collisions, and the ability to merge —
+            at the cost of twice the bits (46 characters vs. 36).
+        </p>
+
+        <h3>Is 46 characters too long?</h3>
+        <p>
+            It depends on your constraints. If you're storing IDs in a database column or passing
+            them
+            in URLs, 46 characters is comparable to a base64-encoded 256-bit hash. If your system
+            is tight on space, a shorter ID format may be a better fit.
+        </p>
+
+        <h3>Can I extract the creation time from a sumid?</h3>
+        <p>
+            Yes — right-shift the integer value by 160 and you have the timestamp in nanoseconds.
+            The <a href="#content">Validate &amp; Decode</a> tool in the sidebar does this
+            automatically.
+        </p>
+
+        <h3>What happens if two machines generate IDs at the same nanosecond?</h3>
+        <p>
+            They share the same time prefix but differ in the random portion.
+            A collision requires matching all 160 random bits — probability
+            1&nbsp;in&nbsp;2<sup>160</sup> (roughly 10<sup>48</sup>).
+        </p>
+
+        <h3>Why base 50 instead of base 62 or base 64?</h3>
+        <p>
+            Honestly, in most cases it wouldn't matter — IDs are copied and pasted, not
+            read aloud or typed by hand. A larger base would shave off about three characters.
+            But when an ID <em>does</em> end up in a screenshot, a log file, or a
+            support ticket, having no ambiguous glyphs and no shell-unsafe characters removes
+            an entire class of "wait, is that a zero or an O?" moments. The cost is small
+            (46 characters instead of ~43); the payoff is that every character is safe everywhere
+            without escaping or squinting.
+        </p>
+
+        <h3>Do sumids work as database primary keys?</h3>
+        <p>
+            Yes. They're sequential, so B-tree inserts stay roughly append-only — you avoid the
+            random-write penalty that plagues UUIDv4. Store them as a fixed-length string column
+            or as a 256-bit integer, depending on your database.
+        </p>
+
+        <h3>Is the nanosecond timestamp actually nanosecond-precise?</h3>
+        <p>
+            It depends on the platform. Most OSes top out at microsecond precision; browsers
+            at milliseconds. The 96-bit field has room for true nanoseconds, but actual
+            precision is whatever your runtime provides.
+        </p>
+    </section>
+
+</main>
+
+<aside>
+    <h2>Tools</h2>
+
+    <form id="generate-form">
+        <fieldset>
+            <legend>Generate</legend>
+            <p>Create a sumid using the current time and random entropy.</p>
+            <button type="submit">
+                <span class="sym">casino</span> Generate
+            </button>
+            <output id="generated-id" class="id-output" for="generate-form"></output>
+            <small class="ts-hint" id="generated-id-ts"></small>
+        </fieldset>
+    </form>
+
+    <form id="validate-form">
+        <fieldset>
+            <legend>Validate &amp; Decode</legend>
+            <label for="validate-input">sumid</label>
+            <input type="text" id="validate-input" name="sum-id" value="sumid" autocomplete="off"
+                   placeholder="Paste a sumid…">
+            <small class="ts-hint" id="validate-input-ts"></small>
+            <output id="validate-result" class="id-output" for="validate-input"></output>
+        </fieldset>
+    </form>
+
+    <form id="int-to-sum-id-form">
+        <fieldset>
+            <legend>Integer → sumid</legend>
+            <label for="int-to-sum-id-input">Integer</label>
+            <input type="text" id="int-to-sum-id-input" name="value" autocomplete="off"
+                   placeholder="Enter an integer…" inputmode="numeric">
+            <output id="int-to-sum-id-result" class="id-output" for="int-to-sum-id-input"></output>
+            <small class="ts-hint" id="int-to-sum-id-result-ts"></small>
+        </fieldset>
+    </form>
+
+    <form id="sum-id-to-int-form">
+        <fieldset>
+            <legend>sumid → Integer</legend>
+            <label for="sum-id-to-int-input">sumid</label>
+            <input type="text" id="sum-id-to-int-input" name="value" autocomplete="off"
+                   placeholder="Paste a sumid…">
+            <small class="ts-hint" id="sum-id-to-int-input-ts"></small>
+            <output id="sum-id-to-int-result" class="id-output" for="sum-id-to-int-input"></output>
+        </fieldset>
+    </form>
+
+    <form id="merge-form">
+        <fieldset>
+            <legend>Merge Two IDs</legend>
+            <label for="merge-input-a">sumid A</label>
+            <input type="text" id="merge-input-a" name="sum-id-a" autocomplete="off"
+                   placeholder="First sumid…">
+            <small class="ts-hint" id="merge-input-a-ts"></small>
+            <label for="merge-input-b">sumid B</label>
+            <input type="text" id="merge-input-b" name="sum-id-b" autocomplete="off"
+                   placeholder="Second sumid…">
+            <small class="ts-hint" id="merge-input-b-ts"></small>
+            <output id="merge-result" class="id-output" for="merge-input-a"></output>
+            <small class="ts-hint" id="merge-result-ts"></small>
+        </fieldset>
+    </form>
+
+    <form id="extract-merge-time-form">
+        <fieldset>
+            <legend>Extract Merge Time</legend>
+            <p>Recover the approximate wall-clock time at which a merge was performed, given both
+                parents and the
+                result.</p>
+            <label for="extract-input-a">Parent A</label>
+            <input type="text" id="extract-input-a" name="sum-id-a" autocomplete="off"
+                   placeholder="First parent sumid…">
+            <small class="ts-hint" id="extract-input-a-ts"></small>
+            <label for="extract-input-b">Parent B</label>
+            <input type="text" id="extract-input-b" name="sum-id-b" autocomplete="off"
+                   placeholder="Second parent sumid…">
+            <small class="ts-hint" id="extract-input-b-ts"></small>
+            <label for="extract-input-merged">Merged</label>
+            <input type="text" id="extract-input-merged" name="sum-id-merged" autocomplete="off"
+                   placeholder="Merged sumid…">
+            <small class="ts-hint" id="extract-input-merged-ts"></small>
+            <output id="extract-result" class="id-output" for="extract-input-a"></output>
+        </fieldset>
+    </form>
+</aside>
+
+<footer>
+    <p>
+        sumid — <strong>S</strong>&#x2060;equential <strong>U</strong>&#x2060;niversally-Unique
+        &amp;
+        <strong>M</strong>&#x2060;ergeable <strong>ID</strong>
+    </p>
+</footer>
+
+<script>
+    // ===================================================================
+    // sumid core — faithful port of sumid.py using native BigInt
+    // ===================================================================
+
+    const SORTED_ALPHABET = "467ACDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
+    const BASE = BigInt(SORTED_ALPHABET.length); // 50n
+
+    const CHAR_TO_INDEX = new Map();
+    for (let i = 0; i < SORTED_ALPHABET.length; i++) {
+        CHAR_TO_INDEX.set(SORTED_ALPHABET[i], BigInt(i));
+    }
+
+    // Tolerant decode: map visually ambiguous characters to their canonical form
+    const TOLERANT_MAP = { "5": "S", "2": "Z", "9": "g", "3": "E" };
+    for (const [alias, canonical] of Object.entries(TOLERANT_MAP)) {
+        CHAR_TO_INDEX.set(alias, CHAR_TO_INDEX.get(canonical));
+    }
+
+    const MAX_SUM_ID_INT = (1n << 256n) - 1n;
+    const RAND_160_MASK = (1n << 160n) - 1n;
+
+    function intToSumId(n) {
+        if (n < 0n) throw new Error("n must be non-negative");
+        if (n === 0n) return SORTED_ALPHABET[0];
+        const out = [];
+        while (n > 0n) {
+            out.push(SORTED_ALPHABET[Number(n % BASE)]);
+            n = n / BASE;
+        }
+        return out.reverse().join("");
+    }
+
+    function sumIdToInt(s) {
+        if (!s) throw new Error("empty string");
+        let val = 0n;
+        for (const ch of s) {
+            const idx = CHAR_TO_INDEX.get(ch);
+            if (idx === undefined) throw new Error(`invalid character: '${ch}'`);
+            val = val * BASE + idx;
+        }
+        return val;
+    }
+
+    function isValidSumId(s) {
+        try {
+            const v = sumIdToInt(s);
+            if (v < 0n || v > MAX_SUM_ID_INT) return false;
+            // Reject non-canonical forms (leading zero-chars or aliases)
+            return intToSumId(v) === s;
+        } catch {
+            return false;
+        }
+    }
+
+    // Crypto-quality random BigInt of `bits` length
+    function randomBigInt(bits) {
+        const bytes = Math.ceil(bits / 8);
+        const buf = new Uint8Array(bytes);
+        crypto.getRandomValues(buf);
+        // Mask off excess bits in the top byte
+        const excess = bytes * 8 - bits;
+        if (excess > 0) buf[0] &= (0xFF >> excess);
+        let val = 0n;
+        for (const b of buf) val = (val << 8n) | BigInt(b);
+        return val;
+    }
+
+    function getTimeNsBigInt() {
+        // performance.timeOrigin + performance.now() gives sub-ms wall time
+        // We multiply by 1e6 to get nanoseconds (still only µs precision in browsers)
+        const ms = performance.timeOrigin + performance.now();
+        return BigInt(Math.round(ms * 1_000_000));
+    }
+
+    function generateSumId() {
+        const timeBits = getTimeNsBigInt();
+        const randBits = randomBigInt(160);
+        return intToSumId((timeBits << 160n) + randBits);
+    }
+
+    function getTimeNsFromSumId(sumIdStr) {
+        const val = sumIdToInt(sumIdStr);
+        return val >> 160n;
+    }
+
+    const MERGE_OVERFLOW_BITS = 18n;
+    const MERGE_RAND_BITS = 160n - MERGE_OVERFLOW_BITS; // 142n
+    const MAX_TIME_96 = (1n << 96n) - 1n;
+
+    // --- Logarithmic scaling (integer-only, fixed-point log2) ---
+
+    const LOG_FRAC_BITS = 16n;
+    const LOG_FRAC_MASK = (1n << LOG_FRAC_BITS) - 1n;
+
+    function bigIntBitLength(n) {
+        if (n <= 0n) return 0n;
+        return BigInt(n.toString(2).length);
+    }
+
+    function fixedLog2(x) {
+        const k = bigIntBitLength(x) - 1n;
+        let frac;
+        if (k >= LOG_FRAC_BITS) {
+            frac = (x >> (k - LOG_FRAC_BITS)) & LOG_FRAC_MASK;
+        } else {
+            frac = (x << (LOG_FRAC_BITS - k)) & LOG_FRAC_MASK;
+        }
+        return (k << LOG_FRAC_BITS) + frac;
+    }
+
+    function inverseFixedLog2(v) {
+        if (v <= 0n) return 1n;
+        const k = v >> LOG_FRAC_BITS;
+        const frac = v & LOG_FRAC_MASK;
+        if (k >= LOG_FRAC_BITS) {
+            return (1n << k) | (frac << (k - LOG_FRAC_BITS));
+        } else {
+            return (1n << k) | (frac >> (LOG_FRAC_BITS - k));
+        }
+    }
+
+    function logScale(value, maxValue, totalSlots) {
+        if (value <= 0n || maxValue <= 0n) return 0n;
+        const logVal = fixedLog2(1n + value);
+        const logMax = fixedLog2(1n + maxValue);
+        if (logMax === 0n) return 0n;
+        const result = logVal * totalSlots / logMax;
+        return result < totalSlots ? result : totalSlots;
+    }
+
+    function logUnscale(position, maxValue, totalSlots) {
+        if (position <= 0n || maxValue <= 0n || totalSlots <= 0n) return 0n;
+        const logMax = fixedLog2(1n + maxValue);
+        const logVal = position * logMax / totalSlots;
+        const x = inverseFixedLog2(logVal);
+        return x > 1n ? x - 1n : 0n;
+    }
+
+    function mergeTwoSumIds(idA, idB) {
+        const a = sumIdToInt(idA);
+        const b = sumIdToInt(idB);
+
+        let loTime = a >> 160n;
+        let hiTime = b >> 160n;
+        if (loTime > hiTime) [loTime, hiTime] = [hiTime, loTime];
+
+        const now = getTimeNsBigInt();
+        const mergeOffset = now > hiTime ? now - hiTime : 0n;
+        const futureRange = MAX_TIME_96 - hiTime;
+
+        let mergedTime, overflow;
+        let available = hiTime - loTime;
+        if (available >= 2n) {
+            available -= 2n;
+            const maxScaled = (available << MERGE_OVERFLOW_BITS) | ((1n << MERGE_OVERFLOW_BITS) - 1n);
+            const scaled = logScale(mergeOffset, futureRange, maxScaled);
+
+            mergedTime = loTime + 1n + (scaled >> MERGE_OVERFLOW_BITS);
+            overflow = scaled & ((1n << MERGE_OVERFLOW_BITS) - 1n);
+        } else {
+            mergedTime = (loTime + hiTime) / 2n;
+            const maxOverflow = (1n << MERGE_OVERFLOW_BITS) - 1n;
+            overflow = logScale(mergeOffset, futureRange, maxOverflow);
         }
 
-        // Tolerant decode: map visually ambiguous characters to their canonical form
-        const TOLERANT_MAP = { "5": "S", "2": "Z", "9": "g", "3": "E" };
-        for (const [alias, canonical] of Object.entries(TOLERANT_MAP)) {
-            CHAR_TO_INDEX.set(alias, CHAR_TO_INDEX.get(canonical));
+        const randBits = (overflow << MERGE_RAND_BITS) | randomBigInt(Number(MERGE_RAND_BITS));
+        return intToSumId((mergedTime << 160n) + randBits);
+    }
+
+    function extractMergeTimeNs(idA, idB, merged) {
+        const aTime = sumIdToInt(idA) >> 160n;
+        const bTime = sumIdToInt(idB) >> 160n;
+        const [loTime, hiTime] = aTime <= bTime ? [aTime, bTime] : [bTime, aTime];
+
+        const m = sumIdToInt(merged);
+        const mTime = m >> 160n;
+        const entropy = m & RAND_160_MASK;
+        const overflow = entropy >> MERGE_RAND_BITS;
+
+        const futureRange = MAX_TIME_96 - hiTime;
+
+        let available = hiTime - loTime;
+        if (mTime < loTime || mTime > hiTime) {
+            throw new Error("merged ID's time is not between the two parents");
+        }
+        let mergeOffset;
+        if (available >= 2n) {
+            available -= 2n;
+            const maxScaled = (available << MERGE_OVERFLOW_BITS) | ((1n << MERGE_OVERFLOW_BITS) - 1n);
+            let scaled = ((mTime - loTime - 1n) << MERGE_OVERFLOW_BITS) + overflow;
+            if (scaled > maxScaled) scaled = maxScaled;
+            mergeOffset = logUnscale(scaled, futureRange, maxScaled);
+        } else {
+            const maxOverflow = (1n << MERGE_OVERFLOW_BITS) - 1n;
+            mergeOffset = logUnscale(overflow, futureRange, maxOverflow);
         }
 
-        const MAX_SUM_ID_INT = (1n << 256n) - 1n;
-        const RAND_160_MASK = (1n << 160n) - 1n;
+        return hiTime + mergeOffset;
+    }
 
-        function intToSumId(n) {
-            if (n < 0n) throw new Error("n must be non-negative");
-            if (n === 0n) return SORTED_ALPHABET[0];
-            const out = [];
-            while (n > 0n) {
-                out.push(SORTED_ALPHABET[Number(n % BASE)]);
-                n = n / BASE;
-            }
-            return out.reverse().join("");
+    // ===================================================================
+    // UI wiring
+    // ===================================================================
+
+    /** Format nanosecond BigInt as ISO-like string with full ns precision. */
+    function nsToIso(ns) {
+        const ms = Number(ns / 1_000_000n);
+        const fracNs = Number(ns % 1_000_000_000n);
+        const date = new Date(ms);
+        return date.getUTCFullYear() + "-"
+            + String(date.getUTCMonth() + 1).padStart(2, "0") + "-"
+            + String(date.getUTCDate()).padStart(2, "0") + " "
+            + String(date.getUTCHours()).padStart(2, "0") + ":"
+            + String(date.getUTCMinutes()).padStart(2, "0") + ":"
+            + String(date.getUTCSeconds()).padStart(2, "0") + "."
+            + String(fracNs).padStart(9, "0") + " (UTC)";
+    }
+
+    /** Show decoded timestamp in a .ts-hint element, or clear it. */
+    function showTimestamp(hintEl, sumIdStr) {
+        if (!sumIdStr || !isValidSumId(sumIdStr)) {
+            hintEl.innerHTML = "";
+            return;
         }
+        const ns = getTimeNsFromSumId(sumIdStr);
+        hintEl.innerHTML = "<span class=\"sym\">schedule</span> " + nsToIso(ns);
+    }
 
-        function sumIdToInt(s) {
-            if (!s) throw new Error("empty string");
-            let val = 0n;
-            for (const ch of s) {
-                const idx = CHAR_TO_INDEX.get(ch);
-                if (idx === undefined) throw new Error(`invalid character: '${ch}'`);
-                val = val * BASE + idx;
-            }
-            return val;
+    // --- Automatic Update Functions ---
+
+    function updateValidate() {
+        const input = document.getElementById("validate-input");
+        const val = input.value.trim();
+        const out = document.getElementById("validate-result");
+        const hint = document.getElementById("validate-input-ts");
+        showTimestamp(hint, val);
+        if (!val) {
+            out.innerHTML = "";
+            input.removeAttribute("aria-invalid");
+            return;
         }
-
-        function isValidSumId(s) {
-            try {
-                const v = sumIdToInt(s);
-                if (v < 0n || v > MAX_SUM_ID_INT) return false;
-                // Reject non-canonical forms (leading zero-chars or aliases)
-                return intToSumId(v) === s;
-            } catch {
-                return false;
-            }
+        if (isValidSumId(val)) {
+            out.innerHTML = "<span class=\"sym\">check_circle</span> Valid sumid";
+            input.removeAttribute("aria-invalid");
+        } else {
+            out.innerHTML = "<span class=\"sym\">error</span> Invalid";
+            input.setAttribute("aria-invalid", "true");
         }
+    }
 
-        // Crypto-quality random BigInt of `bits` length
-        function randomBigInt(bits) {
-            const bytes = Math.ceil(bits / 8);
-            const buf = new Uint8Array(bytes);
-            crypto.getRandomValues(buf);
-            // Mask off excess bits in the top byte
-            const excess = bytes * 8 - bits;
-            if (excess > 0) buf[0] &= (0xFF >> excess);
-            let val = 0n;
-            for (const b of buf) val = (val << 8n) | BigInt(b);
-            return val;
+    function updateIntToSumId() {
+        const input = document.getElementById("int-to-sum-id-input");
+        const raw = input.value.trim();
+        const out = document.getElementById("int-to-sum-id-result");
+        const hint = document.getElementById("int-to-sum-id-result-ts");
+        if (!raw) {
+            out.innerHTML = "";
+            input.removeAttribute("aria-invalid");
+            hint.innerHTML = "";
+            return;
         }
-
-        function getTimeNsBigInt() {
-            // performance.timeOrigin + performance.now() gives sub-ms wall time
-            // We multiply by 1e6 to get nanoseconds (still only µs precision in browsers)
-            const ms = performance.timeOrigin + performance.now();
-            return BigInt(Math.round(ms * 1_000_000));
+        if (!/^\d+$/.test(raw)) {
+            out.innerHTML = "<span class=\"sym\">error</span> Not a valid integer";
+            input.setAttribute("aria-invalid", "true");
+            hint.innerHTML = "";
+            return;
         }
-
-        function generateSumId() {
-            const timeBits = getTimeNsBigInt();
-            const randBits = randomBigInt(160);
-            return intToSumId((timeBits << 160n) + randBits);
-        }
-
-        function getTimeNsFromSumId(sumIdStr) {
-            const val = sumIdToInt(sumIdStr);
-            return val >> 160n;
-        }
-
-        const MERGE_OVERFLOW_BITS = 18n;
-        const MERGE_RAND_BITS = 160n - MERGE_OVERFLOW_BITS; // 142n
-        const MAX_TIME_96 = (1n << 96n) - 1n;
-
-        // --- Logarithmic scaling (integer-only, fixed-point log2) ---
-
-        const LOG_FRAC_BITS = 16n;
-        const LOG_FRAC_MASK = (1n << LOG_FRAC_BITS) - 1n;
-
-        function bigIntBitLength(n) {
-            if (n <= 0n) return 0n;
-            return BigInt(n.toString(2).length);
-        }
-
-        function fixedLog2(x) {
-            const k = bigIntBitLength(x) - 1n;
-            let frac;
-            if (k >= LOG_FRAC_BITS) {
-                frac = (x >> (k - LOG_FRAC_BITS)) & LOG_FRAC_MASK;
-            } else {
-                frac = (x << (LOG_FRAC_BITS - k)) & LOG_FRAC_MASK;
-            }
-            return (k << LOG_FRAC_BITS) + frac;
-        }
-
-        function inverseFixedLog2(v) {
-            if (v <= 0n) return 1n;
-            const k = v >> LOG_FRAC_BITS;
-            const frac = v & LOG_FRAC_MASK;
-            if (k >= LOG_FRAC_BITS) {
-                return (1n << k) | (frac << (k - LOG_FRAC_BITS));
-            } else {
-                return (1n << k) | (frac >> (LOG_FRAC_BITS - k));
-            }
-        }
-
-        function logScale(value, maxValue, totalSlots) {
-            if (value <= 0n || maxValue <= 0n) return 0n;
-            const logVal = fixedLog2(1n + value);
-            const logMax = fixedLog2(1n + maxValue);
-            if (logMax === 0n) return 0n;
-            const result = logVal * totalSlots / logMax;
-            return result < totalSlots ? result : totalSlots;
-        }
-
-        function logUnscale(position, maxValue, totalSlots) {
-            if (position <= 0n || maxValue <= 0n || totalSlots <= 0n) return 0n;
-            const logMax = fixedLog2(1n + maxValue);
-            const logVal = position * logMax / totalSlots;
-            const x = inverseFixedLog2(logVal);
-            return x > 1n ? x - 1n : 0n;
-        }
-
-        function mergeTwoSumIds(idA, idB) {
-            const a = sumIdToInt(idA);
-            const b = sumIdToInt(idB);
-
-            let loTime = a >> 160n;
-            let hiTime = b >> 160n;
-            if (loTime > hiTime) [loTime, hiTime] = [hiTime, loTime];
-
-            const now = getTimeNsBigInt();
-            const mergeOffset = now > hiTime ? now - hiTime : 0n;
-            const futureRange = MAX_TIME_96 - hiTime;
-
-            let mergedTime, overflow;
-            let available = hiTime - loTime;
-            if (available >= 2n) {
-                available -= 2n;
-                const maxScaled = (available << MERGE_OVERFLOW_BITS) | ((1n << MERGE_OVERFLOW_BITS) - 1n);
-                const scaled = logScale(mergeOffset, futureRange, maxScaled);
-
-                mergedTime = loTime + 1n + (scaled >> MERGE_OVERFLOW_BITS);
-                overflow = scaled & ((1n << MERGE_OVERFLOW_BITS) - 1n);
-            } else {
-                mergedTime = (loTime + hiTime) / 2n;
-                const maxOverflow = (1n << MERGE_OVERFLOW_BITS) - 1n;
-                overflow = logScale(mergeOffset, futureRange, maxOverflow);
-            }
-
-            const randBits = (overflow << MERGE_RAND_BITS) | randomBigInt(Number(MERGE_RAND_BITS));
-            return intToSumId((mergedTime << 160n) + randBits);
-        }
-
-        function extractMergeTimeNs(idA, idB, merged) {
-            const aTime = sumIdToInt(idA) >> 160n;
-            const bTime = sumIdToInt(idB) >> 160n;
-            const [loTime, hiTime] = aTime <= bTime ? [aTime, bTime] : [bTime, aTime];
-
-            const m = sumIdToInt(merged);
-            const mTime = m >> 160n;
-            const entropy = m & RAND_160_MASK;
-            const overflow = entropy >> MERGE_RAND_BITS;
-
-            const futureRange = MAX_TIME_96 - hiTime;
-
-            let available = hiTime - loTime;
-            if (mTime < loTime || mTime > hiTime) {
-                throw new Error("merged ID's time is not between the two parents");
-            }
-            let mergeOffset;
-            if (available >= 2n) {
-                available -= 2n;
-                const maxScaled = (available << MERGE_OVERFLOW_BITS) | ((1n << MERGE_OVERFLOW_BITS) - 1n);
-                let scaled = ((mTime - loTime - 1n) << MERGE_OVERFLOW_BITS) + overflow;
-                if (scaled > maxScaled) scaled = maxScaled;
-                mergeOffset = logUnscale(scaled, futureRange, maxScaled);
-            } else {
-                const maxOverflow = (1n << MERGE_OVERFLOW_BITS) - 1n;
-                mergeOffset = logUnscale(overflow, futureRange, maxOverflow);
-            }
-
-            return hiTime + mergeOffset;
-        }
-
-        // ===================================================================
-        // UI wiring
-        // ===================================================================
-
-        /** Format nanosecond BigInt as ISO-like string with full ns precision. */
-        function nsToIso(ns) {
-            const ms = Number(ns / 1_000_000n);
-            const fracNs = Number(ns % 1_000_000_000n);
-            const date = new Date(ms);
-            return date.getUTCFullYear() + "-"
-                + String(date.getUTCMonth() + 1).padStart(2, "0") + "-"
-                + String(date.getUTCDate()).padStart(2, "0") + " "
-                + String(date.getUTCHours()).padStart(2, "0") + ":"
-                + String(date.getUTCMinutes()).padStart(2, "0") + ":"
-                + String(date.getUTCSeconds()).padStart(2, "0") + "."
-                + String(fracNs).padStart(9, "0") + " (UTC)";
-        }
-
-        /** Show decoded timestamp in a .ts-hint element, or clear it. */
-        function showTimestamp(hintEl, sumIdStr) {
-            if (!sumIdStr || !isValidSumId(sumIdStr)) {
-                hintEl.innerHTML = "";
-                return;
-            }
-            const ns = getTimeNsFromSumId(sumIdStr);
-            hintEl.innerHTML = "<span class=\"sym\">schedule</span> " + nsToIso(ns);
-        }
-
-        // --- Automatic Update Functions ---
-
-        function updateValidate() {
-            const input = document.getElementById("validate-input");
-            const val = input.value.trim();
-            const out = document.getElementById("validate-result");
-            const hint = document.getElementById("validate-input-ts");
-            showTimestamp(hint, val);
-            if (!val) {
-                out.innerHTML = "";
-                input.removeAttribute("aria-invalid");
-                return;
-            }
-            if (isValidSumId(val)) {
-                out.innerHTML = "<span class=\"sym\">check_circle</span> Valid sumid";
-                input.removeAttribute("aria-invalid");
-            } else {
-                out.innerHTML = "<span class=\"sym\">error</span> Invalid";
+        try {
+            const n = BigInt(raw);
+            if (n > MAX_SUM_ID_INT) {
+                out.innerHTML = "<span class=\"sym\">error</span> Exceeds 256-bit maximum";
                 input.setAttribute("aria-invalid", "true");
-            }
-        }
-
-        function updateIntToSumId() {
-            const input = document.getElementById("int-to-sum-id-input");
-            const raw = input.value.trim();
-            const out = document.getElementById("int-to-sum-id-result");
-            const hint = document.getElementById("int-to-sum-id-result-ts");
-            if (!raw) {
-                out.innerHTML = "";
-                input.removeAttribute("aria-invalid");
                 hint.innerHTML = "";
                 return;
             }
-            if (!/^\d+$/.test(raw)) {
-                out.innerHTML = "<span class=\"sym\">error</span> Not a valid integer";
+            const result = intToSumId(n);
+            out.textContent = result;
+            input.removeAttribute("aria-invalid");
+            showTimestamp(hint, result);
+        } catch {
+            out.innerHTML = "<span class=\"sym\">error</span> Parse error";
+            input.setAttribute("aria-invalid", "true");
+            hint.innerHTML = "";
+        }
+    }
+
+    function updateSumIdToInt() {
+        const input = document.getElementById("sum-id-to-int-input");
+        const raw = input.value.trim();
+        const out = document.getElementById("sum-id-to-int-result");
+        const hint = document.getElementById("sum-id-to-int-input-ts");
+        showTimestamp(hint, raw);
+        if (!raw) {
+            out.innerHTML = "";
+            input.removeAttribute("aria-invalid");
+            return;
+        }
+        try {
+            const val = sumIdToInt(raw);
+            if (val > MAX_SUM_ID_INT) {
+                out.innerHTML = "<span class=\"sym\">error</span> Exceeds 256 bits";
                 input.setAttribute("aria-invalid", "true");
-                hint.innerHTML = "";
                 return;
             }
-            try {
-                const n = BigInt(raw);
-                if (n > MAX_SUM_ID_INT) {
-                    out.innerHTML = "<span class=\"sym\">error</span> Exceeds 256-bit maximum";
-                    input.setAttribute("aria-invalid", "true");
-                    hint.innerHTML = "";
-                    return;
-                }
-                const result = intToSumId(n);
-                out.textContent = result;
-                input.removeAttribute("aria-invalid");
-                showTimestamp(hint, result);
-            } catch {
-                out.innerHTML = "<span class=\"sym\">error</span> Parse error";
-                input.setAttribute("aria-invalid", "true");
-                hint.innerHTML = "";
-            }
+            out.textContent = val.toString();
+            input.removeAttribute("aria-invalid");
+        } catch (err) {
+            out.textContent = err.message;
+            input.setAttribute("aria-invalid", "true");
+        }
+    }
+
+    function updateMerge() {
+        const aInput = document.getElementById("merge-input-a");
+        const bInput = document.getElementById("merge-input-b");
+        const a = aInput.value.trim();
+        const b = bInput.value.trim();
+        const out = document.getElementById("merge-result");
+        const hintA = document.getElementById("merge-input-a-ts");
+        const hintB = document.getElementById("merge-input-b-ts");
+        const resHint = document.getElementById("merge-result-ts");
+
+        showTimestamp(hintA, a);
+        showTimestamp(hintB, b);
+
+        if (!a || !b) {
+            out.innerHTML = "";
+            resHint.innerHTML = "";
+            aInput.removeAttribute("aria-invalid");
+            bInput.removeAttribute("aria-invalid");
+            return;
         }
 
-        function updateSumIdToInt() {
-            const input = document.getElementById("sum-id-to-int-input");
-            const raw = input.value.trim();
-            const out = document.getElementById("sum-id-to-int-result");
-            const hint = document.getElementById("sum-id-to-int-input-ts");
-            showTimestamp(hint, raw);
-            if (!raw) {
-                out.innerHTML = "";
-                input.removeAttribute("aria-invalid");
-                return;
-            }
-            try {
-                const val = sumIdToInt(raw);
-                if (val > MAX_SUM_ID_INT) {
-                    out.innerHTML = "<span class=\"sym\">error</span> Exceeds 256 bits";
-                    input.setAttribute("aria-invalid", "true");
-                    return;
-                }
-                out.textContent = val.toString();
-                input.removeAttribute("aria-invalid");
-            } catch (err) {
-                out.textContent = err.message;
-                input.setAttribute("aria-invalid", "true");
-            }
+        const aOk = isValidSumId(a);
+        const bOk = isValidSumId(b);
+        aInput[aOk ? "removeAttribute" : "setAttribute"]("aria-invalid", "true");
+        bInput[bOk ? "removeAttribute" : "setAttribute"]("aria-invalid", "true");
+
+        if (!aOk || !bOk) {
+            out.innerHTML = "<span class=\"sym\">error</span> Need two valid IDs";
+            resHint.innerHTML = "";
+            return;
         }
 
-        function updateMerge() {
-            const aInput = document.getElementById("merge-input-a");
-            const bInput = document.getElementById("merge-input-b");
-            const a = aInput.value.trim();
-            const b = bInput.value.trim();
-            const out = document.getElementById("merge-result");
-            const hintA = document.getElementById("merge-input-a-ts");
-            const hintB = document.getElementById("merge-input-b-ts");
-            const resHint = document.getElementById("merge-result-ts");
+        const merged = mergeTwoSumIds(a, b);
+        out.textContent = merged;
+        showTimestamp(resHint, merged);
+    }
 
-            showTimestamp(hintA, a);
-            showTimestamp(hintB, b);
+    function updateExtractMergeTime() {
+        const aInput = document.getElementById("extract-input-a");
+        const bInput = document.getElementById("extract-input-b");
+        const mInput = document.getElementById("extract-input-merged");
+        const a = aInput.value.trim();
+        const b = bInput.value.trim();
+        const m = mInput.value.trim();
+        const out = document.getElementById("extract-result");
+        const hintA = document.getElementById("extract-input-a-ts");
+        const hintB = document.getElementById("extract-input-b-ts");
+        const hintM = document.getElementById("extract-input-merged-ts");
 
-            if (!a || !b) {
-                out.innerHTML = "";
-                resHint.innerHTML = "";
-                aInput.removeAttribute("aria-invalid");
-                bInput.removeAttribute("aria-invalid");
-                return;
-            }
+        showTimestamp(hintA, a);
+        showTimestamp(hintB, b);
+        showTimestamp(hintM, m);
 
-            const aOk = isValidSumId(a);
-            const bOk = isValidSumId(b);
-            aInput[aOk ? "removeAttribute" : "setAttribute"]("aria-invalid", "true");
-            bInput[bOk ? "removeAttribute" : "setAttribute"]("aria-invalid", "true");
-
-            if (!aOk || !bOk) {
-                out.innerHTML = "<span class=\"sym\">error</span> Need two valid IDs";
-                resHint.innerHTML = "";
-                return;
-            }
-
-            const merged = mergeTwoSumIds(a, b);
-            out.textContent = merged;
-            showTimestamp(resHint, merged);
+        if (!a || !b || !m) {
+            out.innerHTML = "";
+            aInput.removeAttribute("aria-invalid");
+            bInput.removeAttribute("aria-invalid");
+            mInput.removeAttribute("aria-invalid");
+            return;
         }
 
-        function updateExtractMergeTime() {
-            const aInput = document.getElementById("extract-input-a");
-            const bInput = document.getElementById("extract-input-b");
-            const mInput = document.getElementById("extract-input-merged");
-            const a = aInput.value.trim();
-            const b = bInput.value.trim();
-            const m = mInput.value.trim();
-            const out = document.getElementById("extract-result");
-            const hintA = document.getElementById("extract-input-a-ts");
-            const hintB = document.getElementById("extract-input-b-ts");
-            const hintM = document.getElementById("extract-input-merged-ts");
+        const aOk = isValidSumId(a);
+        const bOk = isValidSumId(b);
+        const mOk = isValidSumId(m);
+        aInput[aOk ? "removeAttribute" : "setAttribute"]("aria-invalid", "true");
+        bInput[bOk ? "removeAttribute" : "setAttribute"]("aria-invalid", "true");
+        mInput[mOk ? "removeAttribute" : "setAttribute"]("aria-invalid", "true");
 
-            showTimestamp(hintA, a);
-            showTimestamp(hintB, b);
-            showTimestamp(hintM, m);
-
-            if (!a || !b || !m) {
-                out.innerHTML = "";
-                aInput.removeAttribute("aria-invalid");
-                bInput.removeAttribute("aria-invalid");
-                mInput.removeAttribute("aria-invalid");
-                return;
-            }
-
-            const aOk = isValidSumId(a);
-            const bOk = isValidSumId(b);
-            const mOk = isValidSumId(m);
-            aInput[aOk ? "removeAttribute" : "setAttribute"]("aria-invalid", "true");
-            bInput[bOk ? "removeAttribute" : "setAttribute"]("aria-invalid", "true");
-            mInput[mOk ? "removeAttribute" : "setAttribute"]("aria-invalid", "true");
-
-            if (!aOk || !bOk || !mOk) {
-                out.innerHTML = "<span class=\"sym\">error</span> Need three valid IDs";
-                return;
-            }
-
-            try {
-                const ns = extractMergeTimeNs(a, b, m);
-                out.innerHTML = "<span class=\"sym\">schedule</span> Merge time: " + nsToIso(ns);
-            } catch (err) {
-                out.innerHTML = "<span class=\"sym\">error</span> " + err.message;
-            }
+        if (!aOk || !bOk || !mOk) {
+            out.innerHTML = "<span class=\"sym\">error</span> Need three valid IDs";
+            return;
         }
 
-        // --- Event Listeners ---
+        try {
+            const ns = extractMergeTimeNs(a, b, m);
+            out.innerHTML = "<span class=\"sym\">schedule</span> Merge time: " + nsToIso(ns);
+        } catch (err) {
+            out.innerHTML = "<span class=\"sym\">error</span> " + err.message;
+        }
+    }
 
-        // Input listeners for live updates
-        document.getElementById("validate-input").addEventListener("input", updateValidate);
-        document.getElementById("int-to-sum-id-input").addEventListener("input", updateIntToSumId);
-        document.getElementById("sum-id-to-int-input").addEventListener("input", updateSumIdToInt);
-        document.getElementById("merge-input-a").addEventListener("input", updateMerge);
-        document.getElementById("merge-input-b").addEventListener("input", updateMerge);
-        document.getElementById("extract-input-a").addEventListener("input", updateExtractMergeTime);
-        document.getElementById("extract-input-b").addEventListener("input", updateExtractMergeTime);
-        document.getElementById("extract-input-merged").addEventListener("input", updateExtractMergeTime);
+    // --- Event Listeners ---
 
-        // Prevent submission on automated forms
-        ["validate-form", "int-to-sum-id-form", "sum-id-to-int-form", "merge-form", "extract-merge-time-form"].forEach(id => {
-            document.getElementById(id).addEventListener("submit", e => e.preventDefault());
-        });
+    // Input listeners for live updates
+    document.getElementById("validate-input").addEventListener("input", updateValidate);
+    document.getElementById("int-to-sum-id-input").addEventListener("input", updateIntToSumId);
+    document.getElementById("sum-id-to-int-input").addEventListener("input", updateSumIdToInt);
+    document.getElementById("merge-input-a").addEventListener("input", updateMerge);
+    document.getElementById("merge-input-b").addEventListener("input", updateMerge);
+    document.getElementById("extract-input-a").addEventListener("input", updateExtractMergeTime);
+    document.getElementById("extract-input-b").addEventListener("input", updateExtractMergeTime);
+    document.getElementById("extract-input-merged").addEventListener("input", updateExtractMergeTime);
 
-        // Generate (Manual triggger)
-        document.getElementById("generate-form").addEventListener("submit", (e) => {
-            e.preventDefault();
-            const id = generateSumId();
-            document.getElementById("generated-id").textContent = id;
-            showTimestamp(document.getElementById("generated-id-ts"), id);
-        });
+    // Prevent submission on automated forms
+    ["validate-form", "int-to-sum-id-form", "sum-id-to-int-form", "merge-form", "extract-merge-time-form"].forEach(id => {
+        document.getElementById(id).addEventListener("submit", e => e.preventDefault());
+    });
 
-        // Initialize with a generated ID
-        const initialId = generateSumId();
-        document.getElementById("generated-id").textContent = initialId;
-        showTimestamp(document.getElementById("generated-id-ts"), initialId);
-        updateValidate();
-    </script>
+    // Generate (Manual triggger)
+    document.getElementById("generate-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const id = generateSumId();
+        document.getElementById("generated-id").textContent = id;
+        showTimestamp(document.getElementById("generated-id-ts"), id);
+    });
+
+    // Initialize with a generated ID
+    const initialId = generateSumId();
+    document.getElementById("generated-id").textContent = initialId;
+    showTimestamp(document.getElementById("generated-id-ts"), initialId);
+    updateValidate();
+</script>
 
 </body>
 

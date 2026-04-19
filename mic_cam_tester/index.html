@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" class="layout-centered">
 
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="light dark">
-        <title>Screen Share, Mic & Cam Tester</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <link rel="stylesheet" type="text/css" href="../one.css">
-        <style>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Screen Share, Mic & Cam Tester</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
         .media-container {
             display: flex;
             flex-direction: column;
@@ -47,192 +47,204 @@
             flex-wrap: wrap;
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <main>
-            <section>
-                <h2>Screen Share, Mic & Cam Tester</h2>
-                <p>Test your microphone, camera, or screen sharing.</p>
+<body>
+<main>
+    <section>
+        <h2>Screen Share, Mic & Cam Tester</h2>
+        <p>Test your microphone, camera, or screen sharing.</p>
 
-                <div class="media-container mt-4">
-                    <video id="video-preview" autoplay playsinline muted hidden></video>
-                    <audio id="audio-element" controls hidden></audio>
-                    <canvas id="audio-canvas" hidden></canvas>
+        <div class="media-container mt-4">
+            <video id="video-preview" autoplay playsinline muted hidden></video>
+            <audio id="audio-element" controls hidden></audio>
+            <canvas id="audio-canvas" hidden></canvas>
 
-                    <div id="start-controls" class="controls">
-                        <button type="button" id="btn-camera" class="primary">
-                            <span class="sym">videocam</span> Camera
-                        </button>
-                        <button type="button" id="btn-mic">
-                            <span class="sym">mic</span> Microphone
-                        </button>
-                        <button type="button" id="btn-cam-mic">
-                            <span class="sym">photo_camera</span> Cam & Mic
-                        </button>
-                        <button type="button" id="btn-screen">
-                            <span class="sym">computer</span> Screen
-                        </button>
-                        <button type="button" id="btn-tab">
-                            <span class="sym">open_in_new</span> Tab
-                        </button>
-                    </div>
+            <div id="start-controls" class="controls">
+                <button type="button" id="btn-camera" class="primary">
+                    <span class="sym">videocam</span> Camera
+                </button>
+                <button type="button" id="btn-mic">
+                    <span class="sym">mic</span> Microphone
+                </button>
+                <button type="button" id="btn-cam-mic">
+                    <span class="sym">photo_camera</span> Cam & Mic
+                </button>
+                <button type="button" id="btn-screen">
+                    <span class="sym">computer</span> Screen
+                </button>
+                <button type="button" id="btn-tab">
+                    <span class="sym">open_in_new</span> Tab
+                </button>
+            </div>
 
-                    <div id="active-controls" class="controls" hidden>
-                        <label for="mute-toggle">
-                            <input type="checkbox" id="mute-toggle" checked> Muted
-                        </label>
-                        <button type="button" id="btn-stop">
-                            <span class="sym">stop</span> Stop
-                        </button>
-                    </div>
+            <div id="active-controls" class="controls" hidden>
+                <label for="mute-toggle">
+                    <input type="checkbox" id="mute-toggle" checked> Muted
+                </label>
+                <button type="button" id="btn-stop">
+                    <span class="sym">stop</span> Stop
+                </button>
+            </div>
 
-                    <div id="message"></div>
-                </div>
-            </section>
-        </main>
+            <div id="message"></div>
+        </div>
+    </section>
+</main>
 
-        <script>
-        const videoEl = document.getElementById("video-preview");
-        const audioEl = document.getElementById("audio-element");
-        const audioCanvas = document.getElementById("audio-canvas");
-        const canvasCtx = audioCanvas.getContext("2d");
+<script>
+    const videoEl = document.getElementById("video-preview");
+    const audioEl = document.getElementById("audio-element");
+    const audioCanvas = document.getElementById("audio-canvas");
+    const canvasCtx = audioCanvas.getContext("2d");
 
-        const startControls = document.getElementById("start-controls");
-        const activeControls = document.getElementById("active-controls");
-        const messageEl = document.getElementById("message");
+    const startControls = document.getElementById("start-controls");
+    const activeControls = document.getElementById("active-controls");
+    const messageEl = document.getElementById("message");
 
-        const muteToggle = document.getElementById("mute-toggle");
-        const btnStop = document.getElementById("btn-stop");
+    const muteToggle = document.getElementById("mute-toggle");
+    const btnStop = document.getElementById("btn-stop");
 
-        let stream = null;
-        let audioContext = null;
-        let analyser = null;
-        let animationId = null;
-        let mode = null; // 'video' | 'audio'
+    let stream = null;
+    let audioContext = null;
+    let analyser = null;
+    let animationId = null;
+    let mode = null; // 'video' | 'audio'
 
-        function resizeCanvas() {
-            audioCanvas.width = audioCanvas.clientWidth * window.devicePixelRatio;
-            audioCanvas.height = audioCanvas.clientHeight * window.devicePixelRatio;
-            canvasCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
-        }
+    function resizeCanvas() {
+        audioCanvas.width = audioCanvas.clientWidth * window.devicePixelRatio;
+        audioCanvas.height = audioCanvas.clientHeight * window.devicePixelRatio;
+        canvasCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
 
-        window.addEventListener("resize", resizeCanvas);
+    window.addEventListener("resize", resizeCanvas);
 
-        muteToggle.addEventListener("change", () => {
-            videoEl.muted = muteToggle.checked;
-        });
+    muteToggle.addEventListener("change", () => {
+        videoEl.muted = muteToggle.checked;
+    });
 
-        function showUI(active) {
-            startControls.hidden = active;
-            activeControls.hidden = !active;
-        }
+    function showUI(active) {
+        startControls.hidden = active;
+        activeControls.hidden = !active;
+    }
 
-        function setupAudioVis(srcStream) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            const source = audioContext.createMediaStreamSource(srcStream);
-            source.connect(analyser);
+    function setupAudioVis(srcStream) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        const source = audioContext.createMediaStreamSource(srcStream);
+        source.connect(analyser);
 
-            analyser.fftSize = 256;
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
+        analyser.fftSize = 256;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
 
-            audioCanvas.hidden = false;
-            resizeCanvas();
+        audioCanvas.hidden = false;
+        resizeCanvas();
 
-            function draw() {
-                if (!analyser) return;
-                animationId = requestAnimationFrame(draw);
-                analyser.getByteFrequencyData(dataArray);
-                canvasCtx.clearRect(0, 0, audioCanvas.clientWidth, audioCanvas.clientHeight);
-
-                const barWidth = (audioCanvas.clientWidth / bufferLength) * 2.5;
-                let x = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    const barHeight = dataArray[i] / 255 * audioCanvas.clientHeight;
-                    const r = barHeight + (25 * (i / bufferLength));
-                    const g = 250 * (i / bufferLength);
-                    const b = 50;
-                    canvasCtx.fillStyle = `rgb(${r},${g},${b})`;
-                    canvasCtx.fillRect(x, audioCanvas.clientHeight - barHeight, barWidth, barHeight);
-                    x += barWidth + 1;
-                }
-            }
-            draw();
-        }
-
-        async function requestStream(apiName, constraints) {
-            showUI(true);
-            messageEl.innerHTML = "";
-            try {
-                stream = await navigator.mediaDevices[apiName](constraints);
-
-                if (stream.getVideoTracks().length) {
-                    mode = "video";
-                    videoEl.hidden = false;
-                    videoEl.srcObject = stream;
-                    videoEl.muted = muteToggle.checked;
-                    videoEl.play();
-
-                    // Show mute toggle only when there are audio tracks
-                    muteToggle.closest("label").hidden = !stream.getAudioTracks().length;
-
-                    if (stream.getAudioTracks().length) {
-                        setupAudioVis(stream);
-                    }
-                } else {
-                    mode = "audio";
-                    audioEl.hidden = false;
-                    audioEl.srcObject = stream;
-                    audioEl.play();
-                    muteToggle.closest("label").hidden = true;
-                    setupAudioVis(stream);
-                }
-
-                messageEl.innerHTML = "<p>Stream active.</p>";
-            } catch (err) {
-                messageEl.innerHTML = `<p class="error">${err.message || err}</p>`;
-                stopMedia();
-            }
-        }
-
-        function stopMedia() {
-            if (stream) {
-                stream.getTracks().forEach(t => t.stop());
-                stream = null;
-            }
-            videoEl.srcObject = null;
-            videoEl.hidden = true;
-            audioEl.srcObject = null;
-            audioEl.hidden = true;
-            audioCanvas.hidden = true;
-
-            if (audioContext) { audioContext.close(); audioContext = null; }
-            if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
-            analyser = null;
+        function draw() {
+            if (!analyser) return;
+            animationId = requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
             canvasCtx.clearRect(0, 0, audioCanvas.clientWidth, audioCanvas.clientHeight);
 
-            showUI(false);
-            mode = null;
+            const barWidth = (audioCanvas.clientWidth / bufferLength) * 2.5;
+            let x = 0;
+            for (let i = 0; i < bufferLength; i++) {
+                const barHeight = dataArray[i] / 255 * audioCanvas.clientHeight;
+                const r = barHeight + (25 * (i / bufferLength));
+                const g = 250 * (i / bufferLength);
+                const b = 50;
+                canvasCtx.fillStyle = `rgb(${r},${g},${b})`;
+                canvasCtx.fillRect(x, audioCanvas.clientHeight - barHeight, barWidth, barHeight);
+                x += barWidth + 1;
+            }
         }
 
-        // Button bindings
-        document.getElementById("btn-camera").addEventListener("click", () =>
-            requestStream("getUserMedia", { video: true }));
-        document.getElementById("btn-mic").addEventListener("click", () =>
-            requestStream("getUserMedia", { audio: true }));
-        document.getElementById("btn-cam-mic").addEventListener("click", () =>
-            requestStream("getUserMedia", { video: true, audio: true }));
-        document.getElementById("btn-screen").addEventListener("click", () =>
-            requestStream("getDisplayMedia", { video: true }));
-        document.getElementById("btn-tab").addEventListener("click", () =>
-            requestStream("getDisplayMedia", { video: { mediaSource: "browser", scrollWithPage: true } }));
+        draw();
+    }
 
-        btnStop.addEventListener("click", stopMedia);
+    async function requestStream(apiName, constraints) {
+        showUI(true);
+        messageEl.innerHTML = "";
+        try {
+            stream = await navigator.mediaDevices[apiName](constraints);
 
-        window.addEventListener("beforeunload", stopMedia);
-    </script>
-    </body>
+            if (stream.getVideoTracks().length) {
+                mode = "video";
+                videoEl.hidden = false;
+                videoEl.srcObject = stream;
+                videoEl.muted = muteToggle.checked;
+                videoEl.play();
+
+                // Show mute toggle only when there are audio tracks
+                muteToggle.closest("label").hidden = !stream.getAudioTracks().length;
+
+                if (stream.getAudioTracks().length) {
+                    setupAudioVis(stream);
+                }
+            } else {
+                mode = "audio";
+                audioEl.hidden = false;
+                audioEl.srcObject = stream;
+                audioEl.play();
+                muteToggle.closest("label").hidden = true;
+                setupAudioVis(stream);
+            }
+
+            messageEl.innerHTML = "<p>Stream active.</p>";
+        } catch (err) {
+            messageEl.innerHTML = `<p class="error">${err.message || err}</p>`;
+            stopMedia();
+        }
+    }
+
+    function stopMedia() {
+        if (stream) {
+            stream.getTracks().forEach(t => t.stop());
+            stream = null;
+        }
+        videoEl.srcObject = null;
+        videoEl.hidden = true;
+        audioEl.srcObject = null;
+        audioEl.hidden = true;
+        audioCanvas.hidden = true;
+
+        if (audioContext) {
+            audioContext.close();
+            audioContext = null;
+        }
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
+        analyser = null;
+        canvasCtx.clearRect(0, 0, audioCanvas.clientWidth, audioCanvas.clientHeight);
+
+        showUI(false);
+        mode = null;
+    }
+
+    // Button bindings
+    document.getElementById("btn-camera").addEventListener("click", () =>
+        requestStream("getUserMedia", { video: true }));
+    document.getElementById("btn-mic").addEventListener("click", () =>
+        requestStream("getUserMedia", { audio: true }));
+    document.getElementById("btn-cam-mic").addEventListener("click", () =>
+        requestStream("getUserMedia", { video: true, audio: true }));
+    document.getElementById("btn-screen").addEventListener("click", () =>
+        requestStream("getDisplayMedia", { video: true }));
+    document.getElementById("btn-tab").addEventListener("click", () =>
+        requestStream("getDisplayMedia", {
+            video: {
+                mediaSource: "browser",
+                scrollWithPage: true,
+            },
+        }));
+
+    btnStop.addEventListener("click", stopMedia);
+
+    window.addEventListener("beforeunload", stopMedia);
+</script>
+</body>
 
 </html>

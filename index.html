@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="en">
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <title>Tools Dashboard</title>
-        <link rel="stylesheet" href="./one.css">
-        <style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <title>Tools Dashboard</title>
+    <link rel="stylesheet" href="./one.css">
+    <style>
         /* ------------------------------------------------------------------
             DASHBOARD SPECIFIC STYLES
             ------------------------------------------------------------------ */
@@ -236,304 +236,308 @@
             }
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <main>
-            <div class="big">
-                <h1>Tool Dashboard</h1>
+<body>
+<main>
+    <div class="big">
+        <h1>Tool Dashboard</h1>
+    </div>
+
+    <div class="tool-grid">
+        <!-- Paste to Markdown -->
+        <a href="./paste_to_markdown/index.html" class="tool-card card-markdown">
+            <div class="card-header">
+                <h2 class="card-title">Paste to Markdown</h2>
             </div>
-
-            <div class="tool-grid">
-                <!-- Paste to Markdown -->
-                <a href="./paste_to_markdown/index.html" class="tool-card card-markdown">
-                    <div class="card-header">
-                        <h2 class="card-title">Paste to Markdown</h2>
-                    </div>
-                    <p class="card-desc">
-                        Convert clipboard HTML or text content into clean Markdown format instantly.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Text Modifier -->
-                <a href="./text_modifier/index.html" class="tool-card card-text-modifier">
-                    <div class="card-header">
-                        <h2 class="card-title">Text Modifier</h2>
-                    </div>
-                    <p class="card-desc">
-                        Transform, clean, sort, encode, decode, and extract data from text with ease.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Recursive JSON Grid Editor -->
-                <a href="./recursive_json_grid_editor/index.html" class="tool-card card-json">
-                    <div class="card-header">
-                        <h2 class="card-title">Recursive JSON Editor</h2>
-                    </div>
-                    <p class="card-desc">
-                        Edit structured JSON data with a powerful recursive grid layout interface.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- JSON Query -->
-                <a href="./json_query/index.html" class="tool-card card-query" id="tool-json-query">
-                    <div class="card-header">
-                        <h2 class="card-title">JSON Query & Transform Tool</h2>
-                    </div>
-                    <p class="card-desc">
-                        Query, filter, and reshape JSON data using a powerful, lightweight query language.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Visual Regex -->
-                <a href="./visual_regex/index.html" class="tool-card card-regex">
-                    <div class="card-header">
-                        <h2 class="card-title">Visual Regex Builder</h2>
-                    </div>
-                    <p class="card-desc">
-                        Build and test regular expressions visually with a structured tree interface.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Decidr -->
-                <a href="./decidr/index.html" class="tool-card card-decidr">
-                    <div class="card-header">
-                        <h2 class="card-title">Decidr</h2>
-                    </div>
-                    <p class="card-desc">
-                        Pick numbers, compare options, and rank criteria with weighted scoring.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Time Tracker -->
-                <a href="./time_track/index.html" class="tool-card card-time-track">
-                    <div class="card-header">
-                        <h2 class="card-title">Time Tracker</h2>
-                    </div>
-                    <p class="card-desc">
-                        Log your daily working hours, manage overtime balance, and maintain a detailed record of your
-                        activities.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Input Device Tester -->
-                <a href="./input_tester/index.html" class="tool-card card-input">
-                    <div class="card-header">
-                        <h2 class="card-title">Input Device Tester</h2>
-                    </div>
-                    <p class="card-desc">
-                        Test keyboard, mouse, gamepad, touch, and MIDI input signals in real-time.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Media Device Tester -->
-                <a href="./mic_cam_tester/index.html" class="tool-card card-media">
-                    <div class="card-header">
-                        <h2 class="card-title">Media Device Tester</h2>
-                    </div>
-                    <p class="card-desc">
-                        Test your microphone, camera, or screen sharing with real-time audio visualization.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Browser Information -->
-                <a href="./browser_info/index.html" class="tool-card card-browser">
-                    <div class="card-header">
-                        <h2 class="card-title">Browser Information</h2>
-                    </div>
-                    <p class="card-desc">
-                        View comprehensive details about your browser, hardware specifications, and localization settings.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- JWT Decoder -->
-                <a href="./jwt_decoder/index.html" class="tool-card card-jwt">
-                    <div class="card-header">
-                        <h2 class="card-title">JWT Decoder</h2>
-                    </div>
-                    <p class="card-desc">
-                        Safely decode and read JSON Web Tokens locally in your browser.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Themed Ipsum Generator -->
-                <a href="./placeholder_text/index.html" class="tool-card card-placeholder">
-                    <div class="card-header">
-                        <h2 class="card-title">Themed Ipsum Generator</h2>
-                    </div>
-                    <p class="card-desc">
-                        Generate placeholder text using Gourmet, Alien, Fantasy, and Corporate themes.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Favicon Packer -->
-                <a href="./favicon_packer/index.html" class="tool-card card-favicon">
-                    <div class="card-header">
-                        <h2 class="card-title">Favicon Packer</h2>
-                    </div>
-                    <p class="card-desc">
-                        Generate a complete, precise set of modern favicon assets client-side from any
-                        logo icon.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Image Slicer -->
-                <a href="./image_slicer/index.html" class="tool-card card-slicer">
-                    <div class="card-header">
-                        <h2 class="card-title">Image Slicer</h2>
-                    </div>
-                    <p class="card-desc">
-                        Slice an image along one axis (horizontally, vertically) and export parts as
-                        a ZIP.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Grid Gen -->
-                <a href="./grid_gen/index.html" class="tool-card card-grid">
-                    <div class="card-header">
-                        <h2 class="card-title">Grid Gen</h2>
-                    </div>
-                    <p class="card-desc">
-                        Create a grid with multiple layers and export it as SVG or PNG.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- SVG Export -->
-                <a href="./svg_export/index.html" class="tool-card card-svg">
-                    <div class="card-header">
-                        <h2 class="card-title">SVG Export</h2>
-                    </div>
-                    <p class="card-desc">
-                        Open one or multiple SVG files and export them as JPG, PNG, or ZIP archives
-                        thereof.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Image Ratio Calculator -->
-                <a href="./image_ratio_calculator/index.html" class="tool-card card-ratio">
-                    <div class="card-header">
-                        <h2 class="card-title">Image Ratio Calculator</h2>
-                    </div>
-                    <p class="card-desc">
-                        Find the closest standard aspect ratios for any uploaded image.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Shape Builder -->
-                <a href="./shape_builder/index.html" class="tool-card card-shape">
-                    <div class="card-header">
-                        <h2 class="card-title">Shape Builder</h2>
-                    </div>
-                    <p class="card-desc">
-                        Construct vector shapes programmatically with an interactive JavaScript API and real-time SVG
-                        preview.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- Triangle Paint -->
-                <a href="./triangle_paint/index.html" class="tool-card card-triangle">
-                    <div class="card-header">
-                        <h2 class="card-title">Triangle Paint</h2>
-                    </div>
-                    <p class="card-desc">
-                        Create geometric triangular art and export it as an SVG.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-                <!-- File to Base64 -->
-                <a href="./file_to_base64/index.html" class="tool-card card-file-base64">
-                    <div class="card-header">
-                        <h2 class="card-title">File to Base64</h2>
-                    </div>
-                    <p class="card-desc">
-                        Convert binary files to base64 strings or media HTML tags inline.
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
-
-
-                <!-- sumid -->
-                <a href="./sumid/index.html" class="tool-card card-sumid">
-                    <div class="card-header">
-                        <h2 class="card-title">sumid</h2>
-                    </div>
-                    <p class="card-desc">
-                        Generate, validate, decode, convert, and merge 256-bit sequential base-50 unique IDs (UUID-like).
-                    </p>
-                    <div class="card-footer">
-                        Open Tool <span class="sym arrow"></span>
-                    </div>
-                </a>
+            <p class="card-desc">
+                Convert clipboard HTML or text content into clean Markdown format instantly.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
             </div>
-        </main>
+        </a>
 
-        <footer>
-            © <a href="https://github.com/jgandert" target="_blank" rel="noopener">Joschua Gandert</a> ·
-            <a href="https://github.com/jgandert/tools/blob/main/LICENSE">Apache 2.0 LICENSE</a> ·
-            Built with <a href="./one_css/index.html">
-                one.css — the <strong>one</strong> c</strong>&#x2060;lass-lite
-                <strong>s</strong>&#x2060;emantic <strong>s</strong>&#x2060;tylesheet
-            </a>
-        </footer>
-    </body>
+        <!-- Text Modifier -->
+        <a href="./text_modifier/index.html" class="tool-card card-text-modifier">
+            <div class="card-header">
+                <h2 class="card-title">Text Modifier</h2>
+            </div>
+            <p class="card-desc">
+                Transform, clean, sort, encode, decode, and extract data from text with ease.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Recursive JSON Grid Editor -->
+        <a href="./recursive_json_grid_editor/index.html" class="tool-card card-json">
+            <div class="card-header">
+                <h2 class="card-title">Recursive JSON Editor</h2>
+            </div>
+            <p class="card-desc">
+                Edit structured JSON data with a powerful recursive grid layout interface.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- JSON Query -->
+        <a href="./json_query/index.html" class="tool-card card-query" id="tool-json-query">
+            <div class="card-header">
+                <h2 class="card-title">JSON Query & Transform Tool</h2>
+            </div>
+            <p class="card-desc">
+                Query, filter, and reshape JSON data using a powerful, lightweight query language.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Visual Regex -->
+        <a href="./visual_regex/index.html" class="tool-card card-regex">
+            <div class="card-header">
+                <h2 class="card-title">Visual Regex Builder</h2>
+            </div>
+            <p class="card-desc">
+                Build and test regular expressions visually with a structured tree interface.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Decidr -->
+        <a href="./decidr/index.html" class="tool-card card-decidr">
+            <div class="card-header">
+                <h2 class="card-title">Decidr</h2>
+            </div>
+            <p class="card-desc">
+                Pick numbers, compare options, and rank criteria with weighted scoring.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Time Tracker -->
+        <a href="./time_track/index.html" class="tool-card card-time-track">
+            <div class="card-header">
+                <h2 class="card-title">Time Tracker</h2>
+            </div>
+            <p class="card-desc">
+                Log your daily working hours, manage overtime balance, and maintain a detailed
+                record of your
+                activities.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Input Device Tester -->
+        <a href="./input_tester/index.html" class="tool-card card-input">
+            <div class="card-header">
+                <h2 class="card-title">Input Device Tester</h2>
+            </div>
+            <p class="card-desc">
+                Test keyboard, mouse, gamepad, touch, and MIDI input signals in real-time.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Media Device Tester -->
+        <a href="./mic_cam_tester/index.html" class="tool-card card-media">
+            <div class="card-header">
+                <h2 class="card-title">Media Device Tester</h2>
+            </div>
+            <p class="card-desc">
+                Test your microphone, camera, or screen sharing with real-time audio visualization.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Browser Information -->
+        <a href="./browser_info/index.html" class="tool-card card-browser">
+            <div class="card-header">
+                <h2 class="card-title">Browser Information</h2>
+            </div>
+            <p class="card-desc">
+                View comprehensive details about your browser, hardware specifications, and
+                localization settings.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- JWT Decoder -->
+        <a href="./jwt_decoder/index.html" class="tool-card card-jwt">
+            <div class="card-header">
+                <h2 class="card-title">JWT Decoder</h2>
+            </div>
+            <p class="card-desc">
+                Safely decode and read JSON Web Tokens locally in your browser.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Themed Ipsum Generator -->
+        <a href="./placeholder_text/index.html" class="tool-card card-placeholder">
+            <div class="card-header">
+                <h2 class="card-title">Themed Ipsum Generator</h2>
+            </div>
+            <p class="card-desc">
+                Generate placeholder text using Gourmet, Alien, Fantasy, and Corporate themes.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Favicon Packer -->
+        <a href="./favicon_packer/index.html" class="tool-card card-favicon">
+            <div class="card-header">
+                <h2 class="card-title">Favicon Packer</h2>
+            </div>
+            <p class="card-desc">
+                Generate a complete, precise set of modern favicon assets client-side from any
+                logo icon.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Image Slicer -->
+        <a href="./image_slicer/index.html" class="tool-card card-slicer">
+            <div class="card-header">
+                <h2 class="card-title">Image Slicer</h2>
+            </div>
+            <p class="card-desc">
+                Slice an image along one axis (horizontally, vertically) and export parts as
+                a ZIP.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Grid Gen -->
+        <a href="./grid_gen/index.html" class="tool-card card-grid">
+            <div class="card-header">
+                <h2 class="card-title">Grid Gen</h2>
+            </div>
+            <p class="card-desc">
+                Create a grid with multiple layers and export it as SVG or PNG.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- SVG Export -->
+        <a href="./svg_export/index.html" class="tool-card card-svg">
+            <div class="card-header">
+                <h2 class="card-title">SVG Export</h2>
+            </div>
+            <p class="card-desc">
+                Open one or multiple SVG files and export them as JPG, PNG, or ZIP archives
+                thereof.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Image Ratio Calculator -->
+        <a href="./image_ratio_calculator/index.html" class="tool-card card-ratio">
+            <div class="card-header">
+                <h2 class="card-title">Image Ratio Calculator</h2>
+            </div>
+            <p class="card-desc">
+                Find the closest standard aspect ratios for any uploaded image.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Shape Builder -->
+        <a href="./shape_builder/index.html" class="tool-card card-shape">
+            <div class="card-header">
+                <h2 class="card-title">Shape Builder</h2>
+            </div>
+            <p class="card-desc">
+                Construct vector shapes programmatically with an interactive JavaScript API and
+                real-time SVG
+                preview.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Triangle Paint -->
+        <a href="./triangle_paint/index.html" class="tool-card card-triangle">
+            <div class="card-header">
+                <h2 class="card-title">Triangle Paint</h2>
+            </div>
+            <p class="card-desc">
+                Create geometric triangular art and export it as an SVG.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- File to Base64 -->
+        <a href="./file_to_base64/index.html" class="tool-card card-file-base64">
+            <div class="card-header">
+                <h2 class="card-title">File to Base64</h2>
+            </div>
+            <p class="card-desc">
+                Convert binary files to base64 strings or media HTML tags inline.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+
+        <!-- sumid -->
+        <a href="./sumid/index.html" class="tool-card card-sumid">
+            <div class="card-header">
+                <h2 class="card-title">sumid</h2>
+            </div>
+            <p class="card-desc">
+                Generate, validate, decode, convert, and merge 256-bit sequential base-50 unique IDs
+                (UUID-like).
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+    </div>
+</main>
+
+<footer>
+    © <a href="https://github.com/jgandert" target="_blank" rel="noopener">Joschua Gandert</a> ·
+    <a href="https://github.com/jgandert/tools/blob/main/LICENSE">Apache 2.0 LICENSE</a> ·
+    Built with <a href="./one_css/index.html">
+    one.css — the <strong>one</strong> c</strong>&#x2060;lass-lite
+    <strong>s</strong>&#x2060;emantic <strong>s</strong>&#x2060;tylesheet
+</a>
+</footer>
+</body>
 
 </html>

@@ -153,7 +153,7 @@ runTest("Align Layout", () => {
     const shapes = [
         b.Circle({ radius: 10 }),
         b.Circle({ radius: 10 }),
-        b.Circle({ radius: 10 })
+        b.Circle({ radius: 10 }),
     ];
     b.align({ shapes, axis: "horizontal", distribution: "space-between", width: 100 });
 
@@ -191,8 +191,8 @@ runTest("Snap Points Mapping (2 points)", () => {
     // We want to snap rect2's top center to rect1's top center
     rect2.snapPoints({
         map: [
-            { from: "top", to: rect1.points.top }
-        ]
+            { from: "top", to: rect1.points.top },
+        ],
     });
     approx(rect2.points.top.x, rect1.points.top.x);
     approx(rect2.points.top.y, rect1.points.top.y);
@@ -204,8 +204,8 @@ runTest("Snap Points Mapping (2 points)", () => {
     tri.snapPoints({
         map: [
             { from: "C", to: b.Point({ x: 0, y: 0 }) },
-            { from: "B", to: b.Point({ x: 100, y: 100 }) }
-        ]
+            { from: "B", to: b.Point({ x: 100, y: 100 }) },
+        ],
     });
     // Tri B should be exact mapped to 100, 100 since the length of the snapping target vector changes the scale, but we don't scale!
     // Wait... if we don't scale during snap, the distance from C to B is still 50!
@@ -271,4 +271,6 @@ runTest("Output to SVG", () => {
 });
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.`);
-if (failed > 0) {process.exit(1);}
+if (failed > 0) {
+    process.exit(1);
+}

@@ -19,45 +19,70 @@ class JSONQuery {
     }
 
     _deepCloneFallback(obj) {
-        if (obj === null || typeof obj !== "object") {return obj;}
-        if (Array.isArray(obj)) {return obj.map(item => this._deepCloneFallback(item));}
+        if (obj === null || typeof obj !== "object") {
+            return obj;
+        }
+        if (Array.isArray(obj)) {
+            return obj.map(item => this._deepCloneFallback(item));
+        }
         const clone = {};
-        for (const key in obj) {clone[key] = this._deepCloneFallback(obj[key]);}
+        for (const key in obj) {
+            clone[key] = this._deepCloneFallback(obj[key]);
+        }
         return clone;
     }
 
     _parseComposition(str) {
-        if (!str.startsWith("{") || !str.endsWith("}")) {return null;}
+        if (!str.startsWith("{") || !str.endsWith("}")) {
+            return null;
+        }
         const content = str.slice(1, -1).trim();
         const pairs = [];
 
-        let currentAlias = "", currentQuery = "", inString = false, stringChar = "", depth = 0, phase = "ALIAS";
+        let currentAlias = "", currentQuery = "", inString = false, stringChar = "", depth = 0,
+            phase = "ALIAS";
 
         for (let i = 0; i < content.length; i++) {
             const char = content[i];
 
             if ((char === "\"" || char === "'" || char === "`") && content[i - 1] !== "\\") {
-                if (!inString) { inString = true; stringChar = char; }
-                else if (stringChar === char) {inString = false;}
+                if (!inString) {
+                    inString = true;
+                    stringChar = char;
+                } else if (stringChar === char) {
+                    inString = false;
+                }
             }
 
             if (!inString) {
-                if (char === "{" || char === "[") {depth++;}
-                if (char === "}" || char === "]") {depth--;}
+                if (char === "{" || char === "[") {
+                    depth++;
+                }
+                if (char === "}" || char === "]") {
+                    depth--;
+                }
             }
 
             if (depth === 0 && !inString) {
                 if (phase === "ALIAS" && char === ":") {
-                    phase = "QUERY"; continue;
+                    phase = "QUERY";
+                    continue;
                 }
                 if (phase === "QUERY" && char === ",") {
                     pairs.push({ alias: currentAlias.trim(), query: currentQuery.trim() });
-                    currentAlias = ""; currentQuery = ""; phase = "ALIAS"; continue;
+                    currentAlias = "";
+                    currentQuery = "";
+                    phase = "ALIAS";
+                    continue;
                 }
             }
 
-            if (phase === "ALIAS") {currentAlias += char;}
-            if (phase === "QUERY") {currentQuery += char;}
+            if (phase === "ALIAS") {
+                currentAlias += char;
+            }
+            if (phase === "QUERY") {
+                currentQuery += char;
+            }
         }
 
         if (currentAlias && currentQuery) {
@@ -76,7 +101,9 @@ class JSONQuery {
 
     update(queryStr) {
         queryStr = queryStr.trim();
-        if (this.cache.has(queryStr)) {return this.cache.get(queryStr);}
+        if (this.cache.has(queryStr)) {
+            return this.cache.get(queryStr);
+        }
 
         const composition = this._parseComposition(queryStr);
         if (composition) {
@@ -117,24 +144,30 @@ class JSONQuery {
             const remaining = queryStr.slice(cursor);
 
             const wsMatch = remaining.match(/^\s+/);
-            if (wsMatch) { cursor += wsMatch[0].length; continue; }
+            if (wsMatch) {
+                cursor += wsMatch[0].length;
+                continue;
+            }
 
             let match = remaining.match(/^(?:\.)?=>\s*{((?:[^'"`}]|'[^']*'|"[^"]*"|`[^`]*`)+)}/);
             if (match) {
                 tokens.push({ type: "PROJECTION", val: match[1].trim(), raw: match[0] });
-                cursor += match[0].length; continue;
+                cursor += match[0].length;
+                continue;
             }
 
             match = remaining.match(/^(?:\.)?{((?:[^'"`}]|'[^']*'|"[^"]*"|`[^`]*`)+)}/);
             if (match) {
                 tokens.push({ type: "FILTER", val: match[1].trim(), raw: match[0] });
-                cursor += match[0].length; continue;
+                cursor += match[0].length;
+                continue;
             }
 
             match = remaining.match(/^:([a-zA-Z_]+)(?:\(([^)]*)\))?/);
             if (match) {
                 tokens.push({ type: "MODIFIER", val: match[1], args: match[2], raw: match[0] });
-                cursor += match[0].length; continue;
+                cursor += match[0].length;
+                continue;
             }
 
             // Slice notation, e.g. users[0:2], users[1:], users[:-1].
@@ -144,28 +177,32 @@ class JSONQuery {
                     type: "SLICE",
                     start: match[1] !== undefined && match[1] !== null ? parseInt(match[1], 10) : undefined,
                     end: match[2] !== undefined && match[2] !== null ? parseInt(match[2], 10) : undefined,
-                    raw: match[0]
+                    raw: match[0],
                 });
-                cursor += match[0].length; continue;
+                cursor += match[0].length;
+                continue;
             }
 
             // Array/string indexing, e.g. users[0] or users[-1].
             match = remaining.match(/^(?:\.)?\[\s*(-?\d+)\s*\]/);
             if (match) {
                 tokens.push({ type: "INDEX", val: parseInt(match[1], 10), raw: match[0] });
-                cursor += match[0].length; continue;
+                cursor += match[0].length;
+                continue;
             }
 
             match = remaining.match(/^(?:\.)?`([^`]+)`/);
             if (match) {
                 tokens.push({ type: "PATH", val: match[1], raw: match[0] });
-                cursor += match[0].length; continue;
+                cursor += match[0].length;
+                continue;
             }
 
             match = remaining.match(/^(?:\.)?([a-zA-Z_][a-zA-Z0-9_]*)/);
             if (match) {
                 tokens.push({ type: "PATH", val: match[1], raw: match[0] });
-                cursor += match[0].length; continue;
+                cursor += match[0].length;
+                continue;
             }
 
             throw new Error(`Syntax Error: Unrecognized token at "${remaining.slice(0, 10)}"`);
@@ -174,7 +211,9 @@ class JSONQuery {
     }
 
     _resolvePath(obj, pathStr) {
-        if (!pathStr || obj === null || obj === undefined) {return undefined;}
+        if (!pathStr || obj === null || obj === undefined) {
+            return undefined;
+        }
         return pathStr.split(".").reduce((o, i) => o?.[i], obj);
     }
 
@@ -196,7 +235,9 @@ class JSONQuery {
 
         js = js.replace(modRegex, (m, path, backtickPath, mod, args) => {
             const safePath = backtickPath ? `__ctx["${backtickPath}"]` : path;
-            if (!args) {return `__mod(${safePath}, "${mod}", null)`;}
+            if (!args) {
+                return `__mod(${safePath}, "${mod}", null)`;
+            }
             const trimmed = args.trim();
             const safeArgs = /^__STR_\d+__$/.test(trimmed) ? trimmed : `"${args.replace(/"/g, "\\\"")}"`;
             return `__mod(${safePath}, "${mod}", ${safeArgs})`;
@@ -212,7 +253,9 @@ class JSONQuery {
     }
 
     _evaluateStep(data, token) {
-        if (data === undefined || data === null) {return undefined;}
+        if (data === undefined || data === null) {
+            return undefined;
+        }
 
         const __mod = this._applyModifier.bind(this);
 
@@ -221,62 +264,68 @@ class JSONQuery {
         // 2. Assignment attempts (e.g. users.{age = 40}) throw immediately via the `set` trap.
         const createSandboxProxy = (__ctx) => new Proxy(Object(__ctx), {
             has: (t, k) => {
-                if (typeof k !== "string") {return false;}
+                if (typeof k !== "string") {
+                    return false;
+                }
                 const reserved = ["__rest", "omits", "__mod", "__ctx", "Math", "Date", "String", "Number", "Boolean", "Array", "Object", "RegExp", "console"];
-                if (reserved.includes(k)) {return false;}
+                if (reserved.includes(k)) {
+                    return false;
+                }
                 return true;
             },
             get: (t, k) => t[k],
-            set: () => { throw new Error("Data mutation inside queries is strictly prohibited."); }
+            set: () => {
+                throw new Error("Data mutation inside queries is strictly prohibited.");
+            },
         });
 
         switch (token.type) {
-        case "PATH":
-            return Array.isArray(data) ? data.map(item => item?.[token.val]) : data[token.val];
+            case "PATH":
+                return Array.isArray(data) ? data.map(item => item?.[token.val]) : data[token.val];
 
-        case "INDEX": {
-            const idx = token.val;
-            if (Array.isArray(data) || typeof data === "string") {
-                return idx < 0 ? data[data.length + idx] : data[idx];
+            case "INDEX": {
+                const idx = token.val;
+                if (Array.isArray(data) || typeof data === "string") {
+                    return idx < 0 ? data[data.length + idx] : data[idx];
+                }
+                return undefined;
             }
-            return undefined;
-        }
 
-        case "SLICE": {
-            if (Array.isArray(data) || typeof data === "string") {
-                return data.slice(token.start, token.end);
+            case "SLICE": {
+                if (Array.isArray(data) || typeof data === "string") {
+                    return data.slice(token.start, token.end);
+                }
+                return undefined;
             }
-            return undefined;
-        }
 
-        case "FILTER": {
-            const jsCondition = this._transpileFilter(token.val);
-            const evaluator = new Function("__ctx", "createSandboxProxy", "__mod", `
+            case "FILTER": {
+                const jsCondition = this._transpileFilter(token.val);
+                const evaluator = new Function("__ctx", "createSandboxProxy", "__mod", `
           try {
             with(createSandboxProxy(__ctx)) { return (${jsCondition}); }
           } catch(e) { return false; }
         `);
-            return Array.isArray(data)
-                ? data.filter(item => evaluator(item, createSandboxProxy, __mod))
-                : (evaluator(data, createSandboxProxy, __mod) ? data : undefined);
-        }
+                return Array.isArray(data)
+                    ? data.filter(item => evaluator(item, createSandboxProxy, __mod))
+                    : (evaluator(data, createSandboxProxy, __mod) ? data : undefined);
+            }
 
-        case "PROJECTION": {
-            const { code, omits } = this._transpileProjection(token.val);
-            const mapper = new Function("__ctx", "omits", "createSandboxProxy", "__mod", `
+            case "PROJECTION": {
+                const { code, omits } = this._transpileProjection(token.val);
+                const mapper = new Function("__ctx", "omits", "createSandboxProxy", "__mod", `
           try {
             const __rest = { ...__ctx };
             omits.forEach(k => delete __rest[k]);
             with(createSandboxProxy(__ctx)) { return ({ ${code} }); }
           } catch(e) { return undefined; }
         `);
-            return Array.isArray(data)
-                ? data.map(item => mapper(item, omits, createSandboxProxy, __mod))
-                : mapper(data, omits, createSandboxProxy, __mod);
-        }
+                return Array.isArray(data)
+                    ? data.map(item => mapper(item, omits, createSandboxProxy, __mod))
+                    : mapper(data, omits, createSandboxProxy, __mod);
+            }
 
-        case "MODIFIER":
-            return this._applyModifier(data, token.val, token.args);
+            case "MODIFIER":
+                return this._applyModifier(data, token.val, token.args);
         }
     }
 
@@ -312,57 +361,87 @@ class JSONQuery {
     _applyModifier(data, mod, args) {
         const isArr = Array.isArray(data);
         switch (mod) {
-        case "len": return isArr ? data.length : Object.keys(data || {}).length;
-        case "flat": return isArr ? data.flat() : data;
-        case "unique": return isArr ? [...new Set(data)] : data;
-        case "join": return isArr ? data.join(args ? args.replace(/['"]/g, "") : ",") : String(data);
-        case "limit": return isArr ? data.slice(0, parseInt(args, 10)) : data;
-        case "sum": return isArr ? data.reduce((a, b) => a + Number(b), 0) : Number(data);
-        case "avg": return isArr && data.length ? data.reduce((a, b) => a + Number(b), 0) / data.length : 0;
-        case "max": return isArr ? Math.max(...data.map(Number)) : Number(data);
-        case "min": return isArr ? Math.min(...data.map(Number)) : Number(data);
-        case "group_by": {
-            const key = args?.trim();
-            return isArr ? data.reduce((acc, obj) => {
-                const k = this._resolvePath(obj, key) ?? "undefined";
-                acc[k] = acc[k] || [];
-                acc[k].push(obj); return acc;
-            }, {}) : { [this._resolvePath(data, key)]: [data] };
-        }
-        case "sort": {
-            if (!isArr) {return data;}
-            const [key, dir] = (args || "").split(",").map(s => s.trim());
-            const mult = dir === "desc" ? -1 : 1;
-            return data.slice().sort((a, b) => {
-                const valA = this._resolvePath(a, key), valB = this._resolvePath(b, key);
-                if (valA === valB) {return 0;}
-                if (valA === undefined) {return 1;}
-                if (valB === undefined) {return -1;}
-                return valA < valB ? -1 * mult : 1 * mult;
-            });
-        }
-        case "reverse": return isArr ? [...data].reverse() : data;
-        case "keys": return Object.keys(data || {});
-        case "values": return isArr ? data : Object.values(data || {});
-        case "count_by": {
-            const key = args?.trim();
-            if (!isArr) {return { [this._resolvePath(data, key) ?? "undefined"]: 1 };}
-            return data.reduce((acc, obj) => {
-                const k = this._resolvePath(obj, key) ?? "undefined";
-                acc[k] = (acc[k] || 0) + 1; return acc;
-            }, {});
-        }
-        case "upper": return isArr ? data.map(v => typeof v === "string" ? v.toUpperCase() : v)
-            : typeof data === "string" ? data.toUpperCase() : data;
-        case "lower": return isArr ? data.map(v => typeof v === "string" ? v.toLowerCase() : v)
-            : typeof data === "string" ? data.toLowerCase() : data;
-        case "trim": return isArr ? data.map(v => typeof v === "string" ? v.trim() : v)
-            : typeof data === "string" ? data.trim() : data;
-        case "entries": {
-            if (isArr) {return data.map((value, i) => ({ key: i, value }));}
-            return Object.entries(data || {}).map(([key, value]) => ({ key, value }));
-        }
-        default: return data;
+            case "len":
+                return isArr ? data.length : Object.keys(data || {}).length;
+            case "flat":
+                return isArr ? data.flat() : data;
+            case "unique":
+                return isArr ? [...new Set(data)] : data;
+            case "join":
+                return isArr ? data.join(args ? args.replace(/['"]/g, "") : ",") : String(data);
+            case "limit":
+                return isArr ? data.slice(0, parseInt(args, 10)) : data;
+            case "sum":
+                return isArr ? data.reduce((a, b) => a + Number(b), 0) : Number(data);
+            case "avg":
+                return isArr && data.length ? data.reduce((a, b) => a + Number(b), 0) / data.length : 0;
+            case "max":
+                return isArr ? Math.max(...data.map(Number)) : Number(data);
+            case "min":
+                return isArr ? Math.min(...data.map(Number)) : Number(data);
+            case "group_by": {
+                const key = args?.trim();
+                return isArr ? data.reduce((acc, obj) => {
+                    const k = this._resolvePath(obj, key) ?? "undefined";
+                    acc[k] = acc[k] || [];
+                    acc[k].push(obj);
+                    return acc;
+                }, {}) : { [this._resolvePath(data, key)]: [data] };
+            }
+            case "sort": {
+                if (!isArr) {
+                    return data;
+                }
+                const [key, dir] = (args || "").split(",").map(s => s.trim());
+                const mult = dir === "desc" ? -1 : 1;
+                return data.slice().sort((a, b) => {
+                    const valA = this._resolvePath(a, key), valB = this._resolvePath(b, key);
+                    if (valA === valB) {
+                        return 0;
+                    }
+                    if (valA === undefined) {
+                        return 1;
+                    }
+                    if (valB === undefined) {
+                        return -1;
+                    }
+                    return valA < valB ? -1 * mult : 1 * mult;
+                });
+            }
+            case "reverse":
+                return isArr ? [...data].reverse() : data;
+            case "keys":
+                return Object.keys(data || {});
+            case "values":
+                return isArr ? data : Object.values(data || {});
+            case "count_by": {
+                const key = args?.trim();
+                if (!isArr) {
+                    return { [this._resolvePath(data, key) ?? "undefined"]: 1 };
+                }
+                return data.reduce((acc, obj) => {
+                    const k = this._resolvePath(obj, key) ?? "undefined";
+                    acc[k] = (acc[k] || 0) + 1;
+                    return acc;
+                }, {});
+            }
+            case "upper":
+                return isArr ? data.map(v => typeof v === "string" ? v.toUpperCase() : v)
+                    : typeof data === "string" ? data.toUpperCase() : data;
+            case "lower":
+                return isArr ? data.map(v => typeof v === "string" ? v.toLowerCase() : v)
+                    : typeof data === "string" ? data.toLowerCase() : data;
+            case "trim":
+                return isArr ? data.map(v => typeof v === "string" ? v.trim() : v)
+                    : typeof data === "string" ? data.trim() : data;
+            case "entries": {
+                if (isArr) {
+                    return data.map((value, i) => ({ key: i, value }));
+                }
+                return Object.entries(data || {}).map(([key, value]) => ({ key, value }));
+            }
+            default:
+                return data;
         }
     }
 }
@@ -373,19 +452,31 @@ class JSONQuery {
  */
 function stringifyWithUndefined(value, indent = 2) {
     const fmt = (val, depth) => {
-        if (val === undefined) {return "undefined";}
-        if (val === null) {return "null";}
-        if (typeof val === "string") {return JSON.stringify(val);}
-        if (typeof val === "number" || typeof val === "boolean") {return String(val);}
+        if (val === undefined) {
+            return "undefined";
+        }
+        if (val === null) {
+            return "null";
+        }
+        if (typeof val === "string") {
+            return JSON.stringify(val);
+        }
+        if (typeof val === "number" || typeof val === "boolean") {
+            return String(val);
+        }
         const pad = " ".repeat(indent * (depth + 1));
         const closePad = " ".repeat(indent * depth);
         if (Array.isArray(val)) {
-            if (val.length === 0) {return "[]";}
+            if (val.length === 0) {
+                return "[]";
+            }
             return "[\n" + val.map(v => pad + fmt(v, depth + 1)).join(",\n") + "\n" + closePad + "]";
         }
         if (typeof val === "object") {
             const keys = Object.keys(val);
-            if (keys.length === 0) {return "{}";}
+            if (keys.length === 0) {
+                return "{}";
+            }
             return "{\n" + keys.map(k => pad + JSON.stringify(k) + ": " + fmt(val[k], depth + 1)).join(",\n") + "\n" + closePad + "}";
         }
         return String(val);

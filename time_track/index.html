@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="en" class="theme-blue">
 
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="light dark">
-        <meta name="description" content="A web-based time tracking tool.">
-        <style>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="A web-based time tracking tool.">
+    <style>
         /* Settings-specific compact view for pause rules */
         .pause-rules-grid-header {
             display: flex;
@@ -52,1230 +52,1247 @@
             margin-bottom: var(--spacing-sm);
         }
 
-        #time-blocks [role="group"]>label,
-        #edit-time-blocks [role="group"]>label {
+        #time-blocks [role="group"] > label,
+        #edit-time-blocks [role="group"] > label {
             flex: 1;
         }
 
-        #time-blocks [role="group"]>label:nth-child(1),
-        #time-blocks [role="group"]>label:nth-child(2),
-        #edit-time-blocks [role="group"]>label:nth-child(1),
-        #edit-time-blocks [role="group"]>label:nth-child(2) {
+        #time-blocks [role="group"] > label:nth-child(1),
+        #time-blocks [role="group"] > label:nth-child(2),
+        #edit-time-blocks [role="group"] > label:nth-child(1),
+        #edit-time-blocks [role="group"] > label:nth-child(2) {
             flex: 0 0 80px;
         }
     </style>
-        <title>Time Tracker</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <link rel="stylesheet" type="text/css" href="../one.css">
-    </head>
+    <title>Time Tracker</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+</head>
 
-    <body>
-        <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
-        <header>
-            <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
-            <hgroup>
-                <h1>Time Tracker</h1>
-                <p>Track your working hours and overtime.</p>
-            </hgroup>
-            <nav aria-label="Primary">
-                <ul>
-                    <li>
-                        <a href="#add-entry">Add Entry</a>
-                    </li>
-                    <li>
-                        <a href="#history">History</a>
-                    </li>
-                </ul>
-            </nav>
-        </header>
-        <main id="content">
-            <section id="add-entry">
-                <h2>Add Work Entry</h2>
-                <p>
-                    Enter time blocks, one per line. Use <code>#</code>
-                    for comments, <code>/</code> to separate tasks.
-                </p>
-                <form id="entry-form">
-                    <fieldset>
-                        <legend>Time Entry</legend>
-                        <label for="entry-date">
-                            Date
-                            <input type="date" id="entry-date" name="entry-date" required>
-                        </label>
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Time Tracker</h1>
+        <p>Track your working hours and overtime.</p>
+    </hgroup>
+    <nav aria-label="Primary">
+        <ul>
+            <li>
+                <a href="#add-entry">Add Entry</a>
+            </li>
+            <li>
+                <a href="#history">History</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+    <section id="add-entry">
+        <h2>Add Work Entry</h2>
+        <p>
+            Enter time blocks, one per line. Use <code>#</code>
+            for comments, <code>/</code> to separate tasks.
+        </p>
+        <form id="entry-form">
+            <fieldset>
+                <legend>Time Entry</legend>
+                <label for="entry-date">
+                    Date
+                    <input type="date" id="entry-date" name="entry-date" required>
+                </label>
 
-                        <div id="text-input-mode">
-                            <label for="entry-text">
-                                Time blocks
-                                <textarea id="entry-text" name="entry-text" rows="5"
-                                    placeholder="8:30 - 12:00 # morning standup / feature work&#10;12:45 - 17:00 # ticket-123 / code review&#10;17:30 - 19:00 # deploy fix"></textarea>
-                            </label>
-                        </div>
-
-                        <div id="ui-input-mode" class="hidden">
-                            <div id="time-blocks">
-                                <!-- Time block rows inserted here -->
-                            </div>
-                            <button type="button" id="add-block-btn">
-                                <span class="sym">add</span>
-                                Add Time Block
-                            </button>
-                        </div>
-
-                        <div class="editor-controls">
-                            <button type="button" id="insert-time-btn" class="secondary">
-                                <span class="sym">schedule</span>
-                                Insert Current Time
-                            </button>
-                            <label for="toggle-input-mode">
-                                <input type="checkbox" id="toggle-input-mode" role="switch">
-                                Use visual editor
-                            </label>
-                        </div>
-                    </fieldset>
-                    <div class="form-actions">
-                        <button type="submit">Save Entry</button>
-                        <button type="button" id="clear-entry-btn">Clear</button>
-                    </div>
-                </form>
-
-                <details id="entry-preview" open>
-                    <summary>Live Preview</summary>
-                    <article id="preview-content">
-                        <p>Fill in time blocks above to see a preview.</p>
-                    </article>
-                </details>
-            </section>
-
-            <section id="history">
-                <h2>Work History</h2>
-                <p>
-                    Total overtime: <strong id="overtime-display">0 seconds</strong>
-                </p>
-                <div role="search">
-                    <input type="search" id="history-search" placeholder="Search entries..." aria-label="Search entries">
+                <div id="text-input-mode">
+                    <label for="entry-text">
+                        Time blocks
+                        <textarea id="entry-text" name="entry-text" rows="5"
+                                  placeholder="8:30 - 12:00 # morning standup / feature work&#10;12:45 - 17:00 # ticket-123 / code review&#10;17:30 - 19:00 # deploy fix"></textarea>
+                    </label>
                 </div>
-                <table id="history-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Worked</th>
-                            <th>Overtime</th>
-                            <th>Input</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-body">
-                        <!-- Rows inserted dynamically -->
-                    </tbody>
-                </table>
-            </section>
-        </main>
-        <aside>
-            <h2>Settings</h2>
-            <form id="settings-form">
-                <fieldset>
-                    <legend>Configuration</legend>
-                    <label for="target-minutes">
-                        Target minutes per work day
-                        <input type="number" id="target-minutes" name="target-minutes" value="480" min="1" max="720"
-                            required>
-                        <small>Default: 480 (8 hours)</small>
-                    </label>
 
-                    <label for="initial-overtime">
-                        Initial overtime (minutes)
-                        <input type="number" id="initial-overtime" name="initial-overtime" value="0">
-                        <small>Set this once to carry over overtime from a previous system.</small>
-                    </label>
-
-                    <label for="auto-export-interval">
-                        Auto-export after N entries
-                        <input type="number" id="auto-export-interval" name="auto-export-interval" value="5" min="0">
-                        <small>Automatically trigger JSON download every N entries. 0 = never, 1 = always.</small>
-                    </label>
-
-                    <!-- ArbZG §4 Ruhepausen -->
-                    <label for="divisible-warning">
-                        Divisible warning (minutes)
-                        <input type="number" id="divisible-warning" name="divisible-warning" value="15" min="0">
-                        <small>Warn if total work minutes are not divisible by this amount. 0 = disable warning.</small>
-                    </label>
-
-                    <div id="pause-rules-settings">
-                        <p>
-                            <strong>Pause Rules</strong>
-                        </p>
-                        <div id="pause-rules-container"></div>
-                        <button type="button" id="add-pause-rule-btn" class="w-full">
-                            <span class="sym">add</span>
-                            Add Pause Rule
-                        </button>
-                        <small>Threshold and required pause in minutes.</small>
+                <div id="ui-input-mode" class="hidden">
+                    <div id="time-blocks">
+                        <!-- Time block rows inserted here -->
                     </div>
-                </fieldset>
-                <div class="form-actions">
-                    <button type="reset">Reset to Defaults</button>
+                    <button type="button" id="add-block-btn">
+                        <span class="sym">add</span>
+                        Add Time Block
+                    </button>
                 </div>
-            </form>
 
-            <h2>Pause Rules</h2>
-            <ul id="pause-rules-display"></ul>
+                <div class="editor-controls">
+                    <button type="button" id="insert-time-btn" class="secondary">
+                        <span class="sym">schedule</span>
+                        Insert Current Time
+                    </button>
+                    <label for="toggle-input-mode">
+                        <input type="checkbox" id="toggle-input-mode" role="switch">
+                        Use visual editor
+                    </label>
+                </div>
+            </fieldset>
+            <div class="form-actions">
+                <button type="submit">Save Entry</button>
+                <button type="button" id="clear-entry-btn">Clear</button>
+            </div>
+        </form>
 
-            <h2>Data</h2>
-            <div class="flex-row mb-2">
-                <button type="button" id="export-btn">
-                    <span class="sym">save</span>
-                    Export
+        <details id="entry-preview" open>
+            <summary>Live Preview</summary>
+            <article id="preview-content">
+                <p>Fill in time blocks above to see a preview.</p>
+            </article>
+        </details>
+    </section>
+
+    <section id="history">
+        <h2>Work History</h2>
+        <p>
+            Total overtime: <strong id="overtime-display">0 seconds</strong>
+        </p>
+        <div role="search">
+            <input type="search" id="history-search" placeholder="Search entries..."
+                   aria-label="Search entries">
+        </div>
+        <table id="history-table">
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>Worked</th>
+                <th>Overtime</th>
+                <th>Input</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="history-body">
+            <!-- Rows inserted dynamically -->
+            </tbody>
+        </table>
+    </section>
+</main>
+<aside>
+    <h2>Settings</h2>
+    <form id="settings-form">
+        <fieldset>
+            <legend>Configuration</legend>
+            <label for="target-minutes">
+                Target minutes per work day
+                <input type="number" id="target-minutes" name="target-minutes" value="480" min="1"
+                       max="720"
+                       required>
+                <small>Default: 480 (8 hours)</small>
+            </label>
+
+            <label for="initial-overtime">
+                Initial overtime (minutes)
+                <input type="number" id="initial-overtime" name="initial-overtime" value="0">
+                <small>Set this once to carry over overtime from a previous system.</small>
+            </label>
+
+            <label for="auto-export-interval">
+                Auto-export after N entries
+                <input type="number" id="auto-export-interval" name="auto-export-interval" value="5"
+                       min="0">
+                <small>Automatically trigger JSON download every N entries. 0 = never, 1 =
+                    always.</small>
+            </label>
+
+            <!-- ArbZG §4 Ruhepausen -->
+            <label for="divisible-warning">
+                Divisible warning (minutes)
+                <input type="number" id="divisible-warning" name="divisible-warning" value="15"
+                       min="0">
+                <small>Warn if total work minutes are not divisible by this amount. 0 = disable
+                    warning.</small>
+            </label>
+
+            <div id="pause-rules-settings">
+                <p>
+                    <strong>Pause Rules</strong>
+                </p>
+                <div id="pause-rules-container"></div>
+                <button type="button" id="add-pause-rule-btn" class="w-full">
+                    <span class="sym">add</span>
+                    Add Pause Rule
                 </button>
-                <button type="button" id="import-btn">
-                    <span class="sym">folder_open</span>
-                    Import
+                <small>Threshold and required pause in minutes.</small>
+            </div>
+        </fieldset>
+        <div class="form-actions">
+            <button type="reset">Reset to Defaults</button>
+        </div>
+    </form>
+
+    <h2>Pause Rules</h2>
+    <ul id="pause-rules-display"></ul>
+
+    <h2>Data</h2>
+    <div class="flex-row mb-2">
+        <button type="button" id="export-btn">
+            <span class="sym">save</span>
+            Export
+        </button>
+        <button type="button" id="import-btn">
+            <span class="sym">folder_open</span>
+            Import
+        </button>
+    </div>
+    <input type="file" id="import-file" accept=".json" hidden aria-hidden="true">
+</aside>
+<footer>
+    <p>Time Tracker — data stored in LocalStorage.</p>
+</footer>
+
+<!-- Edit modal -->
+<dialog id="edit-dialog" aria-labelledby="edit-dialog-title" aria-modal="true">
+    <article>
+        <header>
+            <h3 id="edit-dialog-title">Edit Entry</h3>
+        </header>
+        <form id="edit-form">
+            <input type="hidden" id="edit-index">
+            <label for="edit-date">
+                Date
+                <input type="date" id="edit-date" name="edit-date" required>
+            </label>
+
+            <div id="edit-text-input-mode">
+                <label for="edit-input">
+                    Time blocks
+                    <textarea id="edit-input" name="edit-input" rows="5" required></textarea>
+                    <small>
+                        One time block per line, e.g. <code>9:00 - 12:30 # morning tasks</code>
+                    </small>
+                </label>
+            </div>
+
+            <div id="edit-ui-input-mode" class="hidden">
+                <div id="edit-time-blocks"></div>
+                <button type="button" id="edit-add-block-btn">
+                    <span class="sym">add</span>
+                    Add Time Block
                 </button>
             </div>
-            <input type="file" id="import-file" accept=".json" hidden aria-hidden="true">
-        </aside>
+
+            <div class="editor-controls">
+                <button type="button" id="edit-insert-time-btn" class="secondary">
+                    <span class="sym">schedule</span>
+                    Insert Current Time
+                </button>
+                <label for="edit-toggle-input-mode">
+                    <input type="checkbox" id="edit-toggle-input-mode" role="switch">
+                    Use visual editor
+                </label>
+            </div>
+
+            <footer>
+                <button type="button" data-action="cancel">Cancel</button>
+                <button type="submit" autofocus>Save Changes</button>
+            </footer>
+        </form>
+    </article>
+</dialog>
+
+<!-- Confirm clear entry dialog -->
+<dialog id="clear-entry-dialog" aria-labelledby="clear-entry-title"
+        aria-describedby="clear-entry-desc"
+        aria-modal="true">
+    <article>
+        <header>
+            <h3 id="clear-entry-title">Confirm Clear</h3>
+        </header>
+        <p id="clear-entry-desc">Are you sure you want to clear the current entry? This will reset
+            the form.</p>
         <footer>
-            <p>Time Tracker — data stored in LocalStorage.</p>
+            <button type="button" data-action="cancel">Cancel</button>
+            <button type="button" data-action="confirm-clear-entry" class="btn-danger" autofocus>
+                Clear
+            </button>
         </footer>
-
-        <!-- Edit modal -->
-        <dialog id="edit-dialog" aria-labelledby="edit-dialog-title" aria-modal="true">
-            <article>
-                <header>
-                    <h3 id="edit-dialog-title">Edit Entry</h3>
-                </header>
-                <form id="edit-form">
-                    <input type="hidden" id="edit-index">
-                    <label for="edit-date">
-                        Date
-                        <input type="date" id="edit-date" name="edit-date" required>
-                    </label>
-
-                    <div id="edit-text-input-mode">
-                        <label for="edit-input">
-                            Time blocks
-                            <textarea id="edit-input" name="edit-input" rows="5" required></textarea>
-                            <small>
-                                One time block per line, e.g. <code>9:00 - 12:30 # morning tasks</code>
-                            </small>
-                        </label>
-                    </div>
-
-                    <div id="edit-ui-input-mode" class="hidden">
-                        <div id="edit-time-blocks"></div>
-                        <button type="button" id="edit-add-block-btn">
-                            <span class="sym">add</span>
-                            Add Time Block
-                        </button>
-                    </div>
-
-                    <div class="editor-controls">
-                        <button type="button" id="edit-insert-time-btn" class="secondary">
-                            <span class="sym">schedule</span>
-                            Insert Current Time
-                        </button>
-                        <label for="edit-toggle-input-mode">
-                            <input type="checkbox" id="edit-toggle-input-mode" role="switch">
-                            Use visual editor
-                        </label>
-                    </div>
-
-                    <footer>
-                        <button type="button" data-action="cancel">Cancel</button>
-                        <button type="submit" autofocus>Save Changes</button>
-                    </footer>
-                </form>
-            </article>
-        </dialog>
-
-        <!-- Confirm clear entry dialog -->
-        <dialog id="clear-entry-dialog" aria-labelledby="clear-entry-title" aria-describedby="clear-entry-desc"
-            aria-modal="true">
-            <article>
-                <header>
-                    <h3 id="clear-entry-title">Confirm Clear</h3>
-                </header>
-                <p id="clear-entry-desc">Are you sure you want to clear the current entry? This will reset the form.</p>
-                <footer>
-                    <button type="button" data-action="cancel">Cancel</button>
-                    <button type="button" data-action="confirm-clear-entry" class="btn-danger" autofocus>Clear</button>
-                </footer>
-            </article>
-        </dialog>
+    </article>
+</dialog>
 
 
-        <script>
-        "use strict";
+<script>
+    "use strict";
 
-        // --- Storage keys ---
-        const STORAGE_KEY = "timetable";
+    // --- Storage keys ---
+    const STORAGE_KEY = "timetable";
 
-        // ArbZG §4 Ruhepausen
-        // Die Arbeit ist durch im voraus feststehende Ruhepausen von mindestens 30
-        // Minuten bei einer Arbeitszeit von mehr als 6 bis zu neun Stunden und 45
-        // Minuten bei einer Arbeitszeit von mehr als 9 Stunden insgesamt zu
-        // unterbrechen. Die Ruhepausen nach Satz 1 können in Zeitabschnitte von
-        // jeweils mindestens 15 Minuten aufgeteilt werden. Länger als sechs Stunden
-        // hintereinander dürfen Arbeitnehmer nicht ohne Ruhepause beschäftigt werden.
-        const DEFAULT_SETTINGS = {
-            targetMinutesPerWorkDay: 480,
-            initialOvertime: 0,
-            autoExportInterval: 5,
-            divisibleWarning: 15,
-            useVisualEditor: false,
-            pauseRules: [
-                { workedThreshold: 9 * 60, requiredPause: 45 },
-                { workedThreshold: 6 * 60, requiredPause: 30 }
-            ]
+    // ArbZG §4 Ruhepausen
+    // Die Arbeit ist durch im voraus feststehende Ruhepausen von mindestens 30
+    // Minuten bei einer Arbeitszeit von mehr als 6 bis zu neun Stunden und 45
+    // Minuten bei einer Arbeitszeit von mehr als 9 Stunden insgesamt zu
+    // unterbrechen. Die Ruhepausen nach Satz 1 können in Zeitabschnitte von
+    // jeweils mindestens 15 Minuten aufgeteilt werden. Länger als sechs Stunden
+    // hintereinander dürfen Arbeitnehmer nicht ohne Ruhepause beschäftigt werden.
+    const DEFAULT_SETTINGS = {
+        targetMinutesPerWorkDay: 480,
+        initialOvertime: 0,
+        autoExportInterval: 5,
+        divisibleWarning: 15,
+        useVisualEditor: false,
+        pauseRules: [
+            { workedThreshold: 9 * 60, requiredPause: 45 },
+            { workedThreshold: 6 * 60, requiredPause: 30 },
+        ],
+    };
+
+    // --- Persistence format (single object in LocalStorage) ---
+    // {
+    //   "settings": { ... },
+    //   "workDays": [
+    //     {
+    //       "inputString": "9:00 - 12:30 # email\n13:00 - 17:30 # ticket-42",
+    //       "minutesWorked": 480,
+    //       "localDate": "2025-01-15",
+    //       "dateTimeUTCWhenAdded": "2025-01-15T16:30:00Z"
+    //     }
+    //   ],
+    //   "overtimeMinutes": 0,
+    //   "draft": "8:00 - 12:00"
+    // }
+
+    function loadData() {
+        const defaults = {
+            settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
+            workDays: [],
+            overtimeMinutes: 0,
+            draft: "",
+        };
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                const settings = { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) };
+
+                // Ensure all settings are valid numbers or fall back to defaults
+                // (JSON.stringify converts NaN to null, so we must handle null)
+                for (const key in DEFAULT_SETTINGS) {
+                    if (settings[key] === null || settings[key] === undefined) {
+                        settings[key] = DEFAULT_SETTINGS[key];
+                    }
+                }
+
+                return {
+                    settings: settings,
+                    workDays: Array.isArray(parsed.workDays) ? parsed.workDays : [],
+                    overtimeMinutes: typeof parsed.overtimeMinutes === "number" ? parsed.overtimeMinutes : 0,
+                    draft: typeof parsed.draft === "string" ? parsed.draft : "",
+                };
+            }
+        } catch (e) { /* use defaults */
+        }
+        return defaults;
+    }
+
+    function saveData(data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data, null, 2));
+    }
+
+    function formatDate(isoStr) {
+        const parts = isoStr.split("-");
+        if (parts.length !== 3) return isoStr;
+        const date = new Date(parts[0], parts[1] - 1, parts[2]);
+        return date.toLocaleDateString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        });
+    }
+
+    // --- Time parsing (format: "H" with optional ":mm") ---
+    function parseTime(str) {
+        const s = str.trim();
+        const match = s.match(/^(\d{1,2})(?::(\d{2}))?$/);
+        if (!match) return null;
+        const h = parseInt(match[1], 10);
+        const m = match[2] ? parseInt(match[2], 10) : 0;
+        if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+        return h * 60 + m;
+    }
+
+    function formatMinutesAsTime(totalMinutes) {
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        return h + ":" + String(m).padStart(2, "0");
+    }
+
+    // --- toHuman: human-readable duration ---
+    function toHuman(minutes) {
+        if (minutes === 0) return "0 seconds";
+        const abs = Math.abs(minutes);
+        const sign = minutes < 0 ? "-" : "";
+        if (abs < 60) return sign + abs + (abs === 1 ? " minute" : " minutes");
+        const fullHours = Math.floor(abs / 60);
+        const remMinutes = abs % 60;
+        const parts = [fullHours + (fullHours === 1 ? " hour" : " hours")];
+        if (remMinutes > 0) parts.push(remMinutes + (remMinutes === 1 ? " minute" : " minutes"));
+        const humanTime = sign + parts.join(" and ");
+        const decimalHours = (abs / 60).toFixed(2).replace(/\.?0+$/, "");
+        const mainTime = sign + decimalHours + (decimalHours === "1" ? " hour" : " hours");
+        return humanTime === mainTime ? humanTime : humanTime + " (= " + mainTime + ")";
+    }
+
+    // --- Parse input string into work data ---
+    // About comments: start with #, in English, use / to separate tasks
+    function parseInputString(inputString) {
+        let minutesWorked = 0;
+        let minutesPaused = 0;
+        let longestConsecutivePause = 0;
+        let previousTo = -1;
+        let lastTo = -1;
+        let unfinishedFromMin = null;
+        const errors = [];
+
+        for (const rawLine of inputString.split("\n")) {
+            const line = rawLine.trim().replace(/#.*$/, "").trim();
+            if (!line) continue;
+
+            const dashIndex = line.indexOf("-");
+            if (dashIndex === -1) {
+                errors.push("Line missing '-': " + rawLine.trim());
+                continue;
+            }
+
+            const fromStr = line.substring(0, dashIndex);
+            const toStr = line.substring(dashIndex + 1);
+
+            const fromMin = parseTime(fromStr);
+            const toMin = parseTime(toStr);
+
+            if (fromMin === null) {
+                errors.push("Invalid from-time: " + fromStr.trim());
+                continue;
+            }
+
+            const pauseDur = (previousTo >= 0) ? fromMin - previousTo : 0;
+            if (previousTo >= 0 && pauseDur < 0) {
+                errors.push("Overlapping time blocks: " + line);
+                continue;
+            }
+
+            // If we have a valid fromMin and no overlap, this is our "current" start point
+            unfinishedFromMin = fromMin;
+
+            if (previousTo >= 0) {
+                minutesPaused += pauseDur;
+                if (pauseDur > longestConsecutivePause) {
+                    longestConsecutivePause = pauseDur;
+                }
+            }
+
+            if (toMin === null) {
+                errors.push("Invalid to-time: " + toStr.trim());
+                continue;
+            }
+
+            if (toMin < fromMin) {
+                errors.push("End time before start time: " + line);
+                unfinishedFromMin = null;
+                continue;
+            }
+
+            const dur = toMin - fromMin;
+            minutesWorked += dur;
+            previousTo = toMin;
+            lastTo = toMin;
+            unfinishedFromMin = null;
+        }
+
+        return {
+            minutesWorked,
+            minutesPaused,
+            longestConsecutivePause,
+            lastTo,
+            unfinishedFromMin,
+            errors,
+        };
+    }
+
+    // --- Pause check ---
+    function getRequiredPause(minutesWorked, minutesPaused, rules) {
+        if (!rules) return null;
+        // Sort by threshold descending to check stricter rules first
+        const sortedRules = [...rules].sort((a, b) => b.workedThreshold - a.workedThreshold);
+        for (const rule of sortedRules) {
+            if (minutesWorked > rule.workedThreshold && minutesPaused < rule.requiredPause) {
+                return rule;
+            }
+        }
+        return null;
+    }
+
+    // --- Recalculate overtime from scratch ---
+    function recalculateOvertime(data) {
+        let overtime = data.settings.initialOvertime;
+        for (const day of data.workDays) {
+            overtime += (day.minutesWorked - data.settings.targetMinutesPerWorkDay);
+        }
+        data.overtimeMinutes = overtime;
+    }
+
+    function triggerExport() {
+        const data = loadData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "timetable.json";
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // --- UI-based time block editor ---
+    function createBlockRow(container, prefix, fromVal, toVal, commentVal) {
+        const idx = container.children.length;
+        const row = document.createElement("div");
+        row.setAttribute("role", "group");
+
+        const fromId = prefix + "-from-" + idx;
+        const toId = prefix + "-to-" + idx;
+        const commentId = prefix + "-comment-" + idx;
+
+        const fromLabel = document.createElement("label");
+        fromLabel.setAttribute("for", fromId);
+        fromLabel.textContent = "From";
+        const fromInput = document.createElement("input");
+        fromInput.type = "text";
+        fromInput.id = fromId;
+        fromInput.placeholder = "9:00";
+        fromInput.required = true;
+        fromInput.value = fromVal || "";
+        fromLabel.appendChild(fromInput);
+
+        const toLabel = document.createElement("label");
+        toLabel.setAttribute("for", toId);
+        toLabel.textContent = "To";
+        const toInput = document.createElement("input");
+        toInput.type = "text";
+        toInput.id = toId;
+        toInput.placeholder = "17:00";
+        toInput.required = true;
+        toInput.value = toVal || "";
+        toLabel.appendChild(toInput);
+
+        const commentLabel = document.createElement("label");
+        commentLabel.setAttribute("for", commentId);
+        commentLabel.textContent = "Comment";
+        const commentInput = document.createElement("input");
+        commentInput.type = "text";
+        commentInput.id = commentId;
+        commentInput.placeholder = "task description";
+        commentInput.value = commentVal || "";
+        commentLabel.appendChild(commentInput);
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "btn-sym btn-danger";
+        removeBtn.innerHTML = "delete";
+        removeBtn.ariaLabel = "Remove this time block";
+        removeBtn.addEventListener("click", () => {
+            row.remove();
+            if (prefix === "block") updatePreview();
+        });
+
+        row.append(fromLabel, toLabel, commentLabel, removeBtn);
+        container.appendChild(row);
+    }
+
+    // Convert UI blocks to text
+    function uiBlocksToText(container) {
+        const lines = [];
+        for (const row of container.querySelectorAll("[role='group']")) {
+            const inputs = row.querySelectorAll("input");
+            const from = inputs[0]?.value.trim() || "";
+            const to = inputs[1]?.value.trim() || "";
+            const comment = inputs[2]?.value.trim() || "";
+            if (from && to) {
+                let line = from + " - " + to;
+                if (comment) line += " # " + comment;
+                lines.push(line);
+            }
+        }
+        return lines.join("\n");
+    }
+
+    // Convert text to UI blocks
+    function textToUiBlocks(container, text) {
+        container.innerHTML = "";
+        const prefix = container.id === "time-blocks" ? "block" : "edit-block";
+        for (const rawLine of text.split("\n")) {
+            const trimmed = rawLine.trim();
+            if (!trimmed) continue;
+            const commentPart = trimmed.includes("#") ? trimmed.substring(trimmed.indexOf("#") + 1).trim() : "";
+            const timePart = trimmed.replace(/#.*$/, "").trim();
+            const dashIdx = timePart.indexOf("-");
+            if (dashIdx === -1) continue;
+            const from = timePart.substring(0, dashIdx).trim();
+            const to = timePart.substring(dashIdx + 1).trim();
+            createBlockRow(container, prefix, from, to, commentPart);
+        }
+        if (container.children.length === 0) {
+            createBlockRow(container, prefix, "", "", "");
+        }
+    }
+
+    function todayISO() {
+        return new Date().toISOString().slice(0, 10);
+    }
+
+    function nowUTC() {
+        return new Date().toISOString();
+    }
+
+    function renderPauseRulesDisplay(rules) {
+        const container = document.getElementById("pause-rules-display");
+        if (!container) return;
+        container.innerHTML = "";
+        const sorted = [...rules].sort((a, b) => a.workedThreshold - b.workedThreshold);
+        for (const rule of sorted) {
+            const li = document.createElement("li");
+            li.innerHTML = `<dfn>&gt;${rule.workedThreshold / 60} hours</dfn>: at least ${rule.requiredPause} min pause required`;
+            container.appendChild(li);
+        }
+    }
+
+    function createPauseRuleRow(container, threshold, pause) {
+        const row = document.createElement("div");
+        row.setAttribute("role", "group");
+
+        const thresholdInput = document.createElement("input");
+        thresholdInput.type = "number";
+        thresholdInput.placeholder = "Min worked";
+        thresholdInput.title = "Threshold: worked minutes";
+        thresholdInput.ariaLabel = "Threshold in minutes";
+        thresholdInput.value = threshold || "";
+        thresholdInput.required = true;
+
+        const pauseInput = document.createElement("input");
+        pauseInput.type = "number";
+        pauseInput.placeholder = "Pause min";
+        pauseInput.title = "Required pause minutes";
+        pauseInput.ariaLabel = "Required pause in minutes";
+        pauseInput.value = pause || "";
+        pauseInput.required = true;
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "btn-sym btn-danger";
+        removeBtn.ariaLabel = "Remove this pause rule";
+        removeBtn.innerHTML = "delete";
+        removeBtn.addEventListener("click", () => {
+            row.remove();
+            if (container.children.length === 1 && container.firstElementChild.classList.contains("pause-rules-grid-header")) {
+                container.innerHTML = "";
+            }
+            const form = document.getElementById("settings-form");
+            if (form) form.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+
+        row.append(thresholdInput, pauseInput, removeBtn);
+        container.appendChild(row);
+    }
+
+    function renderPauseRulesSettings(rules) {
+        const container = document.getElementById("pause-rules-container");
+        if (!container) return;
+        container.innerHTML = "";
+
+        if (rules.length > 0) {
+            const header = document.createElement("div");
+            header.className = "pause-rules-grid-header";
+            header.innerHTML = "<span>Worked ></span><span>Pause</span><span></span>";
+            container.appendChild(header);
+        }
+
+        for (const rule of rules) {
+            createPauseRuleRow(container, rule.workedThreshold, rule.requiredPause);
+        }
+    }
+
+    function readPauseRulesFromSettings() {
+        const container = document.getElementById("pause-rules-container");
+        const rules = [];
+        for (const row of container.children) {
+            const inputs = row.querySelectorAll("input");
+            if (inputs.length < 2) continue;
+            const threshold = parseInt(inputs[0].value, 10);
+            const pause = parseInt(inputs[1].value, 10);
+            if (!isNaN(threshold) && !isNaN(pause)) {
+                rules.push({ workedThreshold: threshold, requiredPause: pause });
+            }
+        }
+        return rules;
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // --- Preview rendering ---
+    function buildPreviewHtml(inputString, settings) {
+        const result = parseInputString(inputString);
+        const parts = [];
+
+        if (result.errors.length > 0) {
+            parts.push("<p><strong>Errors:</strong></p><ul>" +
+                result.errors.map(e => "<li>" + escapeHtml(e) + "</li>").join("") + "</ul>");
+        }
+
+        if (result.minutesWorked > 0 || result.unfinishedFromMin !== null) {
+            if (result.minutesWorked > 0) {
+                parts.push("<p>Worked: <strong>" + toHuman(result.minutesWorked) + "</strong></p>");
+            }
+
+            if (settings.divisibleWarning > 0 && result.minutesWorked % settings.divisibleWarning !== 0) {
+                parts.push("<p><strong>Warning:</strong> Work minutes not divisible by " +
+                    settings.divisibleWarning + ". Maybe a typo?</p>");
+            }
+
+            if (result.minutesPaused > 0) {
+                parts.push("<p>Paused: " + toHuman(result.minutesPaused) + "</p>");
+            } else if (result.minutesWorked > 360) {
+                parts.push("<p><strong>Warning:</strong> No pause recorded.</p>");
+            }
+
+            const pauseRule = getRequiredPause(result.minutesWorked, result.minutesPaused, settings.pauseRules);
+            if (pauseRule) {
+                parts.push("<p><strong>⚠ Pause required:</strong> At least " +
+                    toHuman(pauseRule.requiredPause) + " when working more than " +
+                    toHuman(pauseRule.workedThreshold) + ".</p>");
+            }
+
+            const overtime = result.minutesWorked - settings.targetMinutesPerWorkDay;
+            if (result.minutesWorked > 0) {
+                parts.push("<p>Overtime this day: " + toHuman(overtime) + "</p>");
+            }
+
+            // Show when to stop to meet target
+            if (overtime < 0 && (result.lastTo >= 0 || result.unfinishedFromMin !== null)) {
+                const startTime = result.unfinishedFromMin !== null ? result.unfinishedFromMin : result.lastTo;
+                let targetEnd = startTime + (-overtime);
+                const futureWorked = settings.targetMinutesPerWorkDay;
+                const futurePauseRule = getRequiredPause(futureWorked, result.minutesPaused, settings.pauseRules);
+                if (futurePauseRule) {
+                    const extraPause = futurePauseRule.requiredPause - result.longestConsecutivePause;
+                    if (extraPause > 0) targetEnd += extraPause;
+                }
+                parts.push("<p>Work until <strong>" + formatMinutesAsTime(targetEnd % (24 * 60)) +
+                    "</strong> to meet your daily target.</p>");
+            }
+        }
+
+        return parts.join("") || "<p>Fill in time blocks above to see a preview.</p>";
+    }
+
+    function getCurrentInputText() {
+        const uiMode = document.getElementById("toggle-input-mode").checked;
+        if (uiMode) {
+            return uiBlocksToText(document.getElementById("time-blocks"));
+        }
+        return document.getElementById("entry-text").value;
+    }
+
+    function updatePreview() {
+        const data = loadData();
+        const inputString = getCurrentInputText();
+        document.getElementById("preview-content").innerHTML = buildPreviewHtml(inputString, data.settings);
+
+        data.draft = inputString.trim();
+        const toggle = document.getElementById("toggle-input-mode");
+        if (toggle) data.settings.useVisualEditor = toggle.checked;
+
+        saveData(data);
+    }
+
+    // --- History rendering ---
+    function renderHistory() {
+        const data = loadData();
+        const tbody = document.getElementById("history-body");
+        const searchTerm = (document.getElementById("history-search").value || "").toLowerCase();
+
+        document.getElementById("overtime-display").textContent = toHuman(data.overtimeMinutes);
+
+        tbody.innerHTML = "";
+
+        const filtered = data.workDays
+            .map((day, index) => ({ day, index }))
+            .filter(({ day }) => {
+                if (!searchTerm) return true;
+                return (day.localDate + " " + day.inputString)
+                    .toLowerCase().includes(searchTerm);
+            });
+
+        // Show newest first
+        for (let i = filtered.length - 1; i >= 0; i--) {
+            const { day, index } = filtered[i];
+            const tr = document.createElement("tr");
+
+            const tdDate = document.createElement("td");
+            tdDate.textContent = formatDate(day.localDate);
+            tr.appendChild(tdDate);
+
+            const tdWorked = document.createElement("td");
+            tdWorked.textContent = toHuman(day.minutesWorked);
+            tr.appendChild(tdWorked);
+
+            const tdOvertime = document.createElement("td");
+            const ot = day.minutesWorked - data.settings.targetMinutesPerWorkDay;
+            tdOvertime.textContent = (ot >= 0 ? "+" : "") + ot + " min";
+            tr.appendChild(tdOvertime);
+
+            const tdInput = document.createElement("td");
+            tdInput.textContent = day.inputString.trim().replace(/\n/g, " | ");
+            tr.appendChild(tdInput);
+
+            const tdActions = document.createElement("td");
+            const editBtn = document.createElement("button");
+            editBtn.type = "button";
+            editBtn.className = "btn-sym";
+            editBtn.ariaLabel = "Edit";
+            editBtn.innerHTML = "<span class=\"sym\">edit</span>";
+            editBtn.addEventListener("click", () => openEditDialog(index));
+            tdActions.appendChild(editBtn);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.className = "btn-danger btn-sym";
+            deleteBtn.ariaLabel = "Delete";
+            deleteBtn.innerHTML = "<span class=\"sym\">delete</span>";
+            deleteBtn.addEventListener("click", () => deleteEntry(index));
+            tdActions.appendChild(deleteBtn);
+
+            tr.appendChild(tdActions);
+            tbody.appendChild(tr);
+        }
+    }
+
+    // --- Edit dialog ---
+    function openEditDialog(index) {
+        const data = loadData();
+        const day = data.workDays[index];
+        if (!day) return;
+
+        document.getElementById("edit-index").value = index;
+        document.getElementById("edit-date").value = day.localDate;
+        document.getElementById("edit-input").value = day.inputString;
+
+        // Reset to text mode
+        const toggle = document.getElementById("edit-toggle-input-mode");
+        toggle.checked = false;
+        document.getElementById("edit-text-input-mode").classList.remove("hidden");
+        document.getElementById("edit-ui-input-mode").classList.add("hidden");
+
+        document.getElementById("edit-dialog").showModal();
+    }
+
+    function deleteEntry(index) {
+        if (!confirm("Delete this entry?")) return;
+        const data = loadData();
+        data.workDays.splice(index, 1);
+        recalculateOvertime(data);
+        saveData(data);
+        renderHistory();
+    }
+
+    // --- Init ---
+    function init() {
+        const data = loadData();
+        const s = data.settings;
+
+        // Populate settings form
+        document.getElementById("target-minutes").value = s.targetMinutesPerWorkDay;
+        document.getElementById("initial-overtime").value = s.initialOvertime;
+        document.getElementById("auto-export-interval").value = s.autoExportInterval;
+        document.getElementById("divisible-warning").value = s.divisibleWarning;
+
+        document.getElementById("entry-date").value = todayISO();
+
+        if (data.draft) {
+            document.getElementById("entry-text").value = data.draft;
+        }
+
+        const updateInsertTimeButtonStatus = (warning) => {
+            const mainBtn = document.getElementById("insert-time-btn");
+            const editBtn = document.getElementById("edit-insert-time-btn");
+            const roundingDisabled = warning === 0;
+            mainBtn.disabled = false;
+            editBtn.disabled = false;
+            const title = roundingDisabled ? "Insert exact current time" : `Insert current time rounded to ${warning} min`;
+            mainBtn.title = title;
+            editBtn.title = title;
         };
 
-        // --- Persistence format (single object in LocalStorage) ---
-        // {
-        //   "settings": { ... },
-        //   "workDays": [
-        //     {
-        //       "inputString": "9:00 - 12:30 # email\n13:00 - 17:30 # ticket-42",
-        //       "minutesWorked": 480,
-        //       "localDate": "2025-01-15",
-        //       "dateTimeUTCWhenAdded": "2025-01-15T16:30:00Z"
-        //     }
-        //   ],
-        //   "overtimeMinutes": 0,
-        //   "draft": "8:00 - 12:00"
-        // }
+        updateInsertTimeButtonStatus(s.divisibleWarning);
+        renderPauseRulesDisplay(s.pauseRules);
+        renderPauseRulesSettings(s.pauseRules);
 
-        function loadData() {
-            const defaults = {
-                settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
-                workDays: [],
-                overtimeMinutes: 0,
-                draft: ""
-            };
-            try {
-                const stored = localStorage.getItem(STORAGE_KEY);
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    const settings = { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) };
+        renderHistory();
 
-                    // Ensure all settings are valid numbers or fall back to defaults
-                    // (JSON.stringify converts NaN to null, so we must handle null)
-                    for (const key in DEFAULT_SETTINGS) {
-                        if (settings[key] === null || settings[key] === undefined) {
-                            settings[key] = DEFAULT_SETTINGS[key];
-                        }
-                    }
-
-                    return {
-                        settings: settings,
-                        workDays: Array.isArray(parsed.workDays) ? parsed.workDays : [],
-                        overtimeMinutes: typeof parsed.overtimeMinutes === "number" ? parsed.overtimeMinutes : 0,
-                        draft: typeof parsed.draft === "string" ? parsed.draft : ""
-                    };
-                }
-            } catch (e) { /* use defaults */ }
-            return defaults;
+        // --- Insert Current Time ---
+        function getRoundedCurrentTime(divisible) {
+            const now = new Date();
+            const totalMinutes = now.getHours() * 60 + now.getMinutes();
+            if (!divisible || divisible <= 0) return formatMinutesAsTime(totalMinutes);
+            const roundedMinutes = Math.round(totalMinutes / divisible) * divisible;
+            return formatMinutesAsTime(roundedMinutes);
         }
 
-        function saveData(data) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data, null, 2));
-        }
-
-        function formatDate(isoStr) {
-            const parts = isoStr.split("-");
-            if (parts.length !== 3) return isoStr;
-            const date = new Date(parts[0], parts[1] - 1, parts[2]);
-            return date.toLocaleDateString(undefined, {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-                year: "numeric"
-            });
-        }
-
-        // --- Time parsing (format: "H" with optional ":mm") ---
-        function parseTime(str) {
-            const s = str.trim();
-            const match = s.match(/^(\d{1,2})(?::(\d{2}))?$/);
-            if (!match) return null;
-            const h = parseInt(match[1], 10);
-            const m = match[2] ? parseInt(match[2], 10) : 0;
-            if (h < 0 || h > 23 || m < 0 || m > 59) return null;
-            return h * 60 + m;
-        }
-
-        function formatMinutesAsTime(totalMinutes) {
-            const h = Math.floor(totalMinutes / 60);
-            const m = totalMinutes % 60;
-            return h + ":" + String(m).padStart(2, "0");
-        }
-
-        // --- toHuman: human-readable duration ---
-        function toHuman(minutes) {
-            if (minutes === 0) return "0 seconds";
-            const abs = Math.abs(minutes);
-            const sign = minutes < 0 ? "-" : "";
-            if (abs < 60) return sign + abs + (abs === 1 ? " minute" : " minutes");
-            const fullHours = Math.floor(abs / 60);
-            const remMinutes = abs % 60;
-            const parts = [fullHours + (fullHours === 1 ? " hour" : " hours")];
-            if (remMinutes > 0) parts.push(remMinutes + (remMinutes === 1 ? " minute" : " minutes"));
-            const humanTime = sign + parts.join(" and ");
-            const decimalHours = (abs / 60).toFixed(2).replace(/\.?0+$/, "");
-            const mainTime = sign + decimalHours + (decimalHours === "1" ? " hour" : " hours");
-            return humanTime === mainTime ? humanTime : humanTime + " (= " + mainTime + ")";
-        }
-
-        // --- Parse input string into work data ---
-        // About comments: start with #, in English, use / to separate tasks
-        function parseInputString(inputString) {
-            let minutesWorked = 0;
-            let minutesPaused = 0;
-            let longestConsecutivePause = 0;
-            let previousTo = -1;
-            let lastTo = -1;
-            let unfinishedFromMin = null;
-            const errors = [];
-
-            for (const rawLine of inputString.split("\n")) {
-                const line = rawLine.trim().replace(/#.*$/, "").trim();
-                if (!line) continue;
-
-                const dashIndex = line.indexOf("-");
-                if (dashIndex === -1) {
-                    errors.push("Line missing '-': " + rawLine.trim());
-                    continue;
-                }
-
-                const fromStr = line.substring(0, dashIndex);
-                const toStr = line.substring(dashIndex + 1);
-
-                const fromMin = parseTime(fromStr);
-                const toMin = parseTime(toStr);
-
-                if (fromMin === null) {
-                    errors.push("Invalid from-time: " + fromStr.trim());
-                    continue;
-                }
-
-                const pauseDur = (previousTo >= 0) ? fromMin - previousTo : 0;
-                if (previousTo >= 0 && pauseDur < 0) {
-                    errors.push("Overlapping time blocks: " + line);
-                    continue;
-                }
-
-                // If we have a valid fromMin and no overlap, this is our "current" start point
-                unfinishedFromMin = fromMin;
-
-                if (previousTo >= 0) {
-                    minutesPaused += pauseDur;
-                    if (pauseDur > longestConsecutivePause) {
-                        longestConsecutivePause = pauseDur;
-                    }
-                }
-
-                if (toMin === null) {
-                    errors.push("Invalid to-time: " + toStr.trim());
-                    continue;
-                }
-
-                if (toMin < fromMin) {
-                    errors.push("End time before start time: " + line);
-                    unfinishedFromMin = null;
-                    continue;
-                }
-
-                const dur = toMin - fromMin;
-                minutesWorked += dur;
-                previousTo = toMin;
-                lastTo = toMin;
-                unfinishedFromMin = null;
-            }
-
-            return { minutesWorked, minutesPaused, longestConsecutivePause, lastTo, unfinishedFromMin, errors };
-        }
-
-        // --- Pause check ---
-        function getRequiredPause(minutesWorked, minutesPaused, rules) {
-            if (!rules) return null;
-            // Sort by threshold descending to check stricter rules first
-            const sortedRules = [...rules].sort((a, b) => b.workedThreshold - a.workedThreshold);
-            for (const rule of sortedRules) {
-                if (minutesWorked > rule.workedThreshold && minutesPaused < rule.requiredPause) {
-                    return rule;
-                }
-            }
-            return null;
-        }
-
-        // --- Recalculate overtime from scratch ---
-        function recalculateOvertime(data) {
-            let overtime = data.settings.initialOvertime;
-            for (const day of data.workDays) {
-                overtime += (day.minutesWorked - data.settings.targetMinutesPerWorkDay);
-            }
-            data.overtimeMinutes = overtime;
-        }
-
-        function triggerExport() {
+        function handleInsertTime(targetId, toggleId, containerId) {
             const data = loadData();
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "timetable.json";
-            a.click();
-            URL.revokeObjectURL(url);
-        }
+            const timeStr = getRoundedCurrentTime(data.settings.divisibleWarning);
+            if (!timeStr) return;
 
-        // --- UI-based time block editor ---
-        function createBlockRow(container, prefix, fromVal, toVal, commentVal) {
-            const idx = container.children.length;
-            const row = document.createElement("div");
-            row.setAttribute("role", "group");
-
-            const fromId = prefix + "-from-" + idx;
-            const toId = prefix + "-to-" + idx;
-            const commentId = prefix + "-comment-" + idx;
-
-            const fromLabel = document.createElement("label");
-            fromLabel.setAttribute("for", fromId);
-            fromLabel.textContent = "From";
-            const fromInput = document.createElement("input");
-            fromInput.type = "text";
-            fromInput.id = fromId;
-            fromInput.placeholder = "9:00";
-            fromInput.required = true;
-            fromInput.value = fromVal || "";
-            fromLabel.appendChild(fromInput);
-
-            const toLabel = document.createElement("label");
-            toLabel.setAttribute("for", toId);
-            toLabel.textContent = "To";
-            const toInput = document.createElement("input");
-            toInput.type = "text";
-            toInput.id = toId;
-            toInput.placeholder = "17:00";
-            toInput.required = true;
-            toInput.value = toVal || "";
-            toLabel.appendChild(toInput);
-
-            const commentLabel = document.createElement("label");
-            commentLabel.setAttribute("for", commentId);
-            commentLabel.textContent = "Comment";
-            const commentInput = document.createElement("input");
-            commentInput.type = "text";
-            commentInput.id = commentId;
-            commentInput.placeholder = "task description";
-            commentInput.value = commentVal || "";
-            commentLabel.appendChild(commentInput);
-
-            const removeBtn = document.createElement("button");
-            removeBtn.type = "button";
-            removeBtn.className = "btn-sym btn-danger";
-            removeBtn.innerHTML = "delete";
-            removeBtn.ariaLabel = "Remove this time block";
-            removeBtn.addEventListener("click", () => {
-                row.remove();
-                if (prefix === "block") updatePreview();
-            });
-
-            row.append(fromLabel, toLabel, commentLabel, removeBtn);
-            container.appendChild(row);
-        }
-
-        // Convert UI blocks to text
-        function uiBlocksToText(container) {
-            const lines = [];
-            for (const row of container.querySelectorAll("[role='group']")) {
-                const inputs = row.querySelectorAll("input");
-                const from = inputs[0]?.value.trim() || "";
-                const to = inputs[1]?.value.trim() || "";
-                const comment = inputs[2]?.value.trim() || "";
-                if (from && to) {
-                    let line = from + " - " + to;
-                    if (comment) line += " # " + comment;
-                    lines.push(line);
+            const useUi = document.getElementById(toggleId).checked;
+            if (useUi) {
+                const container = document.getElementById(containerId);
+                const prefix = containerId === "time-blocks" ? "block" : "edit-block";
+                // If last row has content, add new. If empty, fill it.
+                const lastRow = container.querySelector("[role='group']:last-child");
+                const inputs = lastRow ? lastRow.querySelectorAll("input") : [];
+                if (inputs.length > 0 && (!inputs[0].value || !inputs[1].value)) {
+                    if (!inputs[0].value) inputs[0].value = timeStr;
+                    else if (!inputs[1].value) inputs[1].value = timeStr;
+                } else {
+                    createBlockRow(container, prefix, timeStr, "", "");
                 }
+            } else {
+                const textarea = document.getElementById(targetId);
+                const val = textarea.value.trim();
+                if (val && !val.endsWith("\n")) textarea.value += "\n";
+                textarea.value += timeStr + " - ";
+                textarea.focus();
             }
-            return lines.join("\n");
+            updatePreview();
         }
 
-        // Convert text to UI blocks
-        function textToUiBlocks(container, text) {
-            container.innerHTML = "";
-            const prefix = container.id === "time-blocks" ? "block" : "edit-block";
-            for (const rawLine of text.split("\n")) {
-                const trimmed = rawLine.trim();
-                if (!trimmed) continue;
-                const commentPart = trimmed.includes("#") ? trimmed.substring(trimmed.indexOf("#") + 1).trim() : "";
-                const timePart = trimmed.replace(/#.*$/, "").trim();
-                const dashIdx = timePart.indexOf("-");
-                if (dashIdx === -1) continue;
-                const from = timePart.substring(0, dashIdx).trim();
-                const to = timePart.substring(dashIdx + 1).trim();
-                createBlockRow(container, prefix, from, to, commentPart);
+        document.getElementById("insert-time-btn").addEventListener("click", () => {
+            handleInsertTime("entry-text", "toggle-input-mode", "time-blocks");
+        });
+
+        document.getElementById("edit-insert-time-btn").addEventListener("click", () => {
+            handleInsertTime("edit-input", "edit-toggle-input-mode", "edit-time-blocks");
+        });
+
+        // --- Text input live preview ---
+        document.getElementById("entry-text").addEventListener("input", updatePreview);
+
+        // --- Input mode toggle (main form) ---
+        document.getElementById("toggle-input-mode").addEventListener("change", (e) => {
+            const useUi = e.target.checked;
+            const textMode = document.getElementById("text-input-mode");
+            const uiMode = document.getElementById("ui-input-mode");
+            const blocksContainer = document.getElementById("time-blocks");
+
+            if (useUi) {
+                // Convert text to UI blocks
+                textToUiBlocks(blocksContainer, document.getElementById("entry-text").value);
+                textMode.classList.add("hidden");
+                uiMode.classList.remove("hidden");
+                // Listen for changes in UI blocks
+                blocksContainer.addEventListener("input", updatePreview);
+            } else {
+                // Convert UI blocks back to text
+                document.getElementById("entry-text").value = uiBlocksToText(blocksContainer);
+                uiMode.classList.add("hidden");
+                textMode.classList.remove("hidden");
             }
-            if (container.children.length === 0) {
-                createBlockRow(container, prefix, "", "", "");
-            }
+            updatePreview();
+        });
+
+        if (data.settings.useVisualEditor) {
+            const toggle = document.getElementById("toggle-input-mode");
+            toggle.checked = true;
+            toggle.dispatchEvent(new Event("change"));
+        } else {
+            updatePreview();
         }
 
-        function todayISO() {
-            return new Date().toISOString().slice(0, 10);
-        }
 
-        function nowUTC() {
-            return new Date().toISOString();
-        }
+        document.getElementById("add-block-btn").addEventListener("click", () => {
+            createBlockRow(document.getElementById("time-blocks"), "block", "", "", "");
+            updatePreview();
+        });
 
-        function renderPauseRulesDisplay(rules) {
-            const container = document.getElementById("pause-rules-display");
-            if (!container) return;
-            container.innerHTML = "";
-            const sorted = [...rules].sort((a, b) => a.workedThreshold - b.workedThreshold);
-            for (const rule of sorted) {
-                const li = document.createElement("li");
-                li.innerHTML = `<dfn>&gt;${rule.workedThreshold / 60} hours</dfn>: at least ${rule.requiredPause} min pause required`;
-                container.appendChild(li);
-            }
-        }
-
-        function createPauseRuleRow(container, threshold, pause) {
-            const row = document.createElement("div");
-            row.setAttribute("role", "group");
-
-            const thresholdInput = document.createElement("input");
-            thresholdInput.type = "number";
-            thresholdInput.placeholder = "Min worked";
-            thresholdInput.title = "Threshold: worked minutes";
-            thresholdInput.ariaLabel = "Threshold in minutes";
-            thresholdInput.value = threshold || "";
-            thresholdInput.required = true;
-
-            const pauseInput = document.createElement("input");
-            pauseInput.type = "number";
-            pauseInput.placeholder = "Pause min";
-            pauseInput.title = "Required pause minutes";
-            pauseInput.ariaLabel = "Required pause in minutes";
-            pauseInput.value = pause || "";
-            pauseInput.required = true;
-
-            const removeBtn = document.createElement("button");
-            removeBtn.type = "button";
-            removeBtn.className = "btn-sym btn-danger";
-            removeBtn.ariaLabel = "Remove this pause rule";
-            removeBtn.innerHTML = "delete";
-            removeBtn.addEventListener("click", () => {
-                row.remove();
-                if (container.children.length === 1 && container.firstElementChild.classList.contains("pause-rules-grid-header")) {
-                    container.innerHTML = "";
-                }
-                const form = document.getElementById("settings-form");
-                if (form) form.dispatchEvent(new Event("input", { bubbles: true }));
-            });
-
-            row.append(thresholdInput, pauseInput, removeBtn);
-            container.appendChild(row);
-        }
-
-        function renderPauseRulesSettings(rules) {
+        document.getElementById("add-pause-rule-btn").addEventListener("click", () => {
             const container = document.getElementById("pause-rules-container");
-            if (!container) return;
-            container.innerHTML = "";
-
-            if (rules.length > 0) {
+            if (container.children.length === 0) {
                 const header = document.createElement("div");
                 header.className = "pause-rules-grid-header";
                 header.innerHTML = "<span>Worked ></span><span>Pause</span><span></span>";
                 container.appendChild(header);
             }
+            createPauseRuleRow(container, "", "");
+            const form = document.getElementById("settings-form");
+            if (form) form.dispatchEvent(new Event("input", { bubbles: true }));
+        });
 
-            for (const rule of rules) {
-                createPauseRuleRow(container, rule.workedThreshold, rule.requiredPause);
+        // --- Input mode toggle (edit dialog) ---
+        document.getElementById("edit-toggle-input-mode").addEventListener("change", (e) => {
+            const useUi = e.target.checked;
+            const textMode = document.getElementById("edit-text-input-mode");
+            const uiMode = document.getElementById("edit-ui-input-mode");
+            const blocksContainer = document.getElementById("edit-time-blocks");
+
+            if (useUi) {
+                textToUiBlocks(blocksContainer, document.getElementById("edit-input").value);
+                textMode.classList.add("hidden");
+                uiMode.classList.remove("hidden");
+            } else {
+                document.getElementById("edit-input").value = uiBlocksToText(blocksContainer);
+                uiMode.classList.add("hidden");
+                textMode.classList.remove("hidden");
             }
-        }
+        });
 
-        function readPauseRulesFromSettings() {
-            const container = document.getElementById("pause-rules-container");
-            const rules = [];
-            for (const row of container.children) {
-                const inputs = row.querySelectorAll("input");
-                if (inputs.length < 2) continue;
-                const threshold = parseInt(inputs[0].value, 10);
-                const pause = parseInt(inputs[1].value, 10);
-                if (!isNaN(threshold) && !isNaN(pause)) {
-                    rules.push({ workedThreshold: threshold, requiredPause: pause });
-                }
+        document.getElementById("edit-add-block-btn").addEventListener("click", () => {
+            createBlockRow(document.getElementById("edit-time-blocks"), "edit-block", "", "", "");
+        });
+
+        // --- Entry form submit ---
+        document.getElementById("entry-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const uiMode = document.getElementById("toggle-input-mode").checked;
+            let inputString;
+            if (uiMode) {
+                inputString = uiBlocksToText(document.getElementById("time-blocks"));
+            } else {
+                inputString = document.getElementById("entry-text").value.trim();
             }
-            return rules;
-        }
 
-        function escapeHtml(str) {
-            const div = document.createElement("div");
-            div.textContent = str;
-            return div.innerHTML;
-        }
+            if (!inputString) return;
 
-        // --- Preview rendering ---
-        function buildPreviewHtml(inputString, settings) {
+            const date = document.getElementById("entry-date").value;
             const result = parseInputString(inputString);
-            const parts = [];
 
             if (result.errors.length > 0) {
-                parts.push("<p><strong>Errors:</strong></p><ul>" +
-                    result.errors.map(e => "<li>" + escapeHtml(e) + "</li>").join("") + "</ul>");
+                alert("Fix errors before saving:\n" + result.errors.join("\n"));
+                return;
             }
 
-            if (result.minutesWorked > 0 || result.unfinishedFromMin !== null) {
-                if (result.minutesWorked > 0) {
-                    parts.push("<p>Worked: <strong>" + toHuman(result.minutesWorked) + "</strong></p>");
-                }
+            if (result.minutesWorked <= 0) {
+                alert("No work time calculated.");
+                return;
+            }
 
-                if (settings.divisibleWarning > 0 && result.minutesWorked % settings.divisibleWarning !== 0) {
-                    parts.push("<p><strong>Warning:</strong> Work minutes not divisible by " +
-                        settings.divisibleWarning + ". Maybe a typo?</p>");
-                }
+            const data = loadData();
 
-                if (result.minutesPaused > 0) {
-                    parts.push("<p>Paused: " + toHuman(result.minutesPaused) + "</p>");
-                } else if (result.minutesWorked > 360) {
-                    parts.push("<p><strong>Warning:</strong> No pause recorded.</p>");
-                }
-
-                const pauseRule = getRequiredPause(result.minutesWorked, result.minutesPaused, settings.pauseRules);
-                if (pauseRule) {
-                    parts.push("<p><strong>⚠ Pause required:</strong> At least " +
-                        toHuman(pauseRule.requiredPause) + " when working more than " +
-                        toHuman(pauseRule.workedThreshold) + ".</p>");
-                }
-
-                const overtime = result.minutesWorked - settings.targetMinutesPerWorkDay;
-                if (result.minutesWorked > 0) {
-                    parts.push("<p>Overtime this day: " + toHuman(overtime) + "</p>");
-                }
-
-                // Show when to stop to meet target
-                if (overtime < 0 && (result.lastTo >= 0 || result.unfinishedFromMin !== null)) {
-                    const startTime = result.unfinishedFromMin !== null ? result.unfinishedFromMin : result.lastTo;
-                    let targetEnd = startTime + (-overtime);
-                    const futureWorked = settings.targetMinutesPerWorkDay;
-                    const futurePauseRule = getRequiredPause(futureWorked, result.minutesPaused, settings.pauseRules);
-                    if (futurePauseRule) {
-                        const extraPause = futurePauseRule.requiredPause - result.longestConsecutivePause;
-                        if (extraPause > 0) targetEnd += extraPause;
-                    }
-                    parts.push("<p>Work until <strong>" + formatMinutesAsTime(targetEnd % (24 * 60)) +
-                        "</strong> to meet your daily target.</p>");
+            if (result.minutesWorked % data.settings.divisibleWarning !== 0) {
+                if (!confirm("Work minutes (" + result.minutesWorked +
+                    ") are not divisible by " + data.settings.divisibleWarning +
+                    ". Save anyway?")) {
+                    return;
                 }
             }
 
-            return parts.join("") || "<p>Fill in time blocks above to see a preview.</p>";
-        }
 
-        function getCurrentInputText() {
-            const uiMode = document.getElementById("toggle-input-mode").checked;
-            if (uiMode) {
-                return uiBlocksToText(document.getElementById("time-blocks"));
+            // fail if already exists in timetable
+            const existing = data.workDays.findIndex(d => d.localDate === date);
+            if (existing >= 0) {
+                if (!confirm("An entry for " + date + " already exists. Replace it?")) {
+                    return;
+                }
+                data.workDays.splice(existing, 1);
             }
-            return document.getElementById("entry-text").value;
-        }
 
-        function updatePreview() {
-            const data = loadData();
-            const inputString = getCurrentInputText();
-            document.getElementById("preview-content").innerHTML = buildPreviewHtml(inputString, data.settings);
+            data.workDays.push({
+                inputString: inputString,
+                minutesWorked: result.minutesWorked,
+                localDate: date,
+                dateTimeUTCWhenAdded: nowUTC(),
+            });
 
-            data.draft = inputString.trim();
-            const toggle = document.getElementById("toggle-input-mode");
-            if (toggle) data.settings.useVisualEditor = toggle.checked;
-
-            saveData(data);
-        }
-
-        // --- History rendering ---
-        function renderHistory() {
-            const data = loadData();
-            const tbody = document.getElementById("history-body");
-            const searchTerm = (document.getElementById("history-search").value || "").toLowerCase();
-
-            document.getElementById("overtime-display").textContent = toHuman(data.overtimeMinutes);
-
-            tbody.innerHTML = "";
-
-            const filtered = data.workDays
-                .map((day, index) => ({ day, index }))
-                .filter(({ day }) => {
-                    if (!searchTerm) return true;
-                    return (day.localDate + " " + day.inputString)
-                        .toLowerCase().includes(searchTerm);
-                });
-
-            // Show newest first
-            for (let i = filtered.length - 1; i >= 0; i--) {
-                const { day, index } = filtered[i];
-                const tr = document.createElement("tr");
-
-                const tdDate = document.createElement("td");
-                tdDate.textContent = formatDate(day.localDate);
-                tr.appendChild(tdDate);
-
-                const tdWorked = document.createElement("td");
-                tdWorked.textContent = toHuman(day.minutesWorked);
-                tr.appendChild(tdWorked);
-
-                const tdOvertime = document.createElement("td");
-                const ot = day.minutesWorked - data.settings.targetMinutesPerWorkDay;
-                tdOvertime.textContent = (ot >= 0 ? "+" : "") + ot + " min";
-                tr.appendChild(tdOvertime);
-
-                const tdInput = document.createElement("td");
-                tdInput.textContent = day.inputString.trim().replace(/\n/g, " | ");
-                tr.appendChild(tdInput);
-
-                const tdActions = document.createElement("td");
-                const editBtn = document.createElement("button");
-                editBtn.type = "button";
-                editBtn.className = "btn-sym";
-                editBtn.ariaLabel = "Edit";
-                editBtn.innerHTML = "<span class=\"sym\">edit</span>";
-                editBtn.addEventListener("click", () => openEditDialog(index));
-                tdActions.appendChild(editBtn);
-
-                const deleteBtn = document.createElement("button");
-                deleteBtn.type = "button";
-                deleteBtn.className = "btn-danger btn-sym";
-                deleteBtn.ariaLabel = "Delete";
-                deleteBtn.innerHTML = "<span class=\"sym\">delete</span>";
-                deleteBtn.addEventListener("click", () => deleteEntry(index));
-                tdActions.appendChild(deleteBtn);
-
-                tr.appendChild(tdActions);
-                tbody.appendChild(tr);
-            }
-        }
-
-        // --- Edit dialog ---
-        function openEditDialog(index) {
-            const data = loadData();
-            const day = data.workDays[index];
-            if (!day) return;
-
-            document.getElementById("edit-index").value = index;
-            document.getElementById("edit-date").value = day.localDate;
-            document.getElementById("edit-input").value = day.inputString;
-
-            // Reset to text mode
-            const toggle = document.getElementById("edit-toggle-input-mode");
-            toggle.checked = false;
-            document.getElementById("edit-text-input-mode").classList.remove("hidden");
-            document.getElementById("edit-ui-input-mode").classList.add("hidden");
-
-            document.getElementById("edit-dialog").showModal();
-        }
-
-        function deleteEntry(index) {
-            if (!confirm("Delete this entry?")) return;
-            const data = loadData();
-            data.workDays.splice(index, 1);
+            data.workDays.sort((a, b) => a.localDate.localeCompare(b.localDate));
             recalculateOvertime(data);
             saveData(data);
             renderHistory();
-        }
 
-        // --- Init ---
-        function init() {
-            const data = loadData();
-            const s = data.settings;
-
-            // Populate settings form
-            document.getElementById("target-minutes").value = s.targetMinutesPerWorkDay;
-            document.getElementById("initial-overtime").value = s.initialOvertime;
-            document.getElementById("auto-export-interval").value = s.autoExportInterval;
-            document.getElementById("divisible-warning").value = s.divisibleWarning;
-
-            document.getElementById("entry-date").value = todayISO();
-
-            if (data.draft) {
-                document.getElementById("entry-text").value = data.draft;
+            if (data.settings.autoExportInterval > 0 && data.workDays.length % data.settings.autoExportInterval === 0) {
+                triggerExport();
             }
 
-            const updateInsertTimeButtonStatus = (warning) => {
-                const mainBtn = document.getElementById("insert-time-btn");
-                const editBtn = document.getElementById("edit-insert-time-btn");
-                const roundingDisabled = warning === 0;
-                mainBtn.disabled = false;
-                editBtn.disabled = false;
-                const title = roundingDisabled ? "Insert exact current time" : `Insert current time rounded to ${warning} min`;
-                mainBtn.title = title;
-                editBtn.title = title;
+            // Reset form
+            document.getElementById("entry-form").reset();
+            document.getElementById("entry-date").value = todayISO();
+            document.getElementById("toggle-input-mode").checked = false;
+            document.getElementById("text-input-mode").classList.remove("hidden");
+            document.getElementById("ui-input-mode").classList.add("hidden");
+            document.getElementById("time-blocks").innerHTML = "";
+            updatePreview();
+        });
+
+        // --- Settings form ---
+        function saveSettingsFromUI(alertUser = false) {
+            const data = loadData();
+            const targetVal = parseInt(document.getElementById("target-minutes").value, 10);
+            const initialVal = parseInt(document.getElementById("initial-overtime").value, 10);
+            const exportVal = parseInt(document.getElementById("auto-export-interval").value, 10);
+            const warningVal = parseInt(document.getElementById("divisible-warning").value, 10);
+
+            data.settings = {
+                targetMinutesPerWorkDay: !isNaN(targetVal) ? targetVal : DEFAULT_SETTINGS.targetMinutesPerWorkDay,
+                initialOvertime: !isNaN(initialVal) ? initialVal : 0,
+                autoExportInterval: !isNaN(exportVal) ? exportVal : 5,
+                divisibleWarning: !isNaN(warningVal) ? warningVal : 15,
+                useVisualEditor: document.getElementById("toggle-input-mode").checked,
+                pauseRules: readPauseRulesFromSettings(),
             };
 
-            updateInsertTimeButtonStatus(s.divisibleWarning);
-            renderPauseRulesDisplay(s.pauseRules);
-            renderPauseRulesSettings(s.pauseRules);
-
+            recalculateOvertime(data);
+            saveData(data);
             renderHistory();
+            renderPauseRulesDisplay(data.settings.pauseRules);
+            updatePreview();
+            updateInsertTimeButtonStatus(data.settings.divisibleWarning);
+            if (alertUser) alert("Settings saved.");
+        }
 
-            // --- Insert Current Time ---
-            function getRoundedCurrentTime(divisible) {
-                const now = new Date();
-                const totalMinutes = now.getHours() * 60 + now.getMinutes();
-                if (!divisible || divisible <= 0) return formatMinutesAsTime(totalMinutes);
-                const roundedMinutes = Math.round(totalMinutes / divisible) * divisible;
-                return formatMinutesAsTime(roundedMinutes);
-            }
+        document.getElementById("settings-form").addEventListener("submit", (e) => {
+            e.preventDefault();
+            saveSettingsFromUI(true);
+        });
 
-            function handleInsertTime(targetId, toggleId, containerId) {
-                const data = loadData();
-                const timeStr = getRoundedCurrentTime(data.settings.divisibleWarning);
-                if (!timeStr) return;
+        document.getElementById("settings-form").addEventListener("input", () => {
+            saveSettingsFromUI(false);
+        });
 
-                const useUi = document.getElementById(toggleId).checked;
-                if (useUi) {
-                    const container = document.getElementById(containerId);
-                    const prefix = containerId === "time-blocks" ? "block" : "edit-block";
-                    // If last row has content, add new. If empty, fill it.
-                    const lastRow = container.querySelector("[role='group']:last-child");
-                    const inputs = lastRow ? lastRow.querySelectorAll("input") : [];
-                    if (inputs.length > 0 && (!inputs[0].value || !inputs[1].value)) {
-                        if (!inputs[0].value) inputs[0].value = timeStr;
-                        else if (!inputs[1].value) inputs[1].value = timeStr;
-                    } else {
-                        createBlockRow(container, prefix, timeStr, "", "");
-                    }
-                } else {
-                    const textarea = document.getElementById(targetId);
-                    const val = textarea.value.trim();
-                    if (val && !val.endsWith("\n")) textarea.value += "\n";
-                    textarea.value += timeStr + " - ";
-                    textarea.focus();
-                }
-                updatePreview();
-            }
+        document.getElementById("settings-form").addEventListener("reset", () => {
+            setTimeout(() => {
+                const s = DEFAULT_SETTINGS;
+                document.getElementById("target-minutes").value = s.targetMinutesPerWorkDay;
+                document.getElementById("initial-overtime").value = s.initialOvertime;
+                document.getElementById("auto-export-interval").value = s.autoExportInterval;
+                document.getElementById("divisible-warning").value = s.divisibleWarning;
+                renderPauseRulesSettings(s.pauseRules);
+            }, 0);
+        });
 
-            document.getElementById("insert-time-btn").addEventListener("click", () => {
-                handleInsertTime("entry-text", "toggle-input-mode", "time-blocks");
-            });
+        // --- History search ---
+        document.getElementById("history-search").addEventListener("input", renderHistory);
 
-            document.getElementById("edit-insert-time-btn").addEventListener("click", () => {
-                handleInsertTime("edit-input", "edit-toggle-input-mode", "edit-time-blocks");
-            });
+        // --- Edit dialog ---
+        const editDialog = document.getElementById("edit-dialog");
+        editDialog.addEventListener("click", (e) => {
+            if (e.target.matches("[data-action='cancel']")) editDialog.close();
+        });
 
-            // --- Text input live preview ---
-            document.getElementById("entry-text").addEventListener("input", updatePreview);
+        document.getElementById("edit-form").addEventListener("submit", (e) => {
+            e.preventDefault();
+            const index = parseInt(document.getElementById("edit-index").value, 10);
+            const date = document.getElementById("edit-date").value;
 
-            // --- Input mode toggle (main form) ---
-            document.getElementById("toggle-input-mode").addEventListener("change", (e) => {
-                const useUi = e.target.checked;
-                const textMode = document.getElementById("text-input-mode");
-                const uiMode = document.getElementById("ui-input-mode");
-                const blocksContainer = document.getElementById("time-blocks");
-
-                if (useUi) {
-                    // Convert text to UI blocks
-                    textToUiBlocks(blocksContainer, document.getElementById("entry-text").value);
-                    textMode.classList.add("hidden");
-                    uiMode.classList.remove("hidden");
-                    // Listen for changes in UI blocks
-                    blocksContainer.addEventListener("input", updatePreview);
-                } else {
-                    // Convert UI blocks back to text
-                    document.getElementById("entry-text").value = uiBlocksToText(blocksContainer);
-                    uiMode.classList.add("hidden");
-                    textMode.classList.remove("hidden");
-                }
-                updatePreview();
-            });
-
-            if (data.settings.useVisualEditor) {
-                const toggle = document.getElementById("toggle-input-mode");
-                toggle.checked = true;
-                toggle.dispatchEvent(new Event("change"));
+            const editUiMode = document.getElementById("edit-toggle-input-mode").checked;
+            let inputString;
+            if (editUiMode) {
+                inputString = uiBlocksToText(document.getElementById("edit-time-blocks"));
             } else {
-                updatePreview();
+                inputString = document.getElementById("edit-input").value.trim();
             }
 
+            const result = parseInputString(inputString);
+            if (result.errors.length > 0) {
+                alert("Fix errors:\n" + result.errors.join("\n"));
+                return;
+            }
 
-            document.getElementById("add-block-btn").addEventListener("click", () => {
-                createBlockRow(document.getElementById("time-blocks"), "block", "", "", "");
-                updatePreview();
-            });
+            const data = loadData();
+            if (!data.workDays[index]) return;
 
-            document.getElementById("add-pause-rule-btn").addEventListener("click", () => {
-                const container = document.getElementById("pause-rules-container");
-                if (container.children.length === 0) {
-                    const header = document.createElement("div");
-                    header.className = "pause-rules-grid-header";
-                    header.innerHTML = "<span>Worked ></span><span>Pause</span><span></span>";
-                    container.appendChild(header);
-                }
-                createPauseRuleRow(container, "", "");
-                const form = document.getElementById("settings-form");
-                if (form) form.dispatchEvent(new Event("input", { bubbles: true }));
-            });
+            data.workDays[index] = {
+                inputString: inputString,
+                minutesWorked: result.minutesWorked,
+                localDate: date,
+                dateTimeUTCWhenAdded: data.workDays[index].dateTimeUTCWhenAdded,
+            };
 
-            // --- Input mode toggle (edit dialog) ---
-            document.getElementById("edit-toggle-input-mode").addEventListener("change", (e) => {
-                const useUi = e.target.checked;
-                const textMode = document.getElementById("edit-text-input-mode");
-                const uiMode = document.getElementById("edit-ui-input-mode");
-                const blocksContainer = document.getElementById("edit-time-blocks");
-
-                if (useUi) {
-                    textToUiBlocks(blocksContainer, document.getElementById("edit-input").value);
-                    textMode.classList.add("hidden");
-                    uiMode.classList.remove("hidden");
-                } else {
-                    document.getElementById("edit-input").value = uiBlocksToText(blocksContainer);
-                    uiMode.classList.add("hidden");
-                    textMode.classList.remove("hidden");
-                }
-            });
-
-            document.getElementById("edit-add-block-btn").addEventListener("click", () => {
-                createBlockRow(document.getElementById("edit-time-blocks"), "edit-block", "", "", "");
-            });
-
-            // --- Entry form submit ---
-            document.getElementById("entry-form").addEventListener("submit", async (e) => {
-                e.preventDefault();
-
-                const uiMode = document.getElementById("toggle-input-mode").checked;
-                let inputString;
-                if (uiMode) {
-                    inputString = uiBlocksToText(document.getElementById("time-blocks"));
-                } else {
-                    inputString = document.getElementById("entry-text").value.trim();
-                }
-
-                if (!inputString) return;
-
-                const date = document.getElementById("entry-date").value;
-                const result = parseInputString(inputString);
-
-                if (result.errors.length > 0) {
-                    alert("Fix errors before saving:\n" + result.errors.join("\n"));
-                    return;
-                }
-
-                if (result.minutesWorked <= 0) {
-                    alert("No work time calculated.");
-                    return;
-                }
-
-                const data = loadData();
-
-                if (result.minutesWorked % data.settings.divisibleWarning !== 0) {
-                    if (!confirm("Work minutes (" + result.minutesWorked +
-                        ") are not divisible by " + data.settings.divisibleWarning +
-                        ". Save anyway?")) {
-                        return;
-                    }
-                }
+            data.workDays.sort((a, b) => a.localDate.localeCompare(b.localDate));
+            recalculateOvertime(data);
+            saveData(data);
+            renderHistory();
+            editDialog.close();
+        });
 
 
+        // --- Clear entry confirmation ---
+        const clearEntryDialog = document.getElementById("clear-entry-dialog");
+        const entryForm = document.getElementById("entry-form");
 
-                // fail if already exists in timetable
-                const existing = data.workDays.findIndex(d => d.localDate === date);
-                if (existing >= 0) {
-                    if (!confirm("An entry for " + date + " already exists. Replace it?")) {
-                        return;
-                    }
-                    data.workDays.splice(existing, 1);
-                }
+        document.getElementById("clear-entry-btn").addEventListener("click", () => clearEntryDialog.showModal());
 
-                data.workDays.push({
-                    inputString: inputString,
-                    minutesWorked: result.minutesWorked,
-                    localDate: date,
-                    dateTimeUTCWhenAdded: nowUTC()
-                });
-
-                data.workDays.sort((a, b) => a.localDate.localeCompare(b.localDate));
-                recalculateOvertime(data);
-                saveData(data);
-                renderHistory();
-
-                if (data.settings.autoExportInterval > 0 && data.workDays.length % data.settings.autoExportInterval === 0) {
-                    triggerExport();
-                }
-
-                // Reset form
-                document.getElementById("entry-form").reset();
+        clearEntryDialog.addEventListener("click", (e) => {
+            if (e.target.matches("[data-action='cancel']")) {
+                clearEntryDialog.close();
+            } else if (e.target.matches("[data-action='confirm-clear-entry']")) {
+                // Manual reset to handle custom UI state
+                entryForm.reset();
                 document.getElementById("entry-date").value = todayISO();
                 document.getElementById("toggle-input-mode").checked = false;
                 document.getElementById("text-input-mode").classList.remove("hidden");
                 document.getElementById("ui-input-mode").classList.add("hidden");
                 document.getElementById("time-blocks").innerHTML = "";
                 updatePreview();
-            });
-
-            // --- Settings form ---
-            function saveSettingsFromUI(alertUser = false) {
-                const data = loadData();
-                const targetVal = parseInt(document.getElementById("target-minutes").value, 10);
-                const initialVal = parseInt(document.getElementById("initial-overtime").value, 10);
-                const exportVal = parseInt(document.getElementById("auto-export-interval").value, 10);
-                const warningVal = parseInt(document.getElementById("divisible-warning").value, 10);
-
-                data.settings = {
-                    targetMinutesPerWorkDay: !isNaN(targetVal) ? targetVal : DEFAULT_SETTINGS.targetMinutesPerWorkDay,
-                    initialOvertime: !isNaN(initialVal) ? initialVal : 0,
-                    autoExportInterval: !isNaN(exportVal) ? exportVal : 5,
-                    divisibleWarning: !isNaN(warningVal) ? warningVal : 15,
-                    useVisualEditor: document.getElementById("toggle-input-mode").checked,
-                    pauseRules: readPauseRulesFromSettings()
-                };
-
-                recalculateOvertime(data);
-                saveData(data);
-                renderHistory();
-                renderPauseRulesDisplay(data.settings.pauseRules);
-                updatePreview();
-                updateInsertTimeButtonStatus(data.settings.divisibleWarning);
-                if (alertUser) alert("Settings saved.");
+                clearEntryDialog.close();
             }
+        });
 
-            document.getElementById("settings-form").addEventListener("submit", (e) => {
-                e.preventDefault();
-                saveSettingsFromUI(true);
-            });
+        // --- Export JSON (includes settings) ---
+        document.getElementById("export-btn").addEventListener("click", triggerExport);
 
-            document.getElementById("settings-form").addEventListener("input", () => {
-                saveSettingsFromUI(false);
-            });
+        // --- Import JSON ---
+        document.getElementById("import-btn").addEventListener("click", () => {
+            document.getElementById("import-file").click();
+        });
 
-            document.getElementById("settings-form").addEventListener("reset", () => {
-                setTimeout(() => {
-                    const s = DEFAULT_SETTINGS;
-                    document.getElementById("target-minutes").value = s.targetMinutesPerWorkDay;
-                    document.getElementById("initial-overtime").value = s.initialOvertime;
-                    document.getElementById("auto-export-interval").value = s.autoExportInterval;
-                    document.getElementById("divisible-warning").value = s.divisibleWarning;
-                    renderPauseRulesSettings(s.pauseRules);
-                }, 0);
-            });
-
-            // --- History search ---
-            document.getElementById("history-search").addEventListener("input", renderHistory);
-
-            // --- Edit dialog ---
-            const editDialog = document.getElementById("edit-dialog");
-            editDialog.addEventListener("click", (e) => {
-                if (e.target.matches("[data-action='cancel']")) editDialog.close();
-            });
-
-            document.getElementById("edit-form").addEventListener("submit", (e) => {
-                e.preventDefault();
-                const index = parseInt(document.getElementById("edit-index").value, 10);
-                const date = document.getElementById("edit-date").value;
-
-                const editUiMode = document.getElementById("edit-toggle-input-mode").checked;
-                let inputString;
-                if (editUiMode) {
-                    inputString = uiBlocksToText(document.getElementById("edit-time-blocks"));
-                } else {
-                    inputString = document.getElementById("edit-input").value.trim();
-                }
-
-                const result = parseInputString(inputString);
-                if (result.errors.length > 0) {
-                    alert("Fix errors:\n" + result.errors.join("\n"));
-                    return;
-                }
-
-                const data = loadData();
-                if (!data.workDays[index]) return;
-
-                data.workDays[index] = {
-                    inputString: inputString,
-                    minutesWorked: result.minutesWorked,
-                    localDate: date,
-                    dateTimeUTCWhenAdded: data.workDays[index].dateTimeUTCWhenAdded
-                };
-
-                data.workDays.sort((a, b) => a.localDate.localeCompare(b.localDate));
-                recalculateOvertime(data);
-                saveData(data);
-                renderHistory();
-                editDialog.close();
-            });
-
-
-            // --- Clear entry confirmation ---
-            const clearEntryDialog = document.getElementById("clear-entry-dialog");
-            const entryForm = document.getElementById("entry-form");
-
-            document.getElementById("clear-entry-btn").addEventListener("click", () => clearEntryDialog.showModal());
-
-            clearEntryDialog.addEventListener("click", (e) => {
-                if (e.target.matches("[data-action='cancel']")) {
-                    clearEntryDialog.close();
-                } else if (e.target.matches("[data-action='confirm-clear-entry']")) {
-                    // Manual reset to handle custom UI state
-                    entryForm.reset();
-                    document.getElementById("entry-date").value = todayISO();
-                    document.getElementById("toggle-input-mode").checked = false;
-                    document.getElementById("text-input-mode").classList.remove("hidden");
-                    document.getElementById("ui-input-mode").classList.add("hidden");
-                    document.getElementById("time-blocks").innerHTML = "";
-                    updatePreview();
-                    clearEntryDialog.close();
-                }
-            });
-
-            // --- Export JSON (includes settings) ---
-            document.getElementById("export-btn").addEventListener("click", triggerExport);
-
-            // --- Import JSON ---
-            document.getElementById("import-btn").addEventListener("click", () => {
-                document.getElementById("import-file").click();
-            });
-
-            document.getElementById("import-file").addEventListener("change", (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    try {
-                        const imported = JSON.parse(ev.target.result);
-                        if (!imported || !Array.isArray(imported.workDays)) {
-                            alert("Invalid timetable format.");
-                            return;
-                        }
-                        if (confirm("This will replace all current data. Continue?")) {
-                            const data = {
-                                settings: { ...DEFAULT_SETTINGS, ...(imported.settings || {}) },
-                                workDays: imported.workDays,
-                                overtimeMinutes: imported.overtimeMinutes || 0
-                            };
-                            recalculateOvertime(data);
-                            saveData(data);
-
-                            // Update settings form
-                            document.getElementById("target-minutes").value = data.settings.targetMinutesPerWorkDay;
-                            document.getElementById("initial-overtime").value = data.settings.initialOvertime;
-                            document.getElementById("auto-export-interval").value = data.settings.autoExportInterval;
-                            document.getElementById("divisible-warning").value = data.settings.divisibleWarning;
-                            renderPauseRulesSettings(data.settings.pauseRules);
-                            renderPauseRulesDisplay(data.settings.pauseRules);
-
-                            renderHistory();
-                            updatePreview();
-                        }
-                    } catch (err) {
-                        alert("Failed to parse JSON: " + err.message);
+        document.getElementById("import-file").addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const imported = JSON.parse(ev.target.result);
+                    if (!imported || !Array.isArray(imported.workDays)) {
+                        alert("Invalid timetable format.");
+                        return;
                     }
-                };
-                reader.readAsText(file);
-                // Reset so the same file can be imported again
-                e.target.value = "";
-            });
-        }
+                    if (confirm("This will replace all current data. Continue?")) {
+                        const data = {
+                            settings: { ...DEFAULT_SETTINGS, ...(imported.settings || {}) },
+                            workDays: imported.workDays,
+                            overtimeMinutes: imported.overtimeMinutes || 0,
+                        };
+                        recalculateOvertime(data);
+                        saveData(data);
 
-        document.addEventListener("DOMContentLoaded", init);
-    </script>
-    </body>
+                        // Update settings form
+                        document.getElementById("target-minutes").value = data.settings.targetMinutesPerWorkDay;
+                        document.getElementById("initial-overtime").value = data.settings.initialOvertime;
+                        document.getElementById("auto-export-interval").value = data.settings.autoExportInterval;
+                        document.getElementById("divisible-warning").value = data.settings.divisibleWarning;
+                        renderPauseRulesSettings(data.settings.pauseRules);
+                        renderPauseRulesDisplay(data.settings.pauseRules);
+
+                        renderHistory();
+                        updatePreview();
+                    }
+                } catch (err) {
+                    alert("Failed to parse JSON: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+            // Reset so the same file can be imported again
+            e.target.value = "";
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
 
 </html>

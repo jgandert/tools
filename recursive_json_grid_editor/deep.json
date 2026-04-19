@@ -87,7 +87,8 @@
                                                                                                                                                                                                 "text_content": "Look closer...",
                                                                                                                                                                                                 "metadata": {
                                                                                                                                                                                                     "font_size": 2,
-                                                                                                                                                                                                    "ink_molecular_structure": {"carbon_atom_425": {
+                                                                                                                                                                                                    "ink_molecular_structure": {
+                                                                                                                                                                                                        "carbon_atom_425": {
                                                                                                                                                                                                             "nucleus": {
                                                                                                                                                                                                                 "protons": 6,
                                                                                                                                                                                                                 "neutrons": 6,
@@ -101,7 +102,8 @@
                                                                                                                                                                                                                         }
                                                                                                                                                                                                                     }
                                                                                                                                                                                                                 }
-                                                                                                                                                                                                            }}
+                                                                                                                                                                                                            }
+                                                                                                                                                                                                        }
                                                                                                                                                                                                     }
                                                                                                                                                                                                 }
                                                                                                                                                                                             }

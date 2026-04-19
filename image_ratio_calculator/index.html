@@ -22,198 +22,198 @@
 </head>
 
 <body>
-    <main>
-        <section>
-            <h2>Image Ratio Calculator</h2>
-            <p>Select an image to view its properties and find the closest standard aspect ratios.</p>
+<main>
+    <section>
+        <h2>Image Ratio Calculator</h2>
+        <p>Select an image to view its properties and find the closest standard aspect ratios.</p>
 
-            <div class="file-drop-area" id="drop-area">
-                <input type="file" id="file-input" accept="image/*">
-            </div>
+        <div class="file-drop-area" id="drop-area">
+            <input type="file" id="file-input" accept="image/*">
+        </div>
 
-            <div id="results" class="mt-4" hidden>
-                <img id="preview" src="" alt="Image Preview">
+        <div id="results" class="mt-4" hidden>
+            <img id="preview" src="" alt="Image Preview">
 
-                <h3>Image Information</h3>
-                <p>
-                    <strong>File Name:</strong>
-                    <span id="info-name"></span>
-                    <br>
-                    <strong>Dimensions:</strong>
-                    <span id="info-dim"></span>
-                    px<br>
-                    <strong>File Size:</strong>
-                    <span id="info-size"></span>
-                    <br>
-                    <strong>Exact Ratio:</strong>
-                    <span id="info-ratio"></span>
-                </p>
+            <h3>Image Information</h3>
+            <p>
+                <strong>File Name:</strong>
+                <span id="info-name"></span>
+                <br>
+                <strong>Dimensions:</strong>
+                <span id="info-dim"></span>
+                px<br>
+                <strong>File Size:</strong>
+                <span id="info-size"></span>
+                <br>
+                <strong>Exact Ratio:</strong>
+                <span id="info-ratio"></span>
+            </p>
 
-                <h3>Closest Aspect Ratios</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Aspect Ratio</th>
-                            <th>Difference</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ratio-list">
-                    </tbody>
-                </table>
-            </div>
+            <h3>Closest Aspect Ratios</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Aspect Ratio</th>
+                    <th>Difference</th>
+                </tr>
+                </thead>
+                <tbody id="ratio-list">
+                </tbody>
+            </table>
+        </div>
 
-            <div class="flex-row mt-4">
-                <a href="../index.html" class="btn">Back to Dashboard</a>
-            </div>
-        </section>
-    </main>
+        <div class="flex-row mt-4">
+            <a href="../index.html" class="btn">Back to Dashboard</a>
+        </div>
+    </section>
+</main>
 
-    <script>
-        const dropArea = document.getElementById("drop-area");
-        const fileInput = document.getElementById("file-input");
-        const results = document.getElementById("results");
-        const preview = document.getElementById("preview");
+<script>
+    const dropArea = document.getElementById("drop-area");
+    const fileInput = document.getElementById("file-input");
+    const results = document.getElementById("results");
+    const preview = document.getElementById("preview");
 
-        // Allow click to trigger the input regardless
-        dropArea.addEventListener("click", () => fileInput.click());
+    // Allow click to trigger the input regardless
+    dropArea.addEventListener("click", () => fileInput.click());
 
-        // Handle drag events to highlight the drop area
-        ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
-            dropArea.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
+    // Handle drag events to highlight the drop area
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ["dragenter", "dragover"].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => dropArea.classList.add("drag-over"), false);
+    });
+
+    ["dragleave", "drop"].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => dropArea.classList.remove("drag-over"), false);
+    });
+
+    // Handle file drop
+    dropArea.addEventListener("drop", handleDrop, false);
+
+    function handleDrop(e) {
+        let dt = e.dataTransfer;
+        let files = dt.files;
+        if (files.length) {
+            fileInput.files = files;
+            updateFileDisplay();
         }
+    }
 
-        ["dragenter", "dragover"].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => dropArea.classList.add("drag-over"), false);
+    // Handle normal file selection
+    fileInput.addEventListener("change", updateFileDisplay);
+
+    const TARGET_RATIOS = [
+        "1:1", "5:4", "4:3", "7:5", "3:2", "8:5", "16:10", "16:9", "20:9", "21:9", "3:1", "32:9", "4:1",
+    ];
+
+    function getRatioList() {
+        const list = [];
+        for (let r of TARGET_RATIOS) {
+            let parts = r.split(":").map(Number);
+            let w = parts[0], h = parts[1];
+            let val1 = w / h;
+            let val2 = h / w;
+
+            list.push({ name: `${w}:${h}`, value: val1 });
+            if (w !== h) {
+                list.push({ name: `${h}:${w}`, value: val2 });
+            }
+        }
+        return list;
+    }
+
+    const ratioData = getRatioList();
+
+    function updateFileDisplay() {
+        if (fileInput.files && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const sizeKB = (file.size / 1024).toFixed(1);
+            dropArea.setAttribute("data-file-name", `${file.name} (${sizeKB} KB)`);
+
+            const url = URL.createObjectURL(file);
+
+            const img = new Image();
+            img.onload = () => {
+                preview.src = url;
+
+                document.getElementById("info-name").textContent = file.name;
+                document.getElementById("info-dim").textContent = `${img.width} × ${img.height}`;
+                document.getElementById("info-size").textContent = (file.size / 1024) > 1024 ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : `${sizeKB} KB`;
+
+                const exactRatio = img.width / img.height;
+                document.getElementById("info-ratio").textContent = exactRatio.toFixed(4);
+
+                calculateClosestRatios(exactRatio);
+                results.hidden = false;
+            };
+            img.src = url;
+
+        } else {
+            dropArea.removeAttribute("data-file-name");
+            results.hidden = true;
+        }
+    }
+
+    function calculateClosestRatios(actualValue) {
+        const differences = ratioData.map(r => {
+            const closeScore = Math.abs(Math.log(r.value / actualValue));
+            const diffPerc = Math.abs((actualValue - r.value) / r.value) * 100;
+            return { ...r, score: closeScore, diffPerc };
         });
 
-        ["dragleave", "drop"].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => dropArea.classList.remove("drag-over"), false);
-        });
+        // Sort by mathematical distance
+        differences.sort((a, b) => a.score - b.score);
 
-        // Handle file drop 
-        dropArea.addEventListener("drop", handleDrop, false);
+        const top = [];
+        const seenValues = new Set();
+        for (let item of differences) {
+            // Round to group equivalent ratios like 8:5 and 16:10
+            let rounded = item.value.toFixed(5);
+            if (!seenValues.has(rounded)) {
+                seenValues.add(rounded);
+                const aliases = differences.filter(d => d.value.toFixed(5) === rounded).map(d => d.name);
+                const nameStr = aliases.join(" or ");
 
-        function handleDrop(e) {
-            let dt = e.dataTransfer;
-            let files = dt.files;
-            if (files.length) {
-                fileInput.files = files;
-                updateFileDisplay();
+                top.push({ name: nameStr, diffPerc: item.diffPerc });
+                if (top.length === 3) break;
             }
         }
 
-        // Handle normal file selection
-        fileInput.addEventListener("change", updateFileDisplay);
+        const listEl = document.getElementById("ratio-list");
+        listEl.innerHTML = "";
+        top.forEach((item, index) => {
+            const tr = document.createElement("tr");
 
-        const TARGET_RATIOS = [
-            "1:1", "5:4", "4:3", "7:5", "3:2", "8:5", "16:10", "16:9", "20:9", "21:9", "3:1", "32:9", "4:1"
-        ];
+            const tdRank = document.createElement("td");
+            tdRank.textContent = `#${index + 1}`;
 
-        function getRatioList() {
-            const list = [];
-            for (let r of TARGET_RATIOS) {
-                let parts = r.split(":").map(Number);
-                let w = parts[0], h = parts[1];
-                let val1 = w / h;
-                let val2 = h / w;
+            const tdRatio = document.createElement("td");
+            tdRatio.innerHTML = `<strong>${item.name}</strong>`;
 
-                list.push({ name: `${w}:${h}`, value: val1 });
-                if (w !== h) {
-                    list.push({ name: `${h}:${w}`, value: val2 });
-                }
-            }
-            return list;
-        }
-
-        const ratioData = getRatioList();
-
-        function updateFileDisplay() {
-            if (fileInput.files && fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                const sizeKB = (file.size / 1024).toFixed(1);
-                dropArea.setAttribute("data-file-name", `${file.name} (${sizeKB} KB)`);
-
-                const url = URL.createObjectURL(file);
-
-                const img = new Image();
-                img.onload = () => {
-                    preview.src = url;
-
-                    document.getElementById("info-name").textContent = file.name;
-                    document.getElementById("info-dim").textContent = `${img.width} × ${img.height}`;
-                    document.getElementById("info-size").textContent = (file.size / 1024) > 1024 ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : `${sizeKB} KB`;
-
-                    const exactRatio = img.width / img.height;
-                    document.getElementById("info-ratio").textContent = exactRatio.toFixed(4);
-
-                    calculateClosestRatios(exactRatio);
-                    results.hidden = false;
-                };
-                img.src = url;
-
+            const tdDiff = document.createElement("td");
+            if (item.diffPerc < 0.1) {
+                tdDiff.textContent = "Exact match";
             } else {
-                dropArea.removeAttribute("data-file-name");
-                results.hidden = true;
-            }
-        }
-
-        function calculateClosestRatios(actualValue) {
-            const differences = ratioData.map(r => {
-                const closeScore = Math.abs(Math.log(r.value / actualValue));
-                const diffPerc = Math.abs((actualValue - r.value) / r.value) * 100;
-                return { ...r, score: closeScore, diffPerc };
-            });
-
-            // Sort by mathematical distance
-            differences.sort((a, b) => a.score - b.score);
-
-            const top = [];
-            const seenValues = new Set();
-            for (let item of differences) {
-                // Round to group equivalent ratios like 8:5 and 16:10
-                let rounded = item.value.toFixed(5);
-                if (!seenValues.has(rounded)) {
-                    seenValues.add(rounded);
-                    const aliases = differences.filter(d => d.value.toFixed(5) === rounded).map(d => d.name);
-                    const nameStr = aliases.join(" or ");
-
-                    top.push({ name: nameStr, diffPerc: item.diffPerc });
-                    if (top.length === 3) break;
-                }
+                tdDiff.textContent = `${item.diffPerc.toFixed(2)}% off`;
             }
 
-            const listEl = document.getElementById("ratio-list");
-            listEl.innerHTML = "";
-            top.forEach((item, index) => {
-                const tr = document.createElement("tr");
-
-                const tdRank = document.createElement("td");
-                tdRank.textContent = `#${index + 1}`;
-
-                const tdRatio = document.createElement("td");
-                tdRatio.innerHTML = `<strong>${item.name}</strong>`;
-
-                const tdDiff = document.createElement("td");
-                if (item.diffPerc < 0.1) {
-                    tdDiff.textContent = "Exact match";
-                } else {
-                    tdDiff.textContent = `${item.diffPerc.toFixed(2)}% off`;
-                }
-
-                tr.appendChild(tdRank);
-                tr.appendChild(tdRatio);
-                tr.appendChild(tdDiff);
-                listEl.appendChild(tr);
-            });
-        }
-    </script>
+            tr.appendChild(tdRank);
+            tr.appendChild(tdRatio);
+            tr.appendChild(tdDiff);
+            listEl.appendChild(tr);
+        });
+    }
+</script>
 </body>
 
 </html>

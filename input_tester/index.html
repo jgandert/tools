@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" class="layout-centered">
 
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="light dark">
-        <title>Input Device Tester</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <link rel="stylesheet" type="text/css" href="../one.css">
-        <style>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Input Device Tester</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
         #keyboard-visual {
             display: flex;
             flex-wrap: wrap;
@@ -59,252 +59,255 @@
             font-size: 0.75rem;
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <main>
-            <section>
-                <h2>Keyboard</h2>
-                <p>Press any keys to see the input signals in real time.</p>
+<body>
+<main>
+    <section>
+        <h2>Keyboard</h2>
+        <p>Press any keys to see the input signals in real time.</p>
 
-                <div id="keyboard-visual" class="mt-4">
-                    <span>Waiting for input...</span>
-                </div>
+        <div id="keyboard-visual" class="mt-4">
+            <span>Waiting for input...</span>
+        </div>
 
-            <pre class="log-box mt-4">
+        <pre class="log-box mt-4">
 <code id="keyboard-log"></code>
 </pre>
-            </section>
+    </section>
 
-            <section class="mt-6">
-                <h2>Mouse & Pointing Devices</h2>
-                <p>Move, click, wheel, or touch to view pointer events.</p>
+    <section class="mt-6">
+        <h2>Mouse & Pointing Devices</h2>
+        <p>Move, click, wheel, or touch to view pointer events.</p>
 
-                <div id="pointers-container" class="flex-row mt-4">
-                    <!-- Pointer cards go here -->
-                    <span class="text-muted">Waiting for pointer events...</span>
-                </div>
-            </section>
+        <div id="pointers-container" class="flex-row mt-4">
+            <!-- Pointer cards go here -->
+            <span class="text-muted">Waiting for pointer events...</span>
+        </div>
+    </section>
 
-            <section class="mt-6">
-                <h2>Gamepads</h2>
-                <p>Press any button on a connected gamepad or joystick to detect it.</p>
+    <section class="mt-6">
+        <h2>Gamepads</h2>
+        <p>Press any button on a connected gamepad or joystick to detect it.</p>
 
-                <div id="gamepads-container" class="flex-row mt-4">
-                    <!-- Gamepad cards go here -->
-                    <span class="text-muted">Waiting for gamepad connection...</span>
-                </div>
-            </section>
+        <div id="gamepads-container" class="flex-row mt-4">
+            <!-- Gamepad cards go here -->
+            <span class="text-muted">Waiting for gamepad connection...</span>
+        </div>
+    </section>
 
-            <section class="mt-6">
-                <h2>Touch Screen</h2>
-                <p>Touch the screen to see multi-touch events.</p>
+    <section class="mt-6">
+        <h2>Touch Screen</h2>
+        <p>Touch the screen to see multi-touch events.</p>
 
-                <div id="touch-container" class="flex-row mt-4">
-                    <span class="text-muted">Waiting for multi-touch events...</span>
-                </div>
-            </section>
+        <div id="touch-container" class="flex-row mt-4">
+            <span class="text-muted">Waiting for multi-touch events...</span>
+        </div>
+    </section>
 
-            <section class="mt-6">
-                <h2>MIDI Devices</h2>
-                <p>Connect and interact with a MIDI keyboard or controller.</p>
+    <section class="mt-6">
+        <h2>MIDI Devices</h2>
+        <p>Connect and interact with a MIDI keyboard or controller.</p>
 
-                <div id="midi-container" class="flex-row mt-4">
-                    <span class="text-muted">Waiting for MIDI permission & connection...</span>
-                </div>
-            </section>
-        </main>
+        <div id="midi-container" class="flex-row mt-4">
+            <span class="text-muted">Waiting for MIDI permission & connection...</span>
+        </div>
+    </section>
+</main>
 
-        <script>
-        const KEYBOARD_LOG_LIMIT = 200;
-        const POINTER_LOG_LIMIT = 200;
-        const GAMEPAD_LOG_LIMIT = 200;
-        const TOUCH_LOG_LIMIT = 200;
-        const MIDI_LOG_LIMIT = 200;
+<script>
+    const KEYBOARD_LOG_LIMIT = 200;
+    const POINTER_LOG_LIMIT = 200;
+    const GAMEPAD_LOG_LIMIT = 200;
+    const TOUCH_LOG_LIMIT = 200;
+    const MIDI_LOG_LIMIT = 200;
 
-        const visual = document.getElementById("keyboard-visual");
-        const log = document.getElementById("keyboard-log");
+    const visual = document.getElementById("keyboard-visual");
+    const log = document.getElementById("keyboard-log");
 
-        const activeKeys = new Set();
-        const seenKeys = new Set();
-        let logs = [];
-        let initialized = false;
-        let layoutMap = null;
+    const activeKeys = new Set();
+    const seenKeys = new Set();
+    let logs = [];
+    let initialized = false;
+    let layoutMap = null;
 
-        // Try to fetch layout map for accurate representation
-        if (navigator.keyboard && navigator.keyboard.getLayoutMap) {
-            navigator.keyboard.getLayoutMap()
-                .then(map => { layoutMap = map; updateVisual(); })
-                .catch(err => console.warn("Keyboard layout map unavailable", err));
-
-            // Browser fires this when OS layout changes
-            navigator.keyboard.addEventListener("layoutchange", () => {
-                navigator.keyboard.getLayoutMap().then(map => {
-                    layoutMap = map;
-                    updateVisual();
-                });
-            });
-        }
-
-        function addLog(msg) {
-            const time = new Date().toISOString().split("T")[1].slice(0, 12);
-            logs.unshift(`[${time}] ${msg}`);
-            if (logs.length > KEYBOARD_LOG_LIMIT) logs.pop();
-            log.textContent = logs.join("\n");
-        }
-
-        const keyMemory = new Map(); // Store the actual user logical event key so it stays accurate to what they pressed
-
-        function updateVisual() {
-            visual.innerHTML = "";
-            if (seenKeys.size === 0) {
-                visual.textContent = "...";
-                return;
-            }
-
-            seenKeys.forEach(code => {
-                const kbd = document.createElement("kbd");
-                kbd.style.display = "inline-flex";
-                kbd.style.flexDirection = "column";
-                kbd.style.alignItems = "center";
-                kbd.style.textTransform = "none"; // Prevent CSS from blindly forcing "SS"
-
-                // Physical string (code)
-                const codeSpan = document.createElement("span");
-                codeSpan.style.fontSize = "0.7em";
-                codeSpan.style.opacity = "0.7";
-
-                let codeLabel = code;
-                if (codeLabel.startsWith("Key")) codeLabel = codeLabel.slice(3);
-                else if (codeLabel.startsWith("Digit")) codeLabel = codeLabel.slice(5);
-                codeSpan.textContent = codeLabel;
-
-                // Logical string (localized layout/key)
-                const keySpan = document.createElement("span");
-                let logicalLabel = "";
-
-                if (layoutMap && layoutMap.has(code)) {
-                    const char = layoutMap.get(code);
-                    logicalLabel = char ? char : code;
-                } else {
-                    // Fallback to what we remembered they pressed
-                    const mem = keyMemory.get(code);
-                    const memKey = typeof mem === "object" ? mem.key : mem;
-                    if (memKey) logicalLabel = memKey === " " ? "Space" : memKey;
-                    else logicalLabel = codeLabel;
-                }
-
-                // Only uppercase standard single letters so we don't destroy things like 'ß'
-                if (logicalLabel.length === 1 && /[a-z]/.test(logicalLabel)) {
-                    logicalLabel = logicalLabel.toUpperCase();
-                }
-
-                // If they perfectly match (e.g. 'Enter' and 'Enter'), only show it once
-                // Or if the logical key is Unidentified/empty, only show the best available label
-                if (logicalLabel.toUpperCase() === codeLabel.toUpperCase() || logicalLabel === "Unidentified" || codeLabel === "") {
-                    if (logicalLabel === "Unidentified" && codeLabel === "") {
-                        const mem = keyMemory.get(code);
-                        const kc = (typeof mem === "object" && mem.keyCode) ? mem.keyCode : "";
-                        kbd.textContent = kc ? `KC ${kc}` : "???";
-                        kbd.classList.add("unknown");
-                    } else {
-                        kbd.textContent = (logicalLabel === "Unidentified" || logicalLabel === "") ? (codeLabel || logicalLabel) : logicalLabel;
-                    }
-                } else {
-                    keySpan.textContent = logicalLabel;
-                    kbd.appendChild(codeSpan);
-                    kbd.appendChild(keySpan);
-                }
-
-                if (activeKeys.has(code)) {
-                    kbd.classList.add("pressed");
-                }
-
-                visual.appendChild(kbd);
-            });
-        }
-
-        window.addEventListener("keydown", (e) => {
-            if (!initialized) {
-                initialized = true;
-                visual.innerHTML = "";
-            }
-
-            // Prevent default browser behavior for F1-F12, Tab, Alt, etc.
-            if (e.keyCode >= 112 && e.keyCode <= 123) e.preventDefault();
-            if (e.key === "Tab" || e.key === "Alt") e.preventDefault();
-
-            if (!e.repeat) {
-                activeKeys.add(e.code);
-                seenKeys.add(e.code);
-                keyMemory.set(e.code, { key: e.key, keyCode: e.keyCode }); // memory for logical keys
-
-                // Show both layout-agnostic physical Code and the logical localized Key string
-                const keyStr = (e.key === " " ? "Space" : e.key);
-                addLog(`↓ ${e.code || "(no code)"} (KC: ${e.keyCode})  (Key: "${keyStr}")`);
-
+    // Try to fetch layout map for accurate representation
+    if (navigator.keyboard && navigator.keyboard.getLayoutMap) {
+        navigator.keyboard.getLayoutMap()
+            .then(map => {
+                layoutMap = map;
                 updateVisual();
-            }
+            })
+            .catch(err => console.warn("Keyboard layout map unavailable", err));
+
+        // Browser fires this when OS layout changes
+        navigator.keyboard.addEventListener("layoutchange", () => {
+            navigator.keyboard.getLayoutMap().then(map => {
+                layoutMap = map;
+                updateVisual();
+            });
         });
+    }
 
-        window.addEventListener("keyup", (e) => {
-            if (e.keyCode >= 112 && e.keyCode <= 123) e.preventDefault();
-            if (e.key === "Tab" || e.key === "Alt") e.preventDefault();
+    function addLog(msg) {
+        const time = new Date().toISOString().split("T")[1].slice(0, 12);
+        logs.unshift(`[${time}] ${msg}`);
+        if (logs.length > KEYBOARD_LOG_LIMIT) logs.pop();
+        log.textContent = logs.join("\n");
+    }
 
-            activeKeys.delete(e.code);
-            const keyStr = (e.key === " " ? "Space" : e.key);
-            addLog(`↑ ${e.code || "(no code)"} (KC: ${e.keyCode})  (Key: "${keyStr}")`);
-            updateVisual();
-        });
+    const keyMemory = new Map(); // Store the actual user logical event key so it stays accurate to what they pressed
 
-        window.addEventListener("blur", () => {
-            activeKeys.clear();
-            addLog("Window lost focus - cleared keys");
-            updateVisual();
-        });
+    function updateVisual() {
+        visual.innerHTML = "";
+        if (seenKeys.size === 0) {
+            visual.textContent = "...";
+            return;
+        }
 
-        updateVisual();
-        // -- MOUSE / POINTER LOGIC --
-        const ptrContainer = document.getElementById("pointers-container");
-        let mouseState = { x: 0, y: 0, buttons: 0, initialized: false };
-        let ptrLogs = [];
-        let wheelCoalesceValue = 0;
-        let lastLogIsWheel = false;
+        seenKeys.forEach(code => {
+            const kbd = document.createElement("kbd");
+            kbd.style.display = "inline-flex";
+            kbd.style.flexDirection = "column";
+            kbd.style.alignItems = "center";
+            kbd.style.textTransform = "none"; // Prevent CSS from blindly forcing "SS"
 
-        function addPtrLog(msg, dy = null) {
-            const time = new Date().toISOString().split("T")[1].slice(0, 12);
-            const toggle = document.getElementById("coalesce-scroll");
-            const coalesce = toggle ? toggle.checked : true;
+            // Physical string (code)
+            const codeSpan = document.createElement("span");
+            codeSpan.style.fontSize = "0.7em";
+            codeSpan.style.opacity = "0.7";
 
-            if (dy !== null) {
-                if (coalesce && lastLogIsWheel && ptrLogs.length > 0) {
-                    wheelCoalesceValue += dy;
-                    ptrLogs[0] = `[${time}] ⚙ Wheel (coalesced): dY ${wheelCoalesceValue}`;
-                } else {
-                    wheelCoalesceValue = dy;
-                    ptrLogs.unshift(`[${time}] ${msg}`);
-                    if (ptrLogs.length > POINTER_LOG_LIMIT) ptrLogs.pop();
-                }
-                lastLogIsWheel = true;
+            let codeLabel = code;
+            if (codeLabel.startsWith("Key")) codeLabel = codeLabel.slice(3);
+            else if (codeLabel.startsWith("Digit")) codeLabel = codeLabel.slice(5);
+            codeSpan.textContent = codeLabel;
+
+            // Logical string (localized layout/key)
+            const keySpan = document.createElement("span");
+            let logicalLabel = "";
+
+            if (layoutMap && layoutMap.has(code)) {
+                const char = layoutMap.get(code);
+                logicalLabel = char ? char : code;
             } else {
+                // Fallback to what we remembered they pressed
+                const mem = keyMemory.get(code);
+                const memKey = typeof mem === "object" ? mem.key : mem;
+                if (memKey) logicalLabel = memKey === " " ? "Space" : memKey;
+                else logicalLabel = codeLabel;
+            }
+
+            // Only uppercase standard single letters so we don't destroy things like 'ß'
+            if (logicalLabel.length === 1 && /[a-z]/.test(logicalLabel)) {
+                logicalLabel = logicalLabel.toUpperCase();
+            }
+
+            // If they perfectly match (e.g. 'Enter' and 'Enter'), only show it once
+            // Or if the logical key is Unidentified/empty, only show the best available label
+            if (logicalLabel.toUpperCase() === codeLabel.toUpperCase() || logicalLabel === "Unidentified" || codeLabel === "") {
+                if (logicalLabel === "Unidentified" && codeLabel === "") {
+                    const mem = keyMemory.get(code);
+                    const kc = (typeof mem === "object" && mem.keyCode) ? mem.keyCode : "";
+                    kbd.textContent = kc ? `KC ${kc}` : "???";
+                    kbd.classList.add("unknown");
+                } else {
+                    kbd.textContent = (logicalLabel === "Unidentified" || logicalLabel === "") ? (codeLabel || logicalLabel) : logicalLabel;
+                }
+            } else {
+                keySpan.textContent = logicalLabel;
+                kbd.appendChild(codeSpan);
+                kbd.appendChild(keySpan);
+            }
+
+            if (activeKeys.has(code)) {
+                kbd.classList.add("pressed");
+            }
+
+            visual.appendChild(kbd);
+        });
+    }
+
+    window.addEventListener("keydown", (e) => {
+        if (!initialized) {
+            initialized = true;
+            visual.innerHTML = "";
+        }
+
+        // Prevent default browser behavior for F1-F12, Tab, Alt, etc.
+        if (e.keyCode >= 112 && e.keyCode <= 123) e.preventDefault();
+        if (e.key === "Tab" || e.key === "Alt") e.preventDefault();
+
+        if (!e.repeat) {
+            activeKeys.add(e.code);
+            seenKeys.add(e.code);
+            keyMemory.set(e.code, { key: e.key, keyCode: e.keyCode }); // memory for logical keys
+
+            // Show both layout-agnostic physical Code and the logical localized Key string
+            const keyStr = (e.key === " " ? "Space" : e.key);
+            addLog(`↓ ${e.code || "(no code)"} (KC: ${e.keyCode})  (Key: "${keyStr}")`);
+
+            updateVisual();
+        }
+    });
+
+    window.addEventListener("keyup", (e) => {
+        if (e.keyCode >= 112 && e.keyCode <= 123) e.preventDefault();
+        if (e.key === "Tab" || e.key === "Alt") e.preventDefault();
+
+        activeKeys.delete(e.code);
+        const keyStr = (e.key === " " ? "Space" : e.key);
+        addLog(`↑ ${e.code || "(no code)"} (KC: ${e.keyCode})  (Key: "${keyStr}")`);
+        updateVisual();
+    });
+
+    window.addEventListener("blur", () => {
+        activeKeys.clear();
+        addLog("Window lost focus - cleared keys");
+        updateVisual();
+    });
+
+    updateVisual();
+    // -- MOUSE / POINTER LOGIC --
+    const ptrContainer = document.getElementById("pointers-container");
+    let mouseState = { x: 0, y: 0, buttons: 0, initialized: false };
+    let ptrLogs = [];
+    let wheelCoalesceValue = 0;
+    let lastLogIsWheel = false;
+
+    function addPtrLog(msg, dy = null) {
+        const time = new Date().toISOString().split("T")[1].slice(0, 12);
+        const toggle = document.getElementById("coalesce-scroll");
+        const coalesce = toggle ? toggle.checked : true;
+
+        if (dy !== null) {
+            if (coalesce && lastLogIsWheel && ptrLogs.length > 0) {
+                wheelCoalesceValue += dy;
+                ptrLogs[0] = `[${time}] ⚙ Wheel (coalesced): dY ${wheelCoalesceValue}`;
+            } else {
+                wheelCoalesceValue = dy;
                 ptrLogs.unshift(`[${time}] ${msg}`);
                 if (ptrLogs.length > POINTER_LOG_LIMIT) ptrLogs.pop();
-                lastLogIsWheel = false;
             }
-
-            const logEl = document.getElementById("mouse-log");
-            if (logEl) logEl.textContent = ptrLogs.join("\n");
+            lastLogIsWheel = true;
+        } else {
+            ptrLogs.unshift(`[${time}] ${msg}`);
+            if (ptrLogs.length > POINTER_LOG_LIMIT) ptrLogs.pop();
+            lastLogIsWheel = false;
         }
 
-        function ensureMouseCard() {
-            if (mouseState.initialized) return;
-            mouseState.initialized = true;
-            ptrContainer.innerHTML = ""; // Clear waiting text
+        const logEl = document.getElementById("mouse-log");
+        if (logEl) logEl.textContent = ptrLogs.join("\n");
+    }
 
-            const card = document.createElement("div");
-            card.className = "pointer-card flex-1";
+    function ensureMouseCard() {
+        if (mouseState.initialized) return;
+        mouseState.initialized = true;
+        ptrContainer.innerHTML = ""; // Clear waiting text
 
-            card.innerHTML = `
+        const card = document.createElement("div");
+        card.className = "pointer-card flex-1";
+
+        card.innerHTML = `
                 <div class="header-row mb-4">
                     <h3 class="mt-0 mb-0">Primary Pointer</h3>
                     <label for="coalesce-scroll">
@@ -330,93 +333,93 @@
 
                 <pre class="log-box"><code id="mouse-log"></code></pre>
             `;
-            ptrContainer.appendChild(card);
-        }
+        ptrContainer.appendChild(card);
+    }
 
-        function updateMouseVisuals() {
-            ensureMouseCard();
+    function updateMouseVisuals() {
+        ensureMouseCard();
 
-            // Update coords
-            document.getElementById("mouse-x").textContent = `X: ${mouseState.x}`;
-            document.getElementById("mouse-y").textContent = `Y: ${mouseState.y}`;
+        // Update coords
+        document.getElementById("mouse-x").textContent = `X: ${mouseState.x}`;
+        document.getElementById("mouse-y").textContent = `Y: ${mouseState.y}`;
 
-            // Update buttons (bitmask)
-            // 1: Left, 2: Right, 4: Middle, 8: Back, 16: Forward
-            const btns = document.querySelectorAll("#mouse-btns kbd");
-            btns.forEach(btn => {
-                const mask = parseInt(btn.getAttribute("data-btn"), 10);
-                if ((mouseState.buttons & mask) !== 0) {
-                    btn.classList.add("pressed");
-                } else {
-                    btn.classList.remove("pressed");
-                }
-            });
-        }
-
-        function handlePointerAction(e, logPrefix) {
-            mouseState.x = Math.round(e.clientX);
-            mouseState.y = Math.round(e.clientY);
-            mouseState.buttons = e.buttons;
-
-            if (logPrefix) {
-                // Determine button name for log
-                const bMap = { 0: "Left", 1: "Middle", 2: "Right", 3: "B4", 4: "B5" };
-                const btnName = bMap[e.button] || `Btn ${e.button}`;
-                addPtrLog(`${logPrefix} ${btnName} (X:${mouseState.x} Y:${mouseState.y})`);
-            }
-            updateMouseVisuals();
-        }
-
-        window.addEventListener("pointermove", (e) => {
-            // Only tracking primary mouse / pointer for now
-            if (e.pointerType !== "mouse" && e.pointerType !== "touch" && e.pointerType !== "pen") return;
-
-            mouseState.x = Math.round(e.clientX);
-            mouseState.y = Math.round(e.clientY);
-            updateMouseVisuals();
-            // Intentionally not logging pointermove to prevent log flood unless a button is held
-            if (mouseState.buttons > 0) {
-                addPtrLog(`Drag (X:${mouseState.x} Y:${mouseState.y})`);
+        // Update buttons (bitmask)
+        // 1: Left, 2: Right, 4: Middle, 8: Back, 16: Forward
+        const btns = document.querySelectorAll("#mouse-btns kbd");
+        btns.forEach(btn => {
+            const mask = parseInt(btn.getAttribute("data-btn"), 10);
+            if ((mouseState.buttons & mask) !== 0) {
+                btn.classList.add("pressed");
+            } else {
+                btn.classList.remove("pressed");
             }
         });
+    }
 
-        window.addEventListener("pointerdown", e => handlePointerAction(e, "↓"));
-        window.addEventListener("pointerup", e => handlePointerAction(e, "↑"));
+    function handlePointerAction(e, logPrefix) {
+        mouseState.x = Math.round(e.clientX);
+        mouseState.y = Math.round(e.clientY);
+        mouseState.buttons = e.buttons;
 
-        window.addEventListener("wheel", e => {
-            mouseState.x = Math.round(e.clientX);
-            mouseState.y = Math.round(e.clientY);
-            const dy = Math.round(e.deltaY);
-            addPtrLog(`⚙ Wheel: dY ${dy}`, dy);
-            updateMouseVisuals();
-        }, { passive: true });
+        if (logPrefix) {
+            // Determine button name for log
+            const bMap = { 0: "Left", 1: "Middle", 2: "Right", 3: "B4", 4: "B5" };
+            const btnName = bMap[e.button] || `Btn ${e.button}`;
+            addPtrLog(`${logPrefix} ${btnName} (X:${mouseState.x} Y:${mouseState.y})`);
+        }
+        updateMouseVisuals();
+    }
 
-        // Prevent context menu to allow testing right click
-        window.addEventListener("contextmenu", e => e.preventDefault());
+    window.addEventListener("pointermove", (e) => {
+        // Only tracking primary mouse / pointer for now
+        if (e.pointerType !== "mouse" && e.pointerType !== "touch" && e.pointerType !== "pen") return;
 
-        // -- GAMEPAD LOGIC --
-        const gamepadContainer = document.getElementById("gamepads-container");
-        let connectedGamepads = new Set();
-        let lastGamepadState = {};
-        let pollingGamepads = false;
+        mouseState.x = Math.round(e.clientX);
+        mouseState.y = Math.round(e.clientY);
+        updateMouseVisuals();
+        // Intentionally not logging pointermove to prevent log flood unless a button is held
+        if (mouseState.buttons > 0) {
+            addPtrLog(`Drag (X:${mouseState.x} Y:${mouseState.y})`);
+        }
+    });
 
-        function renderGamepad(gp) {
-            let card = document.getElementById(`gamepad-${gp.index}`);
-            let gLogEl = null;
+    window.addEventListener("pointerdown", e => handlePointerAction(e, "↓"));
+    window.addEventListener("pointerup", e => handlePointerAction(e, "↑"));
 
-            if (!card) {
-                // Remove empty state message
-                const msg = gamepadContainer.querySelector(".text-muted");
-                if (msg) msg.remove();
+    window.addEventListener("wheel", e => {
+        mouseState.x = Math.round(e.clientX);
+        mouseState.y = Math.round(e.clientY);
+        const dy = Math.round(e.deltaY);
+        addPtrLog(`⚙ Wheel: dY ${dy}`, dy);
+        updateMouseVisuals();
+    }, { passive: true });
 
-                card = document.createElement("div");
-                card.id = `gamepad-${gp.index}`;
-                card.className = "pointer-card flex-1";
+    // Prevent context menu to allow testing right click
+    window.addEventListener("contextmenu", e => e.preventDefault());
 
-                // Truncate name simply
-                const name = gp.id ? gp.id.replace(/ \(.+\)/, "").substring(0, 30) : "Unknown Device";
+    // -- GAMEPAD LOGIC --
+    const gamepadContainer = document.getElementById("gamepads-container");
+    let connectedGamepads = new Set();
+    let lastGamepadState = {};
+    let pollingGamepads = false;
 
-                card.innerHTML = `
+    function renderGamepad(gp) {
+        let card = document.getElementById(`gamepad-${gp.index}`);
+        let gLogEl = null;
+
+        if (!card) {
+            // Remove empty state message
+            const msg = gamepadContainer.querySelector(".text-muted");
+            if (msg) msg.remove();
+
+            card = document.createElement("div");
+            card.id = `gamepad-${gp.index}`;
+            card.className = "pointer-card flex-1";
+
+            // Truncate name simply
+            const name = gp.id ? gp.id.replace(/ \(.+\)/, "").substring(0, 30) : "Unknown Device";
+
+            card.innerHTML = `
                     <h3 class="mt-0">Gamepad ${gp.index}: ${name}</h3>
                     <div class="flex-row gap-4 align-end mb-4">
                         <div class="flex-row gap-2" id="gp-${gp.index}-axes"></div>
@@ -424,318 +427,318 @@
                     <div class="flex-row gap-2" style="flex-wrap: wrap;" id="gp-${gp.index}-btns"></div>
                     <pre class="log-box mt-4"><code id="gplog-${gp.index}"></code></pre>
                 `;
-                gamepadContainer.appendChild(card);
-            }
-
-            gLogEl = document.getElementById(`gplog-${gp.index}`);
-            const axesContainer = document.getElementById(`gp-${gp.index}-axes`);
-            const btnsContainer = document.getElementById(`gp-${gp.index}-btns`);
-
-            // Initialize or update Joysticks (Axes)
-            // Axes always come in pairs (x, y)
-            for (let i = 0; i < gp.axes.length; i += 2) {
-                const stickId = `gp-${gp.index}-stick-${i}`;
-                let stick = document.getElementById(stickId);
-
-                if (!stick) {
-                    stick = document.createElement("div");
-                    stick.id = stickId;
-                    // Simple joystick design using standard inline blocks
-                    stick.style.cssText = "width: 60px; height: 60px; border: 2px solid var(--outline-variant); border-radius: 50%; position: relative; flex-shrink: 0;";
-
-                    const dot = document.createElement("div");
-                    dot.className = "dot";
-                    dot.style.cssText = "width: 12px; height: 12px; border-radius: 50%; background: var(--primary); left: 50%; top: 50%; position: absolute; margin: -6px 0 0 -6px; pointer-events: none;";
-                    stick.appendChild(dot);
-
-                    axesContainer.appendChild(stick);
-                }
-
-                // Update dot position
-                // Distance to move from center: max 24px (60/2 - 12/2)
-                const dotObj = stick.querySelector(".dot");
-                const x = gp.axes[i] || 0;
-                const y = gp.axes[i + 1] || 0;
-
-                dotObj.style.transform = `translate(${x * 24}px, ${y * 24}px)`;
-            }
-
-            // Initialize or update Buttons
-            gp.buttons.forEach((btn, idx) => {
-                const btnId = `gp-${gp.index}-btn-${idx}`;
-                let b = document.getElementById(btnId);
-
-                if (!b) {
-                    b = document.createElement("kbd");
-                    b.id = btnId;
-                    b.textContent = idx;
-                    b.style.margin = "0";
-                    btnsContainer.appendChild(b);
-                }
-
-                if (btn.pressed) {
-                    b.classList.add("pressed");
-                } else {
-                    b.classList.remove("pressed");
-                }
-
-                // If trigger pressure exists and it's barely pressed
-                if (btn.value > 0.05 && !btn.pressed) {
-                    b.classList.add("pressed");
-                    b.style.opacity = Math.max(0.2, btn.value);
-                } else {
-                    b.style.opacity = 1;
-                }
-            });
-
-            return gLogEl;
+            gamepadContainer.appendChild(card);
         }
 
-        function pollGamepads() {
-            let activeCount = 0;
-            const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+        gLogEl = document.getElementById(`gplog-${gp.index}`);
+        const axesContainer = document.getElementById(`gp-${gp.index}-axes`);
+        const btnsContainer = document.getElementById(`gp-${gp.index}-btns`);
 
-            for (let gp of gps) {
-                if (!gp) continue;
-                activeCount++;
+        // Initialize or update Joysticks (Axes)
+        // Axes always come in pairs (x, y)
+        for (let i = 0; i < gp.axes.length; i += 2) {
+            const stickId = `gp-${gp.index}-stick-${i}`;
+            let stick = document.getElementById(stickId);
 
-                let isNew = !connectedGamepads.has(gp.index);
-                if (isNew) {
-                    connectedGamepads.add(gp.index);
-                    lastGamepadState[gp.index] = {
-                        buttons: gp.buttons.map(b => b.pressed),
-                        logs: []
-                    };
-                }
+            if (!stick) {
+                stick = document.createElement("div");
+                stick.id = stickId;
+                // Simple joystick design using standard inline blocks
+                stick.style.cssText = "width: 60px; height: 60px; border: 2px solid var(--outline-variant); border-radius: 50%; position: relative; flex-shrink: 0;";
 
-                const last = lastGamepadState[gp.index];
-                const gLogEl = renderGamepad(gp);
+                const dot = document.createElement("div");
+                dot.className = "dot";
+                dot.style.cssText = "width: 12px; height: 12px; border-radius: 50%; background: var(--primary); left: 50%; top: 50%; position: absolute; margin: -6px 0 0 -6px; pointer-events: none;";
+                stick.appendChild(dot);
 
-                if (isNew) {
-                    logGp(gp.index, `Connected: ${gp.id}`, gLogEl);
-                }
-
-                // Diff buttons to throw logs
-                if (last) {
-                    gp.buttons.forEach((b, i) => {
-                        if (b.pressed !== last.buttons[i]) {
-                            logGp(gp.index, `${b.pressed ? "↓" : "↑"} Btn ${i}`, gLogEl);
-                            last.buttons[i] = b.pressed;
-                        }
-                    });
-                }
+                axesContainer.appendChild(stick);
             }
 
-            if (activeCount > 0) {
-                requestAnimationFrame(pollGamepads);
+            // Update dot position
+            // Distance to move from center: max 24px (60/2 - 12/2)
+            const dotObj = stick.querySelector(".dot");
+            const x = gp.axes[i] || 0;
+            const y = gp.axes[i + 1] || 0;
+
+            dotObj.style.transform = `translate(${x * 24}px, ${y * 24}px)`;
+        }
+
+        // Initialize or update Buttons
+        gp.buttons.forEach((btn, idx) => {
+            const btnId = `gp-${gp.index}-btn-${idx}`;
+            let b = document.getElementById(btnId);
+
+            if (!b) {
+                b = document.createElement("kbd");
+                b.id = btnId;
+                b.textContent = idx;
+                b.style.margin = "0";
+                btnsContainer.appendChild(b);
+            }
+
+            if (btn.pressed) {
+                b.classList.add("pressed");
             } else {
-                pollingGamepads = false;
+                b.classList.remove("pressed");
             }
-        }
 
-        function logGp(index, msg, el) {
-            const time = new Date().toISOString().split("T")[1].slice(0, 12);
-            const state = lastGamepadState[index];
-            if (!state) return;
-            state.logs.unshift(`[${time}] ${msg}`);
-            if (state.logs.length > GAMEPAD_LOG_LIMIT) state.logs.pop();
-            if (el) el.textContent = state.logs.join("\n");
-        }
-
-        window.addEventListener("gamepadconnected", (e) => {
-            if (!pollingGamepads) {
-                pollingGamepads = true;
-                pollGamepads();
+            // If trigger pressure exists and it's barely pressed
+            if (btn.value > 0.05 && !btn.pressed) {
+                b.classList.add("pressed");
+                b.style.opacity = Math.max(0.2, btn.value);
+            } else {
+                b.style.opacity = 1;
             }
         });
 
-        window.addEventListener("gamepaddisconnected", (e) => {
-            connectedGamepads.delete(e.gamepad.index);
-            const card = document.getElementById(`gamepad-${e.gamepad.index}`);
-            if (card) {
-                card.style.opacity = "0.5";
-                const gLogEl = document.getElementById(`gplog-${e.gamepad.index}`);
-                logGp(e.gamepad.index, "Disconnected", gLogEl);
-            }
-        });
+        return gLogEl;
+    }
 
-        // initial poll in case of fast page refresh picking up loaded devices
-        if (navigator.getGamepads) {
-            const anyConnected = Array.from(navigator.getGamepads()).some(gp => gp !== null);
-            if (anyConnected) {
-                pollingGamepads = true;
-                pollGamepads();
+    function pollGamepads() {
+        let activeCount = 0;
+        const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+
+        for (let gp of gps) {
+            if (!gp) continue;
+            activeCount++;
+
+            let isNew = !connectedGamepads.has(gp.index);
+            if (isNew) {
+                connectedGamepads.add(gp.index);
+                lastGamepadState[gp.index] = {
+                    buttons: gp.buttons.map(b => b.pressed),
+                    logs: [],
+                };
+            }
+
+            const last = lastGamepadState[gp.index];
+            const gLogEl = renderGamepad(gp);
+
+            if (isNew) {
+                logGp(gp.index, `Connected: ${gp.id}`, gLogEl);
+            }
+
+            // Diff buttons to throw logs
+            if (last) {
+                gp.buttons.forEach((b, i) => {
+                    if (b.pressed !== last.buttons[i]) {
+                        logGp(gp.index, `${b.pressed ? "↓" : "↑"} Btn ${i}`, gLogEl);
+                        last.buttons[i] = b.pressed;
+                    }
+                });
             }
         }
 
-        // -- TOUCH LOGIC --
-        const touchContainer = document.getElementById("touch-container");
-        let touchInitialized = false;
-        let touchLogs = [];
-
-        function addTouchLog(msg) {
-            const time = new Date().toISOString().split("T")[1].slice(0, 12);
-            touchLogs.unshift(`[${time}] ${msg}`);
-            if (touchLogs.length > TOUCH_LOG_LIMIT) touchLogs.pop();
-            const logEl = document.getElementById("touch-log");
-            if (logEl) logEl.textContent = touchLogs.join("\n");
+        if (activeCount > 0) {
+            requestAnimationFrame(pollGamepads);
+        } else {
+            pollingGamepads = false;
         }
+    }
 
-        function ensureTouchCard() {
-            if (touchInitialized) return;
-            touchInitialized = true;
-            touchContainer.innerHTML = "";
-            const card = document.createElement("div");
-            card.className = "pointer-card flex-1";
-            card.innerHTML = `
+    function logGp(index, msg, el) {
+        const time = new Date().toISOString().split("T")[1].slice(0, 12);
+        const state = lastGamepadState[index];
+        if (!state) return;
+        state.logs.unshift(`[${time}] ${msg}`);
+        if (state.logs.length > GAMEPAD_LOG_LIMIT) state.logs.pop();
+        if (el) el.textContent = state.logs.join("\n");
+    }
+
+    window.addEventListener("gamepadconnected", (e) => {
+        if (!pollingGamepads) {
+            pollingGamepads = true;
+            pollGamepads();
+        }
+    });
+
+    window.addEventListener("gamepaddisconnected", (e) => {
+        connectedGamepads.delete(e.gamepad.index);
+        const card = document.getElementById(`gamepad-${e.gamepad.index}`);
+        if (card) {
+            card.style.opacity = "0.5";
+            const gLogEl = document.getElementById(`gplog-${e.gamepad.index}`);
+            logGp(e.gamepad.index, "Disconnected", gLogEl);
+        }
+    });
+
+    // initial poll in case of fast page refresh picking up loaded devices
+    if (navigator.getGamepads) {
+        const anyConnected = Array.from(navigator.getGamepads()).some(gp => gp !== null);
+        if (anyConnected) {
+            pollingGamepads = true;
+            pollGamepads();
+        }
+    }
+
+    // -- TOUCH LOGIC --
+    const touchContainer = document.getElementById("touch-container");
+    let touchInitialized = false;
+    let touchLogs = [];
+
+    function addTouchLog(msg) {
+        const time = new Date().toISOString().split("T")[1].slice(0, 12);
+        touchLogs.unshift(`[${time}] ${msg}`);
+        if (touchLogs.length > TOUCH_LOG_LIMIT) touchLogs.pop();
+        const logEl = document.getElementById("touch-log");
+        if (logEl) logEl.textContent = touchLogs.join("\n");
+    }
+
+    function ensureTouchCard() {
+        if (touchInitialized) return;
+        touchInitialized = true;
+        touchContainer.innerHTML = "";
+        const card = document.createElement("div");
+        card.className = "pointer-card flex-1";
+        card.innerHTML = `
                 <h3 class="mt-0 mb-4">Multi-Touch Layout</h3>
                 <div class="flex-row gap-4 align-end mb-4 min-h-40" id="active-touches"></div>
                 <pre class="log-box mt-4"><code id="touch-log"></code></pre>
             `;
-            touchContainer.appendChild(card);
-            updateTouches([]); // Initialize empty state
-        }
+        touchContainer.appendChild(card);
+        updateTouches([]); // Initialize empty state
+    }
 
-        function updateTouches(touches, logPrefix) {
-            ensureTouchCard();
-            const container = document.getElementById("active-touches");
-            container.innerHTML = "";
+    function updateTouches(touches, logPrefix) {
+        ensureTouchCard();
+        const container = document.getElementById("active-touches");
+        container.innerHTML = "";
 
-            if (touches.length === 0) {
-                container.innerHTML = "<span class=\"text-muted\">No active touches</span>";
-            } else {
-                for (let i = 0; i < touches.length; i++) {
-                    const t = touches[i];
+        if (touches.length === 0) {
+            container.innerHTML = "<span class=\"text-muted\">No active touches</span>";
+        } else {
+            for (let i = 0; i < touches.length; i++) {
+                const t = touches[i];
 
-                    const wrap = document.createElement("div");
-                    wrap.className = "flex-row gap-2 align-end";
+                const wrap = document.createElement("div");
+                wrap.className = "flex-row gap-2 align-end";
 
-                    const k = document.createElement("kbd");
-                    k.className = "pressed";
-                    k.style.borderRadius = "50%";
-                    k.style.width = "32px";
-                    k.style.height = "32px";
-                    k.style.display = "inline-flex";
-                    k.style.justifyContent = "center";
-                    k.textContent = t.identifier;
+                const k = document.createElement("kbd");
+                k.className = "pressed";
+                k.style.borderRadius = "50%";
+                k.style.width = "32px";
+                k.style.height = "32px";
+                k.style.display = "inline-flex";
+                k.style.justifyContent = "center";
+                k.textContent = t.identifier;
 
-                    const coord = document.createElement("div");
-                    coord.className = "coord-pill";
-                    coord.innerHTML = `<span>X: ${Math.round(t.clientX)}</span><span>Y: ${Math.round(t.clientY)}</span>`;
+                const coord = document.createElement("div");
+                coord.className = "coord-pill";
+                coord.innerHTML = `<span>X: ${Math.round(t.clientX)}</span><span>Y: ${Math.round(t.clientY)}</span>`;
 
-                    wrap.appendChild(k);
-                    wrap.appendChild(coord);
-                    container.appendChild(wrap);
-                }
+                wrap.appendChild(k);
+                wrap.appendChild(coord);
+                container.appendChild(wrap);
             }
-
-            if (logPrefix) addTouchLog(`${logPrefix} : ${touches.length} Finger(s) Active`);
         }
 
-        window.addEventListener("touchstart", (e) => updateTouches(e.touches, "↓ Start"), { passive: true });
-        window.addEventListener("touchend", (e) => updateTouches(e.touches, "↑ End"), { passive: true });
-        window.addEventListener("touchcancel", (e) => updateTouches(e.touches, "✕ Cancel"), { passive: true });
-        window.addEventListener("touchmove", (e) => {
-            updateTouches(e.touches);
-            // Throttle drag logs or keep silent to avoid log floods, like mousemove
-        }, { passive: true });
+        if (logPrefix) addTouchLog(`${logPrefix} : ${touches.length} Finger(s) Active`);
+    }
 
-        // -- MIDI LOGIC --
-        const midiContainer = document.getElementById("midi-container");
-        let midiLogs = [];
+    window.addEventListener("touchstart", (e) => updateTouches(e.touches, "↓ Start"), { passive: true });
+    window.addEventListener("touchend", (e) => updateTouches(e.touches, "↑ End"), { passive: true });
+    window.addEventListener("touchcancel", (e) => updateTouches(e.touches, "✕ Cancel"), { passive: true });
+    window.addEventListener("touchmove", (e) => {
+        updateTouches(e.touches);
+        // Throttle drag logs or keep silent to avoid log floods, like mousemove
+    }, { passive: true });
 
-        function addMidiLog(msg) {
-            const time = new Date().toISOString().split("T")[1].slice(0, 12);
-            midiLogs.unshift(`[${time}] ${msg}`);
-            if (midiLogs.length > MIDI_LOG_LIMIT) midiLogs.pop();
-            const logEl = document.getElementById("midi-log");
-            if (logEl) logEl.textContent = midiLogs.join("\n");
-        }
+    // -- MIDI LOGIC --
+    const midiContainer = document.getElementById("midi-container");
+    let midiLogs = [];
 
-        function ensureMidiRoot() {
-            if (document.getElementById("midi-root")) return;
-            midiContainer.innerHTML = "";
-            const card = document.createElement("div");
-            card.id = "midi-root";
-            card.className = "pointer-card flex-1 w-full flex-row gap-4";
-            card.style.flexWrap = "wrap";
-            midiContainer.appendChild(card);
+    function addMidiLog(msg) {
+        const time = new Date().toISOString().split("T")[1].slice(0, 12);
+        midiLogs.unshift(`[${time}] ${msg}`);
+        if (midiLogs.length > MIDI_LOG_LIMIT) midiLogs.pop();
+        const logEl = document.getElementById("midi-log");
+        if (logEl) logEl.textContent = midiLogs.join("\n");
+    }
 
-            // Log container inside root
-            const logPre = document.createElement("pre");
-            logPre.className = "log-box mt-4";
-            logPre.innerHTML = "<code id=\"midi-log\"></code>";
-            card.appendChild(logPre);
-        }
+    function ensureMidiRoot() {
+        if (document.getElementById("midi-root")) return;
+        midiContainer.innerHTML = "";
+        const card = document.createElement("div");
+        card.id = "midi-root";
+        card.className = "pointer-card flex-1 w-full flex-row gap-4";
+        card.style.flexWrap = "wrap";
+        midiContainer.appendChild(card);
 
-        function getMidiDeviceCard(input) {
-            ensureMidiRoot();
-            let card = document.getElementById(`midi-dev-${input.id}`);
-            if (!card) {
-                const root = document.getElementById("midi-root");
-                card = document.createElement("div");
-                card.id = `midi-dev-${input.id}`;
-                card.className = "w-full mb-4";
-                card.innerHTML = `
+        // Log container inside root
+        const logPre = document.createElement("pre");
+        logPre.className = "log-box mt-4";
+        logPre.innerHTML = "<code id=\"midi-log\"></code>";
+        card.appendChild(logPre);
+    }
+
+    function getMidiDeviceCard(input) {
+        ensureMidiRoot();
+        let card = document.getElementById(`midi-dev-${input.id}`);
+        if (!card) {
+            const root = document.getElementById("midi-root");
+            card = document.createElement("div");
+            card.id = `midi-dev-${input.id}`;
+            card.className = "w-full mb-4";
+            card.innerHTML = `
                     <h3 class="mt-0 mb-4">${input.name || "Unknown MIDI Device"}</h3>
                     <div id="midi-keys-${input.id}" class="flex-row gap-2" style="flex-wrap: wrap; align-items: flex-end; min-height: 40px;"></div>
                 `;
-                root.insertBefore(card, root.lastElementChild);
-            }
-            return document.getElementById(`midi-keys-${input.id}`);
+            root.insertBefore(card, root.lastElementChild);
         }
+        return document.getElementById(`midi-keys-${input.id}`);
+    }
 
-        function onMIDIMessage(e) {
-            const [cmd, note, vel] = e.data;
-            const input = e.currentTarget;
-            const keysContainer = getMidiDeviceCard(input);
+    function onMIDIMessage(e) {
+        const [cmd, note, vel] = e.data;
+        const input = e.currentTarget;
+        const keysContainer = getMidiDeviceCard(input);
 
-            // MIDI commands: Note On (144-159), Note Off (128-143), Control Change (176-191)
-            const type = cmd >> 4;
+        // MIDI commands: Note On (144-159), Note Off (128-143), Control Change (176-191)
+        const type = cmd >> 4;
 
-            if (type === 9 && vel > 0) { // Note On
-                addMidiLog(`↓ Note On [${note}] (Velocity: ${vel}) - ${input.name}`);
-                let k = document.getElementById(`midi-${input.id}-note-${note}`);
-                if (!k) {
-                    k = document.createElement("kbd");
-                    k.id = `midi-${input.id}-note-${note}`;
-                    k.textContent = note;
-                    keysContainer.appendChild(k);
-                }
-                k.classList.add("pressed");
-            } else if (type === 8 || (type === 9 && vel === 0)) { // Note Off
-                addMidiLog(`↑ Note Off [${note}] - ${input.name}`);
-                const k = document.getElementById(`midi-${input.id}-note-${note}`);
-                if (k) k.classList.remove("pressed");
-            } else if (type === 11) { // Control Change
-                addMidiLog(`⚙ CC [${note}] Value: ${vel} - ${input.name}`);
+        if (type === 9 && vel > 0) { // Note On
+            addMidiLog(`↓ Note On [${note}] (Velocity: ${vel}) - ${input.name}`);
+            let k = document.getElementById(`midi-${input.id}-note-${note}`);
+            if (!k) {
+                k = document.createElement("kbd");
+                k.id = `midi-${input.id}-note-${note}`;
+                k.textContent = note;
+                keysContainer.appendChild(k);
             }
+            k.classList.add("pressed");
+        } else if (type === 8 || (type === 9 && vel === 0)) { // Note Off
+            addMidiLog(`↑ Note Off [${note}] - ${input.name}`);
+            const k = document.getElementById(`midi-${input.id}-note-${note}`);
+            if (k) k.classList.remove("pressed");
+        } else if (type === 11) { // Control Change
+            addMidiLog(`⚙ CC [${note}] Value: ${vel} - ${input.name}`);
         }
+    }
 
-        if (navigator.requestMIDIAccess) {
-            navigator.requestMIDIAccess().then(midiAccess => {
-                for (const input of midiAccess.inputs.values()) {
-                    getMidiDeviceCard(input); // init UI
-                    input.onmidimessage = onMIDIMessage;
-                }
-                midiAccess.onstatechange = (e) => {
-                    if (e.port.type === "input") {
-                        if (e.port.state === "connected") {
-                            addMidiLog(`Connected: ${e.port.name}`);
-                            getMidiDeviceCard(e.port);
-                            e.port.onmidimessage = onMIDIMessage;
-                        } else {
-                            addMidiLog(`Disconnected: ${e.port.name}`);
-                            const card = document.getElementById(`midi-dev-${e.port.id}`);
-                            if (card) card.style.opacity = "0.5";
-                        }
+    if (navigator.requestMIDIAccess) {
+        navigator.requestMIDIAccess().then(midiAccess => {
+            for (const input of midiAccess.inputs.values()) {
+                getMidiDeviceCard(input); // init UI
+                input.onmidimessage = onMIDIMessage;
+            }
+            midiAccess.onstatechange = (e) => {
+                if (e.port.type === "input") {
+                    if (e.port.state === "connected") {
+                        addMidiLog(`Connected: ${e.port.name}`);
+                        getMidiDeviceCard(e.port);
+                        e.port.onmidimessage = onMIDIMessage;
+                    } else {
+                        addMidiLog(`Disconnected: ${e.port.name}`);
+                        const card = document.getElementById(`midi-dev-${e.port.id}`);
+                        if (card) card.style.opacity = "0.5";
                     }
-                };
-            }).catch(e => {
-                midiContainer.innerHTML = "<span class=\"text-muted\">MIDI access refused or unavailable.</span>";
-            });
-        }
-    </script>
-    </body>
+                }
+            };
+        }).catch(e => {
+            midiContainer.innerHTML = "<span class=\"text-muted\">MIDI access refused or unavailable.</span>";
+        });
+    }
+</script>
+</body>
 
 </html>
