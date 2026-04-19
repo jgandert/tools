@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" class="theme-turquoise">
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Visual Regex Builder & Tester</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <link rel="stylesheet" type="text/css" href="../one.css">
-        <style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Regex Builder & Tester</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
         /* Node Styles */
         .node {
             background: var(--surface-container-high);
@@ -123,6 +123,11 @@
             font-family: monospace;
         }
 
+        .type-LITERAL .node-input.text {
+            flex-grow: 1;
+            width: auto;
+        }
+
         input[type="checkbox"].node-input,
         input[type="radio"].node-input {
             width: auto;
@@ -221,7 +226,6 @@
 
         .regex-input {
             font-family: var(--font-code);
-            font-size: 1.2rem !important;
         }
 
         .error-message {
@@ -231,135 +235,138 @@
             margin-top: 4px;
         }
     </style>
-    </head>
+</head>
 
-    <body>
+<body>
 
-        <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+    <input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
 
-        <header>
-            <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
-            <hgroup>
-                <h1>Visual Regex Builder & Tester</h1>
-                <p>Edit the structure tree to generate regex, or paste regex below.</p>
-            </hgroup>
-        </header>
+    <header>
+        <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+        <hgroup>
+            <h1>Visual Regex Builder & Tester</h1>
+            <p>Edit the structure tree to generate regex, or paste regex below.</p>
+        </hgroup>
+    </header>
 
-        <main id="content">
-            <section id="regex-controls">
-                <form onsubmit="return false;">
-                    <label for="regex-out">
-                        Regular Expression
-                        <input type="text" id="regex-out" placeholder="Type regex here (e.g. ^[a-z]+(\d{3}))$"
-                            autocomplete="off" class="regex-input">
-                    </label>
-                    <div id="error-msg" class="error-message"></div>
-                </form>
-            </section>
-
-            <section id="structure-tree">
-                <h2>Structure Tree</h2>
-                <p class="description">Add blocks to build your regex visually.</p>
-                <div id="tree-root"></div>
-            </section>
-
-            <section id="test-section">
-                <h2 class="header-row">
-                    Test <button type="button" id="generate-btn" onclick="generateTestStrings()">
-                        <span class="sym">casino</span> Generate
-                    </button>
-                </h2>
-                <p class="description">Each line is tested independently against the current regex.</p>
-                <label for="test-input">
-                    Test strings (one per line)
-                    <textarea id="test-input" rows="6"></textarea>
+    <main id="content">
+        <section id="regex-controls">
+            <form onsubmit="return false;">
+                <label for="regex-out">
+                    Regular Expression
+                    <input type="text" id="regex-out" placeholder="Type regex here (e.g. ^[a-z]+(\d{3}))$"
+                        autocomplete="off" class="regex-input">
                 </label>
-                <div id="test-results"></div>
-            </section>
-        </main>
+                <label for="join-literals">
+                    <input type="checkbox" id="join-literals" checked onchange="updateASTFromInput()">
+                    Join successive Literals in Structure Tree
+                </label>
+                <div id="error-msg" class="error-message" hidden></div>
+            </form>
+        </section>
 
-        <aside>
-            <h2>Glossary</h2>
-            <ul>
-                <li>
-                    <dfn>Literal</dfn>: Matches exact text characters.
-                </li>
-                <li>
-                    <dfn>Set</dfn>: Matches any single character from a set or range.
-                </li>
-                <li>
-                    <dfn>Group</dfn>: Groups tokens together, useful for capturing or quantifiers.
-                </li>
-                <li>
-                    <dfn>Named Group</dfn>
-                    : A capturing group with a name, e.g. <code>(?P&lt;name&gt;...)</code>
-                    (Python-style).
-                </li>
-                <li>
-                    <dfn>Positive Lookahead</dfn>
-                    <code>(?=...)</code>
-                    : Checks that what comes <em>next</em>
-                    matches, without consuming it. E.g. <code>\d+(?= USD)</code>
-                    matches <code>100</code> in
-                    "100 USD" but not in "100 EUR".
-                </li>
-                <li>
-                    <dfn>Negative Lookahead</dfn>
-                    <code>(?!...)</code>
-                    : Checks that what comes <em>next does
-                        not</em>
-                    match. E.g. <code>\d+(?! USD)</code>
-                    matches <code>100</code> in "100 EUR" but
-                    not in "100 USD".
-                </li>
-                <li>
-                    <dfn>Positive Lookbehind</dfn>
-                    <code>(?&lt;=...)</code>
-                    : Checks that what comes <em>before</em>
-                    matches, without consuming it. E.g. <code>(?&lt;=\$)\d+</code>
-                    matches <code>50</code> in
-                    "$50" but not in "€50".
-                </li>
-                <li>
-                    <dfn>Negative Lookbehind</dfn>
-                    <code>(?&lt;!...)</code>
-                    : Checks that what comes <em>before
-                        does not</em>
-                    match. E.g. <code>(?&lt;!\$)\d+</code>
-                    matches <code>50</code> in "€50"
-                    but not in "$50".
-                </li>
-                <li>
-                    <dfn>Backreference</dfn>
-                    : Matches the same text as previously matched by a group (e.g. <code>\1</code>
-                    or <code>\k&lt;name&gt;</code>).
-                </li>
-                <li>
-                    <dfn>Branch (OR)</dfn>
-                    : Matches the expression before or after the <code>|</code>.
-                </li>
-                <li>
-                    <dfn>Anchor</dfn>
-                    : Matches a position like the start (<code>^</code>
-                    ) or end (<code>$</code>) of a line.
-                </li>
-                <li>
-                    <dfn>Any (.)</dfn>: Matches any single character except newline.
-                </li>
-                <li>
-                    <dfn>Flags</dfn>
-                    : Inline modifiers like <code>(?i)</code>
-                    for case-insensitive or <code>(?x)</code> for
-                    extended mode.
-                </li>
-            </ul>
-            <hr>
-            <button type="button" id="restore-default-btn" class="btn">
-                <span class="sym">history</span> Restore Default Example
-            </button>
-        </aside>
+        <section id="structure-tree">
+            <h2>Structure Tree</h2>
+            <div id="tree-root"></div>
+        </section>
 
-        <script>
+        <section id="test-section">
+            <h2 class="header-row">
+                Test <button type="button" id="generate-btn" onclick="generateTestStrings()">
+                    <span class="sym">casino</span> Generate
+                </button>
+            </h2>
+            <p class="description">Each line is tested independently against the current regex.</p>
+            <label for="test-input">
+                Test strings (one per line)
+                <textarea id="test-input" rows="6"></textarea>
+            </label>
+            <div id="test-results"></div>
+        </section>
+    </main>
+
+    <aside>
+        <h2>Glossary</h2>
+        <ul>
+            <li>
+                <dfn>Literal</dfn>: Matches exact text characters.
+            </li>
+            <li>
+                <dfn>Set</dfn>: Matches any single character from a set or range.
+            </li>
+            <li>
+                <dfn>Group</dfn>: Groups tokens together, useful for capturing or quantifiers.
+            </li>
+            <li>
+                <dfn>Named Group</dfn>
+                : A capturing group with a name, e.g. <code>(?P&lt;name&gt;...)</code>
+                (Python-style).
+            </li>
+            <li>
+                <dfn>Positive Lookahead</dfn>
+                <code>(?=...)</code>
+                : Checks that what comes <em>next</em>
+                matches, without consuming it. E.g. <code>\d+(?= USD)</code>
+                matches <code>100</code> in
+                "100 USD" but not in "100 EUR".
+            </li>
+            <li>
+                <dfn>Negative Lookahead</dfn>
+                <code>(?!...)</code>
+                : Checks that what comes <em>next does
+                    not</em>
+                match. E.g. <code>\d+(?! USD)</code>
+                matches <code>100</code> in "100 EUR" but
+                not in "100 USD".
+            </li>
+            <li>
+                <dfn>Positive Lookbehind</dfn>
+                <code>(?&lt;=...)</code>
+                : Checks that what comes <em>before</em>
+                matches, without consuming it. E.g. <code>(?&lt;=\$)\d+</code>
+                matches <code>50</code> in
+                "$50" but not in "€50".
+            </li>
+            <li>
+                <dfn>Negative Lookbehind</dfn>
+                <code>(?&lt;!...)</code>
+                : Checks that what comes <em>before
+                    does not</em>
+                match. E.g. <code>(?&lt;!\$)\d+</code>
+                matches <code>50</code> in "€50"
+                but not in "$50".
+            </li>
+            <li>
+                <dfn>Backreference</dfn>
+                : Matches the same text as previously matched by a group (e.g. <code>\1</code>
+                or <code>\k&lt;name&gt;</code>).
+            </li>
+            <li>
+                <dfn>Branch (OR)</dfn>
+                : Matches the expression before or after the <code>|</code>.
+            </li>
+            <li>
+                <dfn>Anchor</dfn>
+                : Matches a position like the start (<code>^</code>
+                ) or end (<code>$</code>) of a line.
+            </li>
+            <li>
+                <dfn>Any (.)</dfn>: Matches any single character except newline.
+            </li>
+            <li>
+                <dfn>Flags</dfn>
+                : Inline modifiers like <code>(?i)</code>
+                for case-insensitive or <code>(?x)</code> for
+                extended mode.
+            </li>
+        </ul>
+        <hr>
+        <button type="button" id="restore-default-btn" class="btn">
+            <span class="sym">history</span> Restore Default Example
+        </button>
+    </aside>
+
+    <script>
         /**
          * REVERSE REGEX BUILDER
          * * Architecture:
@@ -699,56 +706,56 @@
                 let out = "";
 
                 switch (node.type) {
-                case TYPES.ROOT:
-                    out = Generator.generate(node.children);
-                    break;
-                case TYPES.LITERAL:
-                    // Escape special chars, but preserve already-escaped literals
-                    if (node.escaped) {
-                        out = "\\" + node.value;
-                    } else {
-                        out = SPECIAL_CHARS.test(node.value) ? "\\" + node.value : node.value;
+                    case TYPES.ROOT:
+                        out = Generator.generate(node.children);
+                        break;
+                    case TYPES.LITERAL:
+                        // Escape special chars, but preserve already-escaped literals
+                        if (node.escaped) {
+                            out = "\\" + node.value;
+                        } else {
+                            out = node.value.split('').map(c => SPECIAL_CHARS.test(c) ? "\\" + c : c).join("");
+                        }
+                        break;
+                    case TYPES.DOT:
+                        out = ".";
+                        break;
+                    case TYPES.ANCHOR:
+                        out = node.value;
+                        break;
+                    case TYPES.SET:
+                        if (node.predefined) {
+                            out = node.predefined;
+                        } else {
+                            out = `[${node.negated ? "^" : ""}${node.content}]`;
+                        }
+                        break;
+                    case TYPES.GROUP: {
+                        const inner = Generator.generate(node.children);
+                        if (node.lookType) {
+                            out = `(${node.lookType}${inner})`;
+                        } else if (node.name) {
+                            out = `(?P<${node.name}>${inner})`;
+                        } else if (node.capturing) {
+                            out = `(${inner})`;
+                        } else {
+                            out = `(?:${inner})`;
+                        }
+                        break;
                     }
-                    break;
-                case TYPES.DOT:
-                    out = ".";
-                    break;
-                case TYPES.ANCHOR:
-                    out = node.value;
-                    break;
-                case TYPES.SET:
-                    if (node.predefined) {
-                        out = node.predefined;
-                    } else {
-                        out = `[${node.negated ? "^" : ""}${node.content}]`;
-                    }
-                    break;
-                case TYPES.GROUP: {
-                    const inner = Generator.generate(node.children);
-                    if (node.lookType) {
-                        out = `(${node.lookType}${inner})`;
-                    } else if (node.name) {
-                        out = `(?P<${node.name}>${inner})`;
-                    } else if (node.capturing) {
-                        out = `(${inner})`;
-                    } else {
-                        out = `(?:${inner})`;
-                    }
-                    break;
-                }
-                case TYPES.BRANCH:
-                    out = node.branches.map(b => Generator.generate(b)).join("|");
-                    break;
-                case TYPES.FLAGS:
-                    out = `(?${node.flags})`;
-                    break;
-                case TYPES.BACKREF:
-                    if (node.named) {
-                        out = `(?P=${node.value})`;
-                    } else {
-                        out = "\\" + node.value;
-                    }
-                    break;
+                    case TYPES.BRANCH:
+                        out = node.branches.map(b => Generator.generate(b)).join("|");
+                        break;
+                    case TYPES.FLAGS:
+                        out = `(?${node.flags})`;
+                        break;
+                    case TYPES.BACKREF:
+                        if (node.named) {
+                            out = `(?P=${node.value})`;
+                        } else {
+                            out = "\\" + node.value;
+                        }
+                        break;
                 }
 
                 // Append quantifier
@@ -773,10 +780,16 @@
             ast: { type: TYPES.ROOT, children: [], id: uid() }
         };
 
+        const setError = (msg) => {
+            const el = document.getElementById("error-msg");
+            el.textContent = msg || "";
+            el.hidden = !msg;
+        };
+
         const updateRegexInput = () => {
             const regexStr = Generator.generate(state.ast);
             document.getElementById("regex-out").value = regexStr;
-            document.getElementById("error-msg").textContent = "";
+            setError("");
             saveState();
         };
 
@@ -789,39 +802,90 @@
                     const parser = new RegexParser(input);
                     state.ast = parser.parse();
                 }
+
+                const joinCheck = document.getElementById("join-literals");
+                if (joinCheck && joinCheck.checked) {
+                    joinLiteralsInAST(state.ast);
+                }
+
                 numberGroups(state.ast);
-                document.getElementById("error-msg").textContent = "";
+                setError("");
                 render();
             } catch (e) {
-                document.getElementById("error-msg").textContent = "Invalid Regex: " + e.message;
+                setError("Invalid Regex: " + e.message);
             }
         };
 
+        function joinLiteralsInAST(node) {
+            if (!node || typeof node !== 'object') return;
+            if (node.children) {
+                node.children = joinLiteralsInArray(node.children);
+                node.children.forEach(joinLiteralsInAST);
+            }
+            if (node.branches) {
+                for (let i = 0; i < node.branches.length; i++) {
+                    node.branches[i] = joinLiteralsInArray(node.branches[i]);
+                    node.branches[i].forEach(joinLiteralsInAST);
+                }
+            }
+        }
+
+        function joinLiteralsInArray(arr) {
+            const result = [];
+            for (let i = 0; i < arr.length; i++) {
+                const current = arr[i];
+                if (result.length > 0 && current.type === TYPES.LITERAL) {
+                    const prev = result[result.length - 1];
+                    if (prev.type === TYPES.LITERAL) {
+                        const prevQuant = prev.quantifier ? JSON.stringify(prev.quantifier) : null;
+                        const currQuant = current.quantifier ? JSON.stringify(current.quantifier) : null;
+                        if (prevQuant === currQuant) {
+                            prev.value += current.value;
+                            delete prev.escaped;
+                            continue;
+                        }
+                    }
+                }
+                result.push(current);
+            }
+            return result;
+        }
+
         /* --- 5. Rendering & Interaction --- */
+
+        function tip(el, text) {
+            el.title = text;
+            el.setAttribute("data-tooltip", text);
+            return el;
+        }
 
         function createEl(tag, className, text, icon) {
             const el = document.createElement(tag);
             if (tag.toLowerCase() === "button") el.type = "button";
             if (className) {
-                const cleanClasses = className.split(" ").filter(c => c !== "btn" && c !== "btn-add").join(" ");
-                if (cleanClasses) el.className = cleanClasses;
-            }
-            if (icon) {
-                const span = document.createElement("span");
-                span.className = "sym";
-                span.textContent = icon;
-                el.appendChild(span);
-                if (text) {
-                    const txt = document.createTextNode(" " + text);
-                    el.appendChild(txt);
+                const cleanClasses = className.split(" ").filter(c => c !== "btn" && c !== "btn-add");
+                if (icon && !text && className.includes("btn-sym")) {
+                    el.textContent = icon;
+                } else if (icon) {
+                    const span = document.createElement("span");
+                    span.className = "sym";
+                    span.textContent = icon;
+                    el.appendChild(span);
+                    if (text) {
+                        const txt = document.createTextNode(" " + text);
+                        el.appendChild(txt);
+                    }
+                } else if (text) {
+                    el.textContent = text;
                 }
+                if (cleanClasses.length > 0) el.className = cleanClasses.join(" ");
             } else if (text) {
                 el.textContent = text;
             }
             return el;
         }
 
-        // Helper to update a node in the tree by ID (naive approach: just re-render full tree for MVP)
+        // Helper to update a node in the tree by ID
         const triggerUpdate = () => {
             numberGroups(state.ast);
             updateRegexInput();
@@ -830,8 +894,7 @@
 
         function renderQuantifierInputs(node, container) {
             if (!node.quantifier) {
-                const btn = createEl("button", "btn-sym", "", "autorenew");
-                btn.title = "Add Repetitions";
+                const btn = tip(createEl("button", "btn-sym", "", "autorenew"), "Add Repetitions");
                 btn.onclick = () => {
                     node.quantifier = { min: 1, max: 1, greedy: true };
                     triggerUpdate();
@@ -870,8 +933,7 @@
             wrapper.appendChild(maxIn);
 
             // Remove Quantifier
-            const removeBtn = createEl("button", "btn-sym btn-danger", "", "close");
-            removeBtn.title = "Remove repetitions";
+            const removeBtn = tip(createEl("button", "btn-sym btn-danger", "", "close"), "Remove repetitions");
             removeBtn.onclick = () => {
                 delete node.quantifier;
                 triggerUpdate();
@@ -909,13 +971,14 @@
                 contentDiv.appendChild(document.createTextNode("Flags: "));
                 const input = createEl("input", "node-input short");
                 input.value = node.flags;
-                input.title = "i = case-insensitive, x = extended, m = multiline, s = dotall";
+                tip(input, "i = case-insensitive, x = extended, m = multiline, s = dotall");
                 input.oninput = (e) => { node.flags = e.target.value; updateRegexInput(); };
                 contentDiv.appendChild(input);
             }
             else if (node.type === TYPES.SET) {
                 const switchBtn = createEl("button", "btn-sym", "", "shuffle");
-                switchBtn.title = node.predefined ? "Switch to custom set" : "Switch to predefined set";
+                const updateSwitchTip = () => tip(switchBtn, node.predefined ? "Switch to custom set" : "Switch to predefined set");
+                updateSwitchTip();
                 switchBtn.onclick = () => {
                     if (node.predefined) {
                         node.content = "a-z";
@@ -1024,7 +1087,8 @@
             }
             else if (node.type === TYPES.BACKREF) {
                 const switchBtn = createEl("button", "btn-sym", "", "shuffle");
-                switchBtn.title = node.named ? "Switch to numeric backref" : "Switch to named backref";
+                const updateSwitchTip = () => tip(switchBtn, node.named ? "Switch to numeric backref" : "Switch to named backref");
+                updateSwitchTip();
                 switchBtn.onclick = () => {
                     node.named = !node.named;
                     node.value = node.named ? "name" : "1";
@@ -1042,6 +1106,21 @@
                 if (node.named) contentDiv.appendChild(createEl("span", "description", ")"));
             }
 
+            if (node.type === TYPES.LITERAL && node.value.length > 1) {
+                const splitBtn = tip(createEl("button", "btn-sym", "", "content_cut"), "Split into individual characters");
+                splitBtn.onclick = () => {
+                    const chars = node.value.split('');
+                    const newNodes = chars.map(c => {
+                        const newNode = { type: TYPES.LITERAL, value: c, id: uid() };
+                        if (node.quantifier) newNode.quantifier = JSON.parse(JSON.stringify(node.quantifier));
+                        return newNode;
+                    });
+                    parentArray.splice(index, 1, ...newNodes);
+                    triggerUpdate();
+                };
+                contentDiv.appendChild(splitBtn);
+            }
+
             // Quantifier UI (Literal, Group, Set, Dot can be repeated)
             if ([TYPES.LITERAL, TYPES.SET, TYPES.GROUP, TYPES.DOT].includes(node.type)) {
                 renderQuantifierInputs(node, contentDiv);
@@ -1054,8 +1133,7 @@
             actions.style.gap = "4px";
 
             // Move Up
-            const moveUpBtn = createEl("button", "btn-sym", "", "arrow_upward");
-            moveUpBtn.title = "Move up";
+            const moveUpBtn = tip(createEl("button", "btn-sym", "", "arrow_upward"), "Move up");
             moveUpBtn.disabled = index === 0;
             moveUpBtn.onclick = () => {
                 [parentArray[index - 1], parentArray[index]] = [parentArray[index], parentArray[index - 1]];
@@ -1064,8 +1142,7 @@
             actions.appendChild(moveUpBtn);
 
             // Move Down
-            const moveDownBtn = createEl("button", "btn-sym", "", "arrow_downward");
-            moveDownBtn.title = "Move down";
+            const moveDownBtn = tip(createEl("button", "btn-sym", "", "arrow_downward"), "Move down");
             moveDownBtn.disabled = index === parentArray.length - 1;
             moveDownBtn.onclick = () => {
                 [parentArray[index + 1], parentArray[index]] = [parentArray[index], parentArray[index + 1]];
@@ -1074,8 +1151,7 @@
             actions.appendChild(moveDownBtn);
 
             // Delete Button
-            const delBtn = createEl("button", "btn-danger btn-sym", "", "delete");
-            delBtn.title = "Delete node";
+            const delBtn = tip(createEl("button", "btn-danger btn-sym", "", "delete"), "Delete node");
             delBtn.onclick = () => {
                 parentArray.splice(index, 1);
                 triggerUpdate();
@@ -1103,8 +1179,7 @@
                     branchWrapper.style.borderLeft = "4px solid orange";
                     branchWrapper.innerHTML = `<strong>Option ${i + 1}</strong>`;
 
-                    const btnRemove = createEl("button", "btn-danger btn-sym", "", "delete");
-                    btnRemove.title = "Remove Option";
+                    const btnRemove = tip(createEl("button", "btn-danger btn-sym", "", "delete"), "Remove Option");
                     btnRemove.style.float = "right";
                     btnRemove.onclick = () => {
                         node.branches.splice(i, 1);
@@ -1186,7 +1261,7 @@
             rootEl.innerHTML = "";
 
             if (!state.ast.children || state.ast.children.length === 0) {
-                rootEl.innerHTML = "<p class=\"description\">Empty pattern. Add blocks below.</p>";
+                rootEl.innerHTML = "<p class=\"description\">Empty pattern. Add blocks to build your regex visually.</p>";
                 rootEl.appendChild(renderToolbox(state.ast.children));
             } else {
                 // Root is treated as a sequence container
@@ -1270,79 +1345,79 @@
             let out = "";
             for (let r = 0; r < count; r++) {
                 switch (node.type) {
-                case TYPES.ROOT:
-                    out += generateFromAST(node.children, captures);
-                    break;
+                    case TYPES.ROOT:
+                        out += generateFromAST(node.children, captures);
+                        break;
 
-                case TYPES.LITERAL:
-                    out += node.value;
-                    break;
+                    case TYPES.LITERAL:
+                        out += node.value;
+                        break;
 
-                case TYPES.DOT:
-                    out += _pick("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
-                    break;
+                    case TYPES.DOT:
+                        out += _pick("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
+                        break;
 
-                case TYPES.ANCHOR:
-                case TYPES.FLAGS:
-                    break; // produce no characters
+                    case TYPES.ANCHOR:
+                    case TYPES.FLAGS:
+                        break; // produce no characters
 
-                case TYPES.SET:
-                    if (node.predefined) {
-                        switch (node.predefined) {
-                        case "\\d": out += String(Math.floor(Math.random() * 10)); break;
-                        case "\\D": out += _pick("abcABC!@# "); break;
-                        case "\\w": out += _pick("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"); break;
-                        case "\\W": out += _pick(" !@#$%^&*"); break;
-                        case "\\s": out += _pick(" \t"); break;
-                        case "\\S": out += _pick("abcABC123!@#"); break;
-                        default: out += "x";
-                        }
-                    } else {
-                        const chars = expandSetContent(node.content);
-                        if (node.negated) {
-                            const all = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-";
-                            const available = [...all].filter(c => !chars.includes(c));
-                            out += available.length > 0 ? _pick(available) : "!";
+                    case TYPES.SET:
+                        if (node.predefined) {
+                            switch (node.predefined) {
+                                case "\\d": out += String(Math.floor(Math.random() * 10)); break;
+                                case "\\D": out += _pick("abcABC!@# "); break;
+                                case "\\w": out += _pick("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"); break;
+                                case "\\W": out += _pick(" !@#$%^&*"); break;
+                                case "\\s": out += _pick(" \t"); break;
+                                case "\\S": out += _pick("abcABC123!@#"); break;
+                                default: out += "x";
+                            }
                         } else {
-                            out += chars.length > 0 ? _pick(chars) : "a";
+                            const chars = expandSetContent(node.content);
+                            if (node.negated) {
+                                const all = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-";
+                                const available = [...all].filter(c => !chars.includes(c));
+                                out += available.length > 0 ? _pick(available) : "!";
+                            } else {
+                                out += chars.length > 0 ? _pick(chars) : "a";
+                            }
                         }
+                        break;
+
+                    case TYPES.GROUP:
+                        if (node.lookType) {
+                            // Positive lookbehind: generate content as prefix
+                            // (it must appear before the match in the input string)
+                            if (node.lookType === "?<=") {
+                                out += generateFromAST(node.children, captures);
+                            }
+                            // Positive lookahead (?=): skip — the later parts of the
+                            // pattern already produce the text the lookahead asserts.
+                            // Negative lookarounds (?!, ?<!): skip, rely on validation.
+                        } else {
+                            const content = generateFromAST(node.children, captures);
+                            // Store capture for backreferences
+                            if (node.capturing && node.groupNumber) {
+                                captures[node.groupNumber] = content;
+                                if (node.name) captures[node.name] = content;
+                            }
+                            out += content;
+                        }
+                        break;
+
+                    case TYPES.BRANCH:
+                        out += generateFromAST(
+                            node.branches[Math.floor(Math.random() * node.branches.length)],
+                            captures
+                        );
+                        break;
+
+                    case TYPES.BACKREF: {
+                        // Replay what the referenced group captured
+                        const key = node.named ? node.value : parseInt(node.value, 10);
+                        out += captures[key] || "";
+                        break;
                     }
-                    break;
-
-                case TYPES.GROUP:
-                    if (node.lookType) {
-                        // Positive lookbehind: generate content as prefix
-                        // (it must appear before the match in the input string)
-                        if (node.lookType === "?<=") {
-                            out += generateFromAST(node.children, captures);
-                        }
-                        // Positive lookahead (?=): skip — the later parts of the
-                        // pattern already produce the text the lookahead asserts.
-                        // Negative lookarounds (?!, ?<!): skip, rely on validation.
-                    } else {
-                        const content = generateFromAST(node.children, captures);
-                        // Store capture for backreferences
-                        if (node.capturing && node.groupNumber) {
-                            captures[node.groupNumber] = content;
-                            if (node.name) captures[node.name] = content;
-                        }
-                        out += content;
-                    }
-                    break;
-
-                case TYPES.BRANCH:
-                    out += generateFromAST(
-                        node.branches[Math.floor(Math.random() * node.branches.length)],
-                        captures
-                    );
-                    break;
-
-                case TYPES.BACKREF: {
-                    // Replay what the referenced group captured
-                    const key = node.named ? node.value : parseInt(node.value, 10);
-                    out += captures[key] || "";
-                    break;
-                }
                 }
             }
             return out;
@@ -1352,31 +1427,31 @@
         function generateNonMatchingString(ast) {
             const s = generateFromAST(ast);
             switch (Math.floor(Math.random() * 9)) {
-            case 0: // Truncate from end
-                return s.length < 2 ? s + "!!!" : s.slice(0, -_randInt(1, Math.min(s.length - 1, 5)));
-            case 1: // Truncate from start
-                return s.length < 2 ? "???" + s : s.slice(_randInt(1, Math.min(s.length - 1, 5)));
-            case 2: { // Insert junk char
-                const pos = Math.floor(Math.random() * (s.length + 1));
-                return s.slice(0, pos) + _pick("!@#$%^&*()[]{}|~`") + s.slice(pos);
-            }
-            case 3: { // Replace a char
-                if (!s.length) return "???";
-                const pos = Math.floor(Math.random() * s.length);
-                return s.slice(0, pos) + _pick("!@#$%^☺★♦") + s.slice(pos + 1);
-            }
-            case 4: { // Swap adjacent chars
-                if (s.length < 2) return s + "???";
-                const pos = Math.floor(Math.random() * (s.length - 1));
-                return s.slice(0, pos) + s[pos + 1] + s[pos] + s.slice(pos + 2);
-            }
-            case 5: { // Fully random string
-                const pool = "abcdefghijklmnopqrstuvwxyz0123456789 !@#";
-                return Array.from({ length: _randInt(3, 17) }, () => _pick(pool)).join("");
-            }
-            case 6: return s + s; // Double
-            case 7: return ">>> " + s; // Prefix
-            case 8: return Math.random() > 0.5 ? s.toUpperCase() : s.toLowerCase(); // Case flip
+                case 0: // Truncate from end
+                    return s.length < 2 ? s + "!!!" : s.slice(0, -_randInt(1, Math.min(s.length - 1, 5)));
+                case 1: // Truncate from start
+                    return s.length < 2 ? "???" + s : s.slice(_randInt(1, Math.min(s.length - 1, 5)));
+                case 2: { // Insert junk char
+                    const pos = Math.floor(Math.random() * (s.length + 1));
+                    return s.slice(0, pos) + _pick("!@#$%^&*()[]{}|~`") + s.slice(pos);
+                }
+                case 3: { // Replace a char
+                    if (!s.length) return "???";
+                    const pos = Math.floor(Math.random() * s.length);
+                    return s.slice(0, pos) + _pick("!@#$%^☺★♦") + s.slice(pos + 1);
+                }
+                case 4: { // Swap adjacent chars
+                    if (s.length < 2) return s + "???";
+                    const pos = Math.floor(Math.random() * (s.length - 1));
+                    return s.slice(0, pos) + s[pos + 1] + s[pos] + s.slice(pos + 2);
+                }
+                case 5: { // Fully random string
+                    const pool = "abcdefghijklmnopqrstuvwxyz0123456789 !@#";
+                    return Array.from({ length: _randInt(3, 17) }, () => _pick(pool)).join("");
+                }
+                case 6: return s + s; // Double
+                case 7: return ">>> " + s; // Prefix
+                case 8: return Math.random() > 0.5 ? s.toUpperCase() : s.toLowerCase(); // Case flip
             }
         }
 
@@ -1526,7 +1601,7 @@
                         text.appendChild(document.createTextNode(line.substring(lastIdx, m.index)));
                         const mark = document.createElement("mark");
                         mark.textContent = m[0] || "ε"; // Show epsilon for empty matches
-                        if (m[0] === "") mark.title = "Empty match";
+                        if (m[0] === "") tip(mark, "Empty match");
                         text.appendChild(mark);
                         lastIdx = m.index + (m[0].length || 1);
                     });
@@ -1617,6 +1692,6 @@
         updateASTFromInput();
         runTests();
     </script>
-    </body>
+</body>
 
 </html>

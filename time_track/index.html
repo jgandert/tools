@@ -42,6 +42,27 @@
             gap: var(--spacing-sm);
             cursor: pointer;
         }
+
+        /* Compact time blocks */
+        #time-blocks [role="group"],
+        #edit-time-blocks [role="group"] {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        #time-blocks [role="group"]>label,
+        #edit-time-blocks [role="group"]>label {
+            flex: 1;
+        }
+
+        #time-blocks [role="group"]>label:nth-child(1),
+        #time-blocks [role="group"]>label:nth-child(2),
+        #edit-time-blocks [role="group"]>label:nth-child(1),
+        #edit-time-blocks [role="group"]>label:nth-child(2) {
+            flex: 0 0 80px;
+        }
     </style>
         <title>Time Tracker</title>
         <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
@@ -302,6 +323,7 @@
             initialOvertime: 0,
             autoExportInterval: 5,
             divisibleWarning: 15,
+            useVisualEditor: false,
             pauseRules: [
                 { workedThreshold: 9 * 60, requiredPause: 45 },
                 { workedThreshold: 6 * 60, requiredPause: 30 }
@@ -319,14 +341,16 @@
         //       "dateTimeUTCWhenAdded": "2025-01-15T16:30:00Z"
         //     }
         //   ],
-        //   "overtimeMinutes": 0
+        //   "overtimeMinutes": 0,
+        //   "draft": "8:00 - 12:00"
         // }
 
         function loadData() {
             const defaults = {
                 settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
                 workDays: [],
-                overtimeMinutes: 0
+                overtimeMinutes: 0,
+                draft: ""
             };
             try {
                 const stored = localStorage.getItem(STORAGE_KEY);
@@ -345,7 +369,8 @@
                     return {
                         settings: settings,
                         workDays: Array.isArray(parsed.workDays) ? parsed.workDays : [],
-                        overtimeMinutes: typeof parsed.overtimeMinutes === "number" ? parsed.overtimeMinutes : 0
+                        overtimeMinutes: typeof parsed.overtimeMinutes === "number" ? parsed.overtimeMinutes : 0,
+                        draft: typeof parsed.draft === "string" ? parsed.draft : ""
                     };
                 }
             } catch (e) { /* use defaults */ }
@@ -390,14 +415,14 @@
             if (minutes === 0) return "0 seconds";
             const abs = Math.abs(minutes);
             const sign = minutes < 0 ? "-" : "";
-            if (abs < 60) return sign + abs + " minutes";
+            if (abs < 60) return sign + abs + (abs === 1 ? " minute" : " minutes");
             const fullHours = Math.floor(abs / 60);
             const remMinutes = abs % 60;
-            const parts = [fullHours + " hours"];
-            if (remMinutes > 0) parts.push(remMinutes + " minutes");
+            const parts = [fullHours + (fullHours === 1 ? " hour" : " hours")];
+            if (remMinutes > 0) parts.push(remMinutes + (remMinutes === 1 ? " minute" : " minutes"));
             const humanTime = sign + parts.join(" and ");
             const decimalHours = (abs / 60).toFixed(2).replace(/\.?0+$/, "");
-            const mainTime = sign + decimalHours + " hours";
+            const mainTime = sign + decimalHours + (decimalHours === "1" ? " hour" : " hours");
             return humanTime === mainTime ? humanTime : humanTime + " (= " + mainTime + ")";
         }
 
@@ -409,6 +434,7 @@
             let longestConsecutivePause = 0;
             let previousTo = -1;
             let lastTo = -1;
+            let unfinishedFromMin = null;
             const errors = [];
 
             for (const rawLine of inputString.split("\n")) {
@@ -431,35 +457,42 @@
                     errors.push("Invalid from-time: " + fromStr.trim());
                     continue;
                 }
-                if (toMin === null) {
-                    errors.push("Invalid to-time: " + toStr.trim());
-                    continue;
-                }
-                if (toMin < fromMin) {
-                    errors.push("End time before start time: " + line);
+
+                const pauseDur = (previousTo >= 0) ? fromMin - previousTo : 0;
+                if (previousTo >= 0 && pauseDur < 0) {
+                    errors.push("Overlapping time blocks: " + line);
                     continue;
                 }
 
-                const dur = toMin - fromMin;
+                // If we have a valid fromMin and no overlap, this is our "current" start point
+                unfinishedFromMin = fromMin;
 
-                if (minutesWorked > 0 && previousTo >= 0) {
-                    const pauseDur = fromMin - previousTo;
-                    if (pauseDur < 0) {
-                        errors.push("Overlapping time blocks: " + line);
-                        continue;
-                    }
+                if (previousTo >= 0) {
                     minutesPaused += pauseDur;
                     if (pauseDur > longestConsecutivePause) {
                         longestConsecutivePause = pauseDur;
                     }
                 }
 
+                if (toMin === null) {
+                    errors.push("Invalid to-time: " + toStr.trim());
+                    continue;
+                }
+
+                if (toMin < fromMin) {
+                    errors.push("End time before start time: " + line);
+                    unfinishedFromMin = null;
+                    continue;
+                }
+
+                const dur = toMin - fromMin;
                 minutesWorked += dur;
                 previousTo = toMin;
                 lastTo = toMin;
+                unfinishedFromMin = null;
             }
 
-            return { minutesWorked, minutesPaused, longestConsecutivePause, lastTo, errors };
+            return { minutesWorked, minutesPaused, longestConsecutivePause, lastTo, unfinishedFromMin, errors };
         }
 
         // --- Pause check ---
@@ -539,9 +572,13 @@
 
             const removeBtn = document.createElement("button");
             removeBtn.type = "button";
-            removeBtn.textContent = "×";
+            removeBtn.className = "btn-sym btn-danger";
+            removeBtn.innerHTML = "delete";
             removeBtn.ariaLabel = "Remove this time block";
-            removeBtn.addEventListener("click", () => row.remove());
+            removeBtn.addEventListener("click", () => {
+                row.remove();
+                if (prefix === "block") updatePreview();
+            });
 
             row.append(fromLabel, toLabel, commentLabel, removeBtn);
             container.appendChild(row);
@@ -628,7 +665,7 @@
             removeBtn.type = "button";
             removeBtn.className = "btn-sym btn-danger";
             removeBtn.ariaLabel = "Remove this pause rule";
-            removeBtn.innerHTML = "<span class=\"sym\">delete</span>";
+            removeBtn.innerHTML = "delete";
             removeBtn.addEventListener("click", () => {
                 row.remove();
                 if (container.children.length === 1 && container.firstElementChild.classList.contains("pause-rules-grid-header")) {
@@ -690,10 +727,12 @@
                     result.errors.map(e => "<li>" + escapeHtml(e) + "</li>").join("") + "</ul>");
             }
 
-            if (result.minutesWorked > 0) {
-                parts.push("<p>Worked: <strong>" + toHuman(result.minutesWorked) + "</strong></p>");
+            if (result.minutesWorked > 0 || result.unfinishedFromMin !== null) {
+                if (result.minutesWorked > 0) {
+                    parts.push("<p>Worked: <strong>" + toHuman(result.minutesWorked) + "</strong></p>");
+                }
 
-                if (result.minutesWorked % settings.divisibleWarning !== 0) {
+                if (settings.divisibleWarning > 0 && result.minutesWorked % settings.divisibleWarning !== 0) {
                     parts.push("<p><strong>Warning:</strong> Work minutes not divisible by " +
                         settings.divisibleWarning + ". Maybe a typo?</p>");
                 }
@@ -712,21 +751,22 @@
                 }
 
                 const overtime = result.minutesWorked - settings.targetMinutesPerWorkDay;
-                parts.push("<p>Overtime this day: " + toHuman(overtime) + "</p>");
+                if (result.minutesWorked > 0) {
+                    parts.push("<p>Overtime this day: " + toHuman(overtime) + "</p>");
+                }
 
                 // Show when to stop to meet target
-                if (overtime < 0 && result.lastTo >= 0) {
-                    let targetEnd = result.lastTo + (-overtime);
+                if (overtime < 0 && (result.lastTo >= 0 || result.unfinishedFromMin !== null)) {
+                    const startTime = result.unfinishedFromMin !== null ? result.unfinishedFromMin : result.lastTo;
+                    let targetEnd = startTime + (-overtime);
                     const futureWorked = settings.targetMinutesPerWorkDay;
                     const futurePauseRule = getRequiredPause(futureWorked, result.minutesPaused, settings.pauseRules);
                     if (futurePauseRule) {
                         const extraPause = futurePauseRule.requiredPause - result.longestConsecutivePause;
                         if (extraPause > 0) targetEnd += extraPause;
                     }
-                    if (targetEnd <= 24 * 60) {
-                        parts.push("<p>Work until <strong>" + formatMinutesAsTime(targetEnd) +
-                            "</strong> to meet your daily target.</p>");
-                    }
+                    parts.push("<p>Work until <strong>" + formatMinutesAsTime(targetEnd % (24 * 60)) +
+                        "</strong> to meet your daily target.</p>");
                 }
             }
 
@@ -745,6 +785,12 @@
             const data = loadData();
             const inputString = getCurrentInputText();
             document.getElementById("preview-content").innerHTML = buildPreviewHtml(inputString, data.settings);
+
+            data.draft = inputString.trim();
+            const toggle = document.getElementById("toggle-input-mode");
+            if (toggle) data.settings.useVisualEditor = toggle.checked;
+
+            saveData(data);
         }
 
         // --- History rendering ---
@@ -850,6 +896,10 @@
 
             document.getElementById("entry-date").value = todayISO();
 
+            if (data.draft) {
+                document.getElementById("entry-text").value = data.draft;
+            }
+
             const updateInsertTimeButtonStatus = (warning) => {
                 const mainBtn = document.getElementById("insert-time-btn");
                 const editBtn = document.getElementById("edit-insert-time-btn");
@@ -938,8 +988,18 @@
                 updatePreview();
             });
 
+            if (data.settings.useVisualEditor) {
+                const toggle = document.getElementById("toggle-input-mode");
+                toggle.checked = true;
+                toggle.dispatchEvent(new Event("change"));
+            } else {
+                updatePreview();
+            }
+
+
             document.getElementById("add-block-btn").addEventListener("click", () => {
                 createBlockRow(document.getElementById("time-blocks"), "block", "", "", "");
+                updatePreview();
             });
 
             document.getElementById("add-pause-rule-btn").addEventListener("click", () => {
@@ -1064,6 +1124,7 @@
                     initialOvertime: !isNaN(initialVal) ? initialVal : 0,
                     autoExportInterval: !isNaN(exportVal) ? exportVal : 5,
                     divisibleWarning: !isNaN(warningVal) ? warningVal : 15,
+                    useVisualEditor: document.getElementById("toggle-input-mode").checked,
                     pauseRules: readPauseRulesFromSettings()
                 };
 
