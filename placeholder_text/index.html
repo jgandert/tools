@@ -222,9 +222,9 @@
                 this.liquids = ["clarified truffle butter", "fermented plum reduction", "dry vermouth", "first-press yuzu juice", "house-made kombucha", "court bouillon", "aged balsamic vinegar", "white balsamic", "sherry vinegar", "champagne vinegar", "apple cider vinegar", "black rice vinegar", "red wine reduction", "white wine deglaze", "port wine syrup", "madeira wine", "marsala", "cognac", "armagnac", "calvados", "grand marnier", "absinthe", "chartreuse", "amaro", "fernet", "campari", "aperol", "sake", "mirin", "shaoxing wine", "awamori", "mezcal", "tequila", "gin", "vodka", "white rum", "dark rum", "aged bourbon", "rye whiskey", "scotch whisky", "single malt", "irish whiskey", "Japanese whisky", "chicken consommé", "beef dashi", "mushroom tea", "tomato water", "cucumber juice", "celery juice", "green apple extraction", "pomegranate molasses", "maple syrup", "agave nectar", "birch syrup", "sorghum syrup", "date syrup", "coconut aminos", "liquid aminos", "tamari", "shoyu", "white soy sauce", "fish sauce", "colatura di alici", "squid ink broth", "whey", "buttermilk", "kefir", "crème fraîche", "heavy cream", "double cream", "clotted cream", "coconut milk", "coconut cream", "almond milk", "oat milk", "cashew cream", "hazelnut oil", "walnut oil", "pumpkin seed oil", "sesame oil", "toasted sesame oil", "chili oil", "garlic oil", "herb-infused olive oil", "extra virgin olive oil", "grapeseed oil", "avocado oil", "duck fat liquid", "rendered lardo", "brown butter (beurre noisette)", "white-soy serum", "prawn-head oil", "ginger-scallion infusion", "pomegranate reduction", "hibiscus tea", "rose water", "orange blossom water", "bitters", "tonic water", "carbonated water"];
                 this.tools = ["heavy-bottomed copper skillet", "immersion blender", "centrifuge", "smoking gun", "japanese mandoline", "granite mortar", "marble pestle", "fine-mesh chinois", "tamis", "superbag", "vacuum sealer", "sous-vide circulator", "blast chiller", "anti-griddle", "pacojet", "thermomix", "dehydrator", "rotary evaporator", "siphon whip", "cream whipper", "culinary torch", "blowtorch", "offset spatula", "plating tweezers", "surgical scalpel", "microplane grater", "box grater", "zester", "pasta machine", "meat grinder", "sausage stuffer", "cast iron dutch oven", "enameled braiser", "carbon steel wok", "teppanyaki grill", "robata grill", "yakitori grill", "wood-fired oven", "tandoor clay oven", "plancha", "salamander broiler", "induction burner", "combi oven", "steam oven", "pressure cooker", "instant pot", "slow cooker", "rice cooker", "bamboo steamer", "tagine", "paella pan", "blini pan", "crêpe pan", "sauteuse", "rondeau", "stockpot", "bain-marie", "double boiler", "stand mixer", "food processor", "burr grinder", "spice mill", "masticating juicer", "cold-press juicer", "hydraulic press", "cheesecloth", "butcher's twine", "cheese wire", "truffle slicer", "oyster knife", "boning knife", "filet knife", "cleaver", "nakiri", "santoku", "gyuto", "yanagiba", "paring knife", "bread knife", "steel honing rod", "whetstone", "copper sugar pot", "silicone baking mat", "perforated tart ring", "geometric mold", "cryogenic tank", "piping bag", "pastry brush", "spatula", "whisk", "tongs", "ladle", "slotted spoon", "skimmer"];
                 this.dishEndings = ["anchors the dish", "brings the elements together", "elevates the entire profile", "adds a crucial dimension", "cuts through the richness", "balances the complex composition", "provides a surprising contrast", "ties the flavors together", "lingers on the palate", "defies expectations", "subverts the traditional narrative", "harmonizes the disparate components", "grounds the ethereal notes", "completes the sensory journey"];
-                this.plateStarts = ["For plating", "To finish", "As a final touch", "Before serving", "To complete the dish", "For the final presentation", "At the pass", "In the final assembly", "Just before the guests arrive"];
-                this.dustings = ["dusting", "sprinkling", "garnish", "hint", "scattering", "accent", "shaving", "micro-emulsion", "whisper", "delicate misting"];
-                this.transitions = ["meanwhile", "consequently", "furthermore", "subsequently", "accordingly", "thereafter", "ultimately", "simultaneously"];
+                this.plateStarts = ["For plating", "To finish", "As a final touch", "Before serving", "To complete the dish", "For the final presentation", "At the pass", "In the final assembly", "Just before the guests arrive", "Upon final inspection", "To ground the composition", "As the final gesture", "Before the first bite"];
+                this.dustings = ["dusting", "sprinkling", "garnish", "hint", "scattering", "accent", "shaving", "micro-emulsion", "whisper", "delicate misting", "chromatic veil", "molecular drizzle", "fine particulate", "aromatic haze", "ethereal film"];
+                this.transitions = ["meanwhile", "consequently", "furthermore", "subsequently", "accordingly", "thereafter", "ultimately", "simultaneously", "henceforth", "in tandem", "complementary to this", "by extension"];
             }
 
             getNounPhrase() {
@@ -234,7 +234,7 @@
             }
 
             generateSentence() {
-                const templateType = this.getTemplateType(26);
+                const templateType = this.getTemplateType(33);
                 let sentence = "";
                 const v1 = this.sample(this.actionVerbs);
                 const v2 = this.sample(this.actionVerbs);
@@ -253,32 +253,39 @@
                 const dust = this.sample(this.dustings);
 
                 switch (templateType) {
-                case 0: sentence = `Carefully ${v1} the ${ing1} while simultaneously ${this.toGerund(v2)} the ${ing2} in ${liq}, achieving ${this.getArticle(flav)} that perfectly ${end}.`; break;
-                case 1: sentence = `The ${adj1} mouthfeel of the ${ing1} juxtaposes beautifully with ${this.getNounPhrase()}, bound together by ${meas} of ${liq}.`; break;
-                case 2: sentence = `To elevate the intrinsic ${flav}, one must firmly ${v1} the ${ing1} until perfectly ${adj1}; finish with ${meas} of ${liq} passed explicitly through ${this.getArticle(tool)}.`; break;
-                case 3: sentence = `Utilizing ${this.getArticle(tool)}, begin ${this.toGerund(v1)} the ${ing1} to isolate its delicate core, ensuring the resulting texture remains uncompromisingly ${adj1}.`; break;
-                case 4: sentence = `Harvested at absolute peak maturity, the ${ing1} requires minimal intervention; simply ${v1} gently and dress with ${liq} to highlight its natural ${flav}.`; break;
-                case 5: sentence = `${start}, strategically ${v1} the ${ing1} atop ${this.getNounPhrase()} foundation, completing the composition with ${this.getArticle(adj1)} ${dust} of ${ing2}.`; break;
-                case 6: sentence = `A whisper of ${liq} provides the foundational ${flav} upon which the ${adj1} ${ing1} is meticulously ${this.toPastParticiple(v1)}.`; break;
-                case 7: sentence = `Experience the olfactory resonance of ${ing1} as it is deeply ${this.toPastParticiple(v1)} against a backdrop of ${adj1} ${ing2}.`; break;
-                case 8: sentence = `The chef's intent is clear: ${v1} the ${ing1} until the ${flav} is purely ${adj1}, then serve atop ${liq}.`; break;
-                case 9: sentence = `By ${this.toGerund(v1)} the ${ing1} with ${this.getArticle(tool)}, one achieves ${this.getArticle(adj1)} symmetry that ${end}.`; break;
-                case 10: sentence = `Rare ${ing1} is first ${this.toPastParticiple(v1)} for 72 hours, then flash-${this.toPastParticiple(v2)} to preserve its ${flav}.`; break;
-                case 11: sentence = `This dish explores the binary nature of ${ing1} and ${ing2}, featuring ${this.getArticle(adj1)} ${dust} of ${liq}.`; break;
-                case 12: sentence = `A symphony of ${adj1} textures, starting with ${ing1} and culminating in ${this.getArticle(adj2)} finish of ${liq}.`; break;
-                case 13: sentence = `Precision is paramount when ${this.toGerund(v1)} the ${ing1}; even ${meas} too much ${liq} can mask the ${flav}.`; break;
-                case 14: sentence = `The ${ing1} is ${this.toPastParticiple(v1)} in its own juices, creating ${this.getArticle(adj1)} essence that ${end}.`; break;
-                case 15: sentence = `${this.getArticle(adj1)} study in contrast, the ${ing1} is presented both ${this.toPastParticiple(v1)} and ${this.toPastParticiple(v2)}.`; break;
-                case 16: sentence = `To unlock the ${flav}, the ${ing1} must be ${this.toPastParticiple(v1)} using ${this.getArticle(tool)} while ${this.toGerund(v2)}.`; break;
-                case 17: sentence = `The final composition: ${ing1}, ${ing2}, and ${meas} of ${adj1} ${liq}.`; break;
-                case 18: sentence = `Notice the ${adj1} architecture of the ${ing1}, which has been ${this.toPastParticiple(v1)} to emphasize its ${flav}.`; break;
-                case 19: sentence = `Beyond the ${flav}, this dish transcends the ${adj1} limits of ${ing1} by ${this.toGerund(v2)} it in ${liq}.`; break;
-                case 20: sentence = `${start}, the ${ing1} is ${this.toPastParticiple(v1)} with ${this.getArticle(tool)} to achieve ${this.getArticle(adj1)} finish.`; break;
-                case 21: sentence = `The ${ing1} serves as the primary canvas for ${this.toGerund(v1)}, eventually ${this.toGerund(v2)} into ${this.getArticle(flav)}.`; break;
-                case 22: sentence = `${this.capitalize(trans)}, the chef opted to ${v1} the ${ing1} alongside ${this.getNounPhrase()}, resulting in ${this.getArticle(flav)}.`; break;
-                case 23: sentence = `The ${ing1} is ${this.toPastParticiple(v1)} and then lightly ${this.toPastParticiple(v2)}, creating ${this.getArticle(adj1)} contrast that ${end}.`; break;
-                case 24: sentence = `Witness the ${adj1} transformation of ${ing1} as it is ${this.toPastParticiple(v1)} within ${this.getArticle(tool)}.`; break;
-                case 25: sentence = `A ${adj1} ${dust} of ${ing1} provides the final ${flav} needed to ${v1} the ${ing2}.`; break;
+                    case 0: sentence = `Carefully ${v1} the ${ing1} while simultaneously ${this.toGerund(v2)} the ${ing2} in ${liq}, achieving ${this.getArticle(flav)} that perfectly ${end}.`; break;
+                    case 1: sentence = `The ${adj1} mouthfeel of the ${ing1} juxtaposes beautifully with ${this.getNounPhrase()}, bound together by ${meas} of ${liq}.`; break;
+                    case 2: sentence = `To elevate the intrinsic ${flav}, one must firmly ${v1} the ${ing1} until perfectly ${adj1}; finish with ${meas} of ${liq} passed explicitly through ${this.getArticle(tool)}.`; break;
+                    case 3: sentence = `Utilizing ${this.getArticle(tool)}, begin ${this.toGerund(v1)} the ${ing1} to isolate its delicate core, ensuring the resulting texture remains uncompromisingly ${adj1}.`; break;
+                    case 4: sentence = `Harvested at absolute peak maturity, the ${ing1} requires minimal intervention; simply ${v1} gently and dress with ${liq} to highlight its natural ${flav}.`; break;
+                    case 5: sentence = `${start}, strategically ${v1} the ${ing1} atop ${this.getNounPhrase()} foundation, completing the composition with ${this.getArticle(adj1)} ${dust} of ${ing2}.`; break;
+                    case 6: sentence = `A whisper of ${liq} provides the foundational ${flav} upon which the ${adj1} ${ing1} is meticulously ${this.toPastParticiple(v1)}.`; break;
+                    case 7: sentence = `Experience the olfactory resonance of ${ing1} as it is deeply ${this.toPastParticiple(v1)} against a backdrop of ${adj1} ${ing2}.`; break;
+                    case 8: sentence = `The chef's intent is clear: ${v1} the ${ing1} until the ${flav} is purely ${adj1}, then serve atop ${liq}.`; break;
+                    case 9: sentence = `By ${this.toGerund(v1)} the ${ing1} with ${this.getArticle(tool)}, one achieves ${this.getArticle(adj1)} symmetry that ${end}.`; break;
+                    case 10: sentence = `Rare ${ing1} is first ${this.toPastParticiple(v1)} for 72 hours, then flash-${this.toPastParticiple(v2)} to preserve its ${flav}.`; break;
+                    case 11: sentence = `This dish explores the binary nature of ${ing1} and ${ing2}, featuring ${this.getArticle(adj1)} ${dust} of ${liq}.`; break;
+                    case 12: sentence = `A symphony of ${adj1} textures, starting with ${ing1} and culminating in ${this.getArticle(adj2)} finish of ${liq}.`; break;
+                    case 13: sentence = `Precision is paramount when ${this.toGerund(v1)} the ${ing1}; even ${meas} too much ${liq} can mask the ${flav}.`; break;
+                    case 14: sentence = `The ${ing1} is ${this.toPastParticiple(v1)} in its own juices, creating ${this.getArticle(adj1)} essence that ${end}.`; break;
+                    case 15: sentence = `${this.getArticle(adj1)} study in contrast, the ${ing1} is presented both ${this.toPastParticiple(v1)} and ${this.toPastParticiple(v2)}.`; break;
+                    case 16: sentence = `To unlock the ${flav}, the ${ing1} must be ${this.toPastParticiple(v1)} using ${this.getArticle(tool)} while ${this.toGerund(v2)}.`; break;
+                    case 17: sentence = `The final composition: ${ing1}, ${ing2}, and ${meas} of ${adj1} ${liq}.`; break;
+                    case 18: sentence = `Notice the ${adj1} architecture of the ${ing1}, which has been ${this.toPastParticiple(v1)} to emphasize its ${flav}.`; break;
+                    case 19: sentence = `Beyond the ${flav}, this dish transcends the ${adj1} limits of ${ing1} by ${this.toGerund(v2)} it in ${liq}.`; break;
+                    case 20: sentence = `${start}, the ${ing1} is ${this.toPastParticiple(v1)} with ${this.getArticle(tool)} to achieve ${this.getArticle(adj1)} finish.`; break;
+                    case 21: sentence = `The ${ing1} serves as the primary canvas for ${this.toGerund(v1)}, eventually ${this.toGerund(v2)} into ${this.getArticle(flav)}.`; break;
+                    case 22: sentence = `${this.capitalize(trans)}, the chef opted to ${v1} the ${ing1} alongside ${this.getNounPhrase()}, resulting in ${this.getArticle(flav)}.`; break;
+                    case 23: sentence = `The ${ing1} is ${this.toPastParticiple(v1)} and then lightly ${this.toPastParticiple(v2)}, creating ${this.getArticle(adj1)} contrast that ${end}.`; break;
+                    case 24: sentence = `Witness the ${adj1} transformation of ${ing1} as it is ${this.toPastParticiple(v1)} within ${this.getArticle(tool)}.`; break;
+                    case 25: sentence = `A ${adj1} ${dust} of ${ing1} provides the final ${flav} needed to ${v1} the ${ing2}.`; break;
+                    case 26: sentence = `For a bolder profile, ${v1} the ${ing1} until ${adj1}, folding in ${meas} of ${liq} to unlock the ${flav}.`; break;
+                    case 27: sentence = `The delicate interplay between the ${ing1} and ${adj2} ${ing2} creates ${this.getArticle(flav)} that easily ${end}.`; break;
+                    case 28: sentence = `Never underestimate the power of ${this.toGerund(v1)} the ${ing1}; even a seemingly ${adj1} component can yield ${flav}.`; break;
+                    case 29: sentence = `${start}, consider ${this.toGerund(v1)} the ${ing1} with ${liq} for an intensely ${adj1} experience.`; break;
+                    case 30: sentence = `A well-executed dish relies on ${this.toGerund(v1)} the ${ing1} and carefully ${this.toGerund(v2)} the ${ing2} to maintain the ${flav}.`; break;
+                    case 31: sentence = `The ${flav} is amplified merely by ${this.toGerund(v1)} the ${adj1} ${ing1} over ${this.getArticle(tool)}.`; break;
+                    case 32: sentence = `By combining ${meas} of ${liq} with ${ing1}, you introduce a surprisingly ${adj1} textural element with ${adj2} ${dust}.`; break;
                 }
                 return this.capitalize(sentence);
             }
@@ -327,36 +334,36 @@
                 const templateType = this.getTemplateType(30);
 
                 switch (templateType) {
-                case 0: return `${this.capitalize(w1)} ${w2} ${p1} ${w3}.`;
-                case 1: return `${this.capitalize(w1)}! ${this.capitalize(p2)} ${w3}.`;
-                case 2: return `${this.capitalize(p1)} ${w2} ${w3} ${w4}?`;
-                case 3: return `${this.capitalize(w1)}, ${p2} — ${w4}.`;
-                case 4: return `${this.capitalize(p3)} (${w4}).`;
-                case 5: return `${this.capitalize(w1)} ${w2} ${p1} ${w4} ${w5} ${p2}!`;
-                case 6: return `${this.capitalize(w1)}-${w2} ${p2} ${w4}.`;
-                case 7: return `${this.capitalize(p1)} ${w2}... ${p2}.`;
-                case 8: return `${this.capitalize(w1)} ${p1} ${w3} ${p4} — ${p3}.`;
-                case 9: return `*${p1}* ${w2} ${p2} ${w4}.`;
-                case 10: return `${this.capitalize(p3)} ${w4} ${w5}?`;
-                case 11: return `${this.capitalize(w1)}! ${this.capitalize(w1)}! ${this.capitalize(p2)}.`;
-                case 12: return `${this.capitalize(p1)} (${p2} ${w4}).`;
-                case 13: return `...${p1} ${w2} ${p3}? ${this.capitalize(w4)}!`;
-                case 14: return `${this.capitalize(w1)} ${p2} ${w3}... ${p1} ${w5}.`;
-                case 15: return `${this.capitalize(p1)} ${this.sample([",", "—", "::"])} ${p3}.`;
-                case 16: return `${this.capitalize(p2)} ${w2} ${p1} ${w3} ${w4} ${p2}!`;
-                case 17: return `${this.capitalize(p1)} ${this.sample(["•", "::", "---"])} ${p2} ${w2} ${w3} ${p3}.`;
-                case 18: return `${this.capitalize(p1)} ${p2} ${w3}... ${p3}? ${this.capitalize(p4)}!`;
-                case 19: return `${this.capitalize(p3)} (${w1} ${w2}) ${p2}.`;
-                case 20: return `${this.capitalize(p3)} ${this.sample(["::", "---", "»"])} ${p1} ${p2}.`;
-                case 21: return `${this.capitalize(w1)} ${w2} ${p3} ${w3} ${p4} ${p2} ${w5}.`;
-                case 22: return `[ ${p2} ] ${this.capitalize(p1)} ${w3} ${w4}.`;
-                case 23: return `${this.capitalize(p1)} ${w2} ${p3} :: ${p2}.`;
-                case 24: return `${this.capitalize(p3)} ${p1}... ${p2}!`;
-                case 25: return `${this.capitalize(w1)} ${w2}-${w3} ${p3} ${p1}.`;
-                case 26: return `${this.capitalize(p2)}, ${this.capitalize(p1)} ${w4} ${p3}.`;
-                case 27: return `${this.capitalize(w1)} ${this.sample(["(v)", "(x)", "(^)", "(o)"])} ${p3} ${p2}.`;
-                case 28: return `${this.capitalize(p3)} ${w1} ${w2} ${w3} ${p4}.`;
-                case 29: return `${this.capitalize(p1)} ${w1} ${p2} ${w2} ${p3}.`;
+                    case 0: return `${this.capitalize(w1)} ${w2} ${p1} ${w3}.`;
+                    case 1: return `${this.capitalize(w1)}! ${this.capitalize(p2)} ${w3}.`;
+                    case 2: return `${this.capitalize(p1)} ${w2} ${w3} ${w4}?`;
+                    case 3: return `${this.capitalize(w1)}, ${p2} — ${w4}.`;
+                    case 4: return `${this.capitalize(p3)} (${w4}).`;
+                    case 5: return `${this.capitalize(w1)} ${w2} ${p1} ${w4} ${w5} ${p2}!`;
+                    case 6: return `${this.capitalize(w1)}-${w2} ${p2} ${w4}.`;
+                    case 7: return `${this.capitalize(p1)} ${w2}... ${p2}.`;
+                    case 8: return `${this.capitalize(w1)} ${p1} ${w3} ${p4} — ${p3}.`;
+                    case 9: return `*${p1}* ${w2} ${p2} ${w4}.`;
+                    case 10: return `${this.capitalize(p3)} ${w4} ${w5}?`;
+                    case 11: return `${this.capitalize(w1)}! ${this.capitalize(w1)}! ${this.capitalize(p2)}.`;
+                    case 12: return `${this.capitalize(p1)} (${p2} ${w4}).`;
+                    case 13: return `...${p1} ${w2} ${p3}? ${this.capitalize(w4)}!`;
+                    case 14: return `${this.capitalize(w1)} ${p2} ${w3}... ${p1} ${w5}.`;
+                    case 15: return `${this.capitalize(p1)} ${this.sample([",", "—", "::"])} ${p3}.`;
+                    case 16: return `${this.capitalize(p2)} ${w2} ${p1} ${w3} ${w4} ${p2}!`;
+                    case 17: return `${this.capitalize(p1)} ${this.sample(["•", "::", "---"])} ${p2} ${w2} ${w3} ${p3}.`;
+                    case 18: return `${this.capitalize(p1)} ${p2} ${w3}... ${p3}? ${this.capitalize(p4)}!`;
+                    case 19: return `${this.capitalize(p3)} (${w1} ${w2}) ${p2}.`;
+                    case 20: return `${this.capitalize(p3)} ${this.sample(["::", "---", "»"])} ${p1} ${p2}.`;
+                    case 21: return `${this.capitalize(w1)} ${w2} ${p3} ${w3} ${p4} ${p2} ${w5}.`;
+                    case 22: return `[ ${p2} ] ${this.capitalize(p1)} ${w3} ${w4}.`;
+                    case 23: return `${this.capitalize(p1)} ${w2} ${p3} :: ${p2}.`;
+                    case 24: return `${this.capitalize(p3)} ${p1}... ${p2}!`;
+                    case 25: return `${this.capitalize(w1)} ${w2}-${w3} ${p3} ${p1}.`;
+                    case 26: return `${this.capitalize(p2)}, ${this.capitalize(p1)} ${w4} ${p3}.`;
+                    case 27: return `${this.capitalize(w1)} ${this.sample(["(v)", "(x)", "(^)", "(o)"])} ${p3} ${p2}.`;
+                    case 28: return `${this.capitalize(p3)} ${w1} ${w2} ${w3} ${p4}.`;
+                    case 29: return `${this.capitalize(p1)} ${w1} ${p2} ${w2} ${p3}.`;
                 }
             }
         }
@@ -368,23 +375,23 @@
         class FantasyLoreGenerator extends BaseGenerator {
             constructor() {
                 super("FantasyLoreGenerator");
-                this.mythicEntities = ["the Shadow-King", "the Celestial Vanguard", "the Arch-Mage", "the Star-Weavers", "the Blood-Lords of Kraven", "the Silent Sisterhood", "the Obsidian Order", "the Iron Dictator", "the Sun-Priests", "the Void-Walkers", "the Dragon-Riders", "the Lich-Queen", "the Storm-Callers", "the Earth-Shakers", "the Fire-Forgers", "the Frost-Giants", "the Night-Elves", "the Day-Walkers", "the Moon-Children", "the Star-Born", "the Ashen King", "the Undying Emperor", "the Void-Entity", "the Astral Serpents", "the Bone-Crafters", "the Time-Weavers", "the Dream-Eaters", "the Soul-Harvesters", "the Light-Bringers", "the Shadow-Dancers", "the Runemasters", "the Crypt-Keepers", "the Grave-Walkers", "the Spirit-Binders", "the Blood-Mages", "The Weaver of Fates", "The Iron Harbinger", "The Silver Saint", "The Eternal Watcher", "The Crimson Oracle", "The Void-Stalker", "The Sun-Eater", "The Marble Queen", "The Clockwork Titan", "The Pale Herald", "The Mirror Man", "The Weaver of Whispers", "The Storm Giant", "The Deep Sea Sovereign", "The Ash Born", "The Eternal Exile", "The Starless King"];
-                this.ancientArtifacts = ["the Sun-Blade", "the Soul-Forge", "the Dream-Weaver", "the Crown of Thorns", "the Staff of Ages", "the Orb of Destruction", "the Amulet of Power", "the Ring of Shadows", "the Cloak of Invisibility", "the Sword of Destiny", "the Shield of Valor", "the Chalice of Life", "the Tome of Knowledge", "the Grimoire of Spells", "the Book of Shadows", "the Crystal Skull", "the Obsidian Monolith", "the Celestial Astrolabe", "the Void-Prism", "the Blood-Chalice", "the Star-Map", "the Bone-Flute", "the Spirit-Lantern", "the Shadow-Mirror", "the Time-Turner", "the Dream-Catcher", "the Soul-Stone", "The Key of Seven Veils", "The Aegis of Infinity", "The Heart of the Void", "The Scepter of Silence", "the Mirror of Truth", "the Soul-Stealer", "the Void-Dagger", "the Solar-Scepter", "the Lunar-Bow", "the Earth-Hammer", "the Wind-Staff", "the Fire-Whip", "the Blood-Axe", "the Time-Dial", "the Echoing Horn", "the Aegis of Ages"];
-                this.mythicRealms = ["Eldoria", "the Obsidian Wastes", "the Astral Sea", "Kaz-Môran", "the Crystal Spires", "the Whispering Woods", "the Shattered Isles", "the Crimson Peaks", "the Sunken City of Atlantis", "the Floating Islands", "the Under-Realm", "the Ethereal Plane", "the Fey-Wilds", "the Shadow-Lands", "the Frost-Wastes", "the Ash-Barrens", "the Void-Abyss", "the Celestial Heavens", "the Demon-Wastes", "the Spirit-Realm", "the Dream-Scape", "the Nightmare-Realm", "the Bone-Deserts", "the Blood-Swamps", "the Fire-Mountains", "the Ice-Canyons", "The Whispering Void", "The Sunken Archives", "The Garden of Forgetting"];
-                this.esotericMaterials = ["star-metal", "void-glass", "blood-iron", "ether", "dragon-bone", "mithril", "adamantium", "orichalcum", "dark-matter", "celestial-bronze", "infernal-iron", "spirit-wood", "shadow-silk", "moon-stone", "sun-gold", "frost-ice", "storm-lightning", "earth-stone", "fire-flame", "water-ice", "abyssal-obsidian", "chronos-crystal", "soul-amber", "dream-dust", "nightmare-ash", "bone-ash", "blood-crystal", "shadow-glass", "light-metal", "spirit-iron", "plasma-glass", "singularity-core", "chrono-steel"];
-                this.epicVerbs = ["banished", "forged", "shattered", "unbound", "consumed", "awakened", "sealed", "conquered", "destroyed", "created", "summoned", "repelled", "corrupted", "purified", "discovered", "lost", "hidden", "revealed", "defended", "betrayed", "usurped", "enslaved", "liberated", "obliterated", "transcended", "ascended", "descended", "devoured", "resurrected", "sacrificed", "reforged", "annihilated", "manifested", "contained"];
-                this.arcaneDisciplines = ["necromancy", "chronomancy", "elemental weaving", "blood magic", "shadow manipulation", "light weaving", "soul binding", "mind control", "illusion magic", "transmutation", "divination", "abjuration", "conjuration", "enchantment", "evocation", "void magic", "chaos magic", "order magic", "nature magic", "arcane magic", "divine magic", "astromancy", "geomancy", "pyromancy", "cryomancy", "aeromancy", "hydromancy", "oneiromancy", "sanguimancy", "thaumaturgy", "runecraft", "ether-tuning"];
-                this.cataclysmicEvents = ["the Great Sundering", "the Crimson Eclipse", "the Star-Fall", "the Void-Rift", "the Celestial Alignment", "the Blood-Moon", "the Night of Shadows", "the Day of Fire", "the Winter of Discontent", "the War of the Gods", "the Rebellion of the Angels", "the Fall of Man", "the Awakening of the Deep", "the Shattering of the Sky", "the Boiling of the Seas", "the Freezing of the Sun", "the Dying of the Light", "the Birth of the Dark", "the Return of the King", "the End of Days", "the Beginning of Time", "The Silence", "The Great Emergence", "The Singularity Event"];
-                this.loreAdjectives = ["abyssal", "luminescent", "forgotten", "cursed", "celestial", "ancient", "forbidden", "sacred", "profane", "eternal", "ephemeral", "infinite", "finite", "mortal", "immortal", "divine", "infernal", "demonic", "angelic", "spirit", "ghostly", "spectral", "phantasmal", "ethereal", "corporeal", "physical", "metaphysical", "magical", "mundane", "extraordinary", "ordinary", "supernatural", "natural", "unnatural", "primordial", "inevitable", "transcendent"];
-                this.timeAdverbs = ["once more", "forever", "for eternity", "ultimately", "at long last", "yet again", "until the end of days", "before the dawn", "beyond the veil", "throughout the ages", "in the blink of an eye"];
-                this.scholars = ["Scholars of", "Mages versed in", "Students of", "Masters of", "Those who study", "Initiates of", "The Keepers of", "The Guardians of", "The Disciples of"];
-                this.destructives = ["devastating", "unfathomable", "terrifying", "absolute", "world-ending", "cataclysmic", "unprecedented", "god-like", "inevitable", "reality-shattering", "unstoppable"];
-                this.mythicNumbers = ["seven", "thirteen", "three", "nine", "twelve", "forty-two", "a thousand", "infinite"];
+                this.mythicEntities = ["the Shadow-King", "the Celestial Vanguard", "the Arch-Mage", "the Star-Weavers", "the Blood-Lords of Kraven", "the Silent Sisterhood", "the Obsidian Order", "the Iron Dictator", "the Sun-Priests", "the Void-Walkers", "the Dragon-Riders", "the Lich-Queen", "the Storm-Callers", "the Earth-Shakers", "the Fire-Forgers", "the Frost-Giants", "the Night-Elves", "the Day-Walkers", "the Moon-Children", "the Star-Born", "the Ashen King", "the Undying Emperor", "the Void-Entity", "the Astral Serpents", "the Bone-Crafters", "the Time-Weavers", "the Dream-Eaters", "the Soul-Harvesters", "the Light-Bringers", "the Shadow-Dancers", "the Runemasters", "the Crypt-Keepers", "the Grave-Walkers", "the Spirit-Binders", "the Blood-Mages", "The Weaver of Fates", "The Iron Harbinger", "The Silver Saint", "The Eternal Watcher", "The Crimson Oracle", "The Void-Stalker", "The Sun-Eater", "The Marble Queen", "The Clockwork Titan", "The Pale Herald", "The Mirror Man", "The Weaver of Whispers", "The Storm Giant", "The Deep Sea Sovereign", "The Ash Born", "The Eternal Exile", "The Starless King", "The Crimson King", "The Weeping Oracle", "The Iron Saint", "The Starless Watcher", "The Gilded Sovereign", "The Tattered Prophet", "The Silent Arbiter", "The Eternal Architect", "The Abyssal Weaver", "The Solar Vanguard", "The Moon-Lit Knight", "The Forgotten Seraph"];
+                this.ancientArtifacts = ["the Sun-Blade", "the Soul-Forge", "the Dream-Weaver", "the Crown of Thorns", "the Staff of Ages", "the Orb of Destruction", "the Amulet of Power", "the Ring of Shadows", "the Cloak of Invisibility", "the Sword of Destiny", "the Shield of Valor", "the Chalice of Life", "the Tome of Knowledge", "the Grimoire of Spells", "the Book of Shadows", "the Crystal Skull", "the Obsidian Monolith", "the Celestial Astrolabe", "the Void-Prism", "the Blood-Chalice", "the Star-Map", "the Bone-Flute", "the Spirit-Lantern", "the Shadow-Mirror", "the Time-Turner", "the Dream-Catcher", "the Soul-Stone", "The Key of Seven Veils", "The Aegis of Infinity", "The Heart of the Void", "The Scepter of Silence", "the Mirror of Truth", "the Soul-Stealer", "the Void-Dagger", "the Solar-Scepter", "the Lunar-Bow", "the Earth-Hammer", "the Wind-Staff", "the Fire-Whip", "the Blood-Axe", "the Time-Dial", "the Echoing Horn", "the Aegis of Ages", "the Shattered Key", "the Mirror of Eternity", "the Bell of Oblivion", "the Thread of Fate", "the Empty Throne", "the Crimson Seal", "the Obsidian Rose", "the Starlight Lantern", "the Void-Compass", "the Iron Crown", "the Scepter of Dust", "the Horn of Valor"];
+                this.mythicRealms = ["Eldoria", "the Obsidian Wastes", "the Astral Sea", "Kaz-Môran", "the Crystal Spires", "the Whispering Woods", "the Shattered Isles", "the Crimson Peaks", "the Sunken City of Atlantis", "the Floating Islands", "the Under-Realm", "the Ethereal Plane", "the Fey-Wilds", "the Shadow-Lands", "the Frost-Wastes", "the Ash-Barrens", "the Void-Abyss", "the Celestial Heavens", "the Demon-Wastes", "the Spirit-Realm", "the Dream-Scape", "the Nightmare-Realm", "the Bone-Deserts", "the Blood-Swamps", "the Fire-Mountains", "the Ice-Canyons", "The Whispering Void", "The Sunken Archives", "The Garden of Forgetting", "The Silver City", "The Bleeding Sands", "The Sea of Sighs", "The Iron Citadel", "The Garden of Statues", "The Echoing Canyons", "The Verdant Abyss", "The Frozen Spire", "The Midnight Plateau", "The Celestial Cradle", "the Radiant Valley", "the Serpentine Reef"];
+                this.esotericMaterials = ["star-metal", "void-glass", "blood-iron", "ether", "dragon-bone", "mithril", "adamantium", "orichalcum", "dark-matter", "celestial-bronze", "infernal-iron", "spirit-wood", "shadow-silk", "moon-stone", "sun-gold", "frost-ice", "storm-lightning", "earth-stone", "fire-flame", "water-ice", "abyssal-obsidian", "chronos-crystal", "soul-amber", "dream-dust", "nightmare-ash", "bone-ash", "blood-crystal", "shadow-glass", "light-metal", "spirit-iron", "plasma-glass", "singularity-core", "chrono-steel", "living-gold", "cold-iron", "ghost-thread", "starlight-silk", "earth-blood", "void-tendril", "solar-flare"];
+                this.epicVerbs = ["banished", "forged", "shattered", "unbound", "consumed", "awakened", "sealed", "conquered", "destroyed", "created", "summoned", "repelled", "corrupted", "purified", "discovered", "lost", "hidden", "revealed", "defended", "betrayed", "usurped", "enslaved", "liberated", "obliterated", "transcended", "ascended", "descended", "devoured", "resurrected", "sacrificed", "reforged", "annihilated", "manifested", "contained", "severed", "ignited", "hollowed", "bound", "echoed", "wept", "scourged", "knighted"];
+                this.arcaneDisciplines = ["necromancy", "chronomancy", "elemental weaving", "blood magic", "shadow manipulation", "light weaving", "soul binding", "mind control", "illusion magic", "transmutation", "divination", "abjuration", "conjuration", "enchantment", "evocation", "void magic", "chaos magic", "order magic", "nature magic", "arcane magic", "divine magic", "astromancy", "geomancy", "pyromancy", "cryomancy", "aeromancy", "hydromancy", "oneiromancy", "sanguimancy", "thaumaturgy", "runecraft", "ether-tuning", "lithomancy", "psionics", "kinetic-weaving", "spatial-folding", "echo-magic", "dream-shaping"];
+                this.cataclysmicEvents = ["the Great Sundering", "the Crimson Eclipse", "the Star-Fall", "the Void-Rift", "the Celestial Alignment", "the Blood-Moon", "the Night of Shadows", "the Day of Fire", "the Winter of Discontent", "the War of the Gods", "the Rebellion of the Angels", "the Fall of Man", "the Awakening of the Deep", "the Shattering of the Sky", "the Boiling of the Seas", "the Freezing of the Sun", "the Dying of the Light", "the Birth of the Dark", "the Return of the King", "the End of Days", "the Beginning of Time", "The Silence", "The Great Emergence", "The Singularity Event", "the Night of Falling Stars", "the Second Silence", "the Thawing of the World", "the Great Forgetting", "the Unraveling", "the Crimson Tide"];
+                this.loreAdjectives = ["abyssal", "luminescent", "forgotten", "cursed", "celestial", "ancient", "forbidden", "sacred", "profane", "eternal", "ephemeral", "infinite", "finite", "mortal", "immortal", "divine", "infernal", "demonic", "angelic", "spirit", "ghostly", "spectral", "phantasmal", "ethereal", "corporeal", "physical", "metaphysical", "magical", "mundane", "extraordinary", "ordinary", "supernatural", "natural", "unnatural", "primordial", "inevitable", "transcendent", "eldritch", "hallowed", "blighted", "serene", "ominous", "radiant", "obsidian", "shimmering", "hollow"];
+                this.timeAdverbs = ["once more", "forever", "for eternity", "ultimately", "at long last", "yet again", "until the end of days", "before the dawn", "beyond the veil", "throughout the ages", "in the blink of an eye", "in the age of myth", "as the world ends", "before the first word", "when the stars align", "since the beginning"];
+                this.scholars = ["Scholars of", "Mages versed in", "Students of", "Masters of", "Those who study", "Initiates of", "The Keepers of", "The Guardians of", "The Disciples of", "The Grey Monks of", "The Sages of", "The Scribes of", "The Hermits of", "The Archivists of"];
+                this.destructives = ["devastating", "unfathomable", "terrifying", "absolute", "world-ending", "cataclysmic", "unprecedented", "god-like", "inevitable", "reality-shattering", "unstoppable", "irreversible", "sacrificial", "harrowing", "soul-crushing"];
+                this.mythicNumbers = ["seven", "thirteen", "three", "nine", "twelve", "forty-two", "a thousand", "infinite", "eleven", "twenty-one", "zero", "ninety-nine", "the first"];
             }
 
 
             generateSentence() {
-                const templateType = this.getTemplateType(30);
+                const templateType = this.getTemplateType(37);
                 let lore = "";
                 const entity1 = this.sample(this.mythicEntities), entity2 = this.sample(this.mythicEntities);
                 const artifact = this.sample(this.ancientArtifacts), realm = this.sample(this.mythicRealms);
@@ -395,36 +402,43 @@
                 const dest = this.sample(this.destructives);
 
                 switch (templateType) {
-                case 0: lore = `When ${event} aligns with the ascendance of ${entity1}, ${artifact} shall awaken from ${realm} to be ${verb} ${adv}.`; break;
-                case 1: lore = `Following ${event}, ${entity1} definitively ${verb} ${artifact}, forever altering the flow of ${magic} throughout ${realm}.`; break;
-                case 2: lore = `Forged from ${adj} ${material} and imbued with highly volatile ${magic}, ${artifact} granted ${entity2} the absolute power to shape ${realm}.`; break;
-                case 3: lore = `The relentless armies of ${entity1} clashed furiously against ${entity2} across the borders of ${realm}, their mastery of ${magic} scarring the ${material} bedrock.`; break;
-                case 4: lore = `${schol} ${magic} theorize that ${artifact} acts as a direct conduit to ${realm}, channeling raw ${material} into ${dest}, ${adj} power.`; break;
-                case 5: lore = `Deep within the heart of ${realm} lies the ruin of ${entity1}, an ancient monolith of ${material} that continuously radiates ${adj} ${magic} energy.`; break;
-                case 6: lore = `Legends speak of a time when ${entity1} used ${artifact} to ${verb} the very foundations of ${realm}.`; break;
-                case 7: lore = `The ${schol} retain a ${adj} fear of ${event}, believing it will one day ${verb} the ${material} gates.`; break;
-                case 8: lore = `Within the ${adj} depths of ${realm}, ${entity1} remains eternally ${verb}, guarded by ${artifact}.`; break;
-                case 9: lore = `Should ${artifact} ever be ${verb} by ${entity2}, the age of ${magic} shall surely end in ${dest} ruin.`; break;
-                case 10: lore = `The ${adj} ${material} used to build ${realm} was allegedly stolen from ${entity1} during ${event}.`; break;
-                case 11: lore = `It is written that ${entity1} and ${entity2} will meet at ${realm} for one final, ${dest} ${event}.`; break;
-                case 12: lore = `The ${magic} of ${realm} is ${adj} and wild, ever since ${artifact} was ${verb} by ${entity1}.`; break;
-                case 13: lore = `Ancient ${material} inscriptions found in ${realm} suggest that ${event} was actually ${this.getArticle(adj)} ritual.`; break;
-                case 14: lore = `By the power of ${artifact}, ${entity1} was able to ${verb} the ${adj} spirits of ${realm}.`; break;
-                case 15: lore = `${this.capitalize(event)} brought about ${this.getArticle(adj)} change in ${realm}, where ${entity1} now rules over ${material}.`; break;
-                case 16: lore = `Whispers in the dark claim that ${entity1} has found a way to ${verb} ${artifact} once more.`; break;
-                case 17: lore = `The ${material} soul of ${realm} can only be saved if ${entity1} is ${verb} before ${event}.`; break;
-                case 18: lore = `Long before ${event}, the ${entity1} used ${material} to create ${this.getArticle(adj)} sanctuary in ${realm}.`; break;
-                case 19: lore = `Even the ${schol} ${magic} cannot explain why ${entity1} seeks to ${verb} ${artifact} using ${material}.`; break;
-                case 20: lore = `Through ${adj} ${magic}, the very essence of ${realm} was ${verb} into ${artifact}.`; break;
-                case 21: lore = `The ${dest} reach of ${entity1} extends beyond ${realm}, driven by the power of ${artifact}.`; break;
-                case 22: lore = `Only those who possess the ${artifact} can hope to ${verb} the ${adj} terrors unleashed during ${event}.`; break;
-                case 23: lore = `A prophecy foretells that ${entity1} will return to ${realm} to ${verb} the ${this.sample(this.mythicNumbers)} seals of ${material}.`; break;
-                case 24: lore = `The ${magic} used by ${entity2} was said to be ${dest}, yet it was ${entity1} who ultimately ${verb} the world.`; break;
-                case 25: lore = `Hidden within ${realm}, the ${artifact} remains a testament to the ${adj} legacy of ${entity1}.`; break;
-                case 26: lore = `Before the first age of ${realm}, ${entity1} used the power of ${artifact} to create the ${material} stars that guide ${magic} users today.`; break;
-                case 27: lore = `It is said that ${entity1} will only return from ${realm} when the ${material} heart of ${artifact} is finally ${verb}.`; break;
-                case 28: lore = `The ${schol} of ${magic} remember the ${dest} ${event} as the moment when ${entity1} first ${verb} the ${adj} walls of ${realm}.`; break;
-                case 29: lore = `Through the use of ${artifact}, ${entity2} was able to ${verb} the ${material} chains that held ${entity1} for ${this.sample(this.mythicNumbers)} ages.`; break;
+                    case 0: lore = `When ${event} aligns with the ascendance of ${entity1}, ${artifact} shall awaken from ${realm} to be ${verb} ${adv}.`; break;
+                    case 1: lore = `Following ${event}, ${entity1} definitively ${verb} ${artifact}, forever altering the flow of ${magic} throughout ${realm}.`; break;
+                    case 2: lore = `Forged from ${adj} ${material} and imbued with highly volatile ${magic}, ${artifact} granted ${entity2} the absolute power to shape ${realm}.`; break;
+                    case 3: lore = `The relentless armies of ${entity1} clashed furiously against ${entity2} across the borders of ${realm}, their mastery of ${magic} scarring the ${material} bedrock.`; break;
+                    case 4: lore = `${schol} ${magic} theorize that ${artifact} acts as a direct conduit to ${realm}, channeling raw ${material} into ${dest}, ${adj} power.`; break;
+                    case 5: lore = `Deep within the heart of ${realm} lies the ruin of ${entity1}, an ancient monolith of ${material} that continuously radiates ${adj} ${magic} energy.`; break;
+                    case 6: lore = `Legends speak of a time when ${entity1} used ${artifact} to ${verb} the very foundations of ${realm}.`; break;
+                    case 7: lore = `The ${schol} retain a ${adj} fear of ${event}, believing it will one day ${verb} the ${material} gates.`; break;
+                    case 8: lore = `Within the ${adj} depths of ${realm}, ${entity1} remains eternally ${verb}, guarded by ${artifact}.`; break;
+                    case 9: lore = `Should ${artifact} ever be ${verb} by ${entity2}, the age of ${magic} shall surely end in ${dest} ruin.`; break;
+                    case 10: lore = `The ${adj} ${material} used to build ${realm} was allegedly stolen from ${entity1} during ${event}.`; break;
+                    case 11: lore = `It is written that ${entity1} and ${entity2} will meet at ${realm} for one final, ${dest} ${event}.`; break;
+                    case 12: lore = `The ${magic} of ${realm} is ${adj} and wild, ever since ${artifact} was ${verb} by ${entity1}.`; break;
+                    case 13: lore = `Ancient ${material} inscriptions found in ${realm} suggest that ${event} was actually ${this.getArticle(adj)} ritual.`; break;
+                    case 14: lore = `By the power of ${artifact}, ${entity1} was able to ${verb} the ${adj} spirits of ${realm}.`; break;
+                    case 15: lore = `${this.capitalize(event)} brought about ${this.getArticle(adj)} change in ${realm}, where ${entity1} now rules over ${material}.`; break;
+                    case 16: lore = `Whispers in the dark claim that ${entity1} has found a way to ${verb} ${artifact} once more.`; break;
+                    case 17: lore = `The ${material} soul of ${realm} can only be saved if ${entity1} is ${verb} before ${event}.`; break;
+                    case 18: lore = `Long before ${event}, the ${entity1} used ${material} to create ${this.getArticle(adj)} sanctuary in ${realm}.`; break;
+                    case 19: lore = `Even the ${schol} ${magic} cannot explain why ${entity1} seeks to ${verb} ${artifact} using ${material}.`; break;
+                    case 20: lore = `Through ${adj} ${magic}, the very essence of ${realm} was ${verb} into ${artifact}.`; break;
+                    case 21: lore = `The ${dest} reach of ${entity1} extends beyond ${realm}, driven by the power of ${artifact}.`; break;
+                    case 22: lore = `Only those who possess the ${artifact} can hope to ${verb} the ${adj} terrors unleashed during ${event}.`; break;
+                    case 23: lore = `A prophecy foretells that ${entity1} will return to ${realm} to ${verb} the ${this.sample(this.mythicNumbers)} seals of ${material}.`; break;
+                    case 24: lore = `The ${magic} used by ${entity2} was said to be ${dest}, yet it was ${entity1} who ultimately ${verb} the world.`; break;
+                    case 25: lore = `Hidden within ${realm}, the ${artifact} remains a testament to the ${adj} legacy of ${entity1}.`; break;
+                    case 26: lore = `Before the first age of ${realm}, ${entity1} used the power of ${artifact} to create the ${material} stars that guide ${magic} users today.`; break;
+                    case 27: lore = `It is said that ${entity1} will only return from ${realm} when the ${material} heart of ${artifact} is finally ${verb}.`; break;
+                    case 28: lore = `The ${schol} of ${magic} remember the ${dest} ${event} as the moment when ${entity1} first ${verb} the ${adj} walls of ${realm}.`; break;
+                    case 29: lore = `Through the use of ${artifact}, ${entity2} was able to ${verb} the ${material} chains that held ${entity1} for ${this.sample(this.mythicNumbers)} ages.`; break;
+                    case 30: lore = `Even as the shadows of ${event} loomed over ${realm}, ${entity1} secretly ${verb} ${artifact} using ${adj} ${material}.`; break;
+                    case 31: lore = `Few among the ${schol} ${magic} comprehend how ${entity1} harnessed ${material} to outlast the ${dest} ${event}.`; break;
+                    case 32: lore = `Wrapped in the lost tomes of ${realm}, legends recall the day ${entity2} finally ${verb} ${artifact}.`; break;
+                    case 33: lore = `The ${adj} incantations of ${magic} required to ${verb} ${artifact} were ultimately forgotten after ${event}.`; break;
+                    case 34: lore = `For ${this.sample(this.mythicNumbers)} centuries, ${entity1} sought the ${adj} knowledge necessary to wield the ${dest} power of ${artifact}.`; break;
+                    case 35: lore = `The ${material} core of ${artifact} vibrates with an old ${magic}, binding ${entity1} to ${realm} for eternity.`; break;
+                    case 36: lore = `When the skies over ${realm} finally turn ${adj}, ${entity2} shall ${verb} the ${material} remnants of ${artifact}.`; break;
                 }
                 return lore;
             }
@@ -441,9 +455,9 @@
                 this.adjectives = ["agile", "lean", "frictionless", "omnichannel", "holistic", "scalable", "disruptive", "synergistic", "hyper-local", "cloud-native", "turnkey", "best-in-class", "bleeding-edge", "cutting-edge", "state-of-the-art", "next-gen", "paradigm-shifting", "actionable", "granular", "robust", "seamless", "integrated", "end-to-end", "B2B", "B2C", "peer-to-peer", "cross-functional", "client-facing", "mission-critical", "proactive", "reactive", "data-driven", "insight-driven", "AI-powered", "algorithmic", "programmatic", "organic", "viral", "evergreen", "snackable", "immersive", "interactive", "gamified", "user-centric", "customer-centric", "mobile-first", "responsive", "dynamic", "static", "high-level", "low-hanging", "top-tier", "bottom-line", "value-added", "core", "strategic", "tactical", "operational", "logistical", "fiscal", "quarterly", "annual", "year-over-year", "month-over-month", "long-term", "short-term", "mid-term", "asynchronous", "synchronous", "real-time", "on-demand", "bespoke", "custom", "tailored", "modular", "plug-and-play", "open-source", "proprietary", "decentralized", "distributed", "blockchain-adjacent", "quantum-ready", "semantic", "contextual", "predictive", "prescriptive", "diagnostic", "descriptive", "qualitative", "quantitative", "tangible", "intangible", "ambient", "invisible", "ubiquitous", "omnipresent", "outcome-based", "purpose-driven", "future-forward", "market-ready"];
                 this.nouns = ["paradigm", "deliverable", "metric", "bandwidth", "ROI", "KPI", "vertical", "touchpoint", "synergy", "ecosystem", "methodology", "framework", "infrastructure", "architecture", "pipeline", "funnel", "roadmap", "blueprint", "wireframe", "mockup", "prototype", "MVP", "beta-test", "rollout", "launch", "campaign", "initiative", "strategy", "tactic", "workflow", "process", "procedure", "protocol", "best-practice", "case-study", "whitepaper", "thought-leadership", "content-silo", "data-lake", "data-warehouse", "dashboard", "analytic", "insight", "learning", "takeaway", "action-item", "pain-point", "bottleneck", "friction-point", "value-proposition", "core-competency", "differentiator", "USP", "persona", "demographic", "psychographic", "target-audience", "stakeholder", "shareholder", "investor", "board-member", "C-suite", "thought-leader", "influencer", "early-adopter", "laggard", "churn-rate", "retention-rate", "conversion-rate", "click-through-rate", "impression", "engagement", "reach", "frequency", "market-share", "mind-share", "wallet-share", "profit-margin", "bottom-line", "top-line", "revenue-stream", "cash-flow", "burn-rate", "runway", "valuation", "exit-strategy", "merger", "acquisition", "north-star", "center-of-excellence", "wheelhouse", "solution-set", "culture", "commitment", "experience", "landscape", "milestone", "pivot", "disruption", "optimization", "scalability", "agility", "value-stream", "bandwidth-cap", "bottleneck-analysis", "churn-probability", "customer-journey", "decision-framework", "ecosystem-play", "feedback-loop", "growth-lever", "incentive-structure", "market-segmentation", "operational-model"];
                 this.idioms = ["move the needle", "think outside the box", "peel the onion", "boil the ocean", "circle back", "take this offline", "put a pin in it", "run it up the flagpole", "skate to where the puck is going", "open the kimono", "drink our own champagne", "eat our own dog food", "hit the ground running", "reinvent the wheel", "push the envelope", "raise the bar", "shift the paradigm", "connect the dots", "read between the lines", "get our ducks in a row", "compare apples to apples", "trim the fat", "lean in", "double down", "pivot to video", "move fast and break things", "fail fast", "fail forward", "iterate rapidly", "build the plane while flying it", "throw spaghetti at the wall", "see what sticks", "look under the hood", "kick the tires", "dot the i's and cross the t's", "cross-pollinate ideas", "herd cats", "find the silver bullet", "capture lightning in a bottle", "punch above our weight", "open the floodgates", "break the silos", "climb the mountain"];
-                this.timelines = ["for Q1", "for Q2", "for Q3", "for Q4", "by EOQ", "by EOY", "moving forward", "down the road", "in the next reporting cycle", "before EOQ", "in the long run", "at the end of the day", "by EOD", "in the upcoming fiscal year", "as we speak", "on a go-forward basis", "next quarter", "this quarter", "by next fiscal", "ASAP", "on the horizon", "at your earliest convenience", "in the interim", "post-launch", "mid-cycle", "year-end", "quarter-end", "by COP", "by EOB", "TBD"];
-                this.outcomes = ["actionable insights", "a positive ROI", "maximum throughput", "sustained growth", "stakeholder buy-in", "market disruption", "a win-win scenario", "synergistic outcomes", "core alignment", "level-up performance"];
-                this.transitions = ["resulting in", "leading to", "driving", "creating", "fostering", "catalyzing", "delivering", "yielding", "unleashing", "triggering", "ensuring", "facilitating", "accelerating", "powering"];
+                this.timelines = ["for Q1", "for Q2", "for Q3", "for Q4", "by EOQ", "by EOY", "moving forward", "down the road", "in the next reporting cycle", "before EOQ", "in the long run", "at the end of the day", "by EOD", "in the upcoming fiscal year", "as we speak", "on a go-forward basis", "next quarter", "this quarter", "by next fiscal", "ASAP", "on the horizon", "at your earliest convenience", "in the interim", "post-launch", "mid-cycle", "year-end", "quarter-end", "by COP", "by EOB", "TBD", "during the roadshow", "pre-IPO", "post-merger", "in the next sprint", "phase 2", "post-hoc", "long-tail"];
+                this.outcomes = ["actionable insights", "a positive ROI", "maximum throughput", "sustained growth", "stakeholder buy-in", "market disruption", "a win-win scenario", "synergistic outcomes", "core alignment", "level-up performance", "unprecedented scalability", "vertical integration", "disruptive innovation", "market supremacy", "zero friction", "customer delight", "brand advocacy"];
+                this.transitions = ["resulting in", "leading to", "driving", "creating", "fostering", "catalyzing", "delivering", "yielding", "unleashing", "triggering", "ensuring", "facilitating", "accelerating", "powering", "amplifying", "reinforcing", "streamlining", "solidifying", "igniting", "galvanizing"];
             }
 
             getIndefiniteArticle(word) {
@@ -455,7 +469,7 @@
             }
 
             generateSentence() {
-                const templateType = this.getTemplateType(25);
+                const templateType = this.getTemplateType(32);
                 let sentence = "";
                 const v1 = this.sample(this.actionVerbs), v2 = this.sample(this.actionVerbs);
                 const adj1 = this.sample(this.adjectives), adj2 = this.sample(this.adjectives);
@@ -465,31 +479,38 @@
                 const trans = this.sample(this.transitions);
 
                 switch (templateType) {
-                case 0: sentence = `By leveraging ${adj1} ${this.pluralize(noun1)}, we can actively ${v1} our ${this.pluralize(noun2)} and truly ${idiom} ${time}.`; break;
-                case 1: sentence = `Let's ${idiom} on the ${adj1} ${noun1} so we can ${v1} the ${adj2} ${this.pluralize(noun2)} ${time}.`; break;
-                case 2: sentence = `Our ${adj1} approach to ${noun1} will inherently ${v1} cross-functional ${this.pluralize(noun2)}, ${trans} ${out}.`; break;
-                case 3: sentence = `To effectively ${v1} the broader ecosystem, we must transition from ${adj1} ${this.pluralize(noun1)} to ${adj2} ${this.pluralize(noun2)}.`; break;
-                case 4: sentence = `Please ensure your ${this.pluralize(noun1)} are aligned with the ${adj1} ${this.pluralize(noun2)} before we attempt to ${v1} the ${this.pluralize(noun3)}.`; break;
-                case 5: sentence = `We need to ${v1} our ${this.pluralize(noun1)} if we're going to truly ${idiom} and reach our ${out} goals.`; break;
-                case 6: sentence = `The ${adj1} nature of our ${noun1} allows us to ${v1} without losing focus on our ${this.pluralize(noun2)}.`; break;
-                case 7: sentence = `Let's take ${this.getIndefiniteArticle(adj1)} look at how we ${v1} our ${noun1} to see if we're actually ${this.toGerund(v2)} value.`; break;
-                case 8: sentence = `Our core ${noun1} is to ${v1} the market by delivering ${adj1}, ${adj2} ${this.pluralize(noun3)} ${time}.`; break;
-                case 9: sentence = `If we can ${v1} our ${this.pluralize(noun1)} with the client's ${this.pluralize(noun2)}, we'll achieve ${out}.`; break;
-                case 10: sentence = `It's time to ${idiom} and start ${this.toGerund(v1)} our ${adj1} digital transformation ${time}.`; break;
-                case 11: sentence = `By ${this.toGerund(v1)} the ${noun1}, we unlock ${adj1} ${this.pluralize(noun2)} that drive ${out}.`; break;
-                case 12: sentence = `Can we ${v1} more ${adj1} ${this.pluralize(noun3)} for our ${this.pluralize(noun1)} to help us ${idiom}?`; break;
-                case 13: sentence = `The ${adj1} ${noun1} we've ${this.toPastParticiple(v1)} will ensure we stay ahead of the ${adj2} curve ${time}.`; break;
-                case 14: sentence = `We must ${v1} our internal ${this.pluralize(noun1)} to foster a more ${adj1}, ${adj2} ${noun3} ${time}.`; break;
-                case 15: sentence = `Is it possible to ${v1} the ${noun1} while still ${this.toGerund(v2)} our ${this.pluralize(noun2)}?`; break;
-                case 16: sentence = `Ultimately, we want to ${v1} ${adj1} ${this.pluralize(noun1)} that deliver ${out} for all stakeholders.`; break;
-                case 17: sentence = `We must ${v1} the ${noun1} to ensure ${adj1} ${this.pluralize(noun2)} that truly ${idiom}.`; break;
-                case 18: sentence = `By ${this.toGerund(v1)} our ${this.pluralize(noun1)}, we can ${v2} the ${adj1} ${noun3} ${time}.`; break;
-                case 19: sentence = `It's mission-critical to ${idiom} and ${v1} the ${adj1} ${noun1} ${time}.`; break;
-                case 20: sentence = `Our ${noun1} strategy is to ${v1} ${adj1} ${this.pluralize(noun2)} and ${trans} ${out}.`; break;
-                case 21: sentence = `To truly ${v1} our market presence, we must ${idiom} and embrace ${adj1} ${this.pluralize(noun1)}.`; break;
-                case 22: sentence = `The ${v1} of ${adj1} ${this.pluralize(noun1)} is ${trans} ${out} in real-time.`; break;
-                case 23: sentence = `${this.capitalize(this.toGerund(v1))} the ${noun1} will allow us to ${v2} our ${adj1} ${this.pluralize(noun2)} ${time}.`; break;
-                case 24: sentence = `We need to ${v1} our ${adj1} ${this.pluralize(noun1)} to ensure we ${idiom} without ${this.toGerund(v2)} the ${noun2}.`; break;
+                    case 0: sentence = `By leveraging ${adj1} ${this.pluralize(noun1)}, we can actively ${v1} our ${this.pluralize(noun2)} and truly ${idiom} ${time}.`; break;
+                    case 1: sentence = `Let's ${idiom} on the ${adj1} ${noun1} so we can ${v1} the ${adj2} ${this.pluralize(noun2)} ${time}.`; break;
+                    case 2: sentence = `Our ${adj1} approach to ${noun1} will inherently ${v1} cross-functional ${this.pluralize(noun2)}, ${trans} ${out}.`; break;
+                    case 3: sentence = `To effectively ${v1} the broader ecosystem, we must transition from ${adj1} ${this.pluralize(noun1)} to ${adj2} ${this.pluralize(noun2)}.`; break;
+                    case 4: sentence = `Please ensure your ${this.pluralize(noun1)} are aligned with the ${adj1} ${this.pluralize(noun2)} before we attempt to ${v1} the ${this.pluralize(noun3)}.`; break;
+                    case 5: sentence = `We need to ${v1} our ${this.pluralize(noun1)} if we're going to truly ${idiom} and reach our ${out} goals.`; break;
+                    case 6: sentence = `The ${adj1} nature of our ${noun1} allows us to ${v1} without losing focus on our ${this.pluralize(noun2)}.`; break;
+                    case 7: sentence = `Let's take ${this.getIndefiniteArticle(adj1)} look at how we ${v1} our ${noun1} to see if we're actually ${this.toGerund(v2)} value.`; break;
+                    case 8: sentence = `Our core ${noun1} is to ${v1} the market by delivering ${adj1}, ${adj2} ${this.pluralize(noun3)} ${time}.`; break;
+                    case 9: sentence = `If we can ${v1} our ${this.pluralize(noun1)} with the client's ${this.pluralize(noun2)}, we'll achieve ${out}.`; break;
+                    case 10: sentence = `It's time to ${idiom} and start ${this.toGerund(v1)} our ${adj1} digital transformation ${time}.`; break;
+                    case 11: sentence = `By ${this.toGerund(v1)} the ${noun1}, we unlock ${adj1} ${this.pluralize(noun2)} that drive ${out}.`; break;
+                    case 12: sentence = `Can we ${v1} more ${adj1} ${this.pluralize(noun3)} for our ${this.pluralize(noun1)} to help us ${idiom}?`; break;
+                    case 13: sentence = `The ${adj1} ${noun1} we've ${this.toPastParticiple(v1)} will ensure we stay ahead of the ${adj2} curve ${time}.`; break;
+                    case 14: sentence = `We must ${v1} our internal ${this.pluralize(noun1)} to foster a more ${adj1}, ${adj2} ${noun3} ${time}.`; break;
+                    case 15: sentence = `Is it possible to ${v1} the ${noun1} while still ${this.toGerund(v2)} our ${this.pluralize(noun2)}?`; break;
+                    case 16: sentence = `Ultimately, we want to ${v1} ${adj1} ${this.pluralize(noun1)} that deliver ${out} for all stakeholders.`; break;
+                    case 17: sentence = `We must ${v1} the ${noun1} to ensure ${adj1} ${this.pluralize(noun2)} that truly ${idiom}.`; break;
+                    case 18: sentence = `By ${this.toGerund(v1)} our ${this.pluralize(noun1)}, we can ${v2} the ${adj1} ${noun3} ${time}.`; break;
+                    case 19: sentence = `It's mission-critical to ${idiom} and ${v1} the ${adj1} ${noun1} ${time}.`; break;
+                    case 20: sentence = `Our ${noun1} strategy is to ${v1} ${adj1} ${this.pluralize(noun2)} and ${trans} ${out}.`; break;
+                    case 21: sentence = `To truly ${v1} our market presence, we must ${idiom} and embrace ${adj1} ${this.pluralize(noun1)}.`; break;
+                    case 22: sentence = `The ${v1} of ${adj1} ${this.pluralize(noun1)} is ${trans} ${out} in real-time.`; break;
+                    case 23: sentence = `${this.capitalize(this.toGerund(v1))} the ${noun1} will allow us to ${v2} our ${adj1} ${this.pluralize(noun2)} ${time}.`; break;
+                    case 24: sentence = `We need to ${v1} our ${adj1} ${this.pluralize(noun1)} to ensure we ${idiom} without ${this.toGerund(v2)} the ${noun2}.`; break;
+                    case 25: sentence = `To successfully ${v1} our ${this.pluralize(noun1)}, we must relentlessly pursue ${adj1} ${this.pluralize(noun2)} and ${idiom}.`; break;
+                    case 26: sentence = `We have the opportunity to ${v1} across the ${noun1} if we can properly onboard the ${adj1} ${noun2} strategy.`; break;
+                    case 27: sentence = `Our priority ${time} is to ${idiom} while simultaneously ${this.toGerund(v1)} next-gen ${this.pluralize(noun1)} for our clients.`; break;
+                    case 28: sentence = `Can we ensure that our ${adj1} ${noun1} will consistently generate ${out} when we actually ${v1} the product?`; break;
+                    case 29: sentence = `By adopting ${this.getIndefiniteArticle(adj1)} ${noun1} architecture, we expect to heavily ${v1} our core ${this.pluralize(noun2)} ${time}.`; break;
+                    case 30: sentence = `Let's make an effort to ${v2} our current pipeline, thereby ${this.toGerund(v1)} a more ${adj1} approach to ${noun1}.`; break;
+                    case 31: sentence = `The focus group expects us to ${v1} these ${adj1} ${this.pluralize(noun1)} and eventually ${idiom} for maximum impact.`; break;
                 }
                 return this.capitalize(sentence);
             }
