@@ -32,7 +32,8 @@
 }
 
 .sym,
-.btn-sym {
+.btn-sym,
+button.btn-sym {
     vertical-align: middle;
     font-family: "Material Symbols Rounded";
     font-weight: normal;
@@ -501,7 +502,9 @@ aside {
 }
 
 aside h2 {
-    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    font-size: 1.2rem;
     text-transform: uppercase;
     color: var(--on-surface-variant);
     padding: var(--spacing-lg) var(--spacing-md) var(--spacing-sm);
@@ -625,6 +628,8 @@ section {
 
 /* Headings inside content */
 h2 {
+    display: flex;
+    align-items: center;
     margin-top: 0;
     font-size: 1.5rem;
     font-weight: 400;
@@ -659,6 +664,8 @@ fieldset {
 }
 
 legend {
+    display: flex;
+    align-items: center;
     padding: 0 var(--spacing-sm);
     color: var(--primary);
     font-weight: 500;
@@ -1036,6 +1043,14 @@ label:has(input[type="checkbox"]:not([role="switch"])) {
     gap: 8px;
     cursor: pointer;
     user-select: none;
+    margin-bottom: var(--spacing-sm);
+}
+
+label:has(input[type="radio"]):last-child,
+label:has(input[type="checkbox"]:not([role="switch"])):last-child,
+.group>label:has(input[type="radio"]),
+.group>label:has(input[type="checkbox"]:not([role="switch"])) {
+    margin-bottom: 0;
 }
 
 label:has(input[role="switch"]) {
@@ -1047,6 +1062,11 @@ label:has(input[role="switch"]) {
     padding: 0;
     user-select: none;
     min-height: 32px;
+}
+
+label:has(input[role="switch"]):last-child,
+.group>label:has(input[role="switch"]) {
+    margin-bottom: 0;
 }
 
 .input-label-hint {
@@ -1375,7 +1395,9 @@ button.btn-danger:not(:disabled):hover,
 button.btn-sym,
 .btn-sym,
 button[type="reset"]:empty {
-    padding: 8px;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1498,7 +1520,7 @@ pre code {
     border-radius: 0;
 }
 
-dialog :not(pre) > code {
+dialog :not(pre)>code {
     background-color: color-mix(in srgb, var(--surface-container-highest), var(--on-surface) 8%);
 }
 
