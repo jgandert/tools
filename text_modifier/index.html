@@ -48,7 +48,7 @@
         <p>Transform, clean, sort, encode, decode, and extract data from text.</p>
     </hgroup>
     <button type="button" class="btn-sym btn-danger" id="restore-default"
-            data-tooltip="Restore default example" data-tooltip-pos="below">
+            data-tooltip="Restore default example">
         restore
     </button>
     <button type="button" class="btn-danger" id="clear-all">
@@ -65,6 +65,10 @@
     <label for="output-text">Output:</label>
     <textarea id="output-text" placeholder="Result will appear here..." class="mb-0"
               rows="12"></textarea>
+
+    <div class="flex-row mt-2">
+        <button type="button" id="copy-output-btn">Copy Output</button>
+    </div>
 </main>
 
 <aside>
@@ -80,6 +84,10 @@
             <label>
                 Append result to Output <input type="checkbox" role="switch" id="append-output"
                                                checked>
+            </label>
+
+            <label for="auto-copy">
+                Copy Output to clipboard <input type="checkbox" role="switch" id="auto-copy">
             </label>
         </fieldset>
     </form>
@@ -225,7 +233,8 @@
         </header>
         <p id="joke-desc">Brute-forcing input to recover the original content. This may take a
             while.
-            <br /><br />Note: Due to the birthday paradox and the pigeonhole principle, we might
+            <br /><br /><strong>Note:</strong> Due to the birthday paradox and the pigeonhole
+            principle, we might
             discover an equivalent collision rather than the original plaintext.
         </p>
         <progress value="0" max="100"></progress>
@@ -245,6 +254,8 @@
     const statsEl = document.getElementById("stats");
     const replaceInputCb = document.getElementById("replace-input");
     const appendOutputCb = document.getElementById("append-output");
+    const copyOutputBtn = document.getElementById("copy-output-btn");
+    const autoCopyCb = document.getElementById("auto-copy");
 
     const DEFAULT_EXAMPLE = `Welcome to the Text Modifier!
 This is a test document designed to try out some of the features.
@@ -356,6 +367,7 @@ Dates & Times:
         localStorage.setItem("text-modifier-output", outputText.value);
         localStorage.setItem("text-modifier-replace-input", replaceInputCb.checked);
         localStorage.setItem("text-modifier-append-output", appendOutputCb.checked);
+        localStorage.setItem("text-modifier-auto-copy", autoCopyCb.checked);
     };
 
     const loadState = () => {
@@ -372,6 +384,8 @@ Dates & Times:
         if (savedOutput !== null) outputText.value = savedOutput;
         if (savedReplaceInput !== null) replaceInputCb.checked = savedReplaceInput === "true";
         if (savedAppendOutput !== null) appendOutputCb.checked = savedAppendOutput === "true";
+        const savedAutoCopy = localStorage.getItem("text-modifier-auto-copy");
+        if (savedAutoCopy !== null) autoCopyCb.checked = savedAutoCopy === "true";
 
         updateStats();
     };
@@ -383,8 +397,31 @@ Dates & Times:
     outputText.addEventListener("input", saveState);
     replaceInputCb.addEventListener("change", saveState);
     appendOutputCb.addEventListener("change", saveState);
+    autoCopyCb.addEventListener("change", saveState);
 
     loadState();
+
+    const copyToClipboard = (silent = false) => {
+        if (!outputText.value) return;
+        const originalText = copyOutputBtn.innerText;
+        const updateBtn = () => {
+            if (silent) return;
+            copyOutputBtn.innerText = "Copied!";
+            setTimeout(() => {
+                copyOutputBtn.innerText = originalText;
+            }, 2000);
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(outputText.value).then(updateBtn);
+        } else {
+            outputText.select();
+            document.execCommand("copy");
+            updateBtn();
+        }
+    };
+
+    copyOutputBtn.addEventListener("click", () => copyToClipboard());
 
     const processAction = async (action) => {
         const text = inputText.value;
@@ -736,6 +773,9 @@ Dates & Times:
         // Auto scroll to bottom
         outputText.scrollTop = outputText.scrollHeight;
         saveState();
+        if (autoCopyCb.checked) {
+            copyToClipboard(true);
+        }
     };
 
     document.getElementById("clear-all").addEventListener("click", () => {
