@@ -367,7 +367,7 @@
             display: flex;
             align-items: center;
             padding-left: 12px;
-            color: var(--c-null);
+            color: var(--primary);
             font-style: italic;
             cursor: default;
         }
@@ -402,6 +402,7 @@
 
         .cell.key.is-index {
             color: var(--primary);
+            font-style: italic;
             user-select: none;
             text-align: right;
         }
@@ -880,11 +881,11 @@
     <div class="separator"></div>
 
     <!-- Type Buttons with Colors -->
-    <button type="button" id="btn-add-obj" class="strict-mode-only" title="Ctrl + Shift + 1">
+    <button type="button" id="btn-add-obj" title="Ctrl + Shift + 1">
         <span class="t-obj">{}</span>
         <kbd>^⇧1</kbd>
     </button>
-    <button type="button" id="btn-add-list" class="strict-mode-only" title="Ctrl + Shift + 2">
+    <button type="button" id="btn-add-list" title="Ctrl + Shift + 2">
         <span class="t-list">[]</span>
         <kbd>^⇧2</kbd>
     </button>
@@ -1238,6 +1239,38 @@
         }
     });
 
+    function navigateGrid(direction) {
+        const active = document.activeElement;
+        const isDown = direction === "down";
+
+        if (active && active.closest(".cell.key")) {
+            const span = active.closest(".cell.key").querySelector("span[contenteditable=\"true\"]");
+            if (span) {
+                const keys = Array.from(dom.container.querySelectorAll(".cell.key span[contenteditable=\"true\"]"));
+                const idx = keys.indexOf(span);
+                if (idx >= 0) {
+                    const nextIdx = isDown ? idx + 1 : idx - 1;
+                    if (nextIdx >= 0 && nextIdx < keys.length) {
+                        keys[nextIdx].focus();
+                        return true;
+                    }
+                }
+            }
+        } else if (active && active.closest(".cell.value")) {
+            const cell = active.closest(".cell.value");
+            const values = Array.from(dom.container.querySelectorAll(".cell.value[contenteditable=\"true\"], .cell.value.complex"));
+            const idx = values.indexOf(cell);
+            if (idx >= 0) {
+                const nextIdx = isDown ? idx + 1 : idx - 1;
+                if (nextIdx >= 0 && nextIdx < values.length) {
+                    values[nextIdx].focus();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     // Tab Navigation Override (Skip complex containers when tabbing from key)
     dom.container.addEventListener("keydown", (e) => {
         if (e.key === "Tab") {
@@ -1264,6 +1297,10 @@
                         prevVal.focus();
                     }
                 }
+            }
+        } else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+            if (navigateGrid(e.key === "ArrowDown" ? "down" : "up")) {
+                e.preventDefault();
             }
         }
     });
@@ -2999,6 +3036,19 @@
                 const t = getActiveTarget();
                 if (t) commitAndExecute(() => dispatchMove(t, 1));
             },
+        },
+        // Navigation
+        {
+            name: "Jump to Next Item",
+            kbd: "^▼",
+            mode: null,
+            action: () => navigateGrid("down"),
+        },
+        {
+            name: "Jump to Previous Item",
+            kbd: "^▲",
+            mode: null,
+            action: () => navigateGrid("up"),
         },
         // View
         {
