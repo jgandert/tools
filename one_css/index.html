@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
     <meta name="description"
-          content="README and showcase for one.css: A class-lite, semantic CSS framework for web tools.">
+          content="README and showcase for one.css: A class-lite, semantic CSS framework for web tools and more.">
     <title>one.css — Classless Semantic Stylesheet</title>
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
@@ -69,7 +69,7 @@
     <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
     <hgroup>
         <h1>one.css</h1>
-        <p>The one class-lite, semantic stylesheet for modern web tools.</p>
+        <p>The one class-lite, semantic stylesheet.</p>
     </hgroup>
 
     <nav aria-label="Primary">
@@ -84,7 +84,7 @@
                 <a href="#processing">Progress & Modal Dialog</a>
             </li>
             <li>
-                <a href="#controls">Color Picker & Buttons</a>
+                <a href="#controls">Controls</a>
             </li>
         </ul>
     </nav>
@@ -183,7 +183,7 @@
     </section>
 
     <section id="typography">
-        <h2>Typography — Inter Font Stack</h2>
+        <h2>Typography</h2>
         <p>
             Body copy is now rendered in <strong>Inter</strong> (variable font, loaded locally from
             <code>Inter-VariableFont_opsz,wght.ttf</code>), with a full system-font fallback chain.
@@ -380,6 +380,21 @@ Done!
             <button type="button">
                 <span class="sym">folder_open</span> Open
             </button>
+        </div>
+
+        <h3>Tooltips</h3>
+        <p>
+            Add a tooltip to any element by simply adding the <code>data-tooltip="Your text
+            here"</code> attribute.
+            Thanks to modern <a
+            href="https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Anchor_positioning"
+            target="_blank">CSS anchor positioning</a>,
+            tooltips automatically adapt their position to always remain visible on-screen and close to their source.
+        </p>
+        <div class="group mt-2">
+            <button type="button" data-tooltip="This is a helpful tooltip">Hover me</button>
+            <span
+                data-tooltip="Tooltips work on any element, not just buttons!">Hover this text</span>
         </div>
     </section>
 

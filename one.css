@@ -715,7 +715,8 @@ input:focus,
 textarea:focus {
     outline: none;
     background-color: color-mix(in srgb, var(--surface-container-highest), var(--on-surface) 4%);
-    border-bottom: 2px solid var(--primary);
+    border-bottom: 1px solid var(--primary);
+    box-shadow: inset 0 -1px 0 0 var(--primary);
 }
 
 /* Style browser spinners for number inputs to fit the theme */
@@ -822,7 +823,8 @@ select {
 select:focus {
     outline: none;
     background-color: color-mix(in srgb, var(--surface-container-highest), var(--on-surface) 4%);
-    border-bottom: 2px solid var(--primary);
+    border-bottom: 1px solid var(--primary);
+    box-shadow: inset 0 -1px 0 0 var(--primary);
 }
 
 button:focus-visible,
@@ -852,7 +854,8 @@ input[type="color"] {
 input[type="color"]:focus {
     outline: none;
     background-color: color-mix(in srgb, var(--surface-container-highest), var(--on-surface) 4%);
-    border-bottom: 2px solid var(--primary);
+    border-bottom: 1px solid var(--primary);
+    box-shadow: inset 0 -1px 0 0 var(--primary);
 }
 
 input[type="color"]::-webkit-color-swatch-wrapper {
@@ -1235,10 +1238,9 @@ input[type="file"]::file-selector-button:active {
 [role="group"],
 [role="search"] {
     display: flex;
-    align-items: flex-end;
-    /* Align to the bottom so underlining matches. */
-    gap: var(--spacing-sm);
-    /* Add spacing between group elements. */
+    align-items: stretch;
+    /* Stretch so input and button share the exact same height. */
+    gap: 0;
     margin-bottom: var(--spacing-md);
 }
 
@@ -1249,7 +1251,11 @@ input[type="file"]::file-selector-button:active {
 }
 
 [role="group"] > button,
-[role="search"] > button {
+[role="search"] > button,
+[role="group"] > button[type="button"],
+[role="search"] > button[type="button"],
+[role="group"] > button[type="submit"],
+[role="search"] > button[type="submit"] {
     flex: 0 0 auto;
     padding: 12px 16px;
     border-radius: 8px 8px 0 0;
@@ -1270,9 +1276,27 @@ input[type="file"]::file-selector-button:active {
     border-bottom-color: var(--primary);
 }
 
+[role="group"] > :is(input, button, select, textarea):not(:first-child),
+[role="search"] > :is(input, button, select, textarea):not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+[role="group"] > :is(input, button, select, textarea):not(:last-child),
+[role="search"] > :is(input, button, select, textarea):not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
 [role="group"] > input,
 [role="search"] > input {
     flex: 1 1 auto;
+}
+
+[role="group"]:focus-within > :is(input, button, select, textarea),
+[role="search"]:focus-within > :is(input, button, select, textarea) {
+    border-bottom-color: var(--primary);
+    box-shadow: inset 0 -1px 0 0 var(--primary);
 }
 
 /* Disabled interaction states */
@@ -1905,84 +1929,70 @@ dialog footer {
     font-weight: 400;
 }
 
+
 [data-tooltip] {
+    /* Associates a unique local scope per element automatically */
+    anchor-name: --local-tooltip-anchor;
+    anchor-scope: --local-tooltip-anchor;
     position: relative;
     cursor: help;
 }
 
-/* Tooltip text (always applied) */
 [data-tooltip]::after {
-    position: absolute;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
-    pointer-events: none;
-    z-index: 1000;
+    /* Extracts the text payload directly from the HTML attribute */
     content: attr(data-tooltip);
-    bottom: calc(100% + 12px);
-    left: 0;
-    transform: translateY(4px);
+
+    /* Establishes the floater relationship */
+    position: fixed;
+    position-anchor: --local-tooltip-anchor;
+
+    /* Primary placement attempt */
+    position-area: top;
+    margin-bottom: 8px;
+    margin-inline: 12px;
+
+    /* The fallback evaluation sequence
+     * Try top-center.
+     * If top overflows, flip to bottom-center.
+     * If bottom-center overflows left, try shifting it flush-right.
+     * If bottom-center overflows right, try shifting it flush-left.
+     * If top-center overflows left, try shifting it flush-right.
+     * If top-center overflows right, try shifting it flush-left.
+     */
+    position-try-fallbacks:
+    flip-block,
+    --bottom-shift-right,
+    --bottom-shift-left,
+    --shift-right,
+    --shift-left;
+
+    /* Visual styling */
     background-color: var(--on-surface-variant);
     color: var(--surface);
     padding: 6px 10px;
     border-radius: var(--radius);
     font-family: var(--font-sans);
-    font-size: 0.75rem;
+    font-size: 0.875rem;
+    font-style: normal;
+    font-weight: normal;
+    line-height: normal;
     text-transform: none;
     letter-spacing: normal;
     white-space: nowrap;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-}
+    z-index: 1000;
 
-[data-tooltip]:hover::after {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-/* Tooltip arrow/triangle (disabled on elements that need ::before for icons natively) */
-[data-tooltip]:not([href^="mailto:"]):not([href^="tel:"]):not([type="reset"])::before {
-    position: absolute;
+    /* Interaction and state management */
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
     pointer-events: none;
-    z-index: 1000;
-    content: '';
-    bottom: calc(100% + 2px);
-    left: 20px;
-    transform: translateX(-50%) translateY(4px);
-    border: 5px solid transparent;
-    border-top-color: var(--on-surface-variant);
+    transition: opacity 0.2s, visibility 0.2s;
 }
 
-[data-tooltip]:not([href^="mailto:"]):not([href^="tel:"]):not([type="reset"]):hover::before {
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
     opacity: 1;
     visibility: visible;
-    transform: translateX(-50%) translateY(0);
-}
-
-/* Tooltip below: add data-tooltip-pos="below" to flip direction */
-[data-tooltip][data-tooltip-pos="below"]::after {
-    bottom: auto;
-    top: calc(100% + 12px);
-    transform: translateY(-4px);
-}
-
-[data-tooltip][data-tooltip-pos="below"]:hover::after {
-    transform: translateY(0);
-}
-
-[data-tooltip][data-tooltip-pos="below"]:not([href^="mailto:"]):not([href^="tel:"]):not([type="reset"])::before {
-    bottom: auto;
-    top: calc(100% + 2px);
-    border-top-color: transparent;
-    border-bottom-color: var(--on-surface-variant);
-    transform: translateX(-50%) translateY(-4px);
-}
-
-[data-tooltip][data-tooltip-pos="below"]:not([href^="mailto:"]):not([href^="tel:"]):not([type="reset"]):hover::before {
-    transform: translateX(-50%) translateY(0);
 }
 
 /* --- Steps List --- */
