@@ -9,10 +9,10 @@ requires zero server interaction.
 - **Various standalone tools** spanning data transformation, image manipulation,
   developer diagnostics, creative design, and productivity.
 - **Unified design system** — all tools<sup>1</sup> share
-  [`one.css`](one_css/index.html), a class-lite semantic stylesheet providing
+  [`one.css`](https://jgandert.github.io/tools/one_css/index.html), a class-lite semantic stylesheet providing
   consistent theming (including dark mode), typography, layout primitives, and
   iconography across every page.
-- **Single-file architecture** — each tool is a (nearly) self-contained `index.html`
+- **Single-file architecture** — each tool is a nearly self-contained `index.html`
   that can be opened directly in a browser.
 - **Offline-ready** — everything runs in the browser; no backend needed.
 
@@ -46,7 +46,7 @@ Licensed under [Apache License, Version 2.0](LICENSE) except for the following:
 
 ### Third-party assets
 
-`turndown-standalone.js` (used in 'Paste To Markdown'), `client-zip.js` (used in multiple tools) and `paper.js` (used only in `shape_builder`) are distributed under the MIT license.
+`turndown-standalone.js` (used in 'Paste To Markdown'), `client-zip.js` (used in multiple tools) and [`paper.js`](https://github.com/paperjs/paper.js) (used in `shape_builder`) are distributed under the MIT license.
 
 The `material-symbols.woff2` and most of the icons are based on
 [Material Symbols](https://github.com/google/material-design-icons) by Google, licensed under the Apache License 2.0.

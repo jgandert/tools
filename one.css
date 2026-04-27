@@ -1405,7 +1405,7 @@ button.btn-danger,
 .btn-danger {
     color: var(--error);
     background-color: transparent;
-    border: 1px solid var(--error);
+    border: 1.5px solid var(--error);
 }
 
 button.btn-danger:not(:disabled):hover,
