@@ -525,10 +525,10 @@ Dates & Times:
                     .replace(/[\u2018\u2019\u201A\u201B\u2039\u203A]/g, "'");
                 break;
             case "remove-markdown-links-text":
-                result = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1");
+                result = text.replace(/(?<!\!)\[([^\]]*)\]\(([^)]+)\)/g, "$1");
                 break;
             case "remove-markdown-links-all":
-                result = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "");
+                result = text.replace(/(?<!\!)\[([^\]]*)\]\(([^)]+)\)/g, "");
                 break;
             case "remove-markdown-images-alt":
                 result = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, "$1");
@@ -954,8 +954,14 @@ Dates & Times:
         const nextType = pendingHashes.shift();
         if (!nextType) return;
         currentHashType = nextType;
+
+        let baseRate = 0;
+        if (nextType === "sha256") baseRate = SHA256_PERCENT_PER_SECOND;
+        else if (nextType === "sha384") baseRate = SHA384_PERCENT_PER_SECOND;
+        else if (nextType === "sha512") baseRate = SHA512_PERCENT_PER_SECOND;
+
         // Start with a truly tiny random probability to match the starting visual
-        cumulativeProbability = Math.random() * 1e-60;
+        cumulativeProbability = Math.random() * baseRate * 0.01;
 
         document.getElementById("joke-title").textContent = `Reversing ${nextType} Hash...`;
         jokeModal.showModal();
