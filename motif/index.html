@@ -176,46 +176,261 @@
 // Parallel() triggers notes at the same time.
 // Ramp() generates continuous parameter slides.
 // LFO modulates parameters reactively.
+//
+// This track pivots from dark cyberpunk to a bright, nostalgic, and hopeful 
+// puzzle-platformer atmosphere. 
+// It retains the fast, crisp breakbeat percussion but replaces heavy distortion 
+// and minor tones with pure waveforms, Lydian/Major chord progressions, and 
+// algorithmic counterpoint.
+//
+// Features showcased:
+// - Generative pure synths (ambient-bell, fm-epiano, soft-square, sub-bass)
+// - Diatonic scale mapping (.scale)
+// - Advanced voice-leading (.chordVoicing)
+// - Algorithmic counterpoint / echo (.offset)
+// - Conditional note mutation (.mask)
+// - Deterministic Euclidean rhythms (.euclid)
+// - An extended 3x longer multi-phase arrangement (96 bars)
+//
+// -----------------------------------------------------------------------------
+// 1. Global Setup
+// -----------------------------------------------------------------------------
+Motif.setTempo(165); // Fast, but clean and breathable
 
-// Global Settings
-Motif.setTempo(120);
-Motif.swing(0.0);
 Motif.master({
-  gain: 0.8,
-  limiter: true,
-  eq: { low: 0, mid: 0, high: 0 }
+    gain: 0.85,
+    limiter: true,
+    eq: { low: 1.05, mid: 0.95, high: 1.10 }, // Clean, hi-fi EQ
 });
 
-// 1. A deep synth bassline
-Track('bass')
-  .synth('sine')
-  .note(['C2', 'Tie', 'Eb2', 'Bb1', 'C2', 'G1', 'Ab1', 'G1'])
-  .envelope({ attack: 0.02, decay: 0.15, sustain: 0.5, release: 0.8 })
-  .gain(0.7)
-  .distort(0.1);
+// -----------------------------------------------------------------------------
+// 2. Global FX Routing
+// -----------------------------------------------------------------------------
+// A pristine, wide delay without messy feedback to maintain laboratory cleanliness
+const echoBus = Bus("echoBus")
+    .filter({ type: "bandpass", cutoff: 2000, resonance: 1.2 })
+    .pan(LFO.sine({ min: -0.7, max: 0.7, speed: "2b" }))
+    .volume(-5);
 
-// 2. A sparkling arpeggiated lead melody
-Track('lead')
-  .synth('triangle')
-  .note([
-    Parallel('C4', 'E4', 'G4', 'B4'),
-    Parallel('D4', 'F4', 'A4', 'C5'),
-    Parallel('Eb4', 'G4', 'Bb4', 'D5'),
-    Parallel('B3', 'D4', 'F#4', 'A4')
-  ])
-  .arp('upDown')
-  .stepLength('1/8') // Uncouple step length from global cycle (loops faster)
-  .envelope({ attack: 0.005, decay: 0.1, sustain: 0.2, release: 0.4 })
-  .gain(0.4)
-  .pan(LFO.sine({ min: -0.8, max: 0.8, speed: '4b' })); // Dynamic stereo panning
+// -----------------------------------------------------------------------------
+// 3. Track Definitions
+// -----------------------------------------------------------------------------
 
-// 3. A soft, dynamic procedural hi-hat
-Track('hihat')
-  .synth('square')
-  .note([null, 'C6', null, 'C6'])
-  .envelope({ attack: 0.001, decay: 0.02, sustain: 0.0, release: 0.02 })
-  .gain(0.15)
-  .pan(LFO.triangle({ min: -0.5, max: 0.5, speed: '2b' }));</textarea>
+// --- MELODIC & ATMOSPHERIC ---
+
+// Ambient Bell: The core harmonic progression (Cmaj7 -> Fmaj7 -> Am7 -> G)
+const bell = Track("bell")
+    .synth("ambient-bell")
+    .note([
+        Parallel("C4", "E4", "G4", "B4"),
+        Parallel("F3", "A3", "C4", "E4"),
+        Parallel("A3", "C4", "E4", "G4"),
+        Parallel("G3", "B3", "D4", "G4")
+    ])
+    .loopLength("4b") // Each chord holds for exactly 1 bar
+    .chordVoicing({ mode: "smooth" }) // Algorithmic voice leading
+    .envelope({ attack: 0.05, decay: 1.5, sustain: 0.2, release: 2.0 })
+    .gain(0.45)
+    .send(echoBus, 0.4);
+
+// Drone Pad: Warm, analog-style backing layer
+const dronePad = Track("dronePad")
+    .synth("ambient-pad")
+    .voices(4)
+    .note([
+        Parallel("C3", "G3", "C4", "E4"),
+        Parallel("F2", "C3", "F3", "A3"),
+        Parallel("A2", "E3", "A3", "C4"),
+        Parallel("G2", "D3", "G3", "B3")
+    ])
+    .loopLength("4b")
+    .envelope({ attack: 1.0, decay: 2.0, sustain: 1.0, release: 3.0 })
+    .filter({ 
+        type: "lowpass", 
+        cutoff: LFO.sine({ min: 600, max: 1800, speed: "8b" }) 
+    })
+    .pan(LFO.sine({ min: -0.5, max: 0.5, speed: "6b" }))
+    .gain(0.35)
+    .send(echoBus, 0.5);
+
+// Plucks: Arpeggiated FM Electric Piano with Algorithmic Counterpoint
+const plucks = Track("plucks")
+    .synth("fm-epiano")
+    .note([
+        Parallel("C4", "G4", "B4", "E5"),
+        Parallel("F3", "C4", "E4", "A4"),
+        Parallel("A3", "E4", "G4", "C5"),
+        Parallel("G3", "D4", "G4", "B4")
+    ])
+    .arp("upDown")
+    .stepLength("1/16")
+    .loopLength("4b")
+    // Showcase .offset(): Overlays a delayed copy of the sequence pitched up an octave
+    .offset("3/16", (e) => {
+        if (typeof e.value === "string" && e.value !== "Tie") {
+            const m = noteToMidi(e.value);
+            if (m) e.value = midiToNote(m + 12);
+        }
+        return e;
+    })
+    .envelope({ attack: 0.01, decay: 0.15, sustain: 0.0, release: 0.2 })
+    .filter({ type: "lowpass", cutoff: 3500 })
+    .gain(0.3)
+    .send(echoBus, 0.3);
+
+// Data Stream: Fast, computer-like arpeggios using Diatonic Scale Mapping
+const dataStream = Track("dataStream")
+    .synth("soft-square")
+    // Numeric degrees mapped to the C Major scale
+    .note([
+        0, 2, null, 7, 
+        2, null, 7, 9, 
+        4, 7, null, 11, 
+        7, null, 11, 14
+    ])
+    .scale("C4", "major")
+    .stepLength("1/16")
+    // Showcase .mask(): Every 3rd active step is pitched up an octave (+7 scale degrees)
+    .mask([false, false, true], (e) => {
+        if (typeof e.value === "number") e.value += 7; 
+        return e;
+    })
+    .envelope({ attack: 0.005, decay: 0.05, sustain: 0, release: 0.05 })
+    .pan(LFO.triangle({ min: -0.8, max: 0.8, speed: "2b" }))
+    .filter({ type: "lowpass", cutoff: LFO.sine({ min: 1000, max: 4000, speed: "4b" }) })
+    .gain(0.18)
+    .send(echoBus, 0.2);
+
+// --- BASSLINES ---
+
+function makeBassRhythm(note) {
+    // Native JS arrays for clean, deterministic 16th-note syncopations
+    return [
+        note, note, null, note, 
+        note, null, note, note, 
+        note, note, null, note, 
+        note, null, note, note
+    ];
+}
+const bassPattern = [
+    makeBassRhythm("C2"), // Bar 1
+    makeBassRhythm("F1"), // Bar 2
+    makeBassRhythm("A1"), // Bar 3
+    makeBassRhythm("G1")  // Bar 4
+];
+
+// Clean sub-bass for most of the track
+const bassClean = Track("bassClean")
+    .synth("sub-bass")
+    .note(bassPattern)
+    .loopLength("4b")
+    .envelope({ attack: 0.02, decay: 0.2, sustain: 0.1, release: 0.1 })
+    .filter({ type: "lowpass", cutoff: 800 })
+    .gain(0.85);
+
+// Distorted bass reserved exclusively for the intense "Drive" section
+const bassDrive = Track("bassDrive")
+    .synth("synth-brass")
+    .note(bassPattern)
+    .loopLength("4b")
+    .envelope({ attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.15 })
+    .filter({ 
+        type: "lowpass", 
+        cutoff: LFO.saw({ min: 400, max: 2200, speed: "2b" }), 
+        resonance: 2.0 
+    })
+    .distort(0.25) // The sole use of distortion, explicitly contained
+    .gain(0.55);
+
+// --- DRUMS ---
+
+// Crisp, breakbeat-style kick drum (Kick on 1 and 3.5)
+const kick = Track("kick")
+    .sample("kick-electronic")
+    .note(["C3", null, null, null, null, "C3", null, null])
+    .gain(0.9);
+
+// Straight 4-on-the-floor kick for buildups
+const kickFourOnFloor = Track("kickFourOnFloor")
+    .sample("kick-electronic")
+    .note(["C3", "C3", "C3", "C3"])
+    .gain(0.9);
+
+// Sharp electronic snare on the backbeats (2 and 4)
+const snare = Track("snare")
+    .sample("snare-electronic")
+    .note([null, null, "C4", null, null, null, "C4", null])
+    .filter({ type: "highpass", cutoff: 300 })
+    .gain(0.75)
+    .send(echoBus, 0.2);
+
+// Extremely quiet ghost snares for groove
+const ghostSnare = Track("ghostSnare")
+    .sample("snare-electronic")
+    .note([null, null, null, "C4", null, null, null, "C4"])
+    .gain(0.15)
+    .filter({ type: "highpass", cutoff: 1200 });
+
+// Fast, deterministic Euclidean hi-hat pattern
+const hihat = Track("hihat")
+    .sample("hihat-closed")
+    .euclid(11, 16) // 11 hits over 16 steps
+    .gain(0.35)
+    .pan(-0.25);
+
+// Ride cymbal for high-energy sections
+const ride = Track("ride")
+    .sample("cymbal-ride")
+    .note([null, null, "C4", null])
+    .gain(0.5)
+    .pan(0.3);
+
+// Sidechain the basses and plucks to the primary kick
+bassClean.sidechain(kick, { attack: 0.01, release: 0.1 });
+bassDrive.sidechain(kick, { attack: 0.01, release: 0.1 });
+plucks.sidechain(kick, { attack: 0.01, release: 0.1 });
+
+// -----------------------------------------------------------------------------
+// 4. Macro Arrangement (96 Bars Total)
+// -----------------------------------------------------------------------------
+Arrange([
+    // Phase 1: Awakening (Ambient Intro) - 8 bars
+    { bars: 8, tracks: [bell] },
+    
+    // Phase 2: Powering Up (Add Drone Pad) - 8 bars
+    { bars: 8, tracks: [bell, dronePad] },
+    
+    // Phase 3: First Steps (Add Clean Bass + Sparse Drums) - 8 bars
+    { bars: 8, tracks: [bell, dronePad, bassClean, kick, snare] },
+    
+    // Phase 4: Discovery (Introduce Plucks counterpoint) - 8 bars
+    { bars: 8, tracks: [bell, dronePad, bassClean, kick, snare, plucks] },
+    
+    // Phase 5: Momentum (Data Stream and Hi-Hats enter) - 8 bars
+    { bars: 8, tracks: [bassClean, kick, snare, hihat, ghostSnare, plucks, dataStream] },
+    
+    // Phase 6: The "Drive" (Maximum Energy, Distorted Bass, Ride Cymbal) - 8 bars
+    { bars: 8, tracks: [bassDrive, kick, snare, hihat, ghostSnare, ride, plucks, dataStream, dronePad] },
+    
+    // Phase 7: Suspension (Ambient Breakdown) - 8 bars
+    { bars: 8, tracks: [bell, dronePad, dataStream] },
+    
+    // Phase 8: Initialization (4-on-the-floor Buildup) - 8 bars
+    { bars: 8, tracks: [bell, dronePad, dataStream, kickFourOnFloor] },
+    
+    // Phase 9: Second Drop (Clean but Massive) - 8 bars
+    { bars: 8, tracks: [bassClean, kick, snare, hihat, plucks, dronePad, bell] },
+    
+    // Phase 10: Climax (Add Data Stream & Ride) - 8 bars
+    { bars: 8, tracks: [bassClean, kick, snare, hihat, ride, plucks, dronePad, bell, dataStream, ghostSnare] },
+    
+    // Phase 11: Wind Down (Fade out rhythm section) - 8 bars
+    { bars: 8, tracks: [dronePad, bell, dataStream] },
+
+    // Phase 12: Sleep (Final chord hold) - 8 bars
+    { bars: 8, tracks: [dronePad] }
+]);
+</textarea>
         <!-- beautify ignore:end -->
         <!-- prettier-ignore-end -->
     </div>
