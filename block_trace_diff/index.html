@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-blue">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Block Trace Diff: Reveal the developer's intent by tracking moved logic and stitching modified gaps.">
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <title>Block Trace Diff — Refactoring moves logic, not just delete and insert</title>
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        #output details {
+            padding: 0 !important;
+        }
+
+        #output details[open] > pre {
+            margin: 0 !important;
+            padding: var(--spacing-md) !important;
+            border-radius: 0 !important;
+        }
+
+        /* Operation type indicators using semantic theme-aware variables */
+        details[data-type="EQUAL"] {
+            border-left: 4px solid var(--outline);
+        }
+
+        details[data-type="EQUAL"] pre {
+            background-color: var(--surface-container);
+            color: var(--on-surface);
+        }
+
+        details[data-type="INSERT"] {
+            border-left: 4px solid var(--ins-color);
+        }
+
+        details[data-type="INSERT"] pre {
+            background-color: var(--ins-bg);
+            color: var(--ins-color);
+        }
+
+        details[data-type="DELETE"] {
+            border-left: 4px solid var(--del-color);
+        }
+
+        details[data-type="DELETE"] pre {
+            background-color: var(--del-bg);
+            color: var(--del-color);
+        }
+
+        details[data-type="MOVE_FROM"] {
+            border-left: 4px solid var(--warn);
+        }
+
+        details[data-type="MOVE_FROM"] pre {
+            background-color: color-mix(in srgb, var(--warn) 12%, var(--surface));
+            color: color-mix(in srgb, var(--warn) 90%, var(--on-surface));
+        }
+
+        details[data-type="MOVE_TO"] {
+            border-left: 4px solid #2196f3;
+        }
+
+        details[data-type="MOVE_TO"] pre {
+            background-color: color-mix(in srgb, #2196f3 12%, var(--surface));
+            color: color-mix(in srgb, #2196f3 90%, var(--on-surface));
+        }
+
+        details[data-type="REPLACE"] {
+            border-left: 4px solid #a855f7;
+        }
+
+        details[data-type="REPLACE"] pre {
+            background-color: color-mix(in srgb, #a855f7 12%, var(--surface));
+            color: color-mix(in srgb, #a855f7 90%, var(--on-surface));
+        }
+
+        /* Align inline full-line block highlights to the edges of code blocks */
+        pre code {
+            display: block;
+        }
+
+        pre code ins,
+        pre code del {
+            display: block;
+            width: calc(100% + 2 * var(--spacing-md));
+            margin-left: calc(-1 * var(--spacing-md));
+            margin-right: calc(-1 * var(--spacing-md));
+            padding-left: var(--spacing-md);
+            padding-right: var(--spacing-md);
+            border-radius: 0;
+        }
+
+        #debug-log {
+            height: 150px;
+            overflow-y: auto;
+            background-color: var(--pre-bg);
+            color: #00ff00;
+            border: 1px solid var(--outline-variant);
+            border-radius: 4px;
+            padding: var(--spacing-sm);
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+        }
+
+        .log-error {
+            color: var(--error);
+        }
+
+        .log-warn {
+            color: var(--warn);
+        }
+
+        .header-row {
+            margin-bottom: var(--spacing-sm);
+        }
+    </style>
+</head>
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Block Trace Diff</h1>
+        <p>Because refactoring moves logic, it doesn't just delete and insert</p>
+    </hgroup>
+</header>
+
+<main id="content">
+    <section>
+        <h2>Diff Output</h2>
+        <output id="output"></output>
+    </section>
+
+    <section>
+        <h2>Debug & Diagnostic Logs</h2>
+        <div id="debug-log"></div>
+    </section>
+</main>
+
+<aside>
+    <h2>Diff Input & Settings</h2>
+    <form id="diff-form">
+        <fieldset>
+            <legend>Text Inputs</legend>
+            <div class="header-row">
+                <label for="source">Source Code</label>
+                <button type="button" id="load-source-btn">
+                    <span class="sym">folder_open</span> Load file
+                </button>
+                <input type="file" id="source-file-input" hidden aria-hidden="true">
+            </div>
+            <!-- prettier-ignore-start -->
+            <!-- beautify ignore:start -->
+            <textarea id="source" spellcheck="false" rows="10">// Deleted line at top
+// Validates the integrity of the checkout payload and items.
+function validateCheckoutPayload(payload) {
+    if (!payload || !payload.userId) {
+        console.error("Validation failed: Missing userId");
+        return false;
+    }
+    if (!payload.items || payload.items.length === 0) {
+        console.error("Validation failed: Cart is empty");
+        return false;
+    }
+    return payload.items.every(item => {
+        return item.id && item.price > 0 && item.quantity > 0;
+    });
+}
+
+// Calculates standard sales tax based on the region code.
+function calculateSalesTax(subtotal, region) {
+    const rate = region === "CA" ? 0.0825 : 0.05;
+    return subtotal * rate;
+}
+
+// Fetches raw cart payloads from the older gateway server.
+const GATEWAY_URL = "http://gateway.internal/v1/carts";
+
+// Core function to charge the client card and clear their active session.
+function processCardPayment(userId, cart, token) {
+    console.log(`Initializing checkout sequence for user: ${userId}`);
+    const service = new PaymentGateway(token);
+    const result = service.charge(cart.total);
+    if (result.success) {
+        Session.clear(userId);
+    }
+    return result;
+}</textarea>
+            <!-- beautify ignore:end -->
+            <!-- prettier-ignore-end -->
+
+            <div class="header-row">
+                <label for="target">Target Code</label>
+                <button type="button" id="load-target-btn">
+                    <span class="sym">folder_open</span> Load file
+                </button>
+                <input type="file" id="target-file-input" hidden aria-hidden="true">
+            </div>
+            <!-- prettier-ignore-start -->
+            <!-- beautify ignore:start -->
+            <textarea id="target" spellcheck="false" rows="10">// Validates the integrity of the checkout payload and items.
+function validateCheckoutPayload(payload) {
+    if (!payload || !payload.userId) {
+        console.error("Validation failed: Missing userId");
+        return false;
+    }
+    if (!payload.items || payload.items.length === 0) {
+        console.error("Validation failed: Cart is empty");
+        return false;
+    }
+    return payload.items.every(item => {
+        return item.id && item.price > 0 && item.quantity > 0;
+    });
+}
+
+// Core function to charge the client card and clear their active session.
+function processCardPayment(userId, cart, token) {
+    console.log(`Initializing checkout sequence for user: ${userId}`);
+    const service = new ModernPaymentGateway(token);
+    const result = service.charge(cart.total);
+    if (result.success) {
+        Session.clear(userId);
+    }
+    return result;
+}
+
+// Fetches raw cart payloads from the modern secure server.
+const GATEWAY_URL = "https://api.secure-checkout.com/v2/carts";
+
+// Calculates standard sales tax based on the region code.
+function calculateSalesTax(subtotal, region) {
+    const rate = region === "CA" ? 0.0825 : 0.05;
+    return subtotal * rate;
+}
+
+// Inserted line at bottom</textarea>
+            <!-- beautify ignore:end -->
+            <!-- prettier-ignore-end -->
+        </fieldset>
+
+        <fieldset>
+            <legend>Algorithm Options</legend>
+            <label for="k-gram-size">k-Gram Size</label>
+            <input type="number" id="k-gram-size" min="1" max="20" value="2">
+
+            <label for="max-stitch-gap">Max Stitch Gap</label>
+            <input type="number" id="max-stitch-gap" min="0" max="20" value="2">
+
+            <label for="max-occurrences">Max Occurrences</label>
+            <input type="number" id="max-occurrences" min="1" max="100" value="5">
+
+            <label for="ignore-leading-whitespace">
+                <input type="checkbox" id="ignore-leading-whitespace" checked>
+                Ignore leading whitespace
+            </label>
+
+            <label for="skip-whitespace-ops">
+                <input type="checkbox" id="skip-whitespace-ops" checked>
+                Skip whitespace moves, inserts, or deletes
+            </label>
+        </fieldset>
+    </form>
+</aside>
+
+<script type="module">
+    import { BlockTraceDiff } from "./block_trace_diff.js";
+
+    // --- Log Hijacker ---
+    const debugLogEl = document.getElementById("debug-log");
+    const appendToDebugLog = (type, message) => {
+        const span = document.createElement("span");
+        span.className = type === "error" ? "log-error" : type === "warn" ? "log-warn" : "";
+        span.textContent = `[${new Date().toLocaleTimeString()}] [${type.toUpperCase()}] ${message}\n`;
+        debugLogEl.appendChild(span);
+        debugLogEl.scrollTop = debugLogEl.scrollHeight;
+    };
+
+    const originalLog = console.log;
+    const originalWarn = console.warn;
+    const originalError = console.error;
+
+    const formatArg = (arg) => {
+        if (typeof arg === "object" && arg !== null) {
+            try {
+                return JSON.stringify(arg, null, 2);
+            } catch (e) {
+                return String(arg);
+            }
+        }
+        return String(arg);
+    };
+
+    console.log = (...args) => {
+        originalLog(...args);
+        appendToDebugLog("log", args.map(formatArg).join(" "));
+    };
+    console.warn = (...args) => {
+        originalWarn(...args);
+        appendToDebugLog("warn", args.map(formatArg).join(" "));
+    };
+    console.error = (...args) => {
+        originalError(...args);
+        appendToDebugLog("error", args.map(formatArg).join(" "));
+    };
+
+    // --- UI Rendering Pipeline ---
+    const outputEl = document.getElementById("output");
+    const sourceTa = document.getElementById("source");
+    const targetTa = document.getElementById("target");
+    const kGramSizeInput = document.getElementById("k-gram-size");
+    const maxStitchGapInput = document.getElementById("max-stitch-gap");
+    const maxOccurrencesInput = document.getElementById("max-occurrences");
+    const ignoreLeadingWhitespaceInput = document.getElementById("ignore-leading-whitespace");
+    const skipWhitespaceOpsInput = document.getElementById("skip-whitespace-ops");
+
+    const getEngine = () => {
+        const kGramSize = parseInt(kGramSizeInput.value, 10) || 2;
+        const maxStitchGap = parseInt(maxStitchGapInput.value, 10);
+        const maxOccurrences = parseInt(maxOccurrencesInput.value, 10) || 5;
+        const ignoreLeadingWhitespace = ignoreLeadingWhitespaceInput.checked;
+        const skipWhitespaceOps = skipWhitespaceOpsInput.checked;
+        return new BlockTraceDiff({
+            kGramSize,
+            maxStitchGap,
+            maxOccurrences,
+            ignoreLeadingWhitespace,
+            skipWhitespaceOps,
+        });
+    };
+
+    function debounce(fn, delay) {
+        let timeoutId;
+        return function(...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => fn.apply(this, args), delay);
+        };
+    }
+
+    const triggerDiff = () => {
+        const src = sourceTa.value.split("\n");
+        const targetLines = targetTa.value.split("\n");
+        const engine = getEngine();
+        const rawOps = engine.diff(src, targetLines);
+        console.log(`Computed diff with ${rawOps.length} raw operations:`, rawOps);
+        const chunks = chunkOperations(rawOps);
+        outputEl.innerHTML = "";
+        chunks.forEach(chunk => {
+            if (chunk.type === "MOVE_FROM") return; // Skip MOVE_FROM redundant block; MOVE_TO shows the actual diff
+            renderChunk(chunk);
+        });
+    };
+
+    const debouncedDiff = debounce(triggerDiff, 250);
+
+    sourceTa.addEventListener("input", debouncedDiff);
+    targetTa.addEventListener("input", debouncedDiff);
+    kGramSizeInput.addEventListener("input", debouncedDiff);
+    maxStitchGapInput.addEventListener("input", debouncedDiff);
+    maxOccurrencesInput.addEventListener("input", debouncedDiff);
+    ignoreLeadingWhitespaceInput.addEventListener("change", debouncedDiff);
+    skipWhitespaceOpsInput.addEventListener("change", debouncedDiff);
+
+    // --- File Upload Logic ---
+    const loadSourceBtn = document.getElementById("load-source-btn");
+    const sourceFileInput = document.getElementById("source-file-input");
+    const loadTargetBtn = document.getElementById("load-target-btn");
+    const targetFileInput = document.getElementById("target-file-input");
+
+    loadSourceBtn.addEventListener("click", () => sourceFileInput.click());
+    loadTargetBtn.addEventListener("click", () => targetFileInput.click());
+
+    const handleFileLoad = (inputEl, textareaEl) => {
+        const file = inputEl.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            textareaEl.value = e.target.result;
+            triggerDiff();
+        };
+        reader.readAsText(file);
+        inputEl.value = "";
+    };
+
+    sourceFileInput.addEventListener("change", () => handleFileLoad(sourceFileInput, sourceTa));
+    targetFileInput.addEventListener("change", () => handleFileLoad(targetFileInput, targetTa));
+
+    // Trigger initial calculation on load
+    triggerDiff();
+
+    function chunkOperations(ops) {
+        const chunks = [];
+        let current = null;
+
+        for (const op of ops) {
+            if (op.type === "MOVE_FROM" || op.type === "MOVE_TO") {
+                chunks.push(op);
+                current = null;
+            } else {
+                if (!current || current.type !== op.type) {
+                    current = {
+                        type: op.type,
+                        lines: [],
+                        moveType: op.moveType,
+                        startSrcLine: op.srcLine,
+                        startTargetLine: op.targetLine,
+                        endSrcLine: op.srcLine,
+                        endTargetLine: op.targetLine,
+                    };
+                    if (op.type === "REPLACE") {
+                        current.internalDiff = [];
+                    }
+                    chunks.push(current);
+                }
+                current.lines.push(op.text);
+                if (op.srcLine) {
+                    current.endSrcLine = op.srcLine;
+                    if (!current.startSrcLine) current.startSrcLine = op.srcLine;
+                }
+                if (op.targetLine) {
+                    current.endTargetLine = op.targetLine;
+                    if (!current.startTargetLine) current.startTargetLine = op.targetLine;
+                }
+                if (op.type === "REPLACE" && op.internalDiff) {
+                    current.internalDiff.push(...op.internalDiff);
+                }
+            }
+        }
+        return chunks;
+    }
+
+    function renderChunk(chunk) {
+        const details = document.createElement("details");
+        details.dataset.type = chunk.type;
+
+        if (chunk.type === "DELETE" || chunk.type === "INSERT" || chunk.type === "REPLACE") {
+            details.open = true;
+        } else if (chunk.type === "MOVE_FROM" || chunk.type === "MOVE_TO") {
+            details.open = chunk.moveType === "MOVE_MODIFIED";
+        }
+
+        const summary = document.createElement("summary");
+        const formatRange = (start, end) => {
+            if (!start) return "";
+            return start === end ? `${start}` : `${start}-${end}`;
+        };
+
+        let label = chunk.type;
+        let lineInfo = "";
+
+        if (chunk.type === "MOVE_FROM" || chunk.type === "MOVE_TO") {
+            label = "MOVE";
+            if (chunk.moveType === "MOVE_MODIFIED") {
+                label += " (MODIFIED)";
+            }
+            const count = chunk.lines ? chunk.lines.length : 0;
+            const srcRange = formatRange(chunk.srcStartLine, chunk.srcEndLine);
+            const targetRange = formatRange(chunk.targetStartLine, chunk.targetEndLine);
+            if (chunk.type === "MOVE_FROM") {
+                lineInfo = `${count} lines (source lines ${srcRange} -> target lines ${targetRange})`;
+            } else {
+                lineInfo = `${count} lines (target lines ${targetRange} <- source lines ${srcRange})`;
+            }
+        } else {
+            if (chunk.moveType === "MOVE_MODIFIED") {
+                label += " (MODIFIED)";
+            }
+            const count = chunk.lines ? chunk.lines.length : 0;
+            if (chunk.type === "DELETE") {
+                lineInfo = `${count} lines (source lines ${formatRange(chunk.startSrcLine, chunk.endSrcLine)})`;
+            } else if (chunk.type === "INSERT") {
+                lineInfo = `${count} lines (target lines ${formatRange(chunk.startTargetLine, chunk.endTargetLine)})`;
+            } else if (chunk.type === "REPLACE") {
+                lineInfo = `${count} lines (source lines ${formatRange(chunk.startSrcLine, chunk.endSrcLine)} -> target lines ${formatRange(chunk.startTargetLine, chunk.endTargetLine)})`;
+            } else if (chunk.type === "EQUAL") {
+                lineInfo = `${count} lines (source lines ${formatRange(chunk.startSrcLine, chunk.endSrcLine)})`;
+            }
+        }
+
+        summary.textContent = `[${label}] ${lineInfo}`;
+
+        const pre = document.createElement("pre");
+        const code = document.createElement("code");
+
+        if (chunk.internalDiff) {
+            if (chunk.type === "REPLACE") {
+                const dels = chunk.internalDiff.filter(mod => mod.type === "DELETE");
+                const inses = chunk.internalDiff.filter(mod => mod.type === "INSERT");
+                dels.forEach(mod => {
+                    const span = document.createElement("del");
+                    span.textContent = mod.text + "\n";
+                    code.appendChild(span);
+                });
+                inses.forEach(mod => {
+                    const span = document.createElement("ins");
+                    span.textContent = mod.text + "\n";
+                    code.appendChild(span);
+                });
+            } else {
+                chunk.internalDiff.forEach(mod => {
+                    const span = document.createElement(mod.type === "INSERT" ? "ins" : mod.type === "DELETE" ? "del" : "span");
+                    span.textContent = mod.text + "\n";
+                    code.appendChild(span);
+                });
+            }
+        } else {
+            code.textContent = chunk.lines.join("\n");
+        }
+
+        pre.appendChild(code);
+        details.appendChild(summary);
+        details.appendChild(pre);
+        outputEl.appendChild(details);
+    }
+</script>
+</body>
+</html>

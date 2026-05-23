@@ -1,6 +1,6 @@
 root = true
 
-[{**/paper.js,**/client-zip.js,**/turndown-standalone.js,**/*.svg}]
+[{client-zip.js,**/paper.js,**/client-zip.js,**/turndown-standalone.js,**/*.svg,*.svg}]
 ij_formatter_enabled = false
 
 [*]

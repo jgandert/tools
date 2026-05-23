@@ -130,15 +130,6 @@
             z-index: 0;
         }
 
-        @media (prefers-color-scheme: dark) {
-            :root:not([data-theme="light"]) .tool-card::after {
-                filter: invert(1) grayscale(100%);
-            }
-        }
-
-        :root[data-theme="dark"] .tool-card::after {
-            filter: invert(1) grayscale(100%);
-        }
 
         /* Individual Icons (SVGs inline for portability, could be images) */
         .card-markdown {
@@ -159,6 +150,10 @@
 
         .card-triangle {
             --bg-icon: url("./triangle_paint/icon.svg");
+        }
+
+        .card-floor-plan {
+            --bg-icon: url("./floor_plan/icon.svg");
         }
 
         .card-grid {
@@ -185,6 +180,10 @@
             --bg-icon: url("./json_query/icon.svg");
         }
 
+        .card-block-trace {
+            --bg-icon: url("./block_trace_diff/icon.svg");
+        }
+
         .card-input {
             --bg-icon: url("./input_tester/icon.svg");
         }
@@ -193,12 +192,20 @@
             --bg-icon: url("./mic_cam_tester/icon.svg");
         }
 
+        .card-motif {
+            --bg-icon: url("./motif/icon.svg");
+        }
+
         .card-shape {
             --bg-icon: url("./shape_builder/icon.svg");
         }
 
         .card-placeholder {
             --bg-icon: url("./placeholder_text/icon.svg");
+        }
+
+        .card-typing-test {
+            --bg-icon: url("./typing_test/icon.svg");
         }
 
         .card-browser {
@@ -217,13 +224,22 @@
             --bg-icon: url("./time_track/icon.svg");
         }
 
-        .card-file-base64 {
-            --bg-icon: url("./file_to_base64/icon.svg");
-        }
-
         .card-text-modifier {
             --bg-icon: url("./text_modifier/icon.svg");
         }
+
+        .card-bisociate {
+            --bg-icon: url("./bisociate/icon.svg");
+        }
+
+        .card-split-copy {
+            --bg-icon: url("./split_copy/icon.svg");
+        }
+
+        .card-hex-collector {
+            --bg-icon: url("./fair_hex_collector/icon.svg");
+        }
+
 
         @media (max-width: 600px) {
 
@@ -265,6 +281,34 @@
             </div>
             <p class="card-desc">
                 Transform, clean, sort, encode, decode, and extract data from text with ease.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Split Copy -->
+        <a href="./split_copy/index.html" class="tool-card card-split-copy">
+            <div class="card-header">
+                <h2 class="card-title">Split Copy</h2>
+            </div>
+            <p class="card-desc">
+                Split text into segments and copy them to clipboard with prefix/postfix and
+                replacements.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Block Trace Diff -->
+        <a href="./block_trace_diff/index.html" class="tool-card card-block-trace">
+            <div class="card-header">
+                <h2 class="card-title">Block Trace Diff</h2>
+            </div>
+            <p class="card-desc">
+                Track moved logic and stitch modified gaps to reveal a developer's real intent
+                during refactoring.
             </p>
             <div class="card-footer">
                 Open Tool <span class="sym arrow"></span>
@@ -323,6 +367,19 @@
             </div>
         </a>
 
+        <!-- Bisociate -->
+        <a href="./bisociate/index.html" class="tool-card card-bisociate">
+            <div class="card-header">
+                <h2 class="card-title">Bisociate</h2>
+            </div>
+            <p class="card-desc">
+                Combine domains and apply strategic prompts to generate novel ideas and solutions.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
         <!-- Time Tracker -->
         <a href="./time_track/index.html" class="tool-card card-time-track">
             <div class="card-header">
@@ -364,6 +421,19 @@
             </div>
         </a>
 
+        <!-- Motif Live Coder -->
+        <a href="./motif/index.html" class="tool-card card-motif">
+            <div class="card-header">
+                <h2 class="card-title">Motif Live Coder</h2>
+            </div>
+            <p class="card-desc">
+                Interactive web-based live-coding playground and synthesizer for Motif.js.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
         <!-- Browser Information -->
         <a href="./browser_info/index.html" class="tool-card card-browser">
             <div class="card-header">
@@ -391,6 +461,20 @@
             </div>
         </a>
 
+        <!-- Favicon Packer -->
+        <a href="./favicon_packer/index.html" class="tool-card card-favicon">
+            <div class="card-header">
+                <h2 class="card-title">Favicon Packer</h2>
+            </div>
+            <p class="card-desc">
+                Generate a complete, precise set of modern favicon assets client-side from any
+                logo icon.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
         <!-- Themed Ipsum Generator -->
         <a href="./placeholder_text/index.html" class="tool-card card-placeholder">
             <div class="card-header">
@@ -404,14 +488,14 @@
             </div>
         </a>
 
-        <!-- Favicon Packer -->
-        <a href="./favicon_packer/index.html" class="tool-card card-favicon">
+        <!-- Zen Typing Test -->
+        <a href="./typing_test/index.html" class="tool-card card-typing-test">
             <div class="card-header">
-                <h2 class="card-title">Favicon Packer</h2>
+                <h2 class="card-title">Zen Typing Test</h2>
             </div>
             <p class="card-desc">
-                Generate a complete, precise set of modern favicon assets client-side from any
-                logo icon.
+                Test your speed and accuracy on generated texts under a sleek, fullscreen Zen Mode
+                interface.
             </p>
             <div class="card-footer">
                 Open Tool <span class="sym arrow"></span>
@@ -478,9 +562,8 @@
                 <h2 class="card-title">Shape Builder</h2>
             </div>
             <p class="card-desc">
-                Construct vector shapes programmatically with an interactive JavaScript API and
-                real-time SVG
-                preview.
+                Construct vector shapes programmatically with a JavaScript API and
+                real-time SVG preview.
             </p>
             <div class="card-footer">
                 Open Tool <span class="sym arrow"></span>
@@ -500,19 +583,18 @@
             </div>
         </a>
 
-        <!-- File to Base64 -->
-        <a href="./file_to_base64/index.html" class="tool-card card-file-base64">
+        <!-- Floor Plan Optimizer -->
+        <a href="./floor_plan/index.html" class="tool-card card-floor-plan">
             <div class="card-header">
-                <h2 class="card-title">File to Base64</h2>
+                <h2 class="card-title">Floor Plan Optimizer</h2>
             </div>
             <p class="card-desc">
-                Convert binary files to base64 strings or media HTML tags inline.
+                Optimize room layouts using constraint-based simulated annealing.
             </p>
             <div class="card-footer">
                 Open Tool <span class="sym arrow"></span>
             </div>
         </a>
-
 
         <!-- sumid -->
         <a href="./sumid/index.html" class="tool-card card-sumid">
@@ -527,7 +609,22 @@
                 Open Tool <span class="sym arrow"></span>
             </div>
         </a>
+
+        <!-- Fair Hex Resource Collection -->
+        <a href="./fair_hex_collector/index.html" class="tool-card card-hex-collector">
+            <div class="card-header">
+                <h2 class="card-title">Fair Hex Resource Collection</h2>
+            </div>
+            <p class="card-desc">
+                Minimize resource clumping and roll-variance in a certain hexagonal board game with
+                an optimized board generator and a statistical deck.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
     </div>
+
 </main>
 
 <footer>
@@ -535,9 +632,11 @@
     <a href="https://github.com/jgandert/tools/blob/main/LICENSE">Apache 2.0 LICENSE</a> ·
     Built with <a href="./one_css/index.html">
     one.css — the <strong>one</strong> c</strong>&#x2060;lass-lite
-    <strong>s</strong>&#x2060;emantic <strong>s</strong>&#x2060;tylesheet
+    <strong>s</strong>
+    &#x2060;emantic <strong>s</strong>&#x2060;tylesheet
 </a>
 </footer>
 </body>
 
 </html>
+

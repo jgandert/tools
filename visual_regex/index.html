@@ -274,14 +274,18 @@
     <section id="test-section">
         <h2 class="header-row">
             Test
-            <button type="button" id="generate-btn" onclick="generateTestStrings()">
+            <button type="button" id="generate-btn">
                 <span class="sym">casino</span> Generate
             </button>
         </h2>
         <p class="description">Each line is tested independently against the current regex.</p>
         <label for="test-input">
             Test strings (one per line)
+            <!-- prettier-ignore-start -->
+            <!-- beautify ignore:start -->
             <textarea id="test-input" rows="6"></textarea>
+            <!-- beautify ignore:end -->
+            <!-- prettier-ignore-end -->
         </label>
         <div id="test-results"></div>
     </section>
@@ -1773,6 +1777,7 @@
     };
 
     // Initialization
+    document.getElementById("generate-btn").addEventListener("click", generateTestStrings);
     document.getElementById("regex-out").addEventListener("input", () => {
         updateASTFromInput();
         runTests();

@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Split text into segments and copy them to clipboard with prefix/postfix and replacements.">
+    <title>Split Copy</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../storage.js"></script>
+    <style>
+        .rule-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .rule-row input {
+            margin-bottom: 0 !important;
+        }
+
+        .rule-row label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            margin: 0;
+            padding-top: 12px;
+        }
+
+        .rule-row .btn-danger {
+            margin-top: 0;
+            padding: 10px;
+        }
+
+
+        .button-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .copy-btn {
+            text-align: left;
+            white-space: pre-wrap;
+            word-break: break-word;
+            padding: 16px;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        /* Success state for clicked buttons */
+        .copy-btn.clicked {
+            background-color: var(--secondary) !important;
+            color: var(--on-secondary) !important;
+            border-color: var(--secondary) !important;
+        }
+
+        .copy-btn.failed {
+            background-color: var(--error) !important;
+            color: var(--on-error) !important;
+            border-color: var(--error) !important;
+        }
+
+        /* Adjusting sidebar textarea */
+        #text-input {
+            min-height: 120px;
+        }
+    </style>
+</head>
+
+<body class="theme-orange">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Split Copy</h1>
+        <p>Segmented Clipboard Tool</p>
+    </hgroup>
+</header>
+
+<aside>
+    <form id="settings-form">
+        <fieldset>
+            <legend>Input</legend>
+            <label for="text-input">Text to Split</label>
+            <textarea id="text-input" name="text-input" rows="5"
+                      placeholder="Enter text here..."></textarea>
+        </fieldset>
+
+        <fieldset>
+            <legend>Settings</legend>
+            <div class="input-row">
+                <select id="preset-select" name="preset-select" aria-label="Presets">
+                    <option value="Default">Default</option>
+                </select>
+                <button type="button" class="btn-sym" id="add-preset-btn" title="Add / Save Preset">
+                    add
+                </button>
+                <button type="button" class="btn-sym btn-danger" id="delete-preset-btn"
+                        title="Delete Preset">delete
+                </button>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Split</legend>
+            <label for="split-input">Split by (e.g. \n\n or ,)</label>
+            <div class="input-row">
+                <input type="text" id="split-input" name="split-input" value="\n\n"
+                       placeholder="\n\n">
+                <label for="split-regex">
+                    <input type="checkbox" id="split-regex" name="split-regex"> RegEx
+                </label>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Wrap</legend>
+            <label for="prefix-input">Prefix</label>
+            <textarea id="prefix-input" name="prefix-input" rows="2"
+                      placeholder="Prepend to each part..."></textarea>
+
+            <label for="postfix-input">Postfix</label>
+            <textarea id="postfix-input" name="postfix-input" rows="2"
+                      placeholder="Append to each part..."></textarea>
+        </fieldset>
+
+        <fieldset>
+            <legend>Replacements</legend>
+            <div id="rules-list"></div>
+            <button type="button" id="add-rule-btn">
+                <span class="sym">add</span> Add Replacement
+            </button>
+        </fieldset>
+
+    </form>
+</aside>
+
+<main id="content">
+    <section>
+        <div id="button-container" class="button-grid">
+            <p class="text-muted">Segments will appear here after you enter text in the sidebar.</p>
+        </div>
+    </section>
+</main>
+
+<script>
+    const textarea = document.getElementById("text-input");
+    const splitInput = document.getElementById("split-input");
+    const splitRegexInput = document.getElementById("split-regex");
+    const container = document.getElementById("button-container");
+    const prefixInput = document.getElementById("prefix-input");
+    const postfixInput = document.getElementById("postfix-input");
+    const rulesList = document.getElementById("rules-list");
+    const addRuleBtn = document.getElementById("add-rule-btn");
+    const presetSelect = document.getElementById("preset-select");
+    const addPresetBtn = document.getElementById("add-preset-btn");
+    const deletePresetBtn = document.getElementById("delete-preset-btn");
+
+    const DEFAULT_PRESET = {
+        split: "\\n\\n",
+        useRegex: false,
+        prefix: "",
+        postfix: "",
+        replacements: [],
+    };
+
+    let presets = {
+        "Default": { ...DEFAULT_PRESET },
+    };
+    let currentPreset = "Default";
+    let replacements = [];
+    let clickedStates = new Set();
+    let saveTimeout;
+
+    function updatePresetSelect() {
+        presetSelect.innerHTML = "";
+        Object.keys(presets).forEach(name => {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = name;
+            presetSelect.appendChild(opt);
+        });
+        presetSelect.value = currentPreset;
+    }
+
+    function loadPreset(name) {
+        if (!presets[name]) {
+            name = "Default";
+        }
+        currentPreset = name;
+        const p = presets[name] || DEFAULT_PRESET;
+        splitInput.value = p.split !== undefined ? p.split : "\\n\\n";
+        splitRegexInput.checked = !!p.useRegex;
+        prefixInput.value = p.prefix || "";
+        postfixInput.value = p.postfix || "";
+        replacements = Array.isArray(p.replacements) ? JSON.parse(JSON.stringify(p.replacements)) : [];
+
+        presetSelect.value = currentPreset;
+        renderRules();
+        renderOutput();
+    }
+
+    // Event listeners for persistence
+    const saveInputs = () => {
+        clearTimeout(saveTimeout);
+        if (presets[currentPreset]) {
+            presets[currentPreset].split = splitInput.value;
+            presets[currentPreset].useRegex = splitRegexInput.checked;
+            presets[currentPreset].prefix = prefixInput.value;
+            presets[currentPreset].postfix = postfixInput.value;
+            presets[currentPreset].replacements = replacements;
+        }
+
+        saveTimeout = setTimeout(async () => {
+            try {
+                await Storage.set("sc-text", textarea.value);
+                await Storage.set("sc-presets", presets);
+                await Storage.set("sc-current-preset", currentPreset);
+            } catch (e) {
+                console.error("Failed to save state to Storage:", e);
+            }
+        }, 500);
+        renderOutput();
+    };
+
+    async function loadState() {
+        try {
+            const savedText = await Storage.get("sc-text");
+            const savedPresets = await Storage.get("sc-presets");
+            const savedCurrentPreset = await Storage.get("sc-current-preset");
+            const savedClickedStates = await Storage.get("sc-clicked-states");
+
+            textarea.value = savedText !== undefined && savedText !== null ? savedText : "";
+            clickedStates = new Set(Array.isArray(savedClickedStates) ? savedClickedStates : []);
+
+            if (savedPresets && typeof savedPresets === "object") {
+                presets = savedPresets;
+            } else {
+                presets = {
+                    "Default": { ...DEFAULT_PRESET },
+                };
+            }
+
+            if (savedCurrentPreset && presets[savedCurrentPreset]) {
+                currentPreset = savedCurrentPreset;
+            } else {
+                currentPreset = "Default";
+            }
+        } catch (e) {
+            console.error("Failed to load text content from Storage:", e);
+            presets = {
+                "Default": { ...DEFAULT_PRESET },
+            };
+            currentPreset = "Default";
+        }
+
+        updatePresetSelect();
+        loadPreset(currentPreset);
+
+        // Wire up event listeners after initial render
+        textarea.addEventListener("input", saveInputs);
+        splitInput.addEventListener("input", saveInputs);
+        splitRegexInput.addEventListener("change", saveInputs);
+        prefixInput.addEventListener("input", saveInputs);
+        postfixInput.addEventListener("input", saveInputs);
+
+        presetSelect.addEventListener("change", (e) => {
+            loadPreset(e.target.value);
+            saveInputs();
+        });
+
+        addPresetBtn.addEventListener("click", () => {
+            const name = prompt("Enter preset name:");
+            if (!name) return;
+            const trimmed = name.trim();
+            if (!trimmed) return;
+
+            if (presets[trimmed]) {
+                if (!confirm(`Preset "${trimmed}" already exists. Overwrite?`)) {
+                    return;
+                }
+            }
+
+            presets[trimmed] = {
+                split: splitInput.value,
+                useRegex: splitRegexInput.checked,
+                prefix: prefixInput.value,
+                postfix: postfixInput.value,
+                replacements: JSON.parse(JSON.stringify(replacements)),
+            };
+
+            currentPreset = trimmed;
+            updatePresetSelect();
+            loadPreset(currentPreset);
+            saveInputs();
+        });
+
+        deletePresetBtn.addEventListener("click", () => {
+            if (currentPreset === "Default") {
+                if (confirm("Reset 'Default' preset?")) {
+                    presets["Default"] = {
+                        split: "\\n\\n",
+                        useRegex: false,
+                        prefix: "",
+                        postfix: "",
+                        replacements: [],
+                    };
+                    loadPreset("Default");
+                    saveInputs();
+                }
+                return;
+            }
+
+            if (confirm(`Delete preset "${currentPreset}"?`)) {
+                delete presets[currentPreset];
+                currentPreset = "Default";
+                updatePresetSelect();
+                loadPreset(currentPreset);
+                saveInputs();
+            }
+        });
+    }
+
+    function renderRules() {
+        rulesList.innerHTML = "";
+        replacements.forEach((rule, index) => {
+            const row = document.createElement("div");
+            row.className = "rule-row";
+
+            const findId = `rule-find-${index}`;
+            const replaceId = `rule-replace-${index}`;
+            const regexId = `rule-regex-${index}`;
+
+            row.innerHTML = `
+                <div style="flex: 1">
+                    <input type="text" id="${findId}" placeholder="Find" value="${rule.find || ""}">
+                    <input type="text" id="${replaceId}" placeholder="Replace" value="${rule.replace || ""}">
+                </div>
+                <label for="${regexId}">
+                    <input type="checkbox" id="${regexId}" ${rule.useRegex ? "checked" : ""}> RegEx
+                </label>
+                <button type="button" class="btn-danger btn-sym" data-index="${index}">delete</button>
+            `;
+
+            const fInput = row.querySelector(`#${findId}`);
+            const rInput = row.querySelector(`#${replaceId}`);
+            const cInput = row.querySelector(`#${regexId}`);
+            const dBtn = row.querySelector(".btn-danger");
+
+            fInput.addEventListener("input", (e) => {
+                rule.find = e.target.value;
+                saveInputs();
+            });
+            rInput.addEventListener("input", (e) => {
+                rule.replace = e.target.value;
+                saveInputs();
+            });
+            cInput.addEventListener("change", (e) => {
+                rule.useRegex = e.target.checked;
+                saveInputs();
+            });
+            dBtn.addEventListener("click", () => {
+                replacements.splice(index, 1);
+                renderRules();
+                saveInputs();
+            });
+
+            rulesList.appendChild(row);
+        });
+    }
+
+    addRuleBtn.addEventListener("click", () => {
+        replacements.push({ find: "", replace: "", useRegex: false });
+        renderRules();
+        saveInputs();
+    });
+
+    async function copyToClipboard(text) {
+        if (navigator.clipboard?.writeText && window.isSecureContext) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (err) {
+                console.error("Clipboard API failed:", err);
+            }
+        }
+
+        // Fallback
+        try {
+            const temp = document.createElement("textarea");
+            temp.value = text;
+            temp.style.position = "fixed";
+            temp.style.left = "-9999px";
+            document.body.appendChild(temp);
+            temp.select();
+            const ok = document.execCommand("copy");
+            document.body.removeChild(temp);
+            return ok;
+        } catch (err) {
+            console.error("Fallback copy failed:", err);
+            return false;
+        }
+    }
+
+    function renderOutput() {
+        const content = textarea.value;
+        if (!content.trim()) {
+            container.innerHTML = "<p class=\"text-muted\">Segments will appear here after you enter text in the sidebar.</p>";
+            return;
+        }
+
+        let processed = content;
+        replacements.forEach(rule => {
+            if (!rule.find) return;
+            try {
+                if (rule.useRegex) {
+                    const regex = new RegExp(rule.find, "g");
+                    processed = processed.replace(regex, rule.replace);
+                } else {
+                    processed = processed.split(rule.find).join(rule.replace);
+                }
+            } catch (e) {
+                console.error("Rule error:", e);
+            }
+        });
+
+        const splitVal = splitInput.value || "\\n\\n";
+        let splitPattern;
+        if (splitRegexInput.checked) {
+            try {
+                splitPattern = new RegExp(splitVal);
+            } catch (e) {
+                container.innerHTML = `<p class="text-danger">Invalid split RegEx: ${e.message}</p>`;
+                return;
+            }
+        } else {
+            splitPattern = splitVal.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\r/g, "\r");
+        }
+
+        const parts = processed.split(splitPattern).map(p => p.trim()).filter(p => p);
+        container.innerHTML = "";
+
+        parts.forEach((part) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "copy-btn";
+            btn.textContent = part;
+
+            if (clickedStates.has(part)) {
+                btn.classList.add("clicked");
+            }
+
+            btn.addEventListener("click", async () => {
+                const textToCopy = prefixInput.value + part + postfixInput.value;
+                const success = await copyToClipboard(textToCopy);
+                if (success) {
+                    btn.classList.remove("failed");
+                    btn.classList.add("clicked");
+                    clickedStates.add(part);
+                    try {
+                        await Storage.set("sc-clicked-states", Array.from(clickedStates));
+                    } catch (e) {
+                        console.error("Failed to save clicked states:", e);
+                    }
+                } else {
+                    btn.classList.add("failed");
+                }
+            });
+
+            container.appendChild(btn);
+        });
+    }
+
+    // Initial render / load
+    loadState();
+</script>
+
+</body>
+</html>

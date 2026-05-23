@@ -79,6 +79,8 @@ button.btn-sym {
     --on-secondary: #ffffff;
     --error: #b3261e;
     --on-error: #ffffff;
+    --warn: #b25e00;
+    --on-warn: #ffffff;
 
     /* Surface Hierarchy (Tonal Elevation) */
     --surface: #f7f9f2;
@@ -108,6 +110,13 @@ button.btn-sym {
 
     /* Theme-aware select dropdown arrow (dark chevron for light backgrounds) */
     --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24'%3E%3Cpath fill='%2349454f' d='M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z'/%3E%3C/svg%3E");
+
+    /* Diff/Highlight Colors */
+    --ins-bg: #e2f5e9;
+    --ins-color: #137333;
+    --del-bg: #fce8e6;
+    --del-color: #c5221f;
+    --del-text-decor: rgba(0, 0, 0, 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -120,6 +129,8 @@ button.btn-sym {
         --on-secondary: #003737;
         --error: #ffb4ab;
         --on-error: #690005;
+        --warn: #ffb859;
+        --on-warn: #4e2600;
 
         --surface: #141218;
         --surface-container-low: #1d1b20;
@@ -137,6 +148,13 @@ button.btn-sym {
 
         /* Light chevron for dark backgrounds */
         --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24'%3E%3Cpath fill='%23cac4d0' d='M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z'/%3E%3C/svg%3E");
+
+        /* Diff/Highlight Colors */
+        --ins-bg: #14351f;
+        --ins-color: #3fb950;
+        --del-bg: #3c1818;
+        --del-color: #f85149;
+        --del-text-decor: rgba(255, 255, 255, 0.45);
     }
 }
 
@@ -149,6 +167,8 @@ button.btn-sym {
     --on-secondary: #003737;
     --error: #ffb4ab;
     --on-error: #690005;
+    --warn: #ffb859;
+    --on-warn: #4e2600;
 
     --surface: #141218;
     --surface-container-low: #1d1b20;
@@ -166,6 +186,13 @@ button.btn-sym {
 
     /* Light chevron for dark backgrounds */
     --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24'%3E%3Cpath fill='%23cac4d0' d='M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z'/%3E%3C/svg%3E");
+
+    /* Diff/Highlight Colors */
+    --ins-bg: #14351f;
+    --ins-color: #3fb950;
+    --del-bg: #3c1818;
+    --del-color: #f85149;
+    --del-text-decor: rgba(255, 255, 255, 0.45);
 }
 
 /* Global reset for box sizing */
@@ -320,7 +347,11 @@ body {
     transition: grid-template-columns var(--trans-std);
 }
 
-/* Area assignments */
+/* Area assignments - min-width: 0 prevents CSS grid from blowing out past the viewport */
+header, main, aside, footer {
+    min-width: 0;
+}
+
 header {
     grid-area: header;
 }
@@ -380,6 +411,9 @@ header {
 /* Header content layout */
 header hgroup {
     flex-grow: 1;
+    flex-shrink: 9999; /* Title yields space to nav when Cramped */
+    min-width: 0;
+    overflow: hidden;
 }
 
 h1 {
@@ -390,6 +424,9 @@ header h1 {
     font-size: 1.25rem;
     margin: 0;
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Or clip to just vanish */
 }
 
 header p {
@@ -397,6 +434,9 @@ header p {
     font-size: 0.875rem;
     opacity: 0.8;
     display: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     /* Hide description on very small screens */
 }
 
@@ -406,13 +446,37 @@ header p {
     }
 }
 
-/* Simple nav row */
+/* Flexible nav row that scrolls horizontally when space runs out */
+header nav {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 8px;
+
+    /* Scroll Shadows (Lea Verou trick) */
+    background: /* Left cover */ linear-gradient(to right, var(--surface-container) 30%, transparent),
+        /* Right cover */ linear-gradient(to left, var(--surface-container) 30%, transparent),
+        /* Left shadow */ radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.15), transparent),
+        /* Right shadow */ radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.15), transparent);
+    background-color: var(--surface-container);
+    background-repeat: no-repeat;
+    background-position: left center, right center, left center, right center;
+    background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+    background-attachment: local, local, scroll, scroll;
+}
+
+header nav::-webkit-scrollbar {
+    display: none;
+}
+
 nav ul {
     list-style: none;
     display: flex;
     gap: var(--spacing-md);
     margin: 0;
     padding: 0;
+    width: max-content;
 }
 
 nav a {
@@ -425,6 +489,7 @@ nav a {
     padding: 8px 12px;
     border-radius: var(--radius);
     transition: var(--trans-interactive);
+    display: inline-block;
 }
 
 nav a:hover {
@@ -587,7 +652,6 @@ aside dfn {
 
 /* Tables */
 table {
-    table-layout: fixed;
     width: 100%;
     border-collapse: collapse;
     margin-bottom: var(--spacing-lg);
@@ -596,7 +660,7 @@ table {
 td,
 th {
     word-wrap: break-word;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     padding: var(--spacing-sm) var(--spacing-md);
     border-bottom: 1px solid var(--outline-variant);
     text-align: left;
@@ -661,6 +725,7 @@ fieldset {
     padding: var(--spacing-md);
     margin: 0 0 var(--spacing-md) 0;
     background-color: var(--surface-container-low);
+    min-width: 0;
 }
 
 legend {
@@ -708,6 +773,9 @@ textarea {
     border-bottom: 1px solid var(--outline);
     border-radius: 8px 8px 0 0;
     transition: var(--trans-interactive);
+}
+
+textarea {
     resize: vertical;
 }
 
@@ -830,8 +898,8 @@ select:focus {
 button:focus-visible,
 a:focus-visible,
 select:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary);
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
 }
 
 /* Color picker — normalize swatch appearance across browsers */
@@ -935,6 +1003,7 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 /* Segmented Control */
 .segmented-control {
     display: flex;
+    flex-wrap: wrap;
     background: var(--surface-container-highest);
     border-radius: var(--radius);
     padding: 4px;
@@ -978,6 +1047,7 @@ input[type="radio"],
 input[type="checkbox"]:not([role="switch"]) {
     appearance: none;
     -webkit-appearance: none;
+    outline: none;
     width: 20px;
     height: 20px;
     border: 2px solid var(--outline);
@@ -1035,8 +1105,8 @@ input[type="checkbox"]:not([role="switch"]):checked::before {
 
 input[type="radio"]:focus-visible,
 input[type="checkbox"]:not([role="switch"]):focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--primary);
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
 }
 
 label:has(input[type="radio"]),
@@ -1081,6 +1151,8 @@ label:has(input[role="switch"]):last-child,
 
 input[role="switch"] {
     appearance: none;
+    -webkit-appearance: none;
+    outline: none;
     position: relative;
     width: 40px;
     height: 24px;
@@ -1116,8 +1188,8 @@ input[role="switch"]:checked::before {
 }
 
 input[role="switch"]:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--primary);
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
 }
 
 /* File input styling */
@@ -1234,13 +1306,41 @@ input[type="file"]::file-selector-button:active {
     color: var(--primary);
 }
 
+/* Row container to align inputs, selects, and textareas next to action buttons/labels */
+.input-row {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.input-row > :is(input, select, textarea) {
+    margin-top: 0;
+    margin-bottom: 0 !important;
+    flex: 1;
+    min-width: 0;
+}
+
+.input-row > :is(button, label) {
+    margin-top: 0;
+    margin-bottom: 0 !important;
+    flex: 0 0 auto;
+}
+
 /* Input Groups */
-[role="group"],
 [role="search"] {
     display: flex;
     align-items: stretch;
     /* Stretch so input and button share the exact same height. */
     gap: 0;
+    margin-bottom: var(--spacing-md);
+}
+
+[role="group"] {
+    display: flex;
+    align-items: flex-end;
+    /* Align elements at their bottom baseline */
+    gap: var(--spacing-sm);
     margin-bottom: var(--spacing-md);
 }
 
@@ -1250,11 +1350,8 @@ input[type="file"]::file-selector-button:active {
     margin-bottom: 0;
 }
 
-[role="group"] > button,
 [role="search"] > button,
-[role="group"] > button[type="button"],
 [role="search"] > button[type="button"],
-[role="group"] > button[type="submit"],
 [role="search"] > button[type="submit"] {
     flex: 0 0 auto;
     padding: 12px 16px;
@@ -1268,21 +1365,17 @@ input[type="file"]::file-selector-button:active {
 }
 
 /* Match the hover and active states of standard buttons, but enforce specificity */
-[role="group"] > button:not(.btn-danger, .btn-primary, [type="submit"]):not(:disabled):hover,
 [role="search"] > button:not(.btn-danger, .btn-primary, [type="submit"]):not(:disabled):hover,
-[role="group"] > button[type="button"]:not(.btn-danger, .btn-primary):not(:disabled):hover,
 [role="search"] > button[type="button"]:not(.btn-danger, .btn-primary):not(:disabled):hover {
     background-color: color-mix(in srgb, var(--surface-container-highest) 85%, var(--primary) 15%);
     border-bottom-color: var(--primary);
 }
 
-[role="group"] > :is(input, button, select, textarea):not(:first-child),
 [role="search"] > :is(input, button, select, textarea):not(:first-child) {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 }
 
-[role="group"] > :is(input, button, select, textarea):not(:last-child),
 [role="search"] > :is(input, button, select, textarea):not(:last-child) {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
@@ -1293,7 +1386,6 @@ input[type="file"]::file-selector-button:active {
     flex: 1 1 auto;
 }
 
-[role="group"]:focus-within > :is(input, button, select, textarea),
 [role="search"]:focus-within > :is(input, button, select, textarea) {
     border-bottom-color: var(--primary);
     box-shadow: inset 0 -1px 0 0 var(--primary);
@@ -1548,6 +1640,24 @@ dialog :not(pre) > code {
     background-color: color-mix(in srgb, var(--surface-container-highest), var(--on-surface) 8%);
 }
 
+/* Diff / Changes */
+ins {
+    background-color: var(--ins-bg);
+    color: var(--ins-color);
+    text-decoration: none;
+    border-radius: 2px;
+    padding: 0 2px;
+}
+
+del {
+    background-color: var(--del-bg);
+    color: var(--del-color);
+    text-decoration: line-through;
+    text-decoration-color: var(--del-text-decor);
+    border-radius: 2px;
+    padding: 0 2px;
+}
+
 button kbd {
     background-color: rgba(0, 0, 0, 0.05);
     border-color: rgba(0, 0, 0, 0.2);
@@ -1780,6 +1890,7 @@ dialog footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: var(--spacing-xs);
 }
 
 .flex-col {
@@ -1959,8 +2070,7 @@ dialog footer {
      * If top-center overflows left, try shifting it flush-right.
      * If top-center overflows right, try shifting it flush-left.
      */
-    position-try-fallbacks:
-    flip-block,
+    position-try-fallbacks: flip-block,
     --bottom-shift-right,
     --bottom-shift-left,
     --shift-right,

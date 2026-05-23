@@ -317,11 +317,24 @@
         .scores-grid input[type="number"] {
             padding: 6px 8px;
             margin-bottom: 0;
+            min-width: 3rem;
         }
 
         /* --- Scores grid: horizontal scroll on overflow --- */
         .scores-grid {
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+
+            /* Scroll Shadows (Lea Verou trick) */
+            background: linear-gradient(to right, var(--surface-container-low) 30%, transparent),
+            linear-gradient(to left, var(--surface-container-low) 30%, transparent),
+            radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.15), transparent),
+            radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.15), transparent);
+            background-color: var(--surface-container-low);
+            background-repeat: no-repeat;
+            background-position: left center, right center, left center, right center;
+            background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+            background-attachment: local, local, scroll, scroll;
         }
 
         /* --- Active layer toggle buttons --- */
@@ -438,22 +451,22 @@
                autocomplete="off">
 
         <div class="group mb-4">
+            <button type="button" data-quick="sort">Sort Priorities</button>
             <button type="button" data-quick="yesno">Yes or No</button>
             <button type="button" data-quick="number">Pick a Number</button>
-            <button type="button" data-quick="sort">Sort Priorities</button>
         </div>
 
         <!-- Number range config -->
         <fieldset id="number-config" hidden>
             <legend>Number Range</legend>
             <div class="flex-row">
-                <label>
+                <label for="num-min">
                     Min <input type="number" id="num-min" value="1">
                 </label>
-                <label>
+                <label for="num-max">
                     Max <input type="number" id="num-max" value="100">
                 </label>
-                <label>
+                <label for="num-count">
                     Pick <input type="number" id="num-count" value="1" min="1">
                 </label>
             </div>
@@ -469,7 +482,7 @@
         </fieldset>
 
         <!-- Choose randomly checkbox -->
-        <label class="mt-4" id="random-toggle-row">
+        <label class="mt-4" id="random-toggle-row" for="choose-randomly">
             <input type="checkbox" id="choose-randomly" checked> Choose randomly?
         </label>
 
@@ -491,7 +504,7 @@
                 <label for="pick-count">
                     Pick count <input type="number" id="pick-count" value="1" min="1" max="99">
                 </label>
-                <label>
+                <label for="with-replacement">
                     <input type="checkbox" id="with-replacement"> With replacement
                 </label>
             </div>
@@ -1173,19 +1186,8 @@
         // Comparison style: shown when in manual mode, with enough options
         const opts = state.options.filter(o => o.name.trim());
         const comparisonCfg = document.getElementById("cfg-comparison");
-        const canCompare = !isRandom && !isGroup && !isNumber && opts.length > 2;
+        const canCompare = !isRandom && !isGroup && !isNumber && opts.length > 2 && !hasProscons && !hasCriteria;
         comparisonCfg.hidden = !canCompare;
-
-        if (canCompare) {
-            const switchEnabled = !hasProscons && !hasCriteria;
-            const radios = comparisonCfg.querySelectorAll("input");
-            radios.forEach(r => r.disabled = !switchEnabled);
-            if (!switchEnabled) {
-                comparisonCfg.setAttribute("data-tooltip", "Comparisons are disabled when criteria or pros & cons are active");
-            } else {
-                comparisonCfg.removeAttribute("data-tooltip");
-            }
-        }
     }
 
     function updateDecideBtn() {
@@ -2051,9 +2053,9 @@
             state.method = "auto";
             state.chooseRandomly = false;
             state.options = [
-                { id: mkId(), name: "", color: PALETTE[0] },
-                { id: mkId(), name: "", color: PALETTE[1] },
-                { id: mkId(), name: "", color: PALETTE[2] },
+                { id: mkId(), name: "A", color: PALETTE[0] },
+                { id: mkId(), name: "B", color: PALETTE[1] },
+                { id: mkId(), name: "C", color: PALETTE[2] },
             ];
             document.querySelector("input[name=\"comp-style\"][value=\"sequential\"]").checked = true;
         }

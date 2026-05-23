@@ -68,6 +68,7 @@
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../storage.js"></script>
 </head>
 
 <body>
@@ -242,7 +243,7 @@
     <input type="file" id="import-file" accept=".json" hidden aria-hidden="true">
 </aside>
 <footer>
-    <p>Time Tracker — data stored in LocalStorage.</p>
+    <p>Time Tracker — data stored in IndexedDB.</p>
 </footer>
 
 <!-- Edit modal -->
@@ -355,7 +356,10 @@
     //   "draft": "8:00 - 12:00"
     // }
 
-    function loadData() {
+    let appData = null;
+
+    async function loadData() {
+        if (appData) return appData;
         const defaults = {
             settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
             workDays: [],
@@ -363,33 +367,43 @@
             draft: "",
         };
         try {
-            const stored = localStorage.getItem(STORAGE_KEY);
+            let stored = await Storage.get(STORAGE_KEY);
+            if (!stored) {
+                const localStored = localStorage.getItem(STORAGE_KEY);
+                if (localStored) {
+                    try {
+                        stored = JSON.parse(localStored);
+                        await Storage.set(STORAGE_KEY, stored);
+                    } catch (e) { /* ignore migration errors */
+                    }
+                }
+            }
             if (stored) {
-                const parsed = JSON.parse(stored);
-                const settings = { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) };
+                const settings = { ...DEFAULT_SETTINGS, ...(stored.settings || {}) };
 
-                // Ensure all settings are valid numbers or fall back to defaults
-                // (JSON.stringify converts NaN to null, so we must handle null)
                 for (const key in DEFAULT_SETTINGS) {
                     if (settings[key] === null || settings[key] === undefined) {
                         settings[key] = DEFAULT_SETTINGS[key];
                     }
                 }
 
-                return {
+                appData = {
                     settings: settings,
-                    workDays: Array.isArray(parsed.workDays) ? parsed.workDays : [],
-                    overtimeMinutes: typeof parsed.overtimeMinutes === "number" ? parsed.overtimeMinutes : 0,
-                    draft: typeof parsed.draft === "string" ? parsed.draft : "",
+                    workDays: Array.isArray(stored.workDays) ? stored.workDays : [],
+                    overtimeMinutes: typeof stored.overtimeMinutes === "number" ? stored.overtimeMinutes : 0,
+                    draft: typeof stored.draft === "string" ? stored.draft : "",
                 };
+                return appData;
             }
         } catch (e) { /* use defaults */
         }
-        return defaults;
+        appData = defaults;
+        return appData;
     }
 
-    function saveData(data) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data, null, 2));
+    function saveData() {
+        if (!appData) return;
+        Storage.set(STORAGE_KEY, appData).catch((e) => console.error(e));
     }
 
     function formatDate(isoStr) {
@@ -536,8 +550,8 @@
     }
 
     function triggerExport() {
-        const data = loadData();
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        if (!appData) return;
+        const blob = new Blob([JSON.stringify(appData, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -800,20 +814,21 @@
     }
 
     function updatePreview() {
-        const data = loadData();
+        if (!appData) return;
         const inputString = getCurrentInputText();
-        document.getElementById("preview-content").innerHTML = buildPreviewHtml(inputString, data.settings);
+        document.getElementById("preview-content").innerHTML = buildPreviewHtml(inputString, appData.settings);
 
-        data.draft = inputString.trim();
+        appData.draft = inputString.trim();
         const toggle = document.getElementById("toggle-input-mode");
-        if (toggle) data.settings.useVisualEditor = toggle.checked;
+        if (toggle) appData.settings.useVisualEditor = toggle.checked;
 
-        saveData(data);
+        saveData();
     }
 
     // --- History rendering ---
     function renderHistory() {
-        const data = loadData();
+        if (!appData) return;
+        const data = appData;
         const tbody = document.getElementById("history-body");
         const searchTerm = (document.getElementById("history-search").value || "").toLowerCase();
 
@@ -875,7 +890,8 @@
 
     // --- Edit dialog ---
     function openEditDialog(index) {
-        const data = loadData();
+        if (!appData) return;
+        const data = appData;
         const day = data.workDays[index];
         if (!day) return;
 
@@ -894,16 +910,17 @@
 
     function deleteEntry(index) {
         if (!confirm("Delete this entry?")) return;
-        const data = loadData();
+        if (!appData) return;
+        const data = appData;
         data.workDays.splice(index, 1);
         recalculateOvertime(data);
-        saveData(data);
+        saveData();
         renderHistory();
     }
 
     // --- Init ---
-    function init() {
-        const data = loadData();
+    async function init() {
+        const data = await loadData();
         const s = data.settings;
 
         // Populate settings form
@@ -945,7 +962,8 @@
         }
 
         function handleInsertTime(targetId, toggleId, containerId) {
-            const data = loadData();
+            if (!appData) return;
+            const data = appData;
             const timeStr = getRoundedCurrentTime(data.settings.divisibleWarning);
             if (!timeStr) return;
 
@@ -1082,7 +1100,8 @@
                 return;
             }
 
-            const data = loadData();
+            if (!appData) return;
+            const data = appData;
 
             if (result.minutesWorked % data.settings.divisibleWarning !== 0) {
                 if (!confirm("Work minutes (" + result.minutesWorked +
@@ -1111,7 +1130,7 @@
 
             data.workDays.sort((a, b) => a.localDate.localeCompare(b.localDate));
             recalculateOvertime(data);
-            saveData(data);
+            saveData();
             renderHistory();
 
             if (data.settings.autoExportInterval > 0 && data.workDays.length % data.settings.autoExportInterval === 0) {
@@ -1130,7 +1149,8 @@
 
         // --- Settings form ---
         function saveSettingsFromUI(alertUser = false) {
-            const data = loadData();
+            if (!appData) return;
+            const data = appData;
             const targetVal = parseInt(document.getElementById("target-minutes").value, 10);
             const initialVal = parseInt(document.getElementById("initial-overtime").value, 10);
             const exportVal = parseInt(document.getElementById("auto-export-interval").value, 10);
@@ -1146,7 +1166,7 @@
             };
 
             recalculateOvertime(data);
-            saveData(data);
+            saveData();
             renderHistory();
             renderPauseRulesDisplay(data.settings.pauseRules);
             updatePreview();
@@ -1202,7 +1222,8 @@
                 return;
             }
 
-            const data = loadData();
+            if (!appData) return;
+            const data = appData;
             if (!data.workDays[index]) return;
 
             data.workDays[index] = {
@@ -1214,7 +1235,7 @@
 
             data.workDays.sort((a, b) => a.localDate.localeCompare(b.localDate));
             recalculateOvertime(data);
-            saveData(data);
+            saveData();
             renderHistory();
             editDialog.close();
         });
@@ -1267,16 +1288,17 @@
                             workDays: imported.workDays,
                             overtimeMinutes: imported.overtimeMinutes || 0,
                         };
-                        recalculateOvertime(data);
-                        saveData(data);
+                        appData = data;
+                        recalculateOvertime(appData);
+                        saveData();
 
                         // Update settings form
-                        document.getElementById("target-minutes").value = data.settings.targetMinutesPerWorkDay;
-                        document.getElementById("initial-overtime").value = data.settings.initialOvertime;
-                        document.getElementById("auto-export-interval").value = data.settings.autoExportInterval;
-                        document.getElementById("divisible-warning").value = data.settings.divisibleWarning;
-                        renderPauseRulesSettings(data.settings.pauseRules);
-                        renderPauseRulesDisplay(data.settings.pauseRules);
+                        document.getElementById("target-minutes").value = appData.settings.targetMinutesPerWorkDay;
+                        document.getElementById("initial-overtime").value = appData.settings.initialOvertime;
+                        document.getElementById("auto-export-interval").value = appData.settings.autoExportInterval;
+                        document.getElementById("divisible-warning").value = appData.settings.divisibleWarning;
+                        renderPauseRulesSettings(appData.settings.pauseRules);
+                        renderPauseRulesDisplay(appData.settings.pauseRules);
 
                         renderHistory();
                         updatePreview();

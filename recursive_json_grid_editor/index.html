@@ -2151,7 +2151,7 @@
                     value: parsed,
                     type: "number",
                 };
-            } catch (e) {
+            } catch {
                 // Not a valid JSON number
             }
         }
@@ -2163,7 +2163,7 @@
                 if (typeof parsed === "string") {
                     return { valid: true, value: parsed, type: "string" };
                 }
-            } catch (e) {
+            } catch {
                 // Invalid escape sequences, etc.
                 return { valid: false };
             }
@@ -2178,7 +2178,7 @@
                 const parsed = JSON.parse(trimmed);
                 const type = Array.isArray(parsed) ? "array" : "object";
                 return { valid: true, value: parsed, type: type };
-            } catch (e) {
+            } catch {
                 return { valid: false };
             }
         }
@@ -2514,7 +2514,7 @@
                 if (trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
                     try {
                         return JSON.parse(trimmed);
-                    } catch (e) {
+                    } catch {
                         // If parsing fails, return as-is (might be invalid)
                         return str;
                     }
@@ -2616,7 +2616,7 @@
             }
 
             return true;
-        } catch (e) {
+        } catch {
             alert("Invalid JSON");
             return false;
         }

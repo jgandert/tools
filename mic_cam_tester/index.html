@@ -167,6 +167,9 @@
         showUI(true);
         messageEl.innerHTML = "";
         try {
+            if (typeof navigator.mediaDevices[apiName] !== "function") {
+                throw new Error(`The API '${apiName}' is not supported on this browser or device.`);
+            }
             stream = await navigator.mediaDevices[apiName](constraints);
 
             if (stream.getVideoTracks().length) {

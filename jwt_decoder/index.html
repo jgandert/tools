@@ -44,8 +44,12 @@
 
         <div>
             <label for="jwt-input">JSON Web Token</label>
+            <!-- prettier-ignore-start -->
+            <!-- beautify ignore:start -->
             <textarea id="jwt-input" rows="3"
                       placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI...">eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6Ik1heCBNdXN0ZXJtYW5uIiwiZXhwIjoxNzcyMDA3OTc1LCJpYXQiOjE3NzIwMDc5NzV9.fG988wZP6Y4IU_v5SCrAJDfkxkO8ORhILWF17Hh2vNM</textarea>
+            <!-- beautify ignore:end -->
+            <!-- prettier-ignore-end -->
         </div>
 
         <div id="error-container" hidden>
@@ -94,7 +98,7 @@
     function formatJson(jsonStr) {
         try {
             return JSON.stringify(JSON.parse(jsonStr), null, 2);
-        } catch (e) {
+        } catch {
             return jsonStr; // Not valid JSON
         }
     }
@@ -134,7 +138,7 @@
             errorContainer.hidden = true;
             copyPayloadBtn.hidden = false;
             jwtInput.removeAttribute("aria-invalid");
-        } catch (err) {
+        } catch {
             showError("Failed to decode the token. It might be corrupted or not valid Base64Url.");
         }
     }

@@ -1,0 +1,2544 @@
+<!DOCTYPE html>
+<html lang="en" class="layout-centered">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Bisociate - Strategic Combinations</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+
+        body {
+            background-attachment: fixed;
+            background-image: radial-gradient(circle at 50% 0%,
+            color-mix(in srgb, var(--primary), var(--surface) 80%) 0%,
+            var(--surface) 100%);
+        }
+
+        /* Strategy Section */
+        #strategy-animation {
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #strategy-animation svg {
+            width: 140px;
+            height: 140px;
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            overflow: visible;
+            filter: drop-shadow(0 0 12px color-mix(in srgb, var(--primary), transparent 40%));
+        }
+
+        #strategy-animation .s {
+            fill: var(--primary);
+            stroke: none;
+        }
+
+        #strategy-title {
+            display: block;
+            width: 100%;
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--on-surface);
+            font-weight: 800;
+        }
+
+        #strategy-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--on-surface-variant);
+            text-align: center;
+        }
+
+        /* Combine Section */
+        .combine-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 600px) {
+            .combine-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .bisociation-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            padding-bottom: 2rem;
+        }
+
+        .items-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            width: 100%;
+        }
+
+        .plus-sign {
+            font-size: 3rem;
+            font-weight: 300;
+            color: var(--primary);
+            opacity: 0.5;
+        }
+
+        .concept-item {
+            flex: 1;
+            padding: 2rem;
+            background: var(--surface-container-highest);
+            border-radius: 20px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            color: var(--on-surface);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timer-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: var(--primary);
+            width: 0%;
+            transition: width 1s linear;
+            box-shadow: 0 0 15px var(--primary);
+            z-index: 1000;
+        }
+
+        .fade-up {
+            animation: fadeUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="timer-progress" id="timer-progress"></div>
+<main>
+    <section id="strategy-section">
+        <div id="strategy-animation"></div>
+        <h2 id="strategy-title">Loading...</h2>
+        <p id="strategy-description"></p>
+    </section>
+
+    <section id="combine-section">
+        <div class="bisociation-display">
+            <div class="items-container">
+                <div class="concept-item" id="item-a">...</div>
+                <div class="plus-sign">&plus;</div>
+                <div class="concept-item" id="item-b">...</div>
+            </div>
+        </div>
+        <div class="combine-grid">
+            <div class="field">
+                <label for="category-1">Domain A</label>
+                <select id="category-1"></select>
+            </div>
+            <div class="field">
+                <label for="category-2">Domain B</label>
+                <select id="category-2"></select>
+            </div>
+        </div>
+    </section>
+</main>
+
+<template id="svg-library">
+    <div class="c">
+        <span>Divide and Conquer</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="42" y="42" width="16" height="16" rx="2">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; -15 -15; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <rect class="s" x="42" y="42" width="16" height="16" rx="2">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; 15 -15; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <rect class="s" x="42" y="42" width="16" height="16" rx="2">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; -15 15; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <rect class="s" x="42" y="42" width="16" height="16" rx="2">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; 15 15; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Extract the Noise</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="20" y1="35" x2="80" y2="35" />
+            <line x1="20" y1="50" x2="80" y2="50" />
+            <line x1="20" y1="65" x2="80" y2="65" />
+            <circle class="s" cx="50" cy="50" r="8">
+                <animate attributeName="cy" values="50; 20; 50" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Create Uneven Ground</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 10 50 L 30 50 L 50 50 L 70 50 L 90 50">
+                <animate attributeName="d"
+                         values="M 10 50 L 30 50 L 50 50 L 70 50 L 90 50; M 10 50 L 30 30 L 50 70 L 70 30 L 90 50; M 10 50 L 30 50 L 50 50 L 70 50 L 90 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Embrace Imbalance</span>
+        <svg viewBox="0 0 100 100">
+            <path class="s" d="M 40 70 L 60 70 L 50 55 Z" />
+            <g transform-origin="50 55">
+                <animatetransform attributeName="transform" type="rotate" values="0; 20; 0" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <line x1="20" y1="55" x2="80" y2="55" />
+                <circle class="s" cx="70" cy="45" r="8" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Consolidate Forces</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="50" cy="50" r="16">
+                <animate attributeName="r" values="6; 20; 6" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle class="s" cx="20" cy="50" r="6">
+                <animate attributeName="cx" values="20; 50; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle class="s" cx="80" cy="50" r="6">
+                <animate attributeName="cx" values="80; 50; 80" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Use the Multi-Tool</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="30" y="30" width="40" height="40" rx="4">
+                <animate attributeName="rx" values="4; 20; 4" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 90 50 50; 180 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <circle class="s" cx="50" cy="50" r="6" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Nest the Concept</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="20" y="20" width="60" height="60" rx="6" />
+            <rect x="35" y="35" width="30" height="30" rx="4">
+                <animatetransform attributeName="transform" type="scale" values="1; 0.4; 1" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Counterbalance</span>
+        <svg viewBox="0 0 100 100">
+            <g transform-origin="50 50">
+                <animatetransform attributeName="transform" type="rotate" values="-15; 15; -15"
+                                  dur="3s" repeatCount="indefinite" calcMode="spline"
+                                  keyTimes="0; 0.5; 1" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <line x1="20" y1="50" x2="80" y2="50" />
+                <rect class="s" x="20" y="30" width="20" height="20" rx="2" />
+                <circle class="s" cx="80" cy="40" r="10">
+                    <animate attributeName="cx" values="80; 95; 80" dur="3s"
+                             repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                             keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                </circle>
+            </g>
+            <path class="s" d="M 45 70 L 55 70 L 50 50 Z" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Anticipate the Backlash</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 20 50 L 50 50 M 40 40 L 50 50 L 40 60">
+                <animatetransform attributeName="transform" type="translate" values="0 0; 20 0; 0 0"
+                                  dur="3s" repeatCount="indefinite" calcMode="spline"
+                                  keyTimes="0; 0.5; 1" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+            <path d="M 80 20 Q 80 50 80 80">
+                <animate attributeName="d"
+                         values="M 80 20 Q 80 50 80 80; M 80 20 Q 95 50 80 80; M 80 20 Q 80 50 80 80"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Set the Stage</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="20" height="20" rx="2">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <rect x="55" y="25" width="20" height="20" rx="2">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         begin="0.3s" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <rect x="25" y="55" width="20" height="20" rx="2">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         begin="0.6s" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <rect x="55" y="55" width="20" height="20" rx="2">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         begin="0.9s" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Prepare for Impact</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="30" cy="50" r="10" />
+            <circle cx="30" cy="50" r="20">
+                <animate attributeName="r" values="14; 28; 14" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="stroke-width" values="2; 6; 2" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <rect class="s" x="70" y="45" width="10" height="10" rx="2">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; -20 0; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Level the Playing Field</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="20" y1="80" x2="80" y2="20">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 45 50 50; 0 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+            <circle class="s" cx="20" cy="80" r="6">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 45 50 50; 0 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle class="s" cx="80" cy="20" r="6">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 45 50 50; 0 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Reverse the Polarity</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="25" stroke-dasharray="8 8">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 180 50 50; 360 50 50" dur="4s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <path d="M 50 15 L 60 25 M 50 15 L 40 25 M 50 85 L 60 75 M 50 85 L 40 75">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; -180 50 50; -360 50 50" dur="4s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Bend the Line</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 20 50 Q 50 50 80 50">
+                <animate attributeName="d"
+                         values="M 20 50 Q 50 50 80 50; M 20 50 Q 50 10 80 50; M 20 50 Q 50 50 80 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+            <circle class="s" cx="50" cy="50" r="6">
+                <animate attributeName="cy" values="50; 30; 50" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Adapt Fluidly</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="30" y="30" width="40" height="40" rx="4">
+                <animate attributeName="rx" values="4; 20; 4" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Overshoot or Undershoot</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="20" y1="50" x2="80" y2="50" stroke-dasharray="4 4" opacity="0.5" />
+            <circle class="s" cx="80" cy="50" r="8" />
+            <circle cx="20" cy="50" r="10">
+                <animate attributeName="cx" values="20; 90; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Shift the Axis</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="4">
+                <animatetransform attributeName="transform" type="skewY" values="0; 15; 0" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <line x1="50" y1="15" x2="50" y2="85">
+                <animatetransform attributeName="transform" type="skewY" values="0; 15; 0" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Induce Resonance</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 10 50 Q 30 50 50 50 T 90 50">
+                <animate attributeName="d"
+                         values="M 10 50 Q 30 50 50 50 T 90 50; M 10 50 Q 30 20 50 50 T 90 50; M 10 50 Q 30 50 50 50 T 90 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Pulse the Effort</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="50" cy="50" r="10" />
+            <circle cx="50" cy="50" r="10">
+                <animate attributeName="r" values="10; 40; 10" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Avoid Idling</span>
+        <svg viewBox="0 0 100 100">
+            <g transform-origin="50 50">
+                <animatetransform attributeName="transform" type="rotate" values="0; 360" dur="4s"
+                                  repeatCount="indefinite" />
+                <circle cx="50" cy="50" r="30" stroke-dasharray="10 15" />
+                <circle class="s" cx="50" cy="20" r="6" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Rush the Hazard</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 50 20 L 70 50 L 50 80" />
+            <circle class="s" cx="20" cy="50" r="8">
+                <animate attributeName="cx" values="20; 80; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Weaponize the Flaw</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="30" />
+            <path d="M 50 20 L 65 50 L 50 80" stroke-dasharray="8 8">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; -15 0; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Close the Loop</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="30" stroke-dasharray="188.5" stroke-dashoffset="188.5">
+                <animate attributeName="stroke-dashoffset" values="188.5; 0; 188.5" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Build the Bridge</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="20" y1="50" x2="40" y2="50" />
+            <line x1="60" y1="50" x2="80" y2="50" />
+            <rect class="s" x="42" y="10" width="16" height="16" rx="2">
+                <animate attributeName="y" values="10; 42; 10" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Automate the Upkeep</span>
+        <svg viewBox="0 0 100 100">
+            <g transform-origin="50 50">
+                <animatetransform attributeName="transform" type="rotate" values="0; 360" dur="4s"
+                                  repeatCount="indefinite" />
+                <circle cx="50" cy="50" r="25" />
+                <rect class="s" x="45" y="15" width="10" height="10" rx="2">
+                    <animatetransform attributeName="transform" type="rotate"
+                                      values="0 50 20; -360 50 20" dur="2s"
+                                      repeatCount="indefinite" />
+                </rect>
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Work the Proxy</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="70" cy="50" r="10">
+                <animate attributeName="cy" values="50; 25; 50" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <rect x="20" y="40" width="20" height="20" rx="4">
+                <animate attributeName="y" values="40; 15; 40" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <line x1="45" y1="50" x2="55" y2="50" stroke-dasharray="4 4">
+                <animate attributeName="y1" values="50; 25; 50" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="y2" values="50; 25; 50" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Embrace the Disposable</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="20" y="40" width="20" height="20" rx="4">
+                <animate attributeName="x" values="20; 60; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Change the Medium</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="30" y="30" width="40" height="40" rx="6">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <circle cx="50" cy="50" r="20">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Apply Fluid Force</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 60 20 Q 60 50 60 80">
+                <animate attributeName="d"
+                         values="M 60 20 Q 60 50 60 80; M 60 20 Q 90 50 60 80; M 60 20 Q 60 50 60 80"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+            <circle class="s" cx="20" cy="50" r="10">
+                <animate attributeName="cx" values="20; 50; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Create Permeable Boundaries</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="50" y1="20" x2="50" y2="80" stroke-dasharray="8 8" />
+            <circle class="s" cx="20" cy="50" r="8">
+                <animate attributeName="cx" values="20; 80; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Introduce Empty Space</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="25" y="25" width="20" height="20" rx="4" />
+            <rect class="s" x="55" y="25" width="20" height="20" rx="4">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <rect class="s" x="25" y="55" width="20" height="20" rx="4">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         begin="1.5s" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <rect class="s" x="55" y="55" width="20" height="20" rx="4" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Make the Invisible Visible</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="25" stroke-dasharray="4 4" opacity="0.3" />
+            <path class="s" d="M 50 15 L 60 30 L 40 30 Z">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 360 50 50" dur="4s" repeatCount="indefinite" />
+            </path>
+            <circle class="s" cx="50" cy="50" r="6" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Match the Material</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="70" cy="50" r="16" />
+            <rect class="s" x="14" y="34" width="32" height="32" rx="4">
+                <animate attributeName="rx" values="4; 16; 4" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="x" values="14; 54; 14" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Shed the Dead Weight</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="50" cy="40" r="16">
+                <animate attributeName="cy" values="40; 20; 40" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <rect class="s" x="42" y="60" width="16" height="16" rx="4">
+                <animate attributeName="y" values="60; 90; 60" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Alter the Baseline State</span>
+        <svg viewBox="0 0 100 100">
+            <g>
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; -10 -10; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <circle class="s" cx="40" cy="40" r="6" />
+            </g>
+            <g>
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; 10 -10; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <circle class="s" cx="60" cy="40" r="6" />
+            </g>
+            <g>
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; -10 10; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <circle class="s" cx="40" cy="60" r="6" />
+            </g>
+            <g>
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; 10 10; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <circle class="s" cx="60" cy="60" r="6" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Harness the Shift</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="20" y="40" width="60" height="20" rx="4">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 90 50 50; 0 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Expand and Contract</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="30" y="30" width="40" height="40" rx="6">
+                <animatetransform attributeName="transform" type="scale" values="1; 0.4; 1" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <circle cx="50" cy="50" r="30">
+                <animatetransform attributeName="transform" type="scale" values="1; 0.7; 1" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Inject a Catalyst</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="50" y1="20" x2="50" y2="80" />
+            <circle class="s" cx="20" cy="50" r="8">
+                <animate attributeName="cx" values="20; 50; 80; 20" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.4; 0.6; 1"
+                         keySplines="0.4 0 0.2 1; 0 0 1 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Neutralize the Atmosphere</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="30" />
+            <rect class="s" x="40" y="40" width="20" height="20" rx="4">
+                <animatetransform attributeName="transform" type="scale" values="1; 0.2; 1" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Weave the Strengths</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 20 50 Q 35 20 50 50 T 80 50">
+                <animate attributeName="d"
+                         values="M 20 50 Q 35 20 50 50 T 80 50; M 20 50 Q 35 80 50 50 T 80 50; M 20 50 Q 35 20 50 50 T 80 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+            <path d="M 20 50 Q 35 80 50 50 T 80 50">
+                <animate attributeName="d"
+                         values="M 20 50 Q 35 80 50 50 T 80 50; M 20 50 Q 35 20 50 50 T 80 50; M 20 50 Q 35 80 50 50 T 80 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+
+    <div class="c">
+        <span>Accept External Input</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 25 25 V 65 A 10 10 0 0 0 35 75 H 65 A 10 10 0 0 0 75 65 V 25" />
+            <circle class="s" cx="50" cy="15" r="8">
+                <animate attributeName="cy" values="15; 55; 15" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Build by Accretion</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="50" cy="50" r="12" />
+            <circle class="s" cx="50" cy="20" r="6">
+                <animate attributeName="cy" values="20; 34; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle class="s" cx="50" cy="80" r="6">
+                <animate attributeName="cy" values="80; 66; 80" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Examine Both Sides</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="20" y1="50" x2="80" y2="50" />
+            <circle class="s" cx="50" cy="30" r="6">
+                <animate attributeName="cy" values="30; 70; 30" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Allow an Easement</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 20 50 L 80 50">
+                <animate attributeName="d"
+                         values="M 20 50 L 80 50; M 20 50 L 40 50 A 10 10 0 0 1 60 50 L 80 50; M 20 50 L 80 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+            <circle class="s" cx="50" cy="80" r="6">
+                <animate attributeName="cy" values="80; 50; 80" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Examine the Seams</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="20" y="30" width="26" height="40" rx="4" />
+            <rect x="54" y="30" width="26" height="40" rx="4" />
+            <line x1="50" y1="20" x2="50" y2="80">
+                <animate attributeName="stroke-width" values="2; 8; 2" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Defy Best Practices</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="35" cy="50" r="16" />
+            <rect class="s" x="55" y="34" width="32" height="32" rx="6">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 71 50; 180 71 50; 360 71 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Consult Your Physiology</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 20 50 Q 35 20 50 50 T 80 50">
+                <animate attributeName="d"
+                         values="M 20 50 Q 35 20 50 50 T 80 50; M 20 50 Q 35 80 50 50 T 80 50; M 20 50 Q 35 20 50 50 T 80 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+            <circle class="s" cx="50" cy="50" r="6" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Process in Batches</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="15" y="25" width="70" height="50" rx="6" />
+            <g class="s">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="-20 0; 20 0; -20 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <circle cx="35" cy="50" r="6" />
+                <circle cx="50" cy="50" r="6" />
+                <circle cx="65" cy="50" r="6" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Introduce Structured Chaos</span>
+        <svg viewBox="0 0 100 100">
+            <g>
+                <animatetransform attributeName="transform" type="translate" values="0 0; 5 -5; 0 0"
+                                  dur="3s" repeatCount="indefinite" calcMode="spline"
+                                  keyTimes="0; 0.5; 1" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <rect x="25" y="25" width="20" height="20" rx="4" />
+            </g>
+            <g>
+                <animatetransform attributeName="transform" type="translate" values="0 0; -5 5; 0 0"
+                                  dur="3s" repeatCount="indefinite" calcMode="spline"
+                                  keyTimes="0; 0.5; 1" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <rect x="55" y="55" width="20" height="20" rx="4" />
+            </g>
+            <line x1="25" y1="75" x2="75" y2="25" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Introduce Grime</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="30">
+                <animate attributeName="stroke-dasharray" values="0 200; 10 15; 0 200" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="stroke-width" values="4; 8; 4" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Build or Burn Bridges</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="15" y="35" width="16" height="30" rx="4" />
+            <rect class="s" x="69" y="35" width="16" height="30" rx="4" />
+            <line x1="31" y1="50" x2="69" y2="50">
+                <animate attributeName="stroke-dasharray" values="40 0; 0 40; 40 0" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Trigger Chain Reactions</span>
+        <svg viewBox="0 0 100 100">
+            <g transform-origin="30 50">
+                <animatetransform attributeName="transform" type="rotate" values="0; 45; 0" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <line x1="30" y1="20" x2="30" y2="80" />
+            </g>
+            <g transform-origin="50 50">
+                <animatetransform attributeName="transform" type="rotate" values="0; 45; 0" dur="3s"
+                                  repeatCount="indefinite" begin="0.2s" calcMode="spline"
+                                  keyTimes="0; 0.5; 1" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <line x1="50" y1="20" x2="50" y2="80" />
+            </g>
+            <g transform-origin="70 50">
+                <animatetransform attributeName="transform" type="rotate" values="0; 45; 0" dur="3s"
+                                  repeatCount="indefinite" begin="0.4s" calcMode="spline"
+                                  keyTimes="0; 0.5; 1" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <line x1="70" y1="20" x2="70" y2="80" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Swap Hierarchical Roles</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="30">
+                <animate attributeName="r" values="30; 10; 30" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle class="s" cx="50" cy="50" r="10">
+                <animate attributeName="r" values="10; 30; 10" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Maintain Immaculate Consistency</span>
+        <svg viewBox="0 0 100 100">
+            <g transform-origin="50 20">
+                <animatetransform attributeName="transform" type="rotate" values="-25; 25; -25"
+                                  dur="3s" repeatCount="indefinite" calcMode="spline"
+                                  keyTimes="0; 0.5; 1" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <line x1="50" y1="20" x2="50" y2="70" />
+                <circle class="s" cx="50" cy="70" r="10" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Introduce Naivety</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="20" y="20" width="60" height="60" rx="8" />
+            <rect x="40" y="40" width="20" height="20" rx="4" />
+            <line x1="10" y1="50" x2="90" y2="50">
+                <animate attributeName="x2" values="90; 10; 90" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Analyze the Clusters</span>
+        <svg viewBox="0 0 100 100">
+            <g class="s">
+                <circle cx="30" cy="30" r="6">
+                    <animatetransform attributeName="transform" type="translate"
+                                      values="0 0; 10 10; 0 0" dur="3s" repeatCount="indefinite"
+                                      calcMode="spline" keyTimes="0; 0.5; 1"
+                                      keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                </circle>
+                <circle cx="70" cy="30" r="6">
+                    <animatetransform attributeName="transform" type="translate"
+                                      values="0 0; -10 10; 0 0" dur="3s" repeatCount="indefinite"
+                                      calcMode="spline" keyTimes="0; 0.5; 1"
+                                      keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                </circle>
+                <circle cx="50" cy="70" r="6">
+                    <animatetransform attributeName="transform" type="translate"
+                                      values="0 0; 0 -10; 0 0" dur="3s" repeatCount="indefinite"
+                                      calcMode="spline" keyTimes="0; 0.5; 1"
+                                      keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                </circle>
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Build Alternative Exits</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="6" />
+            <circle class="s" cx="50" cy="50" r="10">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle class="s" cx="90" cy="50" r="10">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Consult the Unpromising</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="20" y="20" width="60" height="60" rx="6" />
+            <circle class="s" cx="80" cy="80" r="8">
+                <animate attributeName="r" values="8; 16; 8" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Convert Function</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 20 50 Q 50 80 80 50">
+                <animate attributeName="d"
+                         values="M 20 50 Q 50 80 80 50; M 20 50 Q 50 20 80 50; M 20 50 Q 50 80 80 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Show Courage</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="15" y="30" width="20" height="40" rx="4" />
+            <rect x="65" y="30" width="20" height="40" rx="4" />
+            <circle class="s" cx="25" cy="50" r="8">
+                <animate attributeName="cx" values="25; 75; 25" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="cy" values="50; 20; 50" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Sever the Anchor</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="40" y="70" width="20" height="20" rx="4" />
+            <line x1="50" y1="70" x2="50" y2="30">
+                <animate attributeName="stroke-dasharray" values="40 0; 0 40; 40 0" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+            <circle class="s" cx="50" cy="30" r="10">
+                <animate attributeName="cy" values="30; -10; 30" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Embrace Maximalism</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="10" />
+            <circle cx="50" cy="50" r="22" />
+            <circle cx="50" cy="50" r="34" />
+            <circle cx="50" cy="50" r="46">
+                <animatetransform attributeName="transform" type="scale" values="1; 0.5; 1" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Establish a Safe Harbor</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="6" />
+            <circle class="s" cx="50" cy="50" r="8">
+                <animatetransform attributeName="transform" type="scale" values="1; 2; 1" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Target the Core</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="50" cy="50" r="6">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle cx="50" cy="50" r="20">
+                <animate attributeName="r" values="20; 10; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle cx="50" cy="50" r="36">
+                <animate attributeName="r" values="36; 16; 36" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Discard an Axiom</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="40" y="40" width="20" height="20" rx="4">
+                <animate attributeName="y" values="40; 100; 40" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <line x1="20" y1="50" x2="80" y2="50" stroke-dasharray="4 4" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Disconnect from Desire</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 10 50 L 40 50 M 60 50 L 90 50" />
+            <rect class="s" x="42" y="42" width="16" height="16" rx="4">
+                <animate attributeName="y" values="42; 10; 42" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Burn the Playbook</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="4">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <circle class="s" cx="50" cy="50" r="10">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Distort the Timeline</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="34" />
+            <line x1="50" y1="50" x2="50" y2="20">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 180 50 50; 360 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Practice Strategic Inaction</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="35" y="35" width="30" height="30" rx="6" />
+            <path d="M 20 20 L 80 80 M 20 80 L 80 20" stroke-dasharray="4 4">
+                <animate attributeName="stroke-dashoffset" values="0; 40; 0" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Embrace the Obvious</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 20 50 Q 35 20 50 50 T 80 50">
+                <animate attributeName="d"
+                         values="M 20 50 Q 35 20 50 50 T 80 50; M 20 50 Q 50 50 80 50 T 80 50; M 20 50 Q 35 20 50 50 T 80 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Deploy the Cliche</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="40" y="60" width="20" height="20" rx="4" />
+            <path d="M 50 40 V 20 M 35 35 L 25 25 M 65 35 L 75 25">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Show Off</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="50" cy="50" r="10" />
+            <path d="M 50 50 L 50 50 M 50 50 L 50 50 M 50 50 L 50 50 M 50 50 L 50 50">
+                <animate attributeName="d"
+                         values="M 50 50 L 50 50 M 50 50 L 50 50 M 50 50 L 50 50 M 50 50 L 50 50; M 50 20 L 80 50 M 80 50 L 50 80 M 50 80 L 20 50 M 20 50 L 50 20; M 50 50 L 50 50 M 50 50 L 50 50 M 50 50 L 50 50 M 50 50 L 50 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Preserve the Void</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="20" y="20" width="60" height="60" rx="8" stroke-width="8" />
+            <circle class="s" cx="50" cy="50" r="6">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Enforce Absolute Equality</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="20" y="35" width="26" height="30" rx="4" />
+            <rect x="54" y="35" width="26" height="30" rx="4" />
+            <line x1="50" y1="20" x2="50" y2="80">
+                <animate attributeName="y1" values="20; 50; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="y2" values="80; 50; 80" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Endure Boredom</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="20" y1="50" x2="80" y2="50" stroke-width="8" opacity="0.2" />
+            <line x1="20" y1="50" x2="20" y2="50" stroke-width="8">
+                <animate attributeName="x2" values="20; 80; 20" dur="4s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Engage in Menial Labor</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="20" y1="50" x2="40" y2="50">
+                <animate attributeName="x1" values="20; 60; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="x2" values="40; 80; 40" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+            <circle class="s" cx="60" cy="50" r="6">
+                <animate attributeName="cx" values="60; 20; 60" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Question the Vocabulary</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 30 80 L 50 20 L 70 80 M 40 60 L 60 60">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 180 50 50; 0 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+
+    <div class="c">
+        <span>Polarize</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="50" cy="50" r="16">
+                <animate attributeName="cx" values="50; 25; 50" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle class="s" cx="50" cy="50" r="16">
+                <animate attributeName="cx" values="50; 75; 50" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Weaponize Repetition</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="50" cy="25" r="8">
+                <animate attributeName="cy" values="25; 75; 25" dur="1s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <line x1="20" y1="50" x2="80" y2="50" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Spotlight the Error</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="25" cy="50" r="8" />
+            <circle class="s" cx="50" cy="50" r="8">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; 0 -20; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle class="s" cx="75" cy="50" r="8" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Reject the Binary</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="25" cy="50" r="10">
+                <animate attributeName="cx" values="25; 50; 25" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle class="s" cx="75" cy="50" r="10">
+                <animate attributeName="cx" values="75; 50; 75" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle cx="50" cy="50" r="24">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Apply Recursive Feedback</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="20" y="20" width="60" height="60" rx="8" />
+            <rect x="35" y="35" width="30" height="30" rx="4">
+                <animatetransform attributeName="transform" type="scale" values="1; 1.6; 1" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Eliminate Empty Space</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="20" y="20" width="60" height="60" rx="6" />
+            <rect class="s" x="20" y="20" width="60" height="60" rx="6">
+                <animatetransform attributeName="transform" type="scale" values="0; 1; 0" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Leave Ghost Echoes</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="10">
+                <animate attributeName="cx" values="30; 70; 30" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle cx="50" cy="50" r="10" opacity="0.4">
+                <animate attributeName="cx" values="30; 70; 30" dur="3s" repeatCount="indefinite"
+                         begin="-0.2s" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle cx="50" cy="50" r="10" opacity="0.1">
+                <animate attributeName="cx" values="30; 70; 30" dur="3s" repeatCount="indefinite"
+                         begin="-0.4s" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Provide Total Transparency</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="25" y="25" width="50" height="50" rx="6">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <rect x="25" y="25" width="50" height="50" rx="6" />
+            <circle class="s" cx="50" cy="50" r="10" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Indulge the Worst Impulse</span>
+        <svg viewBox="0 0 100 100">
+            <g>
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; -15 -15; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <rect class="s" x="40" y="40" width="20" height="20" rx="4" />
+            </g>
+            <g>
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; 15 15; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <rect class="s" x="40" y="40" width="20" height="20" rx="4" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Check the Perimeter</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="8" />
+            <circle class="s" cx="25" cy="25" r="8">
+                <animate attributeName="cx" values="25; 75; 75; 25; 25" dur="4s"
+                         repeatCount="indefinite" keyTimes="0; 0.25; 0.5; 0.75; 1" />
+                <animate attributeName="cy" values="25; 25; 75; 75; 25" dur="4s"
+                         repeatCount="indefinite" keyTimes="0; 0.25; 0.5; 0.75; 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Reframe the Mistake</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="30" y="30" width="40" height="40" rx="4">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 45 50 50; 0 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <circle cx="50" cy="50" r="30">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Shift the Timeline</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="6">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 90 50 50; 0 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <circle class="s" cx="50" cy="50" r="10">
+                <animatetransform attributeName="transform" type="scale" values="1; 0; 1" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Introduce Imperfection</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="25" />
+            <circle cx="50" cy="50" r="25">
+                <animatetransform attributeName="transform" type="translate" values="0 0; 8 8; 0 0"
+                                  dur="3s" repeatCount="indefinite" calcMode="spline"
+                                  keyTimes="0; 0.5; 1" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Adopt a Biological Metaphor</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 50 20 Q 80 50 50 80 Q 20 50 50 20">
+                <animate attributeName="d"
+                         values="M 50 20 Q 80 50 50 80 Q 20 50 50 20; M 50 30 Q 70 50 50 70 Q 30 50 50 30; M 50 20 Q 80 50 50 80 Q 20 50 50 20"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Atomize the Whole</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="30" y="30" width="40" height="40" rx="6">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <g class="s">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <rect x="20" y="20" width="10" height="10" rx="2" />
+                <rect x="70" y="20" width="10" height="10" rx="2" />
+                <rect x="20" y="70" width="10" height="10" rx="2" />
+                <rect x="70" y="70" width="10" height="10" rx="2" />
+                <rect x="45" y="45" width="10" height="10" rx="2" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Make Micro-Adjustments</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="25" />
+            <line x1="50" y1="50" x2="50" y2="25">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="-15 50 50; 15 50 50; -15 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Interrogate the Motive</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="20" y1="50" x2="80" y2="50" />
+            <circle cx="50" cy="50" r="16">
+                <animate attributeName="cx" values="30; 70; 30" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle class="s" cx="50" cy="50" r="4">
+                <animate attributeName="cx" values="30; 70; 30" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Demand the Impossible</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 30 50 L 70 50 M 50 30 L 50 70">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 135 50 50; 0 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Check for Finality</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="8" />
+            <path d="M 40 50 L 48 58 L 60 40" stroke-width="6">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Check the Void</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="20" y="20" width="24" height="24" rx="4" />
+            <rect x="56" y="20" width="24" height="24" rx="4" />
+            <rect x="20" y="56" width="24" height="24" rx="4" />
+            <rect x="56" y="56" width="24" height="24" rx="4" stroke-dasharray="4 4">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Recalibrate</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="30" />
+            <line x1="50" y1="50" x2="50" y2="20">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="-45 50 50; 45 50 50; -45 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Push Through</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="50" y1="20" x2="50" y2="80" />
+            <circle class="s" cx="20" cy="50" r="10">
+                <animate attributeName="cx" values="20; 80; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Pan the Focus</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="30" y="30" width="40" height="40" rx="6">
+                <animate attributeName="x" values="10; 50; 10" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <circle class="s" cx="50" cy="50" r="6" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Undergo Sensory Deprivation</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="30">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <circle class="s" cx="50" cy="50" r="10">
+                <animate attributeName="r" values="10; 16; 10" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Amplify the Whisper</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 20 50 Q 50 40 80 50">
+                <animate attributeName="d"
+                         values="M 20 50 Q 50 40 80 50; M 20 50 Q 50 10 80 50; M 20 50 Q 50 40 80 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Apply Micro-Focus</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="50" cy="50" r="8">
+                <animate attributeName="r" values="8; 30; 8" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="opacity" values="1; 0.2; 1" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <rect x="35" y="35" width="30" height="30" rx="4">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Invert the Workflow</span>
+        <svg viewBox="0 0 100 100">
+            <path class="s" d="M 50 20 L 70 60 H 30 Z">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 180 50 50; 0 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Exploit the Embarrassment</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="6" />
+            <circle class="s" cx="75" cy="75" r="8">
+                <animate attributeName="r" values="8; 20; 8" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+
+    <div class="c">
+        <span>Frame the Void</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="15" y="15" width="70" height="70" rx="8" stroke-width="8" />
+            <rect x="30" y="30" width="40" height="40" rx="4" stroke-width="2" />
+            <circle class="s" cx="50" cy="50" r="6">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Exhaust the Obvious</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="20" y1="35" x2="80" y2="35" />
+            <line x1="20" y1="50" x2="80" y2="50" />
+            <line x1="20" y1="65" x2="80" y2="65" />
+            <line x1="50" y1="20" x2="50" y2="80" stroke-width="8">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Execute Controlled Sabotage</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="30" stroke-dasharray="8 8">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 360 50 50" dur="4s" repeatCount="indefinite"
+                                  calcMode="linear" />
+            </circle>
+            <rect class="s" x="42" y="30" width="16" height="40" rx="4">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 -10; 0 10; 0 -10" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Automate the Quirks</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 20 50 L 30 30 L 40 70 L 50 30 L 60 70 L 70 30 L 80 50">
+                <animate attributeName="d"
+                         values="M 20 50 L 30 30 L 40 70 L 50 30 L 60 70 L 70 30 L 80 50; M 20 50 L 30 50 L 40 50 L 50 50 L 60 50 L 70 50 L 80 50; M 20 50 L 30 30 L 40 70 L 50 30 L 60 70 L 70 30 L 80 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Execute Blindly</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="70" cy="50" r="16" />
+            <line x1="20" y1="50" x2="40" y2="50">
+                <animate attributeName="x1" values="20; 50; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="x2" values="40; 70; 40" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Enforce the Highlander Rule</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="30" y="30" width="16" height="16" rx="4" />
+            <circle class="s" cx="70" cy="70" r="8" />
+            <circle class="s" cx="50" cy="50" r="12">
+                <animate attributeName="r" values="12; 24; 12" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Build Organic Machinery</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="25" y="25" width="50" height="50" rx="4">
+                <animate attributeName="rx" values="4; 25; 4" dur="4s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 90 50 50; 180 50 50" dur="4s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <circle cx="50" cy="50" r="12" fill="#0f0f0f" stroke="none" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Entrench</span>
+        <svg viewBox="0 0 100 100">
+            <path class="s" d="M 50 30 L 70 60 H 30 Z">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 -20; 0 0; 0 -20" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+            <rect class="s" x="25" y="65" width="50" height="15" rx="4" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Filter the Noise</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="30" cy="30" r="6" />
+            <circle class="s" cx="30" cy="70" r="6" />
+            <line x1="50" y1="15" x2="50" y2="85" />
+            <circle class="s" cx="70" cy="50" r="6">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Invoke Nostalgia</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="8" />
+            <path d="M 25 50 Q 50 25 75 50">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Apply Ruthless Precision</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="4" />
+            <line x1="15" y1="15" x2="85" y2="85">
+                <animate attributeName="stroke-dasharray" values="0 200; 200 0; 0 200" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Abstract the Concrete</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="30" y="30" width="40" height="40" rx="6">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <rect x="25" y="25" width="50" height="50" rx="6">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Induce Semantic Satiation</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 35 35 L 65 35 L 65 65 L 35 65 Z">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 360 50 50" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="d"
+                         values="M 35 35 L 65 35 L 65 65 L 35 65 Z; M 50 20 L 80 50 L 50 80 L 20 50 Z; M 35 35 L 65 35 L 65 65 L 35 65 Z"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Reverse Engineer</span>
+        <svg viewBox="0 0 100 100">
+            <path class="s" d="M 50 20 L 70 60 H 30 Z">
+                <animatetransform attributeName="transform" type="scale" values="1; 0.2; 1" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+            <rect x="35" y="35" width="30" height="30" rx="4">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Bypass the Logic</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 30 20 V 80 M 50 20 V 60 M 70 40 V 80" />
+            <line x1="15" y1="50" x2="85" y2="50" stroke-width="8">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Seek External Perspective</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="6">
+                <animatetransform attributeName="transform" type="scale" values="1; 0.3; 1" dur="3s"
+                                  repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Apply Simple Subtraction</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="40" y="20" width="20" height="20" rx="4" />
+            <rect class="s" x="40" y="45" width="20" height="20" rx="4">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+            <rect class="s" x="40" y="70" width="20" height="20" rx="4" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Perform Spectrum Analysis</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="20" y1="50" x2="40" y2="50" />
+            <circle class="s" cx="50" cy="50" r="10" />
+            <g>
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <line x1="60" y1="50" x2="80" y2="30" />
+                <line x1="60" y1="50" x2="80" y2="50" />
+                <line x1="60" y1="50" x2="80" y2="70" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Prune Sequentially</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="50" y1="80" x2="50" y2="30" />
+            <line x1="50" y1="60" x2="30" y2="40">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+            <line x1="50" y1="50" x2="70" y2="30">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         begin="0.5s" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Silence the Ego</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 50 15 L 60 40 L 85 50 L 60 60 L 50 85 L 40 60 L 15 50 L 40 40 Z">
+                <animate attributeName="d"
+                         values="M 50 15 L 60 40 L 85 50 L 60 60 L 50 85 L 40 60 L 15 50 L 40 40 Z; M 50 45 L 52 48 L 55 50 L 52 52 L 50 55 L 48 52 L 45 50 L 48 48 Z; M 50 15 L 60 40 L 85 50 L 60 60 L 50 85 L 40 60 L 15 50 L 40 40 Z"
+                         dur="4s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="opacity" values="1; 0.2; 1" dur="4s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+            <circle class="s" cx="50" cy="50" r="4" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Apply the Inconsistency Principle</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="25" y="25" width="20" height="20" rx="4" />
+            <rect class="s" x="25" y="55" width="20" height="20" rx="4" />
+            <rect class="s" x="55" y="55" width="20" height="20" rx="4" />
+            <rect class="s" x="55" y="25" width="20" height="20" rx="4">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; -10 10; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Acknowledge the Medium</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="6" stroke-dasharray="10 10">
+                <animate attributeName="stroke-dashoffset" values="40; 0; 40" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Adopt the Broadcast Mindset</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="30" cy="50" r="8" />
+            <path d="M 50 35 A 20 20 0 0 1 50 65 M 65 25 A 35 35 0 0 1 65 75">
+                <animate attributeName="opacity" values="0.2; 1; 0.2" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Declutter</span>
+        <svg viewBox="0 0 100 100">
+            <g class="s">
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <circle cx="20" cy="20" r="6" />
+                <rect x="70" y="20" width="12" height="12" rx="2" />
+                <path d="M 20 70 L 30 80 H 10 Z" />
+            </g>
+            <circle class="s" cx="50" cy="50" r="14" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Rely on Current Self</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="20" cy="40" r="8">
+                <animate attributeName="cx" values="20; 80; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <line x1="15" y1="55" x2="85" y2="55" stroke-dasharray="6 6" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Twist the Spine</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="50" y1="15" x2="50" y2="85" />
+            <line x1="30" y1="30" x2="70" y2="30">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 30; 45 50 30; 0 50 30" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+            <line x1="30" y1="50" x2="70" y2="50">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; -45 50 50; 0 50 50" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+            <line x1="30" y1="70" x2="70" y2="70">
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 70; 45 50 70; 0 50 70" dur="3s"
+                                  repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </line>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Resurrect the Dead</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="25" y="25" width="50" height="50" rx="6" stroke-dasharray="4 4" opacity="0.2">
+                <animate attributeName="opacity" values="0.2; 1; 0.2" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="stroke-dasharray" values="4 4; 50 0; 4 4" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Use the Forbidden</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="30" />
+            <path class="s" d="M 60 30 L 40 50 L 60 70 Z">
+                <animatetransform attributeName="transform" type="scale" values="0.2; 1; 0.2"
+                                  dur="3s" repeatCount="indefinite" transform-origin="50 50"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Impose Scarcity</span>
+        <svg viewBox="0 0 100 100">
+            <g class="s">
+                <circle cx="30" cy="30" r="6">
+                    <animate attributeName="opacity" values="1; 0; 1" dur="3s"
+                             repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                             keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                </circle>
+                <circle cx="70" cy="30" r="6">
+                    <animate attributeName="opacity" values="1; 0; 1" dur="3s"
+                             repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                             keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                </circle>
+                <circle cx="30" cy="70" r="6">
+                    <animate attributeName="opacity" values="1; 0; 1" dur="3s"
+                             repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                             keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                </circle>
+                <circle cx="70" cy="70" r="6">
+                    <animate attributeName="opacity" values="1; 0; 1" dur="3s"
+                             repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                             keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                </circle>
+                <circle cx="50" cy="50" r="10" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Apply a Lens</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 20 50 Q 50 20 80 50" opacity="0.3" />
+            <circle cx="50" cy="50" r="16">
+                <animate attributeName="cx" values="30; 70; 30" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Utilize Novice Execution</span>
+        <svg viewBox="0 0 100 100">
+            <rect x="40" y="40" width="20" height="20" rx="4" />
+            <circle class="s" cx="20" cy="20" r="6">
+                <animate attributeName="cx" values="20; 80; 50; 20" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.33; 0.66; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="cy" values="20; 50; 80; 20" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.33; 0.66; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Embrace Fluidity</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="50" cy="20" r="8">
+                <animate attributeName="cy" values="20; 80; 20" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="r" values="8; 4; 8" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animate attributeName="opacity" values="1; 0; 1" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <path d="M 20 80 Q 50 80 80 80">
+                <animate attributeName="d"
+                         values="M 20 80 Q 50 80 80 80; M 20 80 Q 50 40 80 80; M 20 80 Q 50 80 80 80"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Incorporate the Distraction</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="50" cy="50" r="16" />
+            <circle class="s" cx="20" cy="20" r="6">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; 15 15; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Perform a Cold Assessment</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 20 50 L 35 25 L 50 75 L 65 35 L 80 50">
+                <animate attributeName="d"
+                         values="M 20 50 L 35 25 L 50 75 L 65 35 L 80 50; M 20 50 L 35 50 L 50 50 L 65 50 L 80 50; M 20 50 L 35 25 L 50 75 L 65 35 L 80 50"
+                         dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </path>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Conduct a Historical Audit</span>
+        <svg viewBox="0 0 100 100">
+            <line x1="20" y1="50" x2="80" y2="50" stroke-dasharray="4 12" />
+            <g>
+                <animatetransform attributeName="transform" type="translate"
+                                  values="30 0; -30 0; 30 0" dur="4s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <circle cx="50" cy="50" r="12" fill="#0f0f0f" />
+                <circle class="s" cx="50" cy="50" r="4" />
+                <line x1="58" y1="58" x2="68" y2="68" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Outsource the Decision</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="25" y="40" width="20" height="20" rx="4" />
+            <circle class="s" cx="75" cy="50" r="10">
+                <animatetransform attributeName="transform" type="translate"
+                                  values="0 0; -15 15; 0 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Follow the Anti-Instinct</span>
+        <svg viewBox="0 0 100 100">
+            <g>
+                <animatetransform attributeName="transform" type="translate"
+                                  values="-15 0; 15 0; -15 0" dur="3s" repeatCount="indefinite"
+                                  calcMode="spline" keyTimes="0; 0.5; 1"
+                                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <path d="M 30 30 L 45 50 L 30 70 M 55 30 L 70 50 L 55 70" opacity="0.4" />
+            </g>
+            <circle class="s" cx="75" cy="50" r="10">
+                <animate attributeName="cx" values="75; 25; 75" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Shift Gears</span>
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="26" stroke-dasharray="8 12">
+                <animate attributeName="stroke-width" values="4; 16; 4" dur="3s"
+                         repeatCount="indefinite" calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+                <animatetransform attributeName="transform" type="rotate"
+                                  values="0 50 50; 360 50 50" dur="4s" repeatCount="indefinite"
+                                  calcMode="linear" />
+            </circle>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Apply Cold Mechanics</span>
+        <svg viewBox="0 0 100 100">
+            <path d="M 20 50 H 50 V 30 H 70" />
+            <rect class="s" x="62" y="22" width="16" height="16" rx="4">
+                <animate attributeName="y" values="22; 42; 22" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Make Atomic Progress</span>
+        <svg viewBox="0 0 100 100">
+            <circle class="s" cx="40" cy="40" r="4">
+                <animatetransform attributeName="transform" type="translate" values="0 0; 20 0; 0 0"
+                                  dur="3s" repeatCount="indefinite" calcMode="spline"
+                                  keyTimes="0; 0.5; 1" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </circle>
+            <line x1="20" y1="60" x2="80" y2="60" />
+        </svg>
+    </div>
+
+    <div class="c">
+        <span>Commit Self-Plagiarism</span>
+        <svg viewBox="0 0 100 100">
+            <rect class="s" x="25" y="35" width="20" height="30" rx="4" />
+            <rect class="s" x="55" y="35" width="20" height="30" rx="4">
+                <animate attributeName="opacity" values="0; 1; 0" dur="3s" repeatCount="indefinite"
+                         calcMode="spline" keyTimes="0; 0.5; 1"
+                         keySplines="0.4 0 0.2 1; 0.4 0 0.2 1" />
+            </rect>
+        </svg>
+    </div>
+</template>
+
+<script>
+    let state = {
+        strategies: [],
+        categories: {},
+        svgMap: {},
+        currentSeed: -1,
+    };
+
+    const elements = {
+        strategyTitle: document.getElementById("strategy-title"),
+        strategyDesc: document.getElementById("strategy-description"),
+        strategyAnim: document.getElementById("strategy-animation"),
+        cat1: document.getElementById("category-1"),
+        cat2: document.getElementById("category-2"),
+        itemA: document.getElementById("item-a"),
+        itemB: document.getElementById("item-b"),
+        progress: document.getElementById("timer-progress"),
+    };
+
+    async function init() {
+        try {
+            const [stratRes, catRes] = await Promise.all([
+                fetch("strategies.json").then(r => r.json()),
+                fetch("categories.json").then(r => r.json()),
+            ]);
+
+            state.strategies = stratRes;
+            state.categories = catRes;
+
+            // Load SVGs from the template
+            const template = document.getElementById("svg-library");
+            const fragment = template.content;
+            fragment.querySelectorAll(".c").forEach(el => {
+                const title = el.querySelector("span").textContent.trim();
+                const svg = el.querySelector("svg").outerHTML;
+                state.svgMap[title] = svg;
+            });
+
+            populateSelects();
+            tick();
+            setInterval(tick, 1000);
+
+            elements.cat1.addEventListener("change", updateCombination);
+            elements.cat2.addEventListener("change", updateCombination);
+
+        } catch (err) {
+            console.error("Initialization failed:", err);
+        }
+    }
+
+    function populateSelects() {
+        const names = Object.keys(state.categories).sort();
+        names.forEach(name => {
+            elements.cat1.add(new Option(name, name));
+            elements.cat2.add(new Option(name, name));
+        });
+    }
+
+    function getSeed() {
+        return Math.floor(Date.now() / (5 * 60 * 1000));
+    }
+
+    function mulberry32(a) {
+        return function() {
+            var t = a += 0x6D2B79F5;
+            t = Math.imul(t ^ t >>> 15, t | 1);
+            t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+    }
+
+    function seededRandom(seed) {
+        return mulberry32(seed)();
+    }
+
+    function pick(array, seed, offset = 0) {
+        const r = seededRandom(seed + offset);
+        return array[Math.floor(r * array.length)];
+    }
+
+    function tick() {
+        const seed = getSeed();
+        const now = Date.now();
+        const period = 5 * 60 * 1000;
+        elements.progress.style.width = ((now % period) / period * 100) + "%";
+
+        if (seed !== state.currentSeed) {
+            state.currentSeed = seed;
+
+            const strat = pick(state.strategies, seed, 7);
+            elements.strategyTitle.textContent = strat[0];
+            elements.strategyDesc.textContent = strat[1];
+
+            let svgHtml = state.svgMap[strat[0]] || "";
+            if (svgHtml && strat[2]) {
+                svgHtml = svgHtml.replace(">", `><title>${strat[2]}</title>`);
+            }
+            elements.strategyAnim.innerHTML = svgHtml;
+
+            const catNames = Object.keys(state.categories).sort();
+            elements.cat1.value = pick(catNames, seed, 13);
+            elements.cat2.value = pick(catNames, seed, 17);
+
+            updateCombination();
+
+            // Trigger entry animations
+            [elements.strategyTitle, elements.strategyDesc, elements.strategyAnim].forEach(el => {
+                el.classList.remove("fade-up");
+                void el.offsetWidth;
+                el.classList.add("fade-up");
+            });
+        }
+    }
+
+    function updateCombination() {
+        const seed = getSeed();
+        const items1 = state.categories[elements.cat1.value] || [];
+        const items2 = state.categories[elements.cat2.value] || [];
+
+        const a = pick(items1, seed, 31 + elements.cat1.selectedIndex);
+        const b = pick(items2, seed, 37 + elements.cat2.selectedIndex);
+
+        if (elements.itemA.textContent !== a) {
+            animateChange(elements.itemA, a);
+        }
+        if (elements.itemB.textContent !== b) {
+            animateChange(elements.itemB, b);
+        }
+    }
+
+    function animateChange(el, text) {
+        el.classList.remove("fade-up");
+        void el.offsetWidth;
+        el.textContent = text;
+        el.classList.add("fade-up");
+    }
+
+    init();
+</script>
+</body>
+</html>

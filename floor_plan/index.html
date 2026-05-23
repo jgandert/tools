@@ -1,0 +1,1668 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Floor Plan Optimizer</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        :root {
+            --aside-width: 512px;
+        }
+
+        body {
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            margin-bottom: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1;
+            pointer-events: none;
+            font-size: 0.8125rem;
+            margin: 0;
+            padding: 0.2rem 0.6rem;
+        }
+
+        #layout-grid {
+            border: 1px solid var(--border-color);
+            display: grid;
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        #layout-grid.aspect-locked {
+            flex: 0 0 auto;
+            max-height: 100%;
+            max-width: 100%;
+            align-self: center;
+        }
+
+        .room {
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            user-select: none;
+        }
+
+        .room-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            padding: 0 4px;
+            line-height: 1.3;
+        }
+
+        .room-label-parent {
+            position: absolute;
+            top: 2px;
+            left: 0;
+            right: 0;
+            font-size: 0.8rem;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .room-dims {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
+
+        #rules-editor {
+            height: 60vh;
+            resize: vertical;
+            overflow-y: auto;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 16px;
+            font-size: 1rem;
+            font-family: var(--font-code, monospace);
+            line-height: 1.5;
+            color: var(--on-surface);
+            background-color: var(--surface-container-highest);
+            border: none;
+            border-bottom: 1px solid var(--outline);
+            border-radius: 8px 8px 0 0;
+            transition: var(--trans-interactive);
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            outline: none;
+            caret-color: var(--on-surface);
+            cursor: text;
+        }
+
+        #rules-editor:focus {
+            background-color: color-mix(in srgb, var(--surface-container-highest), var(--on-surface) 4%);
+            border-bottom: 1px solid var(--primary);
+            box-shadow: inset 0 -1px 0 0 var(--primary);
+        }
+
+        #rules-editor > div {
+            padding-left: 1.5rem;
+            text-indent: -1.5rem;
+        }
+
+        .hl-comment {
+            color: var(--outline);
+            font-style: italic;
+        }
+
+        .hl-keyword {
+            color: var(--primary);
+        }
+
+        .hl-room {
+            color: var(--secondary);
+        }
+
+        .hl-param {
+            color: var(--color-danger, #c00);
+        }
+
+        .hl-punct {
+            color: inherit;
+        }
+
+        #error-output {
+            color: var(--color-danger, #c00);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        #parse-messages {
+            margin-top: var(--spacing-md);
+            font-size: 0.8125rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        #stats-output {
+            margin-top: var(--spacing-md);
+        }
+
+        .breakdown-table {
+            font-size: 0.8rem;
+            border-collapse: collapse;
+            margin-top: 0.25rem;
+        }
+
+        .breakdown-table .val {
+            padding-left: 1rem;
+            text-align: right;
+        }
+
+        .msg-error {
+            color: var(--color-danger, #c00);
+        }
+
+        .msg-warning {
+            color: var(--color-warning, #b80);
+        }
+    </style>
+</head>
+
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Floor Plan Optimizer</h1>
+        <p>Optimize room layouts using constraint-based simulated annealing.</p>
+    </hgroup>
+    <button type="button" id="open-modal" class="btn-sym" aria-haspopup="dialog"
+            aria-controls="modal-info">
+        info
+    </button>
+</header>
+
+<main id="content">
+    <section>
+        <article id="loading-overlay" aria-busy="true" aria-live="polite" hidden>Optimizing…
+        </article>
+        <div id="layout-grid"></div>
+        <pre id="error-output" hidden></pre>
+    </section>
+</main>
+
+<aside>
+    <form id="rules-form">
+        <label for="rules-editor">DSL Directives</label>
+        <!-- prettier-ignore-start -->
+        <!-- beautify ignore:start -->
+        <textarea id="rules-input" hidden aria-hidden="true" name="rules" autocomplete="off"
+                  spellcheck="false">
+seed 42
+canvas 1400x1100
+ratio_max 5:3
+side_min 175
+cwl 125
+
+# Areas (1 sqm = 10,000 sq cm)
+room loud area=300000
+room dining area=140000
+room guest_bath area=40000
+room hallway_1 ratio_max=1:6
+room hallway_2 ratio_max=1:6
+room office area=80000
+room kitchen area=150000
+room living area=250000
+room main_bath area=80000
+room parents area=180000
+
+# Food storage
+room pantry area=50000
+
+# Heat pump and washing machine
+room utility area=40000
+
+room dressing area=30000
+
+# Groups
+hallways = [hallway_1, hallway_2]
+meal = [kitchen, dining]
+
+inside loud {
+    room child_1 area=100000
+    room child_2 area=100000
+    room child_3 area=100000
+    [child_1, child_2, child_3] connect any hallways required
+}
+
+# Connectivity
+hallway_1 connect hallway_2 required
+hallways at edge weight=200
+
+parents connect dressing required
+dressing enclosed
+pantry enclosed
+
+parents connect main_bath required
+
+# Main bath is for parents only
+main_bath far hallways weight=2
+
+[all but hallways, pantry, dressing, main_bath] connect any hallways required
+
+# Dining bridges kitchen and living
+[dining, pantry] connect kitchen required
+living connect any meal
+
+[office, parents] far loud
+
+# Must be able to open window for fresh
+# air after cooking and eating
+meal at edge required
+
+# Too hot for sleep
+parents at edge required
+parents not at south required
+
+# Sun goes down west (bad for TV time)
+living at east south required
+
+# Office on the quiet north, west side
+# (no blinding sun in morning or noon)
+office at north west required
+                </textarea>
+        <!-- beautify ignore:end -->
+        <!-- prettier-ignore-end -->
+        <div id="rules-editor" contenteditable="true" spellcheck="false"
+             role="textbox" aria-multiline="true"></div>
+
+        <div class="form-actions">
+            <button type="submit">
+                Optimize <span class="hide-mobile">
+                            <kbd>
+                                <span class="sym">keyboard_return</span>
+                            </kbd></span>
+            </button>
+            <button type="button" id="stop-btn" disabled>Stop</button>
+        </div>
+        <label for="auto-update">
+            Auto-update
+            <input type="checkbox" id="auto-update" role="switch" checked>
+        </label>
+        <label for="aspect-ratio-lock">
+            Preserve aspect ratio
+            <input type="checkbox" id="aspect-ratio-lock" role="switch" checked>
+        </label>
+    </form>
+
+    <div id="parse-messages" hidden></div>
+    <div id="stats-output"></div>
+    <details id="dragged-dimensions" hidden>
+        <summary>Rooms (after wall drag)</summary>
+        <pre>
+<code id="dragged-rooms-json"></code>
+</pre>
+    </details>
+</aside>
+
+<dialog id="modal-info" class="modal-info" aria-labelledby="dialog-title"
+        aria-describedby="dialog-desc"
+        aria-modal="true">
+    <article>
+        <header>
+            <h3 id="dialog-title">Floor Plan DSL Specification</h3>
+        </header>
+
+        <p id="dialog-desc">A declarative DSL for constraint-based room layout optimization.</p>
+
+        <div class="note">
+            <strong>Parameters:</strong>
+            append <code>weight=1.5</code>
+            to any rule to increase its importance (default <code>1</code>
+            ). Append <code>required</code> to mark a rule as a hard constraint — the optimizer
+            retries until it is satisfied.
+        </div>
+
+        <h2>1. Global Settings</h2>
+        <table>
+            <tr>
+                <th>Syntax</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>
+                    <code>canvas 500 500</code>
+                    <br>
+                    <code>canvas 500x500</code>
+                    <br>
+                    <code>canvas 500 500 flexible</code>
+                </td>
+                <td>
+                    Constrains layout to fixed bounds. Without <code>flexible</code>
+                    , the floor plan is always compressed to fit the canvas. With
+                    <code>flexible</code>, the canvas is a soft constraint — overflow is penalized
+                    but not forced out.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>seed 42</code>
+                </td>
+                <td>Deterministic PRNG seed.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>iter 2</code>
+                </td>
+                <td>Multiplies the default iteration budget.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>ratio_max 3:1</code>
+                </td>
+                <td>Global maximum aspect ratio for any room.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>area_min 100</code>
+                    <br>
+                    <code>side_min 10</code>
+                    <br>
+                    <code>side_min 10 flexible</code>
+                    <br>
+                    <code>side_max 50</code>
+                </td>
+                <td>
+                    Global area and side length constraints. <code>side_min</code>
+                    is enforced as a hard constraint by default — room shape curves are clamped so
+                    no dimension falls below the limit. Append <code>flexible</code> to treat it as
+                    a soft hint only.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>cwl 100</code>
+                    <br>
+                    <code>cwc 2</code>
+                </td>
+                <td>
+                    Default connected wall length (<code>cwl</code>
+                    ) and min connected wall count (<code>cwc</code>).
+                </td>
+            </tr>
+        </table>
+
+        <hr>
+
+        <h2>2. Rooms &amp; Variables</h2>
+        <table>
+            <tr>
+                <th>Syntax</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>
+                    <code>room A</code>
+                </td>
+                <td>
+                    Declare a room named <code>A</code>.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>room A area=200</code>
+                    <br>
+                    <code>room A area=10x20</code>
+                </td>
+                <td>Set target area or target dimensions for the room.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>room A area_min=50 side_min=5</code>
+                </td>
+                <td>Override global constraints for this room.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>room A ratio=3:2</code>
+                </td>
+                <td>Target aspect ratio for the room.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>room A ratio_max=2:1</code>
+                </td>
+                <td>Override global maximum aspect ratio for this room.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>group = [A, B]</code>
+                </td>
+                <td>Define a variable containing multiple rooms.</td>
+            </tr>
+        </table>
+
+        <hr>
+
+        <h2>3. Rules &amp; Constraints</h2>
+        <table>
+            <tr>
+                <th>Syntax</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>
+                    <code>A close B</code>
+                </td>
+                <td>Minimize distance between rooms.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>A far B</code>
+                </td>
+                <td>Maximize distance between rooms.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>A connect B</code>
+                </td>
+                <td>
+                    Rooms must share a wall. Append <code>cwl=50</code> to override the required
+                    wall length.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>A {rule} any [B, C]</code>
+                    <br>
+                    <code>A {rule} any list</code>
+                </td>
+                <td>
+                    Target-side <code>any</code>
+                    : <b>OR</b>
+                    across targets — rule satisfied if it holds for at least one target. Works with
+                    <code>connect</code>
+                    , <code>close</code>
+                    , and <code>far</code>.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>any [A, B] {rule} C</code>
+                    <br>
+                    <code>any list {rule} C</code>
+                </td>
+                <td>
+                    Subject-side <code>any</code>
+                    : <b>OR</b>
+                    across subjects — rule satisfied if it holds for at least one room in the
+                    subject list. Combine freely with target-side <code>any</code>
+                    : <code>any [A, B] connect any [C, D]</code>.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>A {rule} [all but B]</code>
+                    <br>
+                    <code>A {rule} [all but B, C]</code>
+                    <br>
+                    <code>A {rule} [all but group]</code>
+                </td>
+                <td>
+                    Expands to every declared room except those listed. Works as subject too: <code>[all
+                    but A] {rule} B</code>. Exclusion is comma-separated rooms and/or group names.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>A at north</code>
+                </td>
+                <td>Snap room to the layout edge (north, south, east, west, edge).</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>A not at north</code>
+                </td>
+                <td>Penalize touching the specified layout bound.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>A enclosed</code>
+                </td>
+                <td>Avoid placing the room on any outer edge.</td>
+            </tr>
+        </table>
+
+        <hr>
+
+        <h2>
+            4. Nested Floor Plans (<code>inside</code>)
+        </h2>
+        <table>
+            <tr>
+                <th>Syntax</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>
+<pre>
+<code>inside A {
+  room x
+  room y
+  x connect y
+}</code></pre>
+                </td>
+                <td>
+                    Defines a sub-floor-plan <em>inside</em>
+                    room <code>A</code>.
+                    The outer plan is optimized first. Once <code>A</code>'s dimensions
+                    are known, its inner plan is optimized using those dimensions as the canvas.
+                    The inner scope is isolated — inner room IDs do not conflict with outer ones.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>canvas</code> inside a block
+                </td>
+                <td>
+                    <strong>Error.</strong> The canvas for an inner plan is always the
+                    resolved dimensions of the parent room. Declaring it explicitly is not allowed.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Nested <code>inside</code>
+                </td>
+                <td>
+                    Works recursively. An <code>inside</code> block can itself contain
+                    further <code>inside</code> blocks. Each level is optimized after
+                    its parent's dimensions are resolved.
+                </td>
+            </tr>
+            <tr>
+                <td>
+<pre>
+<code>inside suite {
+  room bed area=80000
+  bed connect kitchen
+  bed far loud
+  bed close any meal
+}</code></pre>
+                </td>
+                <td>
+                    Inner rooms may reference <strong>outer rooms and groups</strong>
+                    as targets in <code>close</code>
+                    , <code>far</code>
+                    , and <code>connect</code> rules.
+                    The outer room is treated as a fixed reference — its position relative to the
+                    parent room is known after the outer plan is solved.<br>
+                    <br>
+                    A cross-boundary <code>connect</code>
+                    is translated to <code>at &lt;dir&gt;</code>
+                    : the direction (north/south/east/west) is inferred from the outer room's
+                    position relative to the parent room, so the inner room is pushed to the nearest
+                    wall facing that outer room.<br>
+                    <br>
+                    <code>required</code> is not supported on all cross-boundary rules and will be
+                    ignored with a warning.
+                    Outer rooms cannot be rule <em>subjects</em>
+                    inside an <code>inside</code> block.
+                </td>
+            </tr>
+        </table>
+
+        <footer>
+            <button type="button" data-action="close">Close</button>
+        </footer>
+    </article>
+</dialog>
+
+<script id="default-result-cache" type="application/json">{
+    "dsl": "seed 42\ncanvas 1400x1100\nratio_max 5:3\nside_min 175\ncwl 125\nroom loud area=300000\nroom dining area=140000\nroom guest_bath area=40000\nroom hallway_1 ratio_max=1:6\nroom hallway_2 ratio_max=1:6\nroom office area=80000\nroom kitchen area=150000\nroom living area=250000\nroom main_bath area=80000\nroom parents area=180000\nroom pantry area=50000\nroom utility area=40000\nroom dressing area=30000\nhallways = [hallway_1, hallway_2]\nmeal = [kitchen, dining]\ninside loud {\nroom child_1 area=100000\nroom child_2 area=100000\nroom child_3 area=100000\n[child_1, child_2, child_3] connect any hallways required\n}\nhallway_1 connect hallway_2 required\nhallways at edge weight=200\nparents connect dressing required\ndressing enclosed\npantry enclosed\nparents connect main_bath required\nmain_bath far hallways weight=2\n[all but hallways, pantry, dressing, main_bath] connect any hallways required\n[dining, pantry] connect kitchen required\nliving connect any meal\n[office, parents] far loud\nmeal at edge required\nparents at edge required\nparents not at south required\nliving at east south required\noffice at north west required",
+    "config": {
+        "seed": 42,
+        "canvasW": 1400,
+        "canvasH": 1100,
+        "canvasFlexible": false,
+        "ratioMax": 1.6666666666666667,
+        "sideMin": 175,
+        "sideMinFlexible": false,
+        "cwl": 125
+    },
+    "result": {
+        "cost": 1015911949.9956266,
+        "breakdown": {
+            "total": 1015911949.9956266,
+            "area": 1540000,
+            "aspectPenalty": 0,
+            "canvasPenalty": 0,
+            "topologicalPenalty": 968824436.8731543,
+            "roomPenalty": 45547513.122472234
+        },
+        "rooms": [
+            {
+                "id": "office",
+                "x": 0,
+                "y": 0,
+                "w": 755.8951080891308,
+                "h": 194.27584005424634,
+                "centerX": 377.9475540445654,
+                "centerY": 97.13792002712317,
+                "name": "office"
+            },
+            {
+                "id": "loud",
+                "x": 0,
+                "y": 194.27584005424634,
+                "w": 592.8654319353504,
+                "h": 418.01505172252877,
+                "centerX": 296.4327159676752,
+                "centerY": 403.28336591551073,
+                "name": "loud",
+                "inside": {
+                    "cost": 2856492.964447212,
+                    "breakdown": {
+                        "total": 2856492.964447212,
+                        "area": 247826.67419495486,
+                        "aspectPenalty": 0,
+                        "canvasPenalty": 0,
+                        "topologicalPenalty": 0,
+                        "roomPenalty": 2608666.290252257
+                    },
+                    "rooms": [
+                        {
+                            "id": "child_1",
+                            "x": 0,
+                            "y": 0,
+                            "w": 197.6218106451168,
+                            "h": 418.01505172252877,
+                            "centerX": 98.8109053225584,
+                            "centerY": 209.00752586126438,
+                            "name": "child_1"
+                        },
+                        {
+                            "id": "child_2",
+                            "x": 197.6218106451168,
+                            "y": 0,
+                            "w": 197.6218106451168,
+                            "h": 418.01505172252877,
+                            "centerX": 296.4327159676752,
+                            "centerY": 209.00752586126438,
+                            "name": "child_2"
+                        },
+                        {
+                            "id": "child_3",
+                            "x": 395.2436212902336,
+                            "y": 0,
+                            "w": 197.6218106451168,
+                            "h": 418.01505172252877,
+                            "centerX": 494.05452661279196,
+                            "centerY": 209.00752586126438,
+                            "name": "child_3"
+                        }
+                    ]
+                }
+            },
+            {
+                "id": "utility",
+                "x": 592.8654319353504,
+                "y": 194.27584005424634,
+                "w": 163.0296761537803,
+                "h": 418.01505172252877,
+                "centerX": 674.3802700122405,
+                "centerY": 403.28336591551073,
+                "name": "utility"
+            },
+            {
+                "id": "hallway_1",
+                "x": 755.8951080891308,
+                "y": 0,
+                "w": 163.0296761537803,
+                "h": 612.2908917767751,
+                "centerX": 837.4099461660209,
+                "centerY": 306.14544588838754,
+                "name": "hallway_1"
+            },
+            {
+                "id": "hallway_2",
+                "x": 0,
+                "y": 612.2908917767751,
+                "w": 918.9247842429111,
+                "h": 155.1801707982989,
+                "centerX": 459.46239212145554,
+                "centerY": 689.8809771759245,
+                "name": "hallway_2"
+            },
+            {
+                "id": "pantry",
+                "x": 0,
+                "y": 767.4710625750739,
+                "w": 167.26201010357275,
+                "h": 332.52893742492614,
+                "centerX": 83.63100505178637,
+                "centerY": 933.735531287537,
+                "name": "pantry"
+            },
+            {
+                "id": "kitchen",
+                "x": 167.26201010357275,
+                "y": 767.4710625750739,
+                "w": 382.3131659510234,
+                "h": 332.52893742492614,
+                "centerX": 358.4185930790844,
+                "centerY": 933.735531287537,
+                "name": "kitchen"
+            },
+            {
+                "id": "dining",
+                "x": 549.5751760545961,
+                "y": 767.4710625750739,
+                "w": 369.34960818831496,
+                "h": 332.52893742492614,
+                "centerX": 734.2499801487536,
+                "centerY": 933.735531287537,
+                "name": "dining"
+            },
+            {
+                "id": "parents",
+                "x": 918.9247842429111,
+                "y": 0,
+                "w": 481.0752157570891,
+                "h": 335.4247471299523,
+                "centerX": 1159.4623921214557,
+                "centerY": 167.71237356497616,
+                "name": "parents"
+            },
+            {
+                "id": "dressing",
+                "x": 918.9247842429111,
+                "y": 335.4247471299523,
+                "w": 227.1079335790704,
+                "h": 159.1059276775014,
+                "centerX": 1032.4787510324463,
+                "centerY": 414.97771096870304,
+                "name": "dressing"
+            },
+            {
+                "id": "guest_bath",
+                "x": 918.9247842429111,
+                "y": 494.5306748074537,
+                "w": 227.1079335790704,
+                "h": 160.7547378049735,
+                "centerX": 1032.4787510324463,
+                "centerY": 574.9080437099404,
+                "name": "guest_bath"
+            },
+            {
+                "id": "main_bath",
+                "x": 1146.0327178219814,
+                "y": 335.4247471299523,
+                "w": 253.96728217801873,
+                "h": 319.8606654824749,
+                "centerX": 1273.0163589109907,
+                "centerY": 495.3550798711898,
+                "name": "main_bath"
+            },
+            {
+                "id": "living",
+                "x": 918.9247842429111,
+                "y": 655.2854126124272,
+                "w": 481.0752157570891,
+                "h": 444.71458738757286,
+                "centerX": 1159.4623921214557,
+                "centerY": 877.6427063062137,
+                "name": "living"
+            }
+        ]
+    }
+}</script>
+<script src="parser.js"></script>
+<script src="layout_optimizer.js"></script>
+<script src="orchestrator.js"></script>
+<script>
+    const form = document.getElementById("rules-form");
+    const optimizeBtn = form.querySelector("button[type=\"submit\"]");
+    const input = document.getElementById("rules-editor");
+    const autoUpdateToggle = document.getElementById("auto-update");
+    const aspectRatioLock = document.getElementById("aspect-ratio-lock");
+    const layoutGrid = document.getElementById("layout-grid");
+    const statsOutput = document.getElementById("stats-output");
+    const draggedDimensions = document.getElementById("dragged-dimensions");
+    const draggedRoomsJson = document.getElementById("dragged-rooms-json");
+    const parseMessages = document.getElementById("parse-messages");
+    const errorOutput = document.getElementById("error-output");
+    const loadingOverlay = document.getElementById("loading-overlay");
+    const stopBtn = document.getElementById("stop-btn");
+    stopBtn.addEventListener("click", () => {
+        currentAbortController?.abort();
+        currentAbortController = null;
+        loadingOverlay.hidden = true;
+        stopBtn.disabled = true;
+    });
+    let lastResult = null, lastConfig = null;
+
+    let lastStrippedDsl = "";
+    let currentAbortController = null;
+
+    // ---- Syntax highlighting ----
+    const HL_KEYWORDS = new Set([
+        "canvas", "ratio_max", "area_min", "side_min", "side_max", "cwl", "cwc",
+        "seed", "iter", "k", "cooling_rate", "initial_t", "min_t", "algo",
+        "room", "inside", "any", "connect", "close", "far", "at", "not", "enclosed",
+        "edge", "north", "south", "east", "west", "all", "but",
+    ]);
+    const HL_MODIFIERS = new Set(["required", "flexible"]);
+
+    function esc(s) {
+        return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    const PUNCT_RE = /^([[\]{},=]*)([^[\]{},=]*)([[\]{},=]*)$/;
+
+    function highlightToken(tok, rooms, groups) {
+        if (!tok) return "";
+        if (/^[a-zA-Z_]\w*=/.test(tok)) {
+            const eq = tok.indexOf("=");
+            return `<span class="hl-param">${esc(tok.slice(0, eq))}</span>${esc(tok.slice(eq))}`;
+        }
+        const m = tok.match(PUNCT_RE);
+        if (!m) return esc(tok);
+        const [, pre, mid, suf] = m;
+        const midHtml = mid
+            ? HL_MODIFIERS.has(mid) ? `<span class="hl-param">${esc(mid)}</span>`
+                : HL_KEYWORDS.has(mid) ? `<span class="hl-keyword">${esc(mid)}</span>`
+                    : (rooms.has(mid) || groups.has(mid)) ? `<span class="hl-room">${esc(mid)}</span>`
+                        : esc(mid)
+            : "";
+        const preHtml = pre ? `<span class="hl-punct">${esc(pre)}</span>` : "";
+        const sufHtml = suf ? `<span class="hl-punct">${esc(suf)}</span>` : "";
+        return preHtml + midHtml + sufHtml;
+    }
+
+    function highlightLine(line, rooms, groups) {
+        const trimmed = line.trim();
+        if (!trimmed) return "";
+        if (trimmed.startsWith("#") || trimmed.startsWith("//"))
+            return `<span class="hl-comment">${esc(line)}</span>`;
+        return line.split(/(\s+)/).map(p => /^\s+$/.test(p) ? p : highlightToken(p, rooms, groups)).join("");
+    }
+
+    function highlightDSL(text) {
+        const lines = text.split("\n");
+        const rooms = new Set(), groups = new Set();
+        for (const line of lines) {
+            const t = line.trim().split(/\s+/);
+            if (t[0] === "room" && t[1]) rooms.add(t[1]);
+            if (t.length >= 3 && t[1] === "=") groups.add(t[0]);
+        }
+        return lines.map(line => `<div>${highlightLine(line, rooms, groups) || "<br>"}</div>`).join("");
+    }
+
+    // ---- Cursor preservation for contenteditable ----
+    function nodeTextLength(node) {
+        if (!node) return 0;
+        if (node.nodeType === Node.TEXT_NODE) return node.length;
+        if (node.nodeName === "BR") return 0;
+        let len = 0;
+        for (const child of node.childNodes) len += nodeTextLength(child);
+        return len;
+    }
+
+    function caretToOffset(el) {
+        const sel = window.getSelection();
+        if (!sel || !sel.rangeCount) return 0;
+        const { startContainer, startOffset } = sel.getRangeAt(0);
+        if (startContainer === el) {
+            let total = 0;
+            for (let i = 0; i < startOffset; i++) {
+                if (i > 0) total++;
+                total += nodeTextLength(el.childNodes[i]);
+            }
+            if (startOffset > 0) total++;
+            return total;
+        }
+        let total = 0, found = false;
+
+        function walk(node) {
+            if (found) return;
+            if (node === startContainer) {
+                total += startOffset;
+                found = true;
+                return;
+            }
+            if (node.nodeType === Node.TEXT_NODE) {
+                total += node.length;
+                return;
+            }
+            if (node.nodeName === "BR") return;
+            for (let i = 0; i < node.childNodes.length; i++) {
+                if (node === el && i > 0) total++;
+                walk(node.childNodes[i]);
+                if (found) return;
+            }
+        }
+
+        walk(el);
+        return found ? total : el.innerText.length;
+    }
+
+    function offsetToCaret(el, target) {
+        const sel = window.getSelection();
+        if (!sel) return;
+        const range = document.createRange();
+        let rem = target, placed = false;
+
+        function walk(node) {
+            if (placed) return;
+            if (node.nodeType === Node.TEXT_NODE) {
+                if (rem <= node.length) {
+                    range.setStart(node, rem);
+                    range.collapse(true);
+                    placed = true;
+                    return;
+                }
+                rem -= node.length;
+                return;
+            }
+            if (node.nodeName === "BR") return;
+            for (let i = 0; i < node.childNodes.length; i++) {
+                if (node === el && i > 0) {
+                    if (rem === 0) {
+                        range.setStart(node.childNodes[i - 1], 0);
+                        range.collapse(true);
+                        placed = true;
+                        return;
+                    }
+                    rem--;
+                }
+                walk(node.childNodes[i]);
+                if (placed) return;
+            }
+        }
+
+        walk(el);
+        if (!placed) {
+            if (rem === 0 && el.childNodes.length > 0) {
+                range.setStart(el.childNodes[el.childNodes.length - 1], 0);
+                range.collapse(true);
+            } else {
+                range.selectNodeContents(el);
+                range.collapse(false);
+            }
+        }
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+
+    let composing = false, highlighting = false;
+
+    // Custom undo/redo — browser history is destroyed each time innerHTML is replaced for highlighting
+    const undoStack = [];
+    const redoStack = [];
+
+    function pushUndoState() {
+        const text = getEditorText(input);
+        if (undoStack.length > 0 && undoStack[undoStack.length - 1].text === text) return;
+        undoStack.push({ text, caret: caretToOffset(input) });
+        redoStack.length = 0;
+        if (undoStack.length > 500) undoStack.shift();
+    }
+
+    function applyHistoryState({ text, caret }) {
+        highlighting = true;
+        input.innerHTML = highlightDSL(text);
+        highlighting = false;
+        offsetToCaret(input, caret);
+        if (autoUpdateToggle.checked) {
+            currentAbortController?.abort();
+            currentAbortController = null;
+            loadingOverlay.hidden = true;
+            stopBtn.disabled = true;
+            debouncedOptimize();
+        }
+    }
+
+    // Read editor text line-by-line from top-level <div> children using textContent,
+    // which ignores any nested <div> Chrome inserts when editing inside a <span>.
+    function getEditorText(el) {
+        const parts = [];
+        for (const child of el.childNodes) {
+            if (child.nodeType === Node.TEXT_NODE) parts.push(child.textContent);
+            else if (child.nodeName === "DIV") parts.push(child.textContent);
+            else if (child.nodeName === "BR") parts.push("");
+        }
+        return parts.join("\n");
+    }
+
+    function applyHighlight(el) {
+        const caret = document.activeElement === el ? caretToOffset(el) : null;
+        highlighting = true;
+        el.innerHTML = highlightDSL(getEditorText(el));
+        highlighting = false;
+        if (caret !== null) offsetToCaret(el, caret);
+    }
+
+    const _DEFAULT_CACHE = (() => {
+        try {
+            return JSON.parse(document.getElementById("default-result-cache")?.textContent);
+        } catch {
+            return null;
+        }
+    })();
+
+    const dialogInfo = document.getElementById("modal-info");
+    document.getElementById("open-modal").addEventListener("click", () => dialogInfo?.showModal?.());
+    dialogInfo?.addEventListener("click", (e) => {
+        if (e.target === dialogInfo || e.target.closest("[data-action='close']")) {
+            dialogInfo.close();
+        }
+    });
+
+    function updateButtonState() {
+        optimizeBtn.disabled = autoUpdateToggle.checked;
+    }
+
+    function updateGridAspect() {
+        if (aspectRatioLock.checked && lastConfig?.canvasW && lastConfig?.canvasH) {
+            const { canvasW, canvasH } = lastConfig;
+            layoutGrid.style.aspectRatio = `${canvasW} / ${canvasH}`;
+            layoutGrid.classList.add("aspect-locked");
+            if (canvasW < canvasH) {
+                layoutGrid.style.width = "auto";
+                layoutGrid.style.height = "100%";
+            } else {
+                layoutGrid.style.width = "";
+                layoutGrid.style.height = "";
+            }
+        } else {
+            layoutGrid.style.aspectRatio = "";
+            layoutGrid.style.width = "";
+            layoutGrid.style.height = "";
+            layoutGrid.classList.remove("aspect-locked");
+        }
+    }
+
+    autoUpdateToggle.addEventListener("change", updateButtonState);
+    aspectRatioLock.addEventListener("change", updateGridAspect);
+
+    // --- Grid rendering ---
+
+    const SNAP = 0.5;
+
+    function buildGridBreaks(rooms) {
+        const xs = [], ys = [];
+        for (const r of rooms) {
+            xs.push(r.xs, r.xe);
+            ys.push(r.ys, r.ye);
+        }
+        const snap = (vals) => {
+            const sorted = [...vals].sort((a, b) => a - b);
+            const result = [sorted[0]];
+            for (let i = 1; i < sorted.length; i++) {
+                if (sorted[i] - result[result.length - 1] > SNAP) result.push(sorted[i]);
+            }
+            return result;
+        };
+        return { colBreaks: snap(xs), rowBreaks: snap(ys) };
+    }
+
+    function rectToSpan(r, colBreaks, rowBreaks) {
+        const findIdx = (breaks, v) => {
+            for (let i = 0; i < breaks.length; i++) {
+                if (Math.abs(breaks[i] - v) <= SNAP) return i + 1;
+            }
+            return 1;
+        };
+        return {
+            colStart: findIdx(colBreaks, r.xs),
+            colEnd: findIdx(colBreaks, r.xe),
+            rowStart: findIdx(rowBreaks, r.ys),
+            rowEnd: findIdx(rowBreaks, r.ye),
+        };
+    }
+
+    function breaksToPixelPositions(breaks, containerPx) {
+        const total = breaks[breaks.length - 1] - breaks[0];
+        const offset = breaks[0];
+        return breaks.map(b => (b - offset) / total * containerPx);
+    }
+
+    function rescaleInnerRooms(container, roomId, scaleX, scaleY) {
+        const parentDiv = container.querySelector(`:scope > .room[data-id="${roomId}"]`);
+        if (!parentDiv?._rooms) return;
+        for (const r of parentDiv._rooms) {
+            r.xs *= scaleX;
+            r.xe *= scaleX;
+            r.ys *= scaleY;
+            r.ye *= scaleY;
+            rescaleInnerRooms(parentDiv, r.id, scaleX, scaleY);
+        }
+        rebuildGrid(parentDiv);
+    }
+
+    function rebuildGrid(container) {
+        const rooms = container._rooms;
+        const { colBreaks, rowBreaks } = buildGridBreaks(rooms);
+        container._colBreaks = colBreaks;
+        container._rowBreaks = rowBreaks;
+
+        const colTracks = [], rowTracks = [];
+        for (let i = 1; i < colBreaks.length; i++) colTracks.push(colBreaks[i] - colBreaks[i - 1]);
+        for (let i = 1; i < rowBreaks.length; i++) rowTracks.push(rowBreaks[i] - rowBreaks[i - 1]);
+
+        container.style.gridTemplateColumns = colTracks.map(v => v + "fr").join(" ");
+        container.style.gridTemplateRows = rowTracks.map(v => v + "fr").join(" ");
+
+        for (const div of container.querySelectorAll(":scope > .room")) {
+            const r = rooms.find(r => r.id === div.dataset.id);
+            if (!r) continue;
+            const span = rectToSpan(r, colBreaks, rowBreaks);
+            div.dataset.colStart = span.colStart;
+            div.dataset.colEnd = span.colEnd;
+            div.dataset.rowStart = span.rowStart;
+            div.dataset.rowEnd = span.rowEnd;
+            div.style.gridColumn = `${span.colStart} / ${span.colEnd}`;
+            div.style.gridRow = `${span.rowStart} / ${span.rowEnd}`;
+
+            const dimsEl = div.querySelector(":scope > .room-dims");
+            if (dimsEl) dimsEl.textContent = `${Math.round(r.xe - r.xs)}×${Math.round(r.ye - r.ys)}`;
+        }
+    }
+
+    function roomOklch(name, sortedNames, depth) {
+        const lightness = Math.max(0.55, 0.7 - depth * 0.05);
+        const chroma = Math.min(0.18, 0.125 + depth * 0.02);
+        const hue = (sortedNames.indexOf(name) / Math.max(sortedNames.length, 1)) * 360;
+        return {
+            fill: `oklch(${lightness} ${chroma} ${hue} / 0.5)`,
+            border: `oklch(${lightness} ${chroma} ${hue})`,
+        };
+    }
+
+    function renderRoomsToGrid(container, rooms, depth) {
+        container._rooms = rooms.map(r => ({
+            id: r.id,
+            xs: r.x,
+            xe: r.x + r.w,
+            ys: r.y,
+            ye: r.y + r.h,
+        }));
+
+        const sortedNames = rooms.map(r => r.name).sort();
+
+        for (const room of rooms) {
+            const colors = roomOklch(room.name, sortedNames, depth);
+
+            const div = document.createElement("div");
+            div.className = "room";
+            div.dataset.depth = depth;
+            div.dataset.id = room.id;
+
+            if (room.inside?.rooms?.length) {
+                div.style.border = `2px solid ${colors.border}`;
+                div.style.display = "grid";
+                div.style.alignItems = "stretch";
+                div.style.overflow = "hidden";
+
+                const lbl = document.createElement("div");
+                lbl.className = "room-label room-label-parent";
+                lbl.style.color = colors.border;
+                lbl.textContent = room.name.replace(/_/g, " ");
+                div.appendChild(lbl);
+
+                renderRoomsToGrid(div, room.inside.rooms, depth + 1);
+            } else {
+                div.style.backgroundColor = colors.fill;
+                div.style.border = `1px solid ${colors.border}`;
+
+                const lbl = document.createElement("div");
+                lbl.className = "room-label";
+                lbl.textContent = room.name.replace(/_/g, " ");
+                div.appendChild(lbl);
+
+                const dims = document.createElement("div");
+                dims.className = "room-dims";
+                div.appendChild(dims);
+            }
+
+            container.appendChild(div);
+        }
+
+        rebuildGrid(container);
+    }
+
+    function renderLayout(result, config) {
+        layoutGrid.innerHTML = "";
+        renderRoomsToGrid(layoutGrid, result.rooms, 0);
+        updateGridAspect();
+    }
+
+    // --- Draggable walls ---
+
+    const DRAG_HIT = 6;
+    const DRAG_EPS = 5;
+    let dragState = null;
+
+    function snapEq(a, b) {
+        return Math.abs(a - b) <= SNAP;
+    }
+
+    function isRealWall(container, axis, lineIdx, perpPx, colPos, rowPos) {
+        const breaks = axis === "col" ? container._colBreaks : container._rowBreaks;
+        const perpBreaks = axis === "col" ? container._rowBreaks : container._colBreaks;
+        const perpPos = axis === "col" ? rowPos : colPos;
+        if (!breaks || lineIdx >= breaks.length) return false;
+        const wallVal = breaks[lineIdx];
+
+        for (const r of (container._rooms ?? [])) {
+            if (axis === "col") {
+                if (!snapEq(r.xs, wallVal) && !snapEq(r.xe, wallVal)) continue;
+                const si = perpBreaks.findIndex(v => snapEq(v, r.ys));
+                const ei = perpBreaks.findIndex(v => snapEq(v, r.ye));
+                if (si >= 0 && ei >= 0 && perpPx >= perpPos[si] && perpPx <= perpPos[ei]) return true;
+            } else {
+                if (!snapEq(r.ys, wallVal) && !snapEq(r.ye, wallVal)) continue;
+                const si = perpBreaks.findIndex(v => snapEq(v, r.xs));
+                const ei = perpBreaks.findIndex(v => snapEq(v, r.xe));
+                if (si >= 0 && ei >= 0 && perpPx >= perpPos[si] && perpPx <= perpPos[ei]) return true;
+            }
+        }
+        return false;
+    }
+
+    // Walk up from target to find the nearest element with _rooms.
+    // If target itself is a grid container, start from its parent so that
+    // hovering on the container's own border uses the outer grid.
+    function getGridContainer(target) {
+        const start = target._rooms ? target.parentElement : target;
+        let el = start;
+        while (el) {
+            if (el._rooms) return el;
+            el = el.parentElement;
+        }
+        return null;
+    }
+
+    layoutGrid.addEventListener("pointermove", (e) => {
+        if (dragState) {
+            const {
+                container,
+                axis,
+                startWallVal,
+                startPosPx,
+                aRooms,
+                bRooms,
+                minTop,
+                maxBot,
+            } = dragState;
+            const rect = container.getBoundingClientRect();
+            const posPx = axis === "col" ? e.clientX - rect.left : e.clientY - rect.top;
+            const containerPx = axis === "col" ? rect.width : rect.height;
+
+            const breaks = axis === "col" ? container._colBreaks : container._rowBreaks;
+            const totalUnits = breaks[breaks.length - 1] - breaks[0];
+            const deltaUnits = (posPx - startPosPx) * totalUnits / containerPx;
+
+            const newWallVal = Math.max(minTop + DRAG_EPS, Math.min(maxBot - DRAG_EPS, startWallVal + deltaUnits));
+
+            const oldSizes = new Map();
+            for (const r of [...aRooms, ...bRooms]) oldSizes.set(r.id, {
+                w: r.xe - r.xs,
+                h: r.ye - r.ys,
+            });
+
+            for (const r of aRooms) axis === "col" ? (r.xe = newWallVal) : (r.ye = newWallVal);
+            for (const r of bRooms) axis === "col" ? (r.xs = newWallVal) : (r.ys = newWallVal);
+
+            for (const r of [...aRooms, ...bRooms]) {
+                const old = oldSizes.get(r.id);
+                const scaleX = (r.xe - r.xs) / old.w, scaleY = (r.ye - r.ys) / old.h;
+                if (scaleX !== 1 || scaleY !== 1) rescaleInnerRooms(container, r.id, scaleX, scaleY);
+            }
+
+            rebuildGrid(container);
+            return;
+        }
+
+        const container = getGridContainer(e.target);
+        if (!container) {
+            layoutGrid.style.cursor = "";
+            return;
+        }
+        const rect = container.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        const colPos = breaksToPixelPositions(container._colBreaks, rect.width);
+        const rowPos = breaksToPixelPositions(container._rowBreaks, rect.height);
+
+        let cursor = "";
+        for (let i = 1; i < colPos.length - 1; i++) {
+            if (Math.abs(x - colPos[i]) <= DRAG_HIT && isRealWall(container, "col", i, y, colPos, rowPos)) {
+                cursor = "ew-resize";
+                break;
+            }
+        }
+        if (!cursor) {
+            for (let i = 1; i < rowPos.length - 1; i++) {
+                if (Math.abs(y - rowPos[i]) <= DRAG_HIT && isRealWall(container, "row", i, x, colPos, rowPos)) {
+                    cursor = "ns-resize";
+                    break;
+                }
+            }
+        }
+        layoutGrid.style.cursor = cursor;
+    });
+
+    layoutGrid.addEventListener("pointerdown", (e) => {
+        if (dragState) return;
+        const container = getGridContainer(e.target);
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        const colPos = breaksToPixelPositions(container._colBreaks, rect.width);
+        const rowPos = breaksToPixelPositions(container._rowBreaks, rect.height);
+
+        let axis = null, wallVal = 0, startPosPx = 0;
+        for (let i = 1; i < colPos.length - 1; i++) {
+            if (Math.abs(x - colPos[i]) <= DRAG_HIT && isRealWall(container, "col", i, y, colPos, rowPos)) {
+                axis = "col";
+                wallVal = container._colBreaks[i];
+                startPosPx = x;
+                break;
+            }
+        }
+        if (!axis) {
+            for (let i = 1; i < rowPos.length - 1; i++) {
+                if (Math.abs(y - rowPos[i]) <= DRAG_HIT && isRealWall(container, "row", i, x, colPos, rowPos)) {
+                    axis = "row";
+                    wallVal = container._rowBreaks[i];
+                    startPosPx = y;
+                    break;
+                }
+            }
+        }
+        if (!axis) return;
+
+        const aRooms = container._rooms.filter(r => snapEq(axis === "col" ? r.xe : r.ye, wallVal));
+        const bRooms = container._rooms.filter(r => snapEq(axis === "col" ? r.xs : r.ys, wallVal));
+        if (!aRooms.length || !bRooms.length) return;
+
+        const minTop = Math.max(...aRooms.map(r => axis === "col" ? r.xs : r.ys));
+        const maxBot = Math.min(...bRooms.map(r => axis === "col" ? r.xe : r.ye));
+
+        dragState = {
+            container, axis, startWallVal: wallVal, startPosPx,
+            aRooms, bRooms, minTop, maxBot,
+        };
+        layoutGrid.setPointerCapture(e.pointerId);
+        e.preventDefault();
+    });
+
+    layoutGrid.addEventListener("pointerup", () => {
+        if (!dragState) return;
+        dragState = null;
+        layoutGrid.style.cursor = "";
+        showDraggedDimensions();
+    });
+
+    layoutGrid.addEventListener("pointercancel", () => {
+        dragState = null;
+        layoutGrid.style.cursor = "";
+    });
+
+    function computeDraggedRooms(rooms, container) {
+        return rooms.map(room => {
+            const rect = container._rooms?.find(r => r.id === room.id);
+            if (!rect) return room;
+            const x = rect.xs, y = rect.ys, w = rect.xe - rect.xs, h = rect.ye - rect.ys;
+            const updated = { ...room, x, y, w, h, centerX: x + w / 2, centerY: y + h / 2 };
+            if (room.inside?.rooms?.length) {
+                const parentDiv = container.querySelector(`.room[data-id="${room.id}"]`);
+                if (parentDiv?._rooms) {
+                    updated.inside = {
+                        ...room.inside,
+                        rooms: computeDraggedRooms(room.inside.rooms, parentDiv),
+                    };
+                }
+            }
+            return updated;
+        });
+    }
+
+    function showDraggedDimensions() {
+        if (!lastResult || !layoutGrid._rooms) return;
+        const updated = computeDraggedRooms(lastResult.rooms, layoutGrid);
+        draggedRoomsJson.textContent = JSON.stringify(updated, null, 4);
+        draggedDimensions.hidden = false;
+    }
+
+    function showParseMessages(errors, warnings) {
+        if (!errors.length && !warnings.length) {
+            parseMessages.hidden = true;
+            return;
+        }
+        const parts = [
+            ...errors.map(e => `<span class="msg-error">Error: ${e}</span>`),
+            ...warnings.map(w => `<span class="msg-warning">Warning: ${w}</span>`),
+        ];
+        parseMessages.innerHTML = parts.join("\n");
+        parseMessages.hidden = false;
+    }
+
+    function showError(message) {
+        console.error(message);
+        layoutGrid.hidden = true;
+        errorOutput.hidden = false;
+        errorOutput.textContent = message;
+        statsOutput.innerHTML = "";
+    }
+
+    function fmt(n) {
+        return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function showResult(result, config) {
+        lastResult = result;
+        lastConfig = config;
+        layoutGrid.hidden = false;
+        errorOutput.hidden = true;
+        const bd = result.breakdown;
+        const breakdownHtml = bd ? `
+            <details>
+                <summary>Breakdown</summary>
+                <table class="breakdown-table">
+                    <tr><td>Area</td><td class="val">${fmt(bd.area)}</td></tr>
+                    <tr><td>Aspect penalty</td><td class="val">${fmt(bd.aspectPenalty)}</td></tr>
+                    <tr><td>Canvas penalty</td><td class="val">${fmt(bd.canvasPenalty)}</td></tr>
+                    <tr><td>Topological penalty</td><td class="val">${fmt(bd.topologicalPenalty)}</td></tr>
+                    <tr><td>Room penalty</td><td class="val">${fmt(bd.roomPenalty)}</td></tr>
+                </table>
+            </details>` : "";
+        statsOutput.innerHTML = `
+            <p><strong>Cost:</strong> ${fmt(result.cost)}</p>
+            ${breakdownHtml}
+            <details>
+                <summary>Rooms</summary>
+                <pre><code>${JSON.stringify(result.rooms, null, 4)}</code></pre>
+            </details>
+        `;
+        renderLayout(result, config);
+    }
+
+
+    async function runOptimization() {
+        const text = getEditorText(input);
+        const stripped = stripComments(text);
+
+        if (stripped === lastStrippedDsl) {
+            return;
+        }
+        lastStrippedDsl = stripped;
+        draggedDimensions.hidden = true;
+        dragState = null;
+
+        if (_DEFAULT_CACHE?.dsl === stripped) {
+            showParseMessages([], []);
+            showResult(_DEFAULT_CACHE.result, _DEFAULT_CACHE.config);
+            return;
+        }
+
+        currentAbortController?.abort();
+        const controller = new AbortController();
+        currentAbortController = controller;
+
+        loadingOverlay.hidden = false;
+        stopBtn.disabled = false;
+        try {
+            const { config, modules, errors, warnings } = parseDSL(text);
+            showParseMessages(errors, warnings);
+            if (errors.length > 0) return;
+
+            const result = await optimizeRecursive(modules, config, controller.signal);
+            showResult(result, config);
+        } catch (e) {
+            if (e.name !== "AbortError") showError(e.message);
+        } finally {
+            if (!controller.signal.aborted) {
+                loadingOverlay.hidden = true;
+                stopBtn.disabled = true;
+            }
+        }
+    }
+
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        runOptimization();
+    });
+
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            const text = getEditorText(input);
+            const caret = caretToOffset(input);
+            highlighting = true;
+            input.innerHTML = highlightDSL(text.slice(0, caret) + "\n" + text.slice(caret));
+            highlighting = false;
+            offsetToCaret(input, caret + 1);
+            pushUndoState();
+            if (autoUpdateToggle.checked) {
+                currentAbortController?.abort();
+                currentAbortController = null;
+                loadingOverlay.hidden = true;
+                stopBtn.disabled = true;
+                debouncedOptimize();
+            }
+            return;
+        }
+        if (e.key === "Tab") {
+            e.preventDefault();
+            document.execCommand("insertText", false, "    ");
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+            e.preventDefault();
+            runOptimization();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+            e.preventDefault();
+            if (undoStack.length > 1) {
+                redoStack.push(undoStack.pop());
+                applyHistoryState(undoStack[undoStack.length - 1]);
+            }
+            return;
+        }
+        if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+            e.preventDefault();
+            if (redoStack.length > 0) {
+                const state = redoStack.pop();
+                undoStack.push(state);
+                applyHistoryState(state);
+            }
+            return;
+        }
+    });
+
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    const debouncedOptimize = debounce(runOptimization, 500);
+    const debouncedHighlight = debounce(() => applyHighlight(input), 300);
+
+    input.addEventListener("compositionstart", () => {
+        composing = true;
+    });
+    input.addEventListener("compositionend", () => {
+        composing = false;
+        applyHighlight(input);
+    });
+    input.addEventListener("paste", (e) => {
+        e.preventDefault();
+        document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
+    });
+    input.addEventListener("input", () => {
+        if (highlighting || composing) return;
+        pushUndoState();
+        debouncedHighlight();
+        if (autoUpdateToggle.checked) {
+            currentAbortController?.abort();
+            currentAbortController = null;
+            loadingOverlay.hidden = true;
+            stopBtn.disabled = true;
+            debouncedOptimize();
+        }
+    });
+
+    // Initialize editor with highlighted DSL from the source textarea
+    input.innerHTML = highlightDSL(document.getElementById("rules-input").value.replace(/\n$/, ""));
+    undoStack.push({ text: getEditorText(input), caret: 0 });
+
+    window.addEventListener("beforeunload", () => {
+        currentAbortController?.abort();
+    });
+
+    // Run once on load
+    setTimeout(() => {
+        updateButtonState();
+        runOptimization();
+    }, 100);
+</script>
+</body>
+</html>

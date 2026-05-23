@@ -10,6 +10,7 @@
     <title>Text Modifier</title>
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../storage.js"></script>
     <style>
         aside button {
             text-transform: none;
@@ -76,12 +77,12 @@
         <fieldset>
             <legend>Settings</legend>
 
-            <label>
+            <label for="replace-input">
                 Replace Input with result <input type="checkbox" role="switch" id="replace-input">
 
             </label>
 
-            <label>
+            <label for="append-output">
                 Append result to Output <input type="checkbox" role="switch" id="append-output"
                                                checked>
             </label>
@@ -92,7 +93,9 @@
         </fieldset>
     </form>
     <fieldset class="mb-4">
-        <legend><span class="sym mr-2">title</span> Case & Formatting</legend>
+        <legend>
+            <span class="sym mr-2">title</span> Case & Formatting
+        </legend>
         <div class="group">
             <button type="button" data-action="uppercase">Uppercase</button>
             <button type="button" data-action="lowercase">Lowercase</button>
@@ -109,7 +112,9 @@
     </fieldset>
 
     <fieldset class="mb-4">
-        <legend><span class="sym mr-2">cleaning_services</span> Cleaning & Normalization</legend>
+        <legend>
+            <span class="sym mr-2">cleaning_services</span> Cleaning & Normalization
+        </legend>
         <div class="group">
             <button type="button" data-action="trim-lines">Trim whitespace in each line</button>
             <button type="button" data-action="trim-multiple-spaces">Trim spaces that occur multiple
@@ -155,7 +160,9 @@
     </fieldset>
 
     <fieldset class="mb-4">
-        <legend><span class="sym mr-2">sort</span> Sorting & Organization</legend>
+        <legend>
+            <span class="sym mr-2">sort</span> Sorting & Organization
+        </legend>
         <div class="group">
             <button type="button" data-action="sort-asc">Sort lines (A-Z)</button>
             <button type="button" data-action="sort-desc">Sort lines (Z-A)</button>
@@ -173,7 +180,9 @@
     </fieldset>
 
     <fieldset class="mb-4">
-        <legend><span class="sym mr-2">lock</span> Encoding & Transformation</legend>
+        <legend>
+            <span class="sym mr-2">lock</span> Encoding & Transformation
+        </legend>
         <div class="group">
             <button type="button" data-action="url-encode">URL encode</button>
             <button type="button" data-action="url-decode">URL decode</button>
@@ -198,11 +207,15 @@
             <button type="button" data-action="sha-384">SHA-384</button>
             <button type="button" data-action="sha-512">SHA-512</button>
             <button type="button" data-action="undo-sha">Undo SHA sum</button>
+            <button type="button" id="file-to-base64-btn">File to Base64...</button>
         </div>
+        <input type="file" id="file-input" multiple hidden>
     </fieldset>
 
     <fieldset class="mb-4">
-        <legend><span class="sym mr-2">search</span> Extraction & Pattern Matching</legend>
+        <legend>
+            <span class="sym mr-2">search</span> Extraction & Pattern Matching
+        </legend>
         <div class="group">
             <button type="button" data-action="extract-emails">Extract all email addresses</button>
             <button type="button" data-action="extract-urls">Extract all URLs</button>
@@ -233,14 +246,18 @@
         </header>
         <p id="joke-desc">Brute-forcing input to recover the original content. This may take a
             while.
-            <br /><br /><strong>Note:</strong> Due to the birthday paradox and the pigeonhole
+            <br>
+            <br>
+            <strong>Note:</strong> Due to the birthday paradox and the pigeonhole
             principle, we might
             discover an equivalent collision rather than the original plaintext.
         </p>
         <progress value="0" max="100"></progress>
         <p class="text-muted text-sm" id="joke-pct">
             0.00000000000000000000000000000000000000000000000000000000001% completed</p>
-        <p class="text-muted text-sm mb-0"><strong>Estimated time remaining:</strong></p>
+        <p class="text-muted text-sm mb-0">
+            <strong>Estimated time remaining:</strong>
+        </p>
         <p class="text-muted text-sm" id="time-estimate">Calculating...</p>
         <footer>
             <button type="button">Cancel</button>
@@ -362,42 +379,59 @@ Dates & Times:
             `;
     };
 
-    const saveState = () => {
-        localStorage.setItem("text-modifier-input", inputText.value);
-        localStorage.setItem("text-modifier-output", outputText.value);
-        localStorage.setItem("text-modifier-replace-input", replaceInputCb.checked);
-        localStorage.setItem("text-modifier-append-output", appendOutputCb.checked);
-        localStorage.setItem("text-modifier-auto-copy", autoCopyCb.checked);
+    const saveState = async () => {
+        try {
+            // Large data goes to IndexedDB
+            await Storage.set("text-modifier-input", inputText.value);
+            await Storage.set("text-modifier-output", outputText.value);
+
+            // Settings go to localStorage (synchronous and lightweight)
+            localStorage.setItem("text-modifier-replace-input", replaceInputCb.checked);
+            localStorage.setItem("text-modifier-append-output", appendOutputCb.checked);
+            localStorage.setItem("text-modifier-auto-copy", autoCopyCb.checked);
+        } catch (e) {
+            console.error("Failed to save state:", e);
+        }
     };
 
-    const loadState = () => {
-        const savedInput = localStorage.getItem("text-modifier-input");
-        const savedOutput = localStorage.getItem("text-modifier-output");
+    let saveTimeout;
+    const debouncedSave = () => {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveState, 500);
+    };
+
+    const loadState = async () => {
+        // 1. Load settings from localStorage (synchronous)
         const savedReplaceInput = localStorage.getItem("text-modifier-replace-input");
         const savedAppendOutput = localStorage.getItem("text-modifier-append-output");
+        const savedAutoCopy = localStorage.getItem("text-modifier-auto-copy");
 
-        if (savedInput !== null) {
-            inputText.value = savedInput;
-        } else {
-            inputText.value = DEFAULT_EXAMPLE;
-        }
-        if (savedOutput !== null) outputText.value = savedOutput;
         if (savedReplaceInput !== null) replaceInputCb.checked = savedReplaceInput === "true";
         if (savedAppendOutput !== null) appendOutputCb.checked = savedAppendOutput === "true";
-        const savedAutoCopy = localStorage.getItem("text-modifier-auto-copy");
         if (savedAutoCopy !== null) autoCopyCb.checked = savedAutoCopy === "true";
+
+        // 2. Load large text from IndexedDB (asynchronous)
+        try {
+            const savedInput = await Storage.get("text-modifier-input");
+            const savedOutput = await Storage.get("text-modifier-output");
+
+            inputText.value = savedInput !== undefined && savedInput !== null ? savedInput : DEFAULT_EXAMPLE;
+            if (savedOutput) outputText.value = savedOutput;
+        } catch (e) {
+            console.error("Failed to load text content from IndexedDB:", e);
+        }
 
         updateStats();
     };
 
     inputText.addEventListener("input", () => {
         updateStats();
-        saveState();
+        debouncedSave();
     });
-    outputText.addEventListener("input", saveState);
-    replaceInputCb.addEventListener("change", saveState);
-    appendOutputCb.addEventListener("change", saveState);
-    autoCopyCb.addEventListener("change", saveState);
+    outputText.addEventListener("input", debouncedSave);
+    replaceInputCb.addEventListener("change", debouncedSave);
+    appendOutputCb.addEventListener("change", debouncedSave);
+    autoCopyCb.addEventListener("change", debouncedSave);
 
     loadState();
 
@@ -525,10 +559,10 @@ Dates & Times:
                     .replace(/[\u2018\u2019\u201A\u201B\u2039\u203A]/g, "'");
                 break;
             case "remove-markdown-links-text":
-                result = text.replace(/(?<!\!)\[([^\]]*)\]\(([^)]+)\)/g, "$1");
+                result = text.replace(/(?<!!)\[([^\]]*)\]\(([^)]+)\)/g, "$1");
                 break;
             case "remove-markdown-links-all":
-                result = text.replace(/(?<!\!)\[([^\]]*)\]\(([^)]+)\)/g, "");
+                result = text.replace(/(?<!!)\[([^\]]*)\]\(([^)]+)\)/g, "");
                 break;
             case "remove-markdown-images-alt":
                 result = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, "$1");
@@ -571,7 +605,7 @@ Dates & Times:
                 result = text.split(/\r?\n/).map((line, i) => `${i + 1}. ${line}`).join("\n");
                 break;
             case "remove-line-numbers":
-                result = text.split(/\r?\n/).map(line => line.replace(/^\s*\d+[\.\)]?\s*/, "")).join("\n");
+                result = text.split(/\r?\n/).map(line => line.replace(/^\s*\d+[.)]?\s*/, "")).join("\n");
                 break;
             case "shuffle-lines": {
                 const arr = text.split(/\r?\n/);
@@ -598,7 +632,7 @@ Dates & Times:
                 }
                 break;
             case "html-encode":
-                result = text.replace(/[\u00A0-\u9999<>\&]/g, i => "&#" + i.charCodeAt(0) + ";");
+                result = text.replace(/[\u00A0-\u9999<>&]/g, i => "&#" + i.charCodeAt(0) + ";");
                 break;
             case "html-decode": {
                 const doc = new DOMParser().parseFromString(text, "text/html");
@@ -783,7 +817,7 @@ Dates & Times:
             inputText.value = "";
             outputText.value = "";
             updateStats();
-            saveState();
+            debouncedSave();
         }
     });
 
@@ -791,8 +825,42 @@ Dates & Times:
         if (confirm("Restore default example?")) {
             inputText.value = DEFAULT_EXAMPLE;
             updateStats();
-            saveState();
+            debouncedSave();
         }
+    });
+
+    // File to Base64 logic
+    const fileInput = document.getElementById("file-input");
+    document.getElementById("file-to-base64-btn").addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", (e) => {
+        const files = e.target.files;
+        if (!files.length) return;
+
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const dataUrl = event.target.result;
+                let result = "";
+
+                if (file.type.startsWith("image/")) {
+                    result = `<img src="${dataUrl}" alt="${file.name}">`;
+                } else if (file.type.startsWith("video/")) {
+                    result = `<video controls src="${dataUrl}"></video>`;
+                } else if (file.type.startsWith("audio/")) {
+                    result = `<audio controls src="${dataUrl}"></audio>`;
+                } else {
+                    const parts = dataUrl.split(",");
+                    result = parts.length > 1 ? parts[1] : dataUrl;
+                }
+
+                // Inject into input and trigger processing
+                inputText.value = result;
+                processAction(null); // Process with current settings
+            };
+            reader.readAsDataURL(file);
+        });
+        fileInput.value = ""; // Reset
     });
 
     document.querySelectorAll("button[data-action]").forEach(btn => {

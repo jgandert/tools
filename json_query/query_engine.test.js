@@ -1,4 +1,4 @@
-/* eslint-env node */
+/* global JSONQuery, stringifyWithUndefined, require, __dirname, process */
 // Test suite for JSONQuery engine.
 // Run: bun query_engine.test.js
 // Only outputs on error — silence means all tests pass.

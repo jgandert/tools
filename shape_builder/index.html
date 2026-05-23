@@ -542,114 +542,127 @@
         });
     });
 
-    const DEFAULT_CODE = `// A complex shape composition using every method of the library!
+    const DEFAULT_CODE = `// Stellar Astrolabe — exploring every library function to create beautiful patterns
 
-// Primitives
-const p = b.Point({ x: 10, y: 10 });
-const p2 = b.Point({ x: -10, y: 10 });
-const interp = Point.interpolate({ pt1: p, pt2: p2, percent: 0.5 }); // Point.interpolate
+const bgDark = '#0a0a0a'; // Solid background for contrast
+const base = '#311b92'; // Deep purple
+const light = color_invert(base);
+const accent = color_rotate(base, 0.15); // Pinkish red
+const shadow = color_rotate(base, -0.1); // Deep blue
+const gold = '#ffc107';
 
-const circle1 = b.Circle({ radius: 30, center: p });
-const rect1 = b.Rectangle({ width: 40, height: 40, center: p2 });
-const tri1 = b.Triangle({ side: 50 });
-const poly1 = b.Polygon({ points: [[-20, -20], [-10, -30], [20, -20], [10, -10]] });
-let line1 = b.Line({ start: [-50, 0], end: [50, 0], thickness: 2, cap: 'round' });
-const bez1 = b.Bezier({ points: [[-40, 40], [-20, 60], [20, 20], [40, 40]] });
+// 0. Backdrop for light/dark mode consistency
+const backdrop = b.Circle({ radius: 135, center: [0, 0] });
 
-// Transformations
-circle1.translate({ dx: 5, dy: 5 });
-rect1.rotate({ angle: 45, center: rect1.bounds.center });
-tri1.scale({ factor: 1.2, center: tri1.bounds.center });
-poly1.stretch({ width: 60, height: 30, preserveWidth: false, preserveHeight: false });
+// 1. Polygon & smooth: Central core
+const coreHex = b.Polygon({ points: [[0,-64],[55.4,-32],[55.4,32],[0,64],[-55.4,32],[-55.4,-32]] });
+coreHex.smooth({ tension: 0.15 });
 
-let c3 = b.Circle({ radius: 10, center: [0,-100] });
-// moveUntil
-c3.moveUntil({ direction: [0, 1], step: 2, condition: (shape) => shape.bounds.bottom > -50 });
+// 2. offset & stretch: The glowing casing
+const frame = coreHex.offset({ amount: 8, join: 'round' });
+frame.stretch({ width: frame.bounds.width + 4, height: frame.bounds.height + 8 });
 
-let c4 = b.Circle({ radius: 10, center: [100, 0] });
-// slideDirection
-c4.slideDirection({ vector: [-1, 0], stopAt: circle1 });
+// 3. sliceByPoints & keepLeft/Right: Two-tone lighting
+const frameL = frame.sliceByPoints({ p1: [0,-120], p2: [0,120] }).keepLeft();
+const frameR = frame.sliceByPoints({ p1: [0,-120], p2: [0,120] }).keepRight();
 
-// mirror
-const mirroredPoly = poly1.mirror({ axis: 'vertical', about: 'center' });
+// 4. keepTop/Bottom
+const hexTop = coreHex.sliceByPoints({ p1: [-100,0], p2: [100,0] }).keepTop();
+const hexBot = coreHex.sliceByPoints({ p1: [-100,0], p2: [100,0] }).keepBottom();
 
-// Boolean Operations (instance and static)
-let union1 = circle1.union({ shapes: [rect1] });
-let sub1 = union1.subtract({ shapes: [tri1] });
-let isect1 = sub1.intersectBounding(b.Rectangle({ width: 200, height: 200, center: [0,0] })); // intersectBounding
-let xor1 = isect1.xor({ shapes: [c3] });
+// 5. Circle & subtract: Inner orbital track
+const orbit = b.Circle({ radius: 50, center: [0,0] })
+  .subtract({ shapes: [b.Circle({ radius: 46, center: [0,0] })] });
 
-let u2 = b.union({ shapes: [mirroredPoly, poly1] });
-let sub2 = b.subtract({ shapes: [u2, c4] });
-let isectToUse = sub2.intersect({ shapes: [b.Circle({ radius: 50, center: [0,-20] }) ] });
-let xor2 = b.xor({ shapes: [isectToUse, bez1] });
+// 6. Line & sliceByLine: Split orbit diagonally
+const sliceLine = b.Line({ start: [-80,-80], end: [80,80] });
+const orbitTop = orbit.sliceByLine({ lineShape: sliceLine }).keepTop();
+const orbitBot = orbit.sliceByLine({ lineShape: sliceLine }).keepBottom();
 
-// Path Operations
-let offsetShape = xor2.offset({ amount: 2, join: 'round' });
-let rounded = offsetShape.roundCorners({ radius: 2 });
+// 7. Triangle, translate, radialRepeat, split: Sunburst rays
+const ray = b.Triangle({ side: 26 });
+ray.translate({ dx: 0, dy: -85 });
+const sunrays = ray.radialRepeat({ count: 12, center: [0,0] });
+sunrays.split({ angle: 0, center: [0,0], gap: 3 }); // Angle 0 for clean vertical slice
 
-// Slicing
-let sliceByPts = rounded.sliceByPoints({ p1: [-100, -100], p2: [100, 100] });
-let sliceRight = sliceByPts.keepRight();
+// 8. Rectangle, roundCorners, union, xor, intersect: Artifact cross
+const hBar = b.Rectangle({ width: 70, height: 12, center: [0,0] });
+hBar.roundCorners({ radius: 4 });
+const vBar = b.Rectangle({ width: 12, height: 70, center: [0,0] });
+vBar.roundCorners({ radius: 4 });
+const crossStar = hBar.union({ shapes: [vBar] })
+  .xor({ shapes: [b.Circle({ radius: 14, center: [0,0] })] })
+  .intersect({ shapes: [b.Circle({ radius: 42, center: [0,0] })] });
 
-let cutLine = b.Line({ start: [-100, 50], end: [100, 50] });
-let slicer2 = sliceRight.sliceByLine({ lineShape: cutLine });
-let keepTop = slicer2.keepTop();
-let sliceBottom = slicer2.keepBottom(); 
-let keepLeft = sliceBottom.sliceByPoints({ p1: [0, -100], p2: [0, 100] }).keepLeft();
+// 9. distributePoints: Celestial dots
+const ringPts = b.Circle({ radius: 56, center: [0,0] }).distributePoints({ count: 12, paddingMode: 'space-evenly' });
+const ringDots = b.union({ shapes: ringPts.map(pt => b.Circle({ radius: 3, center: [pt.x, pt.y] })) });
 
-// Combine sliced parts back
-let finalShape = keepTop.union({ shapes: [keepLeft] });
+// 10. align: Anchor dots
+const triDots = [0,1,2].map(() => b.Circle({ radius: 4, center: [0,0] }));
+b.align({ shapes: triDots, axis: 'horizontal', distribution: 'space-between', width: 36 });
+triDots.forEach(d => d.translate({ dx: 0, dy: 105 }));
 
-// Shape.inheritPoints (static method)
-let newCircleShape = b.Circle({ radius: 5, center: [0, 0] });
-let inheritedPts = Shape.inheritPoints(newCircleShape.path, [finalShape]); 
+const bottomLine = b.Line({ start: [-25, 115], end: [25, 115], thickness: 3, cap: 'round' });
 
-// distributePoints
-let distPts = finalShape.distributePoints({ count: 4, paddingMode: 'space-evenly' });
+// 11. Bezier, mirror, scale, rotate: Elegant flourishing arcs
+const arcTop = b.Bezier({ points: [[-35,-75],[0,-60],[35,-75]] });
+const arcBot = arcTop.mirror({ axis: 'horizontal', about: [0,0] });
+arcBot.scale({ factor: 0.9, center: arcBot.bounds.center });
+// Removed rotation to keep the crescent shape perfectly symmetrical and legible
 
-// getPointOnPath
-finalShape.updateBoundingPoints(); // updateBoundingPoints
-let ptOnPath = finalShape.getPointOnPath({ from: 'top', to: 'bottom', percent: 0.25 });
+// 12. Point, Point.interpolate: Core focal gem
+const ptA = b.Point({ x: -8, y: 0 });
+const ptB = b.Point({ x: 8, y: 0 });
+const coreMid = Point.interpolate({ pt1: ptA, pt2: ptB, percent: 0.5 });
+const coreGem = b.Circle({ radius: 7, center: [coreMid.x, coreMid.y] });
 
-// movePerpendicular
-let perpPt = ptOnPath.movePerpendicular({ amount: 10, direction: 'outward', path: finalShape, offset: 0 });
+// 13. snapPoints: Northern marker
+const topMarker = b.Triangle({ side: 14 });
+topMarker.snapPoints({ map: [{ from: 'A', to: coreHex.points.top.p }] });
 
-// clone
-let duplicate = finalShape.clone();
-duplicate.translate({ dx: 0, dy: -50 });
+// 14. getPointOnPath, movePerpendicular: Outer orbit tracker
+const orbitPt = orbit.getPointOnPath({ from: 'top', to: 'right', percent: 0.5 });
+const tickOut = orbitPt.movePerpendicular({ amount: 6, direction: 'outward', path: orbit });
+const tickMarker = b.Circle({ radius: 4, center: [tickOut.x, tickOut.y] });
 
-// snapPoints
-duplicate.snapPoints({ map: [{ from: 'bottom', to: finalShape.points.top.p }] });
+// 15. moveUntil: Descending celestial body
+const dropStar = b.Circle({ radius: 4, center: [0,-120] });
+dropStar.moveUntil({ direction: [0,1], step: 1, condition: s => s.bounds.bottom >= -90 });
 
-// split
-let splitShape = duplicate.split({ angle: 10, center: duplicate.bounds.center, gap: 5 });
+// 16. slideDirection: Equator indicator
+const sidePointer = b.Polygon({ points: [[0,0], [10,-5], [10,5]] });
+sidePointer.translate({ dx: -120, dy: 0 });
+sidePointer.slideDirection({ vector: [1,0], stopAt: frame });
 
-// strokeToPath
-let thickLine = b.Line({ start: [-80, -80], end: [-40, -40] }).strokeToPath({ width: 5, cap: 'round' });
+// Framing additions
+const outerRing = b.Circle({ radius: 95, center: [0,0] }).subtract({ shapes: [b.Circle({ radius: 94, center: [0,0] })] });
+const outerDotsPts = b.Circle({ radius: 95, center: [0,0] }).distributePoints({ count: 24, paddingMode: 'space-evenly' });
+const outerDots = b.union({ shapes: outerDotsPts.map(pt => b.Circle({ radius: 1.5, center: [pt.x, pt.y] })) });
 
-// radialRepeat
-let dots = b.Circle({ radius: 3, center: [0, -20] }).radialRepeat({ count: 8, center: [0, 0] });
-
-// smooth
-let smoothed = b.Polygon({ points: [[-70, 0], [-60, -20], [-50, 0]] }).smooth({ tension: 0.5 });
-
-// align
-b.align({ shapes: [thickLine, dots, smoothed], axis: 'horizontal', distribution: 'space-around', width: 100 });
-
-// Color Utilities
-const baseColor = '#6750a4';
-const invertedColor = color_invert(baseColor);
-const rotatedColor = color_rotate(baseColor, 0.5);
-
-// toSVG and result handling
+// The render composite
 return [
-    finalShape.toSVG({ fill: '#a0b0f0', stroke: '#000', strokeWidth: 1 }),
-    splitShape.toSVG({ fill: '#f0a0b0' }),
-    thickLine.toSVG({ fill: baseColor }),
-    dots.toSVG({ fill: invertedColor }),
-    smoothed.toSVG({ fill: rotatedColor }),
-    b.Circle({ radius: 2, center: perpPt.p }).toSVG({ fill: 'red' }) // movePerpendicular visualization
+  backdrop.toSVG({ fill: bgDark }),
+  frameL.toSVG({ fill: shadow }),
+  frameR.toSVG({ fill: accent }),
+  hexBot.toSVG({ fill: shadow }),
+  hexTop.toSVG({ fill: base }),
+  orbitBot.toSVG({ fill: gold }),
+  orbitTop.toSVG({ fill: light }),
+  sunrays.toSVG({ fill: accent }),
+  outerRing.toSVG({ fill: light }),
+  crossStar.toSVG({ fill: light }),
+  ringDots.toSVG({ fill: accent }),
+  ...triDots.map(d => d.toSVG({ fill: light })),
+  bottomLine.toSVG({ fill: light }),
+  arcTop.toSVG({ fill: light }),
+  arcBot.toSVG({ fill: accent }),
+  coreGem.toSVG({ fill: gold }),
+  topMarker.toSVG({ fill: gold }),
+  tickMarker.toSVG({ fill: 'white' }),
+  dropStar.toSVG({ fill: gold }),
+  sidePointer.toSVG({ fill: gold }),
+  outerDots.toSVG({ fill: gold })
 ].join('\\n');`;
 
     const savedCode = localStorage.getItem("shapebuilder_code");

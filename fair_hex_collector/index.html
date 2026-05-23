@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en" class="theme-green">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Fair Hex Resource Collection: Eliminate frustrating statistical anomalies, resource clumping, and starvation in hexagonal board games.">
+    <title>Fair Hex Resource Collection</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        #svg-output {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .draw-container {
+            text-align: center;
+            padding: var(--spacing-lg);
+            background-color: var(--surface-container-high);
+            border-radius: var(--radius);
+            margin-bottom: var(--spacing-lg);
+            border: 1px solid var(--outline-variant);
+        }
+
+        #current-draw-display {
+            font-size: 3.5rem;
+            font-weight: 800;
+            display: block;
+            margin: var(--spacing-sm) 0;
+            color: var(--primary);
+            font-family: var(--font-sans);
+        }
+
+        #current-draw-display mark {
+            background-color: transparent;
+            color: var(--error);
+        }
+
+        dt {
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: var(--primary);
+            margin-top: var(--spacing-lg);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        dd {
+            margin-left: 0;
+            margin-bottom: var(--spacing-lg);
+            color: var(--on-surface-variant);
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Hexagon Resource Collection Game</h1>
+        <p>Fair &amp; Deterministic Edition</p>
+    </hgroup>
+
+    <nav aria-label="Primary">
+        <ul>
+            <li>
+                <a href="#board-generator">Board Generator</a>
+            </li>
+            <li>
+                <a href="#yield-engine">Yield Engine</a>
+            </li>
+            <li>
+                <a href="#variant-rules">Variant Rules</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="content">
+    <!-- SECTION 1: SMART BOARD ALLOCATION -->
+    <section id="board-generator">
+        <h2>Maximum Diversity Board Generator</h2>
+        <p>Uses an axial coordinate system and a two-phase solver to mathematically guarantee the
+            highest possible diversity. Minimizes identical resource types sharing an edge (prevents
+            resource clumping), strictly ensures high-yield numbers (6s and 8s) never share an edge,
+            and minimizes identical numbers sharing an edge.</p>
+
+        <article id="setup-results-container" hidden>
+            <h3>Draft Order (Snake Format)</h3>
+            <p>Initial placement follows this sequence, then reverses for the second placement.</p>
+            <output id="draft-order-output"></output>
+
+            <h3>Optimized Island Layout</h3>
+            <p>Assemble the physical board according to this generated map.</p>
+
+            <figure id="svg-board-container">
+                <div id="svg-output"></div>
+                <br>
+                <small id="desert-explanation">
+                    <strong>Desert Placement Logic:</strong> For the standard board, the desert is
+                    deterministically locked to the <em>Dead Center</em>. This provides perfect
+                    radial equity, ensuring the starting Bandit is equidistant from all players and
+                    intentionally lowering the density of the most highly contested central
+                    intersections. For the expansion board, the two deserts are locked to <em>Polar
+                    Opposite Coasts</em> to preserve the resource-rich center needed to support 5-6
+                    players without creating a massive central dead-zone.
+                </small>
+            </figure>
+
+            <details>
+                <summary>Text Format Fallback (For Screen Readers / Manual Verification)</summary>
+                <table>
+                    <tbody id="board-table-body">
+                    <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </details>
+        </article>
+    </section>
+
+    <!-- SECTION 2: DETERMINISTIC YIELD ENGINE -->
+    <section id="yield-engine">
+        <h2>The "Deck" Yield Engine</h2>
+        <p>Replace volatile dice with a 36-card statistical deck. Every number hits exactly its
+            mathematical probability before a reshuffle.</p>
+
+        <article id="deck-play-area">
+            <div class="draw-container">
+                <h3>Current Turn Yield</h3>
+                <output id="current-draw-display">Deck Ready</output>
+                <button type="button" id="btn-draw-card">Draw Next Number</button>
+            </div>
+
+            <p>
+                <label for="deck-progress-bar">Deck Remaining</label>
+                <progress id="deck-progress-bar" value="0" max="36"></progress>
+                <output id="deck-progress-text">0 / 36</output>
+            </p>
+
+            <details open>
+                <summary>Statistical Integrity Report</summary>
+                <table>
+                    <caption>Expected vs. Actual Yields (Current Deck)</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">Roll</th>
+                        <th scope="col">Base Probability</th>
+                        <th scope="col">Drawn So Far</th>
+                        <th scope="col">Remaining in Deck</th>
+                    </tr>
+                    </thead>
+                    <tbody id="deck-stats-body">
+                    <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </details>
+
+            <details>
+                <summary>Draw History (Last 10)</summary>
+                <ol id="draw-history-list" reversed>
+                    <!-- Populated by JS -->
+                </ol>
+            </details>
+        </article>
+    </section>
+
+    <!-- SECTION 3: RULES & VARIANTS -->
+    <section id="variant-rules">
+        <h2>Low-Variance Variant Rules</h2>
+        <p>Adopt these community-tested rules to prevent snowballing and early-game bad luck.</p>
+
+        <dl>
+            <dt>The "Poverty is no Shame" Welfare Token</dt>
+            <dd>If the yield number is not a 7, and you receive exactly zero resources from your
+                settlements/cities on that turn, take 1 Welfare Token. Trade 2 Welfare Tokens on
+                your turn to the bank for 1 resource of your choice.
+            </dd>
+
+            <dt>The Friendly Bandit (Edge Case Protection)</dt>
+            <dd>When rolling a 7, the Bandit cannot be moved to a hex adjacent to a settlement of a
+                player who currently has the minimum starting victory points. This prevents
+                targeting players stuck at the starting gate.
+            </dd>
+
+            <dt>Blind Bidding Initial Placement</dt>
+            <dd>Instead of a snake-draft, players are given a starting budget of 15 Victory Tokens.
+                The first player to place chooses an intersection and bids a number of tokens.
+                Others may outbid. The winner places their settlement and discards those tokens.
+                Repeat until all start. Remaining tokens act as tie-breakers.
+            </dd>
+
+            <dt>Guaranteed First Turn Build</dt>
+            <dd>All players begin the game with 1 Brick and 1 Lumber in their hand, in addition to
+                the resources yielded by their second settlement. This dramatically speeds up the
+                notoriously slow first 3 rounds.
+            </dd>
+        </dl>
+    </section>
+</main>
+
+<aside>
+    <h2>Settings</h2>
+
+    <form id="config-form">
+        <fieldset>
+            <legend>Board Configuration</legend>
+            <p>
+                <label for="player-count">Game Size</label>
+                <select id="player-count" name="player-count">
+                    <option value="base" selected>Standard (3-4 Players, 19 Hexes)</option>
+                    <option value="expansion">Extended (5-6 Players, 30 Hexes)</option>
+                </select>
+            </p>
+            <button type="button" id="btn-generate-board"><span class="sym">refresh</span>
+                Regenerate
+            </button>
+
+            <div id="loading-indicator" hidden>
+                <br>
+                <progress></progress>
+                <small>Calculating thousands of permutations... Please wait...</small>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Yield Engine Parameters</legend>
+            <p>
+                <label for="bandit-grace">Bandit Grace Period</label>
+                <input type="number" id="bandit-grace" name="bandit-grace" min="0" max="10"
+                       value="3">
+                <small>Ignores "7" for this many draws at the start of the game to prevent early
+                    blockades.</small>
+            </p>
+
+            <p>
+                <label for="burn-card">
+                    Anti-Card Counting
+                    <input type="checkbox" id="burn-card" name="burn-card" role="switch" checked>
+                </label>
+                <small>Remove 1 random card from the bottom of the deck so the final draw remains
+                    uncertain.</small>
+            </p>
+
+        </fieldset>
+
+    </form>
+</aside>
+
+<script>
+    /**
+     * UTILITY FUNCTIONS
+     */
+    function shuffleArray(array) {
+        let current = [...array];
+        for (let i = current.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [current[i], current[j]] = [current[j], current[i]];
+        }
+        return current;
+    }
+
+    /**
+     * SMART TWO-PHASE BOARD GENERATOR & SVG BUILDER
+     */
+    const BOARD_DATA = {
+        base: {
+            players: 4,
+            rows: [3, 4, 5, 4, 3], // 19 hexes
+            hexes: ["Desert", "Wood", "Wood", "Wood", "Wood", "Sheep", "Sheep", "Sheep", "Sheep", "Wheat", "Wheat", "Wheat", "Wheat", "Brick", "Brick", "Brick", "Ore", "Ore", "Ore"],
+            tokens: [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12],
+        },
+        expansion: {
+            players: 6,
+            rows: [3, 4, 5, 6, 5, 4, 3], // 30 hexes
+            hexes: ["Desert", "Desert", "Wood", "Wood", "Wood", "Wood", "Wood", "Wood", "Sheep", "Sheep", "Sheep", "Sheep", "Sheep", "Sheep", "Wheat", "Wheat", "Wheat", "Wheat", "Wheat", "Wheat", "Brick", "Brick", "Brick", "Brick", "Brick", "Ore", "Ore", "Ore", "Ore", "Ore"],
+            tokens: [2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11, 12, 12],
+        },
+    };
+
+    const COORDS = {
+        base: [
+            [0, -2], [1, -2], [2, -2],
+            [-1, -1], [0, -1], [1, -1], [2, -1],
+            [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0],
+            [-2, 1], [-1, 1], [0, 1], [1, 1],
+            [-2, 2], [-1, 2], [0, 2],
+        ],
+        expansion: [
+            [0, -3], [1, -3], [2, -3],
+            [-1, -2], [0, -2], [1, -2], [2, -2],
+            [-2, -1], [-1, -1], [0, -1], [1, -1], [2, -1],
+            [-3, 0], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0],
+            [-3, 1], [-2, 1], [-1, 1], [0, 1], [1, 1],
+            [-3, 2], [-2, 2], [-1, 2], [0, 2],
+            [-3, 3], [-2, 3], [-1, 3],
+        ],
+    };
+
+    const HEX_COLORS = {
+        "Wood": "#2e7d32",
+        "Sheep": "#8bc34a",
+        "Wheat": "#fbc02d",
+        "Brick": "#c62828",
+        "Ore": "#757575",
+        "Desert": "#d7ccc8",
+    };
+
+    // Hexagonal Axial Distance Formula
+    function isAdjacent(c1, c2) {
+        return (Math.abs(c1[0] - c2[0]) + Math.abs(c1[0] + c1[1] - (c2[0] + c2[1])) + Math.abs(c1[1] - c2[1])) / 2 === 1;
+    }
+
+    function getResourceClumpScore(hexes, coords) {
+        let score = 0;
+        for (let i = 0; i < hexes.length; i++) {
+            for (let j = i + 1; j < hexes.length; j++) {
+                if (isAdjacent(coords[i], coords[j])) {
+                    if (hexes[i] === hexes[j] && hexes[i] !== "Desert") {
+                        score++;
+                    }
+                }
+            }
+        }
+        return score;
+    }
+
+    function getTokenRuleScore(hexes, tokens, coords) {
+        let score = 0;
+        let tokenIndex = 0;
+        let numLayout = [];
+
+        for (let i = 0; i < hexes.length; i++) {
+            let num = null;
+            if (hexes[i] !== "Desert") {
+                num = tokens[tokenIndex];
+                tokenIndex++;
+            }
+            numLayout.push(num);
+        }
+
+        for (let i = 0; i < numLayout.length; i++) {
+            for (let j = i + 1; j < numLayout.length; j++) {
+                if (isAdjacent(coords[i], coords[j])) {
+                    let n1 = numLayout[i];
+                    let n2 = numLayout[j];
+
+                    if (n1 !== null && n2 !== null) {
+                        if ((n1 === 6 || n1 === 8) && (n2 === 6 || n2 === 8)) score += 1000;
+                        if (n1 === n2) score += 100;
+                    }
+                }
+            }
+        }
+        return score;
+    }
+
+    function drawHexagonGrid(hexes, tokens, coordsList) {
+        const size = 50;
+        const centerX = 400;
+        const centerY = 400;
+
+        const w = size * Math.sqrt(3);
+        const h = size * 2;
+
+        // Calculate exact bounding box of the hexagon coordinates
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minY = Infinity;
+        let maxY = -Infinity;
+
+        let hexPositions = [];
+
+        for (let i = 0; i < hexes.length; i++) {
+            let coord = coordsList[i];
+            let q = coord[0];
+            let r = coord[1];
+
+            // Pointy top hexagon pixel calculation
+            let x = centerX + size * Math.sqrt(3) * (q + r / 2);
+            let y = centerY + size * 1.5 * r;
+
+            hexPositions.push({ x, y });
+
+            // Calculate bounds of this individual hexagon
+            let left = x - w / 2;
+            let right = x + w / 2;
+            let top = y - h / 2;
+            let bottom = y + h / 2;
+
+            if (left < minX) minX = left;
+            if (right > maxX) maxX = right;
+            if (top < minY) minY = top;
+            if (bottom > maxY) maxY = bottom;
+        }
+
+        // Add margin padding around grid
+        const padding = 15;
+        minX -= padding;
+        minY -= padding;
+        maxX += padding;
+        maxY += padding;
+
+        const viewWidth = maxX - minX;
+        const viewHeight = maxY - minY;
+
+        let svgContent = `<svg viewBox="${minX} ${minY} ${viewWidth} ${viewHeight}" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">`;
+
+        let tokenIndex = 0;
+
+        for (let i = 0; i < hexes.length; i++) {
+            let type = hexes[i];
+            let pos = hexPositions[i];
+            let x = pos.x;
+            let y = pos.y;
+
+            // Points for the polygon
+            let points = [
+                [x, y - h / 2],
+                [x + w / 2, y - h / 4],
+                [x + w / 2, y + h / 4],
+                [x, y + h / 2],
+                [x - w / 2, y + h / 4],
+                [x - w / 2, y - h / 4],
+            ].map(p => p.join(",")).join(" ");
+
+            let color = HEX_COLORS[type];
+            svgContent += `<polygon points="${points}" fill="${color}" stroke="#ffffff" stroke-width="3" />`;
+
+            // Add Type Text
+            let textColor = (type === "Wood" || type === "Ore" || type === "Brick") ? "#ffffff" : "#000000";
+            svgContent += `<text x="${x}" y="${type === "Desert" ? y + 5 : y - 15}" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="${textColor}">${type}</text>`;
+
+            // Add Token
+            if (type !== "Desert") {
+                let num = tokens[tokenIndex];
+                let isRed = (num === 6 || num === 8);
+                let numColor = isRed ? "#d32f2f" : "#000000";
+
+                svgContent += `<circle cx="${x}" cy="${y + 10}" r="14" fill="#ffffff" stroke="#000000" stroke-width="1" />`;
+                svgContent += `<text x="${x}" y="${y + 15}" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="${numColor}">${num}</text>`;
+
+                if (isRed) {
+                    svgContent += `<text x="${x}" y="${y + 22}" font-family="sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="${numColor}">•••</text>`;
+                }
+
+                tokenIndex++;
+            }
+        }
+
+        svgContent += `</svg>`;
+        document.getElementById("svg-output").innerHTML = svgContent;
+    }
+
+    function generateBoard() {
+        const btn = document.getElementById("btn-generate-board");
+        const loadingIndicator = document.getElementById("loading-indicator");
+        const resultsContainer = document.getElementById("setup-results-container");
+        const svgOutput = document.getElementById("svg-output");
+        const tableBody = document.getElementById("board-table-body");
+
+        // 1. Lock UI and visually clear the old board immediately
+        btn.disabled = true;
+        loadingIndicator.removeAttribute("hidden");
+        resultsContainer.setAttribute("hidden", "true");
+        svgOutput.innerHTML = "";
+        tableBody.innerHTML = "";
+
+        // 2. UX buffer so browser guarantees a paint before CPU block
+        setTimeout(() => {
+            try {
+                const gameSize = document.getElementById("player-count").value;
+                const config = BOARD_DATA[gameSize];
+                const coordsList = COORDS[gameSize];
+
+                // Draft Order
+                let forward = Array.from({ length: config.players }, (_, i) => `Player ${i + 1}`);
+                let backward = [...forward].reverse();
+                document.getElementById("draft-order-output").textContent = `${forward.join(" ➔ ")} ➔ ${backward.join(" ➔ ")}`;
+
+                const targetDesertIndices = gameSize === "base" ? [9] : [0, 29];
+                const resourceHexes = config.hexes.filter(h => h !== "Desert");
+
+                // PHASE 1: Find Optimal Resource Map (Max 3000 attempts)
+                let bestHexes = [];
+                let bestHexScore = Infinity;
+
+                for (let i = 0; i < 3000; i++) {
+                    let shuffledResources = shuffleArray(resourceHexes);
+                    let testHexes = [];
+                    let resIdx = 0;
+
+                    for (let j = 0; j < coordsList.length; j++) {
+                        if (targetDesertIndices.includes(j)) {
+                            testHexes.push("Desert");
+                        } else {
+                            testHexes.push(shuffledResources[resIdx++]);
+                        }
+                    }
+
+                    let score = getResourceClumpScore(testHexes, coordsList);
+                    if (score < bestHexScore) {
+                        bestHexScore = score;
+                        bestHexes = testHexes;
+                    }
+                    if (bestHexScore === 0) break;
+                }
+
+                // PHASE 2: Find Optimal Token Assignment (Max 3000 attempts)
+                let bestTokens = [];
+                let bestTokenScore = Infinity;
+                for (let i = 0; i < 3000; i++) {
+                    let testTokens = shuffleArray(config.tokens);
+                    let score = getTokenRuleScore(bestHexes, testTokens, coordsList);
+                    if (score < bestTokenScore) {
+                        bestTokenScore = score;
+                        bestTokens = testTokens;
+                    }
+                    if (bestTokenScore === 0) break;
+                }
+
+                // Render SVG
+                drawHexagonGrid(bestHexes, bestTokens, coordsList);
+
+                // Render Table Fallback
+                let itemIndex = 0;
+                let tokenIndex = 0;
+                config.rows.forEach((rowLength, rowIndex) => {
+                    let tr = document.createElement("tr");
+                    let th = document.createElement("th");
+                    th.setAttribute("scope", "row");
+                    th.textContent = `Row ${rowIndex + 1}`;
+                    tr.appendChild(th);
+
+                    for (let c = 0; c < rowLength; c++) {
+                        let td = document.createElement("td");
+                        let hexType = bestHexes[itemIndex];
+
+                        if (hexType === "Desert") {
+                            td.innerHTML = `<em>Desert (Bandit)</em>`;
+                        } else {
+                            let num = bestTokens[tokenIndex];
+                            td.innerHTML = `${hexType} [ ${num} ]`;
+                            tokenIndex++;
+                        }
+                        tr.appendChild(td);
+                        itemIndex++;
+                    }
+                    tableBody.appendChild(tr);
+                });
+
+                // Success: Show results
+                resultsContainer.removeAttribute("hidden");
+            } catch (error) {
+                svgOutput.innerHTML = `<p><strong>Error Generating Board:</strong> ${error.message}</p>`;
+                resultsContainer.removeAttribute("hidden");
+            } finally {
+                loadingIndicator.setAttribute("hidden", "true");
+                btn.disabled = false;
+            }
+        }, 400);
+    }
+
+    document.getElementById("btn-generate-board").addEventListener("click", generateBoard);
+    document.getElementById("player-count").addEventListener("change", generateBoard);
+
+    // Generate on page load
+    generateBoard();
+
+    /**
+     * DECK YIELD ENGINE
+     */
+    const BASE_DECK = [
+        2, 3, 3, 4, 4, 4, 5, 5, 5, 5,
+        6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7,
+        8, 8, 8, 8, 8, 9, 9, 9, 9,
+        10, 10, 10, 11, 11, 12,
+    ];
+
+    let activeDeck = [];
+    let drawHistory = [];
+    let burnedCard = null;
+    let totalDrawsGame = 0;
+
+    function renderDeckUI() {
+        let pb = document.getElementById("deck-progress-bar");
+        let pt = document.getElementById("deck-progress-text");
+        pb.max = BASE_DECK.length;
+        pb.value = activeDeck.length;
+
+        let burnedText = burnedCard ? " (1 Burned)" : "";
+        pt.textContent = `${activeDeck.length} cards left${burnedText}`;
+
+        let tbody = document.getElementById("deck-stats-body");
+        tbody.innerHTML = "";
+
+        for (let i = 2; i <= 12; i++) {
+            let tr = document.createElement("tr");
+            let th = document.createElement("th");
+            th.setAttribute("scope", "row");
+            th.textContent = i;
+
+            let tdBase = document.createElement("td");
+            tdBase.textContent = BASE_DECK.filter(n => n === i).length;
+
+            let tdDrawn = document.createElement("td");
+            tdDrawn.textContent = drawHistory.filter(n => n === i).length;
+
+            let tdRemain = document.createElement("td");
+            tdRemain.textContent = activeDeck.filter(n => n === i).length;
+
+            tr.appendChild(th);
+            tr.appendChild(tdBase);
+            tr.appendChild(tdDrawn);
+            tr.appendChild(tdRemain);
+            tbody.appendChild(tr);
+        }
+
+        let histList = document.getElementById("draw-history-list");
+        histList.innerHTML = "";
+        let recent = drawHistory.slice(-10).reverse();
+        recent.forEach(num => {
+            let li = document.createElement("li");
+            li.textContent = num === 7 ? "7 (Bandit)" : num;
+            histList.appendChild(li);
+        });
+    }
+
+    function initializeDeck() {
+        activeDeck = shuffleArray(BASE_DECK);
+        drawHistory = [];
+        totalDrawsGame = 0;
+        burnedCard = null;
+
+        if (document.getElementById("burn-card").checked) {
+            burnedCard = activeDeck.pop();
+        }
+
+        document.getElementById("current-draw-display").textContent = "Deck Ready";
+        renderDeckUI();
+    }
+
+    // Initialize by default
+    initializeDeck();
+
+    // Update on parameter change
+    document.getElementById("bandit-grace").addEventListener("input", initializeDeck);
+    document.getElementById("burn-card").addEventListener("change", initializeDeck);
+
+    document.getElementById("btn-draw-card").addEventListener("click", () => {
+        if (activeDeck.length === 0) {
+            document.getElementById("current-draw-display").textContent = "Empty! Reshuffle required.";
+            return;
+        }
+
+        const gracePeriod = parseInt(document.getElementById("bandit-grace").value) || 0;
+        let cardIndex = activeDeck.length - 1;
+        let card = activeDeck[cardIndex];
+
+        if (card === 7 && totalDrawsGame < gracePeriod) {
+            let nonSevenIndex = activeDeck.findIndex(c => c !== 7);
+            if (nonSevenIndex !== -1) {
+                [activeDeck[cardIndex], activeDeck[nonSevenIndex]] = [activeDeck[nonSevenIndex], activeDeck[cardIndex]];
+                activeDeck = shuffleArray(activeDeck);
+                card = activeDeck[activeDeck.length - 1];
+
+                if (card === 7) {
+                    nonSevenIndex = activeDeck.findIndex(c => c !== 7);
+                    let temp = activeDeck.splice(nonSevenIndex, 1)[0];
+                    activeDeck.push(temp);
+                    card = activeDeck[activeDeck.length - 1];
+                }
+            }
+        }
+
+        card = activeDeck.pop();
+        drawHistory.push(card);
+        totalDrawsGame++;
+
+        let display = document.getElementById("current-draw-display");
+        if (card === 7) {
+            display.innerHTML = `<samp>7</samp> <small>(Bandit attacks! Discard if >7 cards)</small>`;
+        } else if (card === 6 || card === 8) {
+            display.innerHTML = `<mark>${card}</mark>`;
+        } else {
+            display.innerHTML = card;
+        }
+
+        renderDeckUI();
+
+        if (activeDeck.length === 0) {
+            display.innerHTML += "<br><small>Deck Exhausted. Please reset.</small>";
+        }
+    });
+
+    // Config form prevent default
+    document.getElementById("config-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+    });
+
+
+</script>
+</body>
+
+</html>

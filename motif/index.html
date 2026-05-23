@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Interactive web-based live-coding playground and synthesizer for Motif.js.">
+    <title>Motif Live Coder</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        /* Premium layout refinements */
+        main {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - var(--header-height));
+            box-sizing: border-box;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+        }
+
+        .editor-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        #code-editor {
+            flex-grow: 1;
+            font-family: var(--font-code);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            resize: none;
+            margin-bottom: 0;
+            border-radius: var(--radius);
+            border: 1px solid var(--outline-variant);
+            padding: var(--spacing-md);
+            background-color: var(--surface-container-highest);
+            color: var(--on-surface);
+        }
+
+        #logs-panel {
+            background: var(--surface-container-low);
+            border: 1px solid var(--outline-variant);
+            border-radius: var(--radius);
+            padding: var(--spacing-sm) var(--spacing-md);
+            height: 350px;
+            overflow-y: auto;
+            margin-top: var(--spacing-md);
+        }
+
+        #logs-panel pre {
+            margin: 0;
+            background: transparent;
+            color: var(--on-surface-variant);
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+        }
+
+        .log-info {
+            color: var(--on-surface-variant);
+        }
+
+        .log-success {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .log-error {
+            color: var(--error);
+            font-weight: 600;
+        }
+
+        .log-warn {
+            color: var(--secondary);
+            font-weight: 500;
+        }
+
+        .log-default {
+            color: var(--on-surface);
+        }
+
+        .btn-sym.recording {
+            color: var(--error) !important;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.4;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle settings"></label>
+    <hgroup>
+        <h1>Motif Live Coder</h1>
+        <p>Interactive algorithmic synth playground</p>
+    </hgroup>
+
+    <nav aria-label="Controls">
+        <ul>
+            <li>
+                <button type="button" class="btn-sym" id="play-pause-btn"
+                        data-tooltip="Start / Pause">play_arrow
+                </button>
+            </li>
+            <li>
+                <button type="button" class="btn-sym" id="restart-btn"
+                        data-tooltip="Restart Playback">replay
+                </button>
+            </li>
+            <li>
+                <button type="button" class="btn-sym" id="download-btn"
+                        data-tooltip="Record & Download WAV">download
+                </button>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<aside>
+    <h2>Console & Theme</h2>
+
+    <form id="settings-form" onsubmit="event.preventDefault();">
+        <fieldset>
+            <legend>Theme Color</legend>
+            <label for="color-selector">
+                Color Theme
+                <select id="color-selector">
+                    <option value="" selected>Default (Purple-Green)</option>
+                    <option value="blue">Blue</option>
+                    <option value="green">Green</option>
+                    <option value="turquoise">Turquoise</option>
+                    <option value="ocker">Ocker</option>
+                    <option value="orange">Orange</option>
+                    <option value="pink">Pink</option>
+                    <option value="purple">Purple</option>
+                    <option value="red">Red</option>
+                </select>
+            </label>
+        </fieldset>
+    </form>
+
+    <details open id="logs-panel">
+        <summary>Engine Output & Console Logs</summary>
+        <pre id="console-logs"><code class="log-info">[System] Ready. Press play_arrow to start playing!</code></pre>
+    </details>
+</aside>
+
+<main id="content">
+    <div class="editor-container">
+        <!-- prettier-ignore-start -->
+        <!-- beautify ignore:start -->
+        <textarea id="code-editor" autocomplete="off" spellcheck="false"
+                  aria-label="Motif Code Editor">// Motif Live Coding Playground
+//
+// Motif is a declarative JavaScript music engine. 
+// Standard arrays are played sequentially; nest them to subdivide beats.
+// Parallel() triggers notes at the same time.
+// Ramp() generates continuous parameter slides.
+// LFO modulates parameters reactively.
+
+// Global Settings
+Motif.setTempo(120);
+Motif.swing(0.0);
+Motif.master({
+  gain: 0.8,
+  limiter: true,
+  eq: { low: 0, mid: 0, high: 0 }
+});
+
+// 1. A deep synth bassline
+Track('bass')
+  .synth('sine')
+  .note(['C2', 'Tie', 'Eb2', 'Bb1', 'C2', 'G1', 'Ab1', 'G1'])
+  .envelope({ attack: 0.02, decay: 0.15, sustain: 0.5, release: 0.8 })
+  .gain(0.7)
+  .distort(0.1);
+
+// 2. A sparkling arpeggiated lead melody
+Track('lead')
+  .synth('triangle')
+  .note([
+    Parallel('C4', 'E4', 'G4', 'B4'),
+    Parallel('D4', 'F4', 'A4', 'C5'),
+    Parallel('Eb4', 'G4', 'Bb4', 'D5'),
+    Parallel('B3', 'D4', 'F#4', 'A4')
+  ])
+  .arp('upDown')
+  .stepLength('1/8') // Uncouple step length from global cycle (loops faster)
+  .envelope({ attack: 0.005, decay: 0.1, sustain: 0.2, release: 0.4 })
+  .gain(0.4)
+  .pan(LFO.sine({ min: -0.8, max: 0.8, speed: '4b' })); // Dynamic stereo panning
+
+// 3. A soft, dynamic procedural hi-hat
+Track('hihat')
+  .synth('square')
+  .note([null, 'C6', null, 'C6'])
+  .envelope({ attack: 0.001, decay: 0.02, sustain: 0.0, release: 0.02 })
+  .gain(0.15)
+  .pan(LFO.triangle({ min: -0.5, max: 0.5, speed: '2b' }));</textarea>
+        <!-- beautify ignore:end -->
+        <!-- prettier-ignore-end -->
+    </div>
+</main>
+
+<script type="module">
+    import {
+        Motif, Track, Bus, Parallel, Ramp, LFO, Arrange, Tie,
+        noteToMidi, midiToNote, degreeToMidi, midiToHz, SCALES, SimplexNoise,
+        trackRegistry, busRegistry,
+    } from "./motif.js";
+
+    // --- Motif Audio Engine Patches ---
+    // Overwrite the default 1.0 second crossfade to make live coding updates
+    // responsive and smooth in real-time.
+    try {
+        const dummyTrack = Track("__temp_probe__");
+        const trackProto = Object.getPrototypeOf(dummyTrack);
+        if (trackProto && typeof trackProto._crossfadeOut === "function") {
+            const originalCrossfadeOut = trackProto._crossfadeOut;
+            trackProto._crossfadeOut = function(newTrack, duration) {
+                return originalCrossfadeOut.call(this, newTrack, 0.05);
+            };
+        }
+    } catch (e) {
+        console.warn("Failed to apply crossfade optimization:", e);
+    }
+
+    // --- DOM Selectors ---
+    const codeEditor = document.getElementById("code-editor");
+    const colorSelector = document.getElementById("color-selector");
+    const consoleLogs = document.getElementById("console-logs");
+    const logsPanel = document.getElementById("logs-panel");
+
+    // --- Console/Logging System ---
+    function logToConsole(message, type = "info") {
+        if (!consoleLogs || !logsPanel) return;
+
+        const classMap = {
+            info: "log-info",
+            success: "log-success",
+            error: "log-error",
+            warn: "log-warn",
+            log: "log-default",
+        };
+        const prefixMap = {
+            info: "[System]",
+            success: "[Success]",
+            error: "[Error]",
+            warn: "[Warning]",
+            log: "[Console]",
+        };
+
+        const span = document.createElement("span");
+        span.className = classMap[type] || "log-info";
+        span.textContent = `${prefixMap[type] || "[System]"} ${message}\n`;
+        consoleLogs.appendChild(span);
+
+        // Auto scroll to bottom
+        logsPanel.scrollTop = logsPanel.scrollHeight;
+    }
+
+    // --- Global Console Redirection ---
+    const originalConsole = {
+        log: console.log,
+        info: console.info,
+        warn: console.warn,
+        error: console.error,
+    };
+
+    function formatConsoleArgs(args) {
+        if (args.length === 0) return "";
+        let first = args[0];
+        if (typeof first === "string") {
+            const styleCount = (first.match(/%c/g) || []).length;
+            let cleanStr = first.replace(/%c/g, "");
+            const remainingArgs = args.slice(1 + styleCount);
+            if (remainingArgs.length > 0) {
+                return cleanStr + " " + remainingArgs.map(x => typeof x === "object" ? JSON.stringify(x) : String(x)).join(" ");
+            }
+            return cleanStr;
+        }
+        return args.map(x => typeof x === "object" ? JSON.stringify(x) : String(x)).join(" ");
+    }
+
+    console.log = function(...args) {
+        originalConsole.log.apply(console, args);
+        logToConsole(formatConsoleArgs(args), "log");
+    };
+
+    console.info = function(...args) {
+        originalConsole.info.apply(console, args);
+        logToConsole(formatConsoleArgs(args), "info");
+    };
+
+    console.warn = function(...args) {
+        originalConsole.warn.apply(console, args);
+        logToConsole(formatConsoleArgs(args), "warn");
+    };
+
+    console.error = function(...args) {
+        originalConsole.error.apply(console, args);
+        logToConsole(formatConsoleArgs(args), "error");
+    };
+
+    // --- Theme Selection ---
+    function applyThemeColor(color) {
+        const themes = [...colorSelector.options].map(o => o.value).filter(Boolean);
+        document.documentElement.classList.remove(...themes.map(t => "theme-" + t));
+        if (color) {
+            document.documentElement.classList.add("theme-" + color);
+        }
+    }
+
+    colorSelector.addEventListener("change", (e) => {
+        const color = e.target.value;
+        applyThemeColor(color);
+        saveSettings();
+    });
+
+    // --- Local Storage Persistence ---
+    const STORAGE_KEY_CODE = "motif_live_code";
+    const STORAGE_KEY_SETTINGS = "motif_live_settings";
+
+    // Load persisted state immediately on startup
+    function saveCode() {
+        try {
+            localStorage.setItem(STORAGE_KEY_CODE, codeEditor.value);
+        } catch (e) {
+            console.warn("Failed to save code to localStorage:", e);
+        }
+    }
+
+    function saveSettings() {
+        try {
+            const settings = {
+                color: colorSelector.value,
+            };
+            localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
+        } catch (e) {
+            console.warn("Failed to save settings to localStorage:", e);
+        }
+    }
+
+    function loadPersistedState() {
+        try {
+            const savedCode = localStorage.getItem(STORAGE_KEY_CODE);
+            if (savedCode !== null) {
+                codeEditor.value = savedCode;
+            }
+
+            const savedSettingsStr = localStorage.getItem(STORAGE_KEY_SETTINGS);
+            if (savedSettingsStr) {
+                const settings = JSON.parse(savedSettingsStr);
+                if (settings.color !== undefined) {
+                    colorSelector.value = settings.color;
+                    applyThemeColor(settings.color);
+                }
+            }
+        } catch (e) {
+            console.warn("Failed to load persisted state from localStorage:", e);
+        }
+    }
+
+    loadPersistedState();
+
+    // --- Motif Live Compiler ---
+    function runUserCode(isHotReload = false) {
+        const code = codeEditor.value;
+        try {
+            if (!isHotReload) {
+                Track.clearRegistry();
+                Bus.clearRegistry();
+            }
+
+            const declaredTrackIds = new Set();
+            const declaredBusIds = new Set();
+
+            const wrappedTrack = (id) => {
+                if (id) declaredTrackIds.add(id);
+                return Track(id);
+            };
+
+            const wrappedBus = (id) => {
+                if (id) declaredBusIds.add(id);
+                return Bus(id);
+            };
+
+            const AsyncFunction = Object.getPrototypeOf(async function() {
+            }).constructor;
+            const compileFn = new AsyncFunction(
+                "Motif", "Track", "Bus", "Parallel", "Ramp", "LFO", "Arrange", "Tie",
+                "noteToMidi", "midiToNote", "degreeToMidi", "midiToHz", "SCALES", "SimplexNoise",
+                `"use strict";\n${code}`,
+            );
+
+            const resultPromise = compileFn(
+                Motif, wrappedTrack, wrappedBus, Parallel, Ramp, LFO, Arrange, Tie,
+                noteToMidi, midiToNote, degreeToMidi, midiToHz, SCALES, SimplexNoise,
+            );
+
+            resultPromise.then((returnValue) => {
+                if (isHotReload) {
+                    Track.pruneExcept(declaredTrackIds);
+                    Bus.pruneExcept(declaredBusIds);
+                }
+
+                // If the script explicitly returns a special instruction to stop (for test suites)
+                if (returnValue === "STOP_MOTIF") {
+                    if (Motif.isPlaying) {
+                        Motif.stop();
+                        playPauseBtn.textContent = "play_arrow";
+                        logToConsole("Playback auto-stopped by script.");
+                    }
+                }
+            }).catch(err => {
+                logToConsole(`Async execution error: ${err.message}`, "error");
+                console.error(err);
+            });
+
+            logToConsole(isHotReload ? "Live changes applied." : "Code compiled and applied successfully.", "success");
+            return true;
+        } catch (err) {
+            logToConsole(err.message, "error");
+            console.error(err);
+            return false;
+        }
+    }
+
+
+    // --- Real-time Hot-reloading & Keyboard Shortcuts ---
+    let debounceTimeout = null;
+
+    codeEditor.addEventListener("input", () => {
+        saveCode();
+
+        // If not currently playing, don't auto-compile (wait for play press)
+        if (!Motif.isPlaying) return;
+
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+            logToConsole("Auto-applying live changes...");
+            runUserCode(true);
+        }, 1200);
+    });
+
+    codeEditor.addEventListener("keydown", (e) => {
+        // Ctrl+Enter or Cmd+Enter
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+            e.preventDefault();
+            clearTimeout(debounceTimeout);
+            logToConsole("Manually applying live changes...");
+
+            if (!Motif.isPlaying) {
+                togglePlayback();
+            } else {
+                runUserCode(true);
+            }
+        }
+    });
+
+    // --- Playback Controls ---
+    const playPauseBtn = document.getElementById("play-pause-btn");
+    const restartBtn = document.getElementById("restart-btn");
+    const downloadBtn = document.getElementById("download-btn");
+
+    async function togglePlayback() {
+        try {
+            Motif.init();
+            if (Motif.ctx.state === "suspended") {
+                await Motif.ctx.resume();
+            }
+
+            if (Motif.isPlaying) {
+                await Motif.pause();
+                playPauseBtn.textContent = "play_arrow";
+                logToConsole("Playback paused.");
+            } else {
+                if (runUserCode()) {
+                    await Motif.start();
+                    playPauseBtn.textContent = "pause";
+                    logToConsole("Playback started.");
+                }
+            }
+        } catch (err) {
+            logToConsole(`Playback error: ${err.message}`, "error");
+        }
+    }
+
+    async function restartPlayback() {
+        try {
+            Motif.init();
+            if (Motif.ctx.state === "suspended") {
+                await Motif.ctx.resume();
+            }
+
+            await Motif.stop();
+            if (runUserCode()) {
+                await Motif.start();
+                playPauseBtn.textContent = "pause";
+                logToConsole("Playback restarted.");
+            } else {
+                playPauseBtn.textContent = "play_arrow";
+            }
+        } catch (err) {
+            logToConsole(`Restart error: ${err.message}`, "error");
+        }
+    }
+
+    playPauseBtn.addEventListener("click", togglePlayback);
+    restartBtn.addEventListener("click", restartPlayback);
+
+    // --- Lossless Stereo WAV Recording Engine ---
+    let recording = false;
+    let recordBuffer = {
+        sampleRate: 44100,
+        channels: [[], []],
+        length: 0,
+    };
+    let recorderNode = null;
+
+    function startRecording() {
+        if (!Motif.ctx) Motif.init();
+
+        recordBuffer.sampleRate = Motif.ctx.sampleRate;
+        recordBuffer.channels = [[], []];
+        recordBuffer.length = 0;
+
+        // Create stereo recorder script processor
+        recorderNode = Motif.ctx.createScriptProcessor(4096, 2, 2);
+        recorderNode.onaudioprocess = (e) => {
+            if (!recording) return;
+            const left = e.inputBuffer.getChannelData(0);
+            const right = e.inputBuffer.getChannelData(1);
+
+            // Push deep copies of float samples
+            recordBuffer.channels[0].push(new Float32Array(left));
+            recordBuffer.channels[1].push(new Float32Array(right));
+            recordBuffer.length += left.length;
+        };
+
+        // Connect Motif's master output into recorder and then pass to destination
+        Motif.masterGain.connect(recorderNode);
+        recorderNode.connect(Motif.ctx.destination);
+
+        recording = true;
+        downloadBtn.textContent = "stop";
+        downloadBtn.classList.add("recording");
+        downloadBtn.setAttribute("data-tooltip", "Stop & Download WAV");
+        logToConsole("Recording started. Adjust code or let it play to record output.", "success");
+    }
+
+    function stopRecordingAndDownload() {
+        recording = false;
+
+        if (recorderNode) {
+            recorderNode.disconnect();
+            recorderNode = null;
+        }
+
+        downloadBtn.textContent = "download";
+        downloadBtn.classList.remove("recording");
+        downloadBtn.setAttribute("data-tooltip", "Record & Download WAV");
+
+        if (recordBuffer.length === 0) {
+            logToConsole("No audio was recorded.", "error");
+            return;
+        }
+
+        logToConsole(`Compiling WAV with ${recordBuffer.length} samples...`);
+
+        // Flatten chunked buffers
+        const flatChannels = [
+            new Float32Array(recordBuffer.length),
+            new Float32Array(recordBuffer.length),
+        ];
+
+        let offset = 0;
+        for (let i = 0; i < recordBuffer.channels[0].length; i++) {
+            const leftChunk = recordBuffer.channels[0][i];
+            const rightChunk = recordBuffer.channels[1][i];
+            flatChannels[0].set(leftChunk, offset);
+            flatChannels[1].set(rightChunk, offset);
+            offset += leftChunk.length;
+        }
+
+        const wavBlob = bufferToWav({
+            sampleRate: recordBuffer.sampleRate,
+            channels: flatChannels,
+            length: recordBuffer.length,
+        }, 2);
+
+        const url = URL.createObjectURL(wavBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `motif-live-${Date.now()}.wav`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        logToConsole("WAV recording saved and downloaded successfully.", "success");
+    }
+
+    // WAV Encoding standard helper
+    function bufferToWav(buffer, numChannels = 2) {
+        const sampleRate = buffer.sampleRate;
+        const length = buffer.length * numChannels * 2 + 44;
+        const bufferArr = new ArrayBuffer(length);
+        const view = new DataView(bufferArr);
+
+        function writeString(v, off, str) {
+            for (let i = 0; i < str.length; i++) {
+                v.setUint8(off + i, str.charCodeAt(i));
+            }
+        }
+
+        writeString(view, 0, "RIFF");
+        view.setUint32(4, length - 8, true);
+        writeString(view, 8, "WAVE");
+        writeString(view, 12, "fmt ");
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); // PCM Format
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * numChannels * 2, true);
+        view.setUint16(32, numChannels * 2, true);
+        view.setUint16(34, 16, true); // 16-bit
+        writeString(view, 36, "data");
+        view.setUint32(40, length - 44, true);
+
+        let offset = 44;
+        for (let i = 0; i < buffer.length; i++) {
+            for (let ch = 0; ch < numChannels; ch++) {
+                let sample = buffer.channels[ch][i];
+                sample = Math.max(-1, Math.min(1, sample)); // Clamp
+                const val = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                view.setInt16(offset, val, true);
+                offset += 2;
+            }
+        }
+
+        return new Blob([view], { type: "audio/wav" });
+    }
+
+    async function handleDownloadClick() {
+        try {
+            Motif.init();
+            if (Motif.ctx.state === "suspended") {
+                await Motif.ctx.resume();
+            }
+
+            if (recording) {
+                stopRecordingAndDownload();
+            } else {
+                // Automatically play if not currently playing
+                if (!Motif.isPlaying) {
+                    if (runUserCode()) {
+                        await Motif.start();
+                        playPauseBtn.textContent = "pause";
+                    } else {
+                        return; // Don't record if code compilation failed
+                    }
+                }
+                startRecording();
+            }
+        } catch (err) {
+            logToConsole(`Recording error: ${err.message}`, "error");
+        }
+    }
+
+    Motif.onPlaybackFinished = () => {
+        playPauseBtn.textContent = "play_arrow";
+        logToConsole("Playback finished.");
+        if (recording) {
+            stopRecordingAndDownload();
+        }
+    };
+
+    globalThis.startRecording = startRecording;
+    globalThis.stopRecording = stopRecordingAndDownload;
+    globalThis.stopRecordingAndDownload = stopRecordingAndDownload;
+
+    downloadBtn.addEventListener("click", handleDownloadClick);
+</script>
+</body>
+
+</html>

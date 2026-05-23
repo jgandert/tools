@@ -72,63 +72,67 @@
     <form onsubmit="return false;">
         <label for="json-input">
             JSON Data
+            <!-- prettier-ignore-start -->
+            <!-- beautify ignore:start -->
             <textarea id="json-input" class="code-area" rows="25" placeholder="Paste JSON here...">
-{
-    "organization": "Tech Innovators Inc",
-    "active_status": true,
-    "last_updated": "2026-02-16T18:00:00Z",
-    "metadata": {
-        "version": 1.2,
-        "environment": "production"
-    },
-    "users": [{
-        "id": 101,
-        "name": "Alice Vance",
-        "age": 28,
-        "str_id": "3",
-        "is_admin": true,
-        "tags": [
-            "frontend",
-            "ux",
-            "mentor"
-        ],
-        "address": {
-            "city": "Berlin",
-            "country": "Germany"
-        },
-        "deleted_at": null
-    }, {
-        "id": 102,
-        "name": "Bob Smith",
-        "age": 34,
-        "is_admin": false,
-        "tags": [
-            "backend",
-            "devops"
-        ],
-        "secret_identity": "Bernd Schmitt",
-        "address": {
-            "city": "San Francisco",
-            "country": "USA"
-        },
-        "deleted_at": "2025-12-01"
-    }, {
-        "id": 103,
-        "name": "Charlie Day",
-        "age": 40,
-        "is_admin": false,
-        "tags": [
-            "manager"
-        ],
-        "address": {
-            "city": "Berlin",
-            "country": "Germany"
-        },
-        "deleted_at": null
-    }],
-    "total_count": 3
-}
+                        {
+                        "organization": "Tech Innovators Inc",
+                        "active_status": true,
+                        "last_updated": "2026-02-16T18:00:00Z",
+                        "metadata": {
+                        "version": 1.2,
+                        "environment": "production"
+                        },
+                        "users": [{
+                        "id": 101,
+                        "name": "Alice Vance",
+                        "age": 28,
+                        "str_id": "3",
+                        "is_admin": true,
+                        "tags": [
+                        "frontend",
+                        "ux",
+                        "mentor"
+                        ],
+                        "address": {
+                        "city": "Berlin",
+                        "country": "Germany"
+                        },
+                        "deleted_at": null
+                        }, {
+                        "id": 102,
+                        "name": "Bob Smith",
+                        "age": 34,
+                        "is_admin": false,
+                        "tags": [
+                        "backend",
+                        "devops"
+                        ],
+                        "secret_identity": "Bernd Schmitt",
+                        "address": {
+                        "city": "San Francisco",
+                        "country": "USA"
+                        },
+                        "deleted_at": "2025-12-01"
+                        }, {
+                        "id": 103,
+                        "name": "Charlie Day",
+                        "age": 40,
+                        "is_admin": false,
+                        "tags": [
+                        "manager"
+                        ],
+                        "address": {
+                        "city": "Berlin",
+                        "country": "Germany"
+                        },
+                        "deleted_at": null
+                        }],
+                        "total_count": 3
+                        }
                     </textarea>
+            <!-- beautify ignore:end -->
+            <!-- prettier-ignore-end -->
         </label>
     </form>
     <hr>

@@ -98,10 +98,9 @@
              class="about-icon">
         <h2>About one.css</h2>
         <p>
-            <strong>one.css</strong> is designed to provide a premium, modern look for web tools
-            with
-            minimal effort. It leverages <strong>semantic HTML</strong> to create high-quality
-            interfaces without the need for complex class name systems.
+            <strong>one.css</strong> is designed to provide a premium, modern look
+            with minimal effort. It leverages <strong>semantic HTML</strong> to create
+            high-quality interfaces without the need for complex class name systems.
         </p>
 
         <h3>Why one.css?</h3>
@@ -127,7 +126,9 @@
                 layouts</a>.
             </li>
             <li>
-                <strong><a href="grid_output.png">256 Icons</a> Included:</strong> Hand-picked
+                <strong>
+                    <a href="grid_output.png">256 Icons</a> Included:
+                </strong> Hand-picked
                 Material Symbols,
                 covering 99% of web
                 tool use cases.
@@ -185,7 +186,7 @@
     <section id="typography">
         <h2>Typography</h2>
         <p>
-            Body copy is now rendered in <strong>Inter</strong> (variable font, loaded locally from
+            Body copy is rendered in <strong>Inter</strong> (variable font, loaded locally from
             <code>Inter-VariableFont_opsz,wght.ttf</code>), with a full system-font fallback chain.
             Font smoothing (<code>-webkit-font-smoothing: antialiased</code> /
             <code>-moz-osx-font-smoothing: grayscale</code>) is applied globally so text looks
@@ -345,6 +346,27 @@ Done!
             <label for="diff-hard">Hard</label>
         </div>
 
+        <h3>Input Rows</h3>
+        <p>
+            Use the <code>.input-row</code> container to align inputs, selects, or textareas next to
+            labels or action buttons with proper spacing and vertical alignment. The form field
+            naturally grows to fill the row.
+        </p>
+        <div class="input-row">
+            <input type="text" placeholder="Enter text here..." aria-label="Demo input text">
+            <label>
+                <input type="checkbox"> RegEx
+            </label>
+        </div>
+        <div class="input-row">
+            <select aria-label="Presets Selection">
+                <option>Preset 1</option>
+                <option>Preset 2</option>
+            </select>
+            <button type="button" class="btn-sym">add</button>
+            <button type="button" class="btn-sym btn-danger">delete</button>
+        </div>
+
         <h3>
             Color Picker (<code>input[type="color"]</code>)
         </h3>
@@ -389,7 +411,8 @@ Done!
             Thanks to modern <a
             href="https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Anchor_positioning"
             target="_blank">CSS anchor positioning</a>,
-            tooltips automatically adapt their position to always remain visible on-screen and close to their source.
+            tooltips automatically adapt their position to always remain visible on-screen and close
+            to their source.
         </p>
         <div class="group mt-2">
             <button type="button" data-tooltip="This is a helpful tooltip">Hover me</button>
@@ -478,12 +501,14 @@ Done!
         <div class="form-actions">
             <button type="submit">
                 Save <span class="hide-mobile">
-                        Settings <kbd>
-                            <span class="sym">keyboard_command_key</span>S</kbd></span></button>
+                            Settings <kbd>
+                                <span class="sym">keyboard_command_key</span>S
+                            </kbd></span></button>
             <button type="reset">
                 Reset <span class="hide-mobile">
-                        <kbd>
-                            <span class="sym">keyboard_return</span></kbd></span></button>
+                            <kbd>
+                                <span class="sym">keyboard_return</span>
+                            </kbd></span></button>
         </div>
     </form>
 </aside>

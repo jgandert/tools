@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en" class="layout-centered theme-purple">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Zen Typing Test</title>
+    <link rel="icon" href="./icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        /* Typing Test Workspace Styles */
+        .typing-workspace {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: var(--spacing-lg);
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        body.zen-active {
+            overflow: hidden;
+            background-color: var(--surface) !important;
+        }
+
+        body.zen-active main,
+        body.zen-active footer {
+            display: none !important;
+        }
+
+        body.zen-active .typing-workspace {
+            display: flex !important;
+        }
+
+        .test-header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .progress-bar-container {
+            flex-grow: 1;
+            height: 6px;
+            background-color: var(--surface-container-highest);
+            border-radius: 3px;
+            margin-right: var(--spacing-md);
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 100%;
+            background-color: var(--primary);
+            transition: width 0.1s linear;
+        }
+
+        .timer-display {
+            font-family: var(--font-code);
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--primary);
+            white-space: nowrap;
+        }
+
+        .text-display {
+            width: 100%;
+            max-width: 800px;
+            margin: auto 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .sentence {
+            font-family: var(--font-code);
+            font-size: 1.5rem;
+            line-height: 1.8;
+            margin-bottom: var(--spacing-lg);
+            user-select: none;
+        }
+
+        .active-sentence {
+            opacity: 1;
+        }
+
+        .next-sentence {
+            opacity: 0.2;
+            transition: opacity 0.3s ease;
+        }
+
+        .next-sentence.near-end {
+            opacity: 0.8;
+        }
+
+        /* Fullscreen styles to ensure fonts and backgrounds are correctly applied */
+        :fullscreen,
+        :-webkit-full-screen,
+        body:fullscreen,
+        body:-webkit-full-screen {
+            background-color: var(--surface) !important;
+            color: var(--on-surface) !important;
+            font-family: var(--font-sans) !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+        }
+
+        ::backdrop,
+        ::-webkit-backdrop {
+            background-color: var(--surface) !important;
+        }
+
+        .char {
+            color: var(--outline);
+            transition: color 0.1s ease, background-color 0.1s ease;
+            position: relative;
+        }
+
+        .char::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 10%;
+            width: 2px;
+            height: 80%;
+            background-color: transparent;
+        }
+
+        .char.correct {
+            color: var(--on-surface);
+        }
+
+        .char.incorrect {
+            color: var(--error);
+        }
+
+        .char.space-char.incorrect {
+            background-color: color-mix(in srgb, var(--error) 20%, transparent);
+            border-radius: 2px;
+        }
+
+        .char.extra-char {
+            border-bottom: 2px solid var(--error);
+            background-color: color-mix(in srgb, var(--error) 15%, transparent);
+            border-radius: 2px;
+        }
+
+        .char.active-char::before {
+            background-color: var(--primary);
+            animation: cursor-blink 1s infinite;
+        }
+
+        @keyframes cursor-blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .test-footer {
+            font-size: 0.875rem;
+            color: var(--outline);
+            margin-top: var(--spacing-lg);
+            text-align: center;
+        }
+
+        /* Results Screen Styles */
+        .hero-stat-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .stat-card {
+            flex: 1;
+            min-width: 180px;
+            text-align: center;
+            background: var(--surface-container-low);
+            border-radius: var(--radius);
+            padding: var(--spacing-md);
+            border: 1px solid var(--outline-variant);
+        }
+
+        .hero-stat {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .hero-stat-wpm {
+            color: var(--primary);
+        }
+
+        .hero-stat-cpm {
+            color: var(--secondary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--on-surface-variant);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .history-graph-container {
+            margin-top: var(--spacing-md);
+            background: var(--surface-container-low);
+            border-radius: var(--radius);
+            padding: var(--spacing-md);
+            border: 1px solid var(--outline-variant);
+            width: 100%;
+        }
+
+        .history-graph {
+            width: 100%;
+            height: auto;
+            overflow: visible;
+        }
+
+        .graph-line-wpm {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .graph-line-acc {
+            fill: none;
+            stroke: var(--secondary);
+            stroke-width: 2;
+            stroke-dasharray: 4 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .graph-dot-wpm {
+            fill: var(--surface-container-low);
+            stroke: var(--primary);
+            stroke-width: 2;
+            cursor: pointer;
+            transition: r 0.2s ease, fill 0.2s ease;
+        }
+
+        .graph-dot-wpm:hover {
+            r: 6;
+            fill: var(--primary);
+        }
+
+        .graph-dot-acc {
+            fill: var(--surface-container-low);
+            stroke: var(--secondary);
+            stroke-width: 2;
+            cursor: pointer;
+            transition: r 0.2s ease, fill 0.2s ease;
+        }
+
+        .graph-dot-acc:hover {
+            r: 5;
+            fill: var(--secondary);
+        }
+
+        .graph-axis {
+            stroke: var(--outline-variant);
+            stroke-width: 1;
+        }
+
+        .graph-grid {
+            stroke: var(--outline-variant);
+            stroke-width: 1;
+            stroke-opacity: 0.2;
+            stroke-dasharray: 2 2;
+        }
+
+        .graph-text {
+            fill: var(--on-surface-variant);
+            font-size: 10px;
+            font-family: var(--font-code);
+            user-select: none;
+        }
+
+        .graph-legend {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-sm);
+            font-size: 0.875rem;
+            font-family: var(--font-sans);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            color: var(--on-surface-variant);
+        }
+
+        .legend-color-wpm {
+            width: 24px;
+            height: 3px;
+            border-radius: 1.5px;
+            background-color: var(--primary);
+        }
+
+        .legend-color-acc {
+            width: 24px;
+            height: 3px;
+            background-image: linear-gradient(to right, var(--secondary) 50%, transparent 50%);
+            background-size: 8px 100%;
+        }
+
+        .graph-tooltip {
+            position: absolute;
+            background: var(--surface-container-high);
+            color: var(--on-surface);
+            border: 1px solid var(--outline-variant);
+            padding: var(--spacing-sm);
+            border-radius: var(--radius);
+            pointer-events: none;
+            font-family: var(--font-code);
+            font-size: 0.75rem;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+<main>
+    <!-- Setup Screen -->
+    <section id="setup-section">
+        <h2>Zen Typing Test</h2>
+        <p>Improve your typing speed and accuracy with clean, customized themed text.</p>
+
+        <div class="mt-4">
+            <label for="duration-input">Test Duration</label>
+            <input type="text" id="duration-input" value="1m" placeholder="e.g. 1m, 30s, 2m">
+            <span class="input-label-hint">Format: e.g., 1m, 30s, 2m. Defaults to minutes if no unit is specified.</span>
+        </div>
+
+        <div class="mt-4">
+            <label for="theme-select">Text Theme</label>
+            <select id="theme-select">
+                <option value="mixed">Mixed Themes</option>
+                <option value="gourmet">Gourmet Culinary</option>
+                <option value="fantasy">Fantasy Lore</option>
+                <option value="corporate">Corporate Synergy</option>
+            </select>
+        </div>
+
+        <div class="mt-4">
+            <label for="zen-toggle">
+                <span>Fullscreen</span>
+                <input type="checkbox" role="switch" id="zen-toggle" checked>
+            </label>
+        </div>
+
+        <div class="mt-4 flex-row gap-2">
+            <button id="start-btn" type="button" class="btn-primary">
+                <span class="sym">play_arrow</span> Start Test
+            </button>
+        </div>
+    </section>
+
+    <!-- Results Screen -->
+    <section id="result-section" class="hidden">
+        <h2>Test Results</h2>
+        <div class="hero-stat-container">
+            <div class="stat-card">
+                <div class="hero-stat hero-stat-wpm" id="res-wpm">0</div>
+                <div class="stat-label">Words Per Minute</div>
+            </div>
+            <div class="stat-card">
+                <div class="hero-stat hero-stat-cpm" id="res-cpm">0</div>
+                <div class="stat-label">Chars Per Minute</div>
+            </div>
+            <div class="stat-card">
+                <div class="hero-stat" id="res-acc">0%</div>
+                <div class="stat-label">Accuracy</div>
+            </div>
+        </div>
+
+        <table class="mt-4">
+            <tbody>
+            <tr>
+                <th>Time Elapsed</th>
+                <td id="res-duration">0s</td>
+            </tr>
+            <tr>
+                <th>Correct Characters</th>
+                <td id="res-correct">0</td>
+            </tr>
+            <tr>
+                <th>Incorrect Characters</th>
+                <td id="res-incorrect">0</td>
+            </tr>
+            <tr>
+                <th>Total Keystrokes</th>
+                <td id="res-total">0</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="mt-4 flex-row gap-2">
+            <button id="restart-btn" type="button" class="btn-primary">
+                <span class="sym">refresh</span> Try Again
+            </button>
+            <button id="back-to-setup-btn" type="button">
+                <span class="sym">settings</span> Settings
+            </button>
+        </div>
+    </section>
+
+    <!-- History Section -->
+    <section id="history-section" class="mt-4">
+        <h2>History</h2>
+        <div id="history-empty" class="text-center text-muted">No tests completed yet.</div>
+        <table id="history-table" class="hidden">
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>WPM</th>
+                <th>CPM</th>
+                <th>Accuracy</th>
+                <th>Duration</th>
+            </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+        </table>
+        <div id="history-graph-container" class="history-graph-container hidden">
+            <svg id="history-graph" viewBox="0 0 600 250" class="history-graph"></svg>
+            <div class="graph-legend">
+                <div class="legend-item">
+                    <div class="legend-color-wpm"></div>
+                    <span>WPM</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color-acc"></div>
+                    <span>Accuracy</span>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 flex-row gap-2" id="clear-history-container">
+            <button id="clear-history-btn" type="button" class="btn-danger hidden">
+                <span class="sym">delete</span> Clear History
+            </button>
+        </div>
+    </section>
+</main>
+
+<!-- Typing Test Workspace (only visible during test) -->
+<div class="typing-workspace" id="typing-workspace">
+    <div class="test-header">
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <div class="timer-display" id="timer-display">60s</div>
+    </div>
+
+    <div class="text-display" id="text-display"></div>
+
+    <div class="test-footer">
+                <span>
+                    Press <kbd>Esc</kbd> to quit and cancel
+                </span>
+    </div>
+</div>
+
+<!-- Text Generator Classes -->
+<script src="../placeholder_text/text_generator.js"></script>
+<script>
+    // --- State Variables ---
+    const gGourmet = new GourmetGenerator();
+    const gFantasy = new FantasyLoreGenerator();
+    const gCorporate = new CorporateSynergyGenerator();
+
+    let completedSentences = [];
+    let currentSentenceText = "";
+    let nextSentenceText = "";
+    let typedText = "";
+    let totalCharsTyped = 0;
+
+    let testStarted = false;
+    let testFinished = false;
+    let totalDuration = 60; // in seconds
+    let secondsRemaining = 60;
+    let startTime = null;
+    let timerInterval = null;
+
+    // --- DOM Elements ---
+    const setupSection = document.getElementById("setup-section");
+    const resultSection = document.getElementById("result-section");
+    const historySection = document.getElementById("history-section");
+    const durationInput = document.getElementById("duration-input");
+    const themeSelect = document.getElementById("theme-select");
+    const zenToggle = document.getElementById("zen-toggle");
+    const startBtn = document.getElementById("start-btn");
+
+    const typingWorkspace = document.getElementById("typing-workspace");
+    const progressBar = document.getElementById("progress-bar");
+    const timerDisplay = document.getElementById("timer-display");
+    const textDisplay = document.getElementById("text-display");
+
+    const restartBtn = document.getElementById("restart-btn");
+    const backToSetupBtn = document.getElementById("back-to-setup-btn");
+
+    const resWpm = document.getElementById("res-wpm");
+    const resCpm = document.getElementById("res-cpm");
+    const resAcc = document.getElementById("res-acc");
+    const resDuration = document.getElementById("res-duration");
+    const resCorrect = document.getElementById("res-correct");
+    const resIncorrect = document.getElementById("res-incorrect");
+    const resTotal = document.getElementById("res-total");
+
+    const historyEmpty = document.getElementById("history-empty");
+    const historyTable = document.getElementById("history-table");
+    const historyBody = document.getElementById("history-body");
+    const clearHistoryBtn = document.getElementById("clear-history-btn");
+
+    // --- Utility Functions ---
+
+    function parseDuration(str) {
+        str = str.trim().toLowerCase();
+        if (!str) return 60;
+
+        const regex = /(\d+(?:\.\d+)?)\s*(m|s|min|sec|minutes|seconds)?/g;
+        let totalSeconds = 0;
+        let match;
+        let hasMatches = false;
+
+        while ((match = regex.exec(str)) !== null) {
+            hasMatches = true;
+            const val = parseFloat(match[1]);
+            const unit = match[2];
+
+            if (!unit) {
+                totalSeconds += (val >= 10 ? val : val * 60);
+            } else if (unit.startsWith("s")) {
+                totalSeconds += val;
+            } else if (unit.startsWith("m")) {
+                totalSeconds += val * 60;
+            }
+        }
+
+        return hasMatches && totalSeconds > 0 ? totalSeconds : 60;
+    }
+
+    function getGenerator() {
+        const selected = themeSelect.value;
+        if (selected === "gourmet") return gGourmet;
+        if (selected === "fantasy") return gFantasy;
+        if (selected === "corporate") return gCorporate;
+
+        // Mixed
+        const r = Math.random();
+        if (r < 0.33) return gGourmet;
+        if (r < 0.66) return gFantasy;
+        return gCorporate;
+    }
+
+    function getNextSentence() {
+        let sentence = "";
+        let attempts = 0;
+        while (attempts < 100) {
+            attempts++;
+            const generator = getGenerator();
+            sentence = generator.generateSentence();
+            // Filter out non-ASCII characters
+            if (!/[^\x00-\x7F]/.test(sentence)) {
+                break;
+            }
+        }
+        return sentence;
+    }
+
+    function alignText(target, typed) {
+        const n = target.length;
+        const m = typed.length;
+
+        const dp = [];
+        for (let i = 0; i <= n; i++) {
+            dp[i] = new Int32Array(m + 1);
+        }
+
+        for (let i = 0; i <= n; i++) dp[i][0] = i;
+        for (let j = 0; j <= m; j++) dp[0][j] = j;
+
+        for (let i = 1; i <= n; i++) {
+            for (let j = 1; j <= m; j++) {
+                if (target[i - 1] === typed[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {
+                    dp[i][j] = Math.min(
+                        dp[i - 1][j - 1] + 1, // substitution
+                        dp[i][j - 1] + 1,     // insertion (extra typed char)
+                        dp[i - 1][j] + 1,      // deletion (skipped target char)
+                    );
+                }
+            }
+        }
+
+        // Find iStart that minimizes dp[i][m] to support prefix alignment
+        let minDistance = Infinity;
+        let iStart = n;
+        for (let r = 0; r <= n; r++) {
+            if (dp[r][m] < minDistance) {
+                minDistance = dp[r][m];
+                iStart = r;
+            } else if (dp[r][m] === minDistance && Math.abs(r - m) < Math.abs(iStart - m)) {
+                iStart = r;
+            }
+        }
+
+        let i = iStart;
+        let j = m;
+        const actions = [];
+
+        // Add untyped suffix of target as deletions
+        for (let r = n - 1; r >= iStart; r--) {
+            actions.push({
+                type: "deletion",
+                targetChar: target[r],
+                typedChar: null,
+                targetIdx: r,
+                typedIdx: null,
+            });
+        }
+
+        // Backtrack from (iStart, m)
+        while (i > 0 || j > 0) {
+            if (i > 0 && j > 0) {
+                const match = target[i - 1] === typed[j - 1];
+                const current = dp[i][j];
+
+                if (match && current === dp[i - 1][j - 1]) {
+                    actions.push({
+                        type: "match",
+                        targetChar: target[i - 1],
+                        typedChar: typed[j - 1],
+                        targetIdx: i - 1,
+                        typedIdx: j - 1,
+                    });
+                    i--;
+                    j--;
+                } else if (current === dp[i - 1][j - 1] + 1) {
+                    actions.push({
+                        type: "substitution",
+                        targetChar: target[i - 1],
+                        typedChar: typed[j - 1],
+                        targetIdx: i - 1,
+                        typedIdx: j - 1,
+                    });
+                    i--;
+                    j--;
+                } else if (current === dp[i][j - 1] + 1) {
+                    actions.push({
+                        type: "insertion",
+                        targetChar: null,
+                        typedChar: typed[j - 1],
+                        targetIdx: null,
+                        typedIdx: j - 1,
+                    });
+                    j--;
+                } else {
+                    actions.push({
+                        type: "deletion",
+                        targetChar: target[i - 1],
+                        typedChar: null,
+                        targetIdx: i - 1,
+                        typedIdx: null,
+                    });
+                    i--;
+                }
+            } else if (j > 0) {
+                actions.push({
+                    type: "insertion",
+                    targetChar: null,
+                    typedChar: typed[j - 1],
+                    targetIdx: null,
+                    typedIdx: j - 1,
+                });
+                j--;
+            } else {
+                actions.push({
+                    type: "deletion",
+                    targetChar: target[i - 1],
+                    typedChar: null,
+                    targetIdx: i - 1,
+                    typedIdx: null,
+                });
+                i--;
+            }
+        }
+
+        actions.reverse();
+        return actions;
+    }
+
+    function hasTypedCharAfter(actions, startIndex) {
+        for (let idx = startIndex + 1; idx < actions.length; idx++) {
+            if (actions[idx].typedIdx !== null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function getMetrics() {
+        let correctChars = 0;
+        let errorChars = 0;
+        let skippedDeletions = 0;
+
+        // 1. Process completed sentences
+        for (const item of completedSentences) {
+            const actions = alignText(item.text, item.typed);
+            for (let idx = 0; idx < actions.length; idx++) {
+                const action = actions[idx];
+                if (action.type === "match") {
+                    correctChars++;
+                } else if (action.type === "substitution" || action.type === "insertion") {
+                    errorChars++;
+                } else if (action.type === "deletion") {
+                    errorChars++;
+                    skippedDeletions++;
+                }
+            }
+        }
+
+        // 2. Process current active sentence
+        const actions = alignText(currentSentenceText, typedText);
+        for (let idx = 0; idx < actions.length; idx++) {
+            const action = actions[idx];
+            if (action.type === "match") {
+                correctChars++;
+            } else if (action.type === "substitution" || action.type === "insertion") {
+                errorChars++;
+            } else if (action.type === "deletion") {
+                if (hasTypedCharAfter(actions, idx)) {
+                    errorChars++;
+                    skippedDeletions++;
+                }
+            }
+        }
+
+        // 3. Time elapsed
+        const elapsedSeconds = startTime ? (Date.now() - startTime) / 1000 : 0;
+        const elapsedMinutes = elapsedSeconds > 0 ? elapsedSeconds / 60 : (totalDuration / 60);
+
+        // 4. Calculate WPM / CPM
+        const wpm = elapsedMinutes > 0 ? (correctChars / 5) / elapsedMinutes : 0;
+        const cpm = elapsedMinutes > 0 ? correctChars / elapsedMinutes : 0;
+
+        // 5. Accuracy (accounting for backspaces and skipped characters)
+        const denominator = totalCharsTyped + skippedDeletions;
+        const accuracy = denominator > 0 ? (correctChars / denominator) * 100 : 0;
+        const trueErrorChars = denominator - correctChars;
+
+        return {
+            correctChars,
+            errorChars: trueErrorChars,
+            wpm: Math.round(wpm * 10) / 10,
+            cpm: Math.round(cpm),
+            accuracy: Math.round(accuracy * 10) / 10,
+            elapsedSeconds,
+        };
+    }
+
+    // --- Core Application Logic ---
+
+    function renderText() {
+        const activeDiv = document.createElement("div");
+        activeDiv.className = "sentence active-sentence";
+
+        const nextDiv = document.createElement("div");
+        nextDiv.className = "sentence next-sentence";
+
+        const activeText = currentSentenceText;
+        const typed = typedText;
+
+        const actions = alignText(activeText, typed);
+
+        // Detect if we are close to the end (5 words or fewer remaining)
+        let spacesLeft = 0;
+        for (let idx = 0; idx < actions.length; idx++) {
+            const action = actions[idx];
+            if (action.type === "deletion" && !hasTypedCharAfter(actions, idx)) {
+                if (action.targetChar === " ") {
+                    spacesLeft++;
+                }
+            }
+        }
+        if (spacesLeft <= 5) {
+            nextDiv.classList.add("near-end");
+        }
+
+        let cursorSet = false;
+
+        for (let idx = 0; idx < actions.length; idx++) {
+            const action = actions[idx];
+
+            if (action.type === "deletion") {
+                const isSkipped = hasTypedCharAfter(actions, idx);
+                const span = document.createElement("span");
+                span.className = "char";
+                span.textContent = action.targetChar === "-" ? "\u2011" : action.targetChar;
+
+                if (action.targetChar === " ") {
+                    span.classList.add("space-char");
+                }
+
+                if (isSkipped) {
+                    span.classList.add("incorrect");
+                } else {
+                    if (!cursorSet && !testFinished) {
+                        span.classList.add("active-char");
+                        cursorSet = true;
+                    }
+                }
+                activeDiv.appendChild(span);
+            } else if (action.type === "match") {
+                const span = document.createElement("span");
+                span.className = "char correct";
+                span.textContent = action.targetChar === "-" ? "\u2011" : action.targetChar;
+                if (action.targetChar === " ") {
+                    span.classList.add("space-char");
+                }
+                activeDiv.appendChild(span);
+            } else if (action.type === "substitution") {
+                const span = document.createElement("span");
+                span.className = "char incorrect";
+                span.textContent = action.targetChar === "-" ? "\u2011" : action.targetChar;
+                if (action.targetChar === " ") {
+                    span.classList.add("space-char");
+                }
+                activeDiv.appendChild(span);
+            } else if (action.type === "insertion") {
+                const span = document.createElement("span");
+                span.className = "char incorrect extra-char";
+                span.textContent = action.typedChar === "-" ? "\u2011" : action.typedChar;
+                if (action.typedChar === " ") {
+                    span.classList.add("space-char");
+                }
+                activeDiv.appendChild(span);
+            }
+        }
+
+        nextDiv.textContent = nextSentenceText.replace(/-/g, "\u2011");
+
+        textDisplay.innerHTML = "";
+        textDisplay.appendChild(activeDiv);
+        textDisplay.appendChild(nextDiv);
+    }
+
+    function startTest() {
+        totalDuration = parseDuration(durationInput.value);
+        secondsRemaining = totalDuration;
+
+        completedSentences = [];
+        typedText = "";
+        totalCharsTyped = 0;
+        testStarted = false;
+        testFinished = false;
+
+        currentSentenceText = getNextSentence() + " ";
+        nextSentenceText = getNextSentence();
+
+        timerDisplay.textContent = Math.ceil(secondsRemaining) + "s";
+        progressBar.style.width = "100%";
+
+        renderText();
+
+        // Handle Zen (Fullscreen) Mode
+        if (zenToggle.checked) {
+            document.body.requestFullscreen().catch(err => {
+                console.error("Failed to enter fullscreen:", err);
+            });
+        }
+
+        document.body.classList.add("zen-active");
+    }
+
+    function startTimer() {
+        startTime = Date.now();
+        timerInterval = setInterval(() => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            secondsRemaining = Math.max(0, totalDuration - elapsed);
+
+            timerDisplay.textContent = Math.ceil(secondsRemaining) + "s";
+            const pct = (secondsRemaining / totalDuration) * 100;
+            progressBar.style.width = pct + "%";
+
+            if (secondsRemaining <= 0) {
+                endTest();
+            }
+        }, 100);
+    }
+
+    function endTest() {
+        testFinished = true;
+        clearInterval(timerInterval);
+
+        // Exit Fullscreen if active
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(err => console.error(err));
+        }
+
+        document.body.classList.remove("zen-active");
+
+        // Calculate results
+        const metrics = getMetrics();
+
+        // Populate Results UI
+        resWpm.textContent = metrics.wpm;
+        resCpm.textContent = metrics.cpm;
+        resAcc.textContent = metrics.accuracy + "%";
+        resDuration.textContent = Math.round(metrics.elapsedSeconds) + "s";
+        resCorrect.textContent = metrics.correctChars;
+        resIncorrect.textContent = metrics.errorChars;
+        resTotal.textContent = totalCharsTyped;
+
+        // Show results
+        setupSection.classList.add("hidden");
+        resultSection.classList.remove("hidden");
+
+        // Save to history
+        saveHistory(metrics);
+    }
+
+    function cancelTest() {
+        testFinished = true;
+        clearInterval(timerInterval);
+
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(err => console.error(err));
+        }
+
+        document.body.classList.remove("zen-active");
+        setupSection.classList.remove("hidden");
+        resultSection.classList.add("hidden");
+    }
+
+    // --- History Logic ---
+
+    function saveHistory(metrics) {
+        const history = JSON.parse(localStorage.getItem("zen-typing-history") || "[]");
+        const entry = {
+            date: new Date().toLocaleString(),
+            wpm: metrics.wpm,
+            cpm: metrics.cpm,
+            accuracy: metrics.accuracy,
+            duration: Math.round(metrics.elapsedSeconds) + "s",
+        };
+        history.unshift(entry); // prepend to show newest first
+        localStorage.setItem("zen-typing-history", JSON.stringify(history));
+        updateHistoryUI();
+    }
+
+    function updateHistoryUI() {
+        const history = JSON.parse(localStorage.getItem("zen-typing-history") || "[]");
+        if (history.length === 0) {
+            historyEmpty.classList.remove("hidden");
+            historyTable.classList.add("hidden");
+            clearHistoryBtn.classList.add("hidden");
+            drawHistoryGraph();
+            return;
+        }
+
+        historyEmpty.classList.add("hidden");
+        historyTable.classList.remove("hidden");
+        clearHistoryBtn.classList.remove("hidden");
+
+        historyBody.innerHTML = "";
+        history.forEach(item => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                    <td>${item.date}</td>
+                    <td><strong>${item.wpm}</strong></td>
+                    <td>${item.cpm}</td>
+                    <td>${item.accuracy}%</td>
+                    <td>${item.duration}</td>
+                `;
+            historyBody.appendChild(tr);
+        });
+
+        drawHistoryGraph();
+    }
+
+    function drawHistoryGraph() {
+        const history = JSON.parse(localStorage.getItem("zen-typing-history") || "[]");
+        const container = document.getElementById("history-graph-container");
+        const svg = document.getElementById("history-graph");
+
+        if (history.length === 0) {
+            container.classList.add("hidden");
+            return;
+        }
+
+        container.classList.remove("hidden");
+
+        const data = [...history].reverse();
+        const width = 600;
+        const height = 250;
+        const paddingLeft = 50;
+        const paddingRight = 50;
+        const paddingTop = 20;
+        const paddingBottom = 40;
+
+        const chartWidth = width - paddingLeft - paddingRight;
+        const chartHeight = height - paddingTop - paddingBottom;
+
+        let maxWpm = Math.max(...data.map(d => d.wpm));
+        let minWpm = Math.min(...data.map(d => d.wpm));
+
+        if (maxWpm === minWpm) {
+            maxWpm = maxWpm + 10;
+            minWpm = Math.max(0, minWpm - 10);
+        } else {
+            const diff = maxWpm - minWpm;
+            maxWpm = maxWpm + diff * 0.1;
+            minWpm = Math.max(0, minWpm - diff * 0.1);
+        }
+
+        let maxAcc = 100;
+        let minAcc = Math.min(...data.map(d => d.accuracy));
+
+        if (minAcc === maxAcc) {
+            minAcc = Math.max(0, minAcc - 10);
+        } else {
+            minAcc = Math.max(0, minAcc - (100 - minAcc) * 0.1);
+        }
+
+        let svgContent = `
+                <!-- Background Grid -->
+                <line x1="${paddingLeft}" y1="${paddingTop}" x2="${width - paddingRight}" y2="${paddingTop}" class="graph-grid" />
+                <line x1="${paddingLeft}" y1="${paddingTop + chartHeight / 2}" x2="${width - paddingRight}" y2="${paddingTop + chartHeight / 2}" class="graph-grid" />
+                <line x1="${paddingLeft}" y1="${height - paddingBottom}" x2="${width - paddingRight}" y2="${height - paddingBottom}" class="graph-grid" />
+                
+                <!-- Axes -->
+                <line x1="${paddingLeft}" y1="${paddingTop}" x2="${paddingLeft}" y2="${height - paddingBottom}" class="graph-axis" />
+                <line x1="${width - paddingRight}" y1="${paddingTop}" x2="${width - paddingRight}" y2="${height - paddingBottom}" class="graph-axis" />
+                
+                <!-- Left Axis Labels (WPM) -->
+                <text x="${paddingLeft - 10}" y="${paddingTop + 4}" text-anchor="end" class="graph-text">${Math.round(maxWpm)}</text>
+                <text x="${paddingLeft - 10}" y="${paddingTop + chartHeight / 2 + 4}" text-anchor="end" class="graph-text">${Math.round((maxWpm + minWpm) / 2)}</text>
+                <text x="${paddingLeft - 10}" y="${height - paddingBottom + 4}" text-anchor="end" class="graph-text">${Math.round(minWpm)}</text>
+                <text x="${paddingLeft - 35}" y="${paddingTop + chartHeight / 2}" text-anchor="middle" transform="rotate(-90, ${paddingLeft - 35}, ${paddingTop + chartHeight / 2})" class="graph-text" style="font-weight: bold;">WPM</text>
+                
+                <!-- Right Axis Labels (Accuracy) -->
+                <text x="${width - paddingRight + 10}" y="${paddingTop + 4}" text-anchor="start" class="graph-text">${Math.round(maxAcc)}%</text>
+                <text x="${width - paddingRight + 10}" y="${paddingTop + chartHeight / 2 + 4}" text-anchor="start" class="graph-text">${Math.round((maxAcc + minAcc) / 2)}%</text>
+                <text x="${width - paddingRight + 10}" y="${height - paddingBottom + 4}" text-anchor="start" class="graph-text">${Math.round(minAcc)}%</text>
+                <text x="${width - paddingRight + 35}" y="${paddingTop + chartHeight / 2}" text-anchor="middle" transform="rotate(90, ${width - paddingRight + 35}, ${paddingTop + chartHeight / 2})" class="graph-text" style="font-weight: bold;">Accuracy</text>
+            `;
+
+        const getX = (index) => {
+            if (data.length <= 1) {
+                return paddingLeft + chartWidth / 2;
+            }
+            return paddingLeft + (index / (data.length - 1)) * chartWidth;
+        };
+
+        const getYWpm = (wpm) => {
+            return height - paddingBottom - ((wpm - minWpm) / (maxWpm - minWpm)) * chartHeight;
+        };
+
+        const getYAcc = (acc) => {
+            return height - paddingBottom - ((acc - minAcc) / (maxAcc - minAcc)) * chartHeight;
+        };
+
+        let wpmPoints = [];
+        let accPoints = [];
+
+        data.forEach((d, idx) => {
+            wpmPoints.push(`${getX(idx)},${getYWpm(d.wpm)}`);
+            accPoints.push(`${getX(idx)},${getYAcc(d.accuracy)}`);
+        });
+
+        if (data.length > 1) {
+            svgContent += `
+                    <!-- Paths -->
+                    <path d="M ${wpmPoints.join(" L ")}" class="graph-line-wpm" />
+                    <path d="M ${accPoints.join(" L ")}" class="graph-line-acc" />
+                `;
+        }
+
+        data.forEach((d, idx) => {
+            const cx = getX(idx);
+            const cyWpm = getYWpm(d.wpm);
+            const cyAcc = getYAcc(d.accuracy);
+            svgContent += `
+                    <!-- WPM Dot -->
+                    <circle cx="${cx}" cy="${cyWpm}" r="4" class="graph-dot-wpm" 
+                            data-date="${d.date}" data-wpm="${d.wpm}" data-acc="${d.accuracy}" data-duration="${d.duration}" />
+                    
+                    <!-- Accuracy Dot -->
+                    <circle cx="${cx}" cy="${cyAcc}" r="4" class="graph-dot-acc" 
+                            data-date="${d.date}" data-wpm="${d.wpm}" data-acc="${d.accuracy}" data-duration="${d.duration}" />
+                `;
+        });
+
+        const maxLabels = 4;
+        const indicesToLabel = [];
+
+        if (data.length > 0) {
+            if (data.length === 1) {
+                indicesToLabel.push(0);
+            } else {
+                const step = (data.length - 1) / (maxLabels - 1);
+                for (let i = 0; i < maxLabels; i++) {
+                    const index = Math.round(i * step);
+                    if (!indicesToLabel.includes(index)) {
+                        indicesToLabel.push(index);
+                    }
+                }
+            }
+        }
+
+        data.forEach((d, idx) => {
+            if (indicesToLabel.includes(idx)) {
+                const cx = getX(idx);
+                const parts = d.date.split(", ");
+                const datePart = parts[0] ? parts[0] : d.date;
+                const timePart = parts[1] ? parts[1] : "";
+
+                svgContent += `
+                        <text x="${cx}" y="${height - 18}" text-anchor="middle" class="graph-text">${datePart}</text>
+                        <text x="${cx}" y="${height - 6}" text-anchor="middle" class="graph-text">${timePart}</text>
+                        <line x1="${cx}" y1="${height - paddingBottom}" x2="${cx}" y2="${height - paddingBottom + 4}" class="graph-axis" />
+                    `;
+            }
+        });
+
+        svg.innerHTML = svgContent;
+
+        const tooltip = document.getElementById("graph-tooltip");
+        const dots = svg.querySelectorAll("circle");
+
+        dots.forEach(dot => {
+            dot.addEventListener("mouseenter", (e) => {
+                const date = e.target.getAttribute("data-date");
+                const wpm = e.target.getAttribute("data-wpm");
+                const acc = e.target.getAttribute("data-acc");
+                const dur = e.target.getAttribute("data-duration");
+                tooltip.innerHTML = `
+                        <strong>${date}</strong><br/>
+                        WPM: <strong>${wpm}</strong><br/>
+                        Accuracy: <strong>${acc}%</strong><br/>
+                        Duration: <strong>${dur}</strong>
+                    `;
+                tooltip.style.display = "block";
+            });
+
+            dot.addEventListener("mousemove", (e) => {
+                const x = e.clientX + window.scrollX + 15;
+                const y = e.clientY + window.scrollY - 15;
+                tooltip.style.left = x + "px";
+                tooltip.style.top = y + "px";
+            });
+
+            dot.addEventListener("mouseleave", () => {
+                tooltip.style.display = "none";
+            });
+        });
+    }
+
+    function clearHistory() {
+        localStorage.removeItem("zen-typing-history");
+        updateHistoryUI();
+    }
+
+    // --- Event Listeners ---
+
+    startBtn.addEventListener("click", startTest);
+    restartBtn.addEventListener("click", () => {
+        resultSection.classList.add("hidden");
+        startTest();
+    });
+    backToSetupBtn.addEventListener("click", () => {
+        resultSection.classList.add("hidden");
+        setupSection.classList.remove("hidden");
+    });
+    clearHistoryBtn.addEventListener("click", clearHistory);
+
+    // Keyboard event capturing
+    window.addEventListener("keydown", (e) => {
+        if (document.body.classList.contains("zen-active") && !testFinished) {
+            // If escape is pressed, cancel immediately
+            if (e.key === "Escape") {
+                cancelTest();
+                e.preventDefault();
+                return;
+            }
+
+            // Start timer on first keypress
+            if (!testStarted) {
+                if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                    testStarted = true;
+                    startTimer();
+                } else {
+                    return; // Ignore other keys before start
+                }
+            }
+
+            // Handle Backspace
+            if (e.key === "Backspace") {
+                if (e.ctrlKey || e.altKey) {
+                    // Delete word
+                    const trimmed = typedText.trimEnd();
+                    const lastSpace = trimmed.lastIndexOf(" ");
+                    if (lastSpace === -1) {
+                        typedText = "";
+                    } else {
+                        typedText = typedText.slice(0, lastSpace + 1);
+                    }
+                } else {
+                    if (typedText.length > 0) {
+                        typedText = typedText.slice(0, -1);
+                    }
+                }
+                renderText();
+                e.preventDefault();
+            }
+            // Handle printable characters
+            else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+                totalCharsTyped++;
+
+                if (typedText.length < currentSentenceText.length + 20) {
+                    typedText += e.key;
+                }
+
+                const actions = alignText(currentSentenceText, typedText);
+                const lastAction = actions[actions.length - 1];
+                const isSentenceCompleted = lastAction && lastAction.typedIdx !== null;
+
+                if (isSentenceCompleted) {
+                    completedSentences.push({
+                        text: currentSentenceText,
+                        typed: typedText,
+                    });
+
+                    currentSentenceText = nextSentenceText + " ";
+                    nextSentenceText = getNextSentence();
+                    typedText = "";
+                }
+
+                renderText();
+                e.preventDefault();
+            }
+        }
+    });
+
+    // If user manually exits fullscreen
+    document.addEventListener("fullscreenchange", () => {
+        if (!document.fullscreenElement && document.body.classList.contains("zen-active") && testStarted && !testFinished) {
+            cancelTest();
+        }
+    });
+
+    // Initialize UI
+    updateHistoryUI();
+</script>
+<div id="graph-tooltip" class="graph-tooltip"></div>
+</body>
+
+</html>
