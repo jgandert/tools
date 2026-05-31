@@ -115,11 +115,13 @@
 
             <details>
                 <summary>Text Format Fallback (For Screen Readers / Manual Verification)</summary>
-                <table>
-                    <tbody id="board-table-body">
-                    <!-- Populated by JS -->
-                    </tbody>
-                </table>
+                <div class="table-container">
+                    <table>
+                        <tbody id="board-table-body">
+                        <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
             </details>
         </article>
     </section>
@@ -145,20 +147,22 @@
 
             <details open>
                 <summary>Statistical Integrity Report</summary>
-                <table>
-                    <caption>Expected vs. Actual Yields (Current Deck)</caption>
-                    <thead>
-                    <tr>
-                        <th scope="col">Roll</th>
-                        <th scope="col">Base Probability</th>
-                        <th scope="col">Drawn So Far</th>
-                        <th scope="col">Remaining in Deck</th>
-                    </tr>
-                    </thead>
-                    <tbody id="deck-stats-body">
-                    <!-- Populated by JS -->
-                    </tbody>
-                </table>
+                <div class="table-container">
+                    <table>
+                        <caption>Expected vs. Actual Yields (Current Deck)</caption>
+                        <thead>
+                        <tr>
+                            <th scope="col">Roll</th>
+                            <th scope="col">Base Probability</th>
+                            <th scope="col">Drawn So Far</th>
+                            <th scope="col">Remaining in Deck</th>
+                        </tr>
+                        </thead>
+                        <tbody id="deck-stats-body">
+                        <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
             </details>
 
             <details>

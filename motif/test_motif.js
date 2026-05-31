@@ -1008,13 +1008,13 @@ console.log("\n=== Track Synthesis and Event Scheduling ===");
         const o1 = oscillators[0];
         assert(o1.type === "sawtooth", `expected o1 type 'sawtooth', got '${o1.type}'`);
         assert(Math.abs(o1.startTime - 0) < 1e-9, `expected o1 startTime 0, got ${o1.startTime}`);
-        assert(Math.abs(o1.stopTime - 1.0) < 1e-9, `expected o1 stopTime 1.0 (duration 1.0), got ${o1.stopTime}`);
+        assert(Math.abs(o1.stopTime - 1.015) < 1e-9, `expected o1 stopTime 1.015 (duration 1.0 + 0.015 release), got ${o1.stopTime}`);
         assert(Math.abs(o1.frequency.value - midiToHz(noteToMidi("C3"))) < 1e-9, `expected o1 frequency C3, got ${o1.frequency.value}`);
 
         const o2 = oscillators[1];
         assert(o2.type === "sawtooth", `expected o2 type 'sawtooth', got '${o2.type}'`);
         assert(Math.abs(o2.startTime - 1.0) < 1e-9, `expected o2 startTime 1.0, got ${o2.startTime}`);
-        assert(Math.abs(o2.stopTime - 2.0) < 1e-9, `expected o2 stopTime 2.0 (duration 1.0), got ${o2.stopTime}`);
+        assert(Math.abs(o2.stopTime - 2.015) < 1e-9, `expected o2 stopTime 2.015 (duration 1.0 + 0.015 release), got ${o2.stopTime}`);
         assert(Math.abs(o2.frequency.value - midiToHz(noteToMidi("E3"))) < 1e-9, `expected o2 frequency E3, got ${o2.frequency.value}`);
     }
 
@@ -1262,8 +1262,8 @@ console.log("\n=== Track Polyphonic Voice Pool & Voice Stealing ===");
         const c3Osc = offlineOldest2.createdOscillators[0];
         const e3Osc = offlineOldest2.createdOscillators[1];
         // Both survive — no choking
-        assert(c3Osc.stopTime === 2.0, `expected C3 to stop at 2.0, got ${c3Osc.stopTime}`);
-        assert(e3Osc.stopTime === 2.0, `expected E3 to stop at 2.0, got ${e3Osc.stopTime}`);
+        assert(c3Osc.stopTime === 2.015, `expected C3 to stop at 2.015, got ${c3Osc.stopTime}`);
+        assert(e3Osc.stopTime === 2.015, `expected E3 to stop at 2.015, got ${e3Osc.stopTime}`);
     }
 
     // 4. Test 'quietest' mode (pool exhausted -> steals the quietest active voice)
@@ -3737,6 +3737,17 @@ console.log("\n=== Track .sample(): Async Sample Loading ===");
     const t3 = Track("sample-chain");
     const ret = t3.note(["C3"]).sample("/audio/snare.wav");
     assert(ret === t3, `sample() should return this for chaining`);
+
+    // TEST 7: Transitioning from sample to synth resets sample state (regression test)
+    const t4 = Track("sample-to-synth");
+    t4.sample("/audio/kick.wav");
+    assert(t4._useSample === true, `should set _useSample to true when sample loaded`);
+
+    t4.synth("sawtooth");
+    assert(t4._useSample === false, `synth() should clear _useSample state`);
+    assert(t4._sampleBuffer === null, `synth() should clear _sampleBuffer`);
+    assert(t4._sampleUrl === null, `synth() should clear _sampleUrl`);
+    assert(t4._sampleLoading === null, `synth() should clear _sampleLoading`);
 
     // Cleanup
     globalThis.fetch = origFetch;
@@ -6958,6 +6969,113 @@ console.log("\n=== Arrange(): macro-arrangement ===");
 
     Motif.ctx = prevCtx;
     Motif.tempo = prevTempo;
+}
+{
+    const prevCtx = Motif.ctx;
+    const prevTempo = Motif.tempo;
+    const sampleRate = 44100;
+    const bufferDurationS = 2.0;
+
+    class MockOsc {
+        constructor() {
+            this.frequency = {
+                value: 0, setValueAtTime(v, t) {
+                    this.value = v;
+                    this.time = t;
+                    return this;
+                },
+            };
+            this.type = "sine";
+            this.startTime = 0;
+            this.stopTime = 0;
+        }
+
+        start(t) {
+            this.startTime = t;
+        }
+
+        stop(t) {
+            this.stopTime = t;
+        }
+
+        connect() {}
+        disconnect() {}
+    }
+
+    class ArrangeOfflineCtx {
+        constructor() {
+            this.currentTime = 0;
+            this.sampleRate = sampleRate;
+            this.createdOscillators = [];
+        }
+
+        createGain() {
+            return {
+                gain: {
+                    value: 1.0, setValueAtTime() {},
+                }, connect() {}, disconnect() {},
+            };
+        }
+
+        createBiquadFilter() {
+            return { connect() {}, disconnect() {} };
+        }
+
+        createDynamicsCompressor() {
+            return { connect() {}, disconnect() {} };
+        }
+
+        createWaveShaper() {
+            return { connect() {}, disconnect() {} };
+        }
+
+        createOscillator() {
+            const o = new MockOsc();
+            this.createdOscillators.push(o);
+            return o;
+        }
+
+        async startRendering() {
+            const stepS = Motif.lookaheadIntervalMs / 1000;
+            for (let t = 0; t <= bufferDurationS + stepS; t += stepS) {
+                this.currentTime = t;
+                Motif.tick();
+            }
+        }
+    }
+
+    let originalSetTimeout = globalThis.setTimeout;
+    let timeoutCallback = null;
+    let timeoutDelay = 0;
+
+    globalThis.setTimeout = (cb, delay) => {
+        timeoutCallback = cb;
+        timeoutDelay = delay;
+        return 999;
+    };
+
+    Track.clearRegistry();
+    const tLoop = Track("t-loop").synth("sine").note([60]);
+    Motif.tempo = 120; // bar = 2s
+    Arrange([
+        { tracks: [tLoop], bars: 1 } // 0-2s
+    ], { loop: true, loopDelay: "1s" });
+
+    const offline = new ArrangeOfflineCtx();
+    Motif.ctx = offline;
+    Motif._schedQueue = [];
+    Motif.isPlaying = true;
+
+    await offline.startRendering();
+
+    assert(Motif.isPlaying === false, "isPlaying should be false after stopping at loop boundary");
+    assert(timeoutCallback !== null, "loop timeout callback should be registered");
+    assert(timeoutDelay === 1000, `expected 1000ms loopDelay, got ${timeoutDelay}`);
+
+    globalThis.setTimeout = originalSetTimeout;
+    Motif.ctx = prevCtx;
+    Motif.tempo = prevTempo;
+    Motif.stop();
 }
 
 // =============================================================================

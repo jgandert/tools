@@ -8,6 +8,7 @@
     <meta name="description"
           content="Paste rich text and instantly convert it to clean Markdown. Runs entirely in your browser.">
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <script src="../one.js"></script>
     <script src="turndown-standalone.js"></script>
     <link rel="stylesheet" href="../one.css">
     <style>
@@ -265,14 +266,14 @@ SOFTWARE.
                                 var text = await navigator.clipboard.readText();
                                 applyPaste("", text);
                             } else {
-                                alert("Clipboard API not available. Please use Ctrl+V / ⌘V instead.");
+                                one.alert("Clipboard API not available. Please use Ctrl+V / ⌘V instead.");
                             }
                         } catch (err) {
                             if (err.name === "NotAllowedError") {
-                                alert("Clipboard permission denied. Please use Ctrl+V / ⌘V instead.");
+                                one.alert("Clipboard permission denied. Please use Ctrl+V / ⌘V instead.");
                             } else {
                                 console.error("Clipboard read failed:", err);
-                                alert("Could not read clipboard. Please use Ctrl+V / ⌘V instead.");
+                                one.alert("Could not read clipboard. Please use Ctrl+V / ⌘V instead.");
                             }
                         }
                     });

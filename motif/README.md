@@ -408,6 +408,21 @@ Arrange([
 ]);
 ```
 
+### Looping
+
+Pass a second options argument to loop the entire arrangement indefinitely. The engine stops at the natural end of the sequence, fires `onPlaybackFinished` (triggering any active WAV recording download for the first pass only), then seamlessly restarts.
+
+- `loop: boolean` — enables continuous looping.
+- `loopDelay: string | number` — gap between the end of one pass and the start of the next. Accepts the same duration strings as the rest of the API (`"2s"`, `"1 bar"`, `"4 beats"`, `0.5`, …). Defaults to `0` (gapless).
+
+```javascript
+Arrange([
+  { bars: 8,  tracks: [intro] },
+  { bars: 16, tracks: [intro, main] },
+  { bars: 8,  tracks: [intro, main, outro] }
+], { loop: true, loopDelay: "2s" });
+```
+
 ---
 
 ## 12. External I/O & Asynchronous Operations

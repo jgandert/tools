@@ -57,8 +57,15 @@ export function Ramp(from, to, duration) {
  * Schedules track boundaries across sequential sections.
  * @param {Array<Object>} sections - Array of { tracks: [], bars: number } objects.
  */
-export function Arrange(sections) {
+export function Arrange(sections, options = {}) {
     if (!Array.isArray(sections)) return;
+
+    Motif._arrangementSections = sections;
+    if (options && typeof options === "object") {
+        Motif._arrangementOptions = options;
+    } else {
+        Motif._arrangementOptions = {};
+    }
 
     // Clear previously set active segments on all tracks defined in this arrangement
     const tracksToReset = new Set();
@@ -491,6 +498,9 @@ export class MotifEngine {
         this.synthRegistry = new Map();
         this._loadingSamples = [];
         this.onPlaybackFinished = null;
+        this._arrangementSections = null;
+        this._arrangementOptions = null;
+        this._loopTimeout = null;
     }
 
     /**
@@ -617,32 +627,42 @@ export class MotifEngine {
         };
 
         if (this._loadingSamples && this._loadingSamples.length > 0) {
-            return Promise.all(this._loadingSamples).then(onReady);
+            Promise.all(this._loadingSamples).then(onReady);
         } else {
             onReady();
-            return Promise.resolve();
         }
     }
 
     /**
      * Suspends the transport without resetting position.
      */
-    async pause() {
+    pause() {
         this.isPlaying = false;
         this._stopScheduler();
+        if (this._loopTimeout) {
+            clearTimeout(this._loopTimeout);
+            this._loopTimeout = null;
+        }
         if (this.ctx && typeof this.ctx.suspend === "function") {
-            await this.ctx.suspend();
+            this.ctx.suspend().catch(err => {
+                console.warn("Failed to suspend AudioContext inside Motif.pause():", err);
+            });
         }
     }
 
     /**
      * Stops the transport and resets playhead/position to zero.
      */
-    async stop() {
+    stop() {
         this.isPlaying = false;
         this.position = 0;
         this._stopScheduler();
         this._schedQueue = [];
+
+        if (this._loopTimeout) {
+            clearTimeout(this._loopTimeout);
+            this._loopTimeout = null;
+        }
 
         // Reset tracks' scheduling states
         for (const track of trackRegistry.values()) {
@@ -652,7 +672,9 @@ export class MotifEngine {
         }
 
         if (this.ctx && typeof this.ctx.suspend === "function") {
-            await this.ctx.suspend();
+            this.ctx.suspend().catch(err => {
+                console.warn("Failed to suspend AudioContext inside Motif.stop():", err);
+            });
         }
     }
 
@@ -736,9 +758,35 @@ export class MotifEngine {
             }
 
             if (hasTracks && allFinished && this.ctx.currentTime >= maxStopTime) {
+                const options = this._arrangementOptions || {};
+                const shouldLoop = !!options.loop;
+
                 this.stop();
+                
                 if (typeof this.onPlaybackFinished === "function") {
-                    this.onPlaybackFinished();
+                    this.onPlaybackFinished({ looped: shouldLoop });
+                }
+
+                if (shouldLoop) {
+                    let delayMs = 0;
+                    if (options.loopDelay !== undefined) {
+                        const delaySeconds = parseDurationToSeconds(options.loopDelay, this.tempo, this.beatsPerBar);
+                        delayMs = Math.max(0, delaySeconds * 1000);
+                    }
+                    
+                    this._loopTimeout = setTimeout(() => {
+                        if (this._loopTimeout) {
+                            Promise.resolve(
+                                this.ctx && this.ctx.state === "suspended" ? this.ctx.resume() : null
+                            ).then(() => {
+                                if (this._loopTimeout) {
+                                    this.start();
+                                }
+                            }).catch(err => {
+                                console.error("Motif auto-loop restart failed:", err);
+                            });
+                        }
+                    }, delayMs);
                 }
             }
         }
@@ -1615,6 +1663,97 @@ const MotifSynths = {
         return (h1 + h3 + h5) * 1.2;
     },
 
+    // 'Acid Bass HQ': Modern, high-fidelity recreation of the classic silver bass box.
+    // Features a cascaded 4-pole (24dB/oct) resonant lowpass filter for a squelch effect.
+    "bass-acid-hq": (ctx) => {
+        ctx.state.phase = ((ctx.state.phase || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+        const saw = (ctx.state.phase * 2.0) - 1.0;
+
+        // Snappy internal envelope for the filter sweep
+        const env = Math.exp(-ctx.t * 4.0);
+        const cutoff = Math.min(200 + (ctx.freq * 4.0 * env), ctx.sampleRate / 6.0);
+
+        // Initialize two-stage SVF states to create a 24dB slope
+        ctx.state.lp1 = ctx.state.lp1 || 0;
+        ctx.state.bp1 = ctx.state.bp1 || 0;
+        ctx.state.lp2 = ctx.state.lp2 || 0;
+        ctx.state.bp2 = ctx.state.bp2 || 0;
+        const f = 2.0 * Math.sin(Math.PI * cutoff / ctx.sampleRate);
+
+        // High resonance for the acid sound
+        const q = 0.4;
+
+        // First filter stage (12dB)
+        const hp1 = saw - ctx.state.lp1 - (q * ctx.state.bp1);
+        ctx.state.bp1 += f * hp1;
+        ctx.state.lp1 += f * ctx.state.bp1;
+
+        // Second filter stage (24dB) cascading from the first stage
+        const hp2 = ctx.state.lp1 - ctx.state.lp2 - (q * ctx.state.bp2);
+        ctx.state.bp2 += f * hp2;
+        ctx.state.lp2 += f * ctx.state.bp2;
+
+        // Drive and saturate the output
+        return Math.tanh(ctx.state.lp2 * 3.0);
+    },
+
+    // 'Rubber Bass': An aggressive, squelchy FM bass favored in complex breakbeat music.
+    // Bounces rapidly with a highly exponential envelope.
+    "bass-rubber-idm": (ctx) => {
+        ctx.state.p1 = ((ctx.state.p1 || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+
+        // Sub modulator
+        ctx.state.p2 = ((ctx.state.p2 || 0) + (ctx.freq * 0.5) / ctx.sampleRate) % 1.0;
+
+        // Extremely tight, punchy envelope
+        const punch = Math.exp(-ctx.t * 25.0);
+        const sustain = Math.exp(-ctx.t * 3.0);
+
+        // Modulator index peaks at the transient
+        const modIndex = 1.0 + (punch * 5.0);
+        const mod = Math.sin(ctx.state.p2 * TWO_PI) * modIndex;
+        const carrier = Math.sin(ctx.state.p1 * TWO_PI + mod);
+
+        // Hard clipping for aggression
+        return Math.tanh(carrier * 2.0) * sustain;
+    },
+
+    // Phase distortion lead. Uses Casio-style phase distortion to warp a sine wave into a variable pulse width, avoiding the aliasing of a standard square wave.
+    "chip-lead-pd": (ctx) => {
+        // Continuous phase accumulator wrapped at 1.0 to prevent floating-point precision loss
+        ctx.state.phase = ((ctx.state.phase || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+
+        // Low frequency oscillator for pulse-width modulation varying between 0.2 and 0.8
+        const pw = 0.5 + 0.3 * Math.sin(ctx.t * 4.0);
+        const p = ctx.state.phase;
+
+        // Phase Distortion: bend the linear phase into two distinct slopes
+        const warpedPhase = p < pw 
+            ? (p / pw) * 0.5 
+            : 0.5 + ((p - pw) / (1.0 - pw)) * 0.5;
+
+        // Read the sine table using warped phase, naturally bounded -1.0 to 1.0
+        return Math.sin(warpedPhase * TWO_PI);
+    },
+
+    // FM sub bass. Sine carrier with a fast-decaying 2x-ratio FM transient for percussive articulation.
+    "chip-bass-fm": (ctx) => {
+        // Independent phase accumulators for Carrier (1x) and Modulator (2x ratio)
+        ctx.state.pCar = ((ctx.state.pCar || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+        ctx.state.pMod = ((ctx.state.pMod || 0) + (ctx.freq * 2.0) / ctx.sampleRate) % 1.0;
+
+        // Fast exponential decay envelope applied to the FM index
+        const fmEnv = Math.exp(-ctx.t * 8.0);
+        const modIndex = fmEnv * 2.5;
+
+        // Two-operator FM calculation
+        const modulator = Math.sin(ctx.state.pMod * TWO_PI) * modIndex;
+        const carrier = Math.sin(ctx.state.pCar * TWO_PI + modulator);
+
+        // Soft-clip saturation for harmonic presence, bounded to -1.0 to 1.0
+        return Math.tanh(carrier * 1.5);
+    },
+
     // ------------------------------------------
     // TAPE, LO-FI, AND AMBIENT TEXTURES
     // ------------------------------------------
@@ -1650,6 +1789,230 @@ const MotifSynths = {
         // Simulate a gentle, slow-opening filter via amplitude
         const swell = Math.min(1.0, ctx.t * 0.5);
         return ((s1 + s2) / 2.0) * swell;
+    },
+
+    // 'Drift Keys': A warm, melancholic electric piano (like a Rhodes) with analog pitch instability (wow/flutter) and soft saturation.
+    "keys-drift": (ctx) => {
+        // Wow (slow drift) and Flutter (fast wobble)
+        const drift = Math.sin(ctx.t * 0.5) * 0.02 + Math.sin(ctx.t * 6.0) * 0.005;
+        const actualFreq = ctx.freq * (1.0 + drift);
+        ctx.state.phase = ((ctx.state.phase || 0) + actualFreq / ctx.sampleRate) % 1.0;
+
+        // Mix of sine body and softened triangle bite
+        const sine = Math.sin(ctx.state.phase * TWO_PI);
+        const tri = Math.abs(ctx.state.phase * 4.0 - 2.0) - 1.0;
+
+        // Soft clip to give it taped warmth
+        return Math.tanh((sine * 0.8 + tri * 0.4) * 1.2);
+    },
+
+    // 'Pad Hauntology': A dusty, degraded analog synth pad.
+    // Emulates the sound of a vintage synthesizer recorded onto heavily worn magnetic tape.
+    // Features pitch drift, integrated noise floor, and a warm, muffled low-pass filter.
+    "pad-hauntology": (ctx) => {
+        // Wow and Flutter pitch instability
+        const wow = Math.sin(ctx.t * TWO_PI * 0.3) * 0.015;
+        const flutter = Math.sin(ctx.t * TWO_PI * 4.5) * 0.005;
+        const actualFreq = ctx.freq * (1.0 + wow + flutter);
+        ctx.state.phase = ((ctx.state.phase || 0) + actualFreq / ctx.sampleRate) % 1.0;
+
+        // Base Waveform (Sawtooth mixed with a Sub Triangle)
+        const saw = (ctx.state.phase * 2.0) - 1.0;
+        const subPhase = (ctx.state.phase * 0.5) % 1.0;
+        const sub = Math.abs(subPhase * 4.0 - 2.0) - 1.0;
+        let rawMix = (saw * 0.6) + (sub * 0.4);
+
+        // Inject tape hiss (Brown noise) directly into the pre-filter signal
+        ctx.state.noise = ((ctx.state.noise || 0) * 0.8) + ((Math.random() * 2.0 - 1.0) * 0.2);
+        rawMix += ctx.state.noise * 0.15;
+
+        // Muffled Low-Pass Filter (SVF) clamped safely
+        ctx.state.lp = ctx.state.lp || 0;
+        ctx.state.bp = ctx.state.bp || 0;
+        const cutoff = Math.min(800 + Math.sin(ctx.t * 0.5) * 200, ctx.sampleRate / 6.0);
+        const f = 2.0 * Math.sin(Math.PI * cutoff / ctx.sampleRate);
+        const hp = rawMix - ctx.state.lp - (0.4 * ctx.state.bp);
+        ctx.state.bp += f * hp;
+        ctx.state.lp += f * ctx.state.bp;
+
+        // Gentle attack and tape saturation
+        const attack = Math.min(1.0, ctx.t * 1.5);
+        return Math.tanh(ctx.state.lp * 1.5) * attack;
+    },
+
+    // 'Vintage Board Lead': A drifting, nostalgic melody synth.
+    // Features a distinct pitch slur on the attack, mimicking analog portamento and failing capacitors.
+    "lead-vintage-board": (ctx) => {
+        // Pitch envelope: starts flat, slides up to pitch over 150ms
+        const pitchSlur = 1.0 - (0.05 * Math.exp(-ctx.t * 15.0));
+
+        // Slow detune
+        const drift = Math.sin(ctx.t * 2.0) * 0.01;
+        const freq = ctx.freq * pitchSlur * (1.0 + drift);
+        ctx.state.phase = ((ctx.state.phase || 0) + freq / ctx.sampleRate) % 1.0;
+
+        // Softened hexagon-style wave (Pulse + Triangle)
+        const pulse = ctx.state.phase < 0.3 ? 1.0 : -1.0;
+        const tri = Math.abs(ctx.state.phase * 4.0 - 2.0) - 1.0;
+        return Math.tanh((pulse * 0.4 + tri * 0.6) * 1.2);
+    },
+
+    // 'Drone Abyss': A massive, rumbling dark ambient drone.
+    // Combines a sub-sine, a detuned sawtooth, and an ultra-slow breathing lowpass filter.
+    // Evolves when held for minutes at a time.
+    "drone-abyss": (ctx) => {
+        // Independent phase accumulators wrapped safely
+        ctx.state.pSub = ((ctx.state.pSub || 0) + (ctx.freq * 0.5) / ctx.sampleRate) % 1.0;
+        ctx.state.pSaw = ((ctx.state.pSaw || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+
+        // An ultra-slow detuned oscillator drifting around the fundamental
+        const driftFreq = ctx.freq * (1.0 + Math.sin(ctx.t * TWO_PI * 0.05) * 0.005);
+        ctx.state.pDrift = ((ctx.state.pDrift || 0) + driftFreq / ctx.sampleRate) % 1.0;
+
+        // Waveforms
+        const sub = Math.sin(ctx.state.pSub * TWO_PI);
+        const saw = (ctx.state.pSaw * 2.0) - 1.0;
+        const drift = (ctx.state.pDrift * 2.0) - 1.0;
+        const mix = (sub * 0.6) + (saw * 0.2) + (drift * 0.2);
+
+        // Ultra-slow breathing LFO for the filter completing a cycle every 20 seconds
+        const breath = (Math.sin(ctx.t * TWO_PI * 0.05) + 1.0) * 0.5;
+
+        // Lowpass Filter (SVF)
+        ctx.state.lp = ctx.state.lp || 0;
+        ctx.state.bp = ctx.state.bp || 0;
+
+        // Filter sweeps slowly between 100Hz and 600Hz
+        const cutoff = Math.min(100 + (breath * 500), ctx.sampleRate / 6.0);
+        const f = 2.0 * Math.sin(Math.PI * cutoff / ctx.sampleRate);
+        const hp = mix - ctx.state.lp - (0.3 * ctx.state.bp);
+        ctx.state.bp += f * hp;
+        ctx.state.lp += f * ctx.state.bp;
+
+        // Glacial Attack taking 4 seconds to reach full volume
+        const attack = Math.min(1.0, ctx.t * 0.25);
+        return Math.tanh(ctx.state.lp * 2.0) * attack;
+    },
+
+    // 'Pad Shimmer': Ethereal, angelic high-end texture.
+    // Uses high-ratio FM synthesis where the modulation index slowly swells, creating a shimmering, cascading upper-harmonic effect.
+    "pad-shimmer": (ctx) => {
+        ctx.state.p1 = ((ctx.state.p1 || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+
+        // Modulator is set to 4x the fundamental (two octaves up)
+        ctx.state.p2 = ((ctx.state.p2 || 0) + (ctx.freq * 4.0) / ctx.sampleRate) % 1.0;
+
+        // Secondary Modulator at 8x (three octaves up)
+        ctx.state.p3 = ((ctx.state.p3 || 0) + (ctx.freq * 8.0) / ctx.sampleRate) % 1.0;
+
+        // Slow LFO controls the brightness shimmer
+        const shimmerLFO = (Math.sin(ctx.t * TWO_PI * 0.1) + 1.0) * 0.5;
+        const mod8 = Math.sin(ctx.state.p3 * TWO_PI) * (0.5 * shimmerLFO);
+        const mod4 = Math.sin(ctx.state.p2 * TWO_PI + mod8) * (1.5 * shimmerLFO);
+        const carrier = Math.sin(ctx.state.p1 * TWO_PI + mod4);
+
+        // Glacial Attack
+        const attack = Math.min(1.0, ctx.t * 0.5);
+        return carrier * attack * 0.6;
+    },
+
+    // 'Binaural Beating': Meditative sine waves.
+    // By playing two sines that are exactly 1Hz apart, it creates a deep acoustic beating effect that pulses naturally without an LFO. A staple of meditation and drone music.
+    "drone-beating": (ctx) => {
+        ctx.state.p1 = ((ctx.state.p1 || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+
+        // Exactly 1 Hz difference creates a one-second amplitude throb
+        ctx.state.p2 = ((ctx.state.p2 || 0) + (ctx.freq + 1.0) / ctx.sampleRate) % 1.0;
+        const s1 = Math.sin(ctx.state.p1 * TWO_PI);
+        const s2 = Math.sin(ctx.state.p2 * TWO_PI);
+        const attack = Math.min(1.0, ctx.t * 0.5);
+        return ((s1 + s2) * 0.5) * attack;
+    },
+
+    // Deep, evolving dual-sine FM pad. Uses a sub-octave modulator and a slow LFO to gently shift the FM index, creating a warm, bioluminescent alien glow.
+    "alien-glow-pad": (ctx) => {
+        const s = ctx.state;
+
+        // Independent phase accumulators with strict modulo wrapping
+        s.pMod = ((s.pMod || 0) + (ctx.freq * 0.5) / ctx.sampleRate) % 1.0;
+
+        // Slow LFO (0.15 Hz)
+        s.pLfo = ((s.pLfo || 0) + 0.15 / ctx.sampleRate) % 1.0; 
+
+        // Slow LFO (0.15 Hz) mapped from 0.2 to 1.2
+        const lfo = Math.sin(s.pLfo * TWO_PI) * 0.5 + 0.7;
+
+        // Gentle FM modulation. The low modulation index keeps it mellow.
+        const modulator = Math.sin(s.pMod * TWO_PI) * (1.2 * lfo);
+
+        // Carrier oscillator phase-modulated by the sub-octave
+        const out = Math.sin(ctx.p * TWO_PI + modulator);
+        return Math.tanh(out * 0.8);
+    },
+
+    // A smooth, hovering magnetic drone. Uses detuned smoothed-triangle waves pushed through a strictly clamped, low-resonance State Variable Filter (SVF).
+    "magnetic-hover": (ctx) => {
+        const s = ctx.state;
+        s.p1 = ((s.p1 || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+
+        // Subtle detuning
+        s.p2 = ((s.p2 || 0) + (ctx.freq * 1.008) / ctx.sampleRate) % 1.0; 
+
+        // Triangle wave approximation with no sharp aliasing edges
+        const tri1 = Math.abs((s.p1 * 2.0) - 1.0) * 2.0 - 1.0;
+        const tri2 = Math.abs((s.p2 * 2.0) - 1.0) * 2.0 - 1.0;
+        const mix = (tri1 + tri2) * 0.5;
+
+        // Stable SVF Lowpass Filter
+        const targetCutoff = ctx.freq * 1.5;
+
+        // Very dark, muffled cutoff
+        const cutoff = Math.min(targetCutoff, ctx.sampleRate / 6.0);
+        const g = Math.tan(Math.PI * cutoff / ctx.sampleRate);
+
+        // High damping = low resonance (mellow sound)
+        const damp = 1.4; 
+        s.ic1eq = s.ic1eq || 0;
+        s.ic2eq = s.ic2eq || 0;
+        const v3 = mix - s.ic2eq;
+        const v1 = s.ic1eq * (1.0 - damp * g) + v3 * g;
+        const v2 = s.ic2eq + s.ic1eq * g;
+        s.ic1eq = v1;
+        s.ic2eq = v2;
+
+        // Soften and scale
+        return Math.tanh(v2 * 1.5) * 0.7; 
+    },
+
+    // A deep, tectonic rumble. Uses two heavily detuned low-frequency waves passed through a dark, low-resonance State Variable Filter to simulate shifting tectonic plates.
+    "tectonic-drone": (ctx) => {
+        const s = ctx.state;
+
+        // Deep earth detuning
+        s.p1 = ((s.p1 || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+        s.p2 = ((s.p2 || 0) + (ctx.freq * 0.985) / ctx.sampleRate) % 1.0;
+
+        // Pseudo-sawtooth generation summing sines to avoid sharp edges or aliasing
+        const wave1 = Math.sin(s.p1 * TWO_PI) + Math.sin(s.p1 * TWO_PI * 2.0) * 0.5;
+        const wave2 = Math.sin(s.p2 * TWO_PI) + Math.sin(s.p2 * TWO_PI * 2.0) * 0.5;
+        const mix = (wave1 + wave2) * 0.5;
+
+        // Stable SVF Lowpass Filter with a very dark cutoff
+        const cutoff = Math.min(ctx.freq * 1.8, ctx.sampleRate / 6.0);
+        const g = Math.tan(Math.PI * cutoff / ctx.sampleRate);
+
+        // High damping prevents resonance whistling
+        const damp = 1.6; 
+        s.ic1eq = s.ic1eq || 0;
+        s.ic2eq = s.ic2eq || 0;
+        const v3 = mix - s.ic2eq;
+        const v1 = s.ic1eq * (1.0 - damp * g) + v3 * g;
+        const v2 = s.ic2eq + s.ic1eq * g;
+        s.ic1eq = v1;
+        s.ic2eq = v2;
+
+        // Saturate to glue the sub frequencies together
+        return Math.tanh(v2 * 1.2) * 0.75;
     },
 
     // ------------------------------------------
@@ -1723,6 +2086,35 @@ const MotifSynths = {
         return ctx.state.filter * 5.0; // Boost gain to compensate for filtering
     },
 
+    // 'Ambient Wind': Generative wind texture that swells slowly over time.
+    // Suitable for background atmosphere in survival games.
+    "ambient-wind": (ctx) => {
+        ctx.state.b0 = ctx.state.b0 || 0;
+        ctx.state.low = ctx.state.low || 0;
+        ctx.state.band = ctx.state.band || 0;
+
+        // Generate brown noise
+        const white = Math.random() * 2.0 - 1.0;
+        ctx.state.b0 = (ctx.state.b0 * 0.9) + (white * 0.1);
+
+        // Slow LFO to sweep the filter simulating wind gusts
+        const lfo = (Math.sin(ctx.t * 0.2) + 1.0) * 0.5;
+
+        // Sweeping filter cutoff clamped safely
+        const cutoff = Math.min(150 + lfo * 800, ctx.sampleRate / 6.0);
+        const f = 2.0 * Math.sin(Math.PI * cutoff / ctx.sampleRate);
+
+        // High resonance for howling wind effect
+        const q = 0.6; 
+        const high = ctx.state.b0 - ctx.state.low - (q * ctx.state.band);
+        ctx.state.band += f * high;
+        ctx.state.low += f * ctx.state.band;
+
+        // Smooth fade in
+        const attack = Math.min(1.0, ctx.t * 0.5);
+        return ctx.state.band * 3.0 * attack;
+    },
+
     // ------------------------------------------
     // MATHEMATICAL & GENERATIVE GLITCH
     // ------------------------------------------
@@ -1752,6 +2144,34 @@ const MotifSynths = {
     "math-fold": (ctx) => {
         const base = Math.sin(ctx.p * TWO_PI);
         return Math.sin((ctx.p + base * 0.5) * TWO_PI);
+    },
+
+    // 'Neuro Fold': An aggressive IDM bass that uses wavefolding.
+    // The sound folds back on itself, creating harsh metallic harmonics.
+    "neuro-fold": (ctx) => {
+        ctx.state.phase = ((ctx.state.phase || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+        const base = Math.sin(ctx.state.phase * TWO_PI);
+
+        // Modulate the drive over time to create a wobble
+        const drive = 2.0 + Math.sin(ctx.t * TWO_PI * 2.0) * 1.5;
+
+        // Wavefolding math: Math.sin() naturally folds signals greater than 1.0
+        return Math.sin(base * drive * Math.PI) * 0.8;
+    },
+
+    // 'Glitch Scatter': Probability-based bit crushing.
+    // Randomly drops sample rate to create algorithmic tearing sounds.
+    "glitch-scatter": (ctx) => {
+        ctx.state.phase = ((ctx.state.phase || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+        ctx.state.hold = ctx.state.hold || 0;
+
+        // A five percent chance per sample to freeze the audio, simulating buffer underruns
+        if (Math.random() > 0.95) {
+            // Quantize amplitude to 4 bits
+            const raw = Math.sin(ctx.state.phase * TWO_PI);
+            ctx.state.hold = Math.round(raw * 4) / 4.0;
+        }
+        return ctx.state.hold;
     },
 
     // ------------------------------------------
@@ -1873,6 +2293,150 @@ const MotifSynths = {
         ctx.state.low += f * ctx.state.band;
 
         return ctx.state.low;
+    },
+
+    // 'Glass Mallet': A highly resonant, woody/glassy pluck.
+    // Uses inharmonic FM ratios (1 : 3.14) to mimic a xylophone or glass marimba.
+    "glass-mallet": (ctx) => {
+        ctx.state.p1 = ((ctx.state.p1 || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+
+        // Modulator at Pi ratio creates a metallic/glassy overtone
+        ctx.state.p2 = ((ctx.state.p2 || 0) + (ctx.freq * 3.1415) / ctx.sampleRate) % 1.0;
+
+        // Fast transient decay for the glass click sound
+        const modIndex = 1.5 * Math.exp(-ctx.t * 20.0);
+        const mod = Math.sin(ctx.state.p2 * TWO_PI) * modIndex;
+        return Math.sin(ctx.state.p1 * TWO_PI + mod) * Math.exp(-ctx.t * 3.0);
+    },
+
+    // 'FM Keys HQ': An FM electric piano.
+    // Crystal clear transients, wide harmonic content, anti-aliased via pure math.
+    "keys-fm-hq": (ctx) => {
+        ctx.state.p1 = ((ctx.state.p1 || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+
+        // Modulator at exactly 2x ratio (Octave)
+        ctx.state.p2 = ((ctx.state.p2 || 0) + (ctx.freq * 2.0) / ctx.sampleRate) % 1.0;
+
+        // Modulator at 14x ratio (High glassy harmonic)
+        ctx.state.p3 = ((ctx.state.p3 || 0) + (ctx.freq * 14.0) / ctx.sampleRate) % 1.0;
+
+        // Complex Envelopes
+        const envBody = Math.exp(-ctx.t * 1.5);
+        const envTine = Math.exp(-ctx.t * 15.0);
+        const modHigh = Math.sin(ctx.state.p3 * TWO_PI) * envTine * 0.8;
+        const modLow = Math.sin(ctx.state.p2 * TWO_PI) * envBody * 2.0;
+        const carrier = Math.sin(ctx.state.p1 * TWO_PI + modLow + modHigh);
+        return carrier * envBody * 0.8;
+    },
+
+    // FM pluck. Rapidly decaying inharmonic FM pluck using a 3.5x ratio, designed for fast arpeggios.
+    "chip-arp-pluck": (ctx) => {
+        // Carrier phase and inharmonic Modulator phase
+        ctx.state.pCar = ((ctx.state.pCar || 0) + ctx.freq / ctx.sampleRate) % 1.0;
+        ctx.state.pMod = ((ctx.state.pMod || 0) + (ctx.freq * 3.5) / ctx.sampleRate) % 1.0;
+
+        // Dual fast-decay envelopes for amplitude and modulation index
+        const ampEnv = Math.exp(-ctx.t * 10.0);
+        const fmEnv = Math.exp(-ctx.t * 15.0);
+        const modulator = Math.sin(ctx.state.pMod * TWO_PI) * fmEnv * 3.0;
+        const out = Math.sin(ctx.state.pCar * TWO_PI + modulator) * ampEnv;
+        return out;
+    },
+
+    // A warm, breathy wooden flute. Uses a pure sine wave fundamental mixed with a gently filtered, low-volume triangle wave for organic woody overtones, driven by a subtle vibrato.
+    "hollow-wood-flute": (ctx) => {
+        const s = ctx.state;
+
+        // Slow LFO for organic breath/pitch drift at approximately 4.5 Hz
+        s.pLfo = ((s.pLfo || 0) + 4.5 / ctx.sampleRate) % 1.0;
+
+        // 2Hz pitch drift
+        const vibrato = Math.sin(s.pLfo * TWO_PI) * 2.0; 
+        const trueFreq = ctx.freq + vibrato;
+
+        // Phase accumulators
+        s.p1 = ((s.p1 || 0) + trueFreq / ctx.sampleRate) % 1.0;
+
+        // First overtone
+        s.p2 = ((s.p2 || 0) + (trueFreq * 2.0) / ctx.sampleRate) % 1.0; 
+        const fund = Math.sin(s.p1 * TWO_PI);
+
+        // Triangle wave for the overtone to give a hollow woody shape
+        const tri = Math.abs((s.p2 * 2.0) - 1.0) * 2.0 - 1.0;
+
+        // Lowpass filter on the triangle overtone to keep it warm and muffled
+        const cutoff = Math.min(ctx.freq * 2.5, ctx.sampleRate / 6.0);
+        const alpha = Math.tan(Math.PI * cutoff / ctx.sampleRate);
+        s.lp = s.lp || 0;
+
+        // Simple 1-pole lowpass
+        s.lp += (tri - s.lp) * alpha; 
+        const mix = (fund * 0.8) + (s.lp * 0.2);
+        return Math.tanh(mix);
+    },
+
+    // Inharmonic FM synthesis modeling a bronze Saron or Gender metallophone.
+    // Uses specific non-integer ratios to generate a metallic, bell-like strike.
+    "gamelan-saron": (ctx) => {
+        const sr = ctx.sampleRate;
+        const f = ctx.freq;
+        const s = ctx.state;
+        const t = ctx.t;
+
+        // Dual-stage exponential decay for the mallet strike and the long ringing body
+        const strikeEnv = Math.exp(-t * 12.0);
+        const bodyEnv = Math.exp(-t * 1.5);
+
+        // Modulator 1: High inharmonic overtone
+        s.pM1 = ((s.pM1 || 0) + (f * 3.46) / sr) % 1.0;
+        const mod1 = Math.sin(s.pM1 * TWO_PI) * strikeEnv * 2.5;
+
+        // Modulator 2: Low inharmonic overtone chained with the first modulator
+        s.pM2 = ((s.pM2 || 0) + (f * 1.52) / sr) % 1.0;
+        const mod2 = Math.sin(s.pM2 * TWO_PI + mod1) * bodyEnv * 1.8;
+
+        // Carrier: Fundamental tone
+        s.pC = ((s.pC || 0) + f / sr) % 1.0;
+        const carrier = Math.sin(s.pC * TWO_PI + mod2);
+        return Math.tanh(carrier * bodyEnv) * 0.8;
+    },
+
+    // Physical modeling estimation of a Suling (traditional bamboo ring flute).
+    // Combines a sine vibrato core with a noise-excited, tightly clamped State Variable Filter.
+    "suling-flute": (ctx) => {
+        const sr = ctx.sampleRate;
+        const f = ctx.freq;
+        const s = ctx.state;
+
+        // Smooth attack mimicking breath pressure
+        const attackEnv = Math.min(ctx.t * 8.0, 1.0);
+
+        // LFO for breath vibrato at approximately 5.5 Hz
+        s.pLfo = ((s.pLfo || 0) + 5.5 / sr) % 1.0;
+        const vibrato = Math.sin(s.pLfo * TWO_PI) * 0.015;
+
+        // Fundamental tone with vibrato applied
+        s.pC = ((s.pC || 0) + (f * (1.0 + vibrato)) / sr) % 1.0;
+        const tone = Math.sin(s.pC * TWO_PI);
+
+        // Breath noise excitation
+        const noise = Math.random() * 2.0 - 1.0;
+
+        // Chamberlin SVF Bandpass Filter for the breath noise
+        // Cutoff clamped to sr / 6.0 to prevent SVF blowout
+        const cutoff = Math.min(f * 2.0, sr / 6.0);
+        const w = 2.0 * Math.sin(Math.PI * cutoff / sr);
+        s.lp = s.lp || 0;
+        s.bp = s.bp || 0;
+
+        // Calculate Highpass with damping factor of 0.6 for moderate resonance
+        const hp = noise - s.lp - 0.6 * s.bp;
+        s.bp += w * hp;
+        s.lp += w * s.bp;
+
+        // Mix the pure tone and the filtered breath noise
+        const out = (tone * 0.65) + (s.bp * 0.35);
+        return Math.tanh(out * attackEnv) * 0.8;
     },
 };
 
@@ -2113,6 +2677,291 @@ const MotifSamples = (() => {
             return buffer;
         },
 
+        // 'Micro Snare': Extremely short, high-passed snare.
+        // Staple of IDM and fast breakbeats.
+        "snare-micro": () => {
+            // Only 100ms
+            const buffer = createBuffer(0.1);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let b0 = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                const noise = Math.random() * 2 - 1;
+
+                // Highpass filter at 2000Hz
+                const cutoff = 2000 / sampleRate;
+                b0 += cutoff * (noise - b0);
+                const hp = noise - b0;
+
+                // FM click at the start
+                const click = Math.sin(TWO_PI * 1500 * t) * Math.exp(-t * 250);
+                data[i] = (hp * 0.8 + click) * Math.exp(-t * 40);
+            }
+            return buffer;
+        },
+
+        // 'Analog Cowbell': Classic TR-808 style cowbell.
+        // Uses two detuned square waves through a bandpass filter.
+        "cowbell-808": () => {
+            const buffer = createBuffer(0.4);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let low = 0;
+            let band = 0;
+
+            // 800Hz filter cutoff
+            const f = 2.0 * Math.sin(Math.PI * 800 / sampleRate);
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // 540Hz and 800Hz square waves
+                const sq1 = Math.sin(TWO_PI * 540 * t) > 0 ? 1 : -1;
+                const sq2 = Math.sin(TWO_PI * 800 * t) > 0 ? 1 : -1;
+                const raw = (sq1 + sq2) * 0.5;
+
+                // SVF Bandpass
+                const high = raw - low - (0.5 * band);
+                band += f * high;
+                low += f * band;
+                data[i] = band * Math.exp(-t * 12);
+            }
+            return buffer;
+        },
+
+        // 'Perc Stutter': A randomized digital burst, mimicking a skipping CD.
+        "perc-stutter": () => {
+            const buffer = createBuffer(0.4);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                const noise = Math.random() * 2 - 1;
+
+                // Amplitude is multiplied by a square LFO that speeds up exponentially
+                const lfoSpeed = 10 + Math.exp(t * 8);
+                const stutter = Math.sin(TWO_PI * lfoSpeed * t) > 0 ? 1 : 0;
+                data[i] = noise * stutter * Math.exp(-t * 5);
+            }
+            return buffer;
+        },
+
+        // 'Deep Impact': A massive cinematic sub-drop for boss arrivals or heavy events.
+        "impact-deep": () => {
+            const buffer = createBuffer(3.0);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let phase = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // Pitch drops from 150Hz down to a rumbling 30Hz
+                const freq = 30 + 120 * Math.exp(-t * 3);
+                phase += freq / sampleRate;
+                const sub = Math.sin(TWO_PI * phase);
+                const noise = (Math.random() * 2 - 1) * Math.exp(-t * 6) * 0.1;
+
+                // Saturate the sub heavily at the beginning, smooth out later
+                const drive = 1.0 + Math.exp(-t * 2) * 4.0;
+                data[i] = Math.tanh((sub + noise) * drive) * Math.exp(-t * 1.5) * 0.8;
+            }
+            return buffer;
+        },
+
+        // 'Ghost Break Snare': A hyper-compressed, metallic snare designed to be chopped at 200 BPM.
+        // Has a distinct resonant ping characteristic of processed breakbeats.
+        "break-snare-ghost": () => {
+            const buffer = createBuffer(0.2);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let b0 = 0;
+            let b1 = 0;
+
+            // High-pass filter math to remove the mud
+            const cutoff = 800 / sampleRate;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // The ping representing a tight snare skin
+                const ping = Math.sin(TWO_PI * 380 * t) * Math.exp(-t * 40.0);
+
+                // The rattle representing white noise
+                const noise = (Math.random() * 2.0 - 1.0);
+
+                // Filter the noise to make it sharp and thin
+                b0 += cutoff * (noise - b0);
+                b1 += cutoff * (b0 - b1);
+                const hpNoise = (noise - b1) * Math.exp(-t * 25.0);
+
+                // Mix and apply hyper-compression
+                const mix = (ping * 1.5) + (hpNoise * 1.5);
+                data[i] = Math.tanh(mix) * 0.7;
+            }
+            return buffer;
+        },
+
+        // 'Data Burst': A chaotic, localized glitch effect.
+        // Sounds like a machine attempting to read a scratched CD-ROM.
+        "glitch-data-burst": () => {
+            const buffer = createBuffer(0.3);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let phase = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // Frequency jumps between massive extremes rapidly
+                // 60 steps per second
+                const stepTime = Math.floor(t * 60.0);
+
+                // Pseudo-random frequency jumping
+                const freq = 100 + ((stepTime * 853) % 2000);
+                phase += freq / sampleRate;
+
+                // Square wave generator
+                const sq = Math.sin(TWO_PI * phase) > 0 ? 1.0 : -1.0;
+
+                // Harsh gating envelope to make it stutter
+                const gate = Math.sin(TWO_PI * 30 * t) > 0 ? 1.0 : 0.0;
+                data[i] = sq * gate * Math.exp(-t * 10.0) * 0.5;
+            }
+            return buffer;
+        },
+
+        // 'Sub Boom': The classic cinematic / ambient transition impact.
+        // A massive, 3-second long pure sub-bass drop that rattles the floor.
+        "sub-boom": () => {
+            const buffer = createBuffer(3.0);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let phase = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // Pitch starts at 90Hz and quickly drops and settles at a rumbling 40Hz
+                const freq = 40 + (50 * Math.exp(-t * 4.0));
+                phase += freq / sampleRate;
+
+                // Pure, floor-shaking sine wave
+                const sub = Math.sin(TWO_PI * phase);
+
+                // Gentle saturation to ensure it translates on smaller speakers
+                const saturated = Math.tanh(sub * 1.5);
+
+                // Long decay ensuring it reaches absolute zero by 3 seconds
+                const env = Math.exp(-t * 2.5);
+                data[i] = saturated * env;
+            }
+            return buffer;
+        },
+
+        // FM kick drum. Uses an exponential pitch drop and a subtracted amplitude envelope to ensure an exact zero-crossing finish.
+        "chip-kick-laser": () => {
+            const duration = 0.6;
+            const buffer = createBuffer(duration);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let phase = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // Exponential pitch envelope from approximately 900Hz down to 45Hz
+                const currentFreq = 45.0 + 855.0 * Math.exp(-t * 35.0);
+                phase += currentFreq / sampleRate;
+                phase %= 1.0;
+
+                // Envelope calculation: Subtract the exact value at the end of the tail to force the amplitude to exactly 0.0 at the final sample.
+                let amp = Math.exp(-t * 6.0) - Math.exp(-duration * 6.0);
+                if (amp < 0) {
+                    amp = 0;
+                }
+
+                // Fast phase modulation at the start for transient articulation
+                const transientFM = Math.exp(-t * 80.0) * Math.sin(phase * TWO_PI * 2.0);
+                data[i] = Math.tanh(Math.sin(phase * TWO_PI + transientFM) * amp * 1.2);
+            }
+            return buffer;
+        },
+
+        // Synthesized snare. Tightly filtered white noise burst layered over a pitched sine body, utilizing a downward sweeping SVF.
+        "chip-snare-burst": () => {
+            const duration = 0.4;
+            const buffer = createBuffer(duration);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+
+            // Flat SVF state variables
+            let lp = 0;
+            let bp = 0;
+            let phaseBody = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // Tonal Body
+                const bodyFreq = 180 + 120 * Math.exp(-t * 40.0);
+                phaseBody = (phaseBody + bodyFreq / sampleRate) % 1.0;
+
+                // Additive approximation of a triangle wave using two odd harmonics
+                const bodyWave = Math.sin(phaseBody * TWO_PI) - 0.11 * Math.sin(3 * phaseBody * TWO_PI);
+                let bodyAmp = Math.exp(-t * 12.0) - Math.exp(-duration * 12.0);
+                if (bodyAmp < 0) {
+                    bodyAmp = 0;
+                }
+                const bodyOut = bodyWave * bodyAmp;
+
+                // Noise Burst
+                const noise = (Math.random() * 2.0 - 1.0);
+                let noiseAmp = Math.exp(-t * 8.0) - Math.exp(-duration * 8.0);
+                if (noiseAmp < 0) {
+                    noiseAmp = 0;
+                }
+
+                // SVF Bandpass frequency envelope
+                const cutoffFreq = 1000 + 6000 * Math.exp(-t * 25.0);
+
+                // Clamp SVF cutoff to sampleRate / 6.0 to prevent filter instability
+                const safeCutoff = Math.min(cutoffFreq, sampleRate / 6.0);
+
+                // SVF calculation (Bandpass isolates frequency and removes DC offset from noise)
+                const q = 0.8;
+                const f = 2.0 * Math.sin((Math.PI * safeCutoff) / sampleRate);
+                lp = lp + f * bp;
+                const hp = noise - lp - q * bp;
+                bp = bp + f * hp;
+                const noiseOut = bp * noiseAmp;
+
+                // Sum, scale the mix, and apply soft-clipping
+                data[i] = Math.tanh((bodyOut * 0.8 + noiseOut * 1.5) * 0.7);
+            }
+            return buffer;
+        },
+
+        // A deep, smooth gravitational hum. Uses a slow 3Hz FM wobble and a symmetrical sine-window envelope to guarantee zero clicking and zero DC offset.
+        "gravitational-ripple": () => {
+            const buffer = createBuffer(4.0);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let phase = 0;
+            let lfoPhase = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // Symmetrical zero-crossing envelope: half-sine wave covering the exact duration
+                const env = Math.sin((i / data.length) * Math.PI);
+
+                // 3Hz slow wobble that fades out smoothly over time
+                const fmEnv = Math.exp(-t * 1.0);
+                lfoPhase += 3.0 / sampleRate;
+                const mod = Math.sin(lfoPhase * TWO_PI) * 12.0 * fmEnv;
+
+                // Deep fundamental tone at approximately 55Hz
+                phase += (55.0 + mod) / sampleRate;
+                const wave = Math.sin(phase * TWO_PI);
+                data[i] = wave * env * 0.8;
+            }
+            return buffer;
+        },
+
         // ------------------------------------------
         // ACOUSTIC & PHYSICAL MODELING (Plucks & Mallets)
         // ------------------------------------------
@@ -2222,6 +3071,233 @@ const MotifSamples = (() => {
                 const attack = Math.min(1.0, t * 50); // slight ramping so it doesn't click
 
                 data[i] = (skin + mallet) * attack * Math.exp(-t * 2.5);
+            }
+            return buffer;
+        },
+
+        // 'UI Blip': A clean, menu sine-blip for selection or typing.
+        "ui-blip": () => {
+            const buffer = createBuffer(0.15);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let phase = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // Fast pitch drop (an octave + a fifth)
+                const freq = 880 + 1000 * Math.exp(-t * 80);
+                phase += freq / sampleRate;
+
+                // Mix sine with a tiny bit of square for a retro edge
+                const sine = Math.sin(TWO_PI * phase);
+                const sq = sine > 0 ? 1 : -1;
+                data[i] = (sine * 0.8 + sq * 0.2) * Math.exp(-t * 30);
+            }
+            return buffer;
+        },
+
+        // 'Pickup Chime': A crystalline, high-pitched FM bell with a randomized micro-detune and a bright transient.
+        "pickup-chime": () => {
+            const buffer = createBuffer(0.4);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+
+            // Randomize the base frequency slightly to give it an organic, overlapping feel
+            const baseFreq = 1200 + (Math.random() * 400);
+            let phaseC = 0;
+            let phaseM = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // Pitch envelope: starts slightly high and drops into place within 20ms
+                const pitchEnv = 1.0 + Math.exp(-t * 150.0) * 0.5;
+                phaseC += (baseFreq * pitchEnv) / sampleRate;
+
+                // Inharmonic ratio for a glassy edge
+                phaseM += (baseFreq * 2.1 * pitchEnv) / sampleRate;
+
+                // FM Synthesis
+                const modIndex = Math.exp(-t * 20.0) * 1.5;
+                const mod = Math.sin(TWO_PI * phaseM) * modIndex;
+                const tone = Math.sin(TWO_PI * phaseC + mod);
+
+                // Fast, sharp decay typical of tiny glowing objects
+                const env = Math.exp(-t * 12.0);
+                data[i] = tone * env * 0.6;
+            }
+            return buffer;
+        },
+
+        // 'Tibetan Gong': A massive, deeply resonant struck metal bowl.
+        // Lasts for 5 seconds. Relies on inharmonic overtones and acoustic beating.
+        "gong-tibetan": () => {
+            const duration = 5.0;
+            const buffer = createBuffer(duration);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let p1 = 0;
+            let p2 = 0;
+            let p3 = 0;
+            let p4 = 0;
+
+            // A deep fundamental and three inharmonic overtones common in bronze bowls
+            const f1 = 110.0;
+
+            // 0.5Hz offset creates a slow undulating throb
+            const f2 = 110.5; 
+            const f3 = f1 * 2.76;
+            const f4 = f1 * 5.41;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                p1 += f1 / sampleRate;
+                p2 += f2 / sampleRate;
+                p3 += f3 / sampleRate;
+                p4 += f4 / sampleRate;
+                const body = (Math.sin(TWO_PI * p1) + Math.sin(TWO_PI * p2)) * 0.5;
+                const tone1 = Math.sin(TWO_PI * p3) * Math.exp(-t * 1.5) * 0.3;
+                const tone2 = Math.sin(TWO_PI * p4) * Math.exp(-t * 3.0) * 0.15;
+
+                // Soft mallet strike
+                const mallet = Math.sin(TWO_PI * 40 * t) * Math.exp(-t * 30.0) * 0.5;
+
+                // Long, smooth exponential tail out to zero
+                const masterEnv = Math.exp(-t * 0.8);
+                data[i] = (body + tone1 + tone2 + mallet) * masterEnv * 0.7;
+            }
+            return buffer;
+        },
+
+        // 'Oceanic Swell': An evolving wave of filtered noise.
+        // Designed for reversing or structural transition points.
+        "swell-oceanic": () => {
+            const duration = 4.0;
+            const buffer = createBuffer(duration);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let bp = 0;
+            let lp = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                const noise = (Math.random() * 2.0) - 1.0;
+
+                // Envelope: Symmetrical half-sine wave fading in smoothly and peaking at 2s
+                const env = Math.sin((t / duration) * Math.PI);
+
+                // The filter opens as the envelope rises and closes as it falls
+                const cutoff = 200 + (env * 1500);
+                const f = 2.0 * Math.sin(Math.PI * cutoff / sampleRate);
+
+                // Slight resonance for an airy tone
+                const q = 0.5; 
+
+                // SVF Math
+                const hp = noise - lp - (q * bp);
+                bp += f * hp;
+                lp += f * bp;
+                data[i] = bp * env * 1.5;
+            }
+            return buffer;
+        },
+
+        // A muffled, alien chime. Uses additive synthesis with inharmonic ratios tuned specifically to low registers, simulating a large resonant alien structure.
+        "void-chime": () => {
+            const buffer = createBuffer(5.0);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let p1 = 0;
+            let p2 = 0;
+            let p3 = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // Independent exponential decays for each harmonic layer. Higher modes decay faster.
+                const env1 = Math.exp(-t * 0.8);
+                const env2 = Math.exp(-t * 1.5);
+                const env3 = Math.exp(-t * 2.5);
+
+                // Base frequency sits at 82Hz (approx E2)
+                p1 += 82.0 / sampleRate;
+
+                // Inharmonic lower-mid
+                p2 += (82.0 * 2.76) / sampleRate;
+
+                // Inharmonic mid (decays fastest)
+                p3 += (82.0 * 5.40) / sampleRate;
+                const s1 = Math.sin(p1 * TWO_PI) * env1 * 1.0;
+                const s2 = Math.sin(p2 * TWO_PI) * env2 * 0.4;
+                const s3 = Math.sin(p3 * TWO_PI) * env3 * 0.15;
+                const mix = (s1 + s2 + s3);
+
+                // Rapid linear attack (5ms) to prevent start clicks
+                const attack = Math.min(1.0, t * 200.0);
+
+                // Final scale and soft-clip to keep dynamics smooth
+                data[i] = Math.tanh(mix * 0.7) * attack;
+            }
+            return buffer;
+        },
+
+        // A soothing, distant ocean swell. Uses white noise sculpted by a symmetrical half-sine envelope and a gently sweeping 1-pole lowpass filter, ensuring zero clicks and natural flow.
+        "ocean-swell": () => {
+            // 6 second long rolling wave
+            const buffer = createBuffer(6.0);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+
+            // 1-pole filter state
+            let lp = 0;
+            for (let i = 0; i < data.length; i++) {
+                // Symmetrical zero-crossing envelope for volume
+                const env = Math.sin((i / data.length) * Math.PI);
+                const noise = Math.random() * 2.0 - 1.0;
+
+                // Sweeping cutoff frequency peaking in the middle of the sample
+                const targetCutoff = 150.0 + (env * 600.0);
+                const cutoff = Math.min(targetCutoff, sampleRate / 6.0);
+                const alpha = Math.tan(Math.PI * cutoff / sampleRate);
+
+                // Extremely smooth 1-pole lowpass filter
+                lp += (noise - lp) * alpha;
+                data[i] = lp * env * 1.5;
+            }
+            return buffer;
+        },
+
+        // A muffled, earthy struck log or mossy stone. Uses additive synthesis with non-integer overtones of a stiff wooden bar, decaying rapidly into the earth.
+        "mossy-stone-strike": () => {
+            const buffer = createBuffer(2.0);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            let p1 = 0;
+            let p2 = 0;
+            let p3 = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // Exponential decays for organic damping. Higher modes decay faster.
+                const env1 = Math.exp(-t * 3.0);
+                const env2 = Math.exp(-t * 8.0);
+                const env3 = Math.exp(-t * 15.0);
+
+                // Base frequency tuned to a low, resonant 130Hz
+                p1 += 130.0 / sampleRate;
+
+                // Wood/stone stiffness mode 1
+                p2 += (130.0 * 2.56) / sampleRate;
+
+                // Wood/stone stiffness mode 2
+                p3 += (130.0 * 4.15) / sampleRate;
+                const s1 = Math.sin(p1 * TWO_PI) * env1 * 1.0;
+                const s2 = Math.sin(p2 * TWO_PI) * env2 * 0.5;
+                const s3 = Math.sin(p3 * TWO_PI) * env3 * 0.2;
+                const mix = s1 + s2 + s3;
+
+                // Rapid linear attack (2ms) simulating a mallet strike without a digital click
+                const attack = Math.min(1.0, t * 500.0);
+
+                // Final zero-crossing safeguard fade at the very end of the buffer
+                const tailFade = Math.max(0.0, 1.0 - (i / data.length));
+                data[i] = Math.tanh(mix * 0.8) * attack * tailFade;
             }
             return buffer;
         },

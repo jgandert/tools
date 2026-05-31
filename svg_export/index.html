@@ -151,6 +151,7 @@
     </section>
 </main>
 
+<script src="../one.js"></script>
 <script src="../client-zip.js"></script>
 
 <script>
@@ -326,7 +327,7 @@
             }
         } catch (error) {
             console.error(error);
-            alert("An error occurred during processing.");
+            one.alert("An error occurred during processing.");
         } finally {
             // Restore UI
             actionBtn.innerHTML = "<span class=\"sym\">folder_open</span> Select SVGs & Download";

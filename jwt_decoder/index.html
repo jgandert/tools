@@ -9,18 +9,9 @@
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../one.js"></script>
     <style>
-        .layout-centered {
-            padding: 0;
-        }
 
-        main {
-            padding: 0;
-        }
-
-        .layout-centered main {
-            max-width: 900px;
-        }
 
         .error-text {
             color: var(--error);
@@ -156,13 +147,7 @@
     copyPayloadBtn.addEventListener("click", () => {
         const text = payloadEl.textContent;
         if (text) {
-            navigator.clipboard.writeText(text).then(() => {
-                const originalText = copyPayloadBtn.textContent;
-                copyPayloadBtn.textContent = "Copied!";
-                setTimeout(() => {
-                    copyPayloadBtn.textContent = originalText;
-                }, 2000);
-            });
+            one.copy(text);
         }
     });
 

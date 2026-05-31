@@ -355,11 +355,12 @@ office at north west required
         </div>
 
         <h2>1. Global Settings</h2>
-        <table>
-            <tr>
-                <th>Syntax</th>
-                <th>Description</th>
-            </tr>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Syntax</th>
+                    <th>Description</th>
+                </tr>
             <tr>
                 <td>
                     <code>canvas 500 500</code>
@@ -421,16 +422,18 @@ office at north west required
                     ) and min connected wall count (<code>cwc</code>).
                 </td>
             </tr>
-        </table>
+            </table>
+        </div>
 
         <hr>
 
         <h2>2. Rooms &amp; Variables</h2>
-        <table>
-            <tr>
-                <th>Syntax</th>
-                <th>Description</th>
-            </tr>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Syntax</th>
+                    <th>Description</th>
+                </tr>
             <tr>
                 <td>
                     <code>room A</code>
@@ -471,16 +474,18 @@ office at north west required
                 </td>
                 <td>Define a variable containing multiple rooms.</td>
             </tr>
-        </table>
+            </table>
+        </div>
 
         <hr>
 
         <h2>3. Rules &amp; Constraints</h2>
-        <table>
-            <tr>
-                <th>Syntax</th>
-                <th>Description</th>
-            </tr>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Syntax</th>
+                    <th>Description</th>
+                </tr>
             <tr>
                 <td>
                     <code>A close B</code>
@@ -562,18 +567,20 @@ office at north west required
                 </td>
                 <td>Avoid placing the room on any outer edge.</td>
             </tr>
-        </table>
+            </table>
+        </div>
 
         <hr>
 
         <h2>
             4. Nested Floor Plans (<code>inside</code>)
         </h2>
-        <table>
-            <tr>
-                <th>Syntax</th>
-                <th>Description</th>
-            </tr>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Syntax</th>
+                    <th>Description</th>
+                </tr>
             <tr>
                 <td>
 <pre>
@@ -640,7 +647,8 @@ office at north west required
                     inside an <code>inside</code> block.
                 </td>
             </tr>
-        </table>
+            </table>
+        </div>
 
         <footer>
             <button type="button" data-action="close">Close</button>
@@ -1500,13 +1508,15 @@ office at north west required
         const breakdownHtml = bd ? `
             <details>
                 <summary>Breakdown</summary>
-                <table class="breakdown-table">
-                    <tr><td>Area</td><td class="val">${fmt(bd.area)}</td></tr>
-                    <tr><td>Aspect penalty</td><td class="val">${fmt(bd.aspectPenalty)}</td></tr>
-                    <tr><td>Canvas penalty</td><td class="val">${fmt(bd.canvasPenalty)}</td></tr>
-                    <tr><td>Topological penalty</td><td class="val">${fmt(bd.topologicalPenalty)}</td></tr>
-                    <tr><td>Room penalty</td><td class="val">${fmt(bd.roomPenalty)}</td></tr>
-                </table>
+                <div class="table-container">
+                    <table class="breakdown-table">
+                        <tr><td>Area</td><td class="val">${fmt(bd.area)}</td></tr>
+                        <tr><td>Aspect penalty</td><td class="val">${fmt(bd.aspectPenalty)}</td></tr>
+                        <tr><td>Canvas penalty</td><td class="val">${fmt(bd.canvasPenalty)}</td></tr>
+                        <tr><td>Topological penalty</td><td class="val">${fmt(bd.topologicalPenalty)}</td></tr>
+                        <tr><td>Room penalty</td><td class="val">${fmt(bd.roomPenalty)}</td></tr>
+                    </table>
+                </div>
             </details>` : "";
         statsOutput.innerHTML = `
             <p><strong>Cost:</strong> ${fmt(result.cost)}</p>

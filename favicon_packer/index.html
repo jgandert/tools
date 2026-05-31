@@ -9,10 +9,18 @@
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../one.js"></script>
     <script src="../client-zip.js"></script>
     <style>
+        .split-card {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+        }
+
         .split-card > div {
-            min-width: 320px;
+            flex: 1 1 320px;
+            max-width: 100%;
         }
 
         .preview-pane {
@@ -113,10 +121,28 @@
         }
 
         .sub-option {
-            margin-left: 2rem;
+            margin-left: var(--spacing-md);
             opacity: 0.8;
             display: flex;
             align-items: center;
+            justify-content: space-between;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+
+        .sub-option input {
+            flex: 1 1 150px;
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 480px) {
+            .preview-pane {
+                padding: var(--spacing-sm);
+            }
+
+            .sub-option {
+                margin-left: var(--spacing-sm);
+            }
         }
 
         .flex-v {
@@ -562,7 +588,7 @@
 
     function handleFile(file) {
         if (!file.type.match(/^image\/(png|jpeg|svg\+xml)$/)) {
-            alert("Please upload a PNG, JPG, or SVG image.");
+            one.alert("Please upload a PNG, JPG, or SVG image.");
             return;
         }
         uploadedFile = file;
@@ -851,7 +877,7 @@
             document.body.removeChild(a);
         } catch (e) {
             console.error(e);
-            alert("An error occurred during export.");
+            one.alert("An error occurred during export.");
         } finally {
             btn.removeAttribute("aria-busy");
             btn.textContent = oldText;

@@ -11,6 +11,7 @@
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../one.js"></script>
     <style>
         textarea#log-out {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -105,17 +106,8 @@
         const copyBtn = document.getElementById("copy-btn");
         const logOutput = document.getElementById("log-out");
 
-        copyBtn.addEventListener("click", async () => {
-            try {
-                await navigator.clipboard.writeText(logOutput.value);
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = "Copied!";
-                setTimeout(() => {
-                    copyBtn.textContent = originalText;
-                }, 2000);
-            } catch (err) {
-                console.error("Failed to copy text: ", err);
-            }
+        copyBtn.addEventListener("click", () => {
+            one.copy(logOutput.value);
         });
     });
 </script>

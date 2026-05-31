@@ -8,6 +8,7 @@
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <title>Image Slicer</title>
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <script src="../one.js"></script>
     <script src="../client-zip.js"></script>
     <link rel="stylesheet" href="../one.css">
     <style>
@@ -423,7 +424,7 @@
     }
 
     function handleFile(file) {
-        if (!file.type.startsWith("image/")) return alert("Please upload an image.");
+        if (!file.type.startsWith("image/")) return one.alert("Please upload an image.");
 
         els.placeholder.textContent = "Loading image...";
 
@@ -660,7 +661,7 @@
             link.remove();
         } catch (err) {
             console.error(err);
-            alert("Error generating slices: " + err.message);
+            one.alert("Error generating slices: " + err.message);
         } finally {
             els.downloadBtn.disabled = false;
             els.downloadBtn.textContent = "Download ZIP";

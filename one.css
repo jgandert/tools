@@ -99,6 +99,7 @@ button.btn-sym {
     --on-surface-variant: #49454f;
     --outline: #79747e;
     --outline-variant: #c4c7c5;
+    --scroll-shadow: rgba(0, 0, 0, 0.15);
 
     /* Theme-aware selection */
     --selection-bg: var(--primary);
@@ -142,6 +143,7 @@ button.btn-sym {
         --on-surface-variant: #cac4d0;
         --outline: #938f99;
         --outline-variant: #49454f;
+        --scroll-shadow: rgba(255, 255, 255, 0.12);
 
         --pre-bg: #101010;
         --pre-color: #e6e0e9;
@@ -180,6 +182,7 @@ button.btn-sym {
     --on-surface-variant: #cac4d0;
     --outline: #938f99;
     --outline-variant: #49454f;
+    --scroll-shadow: rgba(255, 255, 255, 0.12);
 
     --pre-bg: #101010;
     --pre-color: #e6e0e9;
@@ -237,6 +240,11 @@ button.btn-sym {
     display: none !important;
 }
 
+html {
+    scroll-padding-top: calc(var(--header-height) + var(--spacing-md));
+    scroll-behavior: smooth;
+}
+
 /* Base body typography and layout defaults */
 body {
     font-family: var(--font-sans);
@@ -265,10 +273,14 @@ ol,
 dl,
 pre,
 blockquote,
-figure,
 hr,
 table {
     margin-top: 0;
+    margin-bottom: var(--spacing-md);
+}
+
+figure {
+    margin: 0;
     margin-bottom: var(--spacing-md);
 }
 
@@ -457,8 +469,8 @@ header nav {
     /* Scroll Shadows (Lea Verou trick) */
     background: /* Left cover */ linear-gradient(to right, var(--surface-container) 30%, transparent),
         /* Right cover */ linear-gradient(to left, var(--surface-container) 30%, transparent),
-        /* Left shadow */ radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.15), transparent),
-        /* Right shadow */ radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.15), transparent);
+        /* Left shadow */ radial-gradient(farthest-side at 0% 50%, var(--scroll-shadow), transparent),
+        /* Right shadow */ radial-gradient(farthest-side at 100% 50%, var(--scroll-shadow), transparent);
     background-color: var(--surface-container);
     background-repeat: no-repeat;
     background-position: left center, right center, left center, right center;
@@ -651,6 +663,22 @@ aside dfn {
 }
 
 /* Tables */
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    margin-bottom: var(--spacing-lg);
+}
+
+.table-container table {
+    margin-bottom: 0;
+}
+
+.table-container:has(> .hidden),
+.table-container:has(> [hidden]) {
+    display: none;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -857,6 +885,35 @@ small {
     color: var(--on-surface-variant);
 }
 
+.timestamp {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: .7;
+    margin: 2px 0 8px;
+    min-height: 1.4em;
+    font-size: 0.95rem;
+}
+
+.timestamp::before {
+    content: "schedule";
+    font-family: "Material Symbols Rounded";
+    font-weight: normal;
+    font-style: normal;
+    font-size: 1.1em;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    -webkit-font-feature-settings: "liga";
+    font-feature-settings: "liga";
+    -webkit-font-smoothing: antialiased;
+}
+
+.timestamp:empty {
+    display: none;
+}
+
 /* Tighten spacing when following elements with standard bottom margin to maintain a 4px gap */
 :is(input, textarea, select, p, ul, ol, dl, pre, blockquote, figure, hr, table) + small {
     margin-top: calc(var(--spacing-md) * -1 + 4px);
@@ -872,7 +929,7 @@ select {
     width: 100%;
     margin-top: 0;
     margin-bottom: var(--spacing-md);
-    padding: 12px 16px;
+    padding: 12px 40px 12px 16px;
     font-size: 1rem;
     font-family: inherit;
     color: var(--on-surface);
@@ -885,6 +942,7 @@ select {
     background-image: var(--select-arrow);
     background-repeat: no-repeat;
     background-position: right 12px center;
+    text-overflow: ellipsis;
     transition: var(--trans-interactive);
 }
 
@@ -2041,7 +2099,8 @@ dialog footer {
 }
 
 
-[data-tooltip] {
+[data-tooltip],
+[data-tooltip-mobile] {
     /* Associates a unique local scope per element automatically */
     anchor-name: --local-tooltip-anchor;
     anchor-scope: --local-tooltip-anchor;
@@ -2049,10 +2108,8 @@ dialog footer {
     cursor: help;
 }
 
-[data-tooltip]::after {
-    /* Extracts the text payload directly from the HTML attribute */
-    content: attr(data-tooltip);
-
+[data-tooltip]::after,
+[data-tooltip-mobile]::after {
     /* Establishes the floater relationship */
     position: fixed;
     position-anchor: --local-tooltip-anchor;
@@ -2099,11 +2156,43 @@ dialog footer {
     transition: opacity 0.2s, visibility 0.2s;
 }
 
+[data-tooltip]::after {
+    /* Extracts the text payload directly from the HTML attribute */
+    content: attr(data-tooltip);
+}
+
+[data-tooltip-mobile]::after {
+    /* Extracts the text payload directly from the HTML attribute */
+    content: attr(data-tooltip-mobile);
+}
+
 [data-tooltip]:hover::after,
-[data-tooltip]:focus-visible::after {
+[data-tooltip]:focus-visible::after,
+[data-tooltip-mobile]:hover::after,
+[data-tooltip-mobile]:focus-visible::after {
     opacity: 1;
     visibility: visible;
 }
+
+[data-tooltip]:active::after,
+[data-tooltip-mobile]:active::after {
+    /* Prevent anchor positioning detachment glitch where tooltip falls back to
+       button origin (0,0) when something else takes the focus */
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transition: none !important;
+}
+
+@media (min-width: 900px) {
+    [data-tooltip-mobile] {
+        cursor: inherit;
+    }
+
+    [data-tooltip-mobile]::after {
+        display: none !important;
+    }
+}
+
 
 /* --- Steps List --- */
 .steps {
@@ -2152,7 +2241,47 @@ dialog footer {
     border-radius: 0 8px 8px 0;
 }
 
-/* 11. Print Styles -------------------------------------------------------- */
+/* Toasts / Notifications -------------------------------------------------- */
+#one-toast-container,
+#one-toast-container:popover-open {
+    position: fixed;
+    inset: auto;
+    bottom: var(--spacing-md);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    z-index: 2000;
+    pointer-events: none;
+    align-items: center;
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    outline: none;
+}
+
+.toast {
+    background-color: var(--on-surface);
+    color: var(--surface);
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: auto;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Print Styles ------------------------------------------------------------ */
 @media print {
     body {
         background-color: white;
@@ -2788,6 +2917,19 @@ dialog footer {
 }
 
 .layout-centered main {
-    max-width: 700px;
+    max-width: 800px;
     width: 100%;
+}
+
+@media (max-width: 600px) {
+    .layout-centered {
+        padding-left: 2px;
+        padding-right: 2px;
+    }
+
+    .layout-centered main {
+        padding-left: 0;
+        padding-right: 0;
+        padding-top: 12px;
+    }
 }

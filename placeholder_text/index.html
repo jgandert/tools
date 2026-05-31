@@ -9,6 +9,7 @@
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../one.js"></script>
     <style>
         #output {
             height: 400px;
@@ -123,41 +124,9 @@
     sentenceInput.addEventListener("input", updateOutput);
     regenBtn.addEventListener("click", updateOutput);
 
-    copyBtn.addEventListener("click", async () => {
+    copyBtn.addEventListener("click", () => {
         const text = Array.from(outputEl.querySelectorAll("p")).map(p => p.innerText).join("\n\n");
-        const showSuccess = () => {
-            const originalText = copyBtn.innerHTML;
-            copyBtn.innerHTML = "<span class=\"sym\">check</span> Copied!";
-            setTimeout(() => copyBtn.innerHTML = originalText, 2000);
-        };
-
-        // 1. Try modern clipboard API
-        if (navigator.clipboard?.writeText && window.isSecureContext) {
-            try {
-                await navigator.clipboard.writeText(text);
-                showSuccess();
-                return;
-            } catch (err) {
-                console.error("Clipboard API failed:", err);
-            }
-        }
-
-        // 2. Fallback to textarea select/copy (works in non-secure context and old browsers)
-        try {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed";
-            textArea.style.left = "-9999px";
-            textArea.style.top = "0";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            const successful = document.execCommand("copy");
-            document.body.removeChild(textArea);
-            if (successful) showSuccess();
-        } catch (err) {
-            console.error("Fallback copy failed:", err);
-        }
+        one.copy(text);
     });
 
     // Initial Generation

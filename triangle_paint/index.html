@@ -9,6 +9,7 @@
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <title>Triangle Paint</title>
     <link rel="stylesheet" href="../one.css">
+    <script src="../one.js"></script>
     <style>
         /* ------------------------------------------------------------------
             TOOL SPECIFIC STYLES
@@ -1110,10 +1111,7 @@
 
     function copyToClipboard() {
         const copyText = document.getElementById("svg-output");
-        copyText.select();
-        copyText.setSelectionRange(0, 99999);
-        navigator.clipboard.writeText(copyText.value);
-        log("Copied to clipboard.");
+        one.copy(copyText.value);
     }
 
     /* EVENT LISTENERS */
@@ -1129,7 +1127,14 @@
     document.getElementById("t-scroll").addEventListener("change", () => setMode("scroll"));
     document.getElementById("undo-btn").addEventListener("click", performUndo);
     document.getElementById("redo-btn").addEventListener("click", performRedo);
-    document.getElementById("new-artwork-btn").addEventListener("click", () => window.location.reload());
+    document.getElementById("new-artwork-btn").addEventListener("click", async () => {
+        if (Object.keys(gridData).length > 0) {
+            const confirmed = await one.confirm("Start a new artwork? This will clear your current canvas.", "New Artwork");
+            if (!confirmed) return;
+        }
+        localStorage.removeItem("triGridData_v7");
+        window.location.reload();
+    });
     document.getElementById("open-btn").addEventListener("click", () => document.getElementById("file-input").click());
     document.getElementById("file-input").addEventListener("change", (e) => handleFileLoad(e.target));
     document.getElementById("grid-cols").addEventListener("change", resizeGrid);

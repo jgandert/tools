@@ -99,7 +99,7 @@
         <h2>About one.css</h2>
         <p>
             <strong>one.css</strong> is designed to provide a premium, modern look
-            with minimal effort. It leverages <strong>semantic HTML</strong> to create
+            with minimal effort. It leverages <a href="#semantic-power">semantic HTML</a> to create
             high-quality interfaces without the need for complex class name systems.
         </p>
 
@@ -135,25 +135,6 @@
             </li>
         </ul>
 
-        <h3>Semantic Power</h3>
-        <p>
-            By using elements like <code>&lt;header&gt;</code>
-            , <code>&lt;main&gt;</code>,
-            <code>&lt;aside&gt;</code>,
-            and <code>&lt;footer&gt;</code>, you get a full-featured app layout for free. Form
-            elements like
-            <code>&lt;fieldset&gt;</code>
-            and <code>&lt;legend&gt;</code> are beautifully styled, and advanced
-            components like <code>&lt;dialog&gt;</code>
-            and <code>&lt;progress&gt;</code> follow a consistent
-            design language.
-        </p>
-
-        <p>
-            <em>This page itself is the primary showcase and documentation for one.css.</em>
-        </p>
-
-
         <h3>Installation</h3>
         <p>
             To use <a href="../one.css">one CSS file</a>, download it and add the following line to
@@ -170,6 +151,13 @@
             and <a href="../material-symbols.woff2">Material Symbols font</a> in the same folder.
         </p>
 
+        <p>
+            <strong>Optional:</strong> For <a href="#js-dialogs">toast notifications and JS dialog
+            replacements</a>, add the <a href="../one.js">one.js library</a>:
+        </p>
+        <pre>
+<code>&lt;script src="one.js"&gt;&lt;/script&gt;</code>
+</pre>
 
         <h3>License</h3>
         <p>
@@ -180,6 +168,24 @@
             The Inter font is released under the <a
             href="https://openfontlicense.org/open-font-license-official-text/">SIL
             OPEN FONT LICENSE Version 1.1</a>.
+        </p>
+
+        <h3 id="semantic-power">Semantic Power</h3>
+        <p>
+            By using elements like <code>&lt;header&gt;</code>
+            , <code>&lt;main&gt;</code>,
+            <code>&lt;aside&gt;</code>,
+            and <code>&lt;footer&gt;</code>, you get a full-featured app layout for free. Form
+            elements like
+            <code>&lt;fieldset&gt;</code>
+            and <code>&lt;legend&gt;</code> are beautifully styled, and advanced
+            components like <code>&lt;dialog&gt;</code>
+            and <code>&lt;progress&gt;</code> follow a consistent
+            design language.
+        </p>
+
+        <p>
+            <em>This page itself is the primary showcase and documentation for one.css.</em>
         </p>
     </section>
 
@@ -194,66 +200,72 @@
         </p>
 
         <h3>Weight Spectrum</h3>
-        <table>
-            <thead>
-            <tr>
-                <th>CSS Weight</th>
-                <th>Name</th>
-                <th>Sample</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-                <td>
-                    <code>100</code>
-                </td>
-                <td>Thin</td>
-                <td class="demo-fw-100">The quick brown fox jumps over the lazy dog</td>
-            </tr>
-            <tr>
-                <td>
-                    <code>300</code>
-                </td>
-                <td>Light</td>
-                <td class="demo-fw-300">The quick brown fox jumps over the lazy dog</td>
-            </tr>
-            <tr>
-                <td>
-                    <code>400</code>
-                </td>
-                <td>Regular</td>
-                <td class="demo-fw-400">The quick brown fox jumps over the lazy dog</td>
-            </tr>
-            <tr>
-                <td>
-                    <code>500</code>
-                </td>
-                <td>Medium</td>
-                <td class="demo-fw-500">The quick brown fox jumps over the lazy dog</td>
-            </tr>
-            <tr>
-                <td>
-                    <code>600</code>
-                </td>
-                <td>SemiBold</td>
-                <td class="demo-fw-600">The quick brown fox jumps over the lazy dog</td>
-            </tr>
-            <tr>
-                <td>
-                    <code>700</code>
-                </td>
-                <td>Bold</td>
-                <td class="demo-fw-700">The quick brown fox jumps over the lazy dog</td>
-            </tr>
-            <tr>
-                <td>
-                    <code>900</code>
-                </td>
-                <td>Black</td>
-                <td class="demo-fw-900">The quick brown fox jumps over the lazy dog</td>
-            </tr>
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table>
+                <thead>
+                <tr>
+                    <th>CSS Weight</th>
+                    <th>Name</th>
+                    <th>Sample</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>
+                        <code>100</code>
+                    </td>
+                    <td>Thin</td>
+                    <td class="demo-fw-100">The quick brown fox jumps over the lazy dog</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>300</code>
+                    </td>
+                    <td>Light</td>
+                    <td class="demo-fw-300">The quick brown fox jumps over the lazy dog</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>400</code>
+                    </td>
+                    <td>Regular</td>
+                    <td class="demo-fw-400">The quick brown fox jumps over the lazy dog</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>500</code>
+                    </td>
+                    <td>Medium</td>
+                    <td class="demo-fw-500">The quick brown fox jumps over the lazy dog</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>600</code>
+                    </td>
+                    <td>SemiBold</td>
+                    <td class="demo-fw-600">The quick brown fox jumps over the lazy dog</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>700</code>
+                    </td>
+                    <td>Bold</td>
+                    <td class="demo-fw-700">The quick brown fox jumps over the lazy dog</td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>900</code>
+                    </td>
+                    <td>Black</td>
+                    <td class="demo-fw-900">The quick brown fox jumps over the lazy dog</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="text-muted">
+            Wrap tables in a <code>&lt;div class="table-container"&gt;</code> to enable responsive
+            horizontal scrolling on mobile viewports, complete with indicator scroll shadows.
+        </p>
 
         <h3>Scale</h3>
         <p class="demo-display-h1">one.css</p>
@@ -267,6 +279,10 @@
         <p class="text-muted">
             Small / muted text at <code>0.875rem</code> — still fully legible because Inter's
             letterforms are optimized for on-screen rendering.
+        </p>
+        <p class="timestamp">
+            2026-05-27 10:25:00 UTC (styled with <code>.timestamp</code> to automatically include
+            the clock icon)
         </p>
 
         <h3>Process Steps</h3>
@@ -324,10 +340,36 @@ Done!
             </button>
         </div>
 
-        <h3>Modals</h3>
-        <button type="button" id="open-modal" aria-haspopup="dialog" aria-controls="modal-example">
-            Clear Local Data
-        </button>
+        <h3>Modals &amp; Toasts</h3>
+        <div class="group">
+            <button type="button" id="open-modal" aria-haspopup="dialog"
+                    aria-controls="modal-example">
+                Clear Local Data
+            </button>
+        </div>
+
+        <h4 id="js-dialogs">JS Dialogs</h4>
+
+        <div class="group mb-2">
+            <button type="button" id="demo-alert">Show Toast</button>
+            <code>one.alert("Action completed successfully!");</code>
+        </div>
+
+        <div class="group mb-2">
+            <button type="button" id="demo-prompt">Test Prompt</button>
+            <code>const name = await one.prompt("Please enter your name:", "Guest");</code>
+        </div>
+
+        <div class="group mb-2">
+            <button type="button" id="demo-confirm">Test Confirm</button>
+            <code>const confirmed = await one.confirm("Do you really want to delete this
+                item?");</code>
+        </div>
+
+        <div class="group mb-2">
+            <button type="button" id="demo-copy">Test Copy</button>
+            <code>const success = await one.copy("Text to copy", silent = false);</code>
+        </div>
     </section>
 
     <section id="controls">
@@ -414,10 +456,20 @@ Done!
             tooltips automatically adapt their position to always remain visible on-screen and close
             to their source.
         </p>
+        <p>
+            To display a tooltip exclusively on mobile viewports (e.g., when text labels are hidden
+            via <code>.hide-mobile</code> and only icons remain), use <code>data-tooltip-mobile="Your
+            text"</code>. This tooltip automatically disables itself on desktop screens (900px and
+            up).
+        </p>
         <div class="group mt-2">
             <button type="button" data-tooltip="This is a helpful tooltip">Hover me</button>
             <span
                 data-tooltip="Tooltips work on any element, not just buttons!">Hover this text</span>
+            <button type="button" data-tooltip-mobile="Visible only on mobile screen widths!">
+                <span class="sym">phone_iphone</span>
+                <span class="hide-mobile">Mobile Tooltip Demo</span>
+            </button>
         </div>
     </section>
 
@@ -536,7 +588,31 @@ Done!
     </article>
 </dialog>
 
+<script src="../one.js"></script>
 <script>
+    // --- JS Library Logic ---
+    document.getElementById("demo-alert").addEventListener("click", () => {
+        one.alert("Action completed successfully!");
+    });
+
+    document.getElementById("demo-prompt").addEventListener("click", async () => {
+        const name = await one.prompt("Please enter your name:", "Guest");
+        if (name) {
+            one.alert(`Hello, ${name}!`);
+        }
+    });
+
+    document.getElementById("demo-confirm").addEventListener("click", async () => {
+        const confirmed = await one.confirm("Do you really want to delete this item?");
+        if (confirmed) {
+            one.alert("Item deleted.");
+        }
+    });
+
+    document.getElementById("demo-copy").addEventListener("click", () => {
+        one.copy("Sample text copied to clipboard from one.css showcase!");
+    });
+
     // --- Modal Logic ---
     const dialog = document.getElementById("modal-example");
     document.getElementById("open-modal").addEventListener("click", () => dialog?.showModal?.());

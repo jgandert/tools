@@ -49,9 +49,7 @@
             </button>
         </div>
         <div id="error-msg" class="error-message"></div>
-    </section>
 
-    <section id="output-section">
         <label for="json-output">
             Output
             <textarea id="json-output" class="code-area" rows="20" readonly
@@ -75,61 +73,65 @@
             <!-- prettier-ignore-start -->
             <!-- beautify ignore:start -->
             <textarea id="json-input" class="code-area" rows="25" placeholder="Paste JSON here...">
-                        {
-                        "organization": "Tech Innovators Inc",
-                        "active_status": true,
-                        "last_updated": "2026-02-16T18:00:00Z",
-                        "metadata": {
-                        "version": 1.2,
-                        "environment": "production"
-                        },
-                        "users": [{
-                        "id": 101,
-                        "name": "Alice Vance",
-                        "age": 28,
-                        "str_id": "3",
-                        "is_admin": true,
-                        "tags": [
-                        "frontend",
-                        "ux",
-                        "mentor"
-                        ],
-                        "address": {
-                        "city": "Berlin",
-                        "country": "Germany"
-                        },
-                        "deleted_at": null
-                        }, {
-                        "id": 102,
-                        "name": "Bob Smith",
-                        "age": 34,
-                        "is_admin": false,
-                        "tags": [
-                        "backend",
-                        "devops"
-                        ],
-                        "secret_identity": "Bernd Schmitt",
-                        "address": {
-                        "city": "San Francisco",
-                        "country": "USA"
-                        },
-                        "deleted_at": "2025-12-01"
-                        }, {
-                        "id": 103,
-                        "name": "Charlie Day",
-                        "age": 40,
-                        "is_admin": false,
-                        "tags": [
-                        "manager"
-                        ],
-                        "address": {
-                        "city": "Berlin",
-                        "country": "Germany"
-                        },
-                        "deleted_at": null
-                        }],
-                        "total_count": 3
-                        }
+{
+    "organization": "Tech Innovators Inc",
+    "active_status": true,
+    "last_updated": "2026-02-16T18:00:00Z",
+    "metadata": {
+        "version": 1.2,
+        "environment": "production"
+    },
+    "users": [
+        {
+            "id": 101,
+            "name": "Alice Vance",
+            "age": 28,
+            "str_id": "3",
+            "is_admin": true,
+            "tags": [
+                "frontend",
+                "ux",
+                "mentor"
+            ],
+            "address": {
+                "city": "Berlin",
+                "country": "Germany"
+            },
+            "deleted_at": null
+        },
+        {
+            "id": 102,
+            "name": "Bob Smith",
+            "age": 34,
+            "is_admin": false,
+            "tags": [
+                "backend",
+                "devops"
+            ],
+            "secret_identity": "Bernd Schmitt",
+            "address": {
+                "city": "San Francisco",
+                "country": "USA"
+            },
+            "deleted_at": "2025-12-01"
+        },
+        {
+            "id": 103,
+            "name": "Charlie Day",
+            "age": 40,
+            "is_admin": false,
+            "tags": [
+                "manager"
+            ],
+            "address": {
+                "city": "Berlin",
+                "country": "Germany"
+            },
+            "deleted_at": null
+        }
+    ],
+    "total_count": 3
+}
                     </textarea>
             <!-- beautify ignore:end -->
             <!-- prettier-ignore-end -->
@@ -196,11 +198,12 @@
             language automatically
             maps the path extraction across all items in the array.</p>
 
-        <table>
-            <tr>
-                <th>Query String</th>
-                <th>Result / Explanation</th>
-            </tr>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Query String</th>
+                    <th>Result / Explanation</th>
+                </tr>
             <tr>
                 <td>
                     <code>active_status</code>
@@ -289,7 +292,8 @@
                     Slicing works on strings too.
                 </td>
             </tr>
-        </table>
+            </table>
+        </div>
 
         <hr>
 
@@ -324,11 +328,12 @@
             </li>
         </ul>
 
-        <table>
-            <tr>
-                <th>Query String</th>
-                <th>Result / Explanation</th>
-            </tr>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Query String</th>
+                    <th>Result / Explanation</th>
+                </tr>
             <tr>
                 <td>
                     <code>users.{address.city == 'Berlin'}.name</code>
@@ -424,7 +429,8 @@
                     You can also use modifiers in conditions.
                 </td>
             </tr>
-        </table>
+            </table>
+        </div>
 
         <hr>
 
@@ -435,11 +441,12 @@
             map variables directly, inject hardcoded strings, or use spread syntax to control field
             inheritance.</p>
 
-        <table>
-            <tr>
-                <th>Query String</th>
-                <th>Result / Explanation</th>
-            </tr>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Query String</th>
+                    <th>Result / Explanation</th>
+                </tr>
             <tr>
                 <td>
                     <code>=&gt; {last_updated, meta: metadata}</code>
@@ -518,7 +525,8 @@
                     operation.
                 </td>
             </tr>
-        </table>
+            </table>
+        </div>
 
         <hr>
 
@@ -528,11 +536,12 @@
             definitions.
         </p>
 
-        <table>
-            <tr>
-                <th>Query String</th>
-                <th>Result / Explanation</th>
-            </tr>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Query String</th>
+                    <th>Result / Explanation</th>
+                </tr>
             <tr>
                 <td>
                     <code>users.tags</code>
@@ -625,17 +634,19 @@
                     <code>:reverse</code> reverses array order without mutating.
                 </td>
             </tr>
-        </table>
+            </table>
+        </div>
 
         <hr>
 
         <h2>6. Aggregations, Grouping & Sorting</h2>
 
-        <table>
-            <tr>
-                <th>Query String</th>
-                <th>Result / Explanation</th>
-            </tr>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Query String</th>
+                    <th>Result / Explanation</th>
+                </tr>
             <tr>
                 <td>
                     <code>users.age:avg</code>
@@ -773,7 +784,8 @@
                     bridging object results back into array processing.
                 </td>
             </tr>
-        </table>
+            </table>
+        </div>
 
 
         <hr>
@@ -782,11 +794,12 @@
         <p>String modifiers transform text values. When applied to an array, they auto-map over each
             element.</p>
 
-        <table>
-            <tr>
-                <th>Query String</th>
-                <th>Result / Explanation</th>
-            </tr>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Query String</th>
+                    <th>Result / Explanation</th>
+                </tr>
             <tr>
                 <td>
                     <code>users.name:upper</code>
@@ -829,17 +842,19 @@
                     String modifiers also work inline within filters.
                 </td>
             </tr>
-        </table>
+            </table>
+        </div>
 
         <hr>
 
         <h2>8. Composition (Multi-Queries)</h2>
 
-        <table>
-            <tr>
-                <th>Query String</th>
-                <th>Result / Explanation</th>
-            </tr>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Query String</th>
+                    <th>Result / Explanation</th>
+                </tr>
             <tr>
                 <td>
                     <code>{total: users:len, hired: users.{tags contains 'ux'}.name}</code>
@@ -902,7 +917,8 @@
 }</code></pre>
                 </td>
             </tr>
-        </table>
+            </table>
+        </div>
 
         <footer>
             <button type="button" data-action="close">Close</button>

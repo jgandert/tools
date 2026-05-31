@@ -10,6 +10,7 @@
     <title>Text Modifier</title>
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../one.js"></script>
     <script src="../storage.js"></script>
     <style>
         aside button {
@@ -437,22 +438,7 @@ Dates & Times:
 
     const copyToClipboard = (silent = false) => {
         if (!outputText.value) return;
-        const originalText = copyOutputBtn.innerText;
-        const updateBtn = () => {
-            if (silent) return;
-            copyOutputBtn.innerText = "Copied!";
-            setTimeout(() => {
-                copyOutputBtn.innerText = originalText;
-            }, 2000);
-        };
-
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(outputText.value).then(updateBtn);
-        } else {
-            outputText.select();
-            document.execCommand("copy");
-            updateBtn();
-        }
+        one.copy(outputText.value, silent);
     };
 
     copyOutputBtn.addEventListener("click", () => copyToClipboard());
@@ -812,8 +798,8 @@ Dates & Times:
         }
     };
 
-    document.getElementById("clear-all").addEventListener("click", () => {
-        if (confirm("Clear all text?")) {
+    document.getElementById("clear-all").addEventListener("click", async () => {
+        if (await one.confirm("Clear all text?")) {
             inputText.value = "";
             outputText.value = "";
             updateStats();
@@ -821,8 +807,8 @@ Dates & Times:
         }
     });
 
-    document.getElementById("restore-default").addEventListener("click", () => {
-        if (confirm("Restore default example?")) {
+    document.getElementById("restore-default").addEventListener("click", async () => {
+        if (await one.confirm("Restore default example?")) {
             inputText.value = DEFAULT_EXAMPLE;
             updateStats();
             debouncedSave();

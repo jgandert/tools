@@ -69,6 +69,7 @@
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
     <script src="../storage.js"></script>
+    <script src="../one.js"></script>
 </head>
 
 <body>
@@ -157,20 +158,22 @@
             <input type="search" id="history-search" placeholder="Search entries..."
                    aria-label="Search entries">
         </div>
-        <table id="history-table">
-            <thead>
-            <tr>
-                <th>Date</th>
-                <th>Worked</th>
-                <th>Overtime</th>
-                <th>Input</th>
-                <th>Actions</th>
-            </tr>
-            </thead>
-            <tbody id="history-body">
-            <!-- Rows inserted dynamically -->
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table id="history-table">
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Worked</th>
+                    <th>Overtime</th>
+                    <th>Input</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="history-body">
+                <!-- Rows inserted dynamically -->
+                </tbody>
+            </table>
+        </div>
     </section>
 </main>
 <aside>
@@ -908,8 +911,8 @@
         document.getElementById("edit-dialog").showModal();
     }
 
-    function deleteEntry(index) {
-        if (!confirm("Delete this entry?")) return;
+    async function deleteEntry(index) {
+        if (!await one.confirm("Delete this entry?")) return;
         if (!appData) return;
         const data = appData;
         data.workDays.splice(index, 1);
@@ -1091,12 +1094,12 @@
             const result = parseInputString(inputString);
 
             if (result.errors.length > 0) {
-                alert("Fix errors before saving:\n" + result.errors.join("\n"));
+                one.alert("Fix errors before saving:\n" + result.errors.join("\n"));
                 return;
             }
 
             if (result.minutesWorked <= 0) {
-                alert("No work time calculated.");
+                one.alert("No work time calculated.");
                 return;
             }
 
@@ -1104,7 +1107,7 @@
             const data = appData;
 
             if (result.minutesWorked % data.settings.divisibleWarning !== 0) {
-                if (!confirm("Work minutes (" + result.minutesWorked +
+                if (!await one.confirm("Work minutes (" + result.minutesWorked +
                     ") are not divisible by " + data.settings.divisibleWarning +
                     ". Save anyway?")) {
                     return;
@@ -1115,7 +1118,7 @@
             // fail if already exists in timetable
             const existing = data.workDays.findIndex(d => d.localDate === date);
             if (existing >= 0) {
-                if (!confirm("An entry for " + date + " already exists. Replace it?")) {
+                if (!await one.confirm("An entry for " + date + " already exists. Replace it?")) {
                     return;
                 }
                 data.workDays.splice(existing, 1);
@@ -1171,7 +1174,7 @@
             renderPauseRulesDisplay(data.settings.pauseRules);
             updatePreview();
             updateInsertTimeButtonStatus(data.settings.divisibleWarning);
-            if (alertUser) alert("Settings saved.");
+            if (alertUser) one.alert("Settings saved.");
         }
 
         document.getElementById("settings-form").addEventListener("submit", (e) => {
@@ -1218,7 +1221,7 @@
 
             const result = parseInputString(inputString);
             if (result.errors.length > 0) {
-                alert("Fix errors:\n" + result.errors.join("\n"));
+                one.alert("Fix errors:\n" + result.errors.join("\n"));
                 return;
             }
 
@@ -1275,14 +1278,14 @@
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = (ev) => {
+            reader.onload = async (ev) => {
                 try {
                     const imported = JSON.parse(ev.target.result);
                     if (!imported || !Array.isArray(imported.workDays)) {
-                        alert("Invalid timetable format.");
+                        one.alert("Invalid timetable format.");
                         return;
                     }
-                    if (confirm("This will replace all current data. Continue?")) {
+                    if (await one.confirm("This will replace all current data. Continue?")) {
                         const data = {
                             settings: { ...DEFAULT_SETTINGS, ...(imported.settings || {}) },
                             workDays: imported.workDays,
@@ -1291,7 +1294,7 @@
                         appData = data;
                         recalculateOvertime(appData);
                         saveData();
-
+ 
                         // Update settings form
                         document.getElementById("target-minutes").value = appData.settings.targetMinutesPerWorkDay;
                         document.getElementById("initial-overtime").value = appData.settings.initialOvertime;
@@ -1299,12 +1302,12 @@
                         document.getElementById("divisible-warning").value = appData.settings.divisibleWarning;
                         renderPauseRulesSettings(appData.settings.pauseRules);
                         renderPauseRulesDisplay(appData.settings.pauseRules);
-
+ 
                         renderHistory();
                         updatePreview();
                     }
                 } catch (err) {
-                    alert("Failed to parse JSON: " + err.message);
+                    one.alert("Failed to parse JSON: " + err.message);
                 }
             };
             reader.readAsText(file);

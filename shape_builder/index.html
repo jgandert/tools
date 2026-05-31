@@ -363,6 +363,7 @@
     which are released under the MIT license.
 </footer>
 
+<script src="../one.js"></script>
 <script src="./paper.js"></script>
 <script>window.paper = paper;</script>
 <script src="./shapebuilder.js"></script>
@@ -495,7 +496,7 @@
     exportSvgBtn.addEventListener("click", () => {
         const svgElement = shapeContainer.querySelector("svg");
         if (!svgElement) {
-            alert("No SVG to export");
+            one.alert("No SVG to export");
             return;
         }
         const svgContent = svgElement.dataset.originalSvg || svgElement.outerHTML;
@@ -672,8 +673,8 @@ return [
         codeInput.value = DEFAULT_CODE;
     }
 
-    resetBtn.addEventListener("click", () => {
-        if (confirm("Reset code to example?")) {
+    resetBtn.addEventListener("click", async () => {
+        if (await one.confirm("Reset code to example?")) {
             codeInput.value = DEFAULT_CODE;
             localStorage.removeItem("shapebuilder_code");
             updateShape();

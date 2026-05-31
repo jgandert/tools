@@ -26,9 +26,8 @@
 
         /* Connecting Lines (Visual Hierarchy) */
         .node-children {
-            margin-left: var(--spacing-lg);
-            padding-left: var(--spacing-md);
-            border-left: 2px dashed var(--outline-variant);
+            margin-left: var(--spacing-md);
+            padding-left: 0;
             display: flex;
             flex-direction: column;
             gap: var(--spacing-sm);
@@ -99,6 +98,7 @@
             width: auto;
             /* Override one.css 100% width */
             vertical-align: middle;
+            max-width: 100%;
         }
 
         .node-input:focus {
@@ -233,6 +233,40 @@
             font-size: 0.875rem;
             min-height: 1.5rem;
             margin-top: 4px;
+        }
+
+        .node button:not(.btn-sym),
+        .node .btn:not(.btn-sym) {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 8px;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .node-content > * {
+            min-width: 0;
+        }
+
+        @media (max-width: 600px) {
+            main {
+                padding: var(--spacing-md);
+            }
+
+            .node {
+                padding: var(--spacing-sm);
+            }
+
+            .node-children {
+                margin-left: var(--spacing-sm);
+            }
+
+            button.btn-sym,
+            .btn-sym {
+                width: 2rem !important;
+                height: 2rem !important;
+                font-size: 20px !important;
+            }
         }
     </style>
 </head>
@@ -372,6 +406,7 @@
     </button>
 </aside>
 
+<script src="../one.js"></script>
 <script>
     /**
      * REVERSE REGEX BUILDER
@@ -1766,8 +1801,8 @@
         }
     }
 
-    document.getElementById("restore-default-btn").onclick = () => {
-        if (confirm("Restore default example? Current pattern will be lost.")) {
+    document.getElementById("restore-default-btn").onclick = async () => {
+        if (await one.confirm("Restore default example? Current pattern will be lost.")) {
             document.getElementById("regex-out").value = DEFAULT_PATTERN;
             testInput.value = DEFAULT_TESTS;
             updateASTFromInput();

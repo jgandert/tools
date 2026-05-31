@@ -144,6 +144,16 @@ export const TrackVoiceManager = {
      */
     synth(type) {
         this._synthType = type || "sine";
+        this._useSample = false;
+        this._sampleBuffer = null;
+        this._sampleUrl = null;
+        this._sampleLoading = null;
+        this._useSampler = false;
+        this._samplerBuffers = new Map();
+        this._samplerKeys = [];
+        this._samplerLoading = null;
+        this._sliceIndices = null;
+        this._fitDuration = null;
         return this;
     },
 
@@ -927,6 +937,18 @@ export const TrackVoiceManager = {
             voiceGain.gain.setValueAtTime(currentGainVal, startTime);
             if (isTiedNote) {
                 actualDuration = Infinity;
+            } else {
+                const release = 0.015; // 15ms click preventative fade-out
+                const off = startTime + duration;
+                if (typeof voiceGain.gain.exponentialRampToValueAtTime === "function") {
+                    voiceGain.gain.setValueAtTime(currentGainVal, off);
+                    voiceGain.gain.exponentialRampToValueAtTime(0.0001 * currentGainVal, off + release);
+                    voiceGain.gain.setValueAtTime(0, off + release);
+                } else if (typeof voiceGain.gain.setValueAtTime === "function") {
+                    voiceGain.gain.setValueAtTime(currentGainVal, off);
+                    voiceGain.gain.setValueAtTime(0, off + release);
+                }
+                actualDuration = duration + release;
             }
         }
 

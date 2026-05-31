@@ -392,26 +392,28 @@
             </div>
         </div>
 
-        <table class="mt-4">
-            <tbody>
-            <tr>
-                <th>Time Elapsed</th>
-                <td id="res-duration">0s</td>
-            </tr>
-            <tr>
-                <th>Correct Characters</th>
-                <td id="res-correct">0</td>
-            </tr>
-            <tr>
-                <th>Incorrect Characters</th>
-                <td id="res-incorrect">0</td>
-            </tr>
-            <tr>
-                <th>Total Keystrokes</th>
-                <td id="res-total">0</td>
-            </tr>
-            </tbody>
-        </table>
+        <div class="table-container mt-4">
+            <table>
+                <tbody>
+                <tr>
+                    <th>Time Elapsed</th>
+                    <td id="res-duration">0s</td>
+                </tr>
+                <tr>
+                    <th>Correct Characters</th>
+                    <td id="res-correct">0</td>
+                </tr>
+                <tr>
+                    <th>Incorrect Characters</th>
+                    <td id="res-incorrect">0</td>
+                </tr>
+                <tr>
+                    <th>Total Keystrokes</th>
+                    <td id="res-total">0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
 
         <div class="mt-4 flex-row gap-2">
             <button id="restart-btn" type="button" class="btn-primary">
@@ -427,18 +429,20 @@
     <section id="history-section" class="mt-4">
         <h2>History</h2>
         <div id="history-empty" class="text-center text-muted">No tests completed yet.</div>
-        <table id="history-table" class="hidden">
-            <thead>
-            <tr>
-                <th>Date</th>
-                <th>WPM</th>
-                <th>CPM</th>
-                <th>Accuracy</th>
-                <th>Duration</th>
-            </tr>
-            </thead>
-            <tbody id="history-body"></tbody>
-        </table>
+        <div class="table-container">
+            <table id="history-table" class="hidden">
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>WPM</th>
+                    <th>CPM</th>
+                    <th>Accuracy</th>
+                    <th>Duration</th>
+                </tr>
+                </thead>
+                <tbody id="history-body"></tbody>
+            </table>
+        </div>
         <div id="history-graph-container" class="history-graph-container hidden">
             <svg id="history-graph" viewBox="0 0 600 250" class="history-graph"></svg>
             <div class="graph-legend">

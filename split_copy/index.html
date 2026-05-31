@@ -102,8 +102,11 @@
                 <button type="button" class="btn-sym" id="add-preset-btn" title="Add / Save Preset">
                     add
                 </button>
+                <button type="button" class="btn-sym" id="edit-preset-btn" title="Edit Preset Name" disabled>
+                    edit
+                </button>
                 <button type="button" class="btn-sym btn-danger" id="delete-preset-btn"
-                        title="Delete Preset">delete
+                        title="Delete Preset" disabled>delete
                 </button>
             </div>
         </fieldset>
@@ -140,6 +143,14 @@
         </fieldset>
 
     </form>
+    <div class="form-actions">
+        <button type="button" id="btn-export">
+            <span class="sym">download</span> Export
+        </button>
+        <button type="button" id="btn-import">
+            <span class="sym">upload</span> Import
+        </button>
+    </div>
 </aside>
 
 <main id="content">
@@ -150,6 +161,7 @@
     </section>
 </main>
 
+<script src="../one.js"></script>
 <script>
     const textarea = document.getElementById("text-input");
     const splitInput = document.getElementById("split-input");
@@ -161,6 +173,7 @@
     const addRuleBtn = document.getElementById("add-rule-btn");
     const presetSelect = document.getElementById("preset-select");
     const addPresetBtn = document.getElementById("add-preset-btn");
+    const editPresetBtn = document.getElementById("edit-preset-btn");
     const deletePresetBtn = document.getElementById("delete-preset-btn");
 
     const DEFAULT_PRESET = {
@@ -203,6 +216,9 @@
         replacements = Array.isArray(p.replacements) ? JSON.parse(JSON.stringify(p.replacements)) : [];
 
         presetSelect.value = currentPreset;
+        const isDefault = name === "Default";
+        deletePresetBtn.disabled = isDefault;
+        editPresetBtn.disabled = isDefault;
         renderRules();
         renderOutput();
     }
@@ -276,14 +292,14 @@
             saveInputs();
         });
 
-        addPresetBtn.addEventListener("click", () => {
-            const name = prompt("Enter preset name:");
+        addPresetBtn.addEventListener("click", async () => {
+            const name = await one.prompt("Enter preset name:");
             if (!name) return;
             const trimmed = name.trim();
             if (!trimmed) return;
-
+ 
             if (presets[trimmed]) {
-                if (!confirm(`Preset "${trimmed}" already exists. Overwrite?`)) {
+                if (!await one.confirm(`Preset "${trimmed}" already exists. Overwrite?`)) {
                     return;
                 }
             }
@@ -302,29 +318,91 @@
             saveInputs();
         });
 
-        deletePresetBtn.addEventListener("click", () => {
-            if (currentPreset === "Default") {
-                if (confirm("Reset 'Default' preset?")) {
-                    presets["Default"] = {
-                        split: "\\n\\n",
-                        useRegex: false,
-                        prefix: "",
-                        postfix: "",
-                        replacements: [],
-                    };
-                    loadPreset("Default");
-                    saveInputs();
-                }
+        editPresetBtn.addEventListener("click", async () => {
+            if (currentPreset === "Default") return;
+            const name = await one.prompt("Enter new preset name:", currentPreset);
+            if (!name) return;
+            const trimmed = name.trim();
+            if (!trimmed || trimmed === currentPreset) return;
+
+            if (presets[trimmed]) {
+                one.alert(`Preset "${trimmed}" already exists.`);
                 return;
             }
 
-            if (confirm(`Delete preset "${currentPreset}"?`)) {
+            presets[trimmed] = presets[currentPreset];
+            delete presets[currentPreset];
+
+            currentPreset = trimmed;
+            updatePresetSelect();
+            loadPreset(currentPreset);
+            saveInputs();
+        });
+
+        deletePresetBtn.addEventListener("click", async () => {
+            if (currentPreset === "Default") return;
+
+            if (await one.confirm(`Delete preset "${currentPreset}"?`)) {
                 delete presets[currentPreset];
                 currentPreset = "Default";
                 updatePresetSelect();
                 loadPreset(currentPreset);
                 saveInputs();
             }
+        });
+
+        document.getElementById("btn-export").addEventListener("click", () => {
+            const data = {
+                presets,
+                currentPreset,
+                text: textarea.value
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            Object.assign(document.createElement("a"), {
+                href: URL.createObjectURL(blob),
+                download: "split-copy-export.json"
+            }).click();
+        });
+
+        document.getElementById("btn-import").addEventListener("click", () => {
+            const inp = document.createElement("input");
+            inp.type = "file";
+            inp.accept = ".json,application/json";
+            inp.addEventListener("change", () => {
+                const file = inp.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data && typeof data === "object") {
+                            if (data.presets && typeof data.presets === "object") {
+                                presets = data.presets;
+                            }
+                            if (data.currentPreset && presets[data.currentPreset]) {
+                                currentPreset = data.currentPreset;
+                            } else if (Object.keys(presets).length > 0) {
+                                currentPreset = Object.keys(presets)[0];
+                            } else {
+                                currentPreset = "Default";
+                                presets = { "Default": { ...DEFAULT_PRESET } };
+                            }
+                            if (typeof data.text === "string") {
+                                textarea.value = data.text;
+                            }
+                            updatePresetSelect();
+                            loadPreset(currentPreset);
+                            saveInputs();
+                        } else {
+                            one.alert("Invalid JSON data.");
+                        }
+                    } catch (err) {
+                        one.alert("Invalid JSON file.");
+                    }
+                };
+                reader.readAsText(file);
+            });
+            inp.click();
         });
     }
 
@@ -382,33 +460,6 @@
         saveInputs();
     });
 
-    async function copyToClipboard(text) {
-        if (navigator.clipboard?.writeText && window.isSecureContext) {
-            try {
-                await navigator.clipboard.writeText(text);
-                return true;
-            } catch (err) {
-                console.error("Clipboard API failed:", err);
-            }
-        }
-
-        // Fallback
-        try {
-            const temp = document.createElement("textarea");
-            temp.value = text;
-            temp.style.position = "fixed";
-            temp.style.left = "-9999px";
-            document.body.appendChild(temp);
-            temp.select();
-            const ok = document.execCommand("copy");
-            document.body.removeChild(temp);
-            return ok;
-        } catch (err) {
-            console.error("Fallback copy failed:", err);
-            return false;
-        }
-    }
-
     function renderOutput() {
         const content = textarea.value;
         if (!content.trim()) {
@@ -459,7 +510,7 @@
 
             btn.addEventListener("click", async () => {
                 const textToCopy = prefixInput.value + part + postfixInput.value;
-                const success = await copyToClipboard(textToCopy);
+                const success = await one.copy(textToCopy);
                 if (success) {
                     btn.classList.remove("failed");
                     btn.classList.add("clicked");

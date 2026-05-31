@@ -60,51 +60,31 @@
             margin-bottom: var(--spacing-md);
         }
 
-        /* CODE DRAWER */
-        .code-output {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #0d0d0d;
-            border-top: 1px solid #333;
+        /* DIALOG MODAL */
+        dialog textarea {
+            width: 100%;
             height: 250px;
-            transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 40;
-            display: flex;
-            flex-direction: column;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            margin: 0;
         }
 
-        .code-output.visible {
-            transform: translateY(0);
-        }
-
-        .code-header {
-            background: #1a1a1a;
-            padding: 8px 16px;
+        .dialog-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #333;
+            width: 100%;
         }
 
-        .code-header span {
-            color: #fff;
-            font-size: 0.85rem;
-            font-weight: 600;
+        .dialog-body {
+            padding: var(--spacing-md);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
         }
 
-        textarea {
-            flex: 1;
-            background: #000;
-            color: #4ade80;
-            border: none;
-            resize: none;
-            padding: 16px;
-            padding-bottom: 80px;
-            /* Extra padding for mobile scroll */
-            outline: none;
+        .close-btn {
+            margin: 0 !important;
         }
 
         @media (max-width: 900px) {
@@ -218,17 +198,18 @@
         <h1>Grid Generator</h1>
     </hgroup>
 
-    <button onclick="toggleCode()" type="button">
+    <button onclick="toggleCode()" data-tooltip-mobile="View Source" type="button">
         <span class="sym">code</span>
         <span class="hide-mobile">View Source</span>
     </button>
-    <button class="btn-primary" onclick="downloadSVG()" type="button">
+    <button class="btn-primary" onclick="downloadSVG()" data-tooltip-mobile="Download SVG"
+            type="button">
         <span class="sym">download</span>
-        <span>SVG</span>
+        <span class="hide-mobile">SVG</span>
     </button>
-    <button onclick="downloadPNG()" type="button">
+    <button onclick="downloadPNG()" data-tooltip-mobile="Download PNG" type="button">
         <span class="sym">download</span>
-        <span>PNG</span>
+        <span class="hide-mobile">PNG</span>
     </button>
 </header>
 
@@ -315,22 +296,36 @@
     </button>
 </aside>
 
-<div class="code-output" id="code-drawer">
-    <div class="code-header">
-        <span>SVG Source</span>
-        <div class="flex-row gap-2">
-            <button id="copy-btn" onclick="copyCode()" type="button">
-                Copy
+<dialog id="code-dialog" class="modal-info">
+    <article>
+        <header class="dialog-header">
+            <h3>SVG Source Code</h3>
+            <button onclick="toggleCode()" class="btn-sym close-btn" type="button">
+                <span class="sym">close</span>
             </button>
-            <button onclick="toggleCode()" type="button">
-                Close
-            </button>
+        </header>
+        <div class="dialog-body">
+            <!-- prettier-ignore-start -->
+            <!-- beautify ignore:start -->
+            <textarea id="svg-code" readonly onclick="this.select()"></textarea>
+            <!-- beautify ignore:end -->
+            <!-- prettier-ignore-end -->
         </div>
-    </div>
-    <textarea id="svg-code" readonly onclick="this.select()"></textarea>
-</div>
+        <footer>
+            <button class="btn-primary" id="copy-btn" onclick="copyCode()" type="button">
+                <span class="sym">content_copy</span>
+                <span>Copy</span>
+            </button>
+            <button onclick="downloadSVG()" type="button">
+                <span class="sym">download</span>
+                <span>Download .svg</span>
+            </button>
+        </footer>
+    </article>
+</dialog>
 </div>
 
+<script src="../one.js"></script>
 <script>
     let state = {
         theme: "dark",
@@ -361,7 +356,7 @@
         gridList: document.getElementById("grid-list"),
         svgWrapper: document.getElementById("svg-wrapper"),
         svgCode: document.getElementById("svg-code"),
-        drawer: document.getElementById("code-drawer"),
+        drawer: document.getElementById("code-dialog"),
         fitToggle: document.getElementById("fit-toggle"),
     };
 
@@ -477,11 +472,11 @@
             updatePreview();
         };
 
-        els.preset.onchange = (e) => {
+        els.preset.onchange = async (e) => {
             const p = PRESETS[e.target.value];
             if (!p && e.target.value !== "custom") return;
             if (["logo", "icon"].includes(e.target.value)) {
-                const s = prompt("Size (px):", p.w);
+                const s = await one.prompt("Size (px):", p.w);
                 if (!s) {
                     e.target.value = "custom";
                     return;
@@ -581,8 +576,8 @@
         updatePreview();
     }
 
-    function removeGrid(i) {
-        if (confirm("Delete layer?")) {
+    async function removeGrid(i) {
+        if (await one.confirm("Delete layer?")) {
             state.grids.splice(i, 1);
             renderGridList();
             saveState();
@@ -680,7 +675,11 @@
     }
 
     function toggleCode() {
-        els.drawer.classList.toggle("visible");
+        if (els.drawer.open) {
+            els.drawer.close();
+        } else {
+            els.drawer.showModal();
+        }
     }
 
     function downloadSVG() {
@@ -736,23 +735,13 @@
 
     init();
 
-    async function copyCode() {
+    function copyCode() {
         if (!els.svgCode.value) return;
-        try {
-            await navigator.clipboard.writeText(els.svgCode.value);
-            const btn = document.getElementById("copy-btn");
-            const originalText = btn.textContent;
-            btn.textContent = "Copied!";
-            setTimeout(() => {
-                btn.textContent = originalText;
-            }, 2000);
-        } catch (err) {
-            console.error("Failed to copy:", err);
-        }
+        one.copy(els.svgCode.value);
     }
 
-    function resetSettings() {
-        if (confirm("Reset all settings to default?")) {
+    async function resetSettings() {
+        if (await one.confirm("Reset all settings to default?")) {
             localStorage.removeItem("svgGridGenState");
             location.reload();
         }

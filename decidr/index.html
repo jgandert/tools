@@ -699,6 +699,7 @@
 
 <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
+<script src="../one.js"></script>
 <script>
     "use strict";
     // ══════════════════════════════════════════════════════════
@@ -1851,12 +1852,12 @@
 
         const rank = document.getElementById("result-ranking");
         if (result.rankings?.length > 1) {
-            rank.innerHTML = `<table><thead><tr><th>#</th><th>Option</th><th>Score</th></tr></thead><tbody>
+            rank.innerHTML = `<div class="table-container"><table><thead><tr><th>#</th><th>Option</th><th>Score</th></tr></thead><tbody>
                 ${result.rankings.map(r => {
                 const o = state.options.find(x => x.id === r.optionId);
                 return `<tr><td>${r.rank}</td><td><span class="option-color" style="background:${o?.color}"></span> ${o?.name || r.optionId}</td><td>${typeof r.score === "number" ? r.score.toFixed(1) : r.score}</td></tr>`;
             }).join("")}
-            </tbody></table>`;
+            </tbody></table></div>`;
         } else {
             rank.innerHTML = "";
         }
@@ -2105,7 +2106,7 @@
     // ══════════════════════════════════════════════════════════
     //  SHARE
     // ══════════════════════════════════════════════════════════
-    function shareState() {
+    async function shareState() {
         const copy = JSON.parse(JSON.stringify(state));
         copy.undoStack = [];
         const json = JSON.stringify(copy);
@@ -2113,12 +2114,12 @@
             const b64 = btoa(unescape(encodeURIComponent(json)));
             const url = location.href.split("#")[0] + "#" + b64;
             if (url.length <= 2000) {
-                navigator.clipboard?.writeText(url).then(() => alert("Link copied!")).catch(() => prompt("Copy this link:", url));
+                one.copy(url);
             } else {
-                prompt("State JSON (copy to share - link was too long):", json);
+                await one.prompt("State JSON (copy to share - link was too long):", json);
             }
         } catch {
-            prompt("State JSON:", json);
+            await one.prompt("State JSON:", json);
         }
     }
 
@@ -2270,12 +2271,7 @@
     document.getElementById("btn-copy-math").addEventListener("click", () => {
         if (!state.result?.mathReport) return;
         const md = generateMathMarkdown(state.result.mathReport);
-        navigator.clipboard.writeText(md).then(() => {
-            const btn = document.getElementById("btn-copy-math");
-            const old = btn.innerHTML;
-            btn.innerHTML = "<span class=\"sym\">check</span> Copied";
-            setTimeout(() => btn.innerHTML = old, 1500);
-        });
+        one.copy(md);
     });
 
     document.getElementById("btn-share").addEventListener("click", shareState);
@@ -2384,15 +2380,15 @@
                     renderAll();
                     scheduleSave();
                 } catch {
-                    alert("Invalid JSON file.");
+                    one.alert("Invalid JSON file.");
                 }
             };
             reader.readAsText(file);
         });
         inp.click();
     });
-    document.getElementById("btn-reset-all").addEventListener("click", () => {
-        if (!confirm("Reset all decisions and preferences to defaults?")) return;
+    document.getElementById("btn-reset-all").addEventListener("click", async () => {
+        if (!await one.confirm("Reset all decisions and preferences to defaults?")) return;
         localStorage.removeItem("decidr_state");
         localStorage.removeItem("decidr_prefs");
         localStorage.removeItem("decidr_history");

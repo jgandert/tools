@@ -11,8 +11,8 @@
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../storage.js"></script>
     <style>
-        /* Premium layout refinements */
         main {
             display: flex;
             flex-direction: column;
@@ -20,6 +20,19 @@
             box-sizing: border-box;
             gap: var(--spacing-md);
             padding: var(--spacing-md);
+        }
+
+        aside {
+            height: calc(100vh - var(--header-height));
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        @media (min-width: 900px) {
+            aside {
+                position: sticky;
+                top: var(--header-height);
+            }
         }
 
         .editor-container {
@@ -118,7 +131,7 @@
         <ul>
             <li>
                 <button type="button" class="btn-sym" id="play-pause-btn"
-                        data-tooltip="Start / Pause">play_arrow
+                        data-tooltip="Start / Stop">play_arrow
                 </button>
             </li>
             <li>
@@ -136,9 +149,45 @@
 </header>
 
 <aside>
-    <h2>Console & Theme</h2>
+    <h2>Settings &amp; Compositions</h2>
 
     <form id="settings-form" onsubmit="event.preventDefault();">
+        <fieldset>
+            <legend>Compositions</legend>
+            <select id="preset-select" name="preset-select" aria-label="Presets"><option value="Default">Showcase (builtin)</option></select>
+            <div class="input-row">
+                <button type="button" class="btn-sym" id="add-preset-btn" data-tooltip="New Composition">
+                    add
+                </button>
+                <button type="button" class="btn-sym" id="paste-preset-btn" data-tooltip="Paste Composition">
+                    content_paste
+                </button>
+                <button type="button" class="btn-sym" id="edit-preset-btn" data-tooltip="Edit Composition Name" disabled>
+                    edit
+                </button>
+                <button type="button" class="btn-sym btn-danger" id="delete-preset-btn" data-tooltip="Delete Composition" disabled>delete
+                </button>
+            </div>
+            <div class="mt-1">
+                <small id="preset-datetime-display" class="timestamp"></small>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Data</legend>
+            <div class="input-row">
+                <button type="button" id="export-btn">
+                    <span class="sym">save</span>
+                    Export
+                </button>
+                <button type="button" id="import-btn">
+                    <span class="sym">folder_open</span>
+                    Import
+                </button>
+            </div>
+            <input type="file" id="import-file" accept=".json" hidden aria-hidden="true">
+        </fieldset>
+
         <fieldset>
             <legend>Theme Color</legend>
             <label for="color-selector">
@@ -177,12 +226,6 @@
 // Ramp() generates continuous parameter slides.
 // LFO modulates parameters reactively.
 //
-// This track pivots from dark cyberpunk to a bright, nostalgic, and hopeful 
-// puzzle-platformer atmosphere. 
-// It retains the fast, crisp breakbeat percussion but replaces heavy distortion 
-// and minor tones with pure waveforms, Lydian/Major chord progressions, and 
-// algorithmic counterpoint.
-//
 // Features showcased:
 // - Generative pure synths (ambient-bell, fm-epiano, soft-square, sub-bass)
 // - Diatonic scale mapping (.scale)
@@ -193,7 +236,7 @@
 // - An extended 3x longer multi-phase arrangement (96 bars)
 //
 // -----------------------------------------------------------------------------
-// 1. Global Setup
+// Global Setup
 // -----------------------------------------------------------------------------
 Motif.setTempo(165); // Fast, but clean and breathable
 
@@ -204,7 +247,7 @@ Motif.master({
 });
 
 // -----------------------------------------------------------------------------
-// 2. Global FX Routing
+// Global FX Routing
 // -----------------------------------------------------------------------------
 // A pristine, wide delay without messy feedback to maintain laboratory cleanliness
 const echoBus = Bus("echoBus")
@@ -213,7 +256,7 @@ const echoBus = Bus("echoBus")
     .volume(-5);
 
 // -----------------------------------------------------------------------------
-// 3. Track Definitions
+// Track Definitions
 // -----------------------------------------------------------------------------
 
 // --- MELODIC & ATMOSPHERIC ---
@@ -391,7 +434,7 @@ bassDrive.sidechain(kick, { attack: 0.01, release: 0.1 });
 plucks.sidechain(kick, { attack: 0.01, release: 0.1 });
 
 // -----------------------------------------------------------------------------
-// 4. Macro Arrangement (96 Bars Total)
+// Macro Arrangement (96 Bars Total)
 // -----------------------------------------------------------------------------
 Arrange([
     // Phase 1: Awakening (Ambient Intro) - 8 bars
@@ -436,12 +479,31 @@ Arrange([
     </div>
 </main>
 
+<script src="../one.js"></script>
 <script type="module">
     import {
         Motif, Track, Bus, Parallel, Ramp, LFO, Arrange, Tie,
         noteToMidi, midiToNote, degreeToMidi, midiToHz, SCALES, SimplexNoise,
         trackRegistry, busRegistry,
     } from "./motif.js";
+
+    const DYNAMIC_SHOWCASE_COMPOSITION_NAME = "Samples & Synths (builtin)";
+
+    const COMPOSITION_TEMPLATE = `// Motif Composition
+//
+
+Motif.setTempo(165);
+
+Motif.master({
+    gain: 0.85,
+    limiter: true,
+    eq: { low: 1.05, mid: 0.95, high: 1.10 },
+});
+
+Track("bell")
+    .synth("ambient-bell")
+    .note("C4");
+`;
 
     // --- Motif Audio Engine Patches ---
     // Overwrite the default 1.0 second crossfade to make live coding updates
@@ -551,51 +613,423 @@ Arrange([
         saveSettings();
     });
 
-    // --- Local Storage Persistence ---
-    const STORAGE_KEY_CODE = "motif_live_code";
-    const STORAGE_KEY_SETTINGS = "motif_live_settings";
+    // --- Track Management & Persistence ---
+    const defaultCode = codeEditor.value;
 
-    // Load persisted state immediately on startup
-    function saveCode() {
+    const samplesList = Array.from(Motif.sampleRegistry.keys());
+    const synthsList = Array.from(Motif.synthRegistry.keys());
+
+    const generatedShowcaseCode = `// Motif Instrument Showcase
+// Generated dynamically from active engine registries.
+//
+// Audits all samples, then all synths.
+// For each instrument: logs name, plays note, and waits until it finishes.
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const showcaseTrack = Track("showcase")
+    .gain(0.85);
+
+async function runShowcase() {
+    await sleep(200);
+
+    const samples = ${JSON.stringify(samplesList, null, 8)};
+
+    const synths = ${JSON.stringify(synthsList, null, 8)};
+
+    // Play samples
+    for (const sample of samples) {
+        if (!Motif.isPlaying) return;
+
+        console.log(\`[Sample] Playing: \${sample}\\n\`);
+        showcaseTrack.sample(sample);
+        await Promise.resolve();
+
+        // Wait a short moment to guarantee the async buffer has loaded
+        let retries = 0;
+        while (!showcaseTrack._sampleBuffer && retries < 10) {
+            await sleep(50);
+            retries++;
+        }
+
+        const bufferDur = showcaseTrack._sampleBuffer ? showcaseTrack._sampleBuffer.duration : 1.2;
+        const playDur = Math.max(bufferDur, 1.2);
+        showcaseTrack._playEvent({ value: "C3" }, Motif.ctx.currentTime, playDur);
+        await sleep(Math.ceil(playDur * 1000) + 300);
+    }
+
+    // Play synths
+    for (const synth of synths) {
+        if (!Motif.isPlaying) return;
+
+        console.log(\`[Synth] Playing: \${synth}\\n\`);
+        showcaseTrack.synth(synth);
+        await Promise.resolve();
+        const playDur = 1.5;
+        showcaseTrack._playEvent({ value: "C4" }, Motif.ctx.currentTime, playDur);
+        await sleep(2000);
+    }
+
+    console.log("[Showcase] Finished auditing all instruments.");
+}
+
+return runShowcase().then(() => "STOP_MOTIF");
+`;
+
+    let compositions = [];
+    let currentCompositionName = DYNAMIC_SHOWCASE_COMPOSITION_NAME;
+
+    const adjectives = ["Neon", "Retro", "Lunar", "Solar", "Aura", "Quantum", "Sonic", "Glitch", "Pulse", "Cyber", "Spectral", "Vapor"];
+    const nouns = ["Drift", "Wave", "Beats", "Grid", "Forge", "Haze", "Nova", "Oasis", "Echo", "Flux", "Phase", "Sphere"];
+
+    function generateRandomName() {
+        const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+        const noun = nouns[Math.floor(Math.random() * nouns.length)];
+        let name = `${adj}-${noun}`;
+        let suffix = 1;
+        let uniqueName = name;
+        while (compositions.some(c => c.name === uniqueName)) {
+            uniqueName = `${name}-${suffix}`;
+            suffix++;
+        }
+        return uniqueName;
+    }
+
+    async function saveCompositionsToStorage() {
         try {
-            localStorage.setItem(STORAGE_KEY_CODE, codeEditor.value);
+            const customCompositions = compositions.filter(c => !c.isBuiltin).map(c => ({
+                name: c.name,
+                code: c.code,
+                datetime: c.datetime
+            }));
+            await Storage.set("motif_custom_compositions", customCompositions);
+            await Storage.set("motif_current_composition", currentCompositionName);
         } catch (e) {
-            console.warn("Failed to save code to localStorage:", e);
+            console.warn("Failed to save compositions to Storage:", e);
         }
     }
 
-    function saveSettings() {
+    async function saveSettings() {
         try {
             const settings = {
                 color: colorSelector.value,
             };
-            localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
+            await Storage.set("motif_live_settings", settings);
         } catch (e) {
-            console.warn("Failed to save settings to localStorage:", e);
+            console.warn("Failed to save settings to Storage:", e);
         }
     }
 
-    function loadPersistedState() {
+    const presetSelect = document.getElementById("preset-select");
+    const addPresetBtn = document.getElementById("add-preset-btn");
+    const editPresetBtn = document.getElementById("edit-preset-btn");
+    const deletePresetBtn = document.getElementById("delete-preset-btn");
+    const presetDatetimeDisplay = document.getElementById("preset-datetime-display");
+
+    function updatePresetSelect() {
+        // Sort compositions by datetime descending
+        compositions.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+
+        presetSelect.innerHTML = "";
+        compositions.forEach(composition => {
+            const option = document.createElement("option");
+            option.value = composition.name;
+            option.textContent = composition.name;
+            presetSelect.appendChild(option);
+        });
+        const currentComposition = compositions.find(c => c.name === currentCompositionName);
+        if (currentComposition) {
+            presetSelect.value = currentComposition.name;
+        }
+    }
+
+    function updateUI() {
+        const currentComposition = compositions.find(c => c.name === currentCompositionName);
+        if (!currentComposition) return;
+
+        if (codeEditor.value !== currentComposition.code) {
+            codeEditor.value = currentComposition.code;
+        }
+
+        const isBuiltin = !!currentComposition.isBuiltin;
+        deletePresetBtn.disabled = isBuiltin;
+        editPresetBtn.disabled = isBuiltin;
+
+        if (currentComposition.datetime && !isBuiltin) {
+            const date = new Date(currentComposition.datetime);
+            presetDatetimeDisplay.textContent = date.toISOString().replace('T', ' ').replace(/\..+/, '') + ' UTC';
+        } else {
+            presetDatetimeDisplay.textContent = "";
+        }
+    }
+
+    async function loadPersistedState() {
         try {
-            const savedCode = localStorage.getItem(STORAGE_KEY_CODE);
-            if (savedCode !== null) {
-                codeEditor.value = savedCode;
+            const settings = await Storage.get("motif_live_settings");
+            if (settings && settings.color !== undefined) {
+                colorSelector.value = settings.color;
+                applyThemeColor(settings.color);
             }
 
-            const savedSettingsStr = localStorage.getItem(STORAGE_KEY_SETTINGS);
-            if (savedSettingsStr) {
-                const settings = JSON.parse(savedSettingsStr);
-                if (settings.color !== undefined) {
-                    colorSelector.value = settings.color;
-                    applyThemeColor(settings.color);
-                }
+            let customCompositions = await Storage.get("motif_custom_compositions");
+            if (!customCompositions) {
+                customCompositions = await Storage.get("motif_custom_tracks") || [];
             }
+
+            compositions = [
+                {
+                    name: "Showcase (builtin)",
+                    code: defaultCode,
+                    datetime: "1970-01-01T00:00:00.000Z",
+                    isBuiltin: true
+                },
+                {
+                    name: DYNAMIC_SHOWCASE_COMPOSITION_NAME,
+                    code: generatedShowcaseCode,
+                    datetime: "1970-01-01T00:00:00.005Z",
+                    isBuiltin: true
+                },
+                ...customCompositions.map(c => ({ ...c, isBuiltin: false }))
+            ];
+
+            let savedCurrentComposition = await Storage.get("motif_current_composition");
+            if (!savedCurrentComposition) {
+                savedCurrentComposition = await Storage.get("motif_current_track") || DYNAMIC_SHOWCASE_COMPOSITION_NAME;
+            }
+
+            if (compositions.some(c => c.name === savedCurrentComposition)) {
+                currentCompositionName = savedCurrentComposition;
+            } else {
+                currentCompositionName = DYNAMIC_SHOWCASE_COMPOSITION_NAME;
+            }
+
+            updatePresetSelect();
+            updateUI();
         } catch (e) {
-            console.warn("Failed to load persisted state from localStorage:", e);
+            console.warn("Failed to load persisted state from Storage:", e);
+            compositions = [
+                {
+                    name: "Showcase (builtin)",
+                    code: defaultCode,
+                    datetime: "1970-01-01T00:00:00.000Z",
+                    isBuiltin: true
+                },
+                {
+                    name: DYNAMIC_SHOWCASE_COMPOSITION_NAME,
+                    code: generatedShowcaseCode,
+                    datetime: "1970-01-01T00:00:00.005Z",
+                    isBuiltin: true
+                }
+            ];
+            currentCompositionName = DYNAMIC_SHOWCASE_COMPOSITION_NAME;
+            updatePresetSelect();
+            updateUI();
         }
     }
 
     loadPersistedState();
+
+    presetSelect.addEventListener("change", (e) => {
+        const val = e.target.value;
+        currentCompositionName = val;
+
+        saveCompositionsToStorage();
+        updateUI();
+
+        if (Motif.isPlaying) {
+            runUserCode(true);
+        }
+    });
+
+    addPresetBtn.addEventListener("click", async () => {
+        const defaultName = generateRandomName();
+        const name = await one.prompt("Enter composition name:", defaultName);
+        if (!name) return;
+        const trimmed = name.trim();
+        if (!trimmed) return;
+
+        if (compositions.some(c => c.name === trimmed)) {
+            if (!await one.confirm(`Composition "${trimmed}" already exists. Overwrite?`)) {
+                return;
+            }
+            compositions = compositions.filter(c => c.name !== trimmed);
+        }
+
+        const newComposition = {
+            name: trimmed,
+            code: COMPOSITION_TEMPLATE,
+            datetime: new Date().toISOString(),
+            isBuiltin: false
+        };
+        compositions.push(newComposition);
+        currentCompositionName = trimmed;
+
+        saveCompositionsToStorage();
+        updatePresetSelect();
+        updateUI();
+    });
+
+
+    editPresetBtn.addEventListener("click", async () => {
+        const currentComposition = compositions.find(c => c.name === currentCompositionName);
+        if (!currentComposition || currentComposition.isBuiltin) return;
+        const name = await one.prompt("Enter new composition name:", currentCompositionName);
+        if (!name) return;
+        const trimmed = name.trim();
+        if (!trimmed || trimmed === currentCompositionName) return;
+
+        if (compositions.some(c => c.name === trimmed && c !== currentComposition)) {
+            one.alert(`A composition named "${trimmed}" already exists.`);
+            return;
+        }
+
+        currentComposition.name = trimmed;
+        currentCompositionName = trimmed;
+        currentComposition.datetime = new Date().toISOString();
+
+        saveCompositionsToStorage();
+        updatePresetSelect();
+        updateUI();
+    });
+
+    deletePresetBtn.addEventListener("click", async () => {
+        const currentComposition = compositions.find(c => c.name === currentCompositionName);
+        if (!currentComposition || currentComposition.isBuiltin) return;
+
+        if (await one.confirm(`Delete composition "${currentCompositionName}"?`)) {
+            compositions = compositions.filter(c => c.name !== currentCompositionName);
+            const builtinComposition = compositions.find(c => c.isBuiltin);
+            currentCompositionName = builtinComposition ? builtinComposition.name : "";
+
+            saveCompositionsToStorage();
+            updatePresetSelect();
+            updateUI();
+
+            if (Motif.isPlaying) {
+                runUserCode(true);
+            }
+        }
+    });
+
+    const exportBtn = document.getElementById("export-btn");
+    const importBtn = document.getElementById("import-btn");
+    const importFile = document.getElementById("import-file");
+    const pastePresetBtn = document.getElementById("paste-preset-btn");
+
+    exportBtn.addEventListener("click", () => {
+        const customCompositions = compositions.filter(c => !c.isBuiltin).map(c => ({
+            name: c.name,
+            code: c.code,
+            datetime: c.datetime
+        }));
+        const blob = new Blob([JSON.stringify(customCompositions, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `motif-compositions-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    importBtn.addEventListener("click", () => {
+        importFile.click();
+    });
+
+    importFile.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            try {
+                const imported = JSON.parse(ev.target.result);
+                if (!Array.isArray(imported)) {
+                    one.alert("Invalid format. Expected a JSON array of compositions.");
+                    return;
+                }
+                const valid = imported.every(c => c && typeof c.name === "string" && typeof c.code === "string");
+                if (!valid) {
+                    one.alert("Invalid composition format. Each composition must have a name and code.");
+                    return;
+                }
+
+                if (await one.confirm(`Import ${imported.length} composition(s)? This will merge with or overwrite existing custom compositions with the same name.`)) {
+                    imported.forEach(newComp => {
+                        const existingIdx = compositions.findIndex(c => c.name === newComp.name);
+                        if (existingIdx !== -1) {
+                            if (!compositions[existingIdx].isBuiltin) {
+                                compositions[existingIdx] = {
+                                    name: newComp.name,
+                                    code: newComp.code,
+                                    datetime: newComp.datetime || new Date().toISOString(),
+                                    isBuiltin: false
+                                };
+                            }
+                        } else {
+                            compositions.push({
+                                name: newComp.name,
+                                code: newComp.code,
+                                datetime: newComp.datetime || new Date().toISOString(),
+                                isBuiltin: false
+                            });
+                        }
+                    });
+
+                    saveCompositionsToStorage();
+                    updatePresetSelect();
+                    updateUI();
+                    one.alert("Compositions imported successfully.");
+                }
+            } catch (err) {
+                one.alert("Failed to parse JSON: " + err.message);
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = "";
+    });
+
+    pastePresetBtn.addEventListener("click", async () => {
+        try {
+            let clipboardText = "";
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                try {
+                    clipboardText = await navigator.clipboard.readText();
+                } catch (err) {
+                    if (err.name === "NotAllowedError" || err.name === "SecurityError") {
+                        clipboardText = await one.prompt("Clipboard access blocked. Please paste your composition code below:");
+                    } else {
+                        throw err;
+                    }
+                }
+            } else {
+                clipboardText = await one.prompt("Please paste your composition code below:");
+            }
+
+            if (!clipboardText) return;
+            const trimmedCode = clipboardText.trim();
+            if (!trimmedCode) return;
+
+            const generatedName = generateRandomName();
+            const newComposition = {
+                name: generatedName,
+                code: trimmedCode,
+                datetime: new Date().toISOString(),
+                isBuiltin: false
+            };
+            compositions.push(newComposition);
+            currentCompositionName = generatedName;
+
+            saveCompositionsToStorage();
+            updatePresetSelect();
+            updateUI();
+
+            if (Motif.isPlaying) {
+                runUserCode(true);
+            }
+        } catch (err) {
+            console.error("Paste failed:", err);
+            one.alert("Could not paste composition: " + err.message);
+        }
+    });
 
     // --- Motif Live Compiler ---
     function runUserCode(isHotReload = false) {
@@ -665,7 +1099,38 @@ Arrange([
     let debounceTimeout = null;
 
     codeEditor.addEventListener("input", () => {
-        saveCode();
+        const currentComposition = compositions.find(c => c.name === currentCompositionName);
+        if (!currentComposition) return;
+
+        if (currentComposition.isBuiltin) {
+            const randomName = generateRandomName();
+            const newComposition = {
+                name: randomName,
+                code: codeEditor.value,
+                datetime: new Date().toISOString(),
+                isBuiltin: false
+            };
+            compositions.push(newComposition);
+            currentCompositionName = randomName;
+
+            saveCompositionsToStorage();
+
+            const selectionStart = codeEditor.selectionStart;
+            const selectionEnd = codeEditor.selectionEnd;
+
+            updatePresetSelect();
+            updateUI();
+
+            codeEditor.setSelectionRange(selectionStart, selectionEnd);
+        } else {
+            currentComposition.code = codeEditor.value;
+            currentComposition.datetime = new Date().toISOString();
+            saveCompositionsToStorage();
+            if (presetDatetimeDisplay) {
+                const date = new Date(currentComposition.datetime);
+                presetDatetimeDisplay.textContent = date.toISOString().replace('T', ' ').replace(/\..+/, '') + ' UTC';
+            }
+        }
 
         // If not currently playing, don't auto-compile (wait for play press)
         if (!Motif.isPlaying) return;
@@ -704,14 +1169,14 @@ Arrange([
                 await Motif.ctx.resume();
             }
 
-            if (Motif.isPlaying) {
-                await Motif.pause();
+            if (Motif.isPlaying || Motif._loopTimeout) {
+                await Motif.stop();
                 playPauseBtn.textContent = "play_arrow";
-                logToConsole("Playback paused.");
+                logToConsole("Playback stopped.");
             } else {
                 if (runUserCode()) {
                     await Motif.start();
-                    playPauseBtn.textContent = "pause";
+                    playPauseBtn.textContent = "stop";
                     logToConsole("Playback started.");
                 }
             }
@@ -730,7 +1195,7 @@ Arrange([
             await Motif.stop();
             if (runUserCode()) {
                 await Motif.start();
-                playPauseBtn.textContent = "pause";
+                playPauseBtn.textContent = "stop";
                 logToConsole("Playback restarted.");
             } else {
                 playPauseBtn.textContent = "play_arrow";
@@ -888,7 +1353,7 @@ Arrange([
                 if (!Motif.isPlaying) {
                     if (runUserCode()) {
                         await Motif.start();
-                        playPauseBtn.textContent = "pause";
+                        playPauseBtn.textContent = "stop";
                     } else {
                         return; // Don't record if code compilation failed
                     }
@@ -900,9 +1365,14 @@ Arrange([
         }
     }
 
-    Motif.onPlaybackFinished = () => {
-        playPauseBtn.textContent = "play_arrow";
-        logToConsole("Playback finished.");
+    Motif.onPlaybackFinished = (info) => {
+        const isLooping = info && info.looped;
+        if (isLooping) {
+            logToConsole("Arrangement loop completed. Repeating...");
+        } else {
+            playPauseBtn.textContent = "play_arrow";
+            logToConsole("Playback finished.");
+        }
         if (recording) {
             stopRecordingAndDownload();
         }
