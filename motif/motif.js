@@ -9,6 +9,7 @@ import {
     SimplexNoise,
     safeDisconnect,
     reconnectNodes,
+    ensureGranularStretcher,
 } from "./src/helpers.js";
 import { TrackAudioChain } from "./src/TrackAudioChain.js";
 import { TrackVoiceManager } from "./src/TrackVoiceManager.js";
@@ -84,13 +85,42 @@ export function Arrange(sections, options = {}) {
         }
     }
 
+    let startIndex = -1;
+    for (let i = sections.length - 1; i >= 0; i--) {
+        if (sections[i].s || sections[i].start) {
+            startIndex = i;
+            break;
+        }
+    }
+
+    const activeSections = startIndex !== -1 ? sections.slice(startIndex) : sections;
+
+    const activeTracks = new Set();
+    for (const section of activeSections) {
+        if (section.tracks && Array.isArray(section.tracks)) {
+            for (const track of section.tracks) {
+                if (track) {
+                    activeTracks.add(track);
+                }
+            }
+        }
+    }
+
+    for (const track of tracksToReset) {
+        if (!activeTracks.has(track)) {
+            if (track._activeSegments) {
+                track._activeSegments = [{ start: 0, stop: 0 }];
+            }
+        }
+    }
+
     let currentTime = 0;
     // Note: Arrange uses the Motif global transport settings
     const bpm = Motif.tempo;
     const beatsPerBar = Motif.beatsPerBar;
     const barDuration = (60 / bpm) * beatsPerBar;
 
-    for (const section of sections) {
+    for (const section of activeSections) {
         const sectionDuration = (section.bars || 0) * barDuration;
         const sectionStart = currentTime;
         const sectionEnd = sectionStart + sectionDuration;
@@ -98,8 +128,26 @@ export function Arrange(sections, options = {}) {
         if (section.tracks && Array.isArray(section.tracks)) {
             const uniqueTracks = new Set(section.tracks);
             for (const track of uniqueTracks) {
+                if (track._isSolo) continue;
                 if (track && typeof track.start === "function" && typeof track.stop === "function") {
                     track.start(sectionStart).stop(sectionEnd);
+
+                    if (track._gainRampsQueue && track._gainRampsQueue.length > 0) {
+                        const rampNode = track._gainRampsQueue.shift();
+                        track._scheduledRamps = track._scheduledRamps || [];
+
+                        const d = rampNode.duration !== undefined
+                            ? parseDurationToSeconds(rampNode.duration, Motif.tempo, Motif.beatsPerBar)
+                            : sectionDuration;
+
+                        track._scheduledRamps.push({
+                            start: sectionStart,
+                            duration: d,
+                            from: typeof rampNode.from === "number" ? rampNode.from : 1.0,
+                            to: typeof rampNode.to === "number" ? rampNode.to : 0.0,
+                            scheduled: false
+                        });
+                    }
                 }
             }
         }
@@ -609,6 +657,11 @@ export class MotifEngine {
             };
         }
         this.bpmParam.setValueAtTime(this.tempo, this.ctx.currentTime);
+
+        if (this.ctx.audioWorklet) {
+            const p = ensureGranularStretcher(this.ctx).catch(() => {});
+            this._loadingSamples.push(p);
+        }
     }
 
     /**

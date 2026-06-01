@@ -500,7 +500,9 @@ return (async () => {
             .sample("mock-loop")
             .chop(4)                          // Chop 2-second loop into 4 slices
             .pattern([0, 2, [1, 1], [3, 0]]) // Re-order slices dynamically
-            .fit("1b")                       // Warp playback speed to fit exactly 1 bar
+
+            // Warp playback speed with granular time-stretching
+            .fit("1b", { mode: "stretch", grainSize: 0.05, overlap: 4 })
             .gain(0.8);
     });
 

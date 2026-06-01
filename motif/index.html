@@ -676,8 +676,16 @@ async function runShowcase() {
 return runShowcase().then(() => "STOP_MOTIF");
 `;
 
+    const EXAMPLES = [
+        { name: "chiptune_1.motif.js", path: "examples/chiptune_1.motif.js", datetime: "1970-01-01T00:00:00.090Z" },
+        { name: "chiptune_1_loop.motif.js", path: "examples/chiptune_1_loop.motif.js", datetime: "1970-01-01T00:00:00.080Z" },
+        { name: "chiptune_2.motif.js", path: "examples/chiptune_2.motif.js", datetime: "1970-01-01T00:00:00.070Z" },
+        { name: "soundscape.motif.js", path: "examples/soundscape.motif.js", datetime: "1970-01-01T00:00:00.060Z" },
+        { name: "test_all_features.motif.js", path: "examples/test_all_features.motif.js", datetime: "1970-01-01T00:00:00.050Z" }
+    ];
+
     let compositions = [];
-    let currentCompositionName = DYNAMIC_SHOWCASE_COMPOSITION_NAME;
+    let currentCompositionName = "Showcase (builtin)";
 
     const adjectives = ["Neon", "Retro", "Lunar", "Solar", "Aura", "Quantum", "Sonic", "Glitch", "Pulse", "Cyber", "Spectral", "Vapor"];
     const nouns = ["Drift", "Wave", "Beats", "Grid", "Forge", "Haze", "Nova", "Oasis", "Echo", "Flux", "Phase", "Sphere"];
@@ -764,6 +772,26 @@ return runShowcase().then(() => "STOP_MOTIF");
     }
 
     async function loadPersistedState() {
+        const fetchedExamples = [];
+        await Promise.all(
+            EXAMPLES.map(async (ex) => {
+                try {
+                    const response = await fetch(ex.path);
+                    if (response.ok) {
+                        const code = await response.text();
+                        fetchedExamples.push({
+                            name: ex.name,
+                            code: code,
+                            datetime: ex.datetime,
+                            isBuiltin: true
+                        });
+                    }
+                } catch (err) {
+                    console.warn(`Failed to fetch example ${ex.name}:`, err);
+                }
+            })
+        );
+
         try {
             const settings = await Storage.get("motif_live_settings");
             if (settings && settings.color !== undefined) {
@@ -780,13 +808,14 @@ return runShowcase().then(() => "STOP_MOTIF");
                 {
                     name: "Showcase (builtin)",
                     code: defaultCode,
-                    datetime: "1970-01-01T00:00:00.000Z",
+                    datetime: "1970-01-01T00:00:00.100Z",
                     isBuiltin: true
                 },
+                ...fetchedExamples,
                 {
                     name: DYNAMIC_SHOWCASE_COMPOSITION_NAME,
                     code: generatedShowcaseCode,
-                    datetime: "1970-01-01T00:00:00.005Z",
+                    datetime: "1970-01-01T00:00:00.010Z",
                     isBuiltin: true
                 },
                 ...customCompositions.map(c => ({ ...c, isBuiltin: false }))
@@ -794,13 +823,13 @@ return runShowcase().then(() => "STOP_MOTIF");
 
             let savedCurrentComposition = await Storage.get("motif_current_composition");
             if (!savedCurrentComposition) {
-                savedCurrentComposition = await Storage.get("motif_current_track") || DYNAMIC_SHOWCASE_COMPOSITION_NAME;
+                savedCurrentComposition = await Storage.get("motif_current_track") || "Showcase (builtin)";
             }
 
             if (compositions.some(c => c.name === savedCurrentComposition)) {
                 currentCompositionName = savedCurrentComposition;
             } else {
-                currentCompositionName = DYNAMIC_SHOWCASE_COMPOSITION_NAME;
+                currentCompositionName = "Showcase (builtin)";
             }
 
             updatePresetSelect();
@@ -811,17 +840,18 @@ return runShowcase().then(() => "STOP_MOTIF");
                 {
                     name: "Showcase (builtin)",
                     code: defaultCode,
-                    datetime: "1970-01-01T00:00:00.000Z",
+                    datetime: "1970-01-01T00:00:00.100Z",
                     isBuiltin: true
                 },
+                ...fetchedExamples,
                 {
                     name: DYNAMIC_SHOWCASE_COMPOSITION_NAME,
                     code: generatedShowcaseCode,
-                    datetime: "1970-01-01T00:00:00.005Z",
+                    datetime: "1970-01-01T00:00:00.010Z",
                     isBuiltin: true
                 }
             ];
-            currentCompositionName = DYNAMIC_SHOWCASE_COMPOSITION_NAME;
+            currentCompositionName = "Showcase (builtin)";
             updatePresetSelect();
             updateUI();
         }
@@ -1081,14 +1111,36 @@ return runShowcase().then(() => "STOP_MOTIF");
                     }
                 }
             }).catch(err => {
-                logToConsole(`Async execution error: ${err.message}`, "error");
+                let errorMsg = `Async execution error: ${err.message}`;
+                if (err.stack) {
+                    const match = err.stack.match(/<anonymous>:(\d+):(\d+)/);
+                    if (match) {
+                        const lineNum = parseInt(match[1], 10) - 1;
+                        if (lineNum > 0) {
+                            errorMsg += ` (at line ${lineNum})`;
+                        }
+                    }
+                }
+                logToConsole(errorMsg, "error");
+                if (err.stack) logToConsole(err.stack, "warn");
                 console.error(err);
             });
 
             logToConsole(isHotReload ? "Live changes applied." : "Code compiled and applied successfully.", "success");
             return true;
         } catch (err) {
-            logToConsole(err.message, "error");
+            let errorMsg = err.message;
+            if (err.stack) {
+                const match = err.stack.match(/<anonymous>:(\d+):(\d+)/);
+                if (match) {
+                    const lineNum = parseInt(match[1], 10) - 1;
+                    if (lineNum > 0) {
+                        errorMsg += ` (at line ${lineNum})`;
+                    }
+                }
+            }
+            logToConsole(errorMsg, "error");
+            if (err.stack) logToConsole(err.stack, "warn");
             console.error(err);
             return false;
         }

@@ -1,4 +1,4 @@
-import { Motif, Bus } from "../motif.js";
+import { Motif, Bus, parseDurationToSeconds } from "../motif.js";
 import {
     trackRegistry,
     applyParamModulation,
@@ -251,6 +251,12 @@ export const TrackAudioChain = {
      * @returns {TrackAudioChain} this
      */
     gain(level) {
+        if (level && level.isRamp === true) {
+            this._gainRampsQueue = this._gainRampsQueue || [];
+            this._gainRampsQueue.push(level);
+            return this;
+        }
+
         let targetLevel = level;
         if (typeof level === "string") {
             const cleaned = level.trim().replace("−", "-");

@@ -13,6 +13,7 @@ import {
     safeStop,
     safeDisconnect,
     CONSTANTS,
+    ensureGranularStretcher,
 } from "./helpers.js";
 
 const MOTIF_SYNTH_PROCESSOR_SRC = `
@@ -134,6 +135,7 @@ export const TrackVoiceManager = {
         this._slices = null;
         this._sliceIndices = null;
         this._fitDuration = null;
+        this._fitOptions = { mode: "stretch" };
         this._monoBufferCache = null;
     },
 
@@ -367,8 +369,9 @@ export const TrackVoiceManager = {
      * @param {string|number} duration - Bar fraction or second duration to stretch to.
      * @returns {TrackVoiceManager} this
      */
-    fit(duration) {
+    fit(duration, options = {}) {
         this._fitDuration = duration;
+        this._fitOptions = { mode: "stretch", ...options };
         return this;
     },
 
@@ -668,20 +671,60 @@ export const TrackVoiceManager = {
             if (this._activeVoices.size >= this._voiceLimit) return;
         }
 
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        if (this._monoChannel !== null && this._monoChannel !== undefined) {
-            source.buffer = this._getMonoBuffer(source.buffer, this._monoChannel);
-        }
+        let source;
+        const useGranular = !!(this._fitDuration && this._fitOptions && this._fitOptions.mode === "stretch" && typeof AudioWorkletNode !== "undefined");
 
-        if (source.playbackRate && typeof source.playbackRate.setValueAtTime === "function") {
-            source.playbackRate.setValueAtTime(playbackRate, startTime);
-        } else if (source.playbackRate) {
-            source.playbackRate.value = playbackRate;
+        if (useGranular) {
+            source = new AudioWorkletNode(ctx, "granular-stretcher");
+            let stretchFactor = 1.0;
+            let pitchRatio = 1.0;
+            const targetSecs = parseDurationToSeconds(this._fitDuration, Motif.tempo, Motif.beatsPerBar);
+            if (targetSecs > 0 && buffer.duration > 0) {
+                const baseRate = buffer.duration / targetSecs;
+                stretchFactor = 1.0 / baseRate;
+                pitchRatio = playbackRate / baseRate;
+            }
+
+            source.parameters.get("stretchFactor").setValueAtTime(stretchFactor, startTime);
+            source.parameters.get("pitchRatio").setValueAtTime(pitchRatio, startTime);
+
+            if (this._fitOptions.grainSize !== undefined) {
+                source.parameters.get("grainSize").setValueAtTime(this._fitOptions.grainSize, startTime);
+            }
+            if (this._fitOptions.overlap !== undefined) {
+                source.parameters.get("overlap").setValueAtTime(this._fitOptions.overlap, startTime);
+            }
+
+            const leftBuffer = buffer.getChannelData(0);
+            const rightBuffer = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : leftBuffer;
+            source.port.postMessage({ leftBuffer, rightBuffer });
+
+            source.playbackRate = {
+                setValueAtTime: (val, time) => {},
+                value: 1.0
+            };
+            source.start = (t, offset = 0, dur) => {
+                source.port.postMessage({ type: "START", startTime: t, offset });
+            };
+            source.stop = (t) => {
+                source.port.postMessage({ type: "STOP_AT", endTime: t });
+            };
+        } else {
+            source = ctx.createBufferSource();
+            source.buffer = buffer;
+            if (this._monoChannel !== null && this._monoChannel !== undefined) {
+                source.buffer = this._getMonoBuffer(source.buffer, this._monoChannel);
+            }
+
+            if (source.playbackRate && typeof source.playbackRate.setValueAtTime === "function") {
+                source.playbackRate.setValueAtTime(playbackRate, startTime);
+            } else if (source.playbackRate) {
+                source.playbackRate.value = playbackRate;
+            }
         }
 
         const voiceGain = ctx.createGain();
-        const currentGainVal = this._gainLevel !== undefined ? this._gainLevel : 1.0;
+        const currentGainVal = (typeof this._gainLevel === "number" && !isNaN(this._gainLevel)) ? this._gainLevel : 1.0;
         let actualDuration = duration;
 
         if (this._envelope) {
@@ -894,7 +937,7 @@ export const TrackVoiceManager = {
 
         const voice = this._createVoiceSource(this._synthType, hz, hzTo, isRamp, startTime, duration);
         const voiceGain = ctx.createGain();
-        const currentGainVal = this._gainLevel !== undefined ? this._gainLevel : 1.0;
+        const currentGainVal = (typeof this._gainLevel === "number" && !isNaN(this._gainLevel)) ? this._gainLevel : 1.0;
 
         let actualDuration = duration;
         let isTiedNote = event.tied === true;

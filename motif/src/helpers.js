@@ -407,3 +407,27 @@ export const CONSTANTS = {
         DEFAULT_OFFSET: 0.0,
     },
 };
+
+let _granularStretcherPromise = null;
+
+/**
+ * Ensures that the GranularStretcherProcessor worklet is loaded in the given AudioContext.
+ * @param {AudioContext} ctx - Active Web Audio context.
+ * @returns {Promise<void>} Resolves when loaded.
+ */
+export function ensureGranularStretcher(ctx) {
+    if (!ctx || !ctx.audioWorklet) return Promise.reject(new Error("AudioWorklet not supported"));
+    if (_granularStretcherPromise) return _granularStretcherPromise;
+
+    _granularStretcherPromise = ctx.audioWorklet.addModule("/src/worklets/GranularStretcherProcessor.js")
+        .catch(() => ctx.audioWorklet.addModule("./src/worklets/GranularStretcherProcessor.js"))
+        .catch(() => ctx.audioWorklet.addModule("/motif/src/worklets/GranularStretcherProcessor.js"))
+        .catch(err => {
+            console.error("GranularStretcherProcessor load failed:", err);
+            _granularStretcherPromise = null;
+            throw err;
+        });
+
+    return _granularStretcherPromise;
+}
+

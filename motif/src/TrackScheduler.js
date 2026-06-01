@@ -39,6 +39,7 @@ export const TrackScheduler = {
         this._scaleName = "major";
         this._tuningSystem = null;
         this._prevVoicingNotes = [];
+        this._isSolo = false;
     },
 
     /**
@@ -87,6 +88,7 @@ export const TrackScheduler = {
     _clearActiveSegments() {
         this._activeSegments = [];
         this._pendingStart = undefined;
+        this._scheduledRamps = [];
     },
 
     /**
@@ -313,6 +315,24 @@ export const TrackScheduler = {
     },
 
     /**
+     * Solos the track, making it bypass the Arrangement and play infinitely.
+     * @returns {TrackScheduler} this
+     */
+    solo() {
+        this._isSolo = true;
+        this._clearActiveSegments();
+        return this;
+    },
+
+    /**
+     * Alias for solo().
+     * @returns {TrackScheduler} this
+     */
+    s() {
+        return this.solo();
+    },
+
+    /**
      * Halts all scheduled audio voices and resets active transport positions.
      * @private
      */
@@ -321,6 +341,11 @@ export const TrackScheduler = {
         this._currentCycle = null;
         this._currentCycleStartTime = null;
         this._playbackStartTime = null;
+        if (this._scheduledRamps) {
+            for (const ramp of this._scheduledRamps) {
+                ramp.scheduled = false;
+            }
+        }
         if (this._activeVoices) {
             for (const voice of this._activeVoices.values()) {
                 safeStop(voice.oscillator);
@@ -682,14 +707,59 @@ export const TrackScheduler = {
      * @private
      */
     _schedule(horizon) {
-        if (!this._parsedEvents || this._parsedEvents.length === 0) return;
-
         if (this._scheduledUntil === null || this._scheduledUntil === undefined || this._scheduledUntil < Motif.ctx.currentTime) {
             this._currentCycle = 0;
             this._currentCycleStartTime = Motif.ctx.currentTime;
             this._playbackStartTime = Motif.ctx.currentTime;
             this._scheduledUntil = Motif.ctx.currentTime;
         }
+
+        if (this._scheduledRamps && this._scheduledRamps.length > 0) {
+            const refTime = this._playbackStartTime !== null && this._playbackStartTime !== undefined ? this._playbackStartTime : Motif.ctx.currentTime;
+            for (const ramp of this._scheduledRamps) {
+                if (!ramp.scheduled) {
+                    const absStart = refTime + ramp.start;
+                    if (absStart >= this._scheduledUntil && absStart < horizon) {
+                        if (this.trackInputNode) {
+                            const gainParam = this.trackInputNode.gain;
+                            gainParam.setValueAtTime(ramp.from, absStart);
+                            gainParam.linearRampToValueAtTime(ramp.to, absStart + ramp.duration);
+                        } else {
+                            console.warn(`[Motif] gain(Ramp(...)) called before audio is initialized on track "${this.id}". Ramp ignored.`);
+                        }
+                        ramp.scheduled = true;
+                    }
+                }
+            }
+        } else if (this._gainRampsQueue && this._gainRampsQueue.length > 0) {
+            const refTime = this._playbackStartTime !== null && this._playbackStartTime !== undefined ? this._playbackStartTime : Motif.ctx.currentTime;
+            while (this._gainRampsQueue.length > 0) {
+                const rampNode = this._gainRampsQueue.shift();
+                if (this.trackInputNode) {
+                    const gainParam = this.trackInputNode.gain;
+                    const from = typeof rampNode.from === "number" ? rampNode.from : 1.0;
+                    const to = typeof rampNode.to === "number" ? rampNode.to : 0.0;
+                    const d = rampNode.duration !== undefined
+                        ? parseDurationToSeconds(rampNode.duration, Motif.tempo, Motif.beatsPerBar)
+                        : 0.05;
+                    gainParam.setValueAtTime(from, refTime);
+                    gainParam.linearRampToValueAtTime(to, refTime + d);
+                } else {
+                    console.warn(`[Motif] gain(Ramp(...)) called before audio is initialized on track "${this.id}". Ramp ignored.`);
+                }
+            }
+        }
+
+        if (!this._parsedEvents || this._parsedEvents.length === 0) return;
+
+        let anySoloed = false;
+        for (const t of trackRegistry.values()) {
+            if (t._isSolo) {
+                anySoloed = true;
+                break;
+            }
+        }
+        if (anySoloed && !this._isSolo) return;
 
         let cycleDuration;
         if (this._stepLengthFraction !== null && this._stepLengthFraction !== undefined && this._patternTopLevelSteps > 0) {

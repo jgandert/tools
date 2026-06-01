@@ -4777,6 +4777,18 @@ console.log("\n=== Track .fit(): Mathematical Duration Fitting ===");
     const ret = t4.fit("1b");
     assert(ret === t4, "fit() should return this for chaining");
 
+    // TEST 5: fit() options support
+    const t5 = Track("fit-options");
+    t5.fit("1b");
+    assert(t5._fitOptions.mode === "stretch", "fit() mode should default to stretch");
+
+    t5.fit("1b", { mode: "repitch" });
+    assert(t5._fitOptions.mode === "repitch", "fit() mode should be overridable to repitch");
+
+    t5.fit("2b", { grainSize: 0.08, overlap: 8 });
+    assert(t5._fitOptions.grainSize === 0.08, "fit() should store grainSize option");
+    assert(t5._fitOptions.overlap === 8, "fit() should store overlap option");
+
     globalThis.fetch = origFetch;
     Motif.ctx = prevCtx;
     Motif.tempo = prevTempo;
@@ -7327,6 +7339,316 @@ console.log("\n=== Motif Engine: Auto-Stop on Arrangement Completion ===");
 
     // Clean up
     Motif.onPlaybackFinished = null;
+    Motif.ctx = prevCtx;
+    Motif.tempo = prevTempo;
+    Motif.isPlaying = prevIsPlaying;
+}
+
+// =============================================================================
+// Support Ramp() in gain() & Warn on Unsupported Ramp Usage
+// =============================================================================
+console.log("\n=== Support Ramp() in gain() & Warn on Unsupported Ramp Usage ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevTempo = Motif.tempo;
+    const prevIsPlaying = Motif.isPlaying;
+
+    class TestRampOfflineCtx {
+        constructor() {
+            this.currentTime = 0;
+            this.sampleRate = 44100;
+            this.scheduledGains = [];
+        }
+
+        createGain() {
+            const mockGain = {
+                gain: {
+                    value: 1.0,
+                    setValueAtTime(v, t) {
+                        mockGain.setValue = v;
+                        mockGain.setTime = t;
+                    },
+                    linearRampToValueAtTime(v, t) {
+                        mockGain.rampValue = v;
+                        mockGain.rampTime = t;
+                    }
+                },
+                connect() {},
+                disconnect() {}
+            };
+            return mockGain;
+        }
+
+        createOscillator() {
+            return {
+                frequency: {
+                    setValueAtTime() {}
+                },
+                connect() {},
+                disconnect() {},
+                start() {},
+                stop() {}
+            };
+        }
+    }
+
+    // 1. Standalone dynamic call with uninitialized track warning
+    Track.clearRegistry();
+    const tStandalone = Track("t-standalone");
+    let warned = false;
+    const originalConsoleWarn = console.warn;
+    console.warn = (msg) => {
+        if (msg.includes("t-standalone")) {
+            warned = true;
+        }
+    };
+    Motif.isPlaying = true;
+    tStandalone.gain(Ramp(0.5, 0.1, "1 bar"));
+    tStandalone._schedule(0.5);
+    console.warn = originalConsoleWarn;
+    assert(warned === true, "should warn when calling gain(Ramp(...)) dynamically on uninitialized track");
+
+    // 2. Ramp inside Arrange()
+    Track.clearRegistry();
+    const tArrange = Track("t-arrange").synth("sine").note([60]);
+    Motif.tempo = 120; // 1 bar = 2s
+    Arrange([
+        { tracks: [tArrange.gain(Ramp(0.8, 0.2))], bars: 1 } // Ramp 0.8 to 0.2 over 1 bar (2 seconds)
+    ]);
+
+    const mockCtx = new TestRampOfflineCtx();
+    Motif.ctx = mockCtx;
+    Motif.isPlaying = true;
+    Motif._schedQueue = [];
+
+    // Prior to playing, _initAudio initializes the gain node. Let's make sure it happens or mock it
+    tArrange._initAudio();
+
+    // Trigger tick which schedules
+    Motif.tick();
+
+    assert(tArrange._scheduledRamps && tArrange._scheduledRamps.length === 1, "Ramp should be successfully scheduled under _scheduledRamps");
+    if (tArrange._scheduledRamps && tArrange._scheduledRamps.length === 1) {
+        const ramp = tArrange._scheduledRamps[0];
+        assert(ramp.from === 0.8, `expected from = 0.8, got ${ramp.from}`);
+        assert(ramp.to === 0.2, `expected to = 0.2, got ${ramp.to}`);
+        assert(ramp.duration === 2.0, `expected duration = 2.0s, got ${ramp.duration}`);
+    }
+
+    // Verify gain node received the scheduler's setValueAtTime and linearRampToValueAtTime
+    const inputNode = tArrange.trackInputNode;
+    assert(inputNode !== null, "trackInputNode should be initialized");
+    if (inputNode) {
+        assert(inputNode.setValue === 0.8, `setValueAtTime value should be 0.8, got ${inputNode.setValue}`);
+        assert(inputNode.rampValue === 0.2, `linearRampToValueAtTime value should be 0.2, got ${inputNode.rampValue}`);
+        assert(inputNode.rampTime === 2.0, `linearRampToValueAtTime time should be 2.0, got ${inputNode.rampTime}`);
+    }
+
+    // Clean up
+    Motif.ctx = prevCtx;
+    Motif.tempo = prevTempo;
+    Motif.isPlaying = prevIsPlaying;
+}
+
+// =============================================================================
+// Track Solo: Isolation and Arrangement Bypassing
+// =============================================================================
+console.log("\n=== Track Solo: Isolation and Arrangement Bypassing ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevTempo = Motif.tempo;
+    const prevIsPlaying = Motif.isPlaying;
+
+    // 1. solo() and s() flags and segment clearing
+    Track.clearRegistry();
+    const tSolo = Track("t-solo").synth("sine").note([60]);
+    tSolo._activeSegments = [{ start: 0, end: 4 }];
+    assert(tSolo._isSolo === false, "initially not soloed");
+    
+    tSolo.solo();
+    assert(tSolo._isSolo === true, "solo() sets _isSolo to true");
+    assert(tSolo._activeSegments.length === 0, "solo() clears active segments");
+
+    const tSolo2 = Track("t-solo2").synth("sine").note([62]);
+    tSolo2.s();
+    assert(tSolo2._isSolo === true, "s() is an alias for solo()");
+
+    // 2. Solo gate in _schedule() skips non-soloed and executes soloed
+    Track.clearRegistry();
+    const soloTrack = Track("soloed").synth("sine").note([60]).solo();
+    const normalTrack = Track("normal").synth("sine").note([64]);
+
+    soloTrack._parsedEvents = [{ time: 0, note: 60 }];
+    normalTrack._parsedEvents = [{ time: 0, note: 64 }];
+
+    const mockCtx = {
+        currentTime: 0.1,
+        sampleRate: 44100,
+        createGain() { return { gain: { setValueAtTime() {} }, connect() {} }; },
+        createOscillator() { return { frequency: { setValueAtTime() {} }, connect() {}, start() {}, stop() {} }; }
+    };
+    Motif.ctx = mockCtx;
+    Motif.tempo = 120;
+    Motif.isPlaying = true;
+
+    soloTrack._initAudio();
+    normalTrack._initAudio();
+
+    soloTrack._schedule(0.5);
+    normalTrack._schedule(0.5);
+
+    assert(normalTrack._activeVoices.size === 0, "normal track should not schedule any voices when another track is soloed");
+
+    // 3. Arrange() skips soloed tracks
+    Track.clearRegistry();
+    const tSoloArrange = Track("solo-arrange").synth("sine").note([60]).solo();
+    Arrange([
+        { tracks: [tSoloArrange], bars: 1 }
+    ]);
+    assert(tSoloArrange._activeSegments.length === 0, "Arrange should skip soloed track, keeping its active segments empty");
+
+    // Clean up
+    Motif.ctx = prevCtx;
+    Motif.tempo = prevTempo;
+    Motif.isPlaying = prevIsPlaying;
+}
+
+// =============================================================================
+// Arrangement Start Parameter: Skip Previous Sections
+// =============================================================================
+console.log("\n=== Arrangement Start Parameter: Skip Previous Sections ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevTempo = Motif.tempo;
+    const prevIsPlaying = Motif.isPlaying;
+    const sampleRate = 44100;
+    const bufferDurationS = 5.0;
+
+    class MockOsc {
+        constructor() {
+            this.frequency = {
+                value: 0, setValueAtTime(v, t) {
+                    this.value = v;
+                    this.time = t;
+                    return this;
+                },
+            };
+            this.type = "sine";
+            this.startTime = 0;
+            this.stopTime = 0;
+        }
+
+        start(t) {
+            this.startTime = t;
+        }
+
+        stop(t) {
+            this.stopTime = t;
+        }
+
+        connect() {}
+        disconnect() {}
+    }
+
+    class ArrangeOfflineCtx {
+        constructor() {
+            this.currentTime = 0;
+            this.sampleRate = sampleRate;
+            this.createdOscillators = [];
+        }
+
+        createGain() {
+            return {
+                gain: {
+                    value: 1.0, setValueAtTime() {},
+                }, connect() {}, disconnect() {},
+            };
+        }
+
+        createBiquadFilter() {
+            return { connect() {}, disconnect() {} };
+        }
+
+        createDynamicsCompressor() {
+            return { connect() {}, disconnect() {} };
+        }
+
+        createWaveShaper() {
+            return { connect() {}, disconnect() {} };
+        }
+
+        createOscillator() {
+            const o = new MockOsc();
+            this.createdOscillators.push(o);
+            return o;
+        }
+
+        async startRendering() {
+            const stepS = Motif.lookaheadIntervalMs / 1000;
+            for (let t = 0; t <= bufferDurationS + stepS; t += stepS) {
+                this.currentTime = t;
+                Motif.tick();
+            }
+        }
+    }
+
+    // 1. Basic Start Parameter (s: 1 or start: true)
+    Track.clearRegistry();
+    const tBass = Track("bass-start").synth("sine").note([60]);
+    const tLead = Track("lead-start").synth("sine").note([72]);
+
+    Motif.tempo = 120; // bar = 2.0s
+    Arrange([
+        { tracks: [tBass], bars: 1 }, // 0-2s, will be skipped
+        { tracks: [tLead], bars: 1, s: 1 }, // 2-4s -> now starts at 0s
+    ]);
+
+    const offline = new ArrangeOfflineCtx();
+    Motif.ctx = offline;
+    Motif._schedQueue = [];
+    Motif._stopScheduler();
+
+    await offline.startRendering();
+
+    const oscs = offline.createdOscillators;
+    // We expect ONLY tLead to play, starting at 0.0s. tBass is completely skipped from playing (but reset).
+    assert(oscs.length === 1, `expected 1 oscillator, got ${oscs.length}`);
+    if (oscs.length === 1) {
+        assert(Math.abs(oscs[0].frequency.value - midiToHz(72)) < 1e-6, "lead oscillator should have played");
+        assert(Math.abs(oscs[0].startTime - 0.0) < 1e-6, `lead should start at 0.0, got ${oscs[0].startTime}`);
+    }
+
+    // 2. Track Resetting: tracks in skipped sections must be reset
+    // tBass is in the skipped section. Its segments should be cleared.
+    assert(tBass._activeSegments.length === 0 || (tBass._activeSegments.length === 1 && tBass._activeSegments[0].start === 0 && tBass._activeSegments[0].stop === 0), "bass active segments should be cleared or dummy deactivated");
+
+    // 3. Multiple Starts: the last one wins
+    Track.clearRegistry();
+    const tBass2 = Track("bass-start-2").synth("sine").note([60]);
+    const tLead2 = Track("lead-start-2").synth("sine").note([72]);
+    const tPad2 = Track("pad-start-2").synth("sine").note([64]);
+
+    Arrange([
+        { tracks: [tBass2], bars: 1, s: true }, // skipped
+        { tracks: [tLead2], bars: 1, start: true }, // skipped because subsequent has s: 1
+        { tracks: [tPad2], bars: 1, s: 1 }, // last one wins, starts at 0s
+    ]);
+
+    const offline2 = new ArrangeOfflineCtx();
+    Motif.ctx = offline2;
+    Motif._schedQueue = [];
+    Motif._stopScheduler();
+
+    await offline2.startRendering();
+
+    const oscs2 = offline2.createdOscillators;
+    assert(oscs2.length === 1, `expected 1 oscillator, got ${oscs2.length}`);
+    if (oscs2.length === 1) {
+        assert(Math.abs(oscs2[0].frequency.value - midiToHz(64)) < 1e-6, "pad oscillator should have played");
+        assert(Math.abs(oscs2[0].startTime - 0.0) < 1e-6, `pad should start at 0.0, got ${oscs2[0].startTime}`);
+    }
+
+    // Clean up
     Motif.ctx = prevCtx;
     Motif.tempo = prevTempo;
     Motif.isPlaying = prevIsPlaying;

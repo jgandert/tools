@@ -266,7 +266,7 @@ Advanced audio buffer manipulation is handled through explicit fractional mappin
 
 * `.chop(slices: number)`: Divides the loaded sample into equal slices.
 * `.pattern(sliceIndices: Array)`: Reorders and subdivides slices.
-* `.fit(duration: string)`: Warps the buffer length to strictly fit a temporal constraint.
+* `.fit(duration: string | number, options?: { mode?: 'stretch' | 'repitch', grainSize?: number, overlap?: number })`: Warps the buffer length to strictly fit a temporal constraint. By default, `mode: 'stretch'` uses a granular OLA time-stretcher to stretch or compress time while preserving original pitch. Pass `mode: 'repitch'` to fall back to pitch-linked playback rate scaling. `grainSize` (seconds, default `0.05`) and `overlap` (integer, default `4`) customize the stretcher parameters.
 * `.splitStereo(modifier: Function)`: Applies a transformation exclusively to the right stereo channel (historically known as `jux` or juxtapose).
 
 ```javascript
@@ -274,7 +274,7 @@ Track('amen')
   .sample('breaks/amen.wav')
   .chop(8)
   .pattern([0, 1, 2, [3, 3], 4, 5, [7, 6], 0])
-  .fit('1b')
+  .fit('1b', { mode: 'stretch', grainSize: 0.05, overlap: 4 })
   .splitStereo((p) => p.rev()); // Right ear plays in reverse
 ```
 
@@ -421,6 +421,28 @@ Arrange([
   { bars: 16, tracks: [intro, main] },
   { bars: 8,  tracks: [intro, main, outro] }
 ], { loop: true, loopDelay: "2s" });
+```
+
+### Solo
+
+Chain `.solo()` (or `.s()`) on any track to hear only that instrument. The arrangement is bypassed — the soloed track loops continuously. Remove `.solo()` and re-run to restore normal playback.
+
+Multiple tracks can be soloed simultaneously.
+
+```javascript
+Track('bass').synth('fm').note([0, 3, 5, 7]).solo()
+```
+
+### Arrangement Start
+
+Add `s: 1` (or `start: true`) to a section inside the `Arrange` block to skip all sections prior to it, allowing you to test specific sections immediately during playback. If multiple sections have a start flag, the last one wins.
+
+```javascript
+Arrange([
+  { bars: 8, tracks: [darkKeys] },
+  // Skips the first section and starts here immediately
+  { bars: 8, tracks: [darkKeys, subBass], s: 1 } 
+]);
 ```
 
 ---
