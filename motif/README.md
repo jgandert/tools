@@ -4,7 +4,7 @@ Motif is a declarative, native-JavaScript Domain-Specific Language (DSL) for alg
 
 ---
 
-## 1. Global Transport & Master Output
+## Global Transport & Master Output
 
 The `Motif` global object controls the engine lifecycle, tempo, global swing, and master output stage.
 
@@ -34,7 +34,7 @@ document.querySelector('#start').addEventListener('click', async () => {
 
 ---
 
-## 2. Core Primitives: Pattern Calculus
+## Core Primitives: Pattern Calculus
 
 Time in Motif is continuous and cycle-based. By default, 1 Cycle equals 1 Bar. Patterns are constructed using standard JavaScript syntax and one core primitive mapping.
 
@@ -77,7 +77,7 @@ Track('lead')
 
 ---
 
-## 3. The `Track` Class
+## The `Track` Class
 
 The `Track` object is the primary unit of execution. It represents an independent sequencer and audio source. The API is strictly chainable.
 
@@ -136,7 +136,7 @@ Track('piano')
 
 ---
 
-## 4. Polymeters & Time Stretching
+## Polymeters & Time Stretching
 
 By default, sequences stretch to fill exactly 1 global cycle. This behavior can be uncoupled to create polymeters, polyrhythms, and looping offsets.
 
@@ -152,7 +152,7 @@ Track('polymeter')
 
 ---
 
-## 5. Transformations & Time Masks
+## Transformations & Time Masks
 
 Tracks can be mutated algorithmically using higher-order functions.
 
@@ -195,7 +195,7 @@ Track('lead')
 
 ---
 
-## 6. Generative & Stochastic Logic
+## Generative & Stochastic Logic
 
 Motif handles probabilities and algorithmic generation deterministically.
 
@@ -260,7 +260,7 @@ Track('procedural-lead')
 
 ---
 
-## 7. Sample Slicing & Breakbeat Manipulation
+## Sample Slicing & Breakbeat Manipulation
 
 Advanced audio buffer manipulation is handled through explicit fractional mapping arrays.
 
@@ -280,7 +280,7 @@ Track('amen')
 
 ---
 
-## 8. Audio Graphs, Modulation & FX
+## Audio Graphs, Modulation & FX
 
 Audio routing in Motif utilizes Directed Acyclic Graphs (DAGs). Reactivity is achieved natively by assigning control signals to standard JavaScript variables.
 
@@ -336,7 +336,7 @@ Track('stab')
 
 ---
 
-## 9. Custom DSP Generation
+## Custom DSP Generation
 
 For sample-accurate algorithmic synthesis, tracks accept pure mathematical functions compiled to WebAudio AudioWorklets via the `.dsp()` method. Context provides time (`t`), phase (`p`), and input (`i`).
 
@@ -354,7 +354,7 @@ DSP functions run inside an `AudioWorkletProcessor` which delivers exactly **128
 
 ---
 
-## 10. Harmony & Xenharmonics
+## Harmony & Xenharmonics
 
 Motif supports continuous frequency modulation, MIDI pitch representation, strict microtonal/xenharmonic frameworks, and diatonic scale mapping.
 
@@ -385,7 +385,7 @@ Track('microtonal')
 
 ---
 
-## 11. Macro-Arrangement
+## Macro-Arrangement
 
 By default, an unarranged track loops its sequence infinitely. Infinite loops are managed and structured via a declarative `Arrange` block, defining sequential phases of execution with guaranteed phase alignment.
 
@@ -447,7 +447,7 @@ Arrange([
 
 ---
 
-## 12. External I/O & Asynchronous Operations
+## External I/O & Asynchronous Operations
 
 Motif utilizes native JavaScript `await` functionality for sample loading.
 

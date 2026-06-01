@@ -216,6 +216,23 @@ export const TrackAudioChain = {
         const oldMuteGain = this.muteGainNode;
         setTimeout(() => {
             safeDisconnect(oldMuteGain, dest);
+            if (typeof this._stopAllVoices === "function") {
+                this._stopAllVoices();
+            } else if (typeof this._resetScheduling === "function") {
+                this._resetScheduling();
+            }
+            const internalNodes = [
+                "trackInputNode", "preFaderNode", "muteGainNode",
+                "filterNode", "pannerNode", "volumeNode",
+                "eqLowNode", "eqMidNode", "eqHighNode",
+                "compressorNode", "distortionNode", "dspNode",
+                "duckGainNode", "_mergerNode"
+            ];
+            for (const prop of internalNodes) {
+                if (this[prop]) {
+                    safeDisconnect(this[prop]);
+                }
+            }
         }, duration * 1000);
     },
 

@@ -7,6 +7,7 @@ import {
     noteToMidi,
     midiToNote,
     midiToHz,
+    Tie,
 } from "../motif.js";
 import { trackRegistry, mulberry32, bjorklund, safeStop, safeDisconnect } from "./helpers.js";
 
@@ -590,9 +591,12 @@ export const TrackScheduler = {
             }
 
             const sorted = [...group].sort((a, b) => {
-                const midiA = typeof a.value === "number" ? a.value : noteToMidi(a.value);
-                const midiB = typeof b.value === "number" ? b.value : noteToMidi(b.value);
-                return (midiA || 0) - (midiB || 0);
+                const getMidiVal = (v) => {
+                    if (typeof v === "symbol" || v === Tie) return -Infinity;
+                    const m = typeof v === "number" ? v : noteToMidi(v);
+                    return (typeof m === "number" && !isNaN(m)) ? m : 0;
+                };
+                return getMidiVal(a.value) - getMidiVal(b.value);
             });
 
             let arpNotes = [];
@@ -655,10 +659,13 @@ export const TrackScheduler = {
                 continue;
             }
 
-            let notes = group.map(e => ({
-                event: e,
-                midi: typeof e.value === "number" ? e.value : noteToMidi(e.value),
-            }));
+            let notes = group.map(e => {
+                const m = typeof e.value === "number" ? e.value : noteToMidi(e.value);
+                return {
+                    event: e,
+                    midi: (typeof m === "number" && !isNaN(m)) ? m : 0,
+                };
+            });
 
             if (drop !== undefined) {
                 notes.sort((a, b) => (a.midi || 0) - (b.midi || 0));

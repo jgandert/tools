@@ -2,9 +2,9 @@ class GranularStretcherProcessor extends AudioWorkletProcessor {
     static get parameterDescriptors() {
         return [
             { name: "stretchFactor", defaultValue: 1.0, minValue: 0.1, maxValue: 10.0 },
-            { name: "pitchRatio", defaultValue: 1.0, minValue: 0.1, maxValue: 4.0 },
-            { name: "grainSize", defaultValue: 0.05 },
-            { name: "overlap", defaultValue: 4 }
+            { name: "pitchRatio", defaultValue: 1.0, minValue: 0.001, maxValue: 128.0 },
+            { name: "grainSize", defaultValue: 0.05, minValue: 0.001 },
+            { name: "overlap", defaultValue: 4, minValue: 1 }
         ];
     }
 

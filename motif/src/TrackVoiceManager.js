@@ -725,6 +725,7 @@ export const TrackVoiceManager = {
 
         const voiceGain = ctx.createGain();
         const currentGainVal = (typeof this._gainLevel === "number" && !isNaN(this._gainLevel)) ? this._gainLevel : 1.0;
+        const safeGainVal = Math.max(0.0001, currentGainVal);
         let actualDuration = duration;
 
         if (this._envelope) {
@@ -734,10 +735,10 @@ export const TrackVoiceManager = {
             const sustain = env.sustain !== undefined ? env.sustain : CONSTANTS.ENVELOPE.DEFAULT_SUSTAIN;
             const release = parseDurationToSeconds(env.release !== undefined ? env.release : CONSTANTS.ENVELOPE.DEFAULT_RELEASE, Motif.tempo, Motif.beatsPerBar);
 
-            const peakVal = currentGainVal;
+            const peakVal = safeGainVal;
             const sustainLevel = Math.max(0.0001, sustain);
-            const sustainVal = sustainLevel * currentGainVal;
-            const floorVal = 0.0001 * currentGainVal;
+            const sustainVal = sustainLevel * safeGainVal;
+            const floorVal = 0.0001 * safeGainVal;
             const off = startTime + duration;
 
             voiceGain.gain.setValueAtTime(floorVal, startTime);
@@ -764,15 +765,15 @@ export const TrackVoiceManager = {
                 voiceGain.gain.setValueAtTime(0, off + release);
             }
         } else {
-            voiceGain.gain.setValueAtTime(currentGainVal, startTime);
+            voiceGain.gain.setValueAtTime(safeGainVal, startTime);
             if (isTied) {
                 actualDuration = Infinity;
             } else {
                 const release = (this._useSampler) ? parseDurationToSeconds(this._samplerRelease, Motif.tempo, Motif.beatsPerBar) : 0.005;
                 const off = startTime + duration;
                 actualDuration = duration + release;
-                voiceGain.gain.setValueAtTime(currentGainVal, off);
-                voiceGain.gain.exponentialRampToValueAtTime(0.0001 * currentGainVal, off + release);
+                voiceGain.gain.setValueAtTime(safeGainVal, off);
+                voiceGain.gain.exponentialRampToValueAtTime(0.0001 * safeGainVal, off + release);
                 voiceGain.gain.setValueAtTime(0, off + release);
             }
         }
@@ -938,6 +939,7 @@ export const TrackVoiceManager = {
         const voice = this._createVoiceSource(this._synthType, hz, hzTo, isRamp, startTime, duration);
         const voiceGain = ctx.createGain();
         const currentGainVal = (typeof this._gainLevel === "number" && !isNaN(this._gainLevel)) ? this._gainLevel : 1.0;
+        const safeGainVal = Math.max(0.0001, currentGainVal);
 
         let actualDuration = duration;
         let isTiedNote = event.tied === true;
@@ -949,10 +951,10 @@ export const TrackVoiceManager = {
             const sustain = env.sustain !== undefined ? env.sustain : CONSTANTS.ENVELOPE.DEFAULT_SUSTAIN;
             const release = parseDurationToSeconds(env.release !== undefined ? env.release : CONSTANTS.ENVELOPE.DEFAULT_RELEASE, Motif.tempo, Motif.beatsPerBar);
 
-            const peakVal = currentGainVal;
+            const peakVal = safeGainVal;
             const sustainLevel = Math.max(0.0001, sustain);
-            const sustainVal = sustainLevel * currentGainVal;
-            const floorVal = 0.0001 * currentGainVal;
+            const sustainVal = sustainLevel * safeGainVal;
+            const floorVal = 0.0001 * safeGainVal;
             const off = startTime + duration;
 
             voiceGain.gain.setValueAtTime(floorVal, startTime);
@@ -977,18 +979,18 @@ export const TrackVoiceManager = {
                 voiceGain.gain.setValueAtTime(0, off + release);
             }
         } else {
-            voiceGain.gain.setValueAtTime(currentGainVal, startTime);
+            voiceGain.gain.setValueAtTime(safeGainVal, startTime);
             if (isTiedNote) {
                 actualDuration = Infinity;
             } else {
                 const release = 0.015; // 15ms click preventative fade-out
                 const off = startTime + duration;
                 if (typeof voiceGain.gain.exponentialRampToValueAtTime === "function") {
-                    voiceGain.gain.setValueAtTime(currentGainVal, off);
-                    voiceGain.gain.exponentialRampToValueAtTime(0.0001 * currentGainVal, off + release);
+                    voiceGain.gain.setValueAtTime(safeGainVal, off);
+                    voiceGain.gain.exponentialRampToValueAtTime(0.0001 * safeGainVal, off + release);
                     voiceGain.gain.setValueAtTime(0, off + release);
                 } else if (typeof voiceGain.gain.setValueAtTime === "function") {
-                    voiceGain.gain.setValueAtTime(currentGainVal, off);
+                    voiceGain.gain.setValueAtTime(safeGainVal, off);
                     voiceGain.gain.setValueAtTime(0, off + release);
                 }
                 actualDuration = duration + release;
@@ -1075,5 +1077,14 @@ export const TrackVoiceManager = {
         }
 
         this._playAudioBuffer(this._sampleBuffer, startTime, duration, playbackRate, event.tied === true, event);
+    },
+
+    /**
+     * Terminate all active voices playing on this track.
+     */
+    _stopAllVoices() {
+        if (typeof this._resetScheduling === "function") {
+            this._resetScheduling();
+        }
     },
 };

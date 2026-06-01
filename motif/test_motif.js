@@ -447,6 +447,31 @@ console.log("\n=== Motif Engine: Duration Parsing and Tempo Ramping ===");
         rampThrew = true;
     }
     assert(rampThrew === true, "Motif.rampTempo should throw on invalid target tempo");
+
+    // Test smooth tempo ramping and interpolation in tick()
+    Motif.tempo = 100;
+    Motif.ctx.currentTime = 1.0;
+    Motif._tempoRamp = null;
+
+    // Trigger smooth ramp from 100 to 200 BPM over 2 seconds (starts at 1.0, ends at 3.0)
+    Motif.rampTempo(200, 2.0, { smooth: true });
+    assert(Motif.tempo === 100, "With smooth: true, Motif.tempo should not instantly jump to targetBpm");
+    assert(Motif._tempoRamp !== null, "Motif._tempoRamp should be set");
+    assert(Motif._tempoRamp.startBpm === 100, "startBpm should be 100");
+    assert(Motif._tempoRamp.targetBpm === 200, "targetBpm should be 200");
+    assert(Motif._tempoRamp.startTime === 1.0, "startTime should be 1.0");
+    assert(Motif._tempoRamp.endTime === 3.0, "endTime should be 3.0");
+
+    // Advance clock to 2.0 (midway)
+    Motif.ctx.currentTime = 2.0;
+    Motif.tick();
+    assert(Math.abs(Motif.tempo - 150) < 1e-9, `expected interpolated tempo to be 150 at midpoint, got ${Motif.tempo}`);
+
+    // Advance clock to 3.0 (endpoint)
+    Motif.ctx.currentTime = 3.0;
+    Motif.tick();
+    assert(Motif.tempo === 200, `expected tempo to be 200 at end of ramp, got ${Motif.tempo}`);
+    assert(Motif._tempoRamp === null, "tempoRamp should be cleared after completion");
 }
 
 // =============================================================================

@@ -356,6 +356,10 @@ export function midiToNote(midi) {
 }
 
 function evaluateOp(a, b, op) {
+    if (typeof a === "symbol" || typeof b === "symbol") {
+        return a === Tie || b === Tie ? Tie : a;
+    }
+
     const isANoteString = typeof a === "string" && typeof noteToMidi(a) === "number" && !isNaN(noteToMidi(a));
     const isBNoteString = typeof b === "string" && typeof noteToMidi(b) === "number" && !isNaN(noteToMidi(b));
 
@@ -675,12 +679,19 @@ export class MotifEngine {
         }
 
         const onReady = () => {
+            this._loadingSamples = [];
             this.isPlaying = true;
             this._startScheduler();
         };
 
         if (this._loadingSamples && this._loadingSamples.length > 0) {
-            Promise.all(this._loadingSamples).then(onReady);
+            Promise.all(this._loadingSamples)
+                .then(onReady)
+                .catch(err => {
+                    console.error("Failed to load some resources/samples:", err);
+                    this._loadingSamples = [];
+                    onReady();
+                });
         } else {
             onReady();
         }
@@ -711,6 +722,7 @@ export class MotifEngine {
         this.position = 0;
         this._stopScheduler();
         this._schedQueue = [];
+        this._tempoRamp = null;
 
         if (this._loopTimeout) {
             clearTimeout(this._loopTimeout);
@@ -752,6 +764,19 @@ export class MotifEngine {
      */
     tick() {
         if (!this.ctx) return;
+
+        if (this._tempoRamp) {
+            const now = this.ctx.currentTime;
+            const { startBpm, targetBpm, startTime, endTime } = this._tempoRamp;
+            if (now >= endTime) {
+                this.tempo = targetBpm;
+                this._tempoRamp = null;
+            } else if (now > startTime) {
+                const pct = (now - startTime) / (endTime - startTime);
+                this.tempo = startBpm + pct * (targetBpm - startBpm);
+            }
+        }
+
         const horizon = this.ctx.currentTime + this.lookaheadWindowS;
 
         // Schedule track-specific events
@@ -883,13 +908,16 @@ export class MotifEngine {
      * Smoothly interpolates the global tempo to bpm over duration.
      * @param {number} bpm - The target tempo.
      * @param {string|number} duration - The duration over which to ramp.
+     * @param {Object} [options] - Additional options. Pass { smooth: true } to interpolate scheduler tempo.
      */
-    rampTempo(bpm, duration) {
+    rampTempo(bpm, duration, options = {}) {
         if (typeof bpm !== "number" || isNaN(bpm) || bpm <= 0) {
             throw new Error("Target tempo must be a positive number.");
         }
 
-        const seconds = parseDurationToSeconds(duration, this.tempo, this.beatsPerBar);
+        // Use average tempo for duration parsing to ensure ramp ends exactly at target beat
+        const avgBpm = (this.tempo + bpm) / 2;
+        const seconds = parseDurationToSeconds(duration, avgBpm, this.beatsPerBar);
         const startTime = this.ctx.currentTime;
         const endTime = startTime + seconds;
 
@@ -897,9 +925,20 @@ export class MotifEngine {
             // Anchor the ramp at the current value and current time
             this.bpmParam.setValueAtTime(this.tempo, startTime);
             this.bpmParam.linearRampToValueAtTime(bpm, endTime);
-        }
 
-        this.tempo = bpm;
+            if (options.smooth === true) {
+                this._tempoRamp = {
+                    startBpm: this.tempo,
+                    targetBpm: bpm,
+                    startTime,
+                    endTime
+                };
+            } else {
+                this.tempo = bpm;
+            }
+        } else {
+            this.tempo = bpm;
+        }
     }
 
     /**
@@ -1383,6 +1422,15 @@ Track.clearRegistry = function() {
                 safeDisconnect(prev.depthGain);
             }
         }
+        const internalNodes = [
+            "filterNode", "pannerNode", "volumeNode",
+            "eqLowNode", "eqMidNode", "eqHighNode",
+            "compressorNode", "distortionNode", "dspNode",
+            "duckGainNode", "_mergerNode"
+        ];
+        for (const prop of internalNodes) {
+            safeDisconnect(track[prop]);
+        }
         const modulators = [
             "_filterCutoffModulator",
             "_panModulator",
@@ -1425,6 +1473,15 @@ Track.pruneExcept = function(activeIds) {
                 for (const prev of track._modulators.values()) {
                     safeDisconnect(prev.depthGain);
                 }
+            }
+            const internalNodes = [
+                "filterNode", "pannerNode", "volumeNode",
+                "eqLowNode", "eqMidNode", "eqHighNode",
+                "compressorNode", "distortionNode", "dspNode",
+                "duckGainNode", "_mergerNode"
+            ];
+            for (const prop of internalNodes) {
+                safeDisconnect(track[prop]);
             }
             const modulators = [
                 "_filterCutoffModulator",
