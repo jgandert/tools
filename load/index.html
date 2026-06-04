@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+          content="Topological SVG Animator: Generate and animate complex loops using SMIL path morphing.">
+    <title>Topological SVG Animator</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        /* Tool-specific minimal custom layouts */
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+            font-size: 0.85rem;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .label-group {
+            display: flex;
+            flex-direction: column;
+            width: 40%;
+        }
+
+        .help-text {
+            font-size: 0.65rem;
+            color: var(--on-surface-variant);
+            margin-top: 2px;
+            line-height: 1.1;
+        }
+
+        input[type="range"],
+        input[type="color"],
+        select {
+            width: 55%;
+            margin-bottom: 0 !important;
+        }
+
+        input[type="range"] {
+            border: none !important;
+        }
+
+        .preview-wrapper {
+            display: flex;
+            gap: var(--spacing-md);
+            width: 100%;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .svg-container {
+            flex: 1;
+            min-width: 0;
+            aspect-ratio: 1;
+            max-height: calc(100vh - 180px);
+            border: 1px dashed var(--outline-variant);
+            border-radius: var(--radius);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--surface-container-low);
+            position: relative;
+            transition: opacity var(--trans-std);
+        }
+
+        .svg-container-inverted {
+            filter: invert(1);
+        }
+
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--primary);
+            font-size: 0.9rem;
+            font-weight: bold;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--trans-std);
+            z-index: 10;
+        }
+
+        .is-computing .svg-container {
+            opacity: 0.3;
+        }
+
+        .is-computing .loader {
+            opacity: 1;
+        }
+
+        svg {
+            width: 80%;
+            height: 80%;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        dialog textarea {
+            height: 250px;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            margin-bottom: var(--spacing-md);
+        }
+    </style>
+</head>
+<body>
+
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Topological SVG Animator</h1>
+        <p>Interactive mathematical SMIL animation generator.</p>
+    </hgroup>
+    <button onclick="toggleCode()" type="button">
+        <span class="sym">code</span>
+        <span class="hide-mobile">View Source</span>
+    </button>
+    <button class="btn-primary" onclick="downloadSVG()" type="button">
+        <span class="sym">download</span>
+        <span class="hide-mobile">SVG</span>
+    </button>
+</header>
+
+<aside id="controls">
+    <fieldset>
+        <legend>Presets</legend>
+        <select id="preset-select"></select>
+    </fieldset>
+
+    <fieldset>
+        <legend>Appearance</legend>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="stroke-width">Stroke Width</label>
+                <span class="help-text">Thickness of the stroke line.</span>
+            </div>
+            <input type="range" id="stroke-width" min="1" max="12" step="0.5" value="4">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="color-mode">Color Mode</label>
+                <span class="help-text">Solid color or linear gradient.</span>
+            </div>
+            <select id="color-mode">
+                <option value="solid">Solid</option>
+                <option value="gradient">Gradient</option>
+            </select>
+        </div>
+        <div class="control-row" id="row-color-solid">
+            <div class="label-group">
+                <label for="color-solid">Stroke Color</label>
+                <span class="help-text">Color of the line.</span>
+            </div>
+            <input type="color" id="color-solid" value="#3b82f6">
+        </div>
+        <div class="control-row" id="row-color-grad-start" hidden>
+            <div class="label-group">
+                <label for="color-grad-start">Gradient Start</label>
+                <span class="help-text">Starting color of the loop.</span>
+            </div>
+            <input type="color" id="color-grad-start" value="#3b82f6">
+        </div>
+        <div class="control-row" id="row-color-grad-end" hidden>
+            <div class="label-group">
+                <label for="color-grad-end">Gradient End</label>
+                <span class="help-text">Ending color of the loop.</span>
+            </div>
+            <input type="color" id="color-grad-end" value="#8b5cf6">
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Global & Topology</legend>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="num-nodes">Nodes (N)</label>
+                <span class="help-text">Base polygon point count (e.g., 4 = Square)</span>
+            </div>
+            <input type="range" id="num-nodes" min="2" max="10" step="1">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="symmetry">Symmetry</label>
+                <span class="help-text">1.0 forces perfect left/right mirroring. 0 is fully unlinked.</span>
+            </div>
+            <input type="range" id="symmetry" min="0" max="1" step="0.05">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="rotation-loops">Rotation</label>
+                <span
+                    class="help-text">Full 360° loops per cycle. Creates "treadmill" illusion.</span>
+            </div>
+            <input type="range" id="rotation-loops" min="-2" max="2" step="1">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="duration">Duration</label>
+                <span class="help-text">Length of one complete infinite loop (seconds).</span>
+            </div>
+            <input type="range" id="duration" min="1" max="10" step="0.5">
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Radius (Anchor Distance)</legend>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="base-r">Base</label>
+                <span class="help-text">Default distance of nodes from center.</span>
+            </div>
+            <input type="range" id="base-r" min="0" max="50" step="1">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="amp-r">Amplitude</label>
+                <span class="help-text">Distance nodes pulse inward/outward.</span>
+            </div>
+            <input type="range" id="amp-r" min="-40" max="40" step="1">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="freq-r">Frequency</label>
+                <span class="help-text">In/out pulses per full loop.</span>
+            </div>
+            <input type="range" id="freq-r" min="0" max="5" step="1">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="phase-offset-r">Phase Offset</label>
+                <span class="help-text">Time delay between nodes pulsing (creates waves).</span>
+            </div>
+            <input type="range" id="phase-offset-r" min="0" max="4" step="0.1">
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Tension (Control Point Extent)</legend>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="base-tension">Base</label>
+                <span class="help-text">Bézier curve length. 0 makes straight lines.</span>
+            </div>
+            <input type="range" id="base-tension" min="0" max="60" step="1">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="amp-tension">Amplitude</label>
+                <span class="help-text">Amount the curve stretches/retracts during loop.</span>
+            </div>
+            <input type="range" id="amp-tension" min="-40" max="40" step="1">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="freq-tension">Frequency</label>
+                <span class="help-text">Stretch cycles per loop.</span>
+            </div>
+            <input type="range" id="freq-tension" min="0" max="5" step="1">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="phase-offset-tension">Phase Offset</label>
+                <span class="help-text">Delay between nodes stretching.</span>
+            </div>
+            <input type="range" id="phase-offset-tension" min="0" max="4" step="0.1">
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Tangent (3D Twisting)</legend>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="amp-tangent">Amplitude</label>
+                <span class="help-text">Angle off normal. >1.5 creates figure-8 knots.</span>
+            </div>
+            <input type="range" id="amp-tangent" min="0" max="6.28" step="0.1">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="freq-tangent">Frequency</label>
+                <span class="help-text">Twisting cycles per loop.</span>
+            </div>
+            <input type="range" id="freq-tangent" min="0" max="5" step="1">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="phase-offset-tangent">Phase Offset</label>
+                <span class="help-text">Delay in twisting across the shape.</span>
+            </div>
+            <input type="range" id="phase-offset-tangent" min="0" max="4" step="0.1">
+        </div>
+    </fieldset>
+</aside>
+
+<main id="preview">
+    <div class="preview-wrapper">
+        <div class="svg-container" id="svg-container"></div>
+        <div class="svg-container svg-container-inverted" id="svg-container-inverted"></div>
+        <div class="loader">Computing...</div>
+    </div>
+</main>
+
+<dialog id="code-dialog" class="modal-info">
+    <article>
+        <header>
+            <h3>SVG Source Code</h3>
+
+            <button id="close-modal" onclick="closeCode()" class="btn-sym" type="button"
+                    aria-label="Close dialog">
+                <span class="sym">close</span>
+            </button>
+        </header>
+
+        <!-- prettier-ignore-start -->
+        <!-- beautify ignore:start -->
+        <textarea id="svg-output" readonly onclick="this.select()"></textarea>
+        <!-- beautify ignore:end -->
+        <!-- prettier-ignore-end -->
+
+        <footer>
+            <button class="btn-primary" onclick="copySVG()" type="button">
+                <span class="sym">content_copy</span>
+                <span>Copy</span>
+            </button>
+            <button onclick="downloadSVG()" type="button">
+                <span class="sym">download</span>
+                <span>Download .svg</span>
+            </button>
+        </footer>
+    </article>
+</dialog>
+
+<script src="../one.js"></script>
+<script>
+    /**
+     * CONSTANTS & CONFIGURATION
+     */
+    const CONFIG = {
+        canvasSize: 100,
+        center: 50,
+
+        // Evaluates at 0, 0.25, 0.5, 0.75. The 1.0 frame is cloned to guarantee exact string matching.
+        frames: 5,
+        precision: 2,
+    };
+
+    const DEFAULT_APPEARANCE = {
+        "stroke-width": 4,
+        "color-mode": "solid",
+        "color-solid": "#3b82f6",
+        "color-grad-start": "#3b82f6",
+        "color-grad-end": "#8b5cf6",
+    };
+
+    /**
+     * PRESETS DICTIONARY
+     * Rotation is now strictly 'loops' (multiples of 360) to guarantee a zero-cut infinite loop.
+     */
+    const PRESETS = {
+        "The Möbius Fold": {
+            "num-nodes": 4, symmetry: 1.0, "rotation-loops": 1, duration: 4,
+            "base-r": 25, "amp-r": 5, "freq-r": 1, "phase-offset-r": 1,
+            "base-tension": 15, "amp-tension": 5, "freq-tension": 2, "phase-offset-tension": 1,
+            "amp-tangent": 1.8, "freq-tangent": 1, "phase-offset-tangent": 2,
+        },
+        "Bilateral Inversion": {
+            "num-nodes": 3, symmetry: 1.0, "rotation-loops": 0, duration: 6,
+            "base-r": 10, "amp-r": 25, "freq-r": 1, "phase-offset-r": 0,
+            "base-tension": 18, "amp-tension": 8, "freq-tension": 1, "phase-offset-tension": 0,
+            "amp-tangent": 0.5, "freq-tangent": 2, "phase-offset-tangent": 1,
+        },
+        "Organic Tension Bloom": {
+            "num-nodes": 5, symmetry: 0.2, "rotation-loops": -1, duration: 5,
+            "base-r": 20, "amp-r": 5, "freq-r": 2, "phase-offset-r": 2,
+            "base-tension": 10, "amp-tension": 35, "freq-tension": 1, "phase-offset-tension": 1,
+            "amp-tangent": 0, "freq-tangent": 1, "phase-offset-tangent": 0,
+        },
+        "Mechanical Vortex": {
+            "num-nodes": 6, symmetry: 0.0, "rotation-loops": 1, duration: 3,
+            "base-r": 30, "amp-r": 10, "freq-r": 1, "phase-offset-r": 2,
+            "base-tension": 12, "amp-tension": 18, "freq-tension": 1, "phase-offset-tension": 2,
+            "amp-tangent": 0.5, "freq-tangent": 2, "phase-offset-tangent": 1,
+        },
+    };
+
+    let currentState = { ...DEFAULT_APPEARANCE, ...PRESETS["The Möbius Fold"] };
+
+    /**
+     * MATHEMATICAL CORE
+     */
+
+// Basic phase evaluation. Frequencies must be integers to ensure the wave seamlessly repeats at t=1.
+    const evaluatePose = (t, base = 0, amp = 0, freq = 1, phase = 0) => {
+        return base + amp * Math.sin(t * 2 * Math.PI * freq + phase);
+    };
+
+    const lerp = (start, end, amt) => start + (end - start) * amt;
+
+    // Prevents javascript from yielding "-0" strings, which violates strict string-matching requirements
+    const roundCoords = (val) => {
+        const rounded = Number(val.toFixed(CONFIG.precision));
+        return rounded === 0 ? 0 : rounded;
+    };
+
+    // Generates the mathematical dataset for all frames BEFORE compiling to SVG strings.
+    const generateRawFrames = (settings) => {
+        const frames = [];
+        let maxDeviation = 0;
+        const N = settings["num-nodes"];
+
+        // Rationale: We only loop `CONFIG.frames - 1` times. Mathematical float precision
+        // at exactly t=1 (e.g. sin(2π)) often yields microscopic artifacts.
+        // To ensure the "Golden Loop Rule", Frame 0 must be physically duplicated at the end.
+        for (let f = 0; f < CONFIG.frames - 1; f++) {
+            const t = f / (CONFIG.frames - 1);
+            const nodes = [];
+
+            // Generate purely radial, independent nodes
+            for (let i = 0; i < N; i++) {
+                const phaseR = (i / N) * settings["phase-offset-r"] * 2 * Math.PI;
+                const phaseTension = (i / N) * settings["phase-offset-tension"] * 2 * Math.PI;
+                const phaseTangent = (i / N) * settings["phase-offset-tangent"] * 2 * Math.PI;
+
+                // -Math.PI / 2 shifts Node 0 to the top center, ensuring the vertical axis cleanly splits the shape.
+                const baseAngle = (i / N) * 2 * Math.PI - (Math.PI / 2);
+
+                const R = evaluatePose(t, settings["base-r"], settings["amp-r"], settings["freq-r"], phaseR);
+                const L = evaluatePose(t, settings["base-tension"], settings["amp-tension"], settings["freq-tension"], phaseTension);
+
+                // Tangent controls the 3D ribbon twist. A base tangent of +PI/2 forces C1 continuity (smooth curves).
+                const baseTangent = baseAngle + (Math.PI / 2);
+                const phi = baseTangent + evaluatePose(t, 0, settings["amp-tangent"], settings["freq-tangent"], phaseTangent);
+
+                nodes.push({
+                    anchorX: CONFIG.center + R * Math.cos(baseAngle),
+                    anchorY: CONFIG.center + R * Math.sin(baseAngle),
+                    inCpX: CONFIG.center + R * Math.cos(baseAngle) - L * Math.cos(phi),
+                    inCpY: CONFIG.center + R * Math.sin(baseAngle) - L * Math.sin(phi),
+                    outCpX: CONFIG.center + R * Math.cos(baseAngle) + L * Math.cos(phi),
+                    outCpY: CONFIG.center + R * Math.sin(baseAngle) + L * Math.sin(phi),
+                });
+            }
+
+            // Cartesian Mirror Lerp (Float Symmetry)
+            if (settings.symmetry > 0) {
+
+                // Mirror Node 0 (top anchor on vertical axis) to itself
+                nodes[0].inCpX = lerp(nodes[0].inCpX, CONFIG.canvasSize - nodes[0].outCpX, settings.symmetry);
+                nodes[0].inCpY = lerp(nodes[0].inCpY, nodes[0].outCpY, settings.symmetry);
+
+                nodes[0].outCpX = lerp(nodes[0].outCpX, CONFIG.canvasSize - nodes[0].inCpX, settings.symmetry);
+                nodes[0].outCpY = lerp(nodes[0].outCpY, nodes[0].inCpY, settings.symmetry);
+
+                for (let i = Math.ceil(N / 2); i < N; i++) {
+
+                    // Partner node index on the right side
+                    const p = N - i;
+                    const target = nodes[p];
+
+                    // When mirroring across X=50, X mirrored is `100 - X`. Y remains unchanged.
+                    // Rationale for Winding: "inCp" and "outCp" MUST swap roles when mirrored.
+                    nodes[i].anchorX = lerp(nodes[i].anchorX, CONFIG.canvasSize - target.anchorX, settings.symmetry);
+                    nodes[i].anchorY = lerp(nodes[i].anchorY, target.anchorY, settings.symmetry);
+
+                    nodes[i].inCpX = lerp(nodes[i].inCpX, CONFIG.canvasSize - target.outCpX, settings.symmetry);
+                    nodes[i].inCpY = lerp(nodes[i].inCpY, target.outCpY, settings.symmetry);
+
+                    nodes[i].outCpX = lerp(nodes[i].outCpX, CONFIG.canvasSize - target.inCpX, settings.symmetry);
+                    nodes[i].outCpY = lerp(nodes[i].outCpY, target.inCpY, settings.symmetry);
+                }
+            }
+
+            // Record max boundary deviation for the ViewBox Prescaler
+            for (let i = 0; i < N; i++) {
+                for (const key in nodes[i]) {
+                    const deviation = Math.abs(nodes[i][key] - CONFIG.center);
+                    if (deviation > maxDeviation) maxDeviation = deviation;
+                }
+            }
+
+            frames.push(nodes);
+        }
+        return { frames, maxDeviation };
+    };
+
+    /**
+     * COMPILER
+     */
+    const buildSVG = (settings) => {
+        const N = settings["num-nodes"];
+        const { frames, maxDeviation } = generateRawFrames(settings);
+
+        const strokeWidth = settings["stroke-width"] || 4;
+        const safeRadius = 50 - (strokeWidth / 2);
+
+        // Global Prescaler: Native SVG SMIL cannot dynamically scale bounding boxes cleanly.
+        // We calculate the absolute max scale globally, and scale all vectors proportionally here.
+        const scale = maxDeviation > safeRadius ? (safeRadius / maxDeviation) : 1;
+
+        const valuesArray = frames.map(nodes => {
+            const scalePt = (val) => roundCoords(CONFIG.center + (val - CONFIG.center) * scale);
+
+            let path = `M ${scalePt(nodes[0].anchorX)} ${scalePt(nodes[0].anchorY)}`;
+
+            for (let i = 1; i <= N; i++) {
+                const prevNode = nodes[i - 1];
+                const currNode = nodes[i % N];
+
+                // Strict M, C...C, Z enforcement
+                path += ` C ${scalePt(prevNode.outCpX)} ${scalePt(prevNode.outCpY)}, ` +
+                    `${scalePt(currNode.inCpX)} ${scalePt(currNode.inCpY)}, ` +
+                    `${scalePt(currNode.anchorX)} ${scalePt(currNode.anchorY)}`;
+            }
+            return path + " Z";
+        });
+
+        // The Golden Loop Rule enforcement
+        valuesArray.push(valuesArray[0]);
+
+        const valuesString = valuesArray.join(";\n      ");
+
+        // Continuous rotation prevents visual "stutter" that occurs if we apply the path's spline easing to the transform.
+        let transformAnimate = "";
+        if (settings["rotation-loops"] !== 0) {
+            const totalDeg = settings["rotation-loops"] * 360;
+            transformAnimate = `\n    <animateTransform attributeName="transform" type="rotate"
+      from="0 50 50" to="${totalDeg} 50 50" 
+      dur="${settings.duration}s" 
+      repeatCount="indefinite" />`;
+        }
+
+        let defs = "";
+        let strokeAttr = "currentColor";
+
+        if (settings["color-mode"] === "gradient") {
+            const gradStart = settings["color-grad-start"] || "#3b82f6";
+            const gradEnd = settings["color-grad-end"] || "#8b5cf6";
+            defs = `\n  <defs>\n    <linearGradient id="loader-grad" x1="0%" y1="0%" x2="100%" y2="100%">\n      <stop offset="0%" stop-color="${gradStart}" />\n      <stop offset="100%" stop-color="${gradEnd}" />\n    </linearGradient>\n  </defs>`;
+            strokeAttr = "url(#loader-grad)";
+        } else if (settings["color-solid"]) {
+            strokeAttr = settings["color-solid"];
+        }
+
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${defs}
+  <path fill="none" stroke="${strokeAttr}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+    <animate attributeName="d" 
+      values="
+      ${valuesString}" 
+      dur="${settings.duration}s" 
+      repeatCount="indefinite" 
+      calcMode="spline" 
+      keyTimes="0; 0.25; 0.5; 0.75; 1" 
+      keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />${transformAnimate}
+  </path>
+</svg>`;
+    };
+
+    /**
+     * UI BINDING & DEBOUNCE LOGIC
+     */
+    let renderTimeout;
+
+    const initUI = () => {
+        const select = document.getElementById("preset-select");
+        for (const key in PRESETS) {
+            const opt = document.createElement("option");
+            opt.value = key;
+            opt.textContent = key;
+            select.appendChild(opt);
+        }
+
+        select.addEventListener("change", (e) => {
+            currentState = { ...DEFAULT_APPEARANCE, ...PRESETS[e.target.value] };
+            updateSliders();
+            triggerRender();
+        });
+
+        const handleInput = (id, value) => {
+            if (id === "color-mode") {
+                currentState[id] = value;
+                const isGrad = value === "gradient";
+                document.getElementById("row-color-solid").hidden = isGrad;
+                document.getElementById("row-color-grad-start").hidden = !isGrad;
+                document.getElementById("row-color-grad-end").hidden = !isGrad;
+            } else if (id === "stroke-width") {
+                currentState[id] = parseFloat(value);
+            } else if (id.startsWith("color-")) {
+                currentState[id] = value;
+            } else {
+                currentState[id] = parseFloat(value);
+            }
+
+            document.getElementById("preview").classList.add("is-computing");
+            clearTimeout(renderTimeout);
+            renderTimeout = setTimeout(triggerRender, 150);
+        };
+
+        document.querySelectorAll("input[type=range]").forEach(input => {
+            input.addEventListener("input", (e) => handleInput(e.target.id, e.target.value));
+        });
+
+        document.querySelectorAll("input[type=color], select").forEach(input => {
+            input.addEventListener("input", (e) => handleInput(e.target.id, e.target.value));
+            input.addEventListener("change", (e) => handleInput(e.target.id, e.target.value));
+        });
+
+        updateSliders();
+        triggerRender();
+    };
+
+    const updateSliders = () => {
+        for (const key in currentState) {
+            const el = document.getElementById(key);
+            if (el) el.value = currentState[key];
+        }
+        const isGrad = currentState["color-mode"] === "gradient";
+        document.getElementById("row-color-solid").hidden = isGrad;
+        document.getElementById("row-color-grad-start").hidden = !isGrad;
+        document.getElementById("row-color-grad-end").hidden = !isGrad;
+    };
+
+    const triggerRender = () => {
+        const svgCode = buildSVG(currentState);
+        document.getElementById("svg-container").innerHTML = svgCode;
+        document.getElementById("svg-container-inverted").innerHTML = svgCode;
+        document.getElementById("svg-output").value = svgCode;
+        document.getElementById("preview").classList.remove("is-computing");
+    };
+
+    /**
+     * EXPORT LOGIC
+     */
+    const downloadSVG = () => {
+        const code = document.getElementById("svg-output").value;
+        const blob = new Blob([code], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+
+        const filename = `load_${one.getTimestamp()}.svg`;
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const copySVG = () => {
+        const code = document.getElementById("svg-output").value;
+        one.copy(code);
+    };
+
+    const toggleCode = () => {
+        const dialog = document.getElementById("code-dialog");
+        dialog.showModal();
+    };
+
+    const closeCode = () => {
+        const dialog = document.getElementById("code-dialog");
+        dialog.close();
+    };
+
+    // Boot
+    initUI();
+
+</script>
+</body>
+</html>

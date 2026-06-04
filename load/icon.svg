@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="24px"
+   viewBox="0 -960 960 960"
+   width="24px"
+   fill="#1f1f1f"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="icon.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="5.008673"
+     inkscape:cx="-35.338701"
+     inkscape:cy="28.949783"
+     inkscape:window-width="1707"
+     inkscape:window-height="888"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <path
+     d="M 294,-37.8 Q 206.4,-75.6 141,-141 75.6,-206.4 37.8,-294 0,-381.6 0,-480.6 q 0,-99 37.8,-186 37.8,-87 103.2,-152.4 65.4,-65.4 153,-103.2 87.6,-37.8 186,-37.8 20.4,0 34.2,13.8 13.8,13.8 13.8,34.2 0,20.4 -13.8,34.2 Q 500.4,-864 480,-864 320.4,-864 208.2,-751.8 96,-639.6 96,-480 96,-320.4 208.2,-208.2 320.4,-96 480,-96 639.6,-96 751.8,-208.2 864,-320.4 864,-480 q 0,-20.4 13.8,-34.2 13.8,-13.8 34.2,-13.8 20.4,0 34.2,13.8 13.8,13.8 13.8,34.2 0,98.4 -37.8,186 Q 884.4,-206.4 819,-141 753.6,-75.6 666.6,-37.8 579.6,0 480.6,0 381.6,0 294,-37.8 Z"
+     id="path1"
+     style="stroke-width:1.2" />
+  <path
+     d="m 503.4,-354.90811 55.2,55.2 q 20.4,20.4 50.4,21 30,0.6 51.6,-21 20.4,-20.4 20.4,-51 0,-30.6 -20.4,-51 l -55.2,-55.2 q 4.8,-13.2 7.2,-27.6 2.4,-14.4 2.4,-28.8 0,-69.6 -49.2,-118.8 -49.2,-49.2 -118.8,-49.2 -10.8,0 -21.6,0.6 -10.8,0.6 -20.4,4.2 -13.2,4.8 -16.2,19.8 -3,15 6.6,24.6 l 51.6,51.6 q 13.2,13.2 13.2,33.6 0,20.4 -13.2,33.6 -13.2,13.2 -33.6,13.2 -20.4,0 -33.6,-13.2 l -51.6,-51.6 q -9.6,-9.6 -24.6,-6.6 -15,3 -19.8,16.2 -3.6,9.6 -4.2,20.4 -0.6,10.8 -0.6,21.6 0,69.6 49.2,118.8 49.2,49.2 118.8,49.2 15.6,0 29.4,-2.4 13.8,-2.4 27,-7.2 z"
+     id="path1-5"
+     style="stroke-width:1.2;fill:#786721" />
+</svg>

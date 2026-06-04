@@ -1,0 +1,1052 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Finger Chooser — A web tool for touch-based decision making. Choose winners, rank fingers, or divide into teams.">
+    <title>Finger Chooser — Winner(s), Rank, or Teams</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        :root {
+            --canvas-bg-inner: #f5f3ff;
+            --canvas-bg-outer: #e0e7ff;
+            --ring-bg-stroke: rgba(0, 0, 0, 0.06);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --canvas-bg-inner: #181528;
+                --canvas-bg-outer: #09070f;
+                --ring-bg-stroke: rgba(255, 255, 255, 0.08);
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --canvas-bg-inner: #181528;
+            --canvas-bg-outer: #09070f;
+            --ring-bg-stroke: rgba(255, 255, 255, 0.08);
+        }
+
+        /* --- one.css Sidebar Layout Overrides (Collapsed by Default) --- */
+        @media (min-width: 900px) {
+            body:has(#aside-state:not(:checked)) {
+                grid-template-columns: 0px 1fr !important;
+                grid-template-areas:
+                    "header header"
+                    "aside main"
+                    "aside footer" !important;
+            }
+            body:has(#aside-state:not(:checked)) aside {
+                width: 0 !important;
+                opacity: 0 !important;
+                padding: 0 !important;
+                border-right: none !important;
+            }
+            body:has(#aside-state:checked) {
+                grid-template-columns: var(--aside-width) 1fr !important;
+                grid-template-areas:
+                    "header header"
+                    "aside main"
+                    "aside footer" !important;
+            }
+            body:has(#aside-state:checked) aside {
+                width: 100% !important;
+                opacity: 1 !important;
+                padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md) !important;
+                border-right: 1px solid var(--outline-variant) !important;
+            }
+            #aside-state:not(:checked) ~ header .aside-toggle-btn::before {
+                content: 'menu' !important;
+            }
+            #aside-state:checked ~ header .aside-toggle-btn::before {
+                content: 'menu_open' !important;
+            }
+        }
+
+        /* --- Touch Canvas Layout & Aesthetics --- */
+        main {
+            padding: 0 !important;
+            height: calc(100vh - var(--header-height));
+            overflow: hidden;
+            position: relative;
+        }
+
+        footer {
+            display: none !important;
+        }
+
+        #touch-canvas {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, var(--canvas-bg-inner) 0%, var(--canvas-bg-outer) 100%);
+            position: relative;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- Status Display --- */
+        #status-display {
+            text-align: center;
+            pointer-events: none;
+            z-index: 2;
+            transition: opacity 0.3s ease;
+        }
+
+        #status-display .sym {
+            font-size: 4rem;
+            color: var(--primary);
+            opacity: 0.7;
+            animation: pulse-icon 2s infinite ease-in-out;
+        }
+
+        #status-display h2 {
+            font-size: 1.5rem;
+            font-weight: 300;
+            color: var(--on-surface-variant);
+            margin: var(--spacing-md) 0 0 0;
+            opacity: 0.8;
+        }
+
+        @keyframes pulse-icon {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 0.9; }
+        }
+
+        /* --- Finger Circles --- */
+        .finger {
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            transform: translate(-50%, -50%) scale(0.2);
+            left: var(--x);
+            top: var(--y);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease;
+            z-index: 10;
+        }
+
+        .finger.active {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .finger-circle {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background-color: var(--finger-color);
+            box-shadow: 0 0 25px var(--finger-color), inset 0 0 15px rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+        }
+
+        .finger-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 0 10px #ffffff;
+            transition: opacity 0.2s ease;
+        }
+
+        .finger-label {
+            position: absolute;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #ffffff;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+            opacity: 0;
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease;
+        }
+
+        /* --- Circular Progress Ring --- */
+        .progress-ring {
+            position: absolute;
+            transform: rotate(-90deg);
+            pointer-events: none;
+        }
+
+        .progress-ring-bg {
+            fill: none;
+            stroke: var(--ring-bg-stroke);
+            stroke-width: 6px;
+        }
+
+        .progress-ring-fg {
+            fill: none;
+            stroke: var(--finger-color);
+            stroke-width: 6px;
+            stroke-linecap: round;
+            stroke-dasharray: 314.16;
+            stroke-dashoffset: 314.16;
+            transition: stroke-dashoffset 0.05s linear;
+        }
+
+        /* --- Result States --- */
+        .finger.chosen .finger-circle {
+            transform: scale(1.2);
+            box-shadow: 0 0 45px #ffd700, inset 0 0 25px rgba(255, 255, 255, 0.5);
+            border: 4px solid #ffd700;
+        }
+
+        .finger.chosen::after {
+            content: 'star';
+            font-family: 'Material Symbols Rounded';
+            font-size: 28px;
+            color: #ffd700;
+            position: absolute;
+            top: -20px;
+            text-shadow: 0 2px 8px rgba(255, 215, 0, 0.6);
+            animation: bounce-crown 0.6s infinite alternate ease-in-out;
+        }
+
+        @keyframes bounce-crown {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-6px); }
+        }
+
+        .finger.rejected {
+            opacity: 0.15;
+            transform: translate(-50%, -50%) scale(0.8);
+            filter: grayscale(0.8);
+        }
+
+        .finger.result-labeled .finger-dot {
+            opacity: 0;
+        }
+
+        .finger.result-labeled .finger-label {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* --- Particle Emitter --- */
+        #particles-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .confetti-particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            left: 0;
+            top: 0;
+            transform: translate(var(--x), var(--y));
+        }
+
+        /* --- Sidebar Footer --- */
+        aside footer {
+            display: block !important;
+            margin-top: var(--spacing-lg);
+            border-top: 1px solid var(--outline-variant);
+            padding-top: var(--spacing-md);
+        }
+
+        /* --- Custom settings switch positioning --- */
+        form label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        form label input[type="checkbox"][role="switch"] {
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Finger Chooser</h1>
+        <p>A touch-based group decision tool.</p>
+    </hgroup>
+</header>
+
+<main id="content">
+    <div id="touch-canvas">
+        <div id="status-display">
+            <span class="sym">pan_tool</span>
+            <h2 id="status-text">Place 2 or more fingers</h2>
+        </div>
+        <div id="particles-container"></div>
+        <div id="fingers-container"></div>
+    </div>
+</main>
+
+<aside>
+    <h2>Settings</h2>
+    <form id="settings-form" autocomplete="off">
+        <fieldset>
+            <legend>Mode</legend>
+            <div class="segmented-control" role="group" aria-label="Decision Mode">
+                <input type="radio" name="tool-mode" id="mode-select" value="select" checked>
+                <label for="mode-select">Select</label>
+
+                <input type="radio" name="tool-mode" id="mode-rank" value="rank">
+                <label for="mode-rank">Rank</label>
+
+                <input type="radio" name="tool-mode" id="mode-teams" value="teams">
+                <label for="mode-teams">Teams</label>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Options</legend>
+            
+            <div id="config-select-only">
+                <label for="input-chosen-count">
+                    Choose Count
+                    <input type="number" id="input-chosen-count" name="chosen-count" min="1" max="10" value="1">
+                </label>
+            </div>
+
+            <div id="config-teams-only" hidden>
+                <label for="input-team-count">
+                    Number of Teams
+                    <input type="number" id="input-team-count" name="team-count" min="2" max="10" value="2">
+                </label>
+            </div>
+
+            <label for="input-countdown-sec">
+                Countdown (sec)
+                <input type="number" id="input-countdown-sec" name="countdown-sec" min="1" max="10" value="2">
+            </label>
+
+            <label for="input-cooldown-sec">
+                Results Cooldown (sec)
+                <input type="number" id="input-cooldown-sec" name="cooldown-sec" min="0" max="10" value="3">
+            </label>
+        </fieldset>
+
+        <fieldset>
+            <legend>Feedback &amp; Control</legend>
+            
+            <label for="input-sound-effects">
+                Sound Effects
+                <input type="checkbox" role="switch" id="input-sound-effects" name="sound-effects" checked>
+            </label>
+
+            <label for="input-haptics">
+                Haptic Vibration
+                <input type="checkbox" role="switch" id="input-haptics" name="haptics" checked>
+            </label>
+
+            <label for="input-simulator">
+                Simulate Touch (Click)
+                <input type="checkbox" role="switch" id="input-simulator" name="simulator">
+            </label>
+        </fieldset>
+    </form>
+</aside>
+
+<script>
+    // --- Audio Synthesis System ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(type) {
+        if (!settings.sound || audioCtx.state === 'suspended') {
+            try {
+                audioCtx.resume();
+            } catch (e) {}
+        }
+        if (!settings.sound) return;
+
+        const now = audioCtx.currentTime;
+        if (type === 'tick') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+            
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            
+            osc.start(now);
+            osc.stop(now + 0.05);
+        } else if (type === 'success') {
+            const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+            notes.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                
+                gain.gain.setValueAtTime(0, now + idx * 0.08);
+                gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.08 + 0.04);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+                
+                osc.start(now + idx * 0.08);
+                osc.stop(now + idx * 0.08 + 0.35);
+            });
+        } else if (type === 'reset') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(180, now);
+            osc.frequency.exponentialRampToValueAtTime(540, now + 0.12);
+            
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            
+            osc.start(now);
+            osc.stop(now + 0.12);
+        }
+    }
+
+    function triggerVibration(pattern) {
+        if (settings.haptic && navigator.vibrate) {
+            try {
+                navigator.vibrate(pattern);
+            } catch (e) {}
+        }
+    }
+
+    // --- State & Settings ---
+    const state = {
+        fingers: new Map(), // identifier -> { id, x, y, color, element, isChosen, team, rank }
+        status: 'waiting',  // 'waiting', 'counting', 'chosen'
+        countdownStartTime: 0,
+        lastFingerCount: 0,
+        lastTickSecond: -1,
+        decisionTime: 0
+    };
+
+    let particles = [];
+
+    const settings = {
+        get mode() {
+            return new FormData(settingsForm).get('tool-mode');
+        },
+        get chosenCount() {
+            const el = document.getElementById('input-chosen-count');
+            return el ? (parseInt(el.value) || 1) : 1;
+        },
+        get teamCount() {
+            const el = document.getElementById('input-team-count');
+            return el ? (parseInt(el.value) || 2) : 2;
+        },
+        get countdownSec() {
+            const el = document.getElementById('input-countdown-sec');
+            return el ? (parseFloat(el.value) || 2) : 2;
+        },
+        get cooldownSec() {
+            const el = document.getElementById('input-cooldown-sec');
+            return el ? (parseFloat(el.value) || 3) : 3;
+        },
+        get sound() {
+            const el = document.getElementById('input-sound-effects');
+            return el ? el.checked : true;
+        },
+        get haptic() {
+            const el = document.getElementById('input-haptics');
+            return el ? el.checked : true;
+        },
+        get simulator() {
+            const el = document.getElementById('input-simulator');
+            return el ? el.checked : false;
+        }
+    };
+
+    // --- Dom Elements ---
+    const canvas = document.getElementById('touch-canvas');
+    const fingersContainer = document.getElementById('fingers-container');
+    const particlesContainer = document.getElementById('particles-container');
+    const statusText = document.getElementById('status-text');
+    const settingsForm = document.getElementById('settings-form');
+
+    const configSelectOnly = document.getElementById('config-select-only');
+    const configTeamsOnly = document.getElementById('config-teams-only');
+
+    // --- Settings Storage ---
+    const STORAGE_KEY = 'finger-chooser-settings';
+
+    function saveSettings() {
+        const formData = new FormData(settingsForm);
+        const data = {
+            mode: formData.get('tool-mode'),
+            chosenCount: settings.chosenCount,
+            teamCount: settings.teamCount,
+            countdownSec: settings.countdownSec,
+            cooldownSec: settings.cooldownSec,
+            sound: settings.sound,
+            haptic: settings.haptic,
+            simulator: settings.simulator
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function loadSettings() {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (!stored) return;
+            const data = JSON.parse(stored);
+            
+            if (data.mode) {
+                const radio = settingsForm.querySelector(`input[name="tool-mode"][value="${data.mode}"]`);
+                if (radio) radio.checked = true;
+            }
+            
+            const elChosenCount = document.getElementById('input-chosen-count');
+            if (elChosenCount && data.chosenCount !== undefined) elChosenCount.value = data.chosenCount;
+
+            const elTeamCount = document.getElementById('input-team-count');
+            if (elTeamCount && data.teamCount !== undefined) elTeamCount.value = data.teamCount;
+
+            const elCountdownSec = document.getElementById('input-countdown-sec');
+            if (elCountdownSec && data.countdownSec !== undefined) elCountdownSec.value = data.countdownSec;
+
+            const elCooldownSec = document.getElementById('input-cooldown-sec');
+            if (elCooldownSec && data.cooldownSec !== undefined) elCooldownSec.value = data.cooldownSec;
+
+            const elSound = document.getElementById('input-sound-effects');
+            if (elSound && data.sound !== undefined) elSound.checked = data.sound;
+
+            const elHaptic = document.getElementById('input-haptics');
+            if (elHaptic && data.haptic !== undefined) elHaptic.checked = data.haptic;
+
+            const elSimulator = document.getElementById('input-simulator');
+            if (elSimulator && data.simulator !== undefined) elSimulator.checked = data.simulator;
+        } catch (e) {
+            console.error('Failed to load settings', e);
+        }
+    }
+
+    // --- Settings Binding ---
+    let lastSimulatorState = false;
+
+    function updateSettings() {
+        const currentSimulator = settings.simulator;
+        if (currentSimulator !== lastSimulatorState) {
+            clearAllFingers();
+            lastSimulatorState = currentSimulator;
+        }
+
+        // Toggle configuration visibility
+        configSelectOnly.hidden = settings.mode !== 'select';
+        configTeamsOnly.hidden = settings.mode !== 'teams';
+    }
+
+    // Load stored settings on load
+    loadSettings();
+
+    settingsForm.addEventListener('change', () => {
+        saveSettings();
+        updateSettings();
+    });
+    settingsForm.addEventListener('input', () => {
+        saveSettings();
+        updateSettings();
+    });
+    updateSettings();
+
+    // --- Finger Object Factories ---
+    function getFingerColor(index, total) {
+        const hue = (index * 360) / (total || 1);
+        return `oklch(0.68 0.18 ${hue})`;
+    }
+
+    function updateFingerColors() {
+        const count = state.fingers.size;
+        if (count === 0) return;
+        
+        let index = 0;
+        state.fingers.forEach((finger) => {
+            const color = getFingerColor(index, count);
+            finger.color = color;
+            finger.element.style.setProperty('--finger-color', color);
+            index++;
+        });
+    }
+
+    function createFingerElement(id, color) {
+        const fingerDiv = document.createElement('div');
+        fingerDiv.className = 'finger';
+        fingerDiv.id = `finger-${id}`;
+        fingerDiv.style.setProperty('--finger-color', color);
+
+        fingerDiv.innerHTML = `
+            <svg class="progress-ring" width="130" height="130">
+                <circle class="progress-ring-bg" cx="65" cy="65" r="50" />
+                <circle class="progress-ring-fg" cx="65" cy="65" r="50" />
+            </svg>
+            <div class="finger-circle">
+                <div class="finger-dot"></div>
+                <div class="finger-label"></div>
+            </div>
+        `;
+
+        fingersContainer.appendChild(fingerDiv);
+        // Trigger entrance animation next frame
+        requestAnimationFrame(() => fingerDiv.classList.add('active'));
+        return fingerDiv;
+    }
+
+    function clampCoords(x, y) {
+        const rect = canvas.getBoundingClientRect();
+        const r = 65; // radius is half of 130px
+        return {
+            x: Math.max(r, Math.min(x, rect.width - r)),
+            y: Math.max(r, Math.min(y, rect.height - r))
+        };
+    }
+
+    function addFinger(id, x, y) {
+        if (state.fingers.has(id)) return;
+
+        // If a choice was active, any new finger resets the game
+        if (state.status === 'chosen') {
+            resetToWaiting();
+        }
+
+        const color = getFingerColor(state.fingers.size, state.fingers.size + 1);
+        const element = createFingerElement(id, color);
+        const coords = clampCoords(x, y);
+        
+        const finger = {
+            id,
+            x: coords.x,
+            y: coords.y,
+            color,
+            element,
+            isChosen: false,
+            team: null,
+            rank: null
+        };
+
+        finger.element.style.setProperty('--x', `${coords.x}px`);
+        finger.element.style.setProperty('--y', `${coords.y}px`);
+
+        state.fingers.set(id, finger);
+        updateFingerColors();
+        playSound('tick');
+        triggerVibration(40);
+        handleFingerCountChange();
+    }
+
+    function moveFinger(id, x, y) {
+        if (state.status === 'chosen') return;
+        const finger = state.fingers.get(id);
+        if (!finger) return;
+        const coords = clampCoords(x, y);
+        finger.x = coords.x;
+        finger.y = coords.y;
+        finger.element.style.setProperty('--x', `${coords.x}px`);
+        finger.element.style.setProperty('--y', `${coords.y}px`);
+    }
+
+    function removeFinger(id) {
+        if (state.status === 'chosen') return;
+        const finger = state.fingers.get(id);
+        if (!finger) return;
+
+        finger.element.classList.remove('active');
+        // Remove after transition
+        setTimeout(() => finger.element.remove(), 250);
+        state.fingers.delete(id);
+        updateFingerColors();
+
+        handleFingerCountChange();
+    }
+
+    function clearAllFingers() {
+        state.fingers.forEach(f => f.element.remove());
+        state.fingers.clear();
+        resetToWaiting();
+    }
+
+    function resetToWaiting() {
+        state.status = 'waiting';
+        state.countdownStartTime = 0;
+        state.lastFingerCount = 0;
+        state.lastTickSecond = -1;
+        particles = [];
+        particlesContainer.innerHTML = '';
+        
+        // Remove class states from remaining DOM elements if any
+        state.fingers.forEach(finger => {
+            finger.element.className = 'finger active';
+            const lbl = finger.element.querySelector('.finger-label');
+            if (lbl) lbl.textContent = '';
+        });
+
+        statusText.textContent = 'Place 2 or more fingers';
+    }
+
+    // --- Decision Orchestration ---
+    function handleFingerCountChange() {
+        const count = state.fingers.size;
+
+        if (state.status === 'chosen') {
+            return;
+        }
+
+        if (count < 2) {
+            state.status = 'waiting';
+            statusText.textContent = 'Place 2 or more fingers';
+            state.countdownStartTime = 0;
+            state.lastFingerCount = count;
+        } else {
+            // Restart countdown if finger count changed
+            state.status = 'counting';
+            statusText.textContent = 'Hold steady...';
+            state.countdownStartTime = Date.now();
+            state.lastFingerCount = count;
+            state.lastTickSecond = -1;
+        }
+    }
+
+    function makeChoice() {
+        state.status = 'chosen';
+        state.decisionTime = Date.now();
+        playSound('success');
+        triggerVibration([120, 60, 120]);
+
+        const fingerArray = Array.from(state.fingers.values());
+        
+        if (settings.mode === 'select') {
+            // Shuffle and choose N
+            const shuffled = [...fingerArray].sort(() => Math.random() - 0.5);
+            const actualChooseCount = Math.min(settings.chosenCount, shuffled.length);
+            
+            for (let i = 0; i < shuffled.length; i++) {
+                const finger = shuffled[i];
+                if (i < actualChooseCount) {
+                    finger.isChosen = true;
+                    finger.element.classList.add('chosen');
+                    spawnConfetti(finger.x, finger.y, finger.color);
+                } else {
+                    finger.element.classList.add('rejected');
+                }
+            }
+            statusText.textContent = actualChooseCount === 1 ? 'Winner Selected!' : 'Winners Selected!';
+        } else if (settings.mode === 'rank') {
+            // Shuffle and rank all
+            const shuffled = [...fingerArray].sort(() => Math.random() - 0.5);
+            shuffled.forEach((finger, index) => {
+                const rank = index + 1;
+                finger.rank = rank;
+                finger.element.classList.add('result-labeled');
+                const label = finger.element.querySelector('.finger-label');
+                if (label) label.textContent = rank;
+                spawnConfetti(finger.x, finger.y, finger.color);
+            });
+            statusText.textContent = 'Rankings Assigned!';
+        } else if (settings.mode === 'teams') {
+            // Assign teams
+            const shuffled = [...fingerArray].sort(() => Math.random() - 0.5);
+            shuffled.forEach((finger, index) => {
+                const team = (index % settings.teamCount) + 1;
+                const teamColor = getFingerColor(team - 1, settings.teamCount);
+                finger.element.style.setProperty('--finger-color', teamColor);
+                finger.element.classList.add('result-labeled');
+                
+                const label = finger.element.querySelector('.finger-label');
+                if (label) label.textContent = `T${team}`;
+                spawnConfetti(finger.x, finger.y, teamColor);
+            });
+            statusText.textContent = 'Teams Divided!';
+        }
+    }
+
+    // --- Particle System ---
+    class Confetti {
+        constructor(x, y, color) {
+            this.x = x;
+            this.y = y;
+            this.size = Math.random() * 8 + 5;
+            this.speedX = (Math.random() - 0.5) * 14;
+            this.speedY = (Math.random() - 0.5) * 14 - 6; // upward bias
+            this.gravity = 0.25;
+            this.alpha = 1;
+            this.decay = Math.random() * 0.015 + 0.012;
+            
+            this.el = document.createElement('div');
+            this.el.className = 'confetti-particle';
+            this.el.style.backgroundColor = color;
+            this.el.style.width = `${this.size}px`;
+            this.el.style.height = `${this.size}px`;
+            this.el.style.setProperty('--x', `${this.x}px`);
+            this.el.style.setProperty('--y', `${this.y}px`);
+            particlesContainer.appendChild(this.el);
+        }
+
+        update() {
+            this.x += this.speedX;
+            this.speedY += this.gravity;
+            this.y += this.speedY;
+            this.alpha -= this.decay;
+            
+            this.el.style.setProperty('--x', `${this.x}px`);
+            this.el.style.setProperty('--y', `${this.y}px`);
+            this.el.style.opacity = this.alpha;
+            
+            if (this.alpha <= 0) {
+                this.el.remove();
+                return false;
+            }
+            return true;
+        }
+    }
+
+    function spawnConfetti(x, y, color) {
+        for (let i = 0; i < 40; i++) {
+            particles.push(new Confetti(x, y, color));
+        }
+    }
+
+    function updateParticles() {
+        particles = particles.filter(p => p.update());
+    }
+
+    // --- Game Tick Loop ---
+    function updateLoop() {
+        const now = Date.now();
+        
+        if (state.status === 'counting' && state.countdownStartTime > 0) {
+            const elapsed = now - state.countdownStartTime;
+            const totalDuration = settings.countdownSec * 1000;
+            const progress = Math.min(elapsed / totalDuration, 1);
+            
+            // Audio Tick Sound Triggers
+            const currentTickSec = Math.floor(elapsed / 1000);
+            if (state.lastTickSecond !== currentTickSec && currentTickSec < settings.countdownSec) {
+                playSound('tick');
+                triggerVibration(60);
+                state.lastTickSecond = currentTickSec;
+            }
+            
+            // Update Countdown Circle Offset
+            const offset = 314.16 - (progress * 314.16);
+            state.fingers.forEach(finger => {
+                const fgRing = finger.element.querySelector('.progress-ring-fg');
+                if (fgRing) {
+                    fgRing.style.strokeDashoffset = offset;
+                }
+            });
+
+            if (progress >= 1) {
+                makeChoice();
+            }
+        } else if (state.status !== 'chosen') {
+            // Keep circles at 0% progress if not counting
+            state.fingers.forEach(finger => {
+                const fgRing = finger.element.querySelector('.progress-ring-fg');
+                if (fgRing) {
+                    fgRing.style.strokeDashoffset = 314.16;
+                }
+            });
+        }
+
+        updateParticles();
+        requestAnimationFrame(updateLoop);
+    }
+    requestAnimationFrame(updateLoop);
+
+    // --- Touch Event Listeners ---
+    function getCanvasCoords(touch) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top
+        };
+    }
+
+    canvas.addEventListener('touchstart', (e) => {
+        // Prevent default gesture actions like scrolling or zoom
+        e.preventDefault();
+        
+        // Resume audio context on first touch due to browser autoplay policies
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
+        if (state.status === 'chosen') {
+            const elapsed = Date.now() - state.decisionTime;
+            if (elapsed < settings.cooldownSec * 1000) {
+                return;
+            }
+            resetToWaiting();
+        }
+
+        if (settings.simulator) return;
+
+        const activeTouchIds = new Set();
+        for (let i = 0; i < e.touches.length; i++) {
+            const touch = e.touches[i];
+            activeTouchIds.add(touch.identifier);
+            const coords = getCanvasCoords(touch);
+            addFinger(touch.identifier, coords.x, coords.y);
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (settings.simulator) return;
+
+        for (let i = 0; i < e.touches.length; i++) {
+            const touch = e.touches[i];
+            const coords = getCanvasCoords(touch);
+            moveFinger(touch.identifier, coords.x, coords.y);
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        if (settings.simulator) return;
+
+        const activeTouchIds = new Set();
+        for (let i = 0; i < e.touches.length; i++) {
+            activeTouchIds.add(e.touches[i].identifier);
+        }
+
+        // Remove any fingers no longer listed in active touches
+        state.fingers.forEach((finger, id) => {
+            if (!activeTouchIds.has(id)) {
+                removeFinger(id);
+            }
+        });
+    }, { passive: false });
+
+    canvas.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        if (settings.simulator) return;
+
+        const activeTouchIds = new Set();
+        for (let i = 0; i < e.touches.length; i++) {
+            activeTouchIds.add(e.touches[i].identifier);
+        }
+
+        state.fingers.forEach((finger, id) => {
+            if (!activeTouchIds.has(id)) {
+                removeFinger(id);
+            }
+        });
+    }, { passive: false });
+
+    // --- Mouse & Simulator Interaction ---
+    let dragFingerId = null;
+    let didDragMove = false;
+    let isNewSimulatedFinger = false;
+
+    canvas.addEventListener('mousedown', (e) => {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
+        if (state.status === 'chosen') {
+            const elapsed = Date.now() - state.decisionTime;
+            if (elapsed < settings.cooldownSec * 1000) {
+                return;
+            }
+            resetToWaiting();
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        if (settings.simulator) {
+            // Find if clicked close to an existing simulated finger
+            let foundFinger = null;
+            state.fingers.forEach((finger) => {
+                const dist = Math.hypot(finger.x - mx, finger.y - my);
+                if (dist < 50) {
+                    foundFinger = finger;
+                }
+            });
+
+            if (foundFinger) {
+                dragFingerId = foundFinger.id;
+                isNewSimulatedFinger = false;
+                didDragMove = false;
+            } else {
+                // Add new finger
+                const newId = `sim-${Date.now()}`;
+                addFinger(newId, mx, my);
+                dragFingerId = newId;
+                isNewSimulatedFinger = true;
+                didDragMove = false;
+            }
+        } else {
+            // Mouse acts as a single touch
+            addFinger('mouse', mx, my);
+            dragFingerId = 'mouse';
+        }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!dragFingerId) return;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        moveFinger(dragFingerId, mx, my);
+        didDragMove = true;
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+        if (!dragFingerId) return;
+
+        if (settings.simulator) {
+            // Click to toggle behavior: if we didn't drag much, toggle it off
+            if (!didDragMove) {
+                const finger = state.fingers.get(dragFingerId);
+                // If it was already on screen (not brand new in this click event), toggle it off
+                if (finger && !isNewSimulatedFinger) {
+                    removeFinger(dragFingerId);
+                }
+            }
+        } else {
+            removeFinger('mouse');
+        }
+        dragFingerId = null;
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        if (!settings.simulator && dragFingerId === 'mouse') {
+            removeFinger('mouse');
+        }
+        dragFingerId = null;
+    });
+</script>
+</body>
+
+</html>
