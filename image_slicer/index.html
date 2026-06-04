@@ -653,10 +653,12 @@
             // Use client-zip to generate the archive
             const blob = await downloadZip(filesForZip).blob();
 
+            const filename = `slices_${one.getTimestamp()}.zip`;
+
             // Trigger download
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = "slices.zip";
+            link.download = filename;
             link.click();
             link.remove();
         } catch (err) {

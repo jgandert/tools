@@ -12,9 +12,10 @@ The `Motif` global object controls the engine lifecycle, tempo, global swing, an
 * `Motif.start()`: Starts the transport from the current position. **Must be called from a user-initiated event** (e.g., a click or keydown handler); browsers block all audio until the AudioContext is resumed by a user gesture.
 * `Motif.stop()`: Stops the transport and resets position to zero.
 * `Motif.pause()`: Suspends the transport without resetting position.
-* `Motif.rampTempo(bpm: number, duration: string | number)`: Smoothly interpolates the global tempo to `bpm` over `duration`.
+* `Motif.rampTempo(bpm: number, duration: string | number, options?: Object)`: Smoothly interpolates the global tempo to `bpm` over `duration`. Pass `{ smooth: true }` in `options` to smoothly interpolate the transport/scheduler tempo alongside the AudioContext.
 * `Motif.master(options: Object)`: Configures the master output bus — gain, limiting, and EQ applied to the final mix.
 * `Motif.swing(amount: number)`: Sets the global swing amount (from `0` for straight to `1` for full triplet swing).
+* `Motif.beatsPerBar`: Read/write property (default `4`). Controls how many beats constitute one bar, which determines the wall-clock duration of `bars:` in `Arrange()` and the default cycle length for tracks without an explicit `.stepLength()`. Set before playback for non-4/4 meters (e.g. `Motif.beatsPerBar = 3` for 3/4, `Motif.beatsPerBar = 7` for 7/4). The denominator — and therefore the beat duration — is always a quarter note; to express /8 meters halve the tempo or use `.stepLength('1/8')`.
 
 ```javascript
 Motif.setTempo(120); // 1 cycle = 500ms
@@ -49,7 +50,7 @@ const melody = ['C4', Tie, Tie, null, 'G4'];
 
 ### `Parallel(...items)`
 
-Evaluates all internal arguments concurrently within the current temporal step (often referred to as a "stack" or chordal grouping in other DSLs).
+Evaluates all internal arguments concurrently within the current temporal step (often referred to as a "stack" or chordal grouping in other DSLs). `Parallel(...)` produces a value, NOT a Track — place it as an element inside the array passed to `.note([...])`. It cannot be chained (do not call Track methods on it) and cannot be passed as the top-level argument to a Track method.
 
 ```javascript
 // A 4/4 rhythm. The nested array subdivides the second beat into 8th notes.
@@ -62,11 +63,16 @@ const octaves = [0, 12, -12];
 
 // Evaluates to a polyrhythmic cross-product of notes and octave transpositions
 const finalPattern = melody.add(octaves);
+
+// Prototype extensions (.sub, .mul, .div) are also supported on standard Arrays:
+const subPattern = melody.sub(octaves);
+const mulPattern = melody.mul([1, 2]);
+const divPattern = melody.div([1, 2]);
 ```
 
-### `Ramp(from, to)`
+### `Ramp(from, to, duration?)`
 
-Generates a continuous, linearly interpolated value between two endpoints over the duration of the current step. Used to express smooth pitch slides, filter sweeps, or any parameter that must glide rather than jump.
+Generates a continuous, linearly interpolated value between two endpoints. If `duration` (e.g. `'4b'`, `'1/2'`, `0.5`) is omitted, it interpolates over the duration of the current step. Used to express smooth pitch slides, filter sweeps, or any parameter that must glide rather than jump.
 
 ```javascript
 // Smooth pitch glide from C4 to G4 over one cycle, then a discrete note
@@ -84,27 +90,33 @@ The `Track` object is the primary unit of execution. It represents an independen
 ### Instantiation & Sources
 
 * `Track(id: string)`: Creates or references a track by its unique ID.
-* `.synth(type: string)`: Assigns a synthesizer engine (e.g., `'sine'`, `'saw'`, `'square'`, `'triangle'`; `'fm'`, `'pluck'`, and `'noise'` fall back to oscillators).
-* `.sample(path: string)`: Assigns an audio buffer for playback.
+* `.synth(type: string)`: Assigns a synthesizer engine. Supports built-in synthesizers (e.g. `'sine'`, `'supersaw'`, `'keys-drift'`, `'bass-acid-hq'`, `'fm-epiano'`) or custom registered DSP functions.
+* `.sample(path: string)`: Assigns an audio buffer. Accepts file paths or built-in procedural sample names (e.g., `'kick-electronic'`, `'water-drop'`, `'pickup-chime'`). Step semantics: `null` and `undefined` are the only rests; every other value (including `0` and `false`) triggers a one-shot. When `.note(...)` is set, numeric step values are interpreted as MIDI notes and pitch-shift the sample relative to MIDI 60 (C4) — so `.note([1])` triggers but plays drastically pitched down. To fire at native pitch use `.note([60])` or `.freq([midiToHz(60)])`. When combined with `.scale(root, name)` and integer-degree `.note(...)`, the integer is first resolved to a MIDI note via the scale and then the same pitch-shift formula applies, so e.g. `.scale('C5', 'minor').note([0])` plays the sample up one octave.
+* `.sound(name: string)`: Convenience method that automatically routes to `.synth()` or `.sample()` by looking up `name` in the synth registry first, then the sample registry. Eliminates the need to know which registry a built-in name belongs to. File paths (not found in either registry) fall through to `.sample()`.
 * `.sampler(options: Object)`: Assigns a pitch-shifting multi-sample instrument. Provide a `urls` map of note names to file paths, an optional `baseUrl`, and an optional `release`.
 
 ### Sequencing & Envelopes
 
-* `.note(pattern: Array<number | string>)`: Specifies pitch data (accepts MIDI numbers, Hz, or string notation).
+* `.note(pattern: Array<number | string | Ramp | Parallel | Tie | null>)`: Specifies pitch data. Accepts MIDI numbers, note-name strings, `Ramp(from, to, duration?)` step values (for in-step glides), `Parallel(...)` (for chordal stacks at a single step), `Tie` (hold the prior note), and `null` (rest). If `.scale(...)` is used, integers are mapped to diatonic scale degrees.
 * `.freq(pattern: Array<number>)`: Specifies continuous frequency pitch data.
 * `.envelope(options: Object)`: Defines the ADSR amplitude curve (attack, decay, sustain, release).
 
 ### Mixing & Spatialization
 
-* `.gain(level: number | string)`: Sets the track output level. Supports linear scalars (e.g. `0.0` - `1.0`) or decibel strings (e.g., `'-6dB'`), which are parsed exponentially.
-* `.volume(db: number | string)`: Attenuates track level using dB values. Accepts numeric dB values (e.g. `-15`) or parsed decibel strings (e.g. `'-15dB'`).
+* `.gain(level: number | string | RampNode | Signal)`: Sets the track output level. Supports linear scalars (e.g. `0.0` - `1.0`), decibel strings (e.g., `'-6dB'`), a `Ramp(...)` object for gain automation, or a control signal (e.g., an LFO) for continuous modulation (sidechain-style ducking, breath envelopes).
+* `.volume(db: number | string | Signal)`: Attenuates track level using dB values. Accepts numeric dB values (e.g. `-15`), parsed decibel strings (e.g. `'-15dB'`), or a control signal for continuous modulation.
 * `.pan(amount: number | Signal)`: Positions the track in the stereo field (-1.0 full left, 0.0 center, 1.0 full right). Accepts a static value or a control signal (e.g., an LFO).
-* `.filter(options: Object)`: Configures a track-level biquad filter (`type`, `cutoff` (number or Signal), `resonance`).
+* `.filter(options: Object)`: Configures a track-level biquad filter. `type`, `cutoff` (number or Signal), `resonance` (number only — static; modulate via `.modulate('filter.resonance', source, { depth })`).
 * `.distort(amount: number)`: Applies waveshaper distortion/saturation to the track signal chain (0.0 to 100+).
-* `.eq(options: Object)`: Applies a track-level three-band EQ. Bands `low`, `mid`, `high` can be defined with gain/freq/Q values.
-* `.compress(options: Object)`: Applies a track-level compressor (threshold, knee, ratio, attack, release).
+* `.eq(options: Object)`: Applies a track-level three-band EQ. Bands `low`, `mid`, `high` can be defined as a number (gain) or an object `{ gain, frequency, Q }`. Bands also support modulation. Low-shelf default is 320Hz, peaking mid default is 1000Hz (Q=1), high-shelf default is 3200Hz.
+* `.compress(options: Object)`: Applies a track-level compressor. All options (`threshold`, `knee`, `ratio`, `attack`, `release`) support control signals/modulators.
 * `.mute(state?: boolean)`: Mutes the track if `true` or toggles mute state if omitted.
 * `.unmute()`: Unmutes the track.
+* `.s()`: Chainable alias for `.solo()`.
+* `.seed(val: number)`: Seeds the track's pseudo-random number generator for deterministic probabilistic modifiers (e.g. `.degrade()`, `.mutate()`).
+* `.degrade(probability: number)`: Drops events based on a probability threshold (0.0 to 1.0) on every cycle.
+* `.mutate(options: Object)`: Applies Markov-chain-like random transformations per step on every cycle.
+* `.offset(timeShift: string, modifier: Function)`: Creates algorithmic counterpoint on every cycle by overlaying a delayed, mutated copy of the sequence.
 
 ### Polyphony
 
@@ -156,25 +168,27 @@ Track('polymeter')
 
 Tracks can be mutated algorithmically using higher-order functions.
 
-* `.every(cycles: number, modifier: Function)`: Applies the callback transformation once every N cycles. Passes the array of parsed event objects to the modifier callback.
+* `.every(n: number, modifier: Function)`: Invokes the callback every `n`-th pattern loop, passing the array of parsed events. One loop = `arrayLength × stepLength`, **not** one transport bar. For non-polymetric patterns the two coincide; for polymetric patterns (e.g. a 5-step array at `.stepLength('1/16')`), `.every(4)` fires every `4 × 5/16 = 5/4` bars, not every 4 bars.
 * `.mask(booleanArray: Array<boolean>, modifier: Function)`: Applies the transformation strictly to steps where the mask evaluates to `true`.
 * `.subdivide(divisions: number, modifier: Function)`: Iteratively applies a transformation to a specific division of the beat.
 * `.offset(timeShift: string, modifier: Function)`: Creates algorithmic counterpoint by overlaying a delayed, mutated copy of the sequence onto itself.
 * `.swing(amount: number)`: Sets a track-specific swing amount (from `0` to `1`), overriding the global `Motif.swing(amount)` for this track.
 
+### `MotifEventArray` Modifier Prototypes
+
+Callbacks that receive arrays of events (like the `.every()` modifier function) are passed a `MotifEventArray` instance instead of a plain array. `MotifEventArray` inherits from `Array` and provides chainable in-place modification methods:
+
+* `.transpose(semitones: number)`: Transposes notes (MIDI numbers, string names, and Ramp endpoints) by the specified semitone offset.
+* `.fast(factor: number)`: Speeds up the events in time by the specified factor.
+* `.rev()`: Reverses the sequence of events.
+* `.degrade(probability: number)`: Drops events based on a probability threshold (0.0 to 1.0).
+* `.mutate(options: Object)`: Mutates events (ratchet, reverse, etc.) based on Markov-style options.
+* `.offset(timeShift: string | number, modifier: Function)`: Duplicates and shifts events in time, applying the modifier function to the shifted copy.
+
 ```javascript
 Track('lead')
   .note(['C4', 'E4', 'G4'])
-  // Transpose down an octave on the 2nd cycle
-  .every(2, (events) => {
-    events.forEach(e => {
-      if (typeof e.value === 'string' && e.value !== 'Tie') {
-        const m = noteToMidi(e.value);
-        if (m) e.value = midiToNote(m - 12);
-      }
-    });
-    return events;
-  })
+  .every(2, (events) => events.transpose(-12).fast(2).rev())
   // Transpose step 0 and 2 up a perfect 5th (7 semitones)
   .mask([true, false, true, false], (e) => {
     if (typeof e.value === 'string' && e.value !== 'Tie') {
@@ -201,7 +215,7 @@ Motif handles probabilities and algorithmic generation deterministically.
 
 * `.euclid(pulses: number, steps: number, rotate?: number)` or `.euclid({ pulses: number, steps: number, rotate?: number })`: Distributes `pulses` evenly across `steps`.
 * `.degrade(probability: number)`: Drops events based on a probability threshold (0.0 to 1.0).
-* `.mutate(options: Object)`: Applies Markov-chain-like random transformations per step.
+* `.mutate({ chance, actions: { name: weight | true | (events) => events, ... } })`: On each pattern loop, with probability `chance`, picks **one** action by weighted random and applies it. Built-in actions: `ratchet` (doubles each event into two half-duration copies) and `reverse` (reverses event order). Pass `true` for default weight 1, a number for explicit weight, or a function `(events) => events` for a custom transform. Multiple listed actions are alternatives, not stacked.
 
 ```javascript
 Track('hihats')
@@ -210,7 +224,8 @@ Track('hihats')
   .mutate({
     chance: 0.25,
     actions: {
-      ratchet: 2, // Subdivide note triggers
+      // 25% chance per loop: 2/3 odds pick ratchet, 1/3 odds pick reverse
+      ratchet: 2,
       reverse: 1
     }
   });
@@ -286,7 +301,22 @@ Audio routing in Motif utilizes Directed Acyclic Graphs (DAGs). Reactivity is ac
 
 ### Control Signals & Variables
 
-`LFO` (Low Frequency Oscillator) generates control-rate modulation mapped to musical timing. Standard `const` and `let` declarations manage reactive state.
+`LFO` (Low Frequency Oscillator) generates control-rate modulation mapped to musical timing. Calling `LFO(frequencyOrOptions, min?, max?)` returns a sine LFO signal by default.
+
+Waveform constructors:
+* `LFO.sine(options)`
+* `LFO.triangle(options)`
+* `LFO.square(options)`
+* `LFO.saw(options)`
+
+The `options` object supports:
+* `frequency`: Frequency in Hz (defaults to `1.0`).
+* `speed`: Musical duration string or number (e.g., `'4b'`, `'2s'`), which computes frequency dynamically.
+* `min` / `max`: Mapped output range.
+* `depth` / `gain`: Scaling depth multiplier (defaults to `1.0`).
+* `offset`: Constant offset value (defaults to `0.0`).
+
+Standard `const` and `let` declarations manage reactive state.
 
 ```javascript
 const filterSweep = LFO.sine({ min: 200, max: 2000, speed: '2b' });
@@ -301,10 +331,15 @@ Track('pad')
 
 ### Audio-Rate Modulation (FM) & Sidechaining
 
-Tracks can directly modulate the parameters of other tracks at the sample rate.
+Tracks can directly modulate the parameters of other tracks at the sample rate. Supported parameter names for `.modulate()` include:
+* **Filter:** `'filter.cutoff'` (or `'filter.frequency'`), `'filter.resonance'` (or `'filter.Q'`), `'filter.gain'`
+* **Spatial & Level:** `'pan'`, `'volume'`, `'gain'`
+* **EQ:** `'eq.low'`, `'eq.mid'`, `'eq.high'`
+* **Dynamics:** `'compress.threshold'`, `'compress.ratio'`, `'compress.knee'`, `'compress.attack'`, `'compress.release'`
 
+Methods & parameters:
 * `.modulate(parameter: string, source: Track, options: Object)`: Modulate a track parameter with another track's audio output.
-* `.sidechain(target: Track, options: Object)`: Amplitude ducking driven by another track (commonly known as `duck`).
+* `.sidechain(target: Track | string, options?: Object)`: Amplitude ducking driven by another track (commonly known as `duck`). Accepts either a Track instance or a track's unique string ID (e.g. `'kick'`). If the target track has not yet been instantiated, the connection is queued dynamically. `options` accepts `attack` (default: `0.005`s) and `release` (default: `0.2`s).
 
 ```javascript
 const modSource = Track('mod').synth('sine').note([100, 200]).mute();
@@ -313,7 +348,7 @@ Track('carrier')
   .synth('saw')
   .note(['C3', 'G3'])
   .modulate('filter.cutoff', modSource, { depth: 500 })
-  .sidechain(Track('kick'), { attack: 0.01, release: 0.18 }); // Ducking
+  .sidechain('kick', { attack: 0.01, release: 0.18 }); // Ducking using string ID
 ```
 
 ### Buses & Feedback Loops
@@ -358,7 +393,7 @@ DSP functions run inside an `AudioWorkletProcessor` which delivers exactly **128
 
 Motif supports continuous frequency modulation, MIDI pitch representation, strict microtonal/xenharmonic frameworks, and diatonic scale mapping.
 
-* `.scale(root: string, name: string)`: Maps integer step values to diatonic scale degrees. Integers are interpreted as scale degrees (0-indexed), non-integer note names pass through unchanged.
+* `.scale(root: string, name: string)`: Maps integer step values to diatonic scale degrees. Integers are interpreted as scale degrees (0-indexed), non-integer note names pass through unchanged. `root` is a note-name string and **MUST include an octave** (e.g. `'C3'`, `'A2'`, `'F#4'`). An octave-less root like `'A'` is not parseable by `noteToMidi` and yields NaN MIDI values, producing silence.
 * `.arp(mode: string)`: Unrolls a chord voicing into a sequential arpeggio. Modes: `'up'`, `'down'`, `'upDown'`, `'random'`.
 * `.tuning(system: string)`: Snaps numeric integers to explicit Equal Divisions of the Octave (EDO) or custom ratios.
 * `.chordVoicing(options: Object)`: Algorithmic voice leading.
@@ -388,6 +423,8 @@ Track('microtonal')
 ## Macro-Arrangement
 
 By default, an unarranged track loops its sequence infinitely. Infinite loops are managed and structured via a declarative `Arrange` block, defining sequential phases of execution with guaranteed phase alignment.
+
+`bars` counts transport bars at the current tempo. One bar equals `Motif.beatsPerBar` beats (default `4`), so `bars: 8` is `8 × beatsPerBar` beats. Per-track `.stepLength()` or `.loopLength()` overrides do not affect this calculation.
 
 **Important:** Placing a track inside an `Arrange` block implicitly bounds its active playback window. The track will automatically start playing at the designated section start time and automatically stop/finish playing once its designated section concludes.
 
@@ -433,8 +470,13 @@ Multiple tracks can be soloed simultaneously.
 Track('bass').synth('fm').note([0, 3, 5, 7]).solo()
 ```
 
-### Arrangement Start
+---
 
+## Interactive Debugging & Section Testing
+
+To isolate tracks or sections during development:
+
+### Arrangement Start Flag
 Add `s: 1` (or `start: true`) to a section inside the `Arrange` block to skip all sections prior to it, allowing you to test specific sections immediately during playback. If multiple sections have a start flag, the last one wins.
 
 ```javascript
@@ -444,6 +486,97 @@ Arrange([
   { bars: 8, tracks: [darkKeys, subBass], s: 1 } 
 ]);
 ```
+
+---
+
+## Built-in Synthesizers & Procedural Samples
+
+Motif includes a rich suite of built-in DSP synthesizers and procedurally generated samples, accessible directly by name.
+
+### Built-in Synthesizers (`.synth(type)`)
+* **Classic Analog & Retro:**
+  * `'sine'`, `'sawtooth'`, `'square'`, `'triangle'`: Standard core geometric oscillators.
+  * `'pulse'`, `'chip-pulse'`: Retro chiptune pulse waves with 15% and 25% duty cycles.
+  * `'pwm-sweep'`: Sweeping pulse width modulation driven by an internal LFO.
+  * `'sub-bass'`: Saturated driven sub-bass.
+  * `'sub-sweep'`: Sustained sine sub with pitch-sweep transient (starts at 2× frequency, falls to played note — shape amplitude with `.envelope()`).
+  * `'supersaw'`: Five detuned sawtooth oscillators for thick pads/leads.
+  * `'soft-square'`: Warm additive square wave (fundamental + 3rd + 5th harmonics).
+  * `'bass-acid-hq'`: Silver-box emulator with 4-pole resonant lowpass sweep.
+  * `'bass-rubber-idm'`: Squelchy FM bass with punchy exponential envelopes.
+  * `'chip-lead-pd'`: Phase distortion Casio-style lead synthesizer.
+  * `'chip-bass-fm'`: FM sub-bass with 2x ratio modulator transient.
+* **Tape & Ambient Textures:**
+  * `'tape-sine'`: Sine wave with tape wow and flutter pitch drift.
+  * `'ambient-pad'`: Swelling pad using slightly detuned, low-passed sines.
+  * `'keys-drift'`: Rhodes-like electric piano with pitch instability and saturation.
+  * `'pad-hauntology'`: Dusty, degraded pad with tape hiss and slow lowpass sweep.
+  * `'lead-vintage-board'`: Drifting lead synth with attack portamento slur.
+  * `'drone-abyss'`: Dark ambient drone combining sub-sine and detuned saws.
+  * `'pad-shimmer'`: Ethereal FM pad with upper-harmonic shimmer.
+  * `'drone-beating'`: Meditative dual sines spaced 1Hz apart for natural acoustic beating.
+  * `'alien-glow-pad'`: Warm, slow LFO-modulated FM pad.
+  * `'magnetic-hover'`: Muffled SVF lowpass filtered triangle waves.
+  * `'tectonic-drone'`: Heavily detuned low waves through a dark, low-resonance SVF.
+* **Noise & Texture:**
+  * `'noise-white'`: Pure random digital static.
+  * `'noise-pink'`: Pink noise (-3dB/oct) using Kellett's approximation.
+  * `'noise-brown'`, `'noise-brown-deep'`: Leaky integrator lowpass filtered noise.
+  * `'crackle'`: Vinyl pop/dust crackles (approx. 5 random pops/sec).
+  * `'ambient-wind'`: Lowpass filtered noise swept by a slow LFO.
+* **Glitch & Generative:**
+  * `'bytebeat'`: Algorithmic bitwise fractal tearing at 8kHz.
+  * `'bit-crush-sine'`: 8-level quantized amplitude sine wave.
+  * `'math-tan'`: Attenuated tangent wave clamped for metallic digital glitching.
+  * `'math-fold'`: Self-modulating wavefolded sine wave.
+  * `'neuro-fold'`: Aggressive IDM wavefolded bass wobble.
+  * `'glitch-scatter'`: Quantized amplitude with randomized sample freezing.
+* **Instrument Modeling:**
+  * `'fm-epiano'`, `'keys-fm-hq'`: FM electric piano synthesizers.
+  * `'ambient-bell'`: FM bell with inharmonic overtone decay.
+  * `'tine-fm'`: Generative kalimba with thumb click transient.
+  * `'karplus-strong'`: Physically modeled plucked string (guitar/harp).
+  * `'pad-choir'`: Formant-filtered choral pad generating an "Ah" vowel.
+  * `'synth-brass'`: Resonant lowpass swept sawtooth brass section.
+  * `'glass-mallet'`: Woody/glassy pluck using inharmonic FM.
+  * `'chip-arp-pluck'`: Fast-decaying inharmonic FM pluck for rapid arpeggiation.
+  * `'hollow-wood-flute'`: Breath/vibrato modulated flute with woody overtones.
+  * `'gamelan-saron'`: Inharmonic FM model of a bronze metallophone.
+  * `'suling-flute'`: Traditional bamboo flute modeled via SVF filtered noise.
+
+### Procedural Samples (`.sample(name)`)
+Avoid loading external assets by playing procedurally rendered static one-shots:
+* **Drums:** `'kick-electronic'`, `'kick-lofi'`, `'snare-electronic'`, `'tom-electronic'`, `'rimshot'`, `'hihat-closed'`, `'cymbal-ride'`, `'shaker-soft'`, `'clap-vintage'`
+* **Percussion/FX:** `'water-drop'`, `'block-hollow'`, `'snare-micro'`, `'cowbell-808'`, `'perc-stutter'`, `'impact-deep'`, `'break-snare-ghost'`, `'glitch-data-burst'`, `'sub-boom'`, `'chip-kick-laser'`, `'chip-snare-burst'`, `'gravitational-ripple'`
+* **Acoustic/Physical:** `'kick-acoustic'`, `'kalimba-pluck'`, `'kalimba-warm'`, `'music-box'`, `'wineglass'`, `'timpani'`, `'ui-blip'`, `'pickup-chime'`, `'gong-tibetan'`, `'swell-oceanic'`, `'void-chime'`, `'ocean-swell'`, `'mossy-stone-strike'`
+
+---
+
+## Utility Functions & Built-in Scales
+
+Motif exports several helper functions, mathematical helpers, and scales:
+
+### Exported Functions
+* `noteToMidi(note: string): number` — Converts note names (e.g. `'C4'`) to MIDI values (e.g. `60`).
+* `midiToNote(midi: number): string` — Converts MIDI values to note names.
+* `midiToHz(midi: number): number` — Converts MIDI values to frequencies in Hz.
+* `degreeToMidi(degree: number, root: string, scaleName: string): number` — Resolves scale degree to MIDI note.
+* `parseDurationToFraction(duration: string | number): number` — Parses duration strings (e.g. `'1/16'`) to numeric fractions.
+* `parseDurationToSeconds(duration: string | number, bpm: number, beatsPerBar: number): number` — Resolves duration strings to absolute seconds.
+
+### Built-in Scales (`SCALES`)
+Passed to `.scale(root, name)`. Accessible via the exported `SCALES` object:
+* `major` / `ionian`
+* `minor` / `aeolian`
+* `dorian`
+* `phrygian`
+* `lydian`
+* `mixolydian`
+* `locrian`
+* `harmonicMinor`
+* `melodicMinor`
+* `pentatonicMajor`
+* `pentatonicMinor`
 
 ---
 

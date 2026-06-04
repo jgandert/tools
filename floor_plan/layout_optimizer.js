@@ -243,25 +243,42 @@ function assignCoordinates(node, shape, x, y, W, H) {
     }
 }
 
-function applyTargets(rule, targets, layoutMap, getPenalty) {
-    if (rule.any) {
-        let minP = Infinity;
-        for (const t of targets) {
-            const B = layoutMap[t];
-            if (B) {
-                minP = Math.min(minP, getPenalty(B));
-            }
+/**
+ * Top-down coordinate assignment in-place to avoid array/object allocation.
+ */
+function assignCoordinatesInPlace(node, shape, x, y, W, H, layoutMap) {
+    W = W !== undefined ? W : shape.w;
+    H = H !== undefined ? H : shape.h;
+
+    if (node.type === "leaf") {
+        const room = layoutMap[node.id];
+        if (room) {
+            room.x = x;
+            room.y = y;
+            room.w = W;
+            room.h = H;
+            room.centerX = x + W / 2;
+            room.centerY = y + H / 2;
         }
-        return minP === Infinity ? 0 : minP;
+        return;
     }
-    let sum = 0;
-    for (const t of targets) {
-        const B = layoutMap[t];
-        if (B) {
-            sum += getPenalty(B);
-        }
+
+    const leftShape = shape.leftShape;
+    const rightShape = shape.rightShape;
+
+    if (node.type === "H") {
+        // Horizontal cut: left is north (top of screen, low y), right is south (high y)
+        const h_left = H * (leftShape.h / shape.h);
+        const h_right = H * (rightShape.h / shape.h);
+        assignCoordinatesInPlace(node.left, leftShape, x, y, W, h_left, layoutMap);
+        assignCoordinatesInPlace(node.right, rightShape, x, y + h_left, W, h_right, layoutMap);
+    } else {
+        // Vertical cut: left is left, right is right
+        const w_left = W * (leftShape.w / shape.w);
+        const w_right = W * (rightShape.w / shape.w);
+        assignCoordinatesInPlace(node.left, leftShape, x, y, w_left, H, layoutMap);
+        assignCoordinatesInPlace(node.right, rightShape, x + w_left, y, w_right, H, layoutMap);
     }
-    return sum;
 }
 
 function penaltyConnect(room, rule, layoutMap, config, cwm, canvasDiagSq, uwm = 1) {
@@ -269,28 +286,65 @@ function penaltyConnect(room, rule, layoutMap, config, cwm, canvasDiagSq, uwm = 
     const weight = rule.required ? baseW * PENALTIES.REQUIRED_BOOST : 1 + (baseW - 1) * uwm;
     const targets = rule.target ?? [];
 
-    return applyTargets(rule, targets, layoutMap, (B) => {
-        const isHorizontallyAdjacent = (room.x + room.w === B.x) || (B.x + B.w === room.x);
-        const verticalOverlap = Math.max(0, Math.min(room.y + room.h, B.y + B.h) - Math.max(room.y, B.y));
-        const isVerticallyAdjacent = (room.y + room.h === B.y) || (B.y + B.h === room.y);
-        const horizontalOverlap = Math.max(0, Math.min(room.x + room.w, B.x + B.w) - Math.max(room.x, B.x));
-        let sharedWallLength = 0;
-        if (isHorizontallyAdjacent && verticalOverlap > 0) {
-            sharedWallLength = verticalOverlap;
+    if (rule.any) {
+        let minP = Infinity;
+        for (let i = 0; i < targets.length; i++) {
+            const B = layoutMap[targets[i]];
+            if (B) {
+                const isHorizontallyAdjacent = (room.x + room.w === B.x) || (B.x + B.w === room.x);
+                const verticalOverlap = Math.max(0, Math.min(room.y + room.h, B.y + B.h) - Math.max(room.y, B.y));
+                const isVerticallyAdjacent = (room.y + room.h === B.y) || (B.y + B.h === room.y);
+                const horizontalOverlap = Math.max(0, Math.min(room.x + room.w, B.x + B.w) - Math.max(room.x, B.x));
+                let sharedWallLength = 0;
+                if (isHorizontallyAdjacent && verticalOverlap > 0) {
+                    sharedWallLength = verticalOverlap;
+                }
+                if (isVerticallyAdjacent && horizontalOverlap > 0) {
+                    sharedWallLength = horizontalOverlap;
+                }
+                const cwl = rule.cwl || config.cwl || 0;
+                let val = 0;
+                if (sharedWallLength === 0) {
+                    const dx = room.centerX - B.centerX;
+                    const dy = room.centerY - B.centerY;
+                    val = ((dx * dx + dy * dy) / canvasDiagSq) * PENALTIES.CONNECT_BASE * weight * cwm;
+                } else if (cwl > 0 && sharedWallLength < cwl) {
+                    val = ((cwl - sharedWallLength) / Math.sqrt(canvasDiagSq)) * PENALTIES.CWL_SHORT * weight * cwm;
+                }
+                if (val < minP) {
+                    minP = val;
+                }
+            }
         }
-        if (isVerticallyAdjacent && horizontalOverlap > 0) {
-            sharedWallLength = horizontalOverlap;
+        return minP === Infinity ? 0 : minP;
+    }
+
+    let sum = 0;
+    for (let i = 0; i < targets.length; i++) {
+        const B = layoutMap[targets[i]];
+        if (B) {
+            const isHorizontallyAdjacent = (room.x + room.w === B.x) || (B.x + B.w === room.x);
+            const verticalOverlap = Math.max(0, Math.min(room.y + room.h, B.y + B.h) - Math.max(room.y, B.y));
+            const isVerticallyAdjacent = (room.y + room.h === B.y) || (B.y + B.h === room.y);
+            const horizontalOverlap = Math.max(0, Math.min(room.x + room.w, B.x + B.w) - Math.max(room.x, B.x));
+            let sharedWallLength = 0;
+            if (isHorizontallyAdjacent && verticalOverlap > 0) {
+                sharedWallLength = verticalOverlap;
+            }
+            if (isVerticallyAdjacent && horizontalOverlap > 0) {
+                sharedWallLength = horizontalOverlap;
+            }
+            const cwl = rule.cwl || config.cwl || 0;
+            if (sharedWallLength === 0) {
+                const dx = room.centerX - B.centerX;
+                const dy = room.centerY - B.centerY;
+                sum += ((dx * dx + dy * dy) / canvasDiagSq) * PENALTIES.CONNECT_BASE * weight * cwm;
+            } else if (cwl > 0 && sharedWallLength < cwl) {
+                sum += ((cwl - sharedWallLength) / Math.sqrt(canvasDiagSq)) * PENALTIES.CWL_SHORT * weight * cwm;
+            }
         }
-        const cwl = rule.cwl || config.cwl || 0;
-        if (sharedWallLength === 0) {
-            const dx = room.centerX - B.centerX;
-            const dy = room.centerY - B.centerY;
-            return ((dx * dx + dy * dy) / canvasDiagSq) * PENALTIES.CONNECT_BASE * weight * cwm;
-        } else if (cwl > 0 && sharedWallLength < cwl) {
-            return ((cwl - sharedWallLength) / Math.sqrt(canvasDiagSq)) * PENALTIES.CWL_SHORT * weight * cwm;
-        }
-        return 0;
-    });
+    }
+    return sum;
 }
 
 function penaltyClose(room, rule, layoutMap, cwm, canvasDiagSq, uwm = 1) {
@@ -298,11 +352,32 @@ function penaltyClose(room, rule, layoutMap, cwm, canvasDiagSq, uwm = 1) {
     const weight = rule.required ? baseW * PENALTIES.REQUIRED_BOOST : 1 + (baseW - 1) * uwm;
     const targets = rule.target ?? [];
 
-    return applyTargets(rule, targets, layoutMap, (B) => {
-        const dx = room.centerX - B.centerX;
-        const dy = room.centerY - B.centerY;
-        return ((dx * dx + dy * dy) / canvasDiagSq) * weight * PENALTIES.CONNECT_BASE * cwm;
-    });
+    if (rule.any) {
+        let minP = Infinity;
+        for (let i = 0; i < targets.length; i++) {
+            const B = layoutMap[targets[i]];
+            if (B) {
+                const dx = room.centerX - B.centerX;
+                const dy = room.centerY - B.centerY;
+                const val = ((dx * dx + dy * dy) / canvasDiagSq) * weight * PENALTIES.CONNECT_BASE * cwm;
+                if (val < minP) {
+                    minP = val;
+                }
+            }
+        }
+        return minP === Infinity ? 0 : minP;
+    }
+
+    let sum = 0;
+    for (let i = 0; i < targets.length; i++) {
+        const B = layoutMap[targets[i]];
+        if (B) {
+            const dx = room.centerX - B.centerX;
+            const dy = room.centerY - B.centerY;
+            sum += ((dx * dx + dy * dy) / canvasDiagSq) * weight * PENALTIES.CONNECT_BASE * cwm;
+        }
+    }
+    return sum;
 }
 
 function penaltyFar(room, rule, layoutMap, canvasDiag, cwm, uwm = 1) {
@@ -310,31 +385,54 @@ function penaltyFar(room, rule, layoutMap, canvasDiag, cwm, uwm = 1) {
     const weight = rule.required ? baseW * PENALTIES.REQUIRED_BOOST : 1 + (baseW - 1) * uwm;
     const targets = rule.target ?? [];
 
-    return applyTargets(rule, targets, layoutMap, (B) => {
-        const dx = room.centerX - B.centerX;
-        const dy = room.centerY - B.centerY;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        return (1 / (1 + d / canvasDiag)) * weight * PENALTIES.CONNECT_BASE * cwm;
-    });
+    if (rule.any) {
+        let minP = Infinity;
+        for (let i = 0; i < targets.length; i++) {
+            const B = layoutMap[targets[i]];
+            if (B) {
+                const dx = room.centerX - B.centerX;
+                const dy = room.centerY - B.centerY;
+                const d = Math.sqrt(dx * dx + dy * dy);
+                const val = (1 / (1 + d / canvasDiag)) * weight * PENALTIES.CONNECT_BASE * cwm;
+                if (val < minP) {
+                    minP = val;
+                }
+            }
+        }
+        return minP === Infinity ? 0 : minP;
+    }
+
+    let sum = 0;
+    for (let i = 0; i < targets.length; i++) {
+        const B = layoutMap[targets[i]];
+        if (B) {
+            const dx = room.centerX - B.centerX;
+            const dy = room.centerY - B.centerY;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            sum += (1 / (1 + d / canvasDiag)) * weight * PENALTIES.CONNECT_BASE * cwm;
+        }
+    }
+    return sum;
 }
 
-function penaltyAt(room, rule, globalBounds, cwm, canvasDiag, uwm = 1) {
+function penaltyAt(room, rule, rootW, rootH, cwm, canvasDiag, uwm = 1) {
     const baseW = rule.weight || 1;
     const weight = rule.required ? baseW * PENALTIES.REQUIRED_BOOST : 1 + (baseW - 1) * uwm;
     const dirs = rule.dir ?? [];
     let p = 0;
 
-    for (const dir of dirs) {
+    for (let i = 0; i < dirs.length; i++) {
+        const dir = dirs[i];
         let d = 0;
         if (dir === "edge") {
-            const d_min = Math.min(room.y, globalBounds.h - (room.y + room.h), room.x, globalBounds.w - (room.x + room.w));
+            const d_min = Math.min(room.y, rootH - (room.y + room.h), room.x, rootW - (room.x + room.w));
             d = d_min > 0 ? d_min : 0;
         } else if (dir === "north") {
             d = room.y;
         } else if (dir === "south") {
-            d = globalBounds.h - (room.y + room.h);
+            d = rootH - (room.y + room.h);
         } else if (dir === "east") {
-            d = globalBounds.w - (room.x + room.w);
+            d = rootW - (room.x + room.w);
         } else if (dir === "west") {
             d = room.x;
         }
@@ -351,7 +449,7 @@ function penaltyAt(room, rule, globalBounds, cwm, canvasDiag, uwm = 1) {
     return p;
 }
 
-function penaltyNotAt(room, rule, mod, globalBounds, cwm, canvasDiagSq, uwm = 1) {
+function penaltyNotAt(room, rule, mod, rootW, rootH, cwm, canvasDiagSq, uwm = 1) {
     const baseW = rule.weight || 1;
     const weight = rule.required ? baseW * PENALTIES.REQUIRED_BOOST : 1 + (baseW - 1) * uwm;
     const targetDepth = mod.sideMin || PENALTIES.DEFAULT_SIDE_MIN;
@@ -359,7 +457,7 @@ function penaltyNotAt(room, rule, mod, globalBounds, cwm, canvasDiagSq, uwm = 1)
 
     const d0 = rule.dir?.[0];
     if (d0 === "edge" || rule.type === "enclosed") {
-        const d_min = Math.min(room.y, globalBounds.h - (room.y + room.h), room.x, globalBounds.w - (room.x + room.w));
+        const d_min = Math.min(room.y, rootH - (room.y + room.h), room.x, rootW - (room.x + room.w));
         if (d_min < targetDepth) {
             const shortfall = Math.max(0, targetDepth - d_min);
             p += ((shortfall * shortfall) / canvasDiagSq) * weight * PENALTIES.NOT_AT_EDGE * cwm;
@@ -369,12 +467,12 @@ function penaltyNotAt(room, rule, mod, globalBounds, cwm, canvasDiagSq, uwm = 1)
             p += PENALTIES.NOT_AT_DIR * weight * cwm;
         }
     } else if (d0 === "south") {
-        const d = globalBounds.h - (room.y + room.h);
+        const d = rootH - (room.y + room.h);
         if (d < targetDepth) {
             p += PENALTIES.NOT_AT_DIR * weight * cwm;
         }
     } else if (d0 === "east") {
-        const d = globalBounds.w - (room.x + room.w);
+        const d = rootW - (room.x + room.w);
         if (d < targetDepth) {
             p += PENALTIES.NOT_AT_DIR * weight * cwm;
         }
@@ -404,10 +502,11 @@ function sharedWall(A, B) {
 
 function isRuleSatisfied(rule, room, layoutMap, globalBounds) {
     const { w: gW, h: gH } = globalBounds;
+    const targets = rule.target === undefined ? [] : (Array.isArray(rule.target) ? rule.target : [rule.target]);
+    const dirs = rule.dir === undefined ? [] : (Array.isArray(rule.dir) ? rule.dir : (typeof rule.dir === "string" ? rule.dir.split(" ") : []));
 
     switch (rule.type) {
         case "connect": {
-            const targets = rule.target ?? [];
             const cwl = rule.cwl || 0;
             const ok = (t) => {
                 const swl = sharedWall(room, layoutMap[t]);
@@ -416,19 +515,16 @@ function isRuleSatisfied(rule, room, layoutMap, globalBounds) {
             return rule.any ? targets.some(ok) : targets.every(ok);
         }
         case "close": {
-            const targets = rule.target ?? [];
             const ok = (t) => layoutMap[t] && sharedWall(room, layoutMap[t]) > 0;
             return rule.any ? targets.some(ok) : targets.every(ok);
         }
         case "far": {
             // satisfied when not adjacent — the continuous penalty maximizes distance,
             // but the binary check only requires non-adjacency
-            const targets = rule.target ?? [];
             const ok = (t) => !layoutMap[t] || sharedWall(room, layoutMap[t]) === 0;
             return rule.any ? targets.some(ok) : targets.every(ok);
         }
         case "at": {
-            const dirs = rule.dir ?? [];
             return dirs.every(dir => {
                 if (dir === "north") {
                     return room.y < REQUIRED_SATISFIED_EPS;
@@ -450,10 +546,9 @@ function isRuleSatisfied(rule, room, layoutMap, globalBounds) {
         }
         case "not_at":
         case "enclosed": {
-            if (rule.type === "enclosed" || rule.dir?.[0] === "edge") {
+            if (rule.type === "enclosed" || dirs[0] === "edge") {
                 return Math.min(room.y, gH - (room.y + room.h), room.x, gW - (room.x + room.w)) > REQUIRED_SATISFIED_EPS;
             }
-            const dirs = rule.dir ?? [];
             return dirs.every(dir => {
                 if (dir === "north") {
                     return room.y > REQUIRED_SATISFIED_EPS;
@@ -538,54 +633,130 @@ function checkRequiredSatisfied(layout, modulesMap) {
     return unsatisfied;
 }
 
+const subjectAnyMinMap = new Map();
+
 /**
  * Phase 3: Augmented Cost Function (Topological Penalties)
  */
 function calculateTopologicalPenalties(layout, modulesMap, globalBounds, config = {}, connectWeightMultiplier = 1, uwm = 1, layoutMap = null, phantoms = []) {
+    let rootW, rootH;
+    let cfg = config;
+    let cwm = connectWeightMultiplier;
+    let u = uwm;
+    let lMap = layoutMap;
+    let phs = phantoms;
+
+    if (globalBounds && typeof globalBounds === "object") {
+        rootW = globalBounds.w;
+        rootH = globalBounds.h;
+    } else {
+        rootW = globalBounds;
+        rootH = arguments[3];
+        cfg = arguments[4] || {};
+        cwm = arguments[5] !== undefined ? arguments[5] : 1;
+        u = arguments[6] !== undefined ? arguments[6] : 1;
+        lMap = arguments[7];
+        phs = arguments[8] || [];
+    }
+
     let penalty = 0;
-    const canvasDiagSq = globalBounds.w * globalBounds.w + globalBounds.h * globalBounds.h;
+    const canvasDiagSq = rootW * rootW + rootH * rootH;
     const canvasDiag = Math.sqrt(canvasDiagSq);
-    const cwm = connectWeightMultiplier;
 
-    if (!layoutMap) {
-        layoutMap = {};
-        for (const room of layout) {
-            layoutMap[room.id] = room;
+    if (!lMap) {
+        lMap = {};
+        for (let i = 0; i < layout.length; i++) {
+            lMap[layout[i].id] = layout[i];
         }
     }
-    for (const p of phantoms) {
-        if (!layoutMap[p.id]) {
-            layoutMap[p.id] = p;
+    for (let i = 0; i < phs.length; i++) {
+        const p = phs[i];
+        if (!lMap[p.id]) {
+            lMap[p.id] = p;
         }
     }
 
-    const subjectAnyMin = new Map(); // subjectGroupId -> minPenalty
+    subjectAnyMinMap.clear();
+    let connectionsMap = null;
+    let hasCwc = false;
 
-    for (const room of layout) {
+    for (let i = 0; i < layout.length; i++) {
+        const room = layout[i];
         const mod = modulesMap[room.id];
 
-        const cwc = mod?.cwc || config.cwc || 0;
-        if (cwc > 0) {
-            let connections = 0;
-            for (const B of layout) {
-                if (room.id === B.id) {
-                    continue;
-                }
-                const isHorizontallyAdjacent = (room.x + room.w === B.x) || (B.x + B.w === room.x);
-                const verticalOverlap = Math.max(0, Math.min(room.y + room.h, B.y + B.h) - Math.max(room.y, B.y));
-                const isVerticallyAdjacent = (room.y + room.h === B.y) || (B.y + B.h === room.y);
-                const horizontalOverlap = Math.max(0, Math.min(room.x + room.w, B.x + B.w) - Math.max(room.x, B.x));
-                let sharedWallLength = 0;
-                if (isHorizontallyAdjacent && verticalOverlap > 0) {
-                    sharedWallLength = verticalOverlap;
-                }
-                if (isVerticallyAdjacent && horizontalOverlap > 0) {
-                    sharedWallLength = horizontalOverlap;
-                }
-                if (sharedWallLength > 0) {
-                    connections++;
+        if ((mod?.cwc || cfg.cwc || 0) > 0) {
+            hasCwc = true;
+            break;
+        }
+    }
+
+    if (hasCwc) {
+        connectionsMap = new Map();
+        const byX = new Map();
+        const byY = new Map();
+
+        for (let i = 0; i < layout.length; i++) {
+            const r = layout[i];
+            connectionsMap.set(r.id, 0);
+
+            let arrX = byX.get(r.x);
+
+            if (!arrX) {
+                arrX = [];
+                byX.set(r.x, arrX);
+            }
+
+            arrX.push(r);
+
+            let arrY = byY.get(r.y);
+
+            if (!arrY) {
+                arrY = [];
+                byY.set(r.y, arrY);
+            }
+
+            arrY.push(r);
+        }
+
+        for (let i = 0; i < layout.length; i++) {
+            const room = layout[i];
+            const rightCandidates = byX.get(room.x + room.w);
+
+            if (rightCandidates) {
+                for (let j = 0; j < rightCandidates.length; j++) {
+                    const B = rightCandidates[j];
+                    const verticalOverlap = Math.max(0, Math.min(room.y + room.h, B.y + B.h) - Math.max(room.y, B.y));
+
+                    if (verticalOverlap > 0) {
+                        connectionsMap.set(room.id, connectionsMap.get(room.id) + 1);
+                        connectionsMap.set(B.id, connectionsMap.get(B.id) + 1);
+                    }
                 }
             }
+
+            const bottomCandidates = byY.get(room.y + room.h);
+
+            if (bottomCandidates) {
+                for (let j = 0; j < bottomCandidates.length; j++) {
+                    const B = bottomCandidates[j];
+                    const horizontalOverlap = Math.max(0, Math.min(room.x + room.w, B.x + B.w) - Math.max(room.x, B.x));
+
+                    if (horizontalOverlap > 0) {
+                        connectionsMap.set(room.id, connectionsMap.get(room.id) + 1);
+                        connectionsMap.set(B.id, connectionsMap.get(B.id) + 1);
+                    }
+                }
+            }
+        }
+    }
+
+    for (let i = 0; i < layout.length; i++) {
+        const room = layout[i];
+        const mod = modulesMap[room.id];
+
+        const cwc = mod?.cwc || cfg.cwc || 0;
+        if (cwc > 0) {
+            const connections = connectionsMap.get(room.id) || 0;
             if (connections < cwc) {
                 penalty += (cwc - connections) * PENALTIES.CONNECT_BASE * cwm;
             }
@@ -595,24 +766,25 @@ function calculateTopologicalPenalties(layout, modulesMap, globalBounds, config 
             continue;
         }
 
-        for (const rule of mod.rules) {
+        for (let j = 0; j < mod.rules.length; j++) {
+            const rule = mod.rules[j];
             let p = 0;
             if (rule.type === "connect") {
-                p = penaltyConnect(room, rule, layoutMap, config, cwm, canvasDiagSq, uwm);
+                p = penaltyConnect(room, rule, lMap, cfg, cwm, canvasDiagSq, u);
             } else if (rule.type === "close") {
-                p = penaltyClose(room, rule, layoutMap, cwm, canvasDiagSq, uwm);
+                p = penaltyClose(room, rule, lMap, cwm, canvasDiagSq, u);
             } else if (rule.type === "far") {
-                p = penaltyFar(room, rule, layoutMap, canvasDiag, cwm, uwm);
+                p = penaltyFar(room, rule, lMap, canvasDiag, cwm, u);
             } else if (rule.type === "at") {
-                p = penaltyAt(room, rule, globalBounds, cwm, canvasDiag, uwm);
+                p = penaltyAt(room, rule, rootW, rootH, cwm, canvasDiag, u);
             } else if (rule.type === "not_at" || rule.type === "enclosed") {
-                p = penaltyNotAt(room, rule, mod, globalBounds, cwm, canvasDiagSq, uwm);
+                p = penaltyNotAt(room, rule, mod, rootW, rootH, cwm, canvasDiagSq, u);
             }
 
             if (rule.subjectAny && rule.subjectGroupId !== undefined) {
-                const prev = subjectAnyMin.get(rule.subjectGroupId);
+                const prev = subjectAnyMinMap.get(rule.subjectGroupId);
                 if (prev === undefined || p < prev) {
-                    subjectAnyMin.set(rule.subjectGroupId, p);
+                    subjectAnyMinMap.set(rule.subjectGroupId, p);
                 }
             } else {
                 penalty += p;
@@ -620,7 +792,7 @@ function calculateTopologicalPenalties(layout, modulesMap, globalBounds, config 
         }
     }
 
-    for (const p of subjectAnyMin.values()) {
+    for (const p of subjectAnyMinMap.values()) {
         penalty += p;
     }
 
@@ -631,29 +803,38 @@ function calculateTopologicalPenalties(layout, modulesMap, globalBounds, config 
  * Phase 1.5: Fast-Fail Topological Boundary Check on built tree.
  * Replaces NPE re-traversal — reuses the tree already built in evaluateCost.
  */
-function checkBoundariesOnTree(node, boundaries, modulesMap) {
+function checkBoundariesOnTree(node, north, south, east, west, modulesMap) {
+    if (north && typeof north === "object") {
+        // Old signature compatibility: checkBoundariesOnTree(node, boundaries, modulesMap)
+        const boundaries = north;
+        const modMap = south;
+        return checkBoundariesOnTree(node, boundaries.north, boundaries.south, boundaries.east, boundaries.west, modMap);
+    }
+
     if (node.type === "leaf") {
         const mod = modulesMap[node.id];
         if (mod?.rules) {
-            for (const rule of mod.rules) {
+            for (let i = 0; i < mod.rules.length; i++) {
+                const rule = mod.rules[i];
                 if (rule.type !== "at") {
                     continue;
                 }
                 const dirs = rule.dir ?? [];
-                for (const dir of dirs) {
-                    if (dir === "north" && !boundaries.north) {
+                for (let j = 0; j < dirs.length; j++) {
+                    const dir = dirs[j];
+                    if (dir === "north" && !north) {
                         return false;
                     }
-                    if (dir === "south" && !boundaries.south) {
+                    if (dir === "south" && !south) {
                         return false;
                     }
-                    if (dir === "east" && !boundaries.east) {
+                    if (dir === "east" && !east) {
                         return false;
                     }
-                    if (dir === "west" && !boundaries.west) {
+                    if (dir === "west" && !west) {
                         return false;
                     }
-                    if (dir === "edge" && !(boundaries.north || boundaries.south || boundaries.east || boundaries.west)) {
+                    if (dir === "edge" && !(north || south || east || west)) {
                         return false;
                     }
                 }
@@ -662,80 +843,75 @@ function checkBoundariesOnTree(node, boundaries, modulesMap) {
         return true;
     }
 
-    let rightB, leftB;
+    let leftRes;
     if (node.type === "H") {
-        leftB = {
-            north: boundaries.north,
-            south: false,
-            east: boundaries.east,
-            west: boundaries.west,
-        };
-        rightB = {
-            north: false,
-            south: boundaries.south,
-            east: boundaries.east,
-            west: boundaries.west,
-        };
+        leftRes = checkBoundariesOnTree(node.left, north, false, east, west, modulesMap);
+        if (!leftRes) {
+            return false;
+        }
+        return checkBoundariesOnTree(node.right, false, south, east, west, modulesMap);
     } else {
-        rightB = {
-            north: boundaries.north,
-            south: boundaries.south,
-            east: boundaries.east,
-            west: false,
-        };
-        leftB = {
-            north: boundaries.north,
-            south: boundaries.south,
-            east: false,
-            west: boundaries.west,
-        };
+        leftRes = checkBoundariesOnTree(node.left, north, south, false, west, modulesMap);
+        if (!leftRes) {
+            return false;
+        }
+        return checkBoundariesOnTree(node.right, north, south, east, false, modulesMap);
     }
-    return checkBoundariesOnTree(node.right, rightB, modulesMap) &&
-        checkBoundariesOnTree(node.left, leftB, modulesMap);
+}
+
+/**
+ * Linear-time vertical shape-curve merge.
+ */
+function mergeVerticalLinear(L, R) {
+    const result = [];
+    let li = 0;
+    let ri = 0;
+
+    while (li < L.length && ri < R.length) {
+        const l = L[li];
+        const r = R[ri];
+        const w = l.w + r.w;
+        const h = Math.max(l.h, r.h);
+        result.push({
+            w: w,
+            h: h,
+            leftShape: l,
+            rightShape: r,
+        });
+
+        if (l.h > r.h) {
+            li++;
+        } else if (l.h < r.h) {
+            ri++;
+        } else {
+            li++;
+            ri++;
+        }
+    }
+
+    return pruneCurve(result);
 }
 
 /**
  * Merges two child curves under H/V operator and prunes to Pareto front.
- * Iteration order (left outer, right inner) preserved for bit-level determinism.
+ * Uses Stockmeyer's linear-time merge algorithm.
  */
 function mergeShapes(leftCurve, rightCurve, op) {
-    const n = leftCurve.length * rightCurve.length;
-    const ws = new Float64Array(n);
-    const hs = new Float64Array(n);
-    let k = 0;
-    if (op === "H") {
-        for (let li = 0; li < leftCurve.length; li++) {
-            for (let ri = 0; ri < rightCurve.length; ri++, k++) {
-                ws[k] = Math.max(leftCurve[li].w, rightCurve[ri].w);
-                hs[k] = leftCurve[li].h + rightCurve[ri].h;
-            }
-        }
-    } else {
-        for (let li = 0; li < leftCurve.length; li++) {
-            for (let ri = 0; ri < rightCurve.length; ri++, k++) {
-                ws[k] = leftCurve[li].w + rightCurve[ri].w;
-                hs[k] = Math.max(leftCurve[li].h, rightCurve[ri].h);
-            }
-        }
+    if (op === "V") {
+        return mergeVerticalLinear(leftCurve, rightCurve);
     }
-    const idx = Array.from({ length: n }, (_, i) => i)
-        .sort((a, b) => ws[a] - ws[b] || hs[a] - hs[b]);
-    const result = [];
-    let minH = Infinity;
-    for (const i of idx) {
-        if (hs[i] < minH) {
-            const li = Math.floor(i / rightCurve.length);
-            const ri = i % rightCurve.length;
-            result.push({
-                w: ws[i],
-                h: hs[i],
-                leftShape: leftCurve[li],
-                rightShape: rightCurve[ri],
-            });
-            minH = hs[i];
-        }
-    }
-    return result;
+
+    const L_swapped = leftCurve.map(c => ({ w: c.h, h: c.w, original: c })).reverse();
+    const R_swapped = rightCurve.map(c => ({ w: c.h, h: c.w, original: c })).reverse();
+    const merged_swapped = mergeVerticalLinear(L_swapped, R_swapped);
+    const merged = merged_swapped.map(c => ({
+        w: c.h,
+        h: c.w,
+        leftShape: c.leftShape.original,
+        rightShape: c.rightShape.original,
+    })).reverse();
+
+    return pruneCurve(merged);
 }
 
 /**
@@ -842,7 +1018,7 @@ function buildTreeIncremental(prevPositionMap, npe, dirtyPositions, modulesMap) 
  * `rootW, rootH` are the outer bounds the layout fills (rootShape for SA picks,
  * canvas for redistributed layouts).
  */
-function evaluateLayoutCost(layout, rootW, rootH, modulesMap, config = {}, cwm = 1, uwm = 1, phantoms = []) {
+function evaluateLayoutCost(layout, rootW, rootH, modulesMap, config = {}, cwm = 1, uwm = 1, phantoms = [], layoutMap = null, onlyTotal = false) {
     const canvasW = config.canvasW || 500;
     const canvasH = config.canvasH || 500;
     const canvasTargetDiagSq = canvasW * canvasW + canvasH * canvasH;
@@ -855,14 +1031,18 @@ function evaluateLayoutCost(layout, rootW, rootH, modulesMap, config = {}, cwm =
     const overH = Math.max(0, rootH - canvasH);
     const canvasPenalty = ((overW * overW + overH * overH) / canvasTargetDiagSq) * PENALTIES.CANVAS * cwm;
 
-    const layoutMap = Object.fromEntries(layout.map(r => [r.id, r]));
-    const topologicalPenalty = calculateTopologicalPenalties(layout, modulesMap, {
-        w: rootW,
-        h: rootH,
-    }, config, cwm, uwm, layoutMap, phantoms);
+    let lMap = layoutMap;
+    if (!lMap) {
+        lMap = {};
+        for (let i = 0; i < layout.length; i++) {
+            lMap[layout[i].id] = layout[i];
+        }
+    }
+    const topologicalPenalty = calculateTopologicalPenalties(layout, modulesMap, rootW, rootH, config, cwm, uwm, lMap, phantoms);
 
     let roomPenalty = 0;
-    for (const room of layout) {
+    for (let i = 0; i < layout.length; i++) {
+        const room = layout[i];
         const m = modulesMap[room.id];
         if (!m) {
             continue;
@@ -887,10 +1067,13 @@ function evaluateLayoutCost(layout, rootW, rootH, modulesMap, config = {}, cwm =
     }
 
     const total = area + aspectPenalty + canvasPenalty + topologicalPenalty + roomPenalty;
+    if (onlyTotal) {
+        return total;
+    }
     return { total, area, aspectPenalty, canvasPenalty, topologicalPenalty, roomPenalty };
 }
 
-function evaluateCost(npe, modulesMap, config = {}, connectWeightMultiplier = 1, treeBundle = null, uwm = 1, hasAtRules = true, phantoms = []) {
+function evaluateCost(npe, modulesMap, config = {}, connectWeightMultiplier = 1, treeBundle = null, uwm = 1, hasAtRules = true, phantoms = [], layoutArray = null, layoutMap = null) {
     if (!treeBundle) {
         treeBundle = buildTreeFresh(npe, modulesMap);
     }
@@ -901,24 +1084,32 @@ function evaluateCost(npe, modulesMap, config = {}, connectWeightMultiplier = 1,
     // Boundary check on tree — replaces separate passesTopologicalBoundaryCheck NPE traversal
     let boundaryValid = true;
     if (hasAtRules) {
-        boundaryValid = checkBoundariesOnTree(rootNode, {
-            north: true,
-            south: true,
-            east: true,
-            west: true,
-        }, modulesMap);
+        boundaryValid = checkBoundariesOnTree(rootNode, true, true, true, true, modulesMap);
     }
 
     // Objective Cost Function: evaluate all possible root shapes and pick the best one
     let bestCost = Infinity;
     let bestRootShape = null;
 
-    for (const rootShape of rootCurve) {
-        const layout = assignCoordinates(rootNode, rootShape, 0, 0);
-        const cost = evaluateLayoutCost(layout, rootShape.w, rootShape.h, modulesMap, config, connectWeightMultiplier, uwm, phantoms).total;
-        if (cost < bestCost) {
-            bestCost = cost;
-            bestRootShape = rootShape;
+    if (layoutArray && layoutMap) {
+        for (let i = 0; i < rootCurve.length; i++) {
+            const rootShape = rootCurve[i];
+            assignCoordinatesInPlace(rootNode, rootShape, 0, 0, undefined, undefined, layoutMap);
+            const cost = evaluateLayoutCost(layoutArray, rootShape.w, rootShape.h, modulesMap, config, connectWeightMultiplier, uwm, phantoms, layoutMap, true);
+            if (cost < bestCost) {
+                bestCost = cost;
+                bestRootShape = rootShape;
+            }
+        }
+    } else {
+        for (let i = 0; i < rootCurve.length; i++) {
+            const rootShape = rootCurve[i];
+            const layout = assignCoordinates(rootNode, rootShape, 0, 0);
+            const cost = evaluateLayoutCost(layout, rootShape.w, rootShape.h, modulesMap, config, connectWeightMultiplier, uwm, phantoms).total;
+            if (cost < bestCost) {
+                bestCost = cost;
+                bestRootShape = rootShape;
+            }
         }
     }
 
@@ -1220,14 +1411,35 @@ async function _runWithRestarts(modules, config, signal, phantoms = []) {
 }
 
 async function wongLiuSimulatedAnnealing(modules, config = {}, signal = null, phantoms = []) {
-    const hasRequired = modules.some(m => m.rules?.some(r => r.required));
+    // Deep clone modules and their nested properties (rules, curve) to prevent in-place mutation of parameters.
+    const clonedModules = modules.map(m => {
+        const cloned = { ...m };
+        if (m.rules) {
+            cloned.rules = m.rules.map(r => {
+                const clonedRule = { ...r };
+                if (r.target !== undefined) {
+                    clonedRule.target = Array.isArray(r.target) ? [...r.target] : r.target;
+                }
+                if (r.dir !== undefined) {
+                    clonedRule.dir = Array.isArray(r.dir) ? [...r.dir] : r.dir;
+                }
+                return clonedRule;
+            });
+        }
+        if (m.curve) {
+            cloned.curve = m.curve.map(c => ({ ...c }));
+        }
+        return cloned;
+    });
+
+    const hasRequired = clonedModules.some(m => m.rules?.some(r => r.required));
     if (!hasRequired) {
-        return _runWithRestarts(modules, config, signal, phantoms);
+        return _runWithRestarts(clonedModules, config, signal, phantoms);
     }
 
     const maxRetries = config.requiredMaxRetries ?? 10;
     const baseSeed = config.seed ?? 0xDEADBEEF;
-    const modulesMap = Object.fromEntries(modules.map(m => [m.id, m]));
+    const modulesMap = Object.fromEntries(clonedModules.map(m => [m.id, m]));
 
     let best = null;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -1235,7 +1447,7 @@ async function wongLiuSimulatedAnnealing(modules, config = {}, signal = null, ph
             ...config,
             seed: baseSeed + attempt * 0x17A4B3C1,
         };
-        const result = await _runWithRestarts(modules, attemptConfig, signal, phantoms);
+        const result = await _runWithRestarts(clonedModules, attemptConfig, signal, phantoms);
         if (signal?.aborted) {
             throw new DOMException("Cancelled", "AbortError");
         }
@@ -1392,11 +1604,25 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
     const hasAtRules = Object.values(modulesMap).some(m => m.rules?.some(r => r.type === "at"));
     const ruleIdx = buildRuleIndex(modules);
 
+    const layoutArray = [];
+    const layoutMap = {};
+    for (let i = 0; i < modules.length; i++) {
+        const m = modules[i];
+        const room = { id: m.id, x: 0, y: 0, w: 0, h: 0, centerX: 0, centerY: 0 };
+        layoutArray.push(room);
+        layoutMap[m.id] = room;
+    }
+    for (let i = 0; i < phantoms.length; i++) {
+        const p = phantoms[i];
+        const room = { id: p.id, x: p.x, y: p.y, w: p.w, h: p.h, centerX: p.centerX, centerY: p.centerY };
+        layoutMap[p.id] = room;
+    }
+
     let currentNpe;
     let candidates;
     if (n === 1) {
         currentNpe = [modules[0].id];
-        const result = evaluateCost(currentNpe, modulesMap, config, 1, null, 1, hasAtRules, phantoms);
+        const result = evaluateCost(currentNpe, modulesMap, config, 1, null, 1, hasAtRules, phantoms, layoutArray, layoutMap);
         return {
             npe: currentNpe,
             cost: result.cost,
@@ -1409,7 +1635,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
             if (!isValidNPE(c)) {
                 continue;
             }
-            const r = evaluateCost(c, modulesMap, config, 1, null, 1, hasAtRules, phantoms);
+            const r = evaluateCost(c, modulesMap, config, 1, null, 1, hasAtRules, phantoms, layoutArray, layoutMap);
             const cost = r.cost + (r.valid ? 0 : PENALTIES.INVALID_HARD);
             if (cost < bestInitCost) {
                 bestInitCost = cost;
@@ -1423,7 +1649,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
         if (n > 1) {
             const uphillDeltas = [];
             let testNpe = [...currentNpe];
-            const testResult = evaluateCost(testNpe, modulesMap, config, 1, null, 1, hasAtRules, phantoms);
+            const testResult = evaluateCost(testNpe, modulesMap, config, 1, null, 1, hasAtRules, phantoms, layoutArray, layoutMap);
             let testCost = testResult.cost + (testResult.valid ? 0 : PENALTIES.INVALID_HARD);
             for (let i = 0; i < Math.min(n * 5, 100); i++) {
                 const nextNpe = [...testNpe];
@@ -1436,7 +1662,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
                     applyM3(nextNpe, randomFn);
                 }
 
-                const nextResult = evaluateCost(nextNpe, modulesMap, config, 1, null, 1, hasAtRules, phantoms);
+                const nextResult = evaluateCost(nextNpe, modulesMap, config, 1, null, 1, hasAtRules, phantoms, layoutArray, layoutMap);
                 const nextCost = nextResult.cost + (nextResult.valid ? 0 : PENALTIES.INVALID_HARD);
                 const delta = nextCost - testCost;
                 if (delta > 0) {
@@ -1459,7 +1685,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
     let connectWeightMultiplier = Math.min(initial_t / T, CWM_CAP);
     let uwm = Math.min(initial_t / T / CWM_CAP, 1);
     let bestNpe = [...currentNpe];
-    let currentResult = evaluateCost(currentNpe, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms);
+    let currentResult = evaluateCost(currentNpe, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms, layoutArray, layoutMap);
     let currentCost = currentResult.cost;
     if (!currentResult.valid) {
         currentCost += PENALTIES.INVALID_HARD;
@@ -1482,13 +1708,13 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
         connectWeightMultiplier = Math.min(initial_t / T, CWM_CAP);
         uwm = Math.min(initial_t / T / CWM_CAP, 1);
         // Re-evaluate current and best cost with new multiplier so delta is accurate
-        currentResult = evaluateCost(currentNpe, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms);
+        currentResult = evaluateCost(currentNpe, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms, layoutArray, layoutMap);
         currentCost = currentResult.cost;
         if (!currentResult.valid) {
             currentCost += PENALTIES.INVALID_HARD;
         }
 
-        bestResult = evaluateCost(bestNpe, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms);
+        bestResult = evaluateCost(bestNpe, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms, layoutArray, layoutMap);
         bestCost = bestResult.cost;
         if (!bestResult.valid) {
             bestCost += PENALTIES.INVALID_HARD;
@@ -1534,7 +1760,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
                 nextTreeBundle = null; // fresh build inside evaluateCost (no-op move)
             }
 
-            const nextResult = evaluateCost(nextNpe, modulesMap, config, connectWeightMultiplier, nextTreeBundle, uwm, hasAtRules, phantoms);
+            const nextResult = evaluateCost(nextNpe, modulesMap, config, connectWeightMultiplier, nextTreeBundle, uwm, hasAtRules, phantoms, layoutArray, layoutMap);
             let nextCost = nextResult.cost;
             if (!nextResult.valid) {
                 nextCost += PENALTIES.INVALID_SOFT;
@@ -1598,7 +1824,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
             }
             if (isValidNPE(recovered)) {
                 currentNpe = recovered;
-                currentResult = evaluateCost(currentNpe, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms);
+                currentResult = evaluateCost(currentNpe, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms, layoutArray, layoutMap);
                 currentCost = currentResult.cost + (currentResult.valid ? 0 : PENALTIES.INVALID_HARD);
                 if (stagnationRecoveries++ < MAX_STAGNATION_RECOVERIES) {
                     T = Math.min(initial_t, T * STAGNATION_REHEAT);
@@ -1655,7 +1881,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
     {
         const flipped = bestNpe.map(c => c === "H" ? "V" : (c === "V" ? "H" : c));
         if (isValidNPE(flipped)) {
-            const flippedRes = evaluateCost(flipped, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms);
+            const flippedRes = evaluateCost(flipped, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms, layoutArray, layoutMap);
             if (flippedRes.valid && flippedRes.bestShape) {
                 let flippedLayout = assignCoordinates(flippedRes.rootNode, flippedRes.bestShape, 0, 0);
                 let flippedCost = evaluateLayoutCost(

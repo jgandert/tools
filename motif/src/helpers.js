@@ -419,9 +419,8 @@ export function ensureGranularStretcher(ctx) {
     if (!ctx || !ctx.audioWorklet) return Promise.reject(new Error("AudioWorklet not supported"));
     if (_granularStretcherPromise) return _granularStretcherPromise;
 
-    _granularStretcherPromise = ctx.audioWorklet.addModule("/src/worklets/GranularStretcherProcessor.js")
-        .catch(() => ctx.audioWorklet.addModule("./src/worklets/GranularStretcherProcessor.js"))
-        .catch(() => ctx.audioWorklet.addModule("/motif/src/worklets/GranularStretcherProcessor.js"))
+    const url = new URL("./worklets/GranularStretcherProcessor.js", import.meta.url).href;
+    _granularStretcherPromise = ctx.audioWorklet.addModule(url)
         .catch(err => {
             console.error("GranularStretcherProcessor load failed:", err);
             _granularStretcherPromise = null;

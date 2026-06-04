@@ -208,6 +208,10 @@ console.log("\n=== Motif Engine: Web Audio Initialization ===");
         cancelAndHoldAtTime(time) {
             return this;
         }
+
+        cancelScheduledValues(time) {
+            return this;
+        }
     }
 
     class MockGainNode {
@@ -449,6 +453,7 @@ console.log("\n=== Motif Engine: Duration Parsing and Tempo Ramping ===");
     assert(rampThrew === true, "Motif.rampTempo should throw on invalid target tempo");
 
     // Test smooth tempo ramping and interpolation in tick()
+    Motif.ctx.state = "running";
     Motif.tempo = 100;
     Motif.ctx.currentTime = 1.0;
     Motif._tempoRamp = null;
@@ -523,6 +528,7 @@ console.log("\n=== Motif Engine: Master Output Configuration ===");
 // =============================================================================
 console.log("\n=== Motif Engine: Lookahead Scheduler ===");
 {
+    Motif.ctx.state = "running";
     Motif.ctx.currentTime = 0;
     Motif._schedQueue = [];
     Motif._stopScheduler();
@@ -2374,6 +2380,27 @@ console.log("\n=== Track.sidechain ===");
     t7.volume(-6);
     t7.sidechain(kick);
     assert(t7.duckGainNode !== null, "duckGainNode exists after sidechain");
+
+    // 8. Test sidechain by string ID
+    const t8 = Track("sc-string-id");
+    t8._initAudio();
+    t8.sidechain("sc-kick");
+    assert(t8.duckGainNode !== null, "sidechain(stringId) should create duckGainNode");
+    assert(kick._sidechainListeners.length === 3, "trigger track sc-kick should now have three listeners");
+
+    // 9. Test pending sidechain
+    const t9 = Track("sc-pending");
+    t9._initAudio();
+    t9.sidechain("future-kick");
+    assert(t9.duckGainNode !== null, "pending sidechain should create duckGainNode");
+    assert(globalThis._pendingSidechains.has("future-kick"), "should register in _pendingSidechains map");
+    const futureKick = Track("future-kick");
+    assert(futureKick._sidechainListeners.length === 1, "future-kick should get sidechain listener upon instantiation");
+    assert(!globalThis._pendingSidechains.has("future-kick"), "should remove from _pendingSidechains map");
+
+    // 10. Test crossfade retention of sidechain listeners
+    const kickReplacement = Track("sc-kick");
+    assert(kickReplacement._sidechainListeners.length === 3, "replaced track should inherit sidechain listeners");
 
     Motif.ctx = prevCtx;
     Track.clearRegistry();
@@ -7253,6 +7280,56 @@ console.log("\n=== MotifEventArray: Modifier Prototypes (.transpose(), .fast(), 
     assert(chained instanceof MotifEventArray, "chained calls should return a MotifEventArray");
     assert(chained[0].value === "E4", `expected first event of reversed to be E4, got ${chained[0].value}`);
     assert(chained[1].value === "C4", `expected second event of reversed to be C4, got ${chained[1].value}`);
+
+    // 6. Test degrade()
+    const degEvents = new MotifEventArray(
+        { value: "A", startTime: 0, duration: 0.25 },
+        { value: "B", startTime: 0.25, duration: 0.25 }
+    );
+    degEvents.degrade(1.0); // 100% drop chance
+    assert(degEvents.length === 0, "degrade(1.0) should drop all events");
+
+    const degEventsNone = new MotifEventArray(
+        { value: "A", startTime: 0, duration: 0.25 }
+    );
+    degEventsNone.degrade(0.0); // 0% drop chance
+    assert(degEventsNone.length === 1, "degrade(0.0) should keep all events");
+
+    // 7. Test mutate()
+    const mutEvents = new MotifEventArray(
+        { value: "A", startTime: 0, duration: 0.5 }
+    );
+    // Mutate with 100% chance and ratchet action
+    mutEvents.mutate({ chance: 1.0, actions: { ratchet: true } });
+    assert(mutEvents.length === 2, "mutate ratchet should subdivide event into 2");
+    assert(mutEvents[0].duration === 0.25, "ratcheted event 1 duration should be halved");
+    assert(mutEvents[1].startTime === 0.25, "ratcheted event 2 startTime should be offset");
+
+    const mutEventsRev = new MotifEventArray(
+        { value: "A", startTime: 0, duration: 0.25 },
+        { value: "B", startTime: 0.25, duration: 0.75 }
+    );
+    mutEventsRev.mutate({ chance: 1.0, actions: { reverse: true } });
+    // reverse: startTime = 1.0 - (startTime + duration)
+    // A: 1.0 - (0 + 0.25) = 0.75
+    // B: 1.0 - (0.25 + 0.75) = 0.0
+    // sorted: B (0.0), A (0.75)
+    assert(mutEventsRev[0].value === "B", "mutate reverse should reverse order");
+    assert(mutEventsRev[0].startTime === 0.0, "reverse B startTime should be 0.0");
+    assert(mutEventsRev[1].value === "A", "mutate reverse should reverse order");
+    assert(mutEventsRev[1].startTime === 0.75, "reverse A startTime should be 0.75");
+
+    // 8. Test offset()
+    const offEvents = new MotifEventArray(
+        { value: "A", startTime: 0, duration: 0.25 }
+    );
+    offEvents.offset("1/8", (e) => {
+        e.value = "B";
+        return e;
+    });
+    assert(offEvents.length === 2, "offset should duplicate and shift events");
+    assert(offEvents[0].value === "A" && offEvents[0].startTime === 0, "original event should remain unchanged");
+    assert(offEvents[1].value === "B" && offEvents[1].startTime === 0.125, "offset event should be shifted and modified");
 }
 
 // =============================================================================
@@ -7671,6 +7748,62 @@ console.log("\n=== Arrangement Start Parameter: Skip Previous Sections ===");
     if (oscs2.length === 1) {
         assert(Math.abs(oscs2[0].frequency.value - midiToHz(64)) < 1e-6, "pad oscillator should have played");
         assert(Math.abs(oscs2[0].startTime - 0.0) < 1e-6, `pad should start at 0.0, got ${oscs2[0].startTime}`);
+    }
+
+    // 4. Test Synth NaN/Infinity worklet validation
+    const fs = require("fs");
+    const managerSrc = fs.readFileSync(__dirname + "/src/TrackVoiceManager.js", "utf8");
+    const procSrcMatch = managerSrc.match(/const MOTIF_SYNTH_PROCESSOR_SRC = `([\s\S]*?)`;/);
+    assert(procSrcMatch !== null, "Should find MOTIF_SYNTH_PROCESSOR_SRC in TrackVoiceManager.js");
+    if (procSrcMatch) {
+        let processorCode = procSrcMatch[1];
+        processorCode = processorCode.replace("registerProcessor('motif-synth-voice', MotifSynthProcessor);", "");
+        
+        const prevAWP = globalThis.AudioWorkletProcessor;
+        globalThis.AudioWorkletProcessor = class {
+            constructor() {
+                this.port = {
+                    postMessage() {},
+                    onmessage: null
+                };
+            }
+        };
+        globalThis.currentTime = 0;
+        globalThis.sampleRate = 44100;
+        
+        const fn = new Function(processorCode + "\nreturn MotifSynthProcessor;");
+        const MotifSynthProcessorClass = fn();
+        
+        const inst = new MotifSynthProcessorClass();
+        const portMsgs = [];
+        inst.port = {
+            postMessage(msg) {
+                portMsgs.push(msg);
+            }
+        };
+        inst._startTime = 0;
+        
+        inst._synthFn = () => 0.5;
+        let outputs = [[new Float32Array(128)]];
+        inst.process([], outputs, { frequency: [440] });
+        assert(outputs[0][0][0] === 0.5, "Processor should output normal sample values");
+        assert(portMsgs.length === 0, "No error messages should be posted for normal values");
+        
+        inst._synthFn = () => NaN;
+        let threw = false;
+        try {
+            inst.process([], outputs, { frequency: [440] });
+        } catch (e) {
+            threw = true;
+            assert(e.message.includes("non-finite value"), "Exception should contain non-finite info");
+        }
+        assert(threw === true, "Processor should throw on NaN output");
+        assert(portMsgs.some(m => m.type === "SYNTH_ERROR"), "Should post SYNTH_ERROR port message");
+        assert(portMsgs.some(m => m.type === "VOICE_ENDED"), "Should post VOICE_ENDED port message");
+        
+        globalThis.AudioWorkletProcessor = prevAWP;
+        delete globalThis.currentTime;
+        delete globalThis.sampleRate;
     }
 
     // Clean up

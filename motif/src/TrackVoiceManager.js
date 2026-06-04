@@ -76,7 +76,18 @@ class MotifSynthProcessor extends AudioWorkletProcessor {
             }
 
             const freq = isARate ? freqArr[i] : freqArr[0];
-            ch[i] = this._synthFn({ t: this._time, p: this._phase, freq, state: this._state, sampleRate });
+            const val = this._synthFn({ t: this._time, p: this._phase, freq, state: this._state, sampleRate });
+            if (typeof val !== 'number' || isNaN(val) || !isFinite(val)) {
+                this.port.postMessage({
+                    type: 'SYNTH_ERROR',
+                    message: '[Motif Worklet] Synth function generated non-finite value: ' + val + ' (freq: ' + freq + ', time: ' + this._time + ')'
+                });
+                ch[i] = 0;
+                this._done = true;
+                this.port.postMessage({ type: 'VOICE_ENDED' });
+                throw new Error('Synth function generated non-finite value: ' + val);
+            }
+            ch[i] = val;
             this._time += 1 / sampleRate;
             this._phase = (this._phase + freq / sampleRate) % 1.0;
         }
@@ -94,7 +105,7 @@ let _synthWorkletCtx = null;
 let _synthWorkletPromise = null;
 let _synthWorkletLoaded = false;
 
-function _ensureSynthWorklet(ctx) {
+export function ensureSynthWorklet(ctx) {
     if (!ctx.audioWorklet) return Promise.reject(new Error("AudioWorklet not supported"));
     if (_synthWorkletCtx === ctx && _synthWorkletPromise) return _synthWorkletPromise;
     _synthWorkletCtx = ctx;
@@ -209,10 +220,19 @@ export const TrackVoiceManager = {
         this._sampleLoading = bufPromise;
         bufPromise.then(buf => {
             this._sampleBuffer = buf;
-        }).catch(() => {
+        }).catch((err) => {
+            console.error(`[Motif] Failed to load sample "${path}":`, err.message || err);
         });
 
         return this;
+    },
+
+    sound(name) {
+        const nativeOscillators = ["sine", "square", "sawtooth", "triangle", "saw"];
+        if (nativeOscillators.includes(name) || (Motif.synthRegistry && Motif.synthRegistry.has(name))) {
+            return this.synth(name);
+        }
+        return this.sample(name);
     },
 
     /**
@@ -537,7 +557,7 @@ export const TrackVoiceManager = {
         } else if (!["sine", "square", "sawtooth", "triangle", "saw"].includes(type) && Motif.synthRegistry && Motif.synthRegistry.has(type)) {
             const fnCode = Motif.synthRegistry.get(type).toString();
 
-            _ensureSynthWorklet(ctx);
+            ensureSynthWorklet(ctx);
 
             const outputGain = ctx.createGain();
             let voiceNode = null;
@@ -545,6 +565,12 @@ export const TrackVoiceManager = {
             let _endTime = null;
 
             const _createWorkletNode = () => {
+                // If the note window has already elapsed by the time the worklet loaded, skip.
+                if (_endTime !== null && _endTime <= ctx.currentTime) {
+                    safeDisconnect(outputGain);
+                    return;
+                }
+
                 voiceNode = new AudioWorkletNode(ctx, "motif-synth-voice", {
                     numberOfInputs: 0,
                     numberOfOutputs: 1,
@@ -571,6 +597,8 @@ export const TrackVoiceManager = {
                     if (data.type === "VOICE_ENDED") {
                         safeDisconnect(voiceNode);
                         voiceNode = null;
+                    } else if (data.type === "SYNTH_ERROR") {
+                        console.error(data.message);
                     }
                 };
             };
@@ -578,8 +606,7 @@ export const TrackVoiceManager = {
             if (_synthWorkletLoaded) {
                 _createWorkletNode();
             } else {
-                _synthWorkletPromise.then(_createWorkletNode).catch(() => {
-                });
+                _synthWorkletPromise.then(_createWorkletNode).catch(() => {});
             }
 
             const wrapper = {
@@ -614,6 +641,11 @@ export const TrackVoiceManager = {
             const osc = ctx.createOscillator();
             let oscType = type || "sine";
             if (oscType === "saw") oscType = "sawtooth";
+            const VALID_OSC_TYPES = ["sine", "square", "sawtooth", "triangle", "custom"];
+            if (!VALID_OSC_TYPES.includes(oscType)) {
+                console.error(`[Motif] Unknown synth type '${type}' — not in synthRegistry and not a valid oscillator type. Did you mean .sample('${type}')?`);
+                return null;
+            }
             osc.type = oscType;
 
             osc.frequency.setValueAtTime(hz, startTime);
@@ -937,6 +969,7 @@ export const TrackVoiceManager = {
         }
 
         const voice = this._createVoiceSource(this._synthType, hz, hzTo, isRamp, startTime, duration);
+        if (!voice) return;
         const voiceGain = ctx.createGain();
         const currentGainVal = (typeof this._gainLevel === "number" && !isNaN(this._gainLevel)) ? this._gainLevel : 1.0;
         const safeGainVal = Math.max(0.0001, currentGainVal);

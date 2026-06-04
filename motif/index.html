@@ -114,6 +114,59 @@
                 opacity: 1;
             }
         }
+        #playback-hud {
+            background-color: var(--surface-container-low);
+            border: 1px solid var(--outline-variant);
+            border-radius: var(--radius);
+            padding: var(--spacing-md);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        #playback-stats {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 500;
+            color: var(--on-surface-variant);
+        }
+
+        #playback-instruments {
+            color: var(--on-surface-variant);
+            opacity: 0.8;
+            font-size: 0.8em;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #active-samples-list {
+            text-align: right;
+        }
+
+        #playback-instruments span:not(:empty) {
+            background-color: var(--surface-container-high);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        #playback-progress {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+        }
+
+        #playback-progress::-webkit-progress-bar {
+            background-color: var(--surface-container-highest);
+            border-radius: 3px;
+        }
+        #playback-progress::-webkit-progress-value {
+            background-color: var(--primary);
+            border-radius: 3px;
+        }
+        #playback-progress::-moz-progress-bar {
+            background-color: var(--primary);
+            border-radius: 3px;
+        }
     </style>
 </head>
 
@@ -131,12 +184,12 @@
         <ul>
             <li>
                 <button type="button" class="btn-sym" id="play-pause-btn"
-                        data-tooltip="Start / Stop">play_arrow
+                        data-tooltip="Play / Pause">play_arrow
                 </button>
             </li>
             <li>
-                <button type="button" class="btn-sym" id="restart-btn"
-                        data-tooltip="Restart Playback">replay
+                <button type="button" class="btn-sym" id="stop-btn"
+                        data-tooltip="Stop Playback">stop
                 </button>
             </li>
             <li>
@@ -207,13 +260,27 @@
         </fieldset>
     </form>
 
-    <details open id="logs-panel">
+    <details open id="logs-details">
         <summary>Engine Output & Console Logs</summary>
-        <pre id="console-logs"><code class="log-info">[System] Ready. Press play_arrow to start playing!</code></pre>
+        <div id="logs-panel">
+            <pre id="console-logs"><code class="log-info">[System] Ready. Press play_arrow to start playing!
+</code></pre>
+        </div>
     </details>
 </aside>
 
 <main id="content">
+    <div id="playback-hud" hidden>
+        <div id="playback-stats">
+            <span id="playback-time">Bar 1 | Time: 0:00</span>
+            <span id="playback-section"></span>
+        </div>
+        <div id="playback-instruments">
+            <span id="active-synths-list"></span>
+            <span id="active-samples-list"></span>
+        </div>
+        <progress id="playback-progress" value="0" max="100"></progress>
+    </div>
     <div class="editor-container">
         <!-- prettier-ignore-start -->
         <!-- beautify ignore:start -->
@@ -488,6 +555,7 @@ Arrange([
     } from "./motif.js";
 
     const DYNAMIC_SHOWCASE_COMPOSITION_NAME = "Samples & Synths (builtin)";
+    const TITLE_COMMENT_REGEX = /^\/\/\s*Title:\s*(.+)$/m;
 
     const COMPOSITION_TEMPLATE = `// Motif Composition
 //
@@ -565,36 +633,42 @@ Track("bell")
 
     function formatConsoleArgs(args) {
         if (args.length === 0) return "";
+        const formatItem = (x) => {
+            if (x instanceof Error) {
+                return x.stack || `${x.name}: ${x.message}`;
+            }
+            return typeof x === "object" ? JSON.stringify(x) : String(x);
+        };
         let first = args[0];
         if (typeof first === "string") {
             const styleCount = (first.match(/%c/g) || []).length;
             let cleanStr = first.replace(/%c/g, "");
             const remainingArgs = args.slice(1 + styleCount);
             if (remainingArgs.length > 0) {
-                return cleanStr + " " + remainingArgs.map(x => typeof x === "object" ? JSON.stringify(x) : String(x)).join(" ");
+                return cleanStr + " " + remainingArgs.map(formatItem).join(" ");
             }
             return cleanStr;
         }
-        return args.map(x => typeof x === "object" ? JSON.stringify(x) : String(x)).join(" ");
+        return args.map(formatItem).join(" ");
     }
 
     console.log = function(...args) {
-        originalConsole.log.apply(console, args);
+        originalConsole.log(...args);
         logToConsole(formatConsoleArgs(args), "log");
     };
 
     console.info = function(...args) {
-        originalConsole.info.apply(console, args);
+        originalConsole.info(...args);
         logToConsole(formatConsoleArgs(args), "info");
     };
 
     console.warn = function(...args) {
-        originalConsole.warn.apply(console, args);
+        originalConsole.warn(...args);
         logToConsole(formatConsoleArgs(args), "warn");
     };
 
     console.error = function(...args) {
-        originalConsole.error.apply(console, args);
+        originalConsole.error(...args);
         logToConsole(formatConsoleArgs(args), "error");
     };
 
@@ -754,6 +828,12 @@ return runShowcase().then(() => "STOP_MOTIF");
     function updateUI() {
         const currentComposition = compositions.find(c => c.name === currentCompositionName);
         if (!currentComposition) return;
+
+        isDirty = false;
+        if (!Motif.isPlaying && Motif.ctx) {
+            Motif.stop();
+            stopHudLoop();
+        }
 
         if (codeEditor.value !== currentComposition.code) {
             codeEditor.value = currentComposition.code;
@@ -1038,15 +1118,19 @@ return runShowcase().then(() => "STOP_MOTIF");
             const trimmedCode = clipboardText.trim();
             if (!trimmedCode) return;
 
-            const generatedName = generateRandomName();
+            const titleMatch = trimmedCode.match(TITLE_COMMENT_REGEX);
+            const parsedTitle = titleMatch ? titleMatch[1].trim() : null;
+            const exists = parsedTitle && compositions.some(c => c.name === parsedTitle);
+            const chosenName = parsedTitle && !exists ? parsedTitle : generateRandomName();
+
             const newComposition = {
-                name: generatedName,
+                name: chosenName,
                 code: trimmedCode,
                 datetime: new Date().toISOString(),
                 isBuiltin: false
             };
             compositions.push(newComposition);
-            currentCompositionName = generatedName;
+            currentCompositionName = chosenName;
 
             saveCompositionsToStorage();
             updatePresetSelect();
@@ -1113,7 +1197,7 @@ return runShowcase().then(() => "STOP_MOTIF");
             }).catch(err => {
                 let errorMsg = `Async execution error: ${err.message}`;
                 if (err.stack) {
-                    const match = err.stack.match(/<anonymous>:(\d+):(\d+)/);
+                    const match = err.stack.match(/(?:<anonymous>|AsyncFunction|Function):(\d+):(\d+)/);
                     if (match) {
                         const lineNum = parseInt(match[1], 10) - 1;
                         if (lineNum > 0) {
@@ -1131,7 +1215,7 @@ return runShowcase().then(() => "STOP_MOTIF");
         } catch (err) {
             let errorMsg = err.message;
             if (err.stack) {
-                const match = err.stack.match(/<anonymous>:(\d+):(\d+)/);
+                const match = err.stack.match(/(?:<anonymous>|AsyncFunction|Function):(\d+):(\d+)/);
                 if (match) {
                     const lineNum = parseInt(match[1], 10) - 1;
                     if (lineNum > 0) {
@@ -1185,7 +1269,10 @@ return runShowcase().then(() => "STOP_MOTIF");
         }
 
         // If not currently playing, don't auto-compile (wait for play press)
-        if (!Motif.isPlaying) return;
+        if (!Motif.isPlaying) {
+            isDirty = true;
+            return;
+        }
 
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
@@ -1211,25 +1298,170 @@ return runShowcase().then(() => "STOP_MOTIF");
 
     // --- Playback Controls ---
     const playPauseBtn = document.getElementById("play-pause-btn");
-    const restartBtn = document.getElementById("restart-btn");
+    const stopBtn = document.getElementById("stop-btn");
     const downloadBtn = document.getElementById("download-btn");
+
+    // Playback HUD Elements
+    const playbackHud = document.getElementById("playback-hud");
+    const playbackTime = document.getElementById("playback-time");
+    const playbackSection = document.getElementById("playback-section");
+    const playbackProgress = document.getElementById("playback-progress");
+    const activeSynthsList = document.getElementById("active-synths-list");
+    const activeSamplesList = document.getElementById("active-samples-list");
+
+    let isDirty = false;
+    let hudAnimationId = null;
+
+    function formatTime(secs) {
+        const m = Math.floor(secs / 60);
+        const s = Math.floor(secs % 60);
+        return `${m}:${s.toString().padStart(2, "0")}`;
+    }
+
+    function updateHud() {
+        if (Motif.ctx && Motif._debugPlaybackStart !== null) {
+            const elapsed = Motif.ctx.currentTime - Motif._debugPlaybackStart;
+
+            // 1. Calculate duration from Arrangement
+            let totalDurationS = 0;
+            let currentSectionName = "Looping Pattern";
+
+            if (Motif._arrangementSections && Motif._arrangementSections.length > 0) {
+                const bpm = Motif.tempo;
+                const beatsPerBar = Motif.beatsPerBar;
+                const barDuration = (60 / bpm) * beatsPerBar;
+
+                let cumulativeTime = 0;
+                let activeSecFound = false;
+
+                for (let i = 0; i < Motif._arrangementSections.length; i++) {
+                    const section = Motif._arrangementSections[i];
+                    const sectionDuration = (section.bars || 0) * barDuration;
+
+                    if (!activeSecFound && elapsed >= cumulativeTime && elapsed < cumulativeTime + sectionDuration) {
+                        currentSectionName = `Phase ${i + 1}${section.name ? ': ' + section.name : ''}`;
+                        activeSecFound = true;
+                    }
+                    cumulativeTime += sectionDuration;
+                }
+                totalDurationS = cumulativeTime;
+            }
+
+            // 2. Beat / Bar calculation
+            const bpm = Motif.tempo;
+            const beatsPerBar = Motif.beatsPerBar;
+            const beatDuration = 60 / bpm;
+            const barDuration = beatDuration * beatsPerBar;
+            const totalBeats = elapsed / beatDuration;
+            const currentBar = Math.floor(totalBeats / beatsPerBar) + 1;
+            const currentBeat = Math.floor(totalBeats % beatsPerBar) + 1;
+
+            const totalBars = totalDurationS > 0 ? Math.round(totalDurationS / barDuration) : 0;
+
+            // 3. Update HUD text
+            let timeStr = `Bar ${currentBar}`;
+            if (totalBars > 0) timeStr += ` / ${totalBars}`;
+            timeStr += ` (Beat ${currentBeat}) | Time: ${formatTime(elapsed)}`;
+            if (totalDurationS > 0) timeStr += ` / ${formatTime(totalDurationS)}`;
+
+            playbackTime.textContent = timeStr;
+            playbackSection.textContent = totalDurationS > 0 ? `Section: ${currentSectionName}` : "";
+
+            // 4. Update progress bar
+            if (totalDurationS > 0) {
+                playbackProgress.max = totalDurationS;
+                playbackProgress.value = Math.min(elapsed, totalDurationS);
+            } else {
+                playbackProgress.max = barDuration;
+                playbackProgress.value = elapsed % barDuration;
+            }
+
+            // 5. Update active instruments
+            const now = Motif.ctx.currentTime;
+            const activeSynths = new Set();
+            const activeSamples = new Set();
+
+            for (const track of trackRegistry.values()) {
+                if (!track._activeVoices || track._activeVoices.size === 0) continue;
+                for (const voice of track._activeVoices.values()) {
+                    if (now >= voice.startTime && now < voice.endTime) {
+                        if (track._useSample) {
+                            const name = track._sampleUrl ? track._sampleUrl.split('/').pop().replace(/\.[^/.]+$/, "") : "sample";
+                            activeSamples.add(name);
+                        } else if (track._useSampler) {
+                            activeSamples.add(track.id || "sampler");
+                        } else if (track._synthType) {
+                            activeSynths.add(track._synthType);
+                        }
+                    }
+                }
+            }
+
+            activeSynthsList.innerHTML = activeSynths.size > 0 
+                ? `Synths: ${[...activeSynths].join(", ")}` 
+                : "";
+            activeSamplesList.innerHTML = activeSamples.size > 0 
+                ? `Samples: ${[...activeSamples].join(", ")}` 
+                : "";
+        }
+
+        if (Motif.isPlaying) {
+            hudAnimationId = requestAnimationFrame(updateHud);
+        }
+    }
+
+    function startHudLoop() {
+        playbackHud.removeAttribute("hidden");
+        if (!hudAnimationId) {
+            hudAnimationId = requestAnimationFrame(updateHud);
+        }
+    }
+
+    function stopHudLoop() {
+        if (hudAnimationId) {
+            cancelAnimationFrame(hudAnimationId);
+            hudAnimationId = null;
+        }
+        if (Motif._debugPlaybackStart === null) {
+            playbackHud.setAttribute("hidden", "");
+        }
+    }
 
     async function togglePlayback() {
         try {
             Motif.init();
-            if (Motif.ctx.state === "suspended") {
-                await Motif.ctx.resume();
-            }
+            await Motif.ctx.resume();
 
-            if (Motif.isPlaying || Motif._loopTimeout) {
-                await Motif.stop();
+            if (Motif.isPlaying) {
+                Motif.pause();
                 playPauseBtn.textContent = "play_arrow";
-                logToConsole("Playback stopped.");
+                playPauseBtn.setAttribute("data-tooltip", "Play / Resume");
+                logToConsole("Playback paused.");
+                stopHudLoop();
+                updateHud();
             } else {
-                if (runUserCode()) {
+                if (isDirty) {
+                    await Motif.stop();
+                    isDirty = false;
+                    await Motif.ctx.resume();
+                }
+                
+                if (Motif._debugPlaybackStart !== null) {
+                    // Resume from pause without rebuilding/re-registering tracks
                     await Motif.start();
-                    playPauseBtn.textContent = "stop";
-                    logToConsole("Playback started.");
+                    playPauseBtn.textContent = "pause";
+                    playPauseBtn.setAttribute("data-tooltip", "Pause");
+                    logToConsole("Playback resumed.");
+                    startHudLoop();
+                } else {
+                    // Play from start
+                    if (runUserCode()) {
+                        await Motif.start();
+                        playPauseBtn.textContent = "pause";
+                        playPauseBtn.setAttribute("data-tooltip", "Pause");
+                        logToConsole("Playback started.");
+                        startHudLoop();
+                    }
                 }
             }
         } catch (err) {
@@ -1237,28 +1469,23 @@ return runShowcase().then(() => "STOP_MOTIF");
         }
     }
 
-    async function restartPlayback() {
+    async function stopPlayback() {
         try {
             Motif.init();
-            if (Motif.ctx.state === "suspended") {
-                await Motif.ctx.resume();
-            }
-
             await Motif.stop();
-            if (runUserCode()) {
-                await Motif.start();
-                playPauseBtn.textContent = "stop";
-                logToConsole("Playback restarted.");
-            } else {
-                playPauseBtn.textContent = "play_arrow";
-            }
+            isDirty = false;
+            playPauseBtn.textContent = "play_arrow";
+            playPauseBtn.setAttribute("data-tooltip", "Play / Resume");
+            logToConsole("Playback stopped.");
+            stopHudLoop();
+            updateHud();
         } catch (err) {
-            logToConsole(`Restart error: ${err.message}`, "error");
+            logToConsole(`Stop error: ${err.message}`, "error");
         }
     }
 
     playPauseBtn.addEventListener("click", togglePlayback);
-    restartBtn.addEventListener("click", restartPlayback);
+    stopBtn.addEventListener("click", stopPlayback);
 
     // --- Lossless Stereo WAV Recording Engine ---
     let recording = false;
@@ -1394,9 +1621,7 @@ return runShowcase().then(() => "STOP_MOTIF");
     async function handleDownloadClick() {
         try {
             Motif.init();
-            if (Motif.ctx.state === "suspended") {
-                await Motif.ctx.resume();
-            }
+            await Motif.ctx.resume();
 
             if (recording) {
                 stopRecordingAndDownload();

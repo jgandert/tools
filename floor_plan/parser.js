@@ -59,6 +59,22 @@ function suggestCorrections(token, keywords, maxDistance = 2) {
         .map(match => match.kw);
 }
 
+function stripComments(line) {
+    const hashIdx = line.indexOf("#");
+    const slashIdx = line.indexOf("//");
+
+    if (hashIdx === -1 && slashIdx === -1) {
+        return line;
+    }
+
+    if (hashIdx !== -1 && slashIdx !== -1) {
+        return line.substring(0, Math.min(hashIdx, slashIdx));
+    }
+
+    const idx = hashIdx !== -1 ? hashIdx : slashIdx;
+    return line.substring(0, idx);
+}
+
 // Extract `inside <room> { ... }` blocks from DSL text.
 // Returns { outerLines: string[], insideBlocks: { roomId: innerDslText } }
 // Handles nested `inside` via brace depth tracking.
@@ -68,46 +84,75 @@ function extractInsideBlocks(rawLines) {
     let i = 0;
 
     while (i < rawLines.length) {
-        const trimmed = rawLines[i].trim();
-        const match = trimmed.match(/^inside\s+(\S+)\s*\{(.*)$/);
+        const line = rawLines[i];
+        const cleanLine = stripComments(line);
+        const trimmed = cleanLine.trim();
+
+        const match = trimmed.match(/^inside\s+(\S+)(?:\s*\{(.*))?$/);
         if (match) {
             const roomId = match[1];
-            const innerLines = [];
-            let depth = 1;
+            let afterBrace = "";
+            let foundBrace = false;
+            let braceLineIndex = i;
 
-            // Content after opening `{` on the same line
-            const afterBrace = match[2].trim();
-            if (afterBrace) {
-                innerLines.push(afterBrace);
-            }
-            i++;
-
-            while (i < rawLines.length && depth > 0) {
-                const line = rawLines[i];
-                const opens = (line.match(/\{/g) || []).length;
-                const closes = (line.match(/\}/g) || []).length;
-                depth += opens - closes;
-
-                if (depth === 0) {
-                    // Include everything before the closing `}`
-                    const before = line.substring(0, line.lastIndexOf("}")).trim();
-                    if (before) {
-                        innerLines.push(before);
+            if (match[2] !== undefined) {
+                foundBrace = true;
+                afterBrace = match[2];
+            } else {
+                let j = i + 1;
+                while (j < rawLines.length) {
+                    const nextLineClean = stripComments(rawLines[j]).trim();
+                    if (!nextLineClean) {
+                        j++;
+                        continue;
                     }
-                } else {
-                    innerLines.push(line);
+                    if (nextLineClean.startsWith("{")) {
+                        foundBrace = true;
+                        afterBrace = nextLineClean.substring(1);
+                        braceLineIndex = j;
+                    }
+                    break;
                 }
+            }
+
+            if (foundBrace) {
+                const innerLines = [];
+                let depth = 1;
+
+                if (afterBrace.trim()) {
+                    innerLines.push(afterBrace.trim());
+                }
+                i = braceLineIndex + 1;
+
+                while (i < rawLines.length && depth > 0) {
+                    const innerLine = rawLines[i];
+                    const cleanInnerLine = stripComments(innerLine);
+
+                    const opens = (cleanInnerLine.match(/\{/g) || []).length;
+                    const closes = (cleanInnerLine.match(/\}/g) || []).length;
+                    depth += opens - closes;
+
+                    if (depth === 0) {
+                        const cleanBefore = cleanInnerLine.substring(0, cleanInnerLine.lastIndexOf("}")).trim();
+                        if (cleanBefore) {
+                            innerLines.push(cleanBefore);
+                        }
+                    } else {
+                        innerLines.push(innerLine);
+                    }
+                    i++;
+                }
+
+                insideBlocks[roomId] = {
+                    text: innerLines.join("\n"),
+                    unclosed: depth !== 0,
+                };
+            } else {
+                outerLines.push(line);
                 i++;
             }
-
-            if (depth !== 0) {
-                // Unclosed block — store what we have; parser will report it
-                insideBlocks[roomId] = { text: innerLines.join("\n"), unclosed: true };
-            } else {
-                insideBlocks[roomId] = { text: innerLines.join("\n"), unclosed: false };
-            }
         } else {
-            outerLines.push(rawLines[i]);
+            outerLines.push(line);
             i++;
         }
     }

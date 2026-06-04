@@ -423,6 +423,50 @@ console.log("\n=== malformed value inputs ===");
 }
 
 // =============================================================================
+// comment brace depth tracking
+// =============================================================================
+console.log("\n=== comment brace depth tracking ===");
+{
+    const dsl = `
+canvas 500 500
+room A area=100
+inside A {
+  # check balance }
+  // check balance2 {
+  room x area=50
+}
+`;
+    const r = parseDSL(dsl);
+    assert(r.errors.length === 0, `comment-depth: no errors (got: ${JSON.stringify(r.errors)})`);
+    const A = r.modules.find(m => m.id === "A");
+    assert(A?.inside !== undefined, "comment-depth: A.inside exists");
+    assert(A?.inside?.modules?.length === 1, "comment-depth: A has 1 module");
+}
+
+// =============================================================================
+// braces positioning sensitivity in inside declarations
+// =============================================================================
+console.log("\n=== braces positioning sensitivity ===");
+{
+    const dsl = `
+canvas 500 500
+room suite area=150000
+
+inside suite
+{
+  room bed area=80000
+  room bath area=30000
+  bed connect bath
+}
+`;
+    const r = parseDSL(dsl);
+    assert(r.errors.length === 0, `braces-positioning: no errors (got: ${JSON.stringify(r.errors)})`);
+    const suite = r.modules.find(m => m.id === "suite");
+    assert(suite?.inside !== undefined, "braces-positioning: suite.inside exists");
+    assert(suite?.inside?.modules?.length === 2, "braces-positioning: suite has 2 modules");
+}
+
+// =============================================================================
 // circular group references (no infinite recursion)
 // =============================================================================
 console.log("\n=== circular group references ===");

@@ -597,6 +597,41 @@ console.log("\n=== BlockTraceDiff: ignoreLeadingWhitespace and skipWhitespaceOps
 }
 
 // =============================================================================
+// Edge cases & Bugs: Greedy Masking, REPLACE Interruption, and Memory Leaks
+// =============================================================================
+console.log("\n=== BlockTraceDiff: Edge cases & Bugs ===");
+{
+    // We expect the main candidate [10..14] to have a remaining valid segment [12..13] that is >= kGramSize (2).
+    // The other candidates claim src 10, target 11, and src 14, leaving target 12..14 and src 11..13 unclaimed.
+    const engine1 = new BlockTraceDiff({ kGramSize: 2 });
+    const candidates = [
+        { srcStart: 5, srcEnd: 10, targetStart: 105, targetEnd: 110, length: 6 }, // Claims src 5..10
+        { srcStart: 200, srcEnd: 205, targetStart: 6, targetEnd: 11, length: 6 }, // Claims target 6..11
+        { srcStart: 14, srcEnd: 19, targetStart: 300, targetEnd: 305, length: 6 }, // Claims src 14..19
+        { srcStart: 10, srcEnd: 14, targetStart: 10, targetEnd: 14, length: 5 }   // Candidate to trim
+    ];
+    const result1 = engine1._greedyMasking(candidates);
+    const hasTrimmedCand = result1.some(c => c.srcStart === 12 && c.srcEnd === 13 && c.targetStart === 12 && c.targetEnd === 13);
+    assert(hasTrimmedCand, "greedy masking should keep valid sub-blocks of trimmed candidates");
+
+    // In this swap, delete_me and insert_me are in the same block, but MOVE_FROM interrupts them, preventing REPLACE.
+    const engine2 = new BlockTraceDiff({ kGramSize: 2 });
+    const src2 = ["delete_me", "A1", "A2", "B1", "B2"];
+    const tgt2 = ["insert_me", "B1", "B2", "A1", "A2"];
+    const ops2 = engine2.diff(src2, tgt2);
+    const hasReplace2 = ops2.some(op => op.type === "REPLACE");
+    assert(hasReplace2, "REPLACE should be identified even if a MOVE interrupts the contiguous delete/insert sequence");
+
+    // If the interner is not cleared, reusing the same instance keeps growing the Map.
+    const engine4 = new BlockTraceDiff();
+    engine4.diff(["line1"], ["line2"]);
+    const sizeBefore = engine4.interner.stringToInt.size;
+    engine4.diff(["line3"], ["line4"]);
+    // If the interner was cleared or reset, size should not accumulate from the previous run.
+    assert(engine4.interner.stringToInt.size <= 2, `interner should clear or reset on each diff call (got size ${engine4.interner.stringToInt.size})`);
+}
+
+// =============================================================================
 // Summary
 // =============================================================================
 console.log(`\n${"=".repeat(60)}`);

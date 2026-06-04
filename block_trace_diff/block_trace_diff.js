@@ -29,6 +29,7 @@ class BlockTraceDiff {
 
     diff(sourceLines, targetLines) {
         this.moveCounter = 0;
+        this.interner = new StringInterner();
         const src = this._normalizeAndIntern(sourceLines);
         const target = this._normalizeAndIntern(targetLines);
 
@@ -183,35 +184,39 @@ class BlockTraceDiff {
         const claimedSrc = new Set(), claimedTarget = new Set(), finalMoves = [];
 
         for (const cand of candidates) {
-            let sStart = cand.srcStart;
-            let sEnd = cand.srcEnd;
-            let tStart = cand.targetStart;
-            let tEnd = cand.targetEnd;
+            let i = 0;
+            const length = cand.length;
+            const sStart = cand.srcStart;
+            const tStart = cand.targetStart;
 
-            // Edge Trimming: Shrink the boundaries if they overlap on the edges
-            while (sStart <= sEnd && (claimedSrc.has(sStart) || claimedTarget.has(tStart))) {
-                sStart++;
-                tStart++;
-            }
-            while (sEnd >= sStart && (claimedSrc.has(sEnd) || claimedTarget.has(tEnd))) {
-                sEnd--;
-                tEnd--;
-            }
+            while (i < length) {
+                while (i < length && (claimedSrc.has(sStart + i) || claimedTarget.has(tStart + i))) {
+                    i++;
+                }
+                if (i >= length) break;
 
-            // Only keep it if we still have a valid k-gram sized block after trimming
-            if (sEnd - sStart + 1 >= this.kGramSize) {
-                // Double check for internal overlaps that can't be edge-trimmed
-                let valid = true;
-                for (let i = sStart; i <= sEnd; i++) if (claimedSrc.has(i)) valid = false;
-                for (let i = tStart; i <= tEnd; i++) if (claimedTarget.has(i)) valid = false;
+                const segStart = i;
+                while (i < length && !claimedSrc.has(sStart + i) && !claimedTarget.has(tStart + i)) {
+                    i++;
+                }
+                const segEnd = i - 1;
+                const segLength = segEnd - segStart + 1;
 
-                if (valid) {
-                    for (let i = sStart; i <= sEnd; i++) claimedSrc.add(i);
-                    for (let i = tStart; i <= tEnd; i++) claimedTarget.add(i);
+                if (segLength >= this.kGramSize) {
+                    const matchedSrcStart = sStart + segStart;
+                    const matchedSrcEnd = sStart + segEnd;
+                    const matchedTargetStart = tStart + segStart;
+                    const matchedTargetEnd = tStart + segEnd;
+
+                    for (let j = matchedSrcStart; j <= matchedSrcEnd; j++) claimedSrc.add(j);
+                    for (let j = matchedTargetStart; j <= matchedTargetEnd; j++) claimedTarget.add(j);
+
                     finalMoves.push({
-                        srcStart: sStart, srcEnd: sEnd,
-                        targetStart: tStart, targetEnd: tEnd,
-                        length: sEnd - sStart + 1,
+                        srcStart: matchedSrcStart,
+                        srcEnd: matchedSrcEnd,
+                        targetStart: matchedTargetStart,
+                        targetEnd: matchedTargetEnd,
+                        length: segLength,
                     });
                 }
             }
@@ -279,52 +284,128 @@ class BlockTraceDiff {
     }
 
     _myersDiff(a, b) {
-        const N = a.length, M = b.length, max = N + M;
-        const v = new Int32Array(2 * max + 1), trace = [];
-        v[max + 1] = 0;
+        const script = [];
+        this._myersLinear(a, 0, a.length, b, 0, b.length, script);
+        return script;
+    }
 
-        for (let d = 0; d <= max; d++) {
-            const row = new Int32Array(2 * d + 1);
-            for (let k = -d; k <= d; k += 2) {
-                const vIndex = k + max;
-                let x = (k === -d || (k !== d && v[vIndex - 1] < v[vIndex + 1])) ? v[vIndex + 1] : v[vIndex - 1] + 1;
+    _myersLinear(a, aStart, aEnd, b, bStart, bEnd, script) {
+        let N = aEnd - aStart;
+        let M = bEnd - bStart;
+
+        while (N > 0 && M > 0 && a[aStart] === b[bStart]) {
+            script.push({ type: "EQUAL", srcIdx: aStart, targetIdx: bStart });
+            aStart++;
+            bStart++;
+            N--;
+            M--;
+        }
+
+        let suffixLength = 0;
+        while (N > 0 && M > 0 && a[aStart + N - 1] === b[bStart + M - 1]) {
+            suffixLength++;
+            N--;
+            M--;
+        }
+        aEnd -= suffixLength;
+        bEnd -= suffixLength;
+
+        if (N === 0) {
+            for (let i = 0; i < M; i++) {
+                script.push({ type: "INSERT", srcIdx: null, targetIdx: bStart + i });
+            }
+        } else if (M === 0) {
+            for (let i = 0; i < N; i++) {
+                script.push({ type: "DELETE", srcIdx: aStart + i, targetIdx: null });
+            }
+        } else {
+            const split = this._findMiddleSnake(a, aStart, aEnd, b, bStart, bEnd);
+            this._myersLinear(a, aStart, aStart + split.x, b, bStart, bStart + split.y, script);
+            this._myersLinear(a, aStart + split.x, aEnd, b, bStart + split.y, bEnd, script);
+        }
+
+        for (let i = 0; i < suffixLength; i++) {
+            script.push({ type: "EQUAL", srcIdx: aEnd + i, targetIdx: bEnd + i });
+        }
+    }
+
+    _findMiddleSnake(a, aStart, aEnd, b, bStart, bEnd) {
+        const N = aEnd - aStart;
+        const M = bEnd - bStart;
+        const delta = N - M;
+        const odd = delta % 2 !== 0;
+        const max = Math.ceil((N + M) / 2);
+
+        const vf = new Int32Array(2 * max + 3);
+        const vb = new Int32Array(2 * max + 3);
+        const vOffset = max + 1;
+
+        vf[vOffset] = 0;
+        vb[vOffset] = N;
+
+        for (let d = 1; d <= max; d++) {
+            for (let k = d; k >= -d; k -= 2) {
+                const kc = k + vOffset;
+                let x_prev;
+                let y_prev;
+                if (k === -d || (k !== d && vf[kc - 1] < vf[kc + 1])) {
+                    x_prev = vf[kc + 1];
+                    y_prev = x_prev - (k + 1);
+                } else {
+                    x_prev = vf[kc - 1];
+                    y_prev = x_prev - (k - 1);
+                }
+
+                let px;
+                if (k === -d || (k !== d && vf[kc - 1] < vf[kc + 1])) {
+                    px = vf[kc + 1];
+                } else {
+                    px = vf[kc - 1] + 1;
+                }
+
+                let x = px;
                 let y = x - k;
-                while (x < N && y < M && a[x] === b[y]) {
+
+                while (x < N && y < M && a[aStart + x] === b[bStart + y]) {
                     x++;
                     y++;
                 }
-                v[vIndex] = x;
-                row[k + d] = x;
-                if (x >= N && y >= M) {
-                    trace.push(row);
-                    return this._backtrackMyers(trace, a, b, d, max);
+                vf[kc] = x;
+
+                if (odd && k >= delta - (d - 1) && k <= delta + (d - 1)) {
+                    if (x >= vb[kc - delta]) {
+                        return { x: x_prev, y: y_prev };
+                    }
                 }
             }
-            trace.push(row);
-        }
-        return [];
-    }
 
-    _backtrackMyers(trace, a, b, d, max) {
-        let x = a.length, y = b.length;
-        const script = [];
-        for (let step = d; step > 0; step--) {
-            const k = x - y;
-            const prevRow = trace[step - 1];
-            const prevK = (k === -step || (k !== step && prevRow[k + step - 2] < prevRow[k + step])) ? k + 1 : k - 1;
-            const prevX = prevRow[prevK + (step - 1)], prevY = prevX - prevK;
-            while (x > prevX && y > prevY) script.unshift({
-                type: "EQUAL",
-                srcIdx: --x,
-                targetIdx: --y,
-            });
-            if (x > prevX) script.unshift({ type: "DELETE", srcIdx: --x, targetIdx: null });
-            else script.unshift({ type: "INSERT", srcIdx: null, targetIdx: --y });
-            x = prevX;
-            y = prevY;
+            for (let k = d; k >= -d; k -= 2) {
+                const kc = k + vOffset;
+                let midX;
+                if (k === d || (k !== -d && vb[kc - 1] < vb[kc + 1])) {
+                    midX = vb[kc - 1];
+                } else {
+                    midX = vb[kc + 1] - 1;
+                }
+                let midY = midX - (k + delta);
+
+                let x = midX;
+                let y = midY;
+
+                while (x > 0 && y > 0 && a[aStart + x - 1] === b[bStart + y - 1]) {
+                    x--;
+                    y--;
+                }
+                vb[kc] = x;
+
+                if (!odd && (k + delta) >= -d && (k + delta) <= d) {
+                    if (x <= vf[kc + delta]) {
+                        return { x: midX, y: midY };
+                    }
+                }
+            }
         }
-        while (x > 0 && y > 0) script.unshift({ type: "EQUAL", srcIdx: --x, targetIdx: --y });
-        return script;
+        return { x: 0, y: 0 };
     }
 
     _buildFinalOutput(script, srcRun, targetRun, rawSrc, rawTarget, fullSrc, fullTarget) {
@@ -477,47 +558,42 @@ class BlockTraceDiff {
         const n = ops.length;
 
         while (i < n) {
-            if (ops[i].type === "DELETE") {
-                const deletes = [];
-                while (i < n && ops[i].type === "DELETE") {
-                    deletes.push(ops[i]);
-                    i++;
-                }
-
-                const inserts = [];
-                while (i < n && ops[i].type === "INSERT") {
-                    inserts.push(ops[i]);
-                    i++;
-                }
-
-                if (inserts.length > 0) {
-                    const K = Math.min(deletes.length, inserts.length);
-                    for (let j = 0; j < K; j++) {
-                        result.push({
-                            type: "REPLACE",
-                            text: inserts[j].text,
-                            lines: [inserts[j].text],
-                            srcLine: deletes[j].srcLine,
-                            targetLine: inserts[j].targetLine,
-                            internalDiff: [
-                                { type: "DELETE", text: deletes[j].text },
-                                { type: "INSERT", text: inserts[j].text },
-                            ],
-                        });
-                    }
-                    for (let j = K; j < deletes.length; j++) {
-                        result.push(deletes[j]);
-                    }
-                    for (let j = K; j < inserts.length; j++) {
-                        result.push(inserts[j]);
-                    }
-                } else {
-                    result.push(...deletes);
-                }
-            } else {
+            if (ops[i].type === "EQUAL") {
                 result.push(ops[i]);
                 i++;
+                continue;
             }
+            const block = [];
+            while (i < n && ops[i].type !== "EQUAL") {
+                block.push(ops[i]);
+                i++;
+            }
+            const deletes = block.filter(op => op.type === "DELETE");
+            const inserts = block.filter(op => op.type === "INSERT");
+            const moveFroms = block.filter(op => op.type === "MOVE_FROM");
+            const moveTos = block.filter(op => op.type === "MOVE_TO");
+            const replaces = [];
+            const K = Math.min(deletes.length, inserts.length);
+            for (let j = 0; j < K; j++) {
+                replaces.push({
+                    type: "REPLACE",
+                    text: inserts[j].text,
+                    lines: [inserts[j].text],
+                    srcLine: deletes[j].srcLine,
+                    targetLine: inserts[j].targetLine,
+                    internalDiff: [
+                        { type: "DELETE", text: deletes[j].text },
+                        { type: "INSERT", text: inserts[j].text },
+                    ],
+                });
+            }
+            const leftoverDeletes = deletes.slice(K);
+            const leftoverInserts = inserts.slice(K);
+            result.push(...replaces);
+            result.push(...leftoverDeletes);
+            result.push(...moveFroms);
+            result.push(...leftoverInserts);
+            result.push(...moveTos);
         }
         return result;
     }

@@ -497,11 +497,28 @@ export const TrackAudioChain = {
             duckGain.exponentialRampToValueAtTime(1, t + attack + release);
         };
 
-        if (target && target._isTrack) {
-            target._sidechainListeners.push(listener);
+        let targetTrack = target;
+        if (typeof target === "string") {
+            targetTrack = trackRegistry.get(target);
+            if (!targetTrack) {
+                if (!globalThis._pendingSidechains) {
+                    globalThis._pendingSidechains = new Map();
+                }
+                if (!globalThis._pendingSidechains.has(target)) {
+                    globalThis._pendingSidechains.set(target, []);
+                }
+                globalThis._pendingSidechains.get(target).push(listener);
+            }
         }
 
-        this._sidechainConnections.push({ target, listener });
+        if (targetTrack && targetTrack._isTrack) {
+            if (!Array.isArray(targetTrack._sidechainListeners)) {
+                targetTrack._sidechainListeners = [];
+            }
+            targetTrack._sidechainListeners.push(listener);
+        }
+
+        this._sidechainConnections.push({ target: targetTrack || target, listener });
 
         return this;
     },

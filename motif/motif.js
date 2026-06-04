@@ -12,7 +12,7 @@ import {
     ensureGranularStretcher,
 } from "./src/helpers.js";
 import { TrackAudioChain } from "./src/TrackAudioChain.js";
-import { TrackVoiceManager } from "./src/TrackVoiceManager.js";
+import { TrackVoiceManager, ensureSynthWorklet } from "./src/TrackVoiceManager.js";
 import { TrackScheduler } from "./src/TrackScheduler.js";
 
 export { SimplexNoise, trackRegistry, busRegistry };
@@ -203,7 +203,80 @@ export class MotifEventArray extends Array {
         this.sort((a, b) => a.startTime - b.startTime);
         return this;
     }
+
+    degrade(prob) {
+        const kept = this.filter(() => Math.random() >= prob);
+        this.length = 0;
+        this.push(...kept);
+        return this;
+    }
+
+    mutate(options) {
+        const { chance = 0.5, actions = {} } = options || {};
+        if (Math.random() < chance) {
+            const actionNames = Object.keys(actions);
+            if (actionNames.length > 0) {
+                let totalWeight = 0;
+                for (const name of actionNames) {
+                    totalWeight += typeof actions[name] === "number" ? actions[name] : 1.0;
+                }
+
+                let r = Math.random() * totalWeight;
+                let chosenAction = actionNames[0];
+                for (const name of actionNames) {
+                    r -= typeof actions[name] === "number" ? actions[name] : 1.0;
+                    if (r <= 0) {
+                        chosenAction = name;
+                        break;
+                    }
+                }
+
+                if (chosenAction === "reverse") {
+                    this.forEach(e => {
+                        e.startTime = 1.0 - (e.startTime + e.duration);
+                    });
+                    this.sort((a, b) => a.startTime - b.startTime);
+                } else if (chosenAction === "ratchet") {
+                    const newEvents = [];
+                    for (const e of this) {
+                        const e1 = { ...e };
+                        e1.duration /= 2;
+                        const e2 = { ...e1 };
+                        e2.startTime += e1.duration;
+                        newEvents.push(e1, e2);
+                    }
+                    this.length = 0;
+                    this.push(...newEvents);
+                } else if (typeof actions[chosenAction] === "function") {
+                    const result = actions[chosenAction](this);
+                    if (Array.isArray(result)) {
+                        this.length = 0;
+                        this.push(...result);
+                    }
+                }
+            }
+        }
+        return this;
+    }
+
+    offset(timeShift, modifier) {
+        const shift = parseDurationToFraction(timeShift);
+        const offsetEvents = this.map(e => {
+            const clone = { ...e };
+            clone.startTime += shift;
+            if (modifier) {
+                const res = modifier(clone);
+                return res !== undefined ? res : clone;
+            }
+            return clone;
+        }).filter(e => e !== null && e !== undefined);
+
+        this.push(...offsetEvents);
+        this.sort((a, b) => a.startTime - b.startTime);
+        return this;
+    }
 }
+
 
 
 export class PatternParser {
@@ -553,6 +626,7 @@ export class MotifEngine {
         this._arrangementSections = null;
         this._arrangementOptions = null;
         this._loopTimeout = null;
+        this._debugPlaybackStart = null;
     }
 
     /**
@@ -663,8 +737,11 @@ export class MotifEngine {
         this.bpmParam.setValueAtTime(this.tempo, this.ctx.currentTime);
 
         if (this.ctx.audioWorklet) {
-            const p = ensureGranularStretcher(this.ctx).catch(() => {});
-            this._loadingSamples.push(p);
+            const p1 = ensureGranularStretcher(this.ctx).catch(() => {});
+            this._loadingSamples.push(p1);
+            // Pre-warm the synth voice worklet so it's ready before the first tick fires.
+            const p2 = ensureSynthWorklet(this.ctx).catch(() => {});
+            this._loadingSamples.push(p2);
         }
     }
 
@@ -680,6 +757,7 @@ export class MotifEngine {
 
         const onReady = () => {
             this._loadingSamples = [];
+            this._debugPlaybackStart = this._debugPlaybackStart !== null ? this._debugPlaybackStart : this.ctx.currentTime;
             this.isPlaying = true;
             this._startScheduler();
         };
@@ -720,6 +798,7 @@ export class MotifEngine {
     stop() {
         this.isPlaying = false;
         this.position = 0;
+        this._debugPlaybackStart = null;
         this._stopScheduler();
         this._schedQueue = [];
         this._tempoRamp = null;
@@ -764,6 +843,7 @@ export class MotifEngine {
      */
     tick() {
         if (!this.ctx) return;
+        if (this.ctx.state && this.ctx.state !== "running") return;
 
         if (this._tempoRamp) {
             const now = this.ctx.currentTime;
@@ -838,6 +918,12 @@ export class MotifEngine {
             if (hasTracks && allFinished && this.ctx.currentTime >= maxStopTime) {
                 const options = this._arrangementOptions || {};
                 const shouldLoop = !!options.loop;
+
+                // Diagnostic: log if arrangement ends much earlier than expected.
+                const elapsed = this.ctx.currentTime - (this._debugPlaybackStart || this.ctx.currentTime);
+                if (elapsed < 5 && maxStopTime > 0) {
+                    console.warn("[Motif] Arrangement ended after only", elapsed.toFixed(2), "s. maxStopTime:", maxStopTime.toFixed(2), "currentTime:", this.ctx.currentTime.toFixed(2), "— check that all tracks in Arrange() have .note() set and _activeSegments populated.");
+                }
 
                 this.stop();
                 
@@ -1180,7 +1266,7 @@ class EffectChain {
                     gainVal = bandData;
                 } else if (bandData && typeof bandData === "object") {
                     gainVal = bandData.gain;
-                    freqVal = bandData.frequency;
+                    freqVal = bandData.frequency !== undefined ? bandData.frequency : bandData.freq;
                     qVal = bandData.Q;
                 }
 
@@ -1387,18 +1473,29 @@ Bus.pruneExcept = function(activeIds) {
 };
 
 export function Track(id) {
+    let newTrack;
     if (id && trackRegistry.has(id)) {
         const oldTrack = trackRegistry.get(id);
-        const newTrack = new TrackClass(id);
+        newTrack = new TrackClass(id);
+        if (oldTrack && Array.isArray(oldTrack._sidechainListeners)) {
+            newTrack._sidechainListeners = [...oldTrack._sidechainListeners];
+        }
         trackRegistry.set(id, newTrack);
         oldTrack._crossfadeOut(newTrack);
-        return newTrack;
+    } else {
+        newTrack = new TrackClass(id);
+        if (id) {
+            trackRegistry.set(id, newTrack);
+        }
     }
-    const t = new TrackClass(id);
-    if (id) {
-        trackRegistry.set(id, t);
+    if (id && globalThis._pendingSidechains && globalThis._pendingSidechains.has(id)) {
+        if (!Array.isArray(newTrack._sidechainListeners)) {
+            newTrack._sidechainListeners = [];
+        }
+        newTrack._sidechainListeners.push(...globalThis._pendingSidechains.get(id));
+        globalThis._pendingSidechains.delete(id);
     }
-    return t;
+    return newTrack;
 }
 
 Track.clearRegistry = function() {
@@ -1589,19 +1686,28 @@ function createLFO(type, options) {
     return new LFOSignal(osc, gainNode, constantSource);
 }
 
-export const LFO = {
-    sine(options) {
-        return createLFO("sine", options);
-    },
-    triangle(options) {
-        return createLFO("triangle", options);
-    },
-    square(options) {
-        return createLFO("square", options);
-    },
-    saw(options) {
-        return createLFO("saw", options);
-    },
+export function LFO(frequencyOrOptions, min, max) {
+    let options = frequencyOrOptions;
+    if (typeof frequencyOrOptions === "number") {
+        options = { frequency: frequencyOrOptions };
+        if (typeof min === "number" && typeof max === "number") {
+            options.min = min;
+            options.max = max;
+        }
+    }
+    return createLFO("sine", options);
+}
+LFO.sine = function(options) {
+    return createLFO("sine", options);
+};
+LFO.triangle = function(options) {
+    return createLFO("triangle", options);
+};
+LFO.square = function(options) {
+    return createLFO("square", options);
+};
+LFO.saw = function(options) {
+    return createLFO("saw", options);
 };
 
 // ============================================================================
@@ -1743,6 +1849,14 @@ const MotifSynths = {
         const tri = Math.abs(ctx.p * 4.0 - 2.0) - 1.0;
         // Tanh adds subtle analog drive
         return Math.tanh((sine * 0.7 + tri * 0.3) * 1.5);
+    },
+
+    // Sustained sub sine with a pitch-sweep transient: frequency starts at 2× ctx.freq and falls to ctx.freq, then holds at full level — caller shapes amplitude via envelope
+    "sub-sweep": (ctx) => {
+        const sweepFreq = ctx.freq + ctx.freq * Math.exp(-ctx.t * 4.0);
+        ctx.state.phase = ((ctx.state.phase || 0) + sweepFreq / ctx.sampleRate) % 1.0;
+        const sub = Math.sin(ctx.state.phase * TWO_PI);
+        return Math.tanh(sub * 1.5);
     },
 
     // Multiple detuned sawtooths for massive trance/pad leads
@@ -2324,23 +2438,34 @@ const MotifSynths = {
     // Physically modeled plucked string (Acoustic Guitar / Harp)
     "karplus-strong": (ctx) => {
         // Calculate required delay line length for frequency
-        const delayLength = Math.floor(ctx.sampleRate / ctx.freq);
+        const delayLength = Math.max(1, Math.floor(ctx.sampleRate / ctx.freq));
 
         if (!ctx.state.buffer) {
             // Initialize delay line with burst of white noise (the "pluck")
-            ctx.state.buffer = new Float32Array(delayLength);
+            const bufLength = Math.max(4096, delayLength);
+            ctx.state.buffer = new Float32Array(bufLength);
             for (let i = 0; i < delayLength; i++) {
                 ctx.state.buffer[i] = Math.random() * 2.0 - 1.0;
             }
             ctx.state.ptr = 0;
+            ctx.state.bufferLength = bufLength;
+        } else if (delayLength > ctx.state.bufferLength) {
+            // Resize buffer to accommodate a lower frequency / longer delay line
+            const newBuf = new Float32Array(delayLength);
+            newBuf.set(ctx.state.buffer);
+            ctx.state.buffer = newBuf;
+            ctx.state.bufferLength = delayLength;
         }
+
+        ctx.state.ptr = ctx.state.ptr % ctx.state.bufferLength;
 
         // Read current sample
         const currentSample = ctx.state.buffer[ctx.state.ptr];
 
         // Lowpass filter & dampen (simulates energy loss in a string)
         const nextPtr = (ctx.state.ptr + 1) % delayLength;
-        const nextSample = ctx.state.buffer[nextPtr];
+        const safeNextPtr = nextPtr < ctx.state.bufferLength ? nextPtr : 0;
+        const nextSample = ctx.state.buffer[safeNextPtr];
         const filtered = (currentSample + nextSample) * 0.5 * 0.995; // 0.995 is decay factor
 
         // Write back to delay line
@@ -3125,16 +3250,34 @@ const MotifSamples = (() => {
             return buffer;
         },
 
-        // A tiny, high-pitched, fragile tinkling sound
+        // Additive inharmonic cantilever tine model: four beam-mode partials with a gear-pluck transient
         "music-box": () => {
-            const buffer = createBuffer(0.6);
+            const buffer = createBuffer(0.9);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const f0 = 1046.5; // C6 — classic high music-box register
+            let p0 = 0, p1 = 0, p2 = 0, p3 = 0;
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
-                const click = (Math.random() * 2 - 1) * Math.exp(-t * 800) * 0.2; // Gear plucking comb
-                const fundamental = Math.sin(TWO_PI * 1200 * t); // High pitch
-                data[i] = (click + fundamental) * Math.exp(-t * 8) * 0.5;
+
+                // Sub-millisecond broadband gear-tooth pluck transient
+                const click = (Math.random() * 2 - 1) * Math.exp(-t * 3000) * 0.18;
+
+                // Inharmonic cantilever beam partial ratios; higher modes decay faster
+                p0 += f0 / sampleRate;
+                p1 += (f0 * 2.756) / sampleRate;
+                p2 += (f0 * 5.404) / sampleRate;
+                p3 += (f0 * 8.933) / sampleRate;
+
+                const tine =
+                    Math.sin(TWO_PI * p0) * 0.70 * Math.exp(-t *  5.5) +
+                    Math.sin(TWO_PI * p1) * 0.25 * Math.exp(-t * 14.0) +
+                    Math.sin(TWO_PI * p2) * 0.08 * Math.exp(-t * 28.0) +
+                    Math.sin(TWO_PI * p3) * 0.02 * Math.exp(-t * 50.0);
+
+                // 0.125ms gate ramp prevents DC click at buffer start
+                const gate = Math.min(1.0, t * 8000);
+                data[i] = (click + tine) * gate * 0.55;
             }
             return buffer;
         },

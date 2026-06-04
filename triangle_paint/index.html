@@ -947,9 +947,12 @@
 
             const blob = new Blob([svgContent], { type: "image/svg+xml" });
             const url = URL.createObjectURL(blob);
+
+            const filename = `hex-grid-art_${one.getTimestamp()}.svg`;
+
             const a = document.createElement("a");
             a.href = url;
-            a.download = "hex_grid_art.svg";
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

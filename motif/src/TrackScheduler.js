@@ -1,5 +1,6 @@
 import {
     Motif,
+    MotifEventArray,
     PatternParser,
     parseDurationToFraction,
     parseDurationToSeconds,
@@ -394,7 +395,7 @@ export const TrackScheduler = {
      */
     _applyEveryModifier(events, mod, cycleIndex) {
         if (cycleIndex % mod.n === 0) {
-            const result = mod.modifier(events);
+            const result = mod.modifier(new MotifEventArray(...events));
             if (Array.isArray(result)) return result;
         }
         return events;

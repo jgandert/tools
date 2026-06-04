@@ -1345,6 +1345,77 @@ async function runFloorPlan(dsl) {
         console.log(`  flex   cost=${flexResult.score.toFixed(0)}, fits=${inCanvas(flexResult.rooms, 80, 80).ok}`);
     }
 
+    // =====================================================================
+    // TEST TYPE_MISMATCH: checkRequiredSatisfied handles un-normalized rules
+    // =====================================================================
+    console.log("\n=== Test TYPE_MISMATCH: checkRequiredSatisfied handles un-normalized rules ===");
+    {
+        const layout = [
+            { id: "A", x: 0, y: 0, w: 10, h: 10, centerX: 5, centerY: 5 },
+            { id: "B", x: 10, y: 0, w: 10, h: 10, centerX: 15, centerY: 5 },
+        ];
+        const unnormalizedModules = {
+            A: {
+                id: "A",
+                rules: [
+                    { type: "connect", target: "B", required: true },
+                    { type: "at", dir: "north", required: true },
+                ],
+            },
+            B: {
+                id: "B",
+                rules: [],
+            },
+        };
+        let threw = false;
+        let result = [];
+        try {
+            result = checkRequiredSatisfied(layout, unnormalizedModules);
+        } catch (e) {
+            threw = true;
+            console.error(e);
+        }
+        assert(!threw, "TYPE_MISMATCH: checkRequiredSatisfied did not throw");
+        assert(result.length === 0, "TYPE_MISMATCH: all rules are satisfied");
+    }
+
+    // =====================================================================
+    // TEST MUTATION: Input parameters not mutated
+    // =====================================================================
+    console.log("\n=== Test MUTATION: Input parameters not mutated ===");
+    {
+        const originalModules = [
+            {
+                id: "A",
+                area: 100,
+                rules: [
+                    { type: "connect", target: "B", required: true },
+                    { type: "at", dir: "north" },
+                ],
+            },
+            {
+                id: "B",
+                area: 100,
+                rules: [],
+            },
+        ];
+
+        // Deep clone before running to compare against
+        const cloneBeforeRun = JSON.parse(JSON.stringify(originalModules));
+
+        await wongLiuSimulatedAnnealing(originalModules, {
+            seed: 42,
+            k: 5,
+            iter: 1,
+            cooling_rate: 0.5,
+            min_t: 0.1,
+        });
+
+        // Ensure originalModules structure remains untouched
+        assert(JSON.stringify(originalModules) === JSON.stringify(cloneBeforeRun),
+            "MUTATION: originalModules mutated during execution");
+    }
+
     console.log(`\n${"=".repeat(60)}`);
     console.log(`RESULTS: ${passed} passed, ${failed} failed out of ${passed + failed}`);
     if (failures.length > 0) {

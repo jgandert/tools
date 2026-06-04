@@ -73,6 +73,20 @@
             overflow: hidden;
             position: relative;
             user-select: none;
+            border-color: var(--room-border, transparent);
+            background-color: var(--room-fill, transparent);
+        }
+
+        .room-parent {
+            border-width: 2px;
+            border-style: solid;
+            display: grid;
+            align-items: stretch;
+        }
+
+        .room-leaf {
+            border-width: 1px;
+            border-style: solid;
         }
 
         .room-label {
@@ -97,6 +111,7 @@
             pointer-events: none;
             z-index: 1;
             text-align: center;
+            color: var(--room-border);
         }
 
         .room-dims {
@@ -878,7 +893,13 @@ office at north west required
         loadingOverlay.hidden = true;
         stopBtn.disabled = true;
     });
-    let lastResult = null, lastConfig = null;
+    const appState = {
+        lastResult: null,
+        lastConfig: null,
+        undoStack: [],
+        redoStack: [],
+        dragState: null,
+    };
 
     let lastStrippedDsl = "";
     let currentAbortController = null;
@@ -1033,18 +1054,28 @@ office at north west required
         sel.addRange(range);
     }
 
-    let composing = false, highlighting = false;
+    function insertTextAtCaret(text) {
+        const sel = window.getSelection();
+        if (!sel || !sel.rangeCount) return;
 
-    // Custom undo/redo — browser history is destroyed each time innerHTML is replaced for highlighting
-    const undoStack = [];
-    const redoStack = [];
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        const textNode = document.createTextNode(text);
+        range.insertNode(textNode);
+        range.setStartAfter(textNode);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+
+    let composing = false, highlighting = false;
 
     function pushUndoState() {
         const text = getEditorText(input);
-        if (undoStack.length > 0 && undoStack[undoStack.length - 1].text === text) return;
-        undoStack.push({ text, caret: caretToOffset(input) });
-        redoStack.length = 0;
-        if (undoStack.length > 500) undoStack.shift();
+        if (appState.undoStack.length > 0 && appState.undoStack[appState.undoStack.length - 1].text === text) return;
+        appState.undoStack.push({ text, caret: caretToOffset(input) });
+        appState.redoStack.length = 0;
+        if (appState.undoStack.length > 500) appState.undoStack.shift();
     }
 
     function applyHistoryState({ text, caret }) {
@@ -1102,8 +1133,8 @@ office at north west required
     }
 
     function updateGridAspect() {
-        if (aspectRatioLock.checked && lastConfig?.canvasW && lastConfig?.canvasH) {
-            const { canvasW, canvasH } = lastConfig;
+        if (aspectRatioLock.checked && appState.lastConfig?.canvasW && appState.lastConfig?.canvasH) {
+            const { canvasW, canvasH } = appState.lastConfig;
             layoutGrid.style.aspectRatio = `${canvasW} / ${canvasH}`;
             layoutGrid.classList.add("aspect-locked");
             if (canvasW < canvasH) {
@@ -1238,21 +1269,19 @@ office at north west required
             div.dataset.id = room.id;
 
             if (room.inside?.rooms?.length) {
-                div.style.border = `2px solid ${colors.border}`;
-                div.style.display = "grid";
-                div.style.alignItems = "stretch";
-                div.style.overflow = "hidden";
+                div.classList.add("room-parent");
+                div.style.setProperty("--room-border", colors.border);
 
                 const lbl = document.createElement("div");
                 lbl.className = "room-label room-label-parent";
-                lbl.style.color = colors.border;
                 lbl.textContent = room.name.replace(/_/g, " ");
                 div.appendChild(lbl);
 
                 renderRoomsToGrid(div, room.inside.rooms, depth + 1);
             } else {
-                div.style.backgroundColor = colors.fill;
-                div.style.border = `1px solid ${colors.border}`;
+                div.classList.add("room-leaf");
+                div.style.setProperty("--room-border", colors.border);
+                div.style.setProperty("--room-fill", colors.fill);
 
                 const lbl = document.createElement("div");
                 lbl.className = "room-label";
@@ -1280,7 +1309,6 @@ office at north west required
 
     const DRAG_HIT = 6;
     const DRAG_EPS = 5;
-    let dragState = null;
 
     function snapEq(a, b) {
         return Math.abs(a - b) <= SNAP;
@@ -1323,7 +1351,7 @@ office at north west required
     }
 
     layoutGrid.addEventListener("pointermove", (e) => {
-        if (dragState) {
+        if (appState.dragState) {
             const {
                 container,
                 axis,
@@ -1333,7 +1361,7 @@ office at north west required
                 bRooms,
                 minTop,
                 maxBot,
-            } = dragState;
+            } = appState.dragState;
             const rect = container.getBoundingClientRect();
             const posPx = axis === "col" ? e.clientX - rect.left : e.clientY - rect.top;
             const containerPx = axis === "col" ? rect.width : rect.height;
@@ -1392,7 +1420,7 @@ office at north west required
     });
 
     layoutGrid.addEventListener("pointerdown", (e) => {
-        if (dragState) return;
+        if (appState.dragState) return;
         const container = getGridContainer(e.target);
         if (!container) return;
         const rect = container.getBoundingClientRect();
@@ -1428,7 +1456,7 @@ office at north west required
         const minTop = Math.max(...aRooms.map(r => axis === "col" ? r.xs : r.ys));
         const maxBot = Math.min(...bRooms.map(r => axis === "col" ? r.xe : r.ye));
 
-        dragState = {
+        appState.dragState = {
             container, axis, startWallVal: wallVal, startPosPx,
             aRooms, bRooms, minTop, maxBot,
         };
@@ -1437,14 +1465,14 @@ office at north west required
     });
 
     layoutGrid.addEventListener("pointerup", () => {
-        if (!dragState) return;
-        dragState = null;
+        if (!appState.dragState) return;
+        appState.dragState = null;
         layoutGrid.style.cursor = "";
         showDraggedDimensions();
     });
 
     layoutGrid.addEventListener("pointercancel", () => {
-        dragState = null;
+        appState.dragState = null;
         layoutGrid.style.cursor = "";
     });
 
@@ -1468,8 +1496,8 @@ office at north west required
     }
 
     function showDraggedDimensions() {
-        if (!lastResult || !layoutGrid._rooms) return;
-        const updated = computeDraggedRooms(lastResult.rooms, layoutGrid);
+        if (!appState.lastResult || !layoutGrid._rooms) return;
+        const updated = computeDraggedRooms(appState.lastResult.rooms, layoutGrid);
         draggedRoomsJson.textContent = JSON.stringify(updated, null, 4);
         draggedDimensions.hidden = false;
     }
@@ -1500,8 +1528,8 @@ office at north west required
     }
 
     function showResult(result, config) {
-        lastResult = result;
-        lastConfig = config;
+        appState.lastResult = result;
+        appState.lastConfig = config;
         layoutGrid.hidden = false;
         errorOutput.hidden = true;
         const bd = result.breakdown;
@@ -1539,7 +1567,7 @@ office at north west required
         }
         lastStrippedDsl = stripped;
         draggedDimensions.hidden = true;
-        dragState = null;
+        appState.dragState = null;
 
         if (_DEFAULT_CACHE?.dsl === stripped) {
             showParseMessages([], []);
@@ -1596,7 +1624,8 @@ office at north west required
         }
         if (e.key === "Tab") {
             e.preventDefault();
-            document.execCommand("insertText", false, "    ");
+            insertTextAtCaret("    ");
+            input.dispatchEvent(new Event("input", { bubbles: true }));
         }
         if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
             e.preventDefault();
@@ -1604,17 +1633,17 @@ office at north west required
         }
         if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
             e.preventDefault();
-            if (undoStack.length > 1) {
-                redoStack.push(undoStack.pop());
-                applyHistoryState(undoStack[undoStack.length - 1]);
+            if (appState.undoStack.length > 1) {
+                appState.redoStack.push(appState.undoStack.pop());
+                applyHistoryState(appState.undoStack[appState.undoStack.length - 1]);
             }
             return;
         }
         if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
             e.preventDefault();
-            if (redoStack.length > 0) {
-                const state = redoStack.pop();
-                undoStack.push(state);
+            if (appState.redoStack.length > 0) {
+                const state = appState.redoStack.pop();
+                appState.undoStack.push(state);
                 applyHistoryState(state);
             }
             return;
@@ -1645,7 +1674,8 @@ office at north west required
     });
     input.addEventListener("paste", (e) => {
         e.preventDefault();
-        document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
+        insertTextAtCaret(e.clipboardData.getData("text/plain"));
+        input.dispatchEvent(new Event("input", { bubbles: true }));
     });
     input.addEventListener("input", () => {
         if (highlighting || composing) return;
@@ -1662,17 +1692,17 @@ office at north west required
 
     // Initialize editor with highlighted DSL from the source textarea
     input.innerHTML = highlightDSL(document.getElementById("rules-input").value.replace(/\n$/, ""));
-    undoStack.push({ text: getEditorText(input), caret: 0 });
+    appState.undoStack.push({ text: getEditorText(input), caret: 0 });
 
     window.addEventListener("beforeunload", () => {
         currentAbortController?.abort();
     });
 
     // Run once on load
-    setTimeout(() => {
+    document.addEventListener("DOMContentLoaded", () => {
         updateButtonState();
         runOptimization();
-    }, 100);
+    });
 </script>
 </body>
 </html>

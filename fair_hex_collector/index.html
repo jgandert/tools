@@ -320,21 +320,18 @@
         return (Math.abs(c1[0] - c2[0]) + Math.abs(c1[0] + c1[1] - (c2[0] + c2[1])) + Math.abs(c1[1] - c2[1])) / 2 === 1;
     }
 
-    function getResourceClumpScore(hexes, coords) {
+    function getResourceClumpScore(hexes, adjacentPairs) {
         let score = 0;
-        for (let i = 0; i < hexes.length; i++) {
-            for (let j = i + 1; j < hexes.length; j++) {
-                if (isAdjacent(coords[i], coords[j])) {
-                    if (hexes[i] === hexes[j] && hexes[i] !== "Desert") {
-                        score++;
-                    }
-                }
+        for (let idx = 0; idx < adjacentPairs.length; idx++) {
+            const [i, j] = adjacentPairs[idx];
+            if (hexes[i] === hexes[j] && hexes[i] !== "Desert") {
+                score++;
             }
         }
         return score;
     }
 
-    function getTokenRuleScore(hexes, tokens, coords) {
+    function getTokenRuleScore(hexes, tokens, adjacentPairs) {
         let score = 0;
         let tokenIndex = 0;
         let numLayout = [];
@@ -348,17 +345,14 @@
             numLayout.push(num);
         }
 
-        for (let i = 0; i < numLayout.length; i++) {
-            for (let j = i + 1; j < numLayout.length; j++) {
-                if (isAdjacent(coords[i], coords[j])) {
-                    let n1 = numLayout[i];
-                    let n2 = numLayout[j];
+        for (let idx = 0; idx < adjacentPairs.length; idx++) {
+            const [i, j] = adjacentPairs[idx];
+            let n1 = numLayout[i];
+            let n2 = numLayout[j];
 
-                    if (n1 !== null && n2 !== null) {
-                        if ((n1 === 6 || n1 === 8) && (n2 === 6 || n2 === 8)) score += 1000;
-                        if (n1 === n2) score += 100;
-                    }
-                }
+            if (n1 !== null && n2 !== null) {
+                if ((n1 === 6 || n1 === 8) && (n2 === 6 || n2 === 8)) score += 1000;
+                if (n1 === n2) score += 100;
             }
         }
         return score;
@@ -446,11 +440,25 @@
                 let isRed = (num === 6 || num === 8);
                 let numColor = isRed ? "#d32f2f" : "#000000";
 
+                const dotCounts = {
+                    2: "•",
+                    3: "••",
+                    4: "•••",
+                    5: "••••",
+                    6: "•••••",
+                    8: "•••••",
+                    9: "••••",
+                    10: "•••",
+                    11: "••",
+                    12: "•"
+                };
+                let dots = dotCounts[num] || "";
+
                 svgContent += `<circle cx="${x}" cy="${y + 10}" r="14" fill="#ffffff" stroke="#000000" stroke-width="1" />`;
                 svgContent += `<text x="${x}" y="${y + 15}" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="${numColor}">${num}</text>`;
 
-                if (isRed) {
-                    svgContent += `<text x="${x}" y="${y + 22}" font-family="sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="${numColor}">•••</text>`;
+                if (dots) {
+                    svgContent += `<text x="${x}" y="${y + 22}" font-family="sans-serif" font-size="9" font-weight="bold" text-anchor="middle" fill="${numColor}">${dots}</text>`;
                 }
 
                 tokenIndex++;
@@ -490,6 +498,16 @@
                 const targetDesertIndices = gameSize === "base" ? [9] : [0, 29];
                 const resourceHexes = config.hexes.filter(h => h !== "Desert");
 
+                // Precompute adjacent index pairs
+                const adjacentPairs = [];
+                for (let i = 0; i < coordsList.length; i++) {
+                    for (let j = i + 1; j < coordsList.length; j++) {
+                        if (isAdjacent(coordsList[i], coordsList[j])) {
+                            adjacentPairs.push([i, j]);
+                        }
+                    }
+                }
+
                 // PHASE 1: Find Optimal Resource Map (Max 3000 attempts)
                 let bestHexes = [];
                 let bestHexScore = Infinity;
@@ -507,7 +525,7 @@
                         }
                     }
 
-                    let score = getResourceClumpScore(testHexes, coordsList);
+                    let score = getResourceClumpScore(testHexes, adjacentPairs);
                     if (score < bestHexScore) {
                         bestHexScore = score;
                         bestHexes = testHexes;
@@ -520,7 +538,7 @@
                 let bestTokenScore = Infinity;
                 for (let i = 0; i < 3000; i++) {
                     let testTokens = shuffleArray(config.tokens);
-                    let score = getTokenRuleScore(bestHexes, testTokens, coordsList);
+                    let score = getTokenRuleScore(bestHexes, testTokens, adjacentPairs);
                     if (score < bestTokenScore) {
                         bestTokenScore = score;
                         bestTokens = testTokens;
@@ -616,7 +634,7 @@
             tdDrawn.textContent = drawHistory.filter(n => n === i).length;
 
             let tdRemain = document.createElement("td");
-            tdRemain.textContent = activeDeck.filter(n => n === i).length;
+            tdRemain.textContent = BASE_DECK.filter(n => n === i).length - drawHistory.filter(n => n === i).length;
 
             tr.appendChild(th);
             tr.appendChild(tdBase);
@@ -645,6 +663,28 @@
             burnedCard = activeDeck.pop();
         }
 
+        // Apply grace period: prevent 7s from appearing in the first N draws (from the end of activeDeck)
+        const gracePeriod = parseInt(document.getElementById("bandit-grace").value) || 0;
+        if (gracePeriod > 0) {
+            for (let i = 0; i < gracePeriod; i++) {
+                const idx = activeDeck.length - 1 - i;
+                if (idx < 0) break;
+                if (activeDeck[idx] === 7) {
+                    // Find a non-7 card in the rest of the deck (indices 0 to activeDeck.length - 1 - gracePeriod)
+                    let swapIdx = -1;
+                    for (let j = 0; j < activeDeck.length - gracePeriod; j++) {
+                        if (activeDeck[j] !== 7) {
+                            swapIdx = j;
+                            break;
+                        }
+                    }
+                    if (swapIdx !== -1) {
+                        [activeDeck[idx], activeDeck[swapIdx]] = [activeDeck[swapIdx], activeDeck[idx]];
+                    }
+                }
+            }
+        }
+
         document.getElementById("current-draw-display").textContent = "Deck Ready";
         renderDeckUI();
     }
@@ -662,27 +702,7 @@
             return;
         }
 
-        const gracePeriod = parseInt(document.getElementById("bandit-grace").value) || 0;
-        let cardIndex = activeDeck.length - 1;
-        let card = activeDeck[cardIndex];
-
-        if (card === 7 && totalDrawsGame < gracePeriod) {
-            let nonSevenIndex = activeDeck.findIndex(c => c !== 7);
-            if (nonSevenIndex !== -1) {
-                [activeDeck[cardIndex], activeDeck[nonSevenIndex]] = [activeDeck[nonSevenIndex], activeDeck[cardIndex]];
-                activeDeck = shuffleArray(activeDeck);
-                card = activeDeck[activeDeck.length - 1];
-
-                if (card === 7) {
-                    nonSevenIndex = activeDeck.findIndex(c => c !== 7);
-                    let temp = activeDeck.splice(nonSevenIndex, 1)[0];
-                    activeDeck.push(temp);
-                    card = activeDeck[activeDeck.length - 1];
-                }
-            }
-        }
-
-        card = activeDeck.pop();
+        const card = activeDeck.pop();
         drawHistory.push(card);
         totalDrawsGame++;
 

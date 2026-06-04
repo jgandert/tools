@@ -869,9 +869,11 @@
             }
 
             const zipBlob = await downloadZip(zipFiles).blob();
+            const filename = `favicons_${one.getTimestamp()}.zip`;
+
             const a = document.createElement("a");
             a.href = URL.createObjectURL(zipBlob);
-            a.download = "favicons.zip";
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
