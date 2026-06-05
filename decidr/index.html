@@ -397,6 +397,16 @@
             opacity: 0.5;
         }
 
+        #math-report-content .report-title {
+            font-size: 1.15rem;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .history-item {
+            border-bottom: 1px solid var(--outline-variant);
+            padding-bottom: var(--spacing-sm);
+        }
+
         /* --- Accessibility --- */
         .sr-only {
             position: absolute;
@@ -924,10 +934,12 @@
             dot.style.background = opt.color;
             const range = document.createElement("input");
             range.type = "range";
+            range.id = `weight-range-${opt.id}`;
             range.min = "0.01";
             range.max = "1";
             range.step = "0.01";
             range.value = w;
+            lbl.htmlFor = range.id;
             const val = document.createElement("span");
             val.className = "weight-val";
             val.textContent = w.toFixed(2);
@@ -1608,7 +1620,7 @@
                     <span class="matchup-vs">VS</span>
                     <button class="matchup-card" id="mc-b" aria-label="${b.name} (Press 2)">${b.name}</button>
                 </div>
-                <div class="group" style="justify-content:center"><button type="button" id="mc-tie" aria-label="Tie (Press 3)">Equal / Skip</button></div>`;
+                <div class="group justify-center"><button type="button" id="mc-tie" aria-label="Tie (Press 3)">Equal / Skip</button></div>`;
             // Keyboard shortcuts: 1, 2, or 3/s for tie
             const onKey = e => {
                 if (sessionId !== _compSession || state.phase !== "process") {
@@ -1925,7 +1937,7 @@
             return `<div class="report-section"><span class="report-label">${label}</span><div>${content}</div></div>`;
         };
 
-        let h = `<div style="font-size:1.15rem; margin-bottom:var(--spacing-md)"><b>${report.title}</b></div>`;
+        let h = `<div class="report-title"><b>${report.title}</b></div>`;
         h += wrapSection("Inputs", report.inputs);
         h += wrapSection("Steps", report.steps);
         h += `<hr><div class="mt-2"><b>Result:</b> ${report.result}</div>`;
@@ -2077,9 +2089,7 @@
         el.innerHTML = "";
         items.forEach((h, i) => {
             const row = document.createElement("div");
-            row.className = "header-row mb-2";
-            row.style.borderBottom = "1px solid var(--outline-variant)";
-            row.style.paddingBottom = "var(--spacing-sm)";
+            row.className = "header-row mb-2 history-item";
             row.innerHTML = `
                 <div>
                     <strong>${h.question}</strong>${h.winner ? ` → <em>${h.winner}</em>` : ""}

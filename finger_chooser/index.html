@@ -369,17 +369,33 @@
 
 <script>
     // --- Audio Synthesis System ---
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    function playSound(type) {
-        if (!settings.sound || audioCtx.state === 'suspended') {
+    let audioCtx = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        if (audioCtx && audioCtx.state === 'suspended') {
             try {
                 audioCtx.resume();
             } catch (e) {}
         }
-        if (!settings.sound) return;
+    }
+
+    function playSound(type) {
+        if (!settings.sound) {
+            return;
+        }
+
+        initAudio();
+
+        if (!audioCtx) {
+            return;
+        }
 
         const now = audioCtx.currentTime;
+
         if (type === 'tick') {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -568,10 +584,12 @@
     loadSettings();
 
     settingsForm.addEventListener('change', () => {
+        initAudio();
         saveSettings();
         updateSettings();
     });
     settingsForm.addEventListener('input', () => {
+        initAudio();
         saveSettings();
         updateSettings();
     });
@@ -647,6 +665,7 @@
             color,
             element,
             isChosen: false,
+            isReleased: false,
             team: null,
             rank: null
         };
@@ -673,7 +692,13 @@
     }
 
     function removeFinger(id) {
-        if (state.status === 'chosen') return;
+        if (state.status === 'chosen') {
+            const finger = state.fingers.get(id);
+            if (finger) {
+                finger.isReleased = true;
+            }
+            return;
+        }
         const finger = state.fingers.get(id);
         if (!finger) return;
 
@@ -700,12 +725,21 @@
         particles = [];
         particlesContainer.innerHTML = '';
         
-        // Remove class states from remaining DOM elements if any
-        state.fingers.forEach(finger => {
-            finger.element.className = 'finger active';
-            const lbl = finger.element.querySelector('.finger-label');
-            if (lbl) lbl.textContent = '';
+        // Clean up released fingers, reset active ones
+        state.fingers.forEach((finger, id) => {
+            if (finger.isReleased) {
+                finger.element.remove();
+                state.fingers.delete(id);
+            } else {
+                finger.element.className = 'finger active';
+                finger.isChosen = false;
+                finger.team = null;
+                finger.rank = null;
+                const lbl = finger.element.querySelector('.finger-label');
+                if (lbl) lbl.textContent = '';
+            }
         });
+        updateFingerColors();
 
         statusText.textContent = 'Place 2 or more fingers';
     }
@@ -880,114 +914,41 @@
     }
     requestAnimationFrame(updateLoop);
 
-    // --- Touch Event Listeners ---
-    function getCanvasCoords(touch) {
-        const rect = canvas.getBoundingClientRect();
-        return {
-            x: touch.clientX - rect.left,
-            y: touch.clientY - rect.top
-        };
-    }
-
-    canvas.addEventListener('touchstart', (e) => {
-        // Prevent default gesture actions like scrolling or zoom
-        e.preventDefault();
-        
-        // Resume audio context on first touch due to browser autoplay policies
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-
-        if (state.status === 'chosen') {
-            const elapsed = Date.now() - state.decisionTime;
-            if (elapsed < settings.cooldownSec * 1000) {
-                return;
-            }
-            resetToWaiting();
-        }
-
-        if (settings.simulator) return;
-
-        const activeTouchIds = new Set();
-        for (let i = 0; i < e.touches.length; i++) {
-            const touch = e.touches[i];
-            activeTouchIds.add(touch.identifier);
-            const coords = getCanvasCoords(touch);
-            addFinger(touch.identifier, coords.x, coords.y);
-        }
-    }, { passive: false });
-
-    canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        if (settings.simulator) return;
-
-        for (let i = 0; i < e.touches.length; i++) {
-            const touch = e.touches[i];
-            const coords = getCanvasCoords(touch);
-            moveFinger(touch.identifier, coords.x, coords.y);
-        }
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        if (settings.simulator) return;
-
-        const activeTouchIds = new Set();
-        for (let i = 0; i < e.touches.length; i++) {
-            activeTouchIds.add(e.touches[i].identifier);
-        }
-
-        // Remove any fingers no longer listed in active touches
-        state.fingers.forEach((finger, id) => {
-            if (!activeTouchIds.has(id)) {
-                removeFinger(id);
-            }
-        });
-    }, { passive: false });
-
-    canvas.addEventListener('touchcancel', (e) => {
-        e.preventDefault();
-        if (settings.simulator) return;
-
-        const activeTouchIds = new Set();
-        for (let i = 0; i < e.touches.length; i++) {
-            activeTouchIds.add(e.touches[i].identifier);
-        }
-
-        state.fingers.forEach((finger, id) => {
-            if (!activeTouchIds.has(id)) {
-                removeFinger(id);
-            }
-        });
-    }, { passive: false });
-
-    // --- Mouse & Simulator Interaction ---
+    // --- Unified Pointer & Simulator Interaction ---
     let dragFingerId = null;
     let didDragMove = false;
     let isNewSimulatedFinger = false;
 
-    canvas.addEventListener('mousedown', (e) => {
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
+    function getCanvasCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+        initAudio();
 
         if (state.status === 'chosen') {
             const elapsed = Date.now() - state.decisionTime;
+
             if (elapsed < settings.cooldownSec * 1000) {
                 return;
             }
+
             resetToWaiting();
         }
 
-        const rect = canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
+        const coords = getCanvasCoords(e);
 
         if (settings.simulator) {
-            // Find if clicked close to an existing simulated finger
             let foundFinger = null;
+
             state.fingers.forEach((finger) => {
-                const dist = Math.hypot(finger.x - mx, finger.y - my);
+                const dist = Math.hypot(finger.x - coords.x, finger.y - coords.y);
+
                 if (dist < 50) {
                     foundFinger = finger;
                 }
@@ -998,53 +959,77 @@
                 isNewSimulatedFinger = false;
                 didDragMove = false;
             } else {
-                // Add new finger
                 const newId = `sim-${Date.now()}`;
-                addFinger(newId, mx, my);
+
+                addFinger(newId, coords.x, coords.y);
                 dragFingerId = newId;
                 isNewSimulatedFinger = true;
                 didDragMove = false;
             }
         } else {
-            // Mouse acts as a single touch
-            addFinger('mouse', mx, my);
-            dragFingerId = 'mouse';
+            addFinger(e.pointerId, coords.x, coords.y);
+        }
+
+        canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+        if (settings.simulator) {
+            if (!dragFingerId) {
+                return;
+            }
+
+            const coords = getCanvasCoords(e);
+
+            moveFinger(dragFingerId, coords.x, coords.y);
+            didDragMove = true;
+        } else {
+            if (state.fingers.has(e.pointerId)) {
+                const coords = getCanvasCoords(e);
+
+                moveFinger(e.pointerId, coords.x, coords.y);
+            }
         }
     });
 
-    canvas.addEventListener('mousemove', (e) => {
-        if (!dragFingerId) return;
-        const rect = canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
-
-        moveFinger(dragFingerId, mx, my);
-        didDragMove = true;
-    });
-
-    canvas.addEventListener('mouseup', (e) => {
-        if (!dragFingerId) return;
-
+    canvas.addEventListener('pointerup', (e) => {
         if (settings.simulator) {
-            // Click to toggle behavior: if we didn't drag much, toggle it off
+            if (!dragFingerId) {
+                return;
+            }
+
             if (!didDragMove) {
                 const finger = state.fingers.get(dragFingerId);
-                // If it was already on screen (not brand new in this click event), toggle it off
+
                 if (finger && !isNewSimulatedFinger) {
                     removeFinger(dragFingerId);
                 }
             }
+
+            dragFingerId = null;
         } else {
-            removeFinger('mouse');
+            if (state.fingers.has(e.pointerId)) {
+                removeFinger(e.pointerId);
+            }
         }
-        dragFingerId = null;
+
+        try {
+            canvas.releasePointerCapture(e.pointerId);
+        } catch (err) {}
     });
 
-    canvas.addEventListener('mouseleave', () => {
-        if (!settings.simulator && dragFingerId === 'mouse') {
-            removeFinger('mouse');
+    canvas.addEventListener('pointercancel', (e) => {
+        if (settings.simulator) {
+            dragFingerId = null;
+        } else {
+            if (state.fingers.has(e.pointerId)) {
+                removeFinger(e.pointerId);
+            }
         }
-        dragFingerId = null;
+
+        try {
+            canvas.releasePointerCapture(e.pointerId);
+        } catch (err) {}
     });
 </script>
 </body>

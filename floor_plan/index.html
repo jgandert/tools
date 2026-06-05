@@ -11,7 +11,13 @@
     <link rel="stylesheet" type="text/css" href="../one.css">
     <style>
         :root {
-            --aside-width: 512px;
+            --aside-width: 95%;
+        }
+
+        @media (min-width: 900px) {
+            :root {
+                --aside-width: 512px;
+            }
         }
 
         body {
@@ -23,16 +29,12 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            position: relative;
+            min-height: 0;
         }
 
-        section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            margin-bottom: 0;
-            overflow: hidden;
-            position: relative;
+        aside {
+            max-width: 100%;
         }
 
         #loading-overlay {
@@ -229,12 +231,10 @@
 </header>
 
 <main id="content">
-    <section>
-        <article id="loading-overlay" aria-busy="true" aria-live="polite" hidden>Optimizing…
-        </article>
-        <div id="layout-grid"></div>
-        <pre id="error-output" hidden></pre>
-    </section>
+    <article id="loading-overlay" aria-busy="true" aria-live="polite" hidden>Optimizing…
+    </article>
+    <div id="layout-grid"></div>
+    <pre id="error-output" hidden></pre>
 </main>
 
 <aside>
