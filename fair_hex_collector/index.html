@@ -397,8 +397,8 @@
             if (bottom > maxY) maxY = bottom;
         }
 
-        // Add margin padding around grid
-        const padding = 15;
+        // Add margin padding around grid (otherwise border cut off)
+        const padding = 7;
         minX -= padding;
         minY -= padding;
         maxX += padding;

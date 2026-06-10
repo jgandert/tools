@@ -295,6 +295,12 @@
             <li>Write the processed results to the local storage interface.</li>
         </ol>
 
+        <h3>Tags</h3>
+        <div class="tag-list">
+            <span class="tag">Default</span>
+            <span class="tag tag-highlight">Highlight</span>
+        </div>
+
     </section>
 
     <section id="processing">
@@ -456,18 +462,20 @@ Done!
             tooltips automatically adapt their position to always remain visible on-screen and close
             to their source.
         </p>
+        <div class="group mb-2">
+            <button type="button" data-tooltip="This is a helpful tooltip">Hover me</button>
+            <span
+                data-tooltip="Tooltips work on any element, not just buttons!">Hover this text</span>
+        </div>
         <p>
             To display a tooltip exclusively on mobile viewports (e.g., when text labels are hidden
             via <code>.hide-mobile</code> and only icons remain), use <code>data-tooltip-mobile="Your
             text"</code>. This tooltip automatically disables itself on desktop screens (900px and
             up).
         </p>
-        <div class="group mt-2">
-            <button type="button" data-tooltip="This is a helpful tooltip">Hover me</button>
-            <span
-                data-tooltip="Tooltips work on any element, not just buttons!">Hover this text</span>
+        <div class="group">
             <button type="button" data-tooltip-mobile="Visible only on mobile screen widths!">
-                <span class="sym">phone_iphone</span>
+                <span class="sym">phone</span>
                 <span class="hide-mobile">Mobile Tooltip Demo</span>
             </button>
         </div>
@@ -540,7 +548,9 @@ Done!
                     <option value="" selected>Default (Purple-Green)</option>
                     <option value="blue">Blue</option>
                     <option value="green">Green</option>
+                    <option value="olive">Olive</option>
                     <option value="turquoise">Turquoise</option>
+                    <option value="teal">Teal</option>
                     <option value="ocker">Ocker</option>
                     <option value="orange">Orange</option>
                     <option value="pink">Pink</option>

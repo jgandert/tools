@@ -51,6 +51,21 @@ button.btn-sym {
     -webkit-font-smoothing: antialiased;
 }
 
+.sym {
+    margin-inline-end: 0.35em;
+}
+
+:is(.btn, button, .back-link, h1, h2, h3, h4, h5, h6, legend) > .sym {
+    margin-inline-end: 0;
+}
+
+:is(h1, h2, h3, h4, h5, h6, legend):has(> .sym) {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+
 /* Material 3 Design Tokens: Tonal Elevation System */
 :root {
     color-scheme: light;
@@ -581,6 +596,7 @@ aside {
 aside h2 {
     display: flex;
     align-items: center;
+    gap: var(--spacing-sm);
     font-size: 1.2rem;
     text-transform: uppercase;
     color: var(--on-surface-variant);
@@ -608,9 +624,14 @@ aside dfn {
 
 .form-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     margin-top: var(--spacing-md);
     margin-bottom: var(--spacing-md);
+}
+
+aside .form-actions {
+    flex-direction: column;
 }
 
 /* Mobile: when checkbox is checked, slide the drawer into view */
@@ -722,6 +743,7 @@ section {
 h2 {
     display: flex;
     align-items: center;
+    gap: var(--spacing-sm);
     margin-top: 0;
     font-size: 1.5rem;
     font-weight: 400;
@@ -1502,6 +1524,14 @@ button:active,
     transform: translateY(2px);
 }
 
+/* Temporary visual feedback class indicating a button response has not just
+   been registered (:active), but also caused some state change. */
+.feedback-active {
+    background-color: var(--primary) !important;
+    color: var(--on-primary) !important;
+    transform: scale(0.95);
+}
+
 /* Secondary / Tonal buttons */
 button,
 button[type="button"],
@@ -1535,6 +1565,7 @@ button[data-action="confirm"]:not(:disabled):hover,
 button.btn-primary:not(:disabled):hover,
 .btn-primary:not(:disabled):hover {
     background-color: color-mix(in srgb, var(--primary), var(--on-primary) 15%);
+    color: var(--on-primary);
 }
 
 /* CSS-only Icon for Reset Button */
@@ -1618,13 +1649,32 @@ details[open] summary::before {
 /* Simple fade & slide for the content */
 details[open] > *:not(summary) {
     animation: details-show 0.25s ease-out;
-    padding: 0 var(--spacing-md) var(--spacing-md);
+    padding: 0 var(--spacing-md) 0;
+}
+
+details[open] > *:not(summary):not(pre):not(fieldset):not(.segmented-control):last-child {
+    padding-bottom: var(--spacing-md);
+}
+
+details[open] > ul,
+details[open] > ol {
+    padding-left: calc(var(--spacing-md) + 24px);
 }
 
 /* Self-contained block children (own background/border) need margin for
    external spacing — padding would go inside their visual boundary. */
 details[open] > .segmented-control {
     padding: 0;
+    margin: 0 var(--spacing-md) var(--spacing-md);
+}
+
+details[open] > pre {
+    padding: var(--spacing-sm);
+    margin: 0 var(--spacing-md) var(--spacing-md);
+}
+
+details[open] > fieldset {
+    padding: var(--spacing-md);
     margin: 0 var(--spacing-md) var(--spacing-md);
 }
 
@@ -2281,6 +2331,28 @@ dialog footer {
     transform: translateY(0);
 }
 
+/* --- Tags --- */
+.tag-list {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+    margin-bottom: var(--spacing-md);
+}
+
+.tag {
+    background-color: var(--surface-container-highest);
+    color: var(--on-surface);
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.tag-highlight {
+    background-color: var(--primary);
+    color: var(--on-primary);
+}
+
 /* Print Styles ------------------------------------------------------------ */
 @media print {
     body {
@@ -2893,6 +2965,150 @@ dialog footer {
     --on-surface-variant: rgb(213 194 199);
     --outline: rgb(157 140 145);
     --outline-variant: rgb(81 67 71);
+}
+
+/* --- OLIVE THEME --- */
+.theme-olive {
+    --primary: rgb(95 98 26);
+    --primary-dark: rgb(71 74 1);
+    --on-primary: rgb(255 255 255);
+    --secondary: rgb(201 201 165);
+    --on-secondary: rgb(49 49 32);
+    --selection-bg: var(--primary);
+    --selection-color: var(--on-primary);
+    --error: rgb(186 26 26);
+    --on-error: rgb(255 255 255);
+
+    --surface: rgb(253 250 236);
+    --surface-container-low: rgb(247 244 230);
+    --surface-container: rgb(241 238 225);
+    --surface-container-high: rgb(235 232 219);
+    --surface-container-highest: rgb(229 227 214);
+
+    --on-surface: rgb(28 28 20);
+    --on-surface-variant: rgb(72 71 59);
+    --outline: rgb(121 120 105);
+    --outline-variant: rgb(201 199 182);
+}
+
+@media (prefers-color-scheme: dark) {
+    .theme-olive:not([data-theme="light"]) {
+        --primary: rgb(200 204 120);
+        --primary-dark: color-mix(in srgb, var(--primary), var(--on-primary) 20%);
+        --on-primary: rgb(49 51 0);
+        --secondary: rgb(201 201 165);
+        --on-secondary: rgb(49 49 32);
+        --selection-bg: var(--primary);
+        --selection-color: var(--on-primary);
+        --error: rgb(255 180 171);
+        --on-error: rgb(105 0 5);
+
+        --surface: rgb(20 20 12);
+        --surface-container-low: rgb(28 28 20);
+        --surface-container: rgb(32 32 24);
+        --surface-container-high: rgb(43 42 34);
+        --surface-container-highest: rgb(53 53 44);
+
+        --on-surface: rgb(229 227 214);
+        --on-surface-variant: rgb(201 199 182);
+        --outline: rgb(146 145 130);
+        --outline-variant: rgb(72 71 59);
+    }
+}
+
+.theme-olive[data-theme="dark"] {
+    --primary: rgb(200 204 120);
+    --primary-dark: color-mix(in srgb, var(--primary), var(--on-primary) 20%);
+    --on-primary: rgb(49 51 0);
+    --secondary: rgb(201 201 165);
+    --on-secondary: rgb(49 49 32);
+    --selection-bg: var(--primary);
+    --selection-color: var(--on-primary);
+    --error: rgb(255 180 171);
+    --on-error: rgb(105 0 5);
+
+    --surface: rgb(20 20 12);
+    --surface-container-low: rgb(28 28 20);
+    --surface-container: rgb(32 32 24);
+    --surface-container-high: rgb(43 42 34);
+    --surface-container-highest: rgb(53 53 44);
+
+    --on-surface: rgb(229 227 214);
+    --on-surface-variant: rgb(201 199 182);
+    --outline: rgb(146 145 130);
+    --outline-variant: rgb(72 71 59);
+}
+
+/* --- TEAL THEME --- */
+.theme-teal {
+    --primary: rgb(0 106 98);
+    --primary-dark: rgb(0 80 74);
+    --on-primary: rgb(255 255 255);
+    --secondary: rgb(177 204 199);
+    --on-secondary: rgb(31 52 49);
+    --selection-bg: var(--primary);
+    --selection-color: var(--on-primary);
+    --error: rgb(186 26 26);
+    --on-error: rgb(255 255 255);
+
+    --surface: rgb(244 251 248);
+    --surface-container-low: rgb(239 245 243);
+    --surface-container: rgb(233 239 237);
+    --surface-container-high: rgb(227 234 231);
+    --surface-container-highest: rgb(221 228 226);
+
+    --on-surface: rgb(22 29 28);
+    --on-surface-variant: rgb(63 73 71);
+    --outline: rgb(111 121 119);
+    --outline-variant: rgb(190 201 198);
+}
+
+@media (prefers-color-scheme: dark) {
+    .theme-teal:not([data-theme="light"]) {
+        --primary: rgb(129 213 203);
+        --primary-dark: color-mix(in srgb, var(--primary), var(--on-primary) 20%);
+        --on-primary: rgb(0 55 51);
+        --secondary: rgb(177 204 199);
+        --on-secondary: rgb(31 52 49);
+        --selection-bg: var(--primary);
+        --selection-color: var(--on-primary);
+        --error: rgb(255 180 171);
+        --on-error: rgb(105 0 5);
+
+        --surface: rgb(14 21 20);
+        --surface-container-low: rgb(22 29 28);
+        --surface-container: rgb(26 33 32);
+        --surface-container-high: rgb(37 43 42);
+        --surface-container-highest: rgb(48 54 53);
+
+        --on-surface: rgb(221 228 226);
+        --on-surface-variant: rgb(190 201 198);
+        --outline: rgb(137 147 145);
+        --outline-variant: rgb(63 73 71);
+    }
+}
+
+.theme-teal[data-theme="dark"] {
+    --primary: rgb(129 213 203);
+    --primary-dark: color-mix(in srgb, var(--primary), var(--on-primary) 20%);
+    --on-primary: rgb(0 55 51);
+    --secondary: rgb(177 204 199);
+    --on-secondary: rgb(31 52 49);
+    --selection-bg: var(--primary);
+    --selection-color: var(--on-primary);
+    --error: rgb(255 180 171);
+    --on-error: rgb(105 0 5);
+
+    --surface: rgb(14 21 20);
+    --surface-container-low: rgb(22 29 28);
+    --surface-container: rgb(26 33 32);
+    --surface-container-high: rgb(37 43 42);
+    --surface-container-highest: rgb(48 54 53);
+
+    --on-surface: rgb(221 228 226);
+    --on-surface-variant: rgb(190 201 198);
+    --outline: rgb(137 147 145);
+    --outline-variant: rgb(63 73 71);
 }
 
 /* =========================================

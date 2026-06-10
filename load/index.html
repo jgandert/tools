@@ -38,7 +38,7 @@
 
         input[type="range"],
         input[type="color"],
-        select {
+        .control-row select {
             width: 55%;
             margin-bottom: 0 !important;
         }
@@ -179,7 +179,80 @@
             </div>
             <input type="color" id="color-grad-end" value="#8b5cf6">
         </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="fill-mode">Shape Fill</label>
+                <span class="help-text">None, Solid color, or Gradient fill.</span>
+            </div>
+            <select id="fill-mode">
+                <option value="none">None</option>
+                <option value="solid">Solid</option>
+                <option value="gradient">Gradient</option>
+            </select>
+        </div>
+        <div class="control-row" id="row-fill-opacity" hidden>
+            <div class="label-group">
+                <label for="fill-opacity">Fill Opacity</label>
+                <span class="help-text">Opacity of the shape fill.</span>
+            </div>
+            <input type="range" id="fill-opacity" min="0" max="1" step="0.05" value="0.5">
+        </div>
+        <div class="control-row" id="row-color-fill" hidden>
+            <div class="label-group">
+                <label for="color-fill">Fill Color</label>
+                <span class="help-text">Color of the shape interior.</span>
+            </div>
+            <input type="color" id="color-fill" value="#3b82f6">
+        </div>
+        <div class="control-row" id="row-color-fill-grad-start" hidden>
+            <div class="label-group">
+                <label for="color-fill-grad-start">Fill Grad Start</label>
+                <span class="help-text">Start color of fill gradient.</span>
+            </div>
+            <input type="color" id="color-fill-grad-start" value="#3b82f6">
+        </div>
+        <div class="control-row" id="row-color-fill-grad-end" hidden>
+            <div class="label-group">
+                <label for="color-fill-grad-end">Fill Grad End</label>
+                <span class="help-text">End color of fill gradient.</span>
+            </div>
+            <input type="color" id="color-fill-grad-end" value="#8b5cf6">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="glow-filter">Glow Filter</label>
+                <span class="help-text">Add glowing effect to outline.</span>
+            </div>
+            <input type="checkbox" id="glow-filter" role="switch">
+        </div>
     </fieldset>
+
+
+    <fieldset>
+        <legend>Stroke Dash</legend>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="dash-length">Dash Length</label>
+                <span class="help-text">Length of active stroke segments (0 = Solid).</span>
+            </div>
+            <input type="range" id="dash-length" min="0" max="40" step="1" value="0">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="dash-gap">Gap Length</label>
+                <span class="help-text">Length of gaps between dashes.</span>
+            </div>
+            <input type="range" id="dash-gap" min="1" max="40" step="1" value="10">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="dash-speed">Flow Speed</label>
+                <span class="help-text">Speed/direction of dash movement (0 = Static).</span>
+            </div>
+            <input type="range" id="dash-speed" min="-30" max="30" step="1" value="0">
+        </div>
+    </fieldset>
+
 
     <fieldset>
         <legend>Global & Topology</legend>
@@ -199,18 +272,119 @@
         </div>
         <div class="control-row">
             <div class="label-group">
-                <label for="rotation-loops">Rotation</label>
-                <span
-                    class="help-text">Full 360° loops per cycle. Creates "treadmill" illusion.</span>
-            </div>
-            <input type="range" id="rotation-loops" min="-2" max="2" step="1">
-        </div>
-        <div class="control-row">
-            <div class="label-group">
                 <label for="duration">Duration</label>
                 <span class="help-text">Length of one complete infinite loop (seconds).</span>
             </div>
             <input type="range" id="duration" min="1" max="10" step="0.5">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="base-layout">Base Layout</label>
+                <span class="help-text">Select base geometry layout.</span>
+            </div>
+            <select id="base-layout">
+                <option value="polygon">Polygon</option>
+                <option value="rose">Rose</option>
+                <option value="lissajous">Lissajous</option>
+                <option value="spiral">Spiral</option>
+            </select>
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="segment-style">Segment Style</label>
+                <span class="help-text">Type of path segment drawing.</span>
+            </div>
+            <select id="segment-style">
+                <option value="cubic">Cubic Bezier (C)</option>
+                <option value="quadratic">Quadratic Bezier (Q)</option>
+                <option value="straight">Straight Lines (L)</option>
+            </select>
+        </div>
+        <div class="control-row" id="row-rose-k" hidden>
+            <div class="label-group">
+                <label for="rose-k">Rose Parameter (k)</label>
+                <span class="help-text">Petal frequency parameter.</span>
+            </div>
+            <input type="range" id="rose-k" min="1" max="10" step="1" value="3">
+        </div>
+        <div class="control-row" id="row-lissajous-a" hidden>
+            <div class="label-group">
+                <label for="lissajous-a">Lissajous X Freq (a)</label>
+                <span class="help-text">Horizontal wave frequency.</span>
+            </div>
+            <input type="range" id="lissajous-a" min="1" max="10" step="1" value="3">
+        </div>
+        <div class="control-row" id="row-lissajous-b" hidden>
+            <div class="label-group">
+                <label for="lissajous-b">Lissajous Y Freq (b)</label>
+                <span class="help-text">Vertical wave frequency.</span>
+            </div>
+            <input type="range" id="lissajous-b" min="1" max="10" step="1" value="4">
+        </div>
+        <div class="control-row" id="row-spiral-b" hidden>
+            <div class="label-group">
+                <label for="spiral-b">Spiral Growth (b)</label>
+                <span class="help-text">Radius growth rate.</span>
+            </div>
+            <input type="range" id="spiral-b" min="0" max="10" step="0.5" value="3">
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Transform Animation</legend>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="transform-type">Transform Type</label>
+                <span class="help-text">Select animation type applied to path.</span>
+            </div>
+            <select id="transform-type">
+                <option value="none">None</option>
+                <option value="rotate">Rotate</option>
+                <option value="scale">Pulsate (Scale)</option>
+                <option value="translate">Orbit (Translate)</option>
+                <option value="combo">Combo (Rotate + Scale)</option>
+            </select>
+        </div>
+        <div class="control-row" id="row-rotation-loops" hidden>
+            <div class="label-group">
+                <label for="rotation-loops">Rotation Loops</label>
+                <span class="help-text">Full 360° loops per cycle.</span>
+            </div>
+            <input type="range" id="rotation-loops" min="-2" max="2" step="1" value="0">
+        </div>
+        <div class="control-row" id="row-transform-scale" hidden>
+            <div class="label-group">
+                <label for="transform-scale">Pulsate Amplitude</label>
+                <span class="help-text">Scale deviation amount.</span>
+            </div>
+            <input type="range" id="transform-scale" min="0" max="0.5" step="0.05" value="0.2">
+        </div>
+        <div class="control-row" id="row-transform-translate" hidden>
+            <div class="label-group">
+                <label for="transform-translate">Orbit Distance</label>
+                <span class="help-text">Translation offset distance.</span>
+            </div>
+            <input type="range" id="transform-translate" min="0" max="20" step="1" value="5">
+        </div>
+        <div class="control-row" id="row-transform-wave" hidden>
+            <div class="label-group">
+                <label for="transform-wave">Transform Wave</label>
+                <span class="help-text">Oscillation profile function.</span>
+            </div>
+            <select id="transform-wave">
+                <option value="sine">Sine</option>
+                <option value="triangle">Triangle</option>
+                <option value="square">Square</option>
+                <option value="sawtooth">Sawtooth</option>
+                <option value="harmonic">Harmonic</option>
+            </select>
+        </div>
+        <div class="control-row" id="row-transform-freq" hidden>
+            <div class="label-group">
+                <label for="transform-freq">Transform Freq</label>
+                <span class="help-text">Oscillation cycles per loop.</span>
+            </div>
+            <input type="range" id="transform-freq" min="1" max="8" step="1" value="1">
         </div>
     </fieldset>
 
@@ -244,6 +418,19 @@
             </div>
             <input type="range" id="phase-offset-r" min="0" max="4" step="0.1">
         </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="wave-r">Waveform</label>
+                <span class="help-text">Wave shape for radius oscillation.</span>
+            </div>
+            <select id="wave-r">
+                <option value="sine">Sine</option>
+                <option value="triangle">Triangle</option>
+                <option value="square">Square</option>
+                <option value="sawtooth">Sawtooth</option>
+                <option value="harmonic">Harmonic</option>
+            </select>
+        </div>
     </fieldset>
 
     <fieldset>
@@ -276,6 +463,19 @@
             </div>
             <input type="range" id="phase-offset-tension" min="0" max="4" step="0.1">
         </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="wave-tension">Waveform</label>
+                <span class="help-text">Wave shape for tension oscillation.</span>
+            </div>
+            <select id="wave-tension">
+                <option value="sine">Sine</option>
+                <option value="triangle">Triangle</option>
+                <option value="square">Square</option>
+                <option value="sawtooth">Sawtooth</option>
+                <option value="harmonic">Harmonic</option>
+            </select>
+        </div>
     </fieldset>
 
     <fieldset>
@@ -300,6 +500,19 @@
                 <span class="help-text">Delay in twisting across the shape.</span>
             </div>
             <input type="range" id="phase-offset-tangent" min="0" max="4" step="0.1">
+        </div>
+        <div class="control-row">
+            <div class="label-group">
+                <label for="wave-tangent">Waveform</label>
+                <span class="help-text">Wave shape for tangent oscillation.</span>
+            </div>
+            <select id="wave-tangent">
+                <option value="sine">Sine</option>
+                <option value="triangle">Triangle</option>
+                <option value="square">Square</option>
+                <option value="sawtooth">Sawtooth</option>
+                <option value="harmonic">Harmonic</option>
+            </select>
         </div>
     </fieldset>
 </aside>
@@ -362,6 +575,30 @@
         "color-solid": "#3b82f6",
         "color-grad-start": "#3b82f6",
         "color-grad-end": "#8b5cf6",
+        "wave-r": "sine",
+        "wave-tension": "sine",
+        "wave-tangent": "sine",
+        "fill-mode": "none",
+        "fill-opacity": 0.5,
+        "color-fill": "#3b82f6",
+        "color-fill-grad-start": "#3b82f6",
+        "color-fill-grad-end": "#8b5cf6",
+        "dash-length": 0,
+        "dash-gap": 10,
+        "dash-speed": 0,
+        "glow-filter": false,
+        "transform-type": "none",
+        "rotation-loops": 0,
+        "transform-scale": 0.2,
+        "transform-translate": 5,
+        "transform-wave": "sine",
+        "transform-freq": 1,
+        "base-layout": "polygon",
+        "rose-k": 3,
+        "lissajous-a": 3,
+        "lissajous-b": 4,
+        "spiral-b": 3,
+        "segment-style": "cubic",
     };
 
     /**
@@ -395,15 +632,49 @@
         },
     };
 
-    let currentState = { ...DEFAULT_APPEARANCE, ...PRESETS["The Möbius Fold"] };
+    const sanitizeState = (state) => {
+        if (state["transform-type"] === "none" && state["rotation-loops"] !== 0) {
+            state["transform-type"] = "rotate";
+        }
+        return state;
+    };
+
+    let currentState = sanitizeState({ ...DEFAULT_APPEARANCE, ...PRESETS["The Möbius Fold"] });
 
     /**
      * MATHEMATICAL CORE
      */
 
 // Basic phase evaluation. Frequencies must be integers to ensure the wave seamlessly repeats at t=1.
-    const evaluatePose = (t, base = 0, amp = 0, freq = 1, phase = 0) => {
-        return base + amp * Math.sin(t * 2 * Math.PI * freq + phase);
+    const evaluatePose = (t, base = 0, amp = 0, freq = 1, phase = 0, waveType = "sine") => {
+        let waveValue = 0;
+        switch (waveType) {
+            case "triangle": {
+                const x = t * freq + phase / (2 * Math.PI) - 0.25;
+                waveValue = 1 - 4 * Math.abs(Math.round(x) - x);
+                break;
+            }
+            case "square": {
+                const s = Math.sin(t * 2 * Math.PI * freq + phase);
+                waveValue = Math.sign(s);
+                break;
+            }
+            case "sawtooth": {
+                const x = t * freq + phase / (2 * Math.PI);
+                waveValue = 2 * (x - Math.floor(x + 0.5));
+                break;
+            }
+            case "harmonic": {
+                const angle = t * 2 * Math.PI * freq + phase;
+                waveValue = Math.sin(angle) + 0.5 * Math.sin(2 * angle);
+                break;
+            }
+            case "sine":
+            default:
+                waveValue = Math.sin(t * 2 * Math.PI * freq + phase);
+                break;
+        }
+        return base + amp * waveValue;
     };
 
     const lerp = (start, end, amt) => start + (end - start) * amt;
@@ -426,8 +697,8 @@
         for (let f = 0; f < CONFIG.frames - 1; f++) {
             const t = f / (CONFIG.frames - 1);
             const nodes = [];
+            const layout = settings["base-layout"] || "polygon";
 
-            // Generate purely radial, independent nodes
             for (let i = 0; i < N; i++) {
                 const phaseR = (i / N) * settings["phase-offset-r"] * 2 * Math.PI;
                 const phaseTension = (i / N) * settings["phase-offset-tension"] * 2 * Math.PI;
@@ -435,50 +706,95 @@
 
                 // -Math.PI / 2 shifts Node 0 to the top center, ensuring the vertical axis cleanly splits the shape.
                 const baseAngle = (i / N) * 2 * Math.PI - (Math.PI / 2);
+                const theta = (i / N) * 2 * Math.PI;
 
-                const R = evaluatePose(t, settings["base-r"], settings["amp-r"], settings["freq-r"], phaseR);
-                const L = evaluatePose(t, settings["base-tension"], settings["amp-tension"], settings["freq-tension"], phaseTension);
+                const R = evaluatePose(t, settings["base-r"], settings["amp-r"], settings["freq-r"], phaseR, settings["wave-r"]);
+                const L = evaluatePose(t, settings["base-tension"], settings["amp-tension"], settings["freq-tension"], phaseTension, settings["wave-tension"]);
 
-                // Tangent controls the 3D ribbon twist. A base tangent of +PI/2 forces C1 continuity (smooth curves).
-                const baseTangent = baseAngle + (Math.PI / 2);
-                const phi = baseTangent + evaluatePose(t, 0, settings["amp-tangent"], settings["freq-tangent"], phaseTangent);
+                let anchorX = CONFIG.center;
+                let anchorY = CONFIG.center;
+                let baseTangent = baseAngle + (Math.PI / 2);
+
+                if (layout === "polygon") {
+                    anchorX += R * Math.cos(baseAngle);
+                    anchorY += R * Math.sin(baseAngle);
+                    // baseTangent remains baseAngle + PI/2
+                } else if (layout === "rose") {
+                    const k = settings["rose-k"] ?? 3;
+                    const rVal = R * Math.cos(k * theta);
+                    const drVal = -k * R * Math.sin(k * theta);
+
+                    anchorX += rVal * Math.cos(baseAngle);
+                    anchorY += rVal * Math.sin(baseAngle);
+
+                    const dx = drVal * Math.cos(baseAngle) - rVal * Math.sin(baseAngle);
+                    const dy = drVal * Math.sin(baseAngle) + rVal * Math.cos(baseAngle);
+                    baseTangent = (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) ? baseAngle + (Math.PI / 2) : Math.atan2(dy, dx);
+                } else if (layout === "lissajous") {
+                    const a = settings["lissajous-a"] ?? 3;
+                    const b = settings["lissajous-b"] ?? 4;
+
+                    anchorX += R * Math.sin(a * theta);
+                    anchorY += R * Math.cos(b * theta);
+
+                    const dx = a * R * Math.cos(a * theta);
+                    const dy = -b * R * Math.sin(b * theta);
+                    baseTangent = (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) ? baseAngle + (Math.PI / 2) : Math.atan2(dy, dx);
+                } else if (layout === "spiral") {
+                    const bVal = settings["spiral-b"] ?? 3;
+                    const thetaMapped = (i <= N / 2) ? (i / N) * 2 * Math.PI : ((N - i) / N) * 2 * Math.PI;
+                    const drVal = (i <= N / 2) ? bVal : -bVal;
+
+                    const rVal = R + bVal * thetaMapped;
+
+                    anchorX += rVal * Math.cos(baseAngle);
+                    anchorY += rVal * Math.sin(baseAngle);
+
+                    const dx = drVal * Math.cos(baseAngle) - rVal * Math.sin(baseAngle);
+                    const dy = drVal * Math.sin(baseAngle) + rVal * Math.cos(baseAngle);
+                    baseTangent = (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) ? baseAngle + (Math.PI / 2) : Math.atan2(dy, dx);
+                }
+
+                // Tangent controls the 3D ribbon twist. A base tangent forces C1 continuity (smooth curves).
+                const phi = baseTangent + evaluatePose(t, 0, settings["amp-tangent"], settings["freq-tangent"], phaseTangent, settings["wave-tangent"]);
 
                 nodes.push({
-                    anchorX: CONFIG.center + R * Math.cos(baseAngle),
-                    anchorY: CONFIG.center + R * Math.sin(baseAngle),
-                    inCpX: CONFIG.center + R * Math.cos(baseAngle) - L * Math.cos(phi),
-                    inCpY: CONFIG.center + R * Math.sin(baseAngle) - L * Math.sin(phi),
-                    outCpX: CONFIG.center + R * Math.cos(baseAngle) + L * Math.cos(phi),
-                    outCpY: CONFIG.center + R * Math.sin(baseAngle) + L * Math.sin(phi),
+                    anchorX: anchorX,
+                    anchorY: anchorY,
+                    inCpX: anchorX - L * Math.cos(phi),
+                    inCpY: anchorY - L * Math.sin(phi),
+                    outCpX: anchorX + L * Math.cos(phi),
+                    outCpY: anchorY + L * Math.sin(phi),
                 });
             }
 
             // Cartesian Mirror Lerp (Float Symmetry)
             if (settings.symmetry > 0) {
+                const origNodes = nodes.map(n => ({ ...n }));
 
                 // Mirror Node 0 (top anchor on vertical axis) to itself
-                nodes[0].inCpX = lerp(nodes[0].inCpX, CONFIG.canvasSize - nodes[0].outCpX, settings.symmetry);
-                nodes[0].inCpY = lerp(nodes[0].inCpY, nodes[0].outCpY, settings.symmetry);
+                nodes[0].inCpX = lerp(origNodes[0].inCpX, CONFIG.canvasSize - origNodes[0].outCpX, settings.symmetry);
+                nodes[0].inCpY = lerp(origNodes[0].inCpY, origNodes[0].outCpY, settings.symmetry);
 
-                nodes[0].outCpX = lerp(nodes[0].outCpX, CONFIG.canvasSize - nodes[0].inCpX, settings.symmetry);
-                nodes[0].outCpY = lerp(nodes[0].outCpY, nodes[0].inCpY, settings.symmetry);
+                nodes[0].outCpX = lerp(origNodes[0].outCpX, CONFIG.canvasSize - origNodes[0].inCpX, settings.symmetry);
+                nodes[0].outCpY = lerp(origNodes[0].outCpY, origNodes[0].inCpY, settings.symmetry);
 
                 for (let i = Math.ceil(N / 2); i < N; i++) {
 
                     // Partner node index on the right side
                     const p = N - i;
-                    const target = nodes[p];
+                    const target = origNodes[p];
 
                     // When mirroring across X=50, X mirrored is `100 - X`. Y remains unchanged.
                     // Rationale for Winding: "inCp" and "outCp" MUST swap roles when mirrored.
-                    nodes[i].anchorX = lerp(nodes[i].anchorX, CONFIG.canvasSize - target.anchorX, settings.symmetry);
-                    nodes[i].anchorY = lerp(nodes[i].anchorY, target.anchorY, settings.symmetry);
+                    nodes[i].anchorX = lerp(origNodes[i].anchorX, CONFIG.canvasSize - target.anchorX, settings.symmetry);
+                    nodes[i].anchorY = lerp(origNodes[i].anchorY, target.anchorY, settings.symmetry);
 
-                    nodes[i].inCpX = lerp(nodes[i].inCpX, CONFIG.canvasSize - target.outCpX, settings.symmetry);
-                    nodes[i].inCpY = lerp(nodes[i].inCpY, target.outCpY, settings.symmetry);
+                    nodes[i].inCpX = lerp(origNodes[i].inCpX, CONFIG.canvasSize - target.outCpX, settings.symmetry);
+                    nodes[i].inCpY = lerp(origNodes[i].inCpY, target.outCpY, settings.symmetry);
 
-                    nodes[i].outCpX = lerp(nodes[i].outCpX, CONFIG.canvasSize - target.inCpX, settings.symmetry);
-                    nodes[i].outCpY = lerp(nodes[i].outCpY, target.inCpY, settings.symmetry);
+                    nodes[i].outCpX = lerp(origNodes[i].outCpX, CONFIG.canvasSize - target.inCpX, settings.symmetry);
+                    nodes[i].outCpY = lerp(origNodes[i].outCpY, target.inCpY, settings.symmetry);
                 }
             }
 
@@ -509,6 +825,8 @@
         // We calculate the absolute max scale globally, and scale all vectors proportionally here.
         const scale = maxDeviation > safeRadius ? (safeRadius / maxDeviation) : 1;
 
+        const segmentStyle = settings["segment-style"] || "cubic";
+
         const valuesArray = frames.map(nodes => {
             const scalePt = (val) => roundCoords(CONFIG.center + (val - CONFIG.center) * scale);
 
@@ -518,10 +836,18 @@
                 const prevNode = nodes[i - 1];
                 const currNode = nodes[i % N];
 
-                // Strict M, C...C, Z enforcement
-                path += ` C ${scalePt(prevNode.outCpX)} ${scalePt(prevNode.outCpY)}, ` +
-                    `${scalePt(currNode.inCpX)} ${scalePt(currNode.inCpY)}, ` +
-                    `${scalePt(currNode.anchorX)} ${scalePt(currNode.anchorY)}`;
+                if (segmentStyle === "quadratic") {
+                    const cpX = (prevNode.outCpX + currNode.inCpX) / 2;
+                    const cpY = (prevNode.outCpY + currNode.inCpY) / 2;
+                    path += ` Q ${scalePt(cpX)} ${scalePt(cpY)}, ${scalePt(currNode.anchorX)} ${scalePt(currNode.anchorY)}`;
+                } else if (segmentStyle === "straight") {
+                    path += ` L ${scalePt(currNode.anchorX)} ${scalePt(currNode.anchorY)}`;
+                } else {
+                    // Strict M, C...C, Z enforcement
+                    path += ` C ${scalePt(prevNode.outCpX)} ${scalePt(prevNode.outCpY)}, ` +
+                        `${scalePt(currNode.inCpX)} ${scalePt(currNode.inCpY)}, ` +
+                        `${scalePt(currNode.anchorX)} ${scalePt(currNode.anchorY)}`;
+                }
             }
             return path + " Z";
         });
@@ -531,30 +857,127 @@
 
         const valuesString = valuesArray.join(";\n      ");
 
-        // Continuous rotation prevents visual "stutter" that occurs if we apply the path's spline easing to the transform.
+        const getScaleValues = (amp) => {
+            const freq = settings["transform-freq"] ?? 1;
+            const wave = settings["transform-wave"] ?? "sine";
+            return [0, 0.25, 0.5, 0.75, 1].map(t => {
+                const w = evaluatePose(t, 0, 1, freq, 0, wave);
+                return roundCoords(1 + amp * w);
+            }).join("; ");
+        };
+
+        const getTranslateValues = (trans) => {
+            const freq = settings["transform-freq"] ?? 1;
+            const wave = settings["transform-wave"] ?? "sine";
+            return [0, 0.25, 0.5, 0.75, 1].map(t => {
+                const x = evaluatePose(t, 0, trans, freq, 0, wave);
+                const y = evaluatePose(t, 0, trans, freq, -Math.PI / 2, wave);
+                return `${roundCoords(x)} ${roundCoords(y)}`;
+            }).join("; ");
+        };
+
+        // Continuous transform animation prevents visual "stutter" that occurs if we apply the path's spline easing to the transform.
         let transformAnimate = "";
-        if (settings["rotation-loops"] !== 0) {
-            const totalDeg = settings["rotation-loops"] * 360;
-            transformAnimate = `\n    <animateTransform attributeName="transform" type="rotate"
-      from="0 50 50" to="${totalDeg} 50 50" 
+        const transformType = settings["transform-type"] || "none";
+
+        if (transformType === "rotate") {
+            const loops = settings["rotation-loops"] ?? 0;
+            if (loops !== 0) {
+                const totalDeg = loops * 360;
+                transformAnimate = `\n    <animateTransform attributeName="transform" type="rotate"
+      from="0" to="${totalDeg}" 
       dur="${settings.duration}s" 
       repeatCount="indefinite" />`;
+            }
+        } else if (transformType === "scale") {
+            const amp = settings["transform-scale"] ?? 0.2;
+            transformAnimate = `\n    <animateTransform attributeName="transform" type="scale"
+      values="${getScaleValues(amp)}" 
+      keyTimes="0; 0.25; 0.5; 0.75; 1" 
+      calcMode="spline" 
+      keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" 
+      dur="${settings.duration}s" 
+      repeatCount="indefinite" />`;
+        } else if (transformType === "translate") {
+            const trans = settings["transform-translate"] ?? 5;
+            transformAnimate = `\n    <animateTransform attributeName="transform" type="translate"
+      values="${getTranslateValues(trans)}" 
+      keyTimes="0; 0.25; 0.5; 0.75; 1" 
+      calcMode="spline" 
+      keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" 
+      dur="${settings.duration}s" 
+      repeatCount="indefinite" />`;
+        } else if (transformType === "combo") {
+            const loops = settings["rotation-loops"] ?? 0;
+            const amp = settings["transform-scale"] ?? 0.2;
+            const rotAnimate = loops !== 0 ? `\n    <animateTransform attributeName="transform" type="rotate"
+      from="0" to="${loops * 360}" 
+      dur="${settings.duration}s" 
+      repeatCount="indefinite" 
+      additive="sum" />` : "";
+            const scaleAnimate = `\n    <animateTransform attributeName="transform" type="scale"
+      values="${getScaleValues(amp)}" 
+      keyTimes="0; 0.25; 0.5; 0.75; 1" 
+      calcMode="spline" 
+      keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" 
+      dur="${settings.duration}s" 
+      repeatCount="indefinite" 
+      additive="sum" />`;
+            transformAnimate = rotAnimate + scaleAnimate;
         }
 
-        let defs = "";
-        let strokeAttr = "currentColor";
-
+        let defsContent = "";
         if (settings["color-mode"] === "gradient") {
             const gradStart = settings["color-grad-start"] || "#3b82f6";
             const gradEnd = settings["color-grad-end"] || "#8b5cf6";
-            defs = `\n  <defs>\n    <linearGradient id="loader-grad" x1="0%" y1="0%" x2="100%" y2="100%">\n      <stop offset="0%" stop-color="${gradStart}" />\n      <stop offset="100%" stop-color="${gradEnd}" />\n    </linearGradient>\n  </defs>`;
+            defsContent += `\n    <linearGradient id="loader-grad" x1="0%" y1="0%" x2="100%" y2="100%">\n      <stop offset="0%" stop-color="${gradStart}" />\n      <stop offset="100%" stop-color="${gradEnd}" />\n    </linearGradient>`;
+        }
+        if (settings["fill-mode"] === "gradient") {
+            const fillGradStart = settings["color-fill-grad-start"] || "#3b82f6";
+            const fillGradEnd = settings["color-fill-grad-end"] || "#8b5cf6";
+            defsContent += `\n    <linearGradient id="fill-grad" x1="0%" y1="0%" x2="100%" y2="100%">\n      <stop offset="0%" stop-color="${fillGradStart}" />\n      <stop offset="100%" stop-color="${fillGradEnd}" />\n    </linearGradient>`;
+        }
+        if (settings["glow-filter"]) {
+            defsContent += `\n    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">\n      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>\n      <feMerge>\n        <feMergeNode in="coloredBlur"/>\n        <feMergeNode in="SourceGraphic"/>\n      </feMerge>\n    </filter>`;
+        }
+        const defs = defsContent ? `\n  <defs>${defsContent}\n  </defs>` : "";
+
+        let strokeAttr = "currentColor";
+        if (settings["color-mode"] === "gradient") {
             strokeAttr = "url(#loader-grad)";
         } else if (settings["color-solid"]) {
             strokeAttr = settings["color-solid"];
         }
 
+        let fillAttr = "none";
+        let fillOpacityAttr = "";
+        if (settings["fill-mode"] === "solid") {
+            fillAttr = settings["color-fill"] || "#3b82f6";
+            fillOpacityAttr = ` fill-opacity="${settings["fill-opacity"] ?? 0.5}"`;
+        } else if (settings["fill-mode"] === "gradient") {
+            fillAttr = "url(#fill-grad)";
+            fillOpacityAttr = ` fill-opacity="${settings["fill-opacity"] ?? 0.5}"`;
+        }
+
+        let filterAttr = "";
+        if (settings["glow-filter"]) {
+            filterAttr = ` filter="url(#glow)"`;
+        }
+
+        let dashAttr = "";
+        let dashAnimate = "";
+        if (settings["dash-length"] > 0) {
+            dashAttr = ` stroke-dasharray="${settings["dash-length"]} ${settings["dash-gap"]}"`;
+            if (settings["dash-speed"] !== 0) {
+                const cycleDist = settings["dash-length"] + settings["dash-gap"];
+                const dashDur = cycleDist / Math.abs(settings["dash-speed"]);
+                const toOffset = -Math.sign(settings["dash-speed"]) * cycleDist;
+                dashAnimate = `\n    <animate attributeName="stroke-dashoffset" values="0; ${toOffset}" dur="${dashDur}s" repeatCount="indefinite" />`;
+            }
+        }
+
         return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${defs}
-  <path fill="none" stroke="${strokeAttr}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="${fillAttr}"${fillOpacityAttr} stroke="${strokeAttr}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" transform-origin="50 50"${filterAttr}${dashAttr}>
     <animate attributeName="d" 
       values="
       ${valuesString}" 
@@ -562,7 +985,7 @@
       repeatCount="indefinite" 
       calcMode="spline" 
       keyTimes="0; 0.25; 0.5; 0.75; 1" 
-      keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />${transformAnimate}
+      keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" />${transformAnimate}${dashAnimate}
   </path>
 </svg>`;
     };
@@ -582,26 +1005,75 @@
         }
 
         select.addEventListener("change", (e) => {
-            currentState = { ...DEFAULT_APPEARANCE, ...PRESETS[e.target.value] };
+            currentState = sanitizeState({ ...DEFAULT_APPEARANCE, ...PRESETS[e.target.value] });
             updateSliders();
             triggerRender();
         });
 
         const handleInput = (id, value) => {
+            if (id === "base-layout") {
+                currentState[id] = value;
+                const layout = value;
+                document.getElementById("row-rose-k").hidden = layout !== "rose";
+                document.getElementById("row-lissajous-a").hidden = layout !== "lissajous";
+                document.getElementById("row-lissajous-b").hidden = layout !== "lissajous";
+                document.getElementById("row-spiral-b").hidden = layout !== "spiral";
+                triggerRebuild();
+                return;
+            }
+
             if (id === "color-mode") {
                 currentState[id] = value;
                 const isGrad = value === "gradient";
                 document.getElementById("row-color-solid").hidden = isGrad;
                 document.getElementById("row-color-grad-start").hidden = !isGrad;
                 document.getElementById("row-color-grad-end").hidden = !isGrad;
-            } else if (id === "stroke-width") {
-                currentState[id] = parseFloat(value);
-            } else if (id.startsWith("color-")) {
-                currentState[id] = value;
-            } else {
-                currentState[id] = parseFloat(value);
+                triggerRebuild();
+                return;
             }
 
+            if (id === "fill-mode") {
+                currentState[id] = value;
+                const isSolid = value === "solid";
+                const isGrad = value === "gradient";
+                document.getElementById("row-color-fill").hidden = !isSolid;
+                document.getElementById("row-color-fill-grad-start").hidden = !isGrad;
+                document.getElementById("row-color-fill-grad-end").hidden = !isGrad;
+                document.getElementById("row-fill-opacity").hidden = value === "none";
+                triggerRebuild();
+                return;
+            }
+
+            if (id === "glow-filter") {
+                currentState[id] = !!value;
+                triggerRebuild();
+                return;
+            }
+
+            if (id === "transform-type") {
+                currentState[id] = value;
+                const transformType = value;
+                const needsWave = (transformType === "scale" || transformType === "translate" || transformType === "combo");
+                document.getElementById("row-rotation-loops").hidden = !(transformType === "rotate" || transformType === "combo");
+                document.getElementById("row-transform-scale").hidden = !(transformType === "scale" || transformType === "combo");
+                document.getElementById("row-transform-translate").hidden = !(transformType === "translate");
+                document.getElementById("row-transform-wave").hidden = !needsWave;
+                document.getElementById("row-transform-freq").hidden = !needsWave;
+                triggerRebuild();
+                return;
+            }
+
+            if (id === "segment-style" || id === "transform-wave" || id.startsWith("color-") || id.startsWith("wave-")) {
+                currentState[id] = value;
+                triggerRebuild();
+                return;
+            }
+
+            currentState[id] = parseFloat(value);
+            triggerRebuild();
+        };
+
+        const triggerRebuild = () => {
             document.getElementById("preview").classList.add("is-computing");
             clearTimeout(renderTimeout);
             renderTimeout = setTimeout(triggerRender, 150);
@@ -616,6 +1088,11 @@
             input.addEventListener("change", (e) => handleInput(e.target.id, e.target.value));
         });
 
+        document.querySelectorAll("input[type=checkbox]").forEach(input => {
+            if (input.id === "aside-state") return;
+            input.addEventListener("change", (e) => handleInput(e.target.id, e.target.checked));
+        });
+
         updateSliders();
         triggerRender();
     };
@@ -623,12 +1100,40 @@
     const updateSliders = () => {
         for (const key in currentState) {
             const el = document.getElementById(key);
-            if (el) el.value = currentState[key];
+            if (el) {
+                if (el.type === "checkbox") {
+                    el.checked = currentState[key];
+                } else {
+                    el.value = currentState[key];
+                }
+            }
         }
         const isGrad = currentState["color-mode"] === "gradient";
         document.getElementById("row-color-solid").hidden = isGrad;
         document.getElementById("row-color-grad-start").hidden = !isGrad;
         document.getElementById("row-color-grad-end").hidden = !isGrad;
+
+        const fillMode = currentState["fill-mode"] || "none";
+        const isFillSolid = fillMode === "solid";
+        const isFillGrad = fillMode === "gradient";
+        document.getElementById("row-color-fill").hidden = !isFillSolid;
+        document.getElementById("row-color-fill-grad-start").hidden = !isFillGrad;
+        document.getElementById("row-color-fill-grad-end").hidden = !isFillGrad;
+        document.getElementById("row-fill-opacity").hidden = fillMode === "none";
+
+        const transformType = currentState["transform-type"] || "none";
+        const needsWave = (transformType === "scale" || transformType === "translate" || transformType === "combo");
+        document.getElementById("row-rotation-loops").hidden = !(transformType === "rotate" || transformType === "combo");
+        document.getElementById("row-transform-scale").hidden = !(transformType === "scale" || transformType === "combo");
+        document.getElementById("row-transform-translate").hidden = !(transformType === "translate");
+        document.getElementById("row-transform-wave").hidden = !needsWave;
+        document.getElementById("row-transform-freq").hidden = !needsWave;
+
+        const layout = currentState["base-layout"] || "polygon";
+        document.getElementById("row-rose-k").hidden = layout !== "rose";
+        document.getElementById("row-lissajous-a").hidden = layout !== "lissajous";
+        document.getElementById("row-lissajous-b").hidden = layout !== "lissajous";
+        document.getElementById("row-spiral-b").hidden = layout !== "spiral";
     };
 
     const triggerRender = () => {
