@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="MockML - Text-based wireframe mockup editor and compiler.">
+    <title>MockML Editor</title>
+    <link rel="icon" href="../icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../one.js"></script>
+    <script src="../storage.js"></script>
+    <style>
+        @media (min-width: 900px) {
+            :root {
+                --aside-width: 480px;
+            }
+
+            body {
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            main {
+                overflow: auto;
+                position: relative;
+            }
+        }
+
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - var(--header-height) - 40px);
+        }
+
+        #dsl-input {
+            height: 60vh;
+            resize: vertical;
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+            width: 100%;
+            margin-bottom: var(--spacing-sm);
+            box-sizing: border-box;
+        }
+
+        #error-banner {
+            display: none;
+            background-color: var(--error);
+            color: var(--on-error);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius);
+            margin-bottom: var(--spacing-md);
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+        }
+
+        .mock-root {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+            background-color: var(--surface-container-low);
+            border: 1px dashed var(--outline);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            min-height: 400px;
+        }
+
+        .mock {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            background-color: var(--surface);
+            border: 1px solid var(--outline-variant);
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 300px;
+        }
+
+        .mock[data-title]::before {
+            content: attr(data-title);
+            display: block;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--on-surface);
+        }
+
+        .room {
+            display: flex;
+            gap: 0.5rem;
+            box-sizing: border-box;
+        }
+
+        .room-col {
+            gap: 0.25rem;
+        }
+
+        .room-parent {
+            padding: 0;
+        }
+
+        .room-group {
+            background-color: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 0.75rem;
+        }
+
+        .show-container-decor .room-group {
+            background-color: var(--surface-container);
+            border-color: var(--outline-variant);
+        }
+
+        .room-leaf {
+            background-color: transparent;
+            border: 1px dashed transparent;
+            border-radius: 4px;
+            padding: 0.25rem 0.75rem;
+            display: flex;
+            align-items: center;
+            transition: var(--trans-interactive);
+        }
+
+        .show-room-leaf-decor .room-leaf {
+            background-color: var(--surface-container-low);
+            border-color: var(--outline-variant);
+        }
+
+        .room-table {
+            gap: 0 !important;
+        }
+
+        .room-table .room-row {
+            gap: 0 !important;
+        }
+
+        .room-table .room-leaf {
+            border-radius: 0;
+            margin-inline-end: -1px;
+            margin-block-end: -1px;
+        }
+
+        .room-label {
+            width: 100%;
+            color: var(--on-surface);
+            font-size: 0.9rem;
+        }
+
+        .room-label:has(.mock-img) {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: inherit;
+        }
+
+        .border-top {
+            border-top: 2px solid var(--on-surface) !important;
+        }
+
+        .border-bottom {
+            border-bottom: 2px solid var(--on-surface) !important;
+        }
+
+        .border-left {
+            border-left: 2px solid var(--on-surface) !important;
+        }
+
+        .border-right {
+            border-right: 2px solid var(--on-surface) !important;
+        }
+
+        .has-note {
+            outline: 2px dotted var(--note-color, var(--primary));
+            outline-offset: 2px;
+        }
+
+        .has-note:not(button):not(.btn):not(.btn-sym):not(input):not(select) {
+            background-color: color-mix(in srgb, var(--note-color, var(--primary)) 2%, transparent) !important;
+        }
+
+        .mock-notes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: var(--spacing-sm);
+            margin-top: 1rem;
+        }
+
+        .mock-note {
+            background-color: color-mix(in srgb, var(--note-color, var(--primary)) 8%, var(--surface-container-high));
+            border-left: 4px solid var(--note-color, var(--primary));
+            padding: var(--spacing-sm);
+            border-radius: 0 8px 8px 0;
+            font-size: 0.85rem;
+            color: var(--on-surface);
+        }
+
+        svg.mock-note-lines line,
+        svg.mock-note-lines path {
+            stroke: var(--note-color, var(--primary));
+            stroke-width: 1.5;
+            stroke-dasharray: 4 4;
+            fill: none;
+        }
+
+        .mock-footnotes {
+            border-top: 1px solid var(--outline-variant);
+            padding-top: var(--spacing-sm);
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--on-surface-variant);
+        }
+
+        .mock-footnote {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .mock-img {
+            background-color: var(--surface-container-highest);
+            border: 1px solid var(--outline-variant);
+            border-radius: 4px;
+            padding: var(--spacing-sm);
+            min-height: 60px;
+            max-width: 100%;
+            max-height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--on-surface-variant);
+            font-weight: 500;
+            position: relative;
+        }
+
+        .mock-img:not([data-src])::before,
+        .mock-img[data-src=""]::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--on-surface-variant);
+            opacity: 0.15;
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm-40 80v-560 560Z'/%3E%3C/svg%3E");
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm-40 80v-560 560Z'/%3E%3C/svg%3E");
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            pointer-events: none;
+        }
+
+        sup {
+            font-size: 0.75rem;
+            color: var(--primary);
+            vertical-align: super;
+        }
+
+        .preview-stale {
+            opacity: 0.6;
+        }
+
+        .modal-body {
+            overflow-y: auto;
+            max-height: 60vh;
+            padding-right: var(--spacing-sm);
+        }
+
+        dialog h4 {
+            margin-top: var(--spacing-lg);
+            margin-bottom: var(--spacing-sm);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .mock-root a {
+            border-bottom-color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>MockML</h1>
+        <p>Wireframe mockup markup language compiler & previewer</p>
+    </hgroup>
+    <button type="button" id="copy-html-btn" class="btn">Copy HTML</button>
+    <button type="button" id="clear-btn" class="btn-danger">Clear</button>
+    <button type="button" id="open-modal" class="btn-sym" aria-haspopup="dialog"
+            aria-controls="modal-info">
+        info
+    </button>
+</header>
+
+<main id="content">
+    <div id="error-banner"></div>
+    <div id="preview-container"></div>
+</main>
+
+<aside>
+    <div class="editor-container">
+        <label for="example-select">Mockup Template:</label>
+        <select id="example-select" aria-label="Select mockup template">
+            <option value="dashboard">Console Dashboard</option>
+            <option value="media_player">Media Player</option>
+            <option value="login">Sign In Form</option>
+            <option value="features">Product Features</option>
+        </select>
+
+        <label for="dsl-input">DSL Input:</label>
+        <textarea id="dsl-input" placeholder="Enter wireframe DSL here..."
+                  spellcheck="false"></textarea>
+
+        <label for="toggle-room-leaf-decor">
+            <span>Show room-leaf background & border</span>
+            <input type="checkbox" role="switch" id="toggle-room-leaf-decor">
+        </label>
+
+        <label for="toggle-container-decor">
+            <span>Show container background & border</span>
+            <input type="checkbox" role="switch" id="toggle-container-decor">
+        </label>
+
+        <label for="toggle-notes-as-footnotes">
+            <span>Render notes as footnotes (sup)</span>
+            <input type="checkbox" role="switch" id="toggle-notes-as-footnotes">
+        </label>
+
+        <label for="toggle-hide-notes">
+            <span>Hide (foot)notes</span>
+            <input type="checkbox" role="switch" id="toggle-hide-notes">
+        </label>
+    </div>
+</aside>
+
+<script type="module">
+    import { mount, connectNotes } from "./src/index.js";
+
+    const dslInput = document.getElementById("dsl-input");
+    const previewContainer = document.getElementById("preview-container");
+    const errorBanner = document.getElementById("error-banner");
+    const exampleSelect = document.getElementById("example-select");
+    const copyHtmlBtn = document.getElementById("copy-html-btn");
+    const clearBtn = document.getElementById("clear-btn");
+    const toggleRoomLeafDecor = document.getElementById("toggle-room-leaf-decor");
+    const toggleContainerDecor = document.getElementById("toggle-container-decor");
+    const toggleNotesAsFootnotes = document.getElementById("toggle-notes-as-footnotes");
+    const toggleHideNotes = document.getElementById("toggle-hide-notes");
+
+    const TEMPLATES = {
+        dashboard: `title: Console Dashboard
+
+inline $new = { htag(New) }
+
+[
+  icon(menu) | h2(Acme Admin) | spacer() | input(Search projects...) | img(avatar)
+]:ud
+
+{
+  {
+    link(Overview)
+    link(Databases) $new()
+    link(Deployments)
+    link(Settings)
+  } |
+
+  {
+    h1(Database Cluster)
+    
+    {
+      {
+        h3(CPU Load)
+        '12%'
+        tag(Normal)
+      }:all | {
+        h3(Memory)
+        '64%'
+        tag(Warning)
+      }:all | {
+        h3(Storage)
+        '1.2 TB'
+        tag(Normal)
+      }:all
+    }
+    
+    spacer()
+    
+    h2(Active Sessions)
+    [:ud
+      'Username' | 'Origin' | 'Action'
+      'admin' | '10.0.0.5' | button(Revoke) <- "Revokes active admin session token"
+      'developer' | '192.168.1.12' | button(Revoke)
+      ['readonly' | '127.0.0.1' | button(Revoke)] <- "Each row is loaded as the user scrolls down."
+    ]
+  }:3
+}`,
+        login: `title: Sign In
+
+{
+  h2(Welcome Back)
+  'Please enter your credentials to access your account.'
+  spacer()
+  {
+    'Email Address'
+    input(name@company.com)
+  }
+  {
+    'Password'
+    input(••••••••)
+  }
+  {
+    hbutton(Sign In):@right | link(Forgot password?)
+  }
+  hr()
+  "Don't have an account?" link(Sign up today) :@center
+}:2ud`,
+        features: `title: Product Features
+
+h1(Features & Pricing)
+'Explore our flexible options tailored to your needs.'
+spacer()
+{
+  {
+    h2(Free Plan)
+    'Basic access for individuals'
+    h3($0 / mo)
+    hr()
+    icon(check) ' 1 User'
+    icon(check) ' 5GB Storage'
+    icon(close) ' Priority Support'
+    spacer()
+    hbutton(Choose Free)
+  }:all | {
+    h2(Pro Plan)
+    'For small teams & startups'
+    h3($29 / mo)
+    hr()
+    icon(check) ' 5 Users'
+    icon(check) ' 100GB Storage'
+    icon(check) ' Priority Support'
+    spacer()
+    hbutton(Choose Pro)
+  }:all | {
+    h2(Enterprise)
+    'Custom solutions for companies'
+    h3(Contact Us)
+    hr()
+    icon(check) ' Unlimited Users'
+    icon(check) ' Custom Storage' sup(1)
+    icon(check) ' 24/7 Phone Support'
+    spacer()
+    button(Contact Sales)
+  }:all
+}
+
+sup(1) "Custom storage limits apply based on SLA terms"`,
+        media_player: `title: Media Player
+inline $song_row = { 
+  img(cover, 1:1):0 | "Title $0" | button(icon(close)):@r0}
+
+[
+  icon(menu_open):0 | img(cover, 1:1):0 | {
+    "N/M" strong("title") <- "clicking on the title here (same for titles in the queue) or the cover will open a modal showing the tags and exact play-, and skipcounts"
+    strong("artist") <<- 'triggers a search for all songs by said artist'  " from " strong("album") <<- 'triggers search for all songs in album' " (year)"
+  } | icon(star) icon(star)icon(star)icon(star)icon(star) button(icon(add)) <<- 'add current song to playlist (modal with playlist names)' button(icon(pause)):@right
+]:ud
+
+
+{
+  h3(Queue)
+  [
+    $song_row("1")
+    $song_row("2")
+    $song_row("3")
+  ]
+}:r | {
+  [ input(Search...) | button(icon(search)) :0 | button(icon(settings)) <- "in the settings there's also a way to save the current query under a specific name" :0 ]
+  {
+    img(Title 1) <- 'clicking on song adds it to the queue' | img(Title 2) | img(Title 3) | img(Title 4) | img(Title 5) | img(Title 6)
+    img(Title 7) | img(Title 8) | img(Title 9) | img(Title A) | img(Title B) | img(Title C)
+  }
+}:3
+
+spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | spacer()`,
+    };
+
+    function updatePreview() {
+        const src = dslInput.value;
+        try {
+            errorBanner.style.display = "none";
+            previewContainer.classList.remove("preview-stale");
+            mount(src, previewContainer, {
+                notesAsFootnotes: toggleNotesAsFootnotes ? toggleNotesAsFootnotes.checked : false,
+                hideNotes: toggleHideNotes ? toggleHideNotes.checked : false,
+            });
+        } catch (e) {
+            console.error(e);
+            errorBanner.textContent = e.message || String(e);
+            errorBanner.style.display = "block";
+            previewContainer.classList.add("preview-stale");
+        }
+    }
+
+    dslInput.addEventListener("input", () => {
+        updatePreview();
+        try {
+            Storage.set("mini-mock-dsl", dslInput.value);
+        } catch (e) {
+            localStorage.setItem("mini-mock-dsl", dslInput.value);
+        }
+    });
+
+    let currentTemplate = exampleSelect.value;
+
+    exampleSelect.addEventListener("change", async () => {
+        const val = exampleSelect.value;
+        if (!val || !TEMPLATES[val]) return;
+
+        const isChanged = dslInput.value.trim() && dslInput.value !== (TEMPLATES[currentTemplate] || "");
+        if (isChanged) {
+            const confirmed = await one.confirm("Discard changes and switch template?");
+            if (!confirmed) {
+                exampleSelect.value = currentTemplate;
+                return;
+            }
+        }
+
+        currentTemplate = val;
+        dslInput.value = TEMPLATES[val];
+        updatePreview();
+        try {
+            Storage.set("mini-mock-dsl", dslInput.value);
+        } catch (e) {
+            localStorage.setItem("mini-mock-dsl", dslInput.value);
+        }
+    });
+
+    clearBtn.addEventListener("click", async () => {
+        if (await one.confirm("Clear editor content?")) {
+            dslInput.value = "";
+            updatePreview();
+            try {
+                Storage.set("mini-mock-dsl", "");
+            } catch (e) {
+                localStorage.setItem("mini-mock-dsl", "");
+            }
+        }
+    });
+
+    toggleRoomLeafDecor.addEventListener("change", () => {
+        const isChecked = toggleRoomLeafDecor.checked;
+        previewContainer.classList.toggle("show-room-leaf-decor", isChecked);
+        try {
+            Storage.set("mini-mock-decor", isChecked);
+        } catch (e) {
+            localStorage.setItem("mini-mock-decor", isChecked);
+        }
+    });
+
+    toggleContainerDecor.addEventListener("change", () => {
+        const isChecked = toggleContainerDecor.checked;
+        previewContainer.classList.toggle("show-container-decor", isChecked);
+        try {
+            Storage.set("mini-mock-container-decor", isChecked);
+        } catch (e) {
+            localStorage.setItem("mini-mock-container-decor", isChecked);
+        }
+    });
+
+    toggleNotesAsFootnotes.addEventListener("change", () => {
+        const isChecked = toggleNotesAsFootnotes.checked;
+        updatePreview();
+        try {
+            Storage.set("mini-mock-notes-as-footnotes", isChecked);
+        } catch (e) {
+            localStorage.setItem("mini-mock-notes-as-footnotes", isChecked);
+        }
+    });
+
+    toggleHideNotes.addEventListener("change", () => {
+        const isChecked = toggleHideNotes.checked;
+        updatePreview();
+        try {
+            Storage.set("mini-mock-hide-notes", isChecked);
+        } catch (e) {
+            localStorage.setItem("mini-mock-hide-notes", isChecked);
+        }
+    });
+
+    copyHtmlBtn.addEventListener("click", () => {
+        const html = previewContainer.innerHTML;
+        one.copy(html);
+    });
+
+    // Resize observer to redraw note connection lines
+    const observer = new ResizeObserver(() => {
+        requestAnimationFrame(() => {
+            try {
+                const mockRoot = previewContainer.querySelector(".mock-root");
+                if (mockRoot) {
+                    connectNotes(mockRoot);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    });
+    observer.observe(previewContainer);
+
+    // Initial state loading
+    async function init() {
+        let showDecor = false;
+        try {
+            const savedDecor = await Storage.get("mini-mock-decor");
+            if (savedDecor !== undefined && savedDecor !== null) {
+                showDecor = savedDecor === true || savedDecor === "true";
+            }
+        } catch (e) {
+            const fallbackDecor = localStorage.getItem("mini-mock-decor");
+            if (fallbackDecor !== null) {
+                showDecor = fallbackDecor === true || fallbackDecor === "true";
+            }
+        }
+        toggleRoomLeafDecor.checked = showDecor;
+        previewContainer.classList.toggle("show-room-leaf-decor", showDecor);
+
+        let showContainerDecor = false;
+        try {
+            let savedDecor = await Storage.get("mini-mock-container-decor");
+            if (savedDecor === undefined || savedDecor === null) {
+                savedDecor = await Storage.get("mini-mock-container-borders");
+            }
+            if (savedDecor !== undefined && savedDecor !== null) {
+                showContainerDecor = savedDecor === true || savedDecor === "true";
+            }
+        } catch (e) {
+            let fallbackDecor = localStorage.getItem("mini-mock-container-decor");
+            if (fallbackDecor === null) {
+                fallbackDecor = localStorage.getItem("mini-mock-container-borders");
+            }
+            if (fallbackDecor !== null) {
+                showContainerDecor = fallbackDecor === true || fallbackDecor === "true";
+            }
+        }
+        toggleContainerDecor.checked = showContainerDecor;
+        previewContainer.classList.toggle("show-container-decor", showContainerDecor);
+
+        let notesAsFootnotes = false;
+        try {
+            const savedNotesAsFootnotes = await Storage.get("mini-mock-notes-as-footnotes");
+            if (savedNotesAsFootnotes !== undefined && savedNotesAsFootnotes !== null) {
+                notesAsFootnotes = savedNotesAsFootnotes === true || savedNotesAsFootnotes === "true";
+            }
+        } catch (e) {
+            const fallbackNotesAsFootnotes = localStorage.getItem("mini-mock-notes-as-footnotes");
+            if (fallbackNotesAsFootnotes !== null) {
+                notesAsFootnotes = fallbackNotesAsFootnotes === true || fallbackNotesAsFootnotes === "true";
+            }
+        }
+        toggleNotesAsFootnotes.checked = notesAsFootnotes;
+
+        let hideNotes = false;
+        try {
+            const savedHideNotes = await Storage.get("mini-mock-hide-notes");
+            if (savedHideNotes !== undefined && savedHideNotes !== null) {
+                hideNotes = savedHideNotes === true || savedHideNotes === "true";
+            }
+        } catch (e) {
+            const fallbackHideNotes = localStorage.getItem("mini-mock-hide-notes");
+            if (fallbackHideNotes !== null) {
+                hideNotes = fallbackHideNotes === true || fallbackHideNotes === "true";
+            }
+        }
+        toggleHideNotes.checked = hideNotes;
+
+        let saved = null;
+        try {
+            saved = await Storage.get("mini-mock-dsl");
+        } catch (e) {
+            console.error("Storage load failed:", e);
+            saved = localStorage.getItem("mini-mock-dsl");
+        }
+
+        if (saved === undefined || saved === null || saved.trim() === "") {
+            saved = TEMPLATES.dashboard;
+        } else if (saved.includes(":col") || saved.includes(":row")) {
+            saved = TEMPLATES.dashboard;
+            try {
+                await Storage.set("mini-mock-dsl", saved);
+            } catch (e) {
+                localStorage.setItem("mini-mock-dsl", saved);
+            }
+        }
+
+        dslInput.value = saved;
+        for (const [key, val] of Object.entries(TEMPLATES)) {
+            if (val === saved) {
+                exampleSelect.value = key;
+                currentTemplate = key;
+                break;
+            }
+        }
+        updatePreview();
+    }
+
+    init();
+
+    const dialogInfo = document.getElementById("modal-info");
+    document.getElementById("open-modal").addEventListener("click", () => dialogInfo?.showModal?.());
+    dialogInfo?.addEventListener("click", (e) => {
+        if (e.target === dialogInfo || e.target.closest("[data-action='close']")) {
+            dialogInfo.close();
+        }
+    });
+</script>
+
+<dialog id="modal-info" class="modal-info" aria-labelledby="dialog-title"
+        aria-describedby="dialog-desc" aria-modal="true">
+    <article>
+        <header>
+            <h3 id="dialog-title">MockML Reference</h3>
+        </header>
+        <p id="dialog-desc">A text-based markup language for building interactive wireframes and
+            mockups.</p>
+
+        <div class="modal-body">
+            <h4>1. Structure & Layout</h4>
+            <div class="table-container">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Syntax</th>
+                        <th>Description</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td><code>title: &lt;text&gt;</code></td>
+                        <td>Document title metadata (must be on first line). Example: <code>title:
+                            My App</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>min_height: &lt;num&gt;</code></td>
+                        <td>Global minimum height metadata. Example: <code>min_height: 500</code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>'text'</code> or <code>"text"</code></td>
+                        <td>Plain cell label. Supports backslash escaping. Example: <code>'User
+                            Profile'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>|</code></td>
+                        <td>Column separator. Lays out adjacent cells horizontally. Example: <code>'Left'
+                            | 'Right'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>[ ... ]</code></td>
+                        <td>Table layout grid. Newlines inside the brackets create rows, and column
+                            separators <code>|</code> create columns.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>{ ... }</code></td>
+                        <td>Container group. Wraps its inner content in a container.</td>
+                    </tr>
+                    <tr>
+                        <td><code>spacer()</code></td>
+                        <td>Empty spacer cell that automatically expands to fill available layout
+                            space.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>hr()</code></td>
+                        <td>Horizontal divider line.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4>2. Modifiers & Sizing</h4>
+            <div class="table-container">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Modifier</th>
+                        <th>Description</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td><code>:N</code></td>
+                        <td>Flex weight sizing hint. Example: <code>'Main':3 | 'Sidebar'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>:h&lt;size&gt;</code></td>
+                        <td>Fixed height constraint. Example: <code>'Header':h80</code>, <code>'Content':h20rem</code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>:min-h&lt;size&gt;</code></td>
+                        <td>Minimum height constraint. Example: <code>'Footer':min-h100</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>:borders</code></td>
+                        <td>Visible borders. Keywords: <code>all</code>, <code>l</code> (left),
+                            <code>r</code> (right), <code>u</code> (top), <code>d</code> (bottom),
+                            <code>lr</code> (left/right), <code>ud</code> (top/bottom). Example:
+                            <code>{a|b}:ud</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>:@align</code></td>
+                        <td>Text/flex alignment. Keywords: <code>left</code>/<code>l</code>, <code>right</code>/<code>r</code>,
+                            <code>center</code>/<code>c</code>, <code>justify</code>/<code>j</code>.
+                            Example: <code>'Center label':@center</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>:@valign</code></td>
+                        <td>Vertical/cross-axis alignment. Keywords: <code>top</code>/<code>t</code>,
+                            <code>bottom</code>/<code>b</code>, <code>middle</code>/<code>m</code>.
+                            Example: <code>'Top aligned':@top</code>, <code>'Centered':@center@middle</code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>[:borders ...]</code></td>
+                        <td>Table default borders. Applies modifiers to every child in the table
+                            grid. Example: <code>[:ud 'Row 1' | 'Row 2']</code></td>
+                    </tr>
+                    <tr>
+                        <td>Combined</td>
+                        <td>Combined modifier inline (alignment, weight, borders). Example: <code>'Title':@center2ud</code>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4>3. UI Components</h4>
+            <div class="table-container">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Syntax</th>
+                        <th>Description</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td><code>button(text)</code></td>
+                        <td>Button element. Example: <code>button(Cancel)</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>hbutton(text)</code></td>
+                        <td>Highlighted (primary) button. Example: <code>hbutton(Submit)</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>button(icon(name))</code></td>
+                        <td>Icon-only button (renders as <code>btn-sym</code>). Example: <code>button(icon(download))</code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>input(placeholder)</code></td>
+                        <td>Text input field. Example: <code>input(Search...)</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>link(text)</code><br><code>link(url, text)</code></td>
+                        <td>Hyperlink. 1 arg: label text (href="#"). 2 args: URL (first) and label
+                            (second). Example: <code>link(/home, Home)</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>img(alt)</code><br><code>img(url, alt)</code><br><code>img(...,
+                            ratio)</code></td>
+                        <td>Image placeholder. Supports optional aspect ratio hint (e.g.
+                            <code>1:1</code>, <code>16:9</code>). Example: <code>img(avatar,
+                                1:1)</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>select(o1, o2, ...)</code></td>
+                        <td>Dropdown selector with options. Example: <code>select(Red, Green,
+                            Blue)</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>htag(text)</code></td>
+                        <td>Small colored status badge/pill. Example: <code>htag(New)</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>tag(text)</code></td>
+                        <td>Chip/tag indicator. Example: <code>tag(Active)</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>icon(name)</code></td>
+                        <td>Material icon. Example: <code>icon(settings)</code></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4>4. Annotations, Comments & Macros</h4>
+            <div class="table-container">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Syntax</th>
+                        <th>Description</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td><code>// comment</code></td>
+                        <td>Line comment. Must be outside quotes or brackets, and preceded by space
+                            or a column separator. Example: <code>// sidebar cells</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>&lt;- note text</code></td>
+                        <td>Descriptive side note box connected to the element with a line. Example:
+                            <code>'Stats' &lt;- Refreshes daily</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>&lt;&lt;- note text</code></td>
+                        <td>Inline side note box targeting the specific preceding inline element or
+                            text. Example: <code>button(Add) &lt;&lt;- 'Adds item'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>sup(N)</code><br><code>sup(N) note text</code></td>
+                        <td>Footnote reference superscript, and footnote definition at the bottom of
+                            the code. Example: <code>sup(1) Must be unique</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>$macro = { ... }</code></td>
+                        <td>Macro template definition. Calls wrap contents in a card. Example:
+                            <code>$card = { $0 | $1 }</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>inline $macro = { ... }</code></td>
+                        <td>Inline macro template definition. Inserts contents transparently.
+                            Example: <code>inline $box = { $0 }</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>$macro(args)</code></td>
+                        <td>Invocation of a macro template with parameter arguments. Example: <code>$card(Username,
+                            input())</code></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer>
+            <button type="button" data-action="close">Close</button>
+        </footer>
+    </article>
+</dialog>
+</body>
+
+</html>

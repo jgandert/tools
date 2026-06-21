@@ -1614,7 +1614,15 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
     }
     for (let i = 0; i < phantoms.length; i++) {
         const p = phantoms[i];
-        const room = { id: p.id, x: p.x, y: p.y, w: p.w, h: p.h, centerX: p.centerX, centerY: p.centerY };
+        const room = {
+            id: p.id,
+            x: p.x,
+            y: p.y,
+            w: p.w,
+            h: p.h,
+            centerX: p.centerX,
+            centerY: p.centerY,
+        };
         layoutMap[p.id] = room;
     }
 

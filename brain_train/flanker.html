@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="en" class="theme-purple">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="Eriksen Flanker cognitive training task.">
+    <title>Eriksen Flanker Task</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .simulation-container {
+            background: var(--surface-container-low);
+            border-radius: var(--radius);
+            padding: var(--spacing-md);
+            border: 1px solid var(--outline-variant);
+            margin-top: var(--spacing-lg);
+        }
+
+        .form-row {
+            display: flex;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-row > div {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .display-area {
+            background-color: var(--surface-container-highest);
+            border-radius: var(--radius);
+            border: 1px solid var(--outline-variant);
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: var(--spacing-lg) 0;
+            font-size: 3.5rem;
+            font-weight: 700;
+            font-family: monospace;
+            user-select: none;
+            color: var(--primary);
+        }
+
+        .spacing-tight {
+            letter-spacing: 0.15rem;
+            text-indent: 0.15rem;
+        }
+
+        .spacing-normal {
+            letter-spacing: 0.8rem;
+            text-indent: 0.8rem;
+        }
+
+        .spacing-wide {
+            letter-spacing: 2.2rem;
+            text-indent: 2.2rem;
+        }
+
+        .game-actions {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" checked>
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Eriksen Flanker</h1>
+        <p>Attention Measurement Task</p>
+    </hgroup>
+    <nav aria-label="Primary">
+        <ul>
+            <li>
+                <a href="index.html" class="back-link">
+                    <span class="sym">arrow_back</span> Hub
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="content">
+    <section id="game-section">
+        <h2>Eriksen Flanker Task</h2>
+
+        <div id="instructions-text">
+            <p>
+                Identify the direction of the central target arrow or letter as fast as possible.
+                Ignore the flanking distractors on either side.
+            </p>
+            <details>
+                <summary>How to Play &amp; Examples</summary>
+                <p>
+                    A fixation cross (<code>+</code>) will appear, followed briefly by 5 or 7
+                    letters or arrows. Focus only on the <strong>middle character</strong>.
+                </p>
+                <p>
+                    <strong>Key Mappings:</strong>
+                </p>
+                <ul>
+                    <li><strong>Left Target:</strong> Press <strong>A</strong> or <strong>Left
+                        Arrow</strong> (&larr;) if the center target is <code>X</code>,
+                        <code>C</code>, <code>S</code>, or <code>&lt;</code>.
+                    </li>
+                    <li><strong>Right Target:</strong> Press <strong>L</strong> or <strong>Right
+                        Arrow</strong> (&rarr;) if the center target is <code>V</code>,
+                        <code>B</code>, <code>H</code>, <code>K</code>, or <code>&gt;</code>.
+                    </li>
+                </ul>
+                <p>
+                    <strong>Examples:</strong>
+                </p>
+                <ul>
+                    <li><code>&lt;&lt;&lt;&lt;&lt;</code> (Congruent): Center is <code>&lt;</code>
+                        &rarr; Press <strong>Left</strong>.
+                    </li>
+                    <li><code>&lt;&lt;&gt;&lt;&lt;</code> (Incongruent): Center is <code>&gt;</code>
+                        &rarr; Press <strong>Right</strong>.
+                    </li>
+                    <li><code>XXCXX</code> (Congruent): Center is <code>C</code> &rarr; Press
+                        <strong>Left</strong>.
+                    </li>
+                    <li><code>XXVXX</code> (Incongruent): Center is <code>V</code> &rarr; Press
+                        <strong>Right</strong>.
+                    </li>
+                </ul>
+            </details>
+        </div>
+
+        <div class="display-area" id="display-area">
+            +
+        </div>
+
+        <div id="game-status" class="simulation-container hidden">
+            <div class="form-row">
+                <div>
+                    <strong>Trial:</strong>
+                    <span id="stat-trial">0 / 100</span>
+                </div>
+                <div>
+                    <strong>Score:</strong>
+                    <span id="stat-score">0</span>
+                </div>
+                <div>
+                    <strong>Accuracy:</strong>
+                    <span id="stat-accuracy">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-actions" class="game-actions hidden">
+            <button id="btn-response-left" class="btn btn-primary" type="button">
+                Left Target (A / ←)
+            </button>
+            <button id="btn-response-right" class="btn btn-primary" type="button">
+                Right Target (L / →)
+            </button>
+            <button id="btn-stop" class="btn btn-danger" type="button">
+                <span class="sym">stop</span> Stop
+            </button>
+        </div>
+
+        <section id="config-section" class="simulation-container">
+            <h2>Game Configuration</h2>
+            <div class="form-row">
+                <div>
+                    <label for="select-difficulty">Task Mode</label>
+                    <select id="select-difficulty">
+                        <option value="Arrow-Mixed" selected>Arrow-Mixed</option>
+                        <option value="Letter-Mixed">Letter-Mixed</option>
+                        <option value="Arrow-Incongruent">Arrow-Incongruent Only</option>
+                        <option value="Challenge-Mixed-Random">75% Incongruent, 7 Chars, Mixed,
+                            Random Flankers
+                        </option>
+                        <option value="Challenge-Mixed-Uniform">75% Incongruent, 7 Chars, Mixed,
+                            Uniform Flankers
+                        </option>
+                    </select>
+                </div>
+                <div>
+                    <label for="select-spacing">Stimulus Spacing</label>
+                    <select id="select-spacing">
+                        <option value="tight">Tight</option>
+                        <option value="normal" selected>Normal</option>
+                        <option value="wide">Wide</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="select-trials">Number of Trials</label>
+                    <select id="select-trials">
+                        <option value="20">20 Trials (Quick)</option>
+                        <option value="50">50 Trials (Medium)</option>
+                        <option value="100" selected>100 Trials (Standard)</option>
+                        <option value="150">150 Trials (Extended)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label for="select-duration">Stimulus Duration</label>
+                    <select id="select-duration">
+                        <option value="150">150 ms (Fast)</option>
+                        <option value="250" selected>250 ms (Standard)</option>
+                        <option value="400">400 ms (Slow)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="select-deadline">Response Deadline</label>
+                    <select id="select-deadline">
+                        <option value="1000">1000 ms (Tight)</option>
+                        <option value="1200" selected>1200 ms (Standard)</option>
+                        <option value="1500">1500 ms (Relaxed)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <button id="btn-start" class="btn btn-primary" type="button">
+                    <span class="sym">play_arrow</span> Start Training
+                </button>
+            </div>
+        </section>
+
+        <section id="results-panel" class="simulation-container hidden">
+            <h2>Session Completed!</h2>
+            <div class="results-grid">
+                <div>
+                    <strong>Accuracy:</strong>
+                    <span id="results-accuracy">0%</span>
+                </div>
+                <div>
+                    <strong>Congruent RT:</strong>
+                    <span id="results-congruent-rt">0 ms</span>
+                </div>
+                <div>
+                    <strong>Incongruent RT:</strong>
+                    <span id="results-incongruent-rt">0 ms</span>
+                </div>
+                <div>
+                    <strong>Flanker Effect:</strong>
+                    <span id="results-flanker-effect">0 ms</span>
+                </div>
+                <div>
+                    <strong>Congruent Accuracy:</strong>
+                    <span id="results-congruent-acc">0%</span>
+                </div>
+                <div>
+                    <strong>Incongruent Accuracy:</strong>
+                    <span id="results-incongruent-acc">0%</span>
+                </div>
+                <div>
+                    <strong>Final Score:</strong>
+                    <span id="results-score">0</span>
+                </div>
+            </div>
+            <p id="flanker-feedback">...</p>
+            <div class="form-row">
+                <button id="btn-return-hub" class="btn btn-primary" type="button">
+                    <span class="sym">arrow_back</span> Return to Hub
+                </button>
+                <button id="btn-play-again" class="btn" type="button">
+                    <span class="sym">refresh</span> Play Again
+                </button>
+            </div>
+        </section>
+    </section>
+</main>
+
+<aside>
+    <h2>Game Info</h2>
+    <ul>
+        <li><strong>Stimulus:</strong> 5 arrows / letters</li>
+        <li><strong>Keys:</strong> Left Arrow / A (Left target), Right Arrow / L (Right target)</li>
+        <li><strong>Mix:</strong> Congruent (50%), Incongruent (50%)</li>
+        <li><strong>Focus:</strong> Flanker effect calculation (Incongruent RT - Congruent RT)</li>
+    </ul>
+</aside>
+
+<footer>
+    <p>Brain Train suite — Eriksen Flanker Task</p>
+</footer>
+
+<script src="../one.js"></script>
+<script>
+
+
+    loadGameSettings();
+
+    // DOM Elements
+    const displayArea = document.getElementById("display-area");
+    const gameStatus = document.getElementById("game-status");
+    const gameActions = document.getElementById("game-actions");
+    const configSection = document.getElementById("config-section");
+    const resultsPanel = document.getElementById("results-panel");
+    const instructionsText = document.getElementById("instructions-text");
+
+    const selectDifficulty = document.getElementById("select-difficulty");
+    const selectSpacing = document.getElementById("select-spacing");
+    const selectTrials = document.getElementById("select-trials");
+    const selectDuration = document.getElementById("select-duration");
+    const selectDeadline = document.getElementById("select-deadline");
+
+    const btnStart = document.getElementById("btn-start");
+    const btnStop = document.getElementById("btn-stop");
+    const btnResponseLeft = document.getElementById("btn-response-left");
+    const btnResponseRight = document.getElementById("btn-response-right");
+    const btnReturnHub = document.getElementById("btn-return-hub");
+    const btnPlayAgain = document.getElementById("btn-play-again");
+
+    const statTrial = document.getElementById("stat-trial");
+    const statScore = document.getElementById("stat-score");
+    const statAccuracy = document.getElementById("stat-accuracy");
+
+    const resultsAccuracy = document.getElementById("results-accuracy");
+    const resultsCongruentRt = document.getElementById("results-congruent-rt");
+    const resultsIncongruentRt = document.getElementById("results-incongruent-rt");
+    const resultsFlankerEffect = document.getElementById("results-flanker-effect");
+    const resultsCongruentAcc = document.getElementById("results-congruent-acc");
+    const resultsIncongruentAcc = document.getElementById("results-incongruent-acc");
+    const resultsScore = document.getElementById("results-score");
+    const flankerFeedback = document.getElementById("flanker-feedback");
+
+    // Game state variables
+    let isPlaying = false;
+    let currentTrial = 0;
+    let totalTrials = 100;
+    let difficultyMode = "Arrow-Mixed";
+    let spacingConfig = "normal";
+    let stimulusDuration = 250;
+    let responseDeadline = 1200;
+
+    let trialsSequence = [];
+    let congruentTrials = [];
+    let incongruentTrials = [];
+
+    let trialStartTime = 0;
+    let sessionStartTime = 0;
+    let responded = false;
+    let responseRT = null;
+    let isCorrect = false;
+
+    let stimulusTimeout = null;
+    let trialTimeout = null;
+    let fixationTimeout = null;
+    let feedbackTimeout = null;
+
+    let audioCtx = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx && audioCtx.state === "suspended") {
+            try {
+                audioCtx.resume();
+            } catch (e) {
+            }
+        }
+    }
+
+    function playSound(type) {
+        initAudio();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+
+        if (type === "tick") {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+            osc.start(now);
+            osc.stop(now + 0.05);
+        } else if (type === "success") {
+            const notes = [261.63, 329.63, 392.00, 523.25];
+            notes.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.type = "triangle";
+                osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+                gain.gain.setValueAtTime(0, now + idx * 0.08);
+                gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.08 + 0.04);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+
+                osc.start(now + idx * 0.08);
+                osc.stop(now + idx * 0.08 + 0.35);
+            });
+        } else if (type === "fail") {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(130, now);
+            osc.frequency.linearRampToValueAtTime(80, now + 0.25);
+
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+            osc.start(now);
+            osc.stop(now + 0.25);
+        }
+    }
+
+    function showSection(section) {
+        configSection.classList.add("hidden");
+        gameStatus.classList.add("hidden");
+        gameActions.classList.add("hidden");
+        resultsPanel.classList.add("hidden");
+        instructionsText.classList.add("hidden");
+
+        if (section === "settings") {
+            configSection.classList.remove("hidden");
+            instructionsText.classList.remove("hidden");
+            displayArea.textContent = "+";
+            displayArea.className = "display-area";
+        } else if (section === "playing") {
+            gameStatus.classList.remove("hidden");
+            gameActions.classList.remove("hidden");
+        } else if (section === "results") {
+            resultsPanel.classList.remove("hidden");
+        }
+    }
+
+    function generateTrials(mode, count) {
+        const trials = [];
+        const isArrow = mode.startsWith("Arrow");
+        const isIncongruentOnly = mode.includes("Incongruent");
+        const isChallenge = mode.startsWith("Challenge");
+
+        for (let i = 0; i < count; i++) {
+            let type = "congruent";
+            if (isChallenge) {
+                type = i % 4 === 0 ? "congruent" : "incongruent";
+            } else if (isIncongruentOnly) {
+                type = "incongruent";
+            } else {
+                type = i % 2 === 0 ? "congruent" : "incongruent";
+            }
+
+            const targetDir = Math.floor(i / 2) % 2 === 0 ? "left" : "right";
+            let stimulus = "";
+
+            const trialIsArrow = isChallenge ? (i % 2 === 0) : isArrow;
+            const numChars = isChallenge ? 7 : 5;
+            const halfFlankers = (numChars - 1) / 2;
+
+            if (trialIsArrow) {
+                const targetChar = targetDir === "left" ? "<" : ">";
+                if (type === "congruent") {
+                    stimulus = targetChar.repeat(numChars);
+                } else {
+                    if (mode === "Challenge-Mixed-Random") {
+                        let leftFlankers = "";
+                        let rightFlankers = "";
+                        for (let k = 0; k < halfFlankers; k++) {
+                            leftFlankers += Math.random() < 0.5 ? "<" : ">";
+                            rightFlankers += Math.random() < 0.5 ? "<" : ">";
+                        }
+                        if (!leftFlankers.includes(targetDir === "left" ? ">" : "<") &&
+                            !rightFlankers.includes(targetDir === "left" ? ">" : "<")) {
+                            const oppositeChar = targetDir === "left" ? ">" : "<";
+                            leftFlankers = oppositeChar + leftFlankers.substring(1);
+                        }
+                        stimulus = leftFlankers + targetChar + rightFlankers;
+                    } else {
+                        const oppositeChar = targetDir === "left" ? ">" : "<";
+                        stimulus = oppositeChar.repeat(halfFlankers) + targetChar + oppositeChar.repeat(halfFlankers);
+                    }
+                }
+            } else {
+                const leftChars = ["S", "C", "X"];
+                const rightChars = ["H", "K", "V", "B"];
+                const targetChar = targetDir === "left"
+                    ? leftChars[Math.floor(Math.random() * leftChars.length)]
+                    : rightChars[Math.floor(Math.random() * rightChars.length)];
+
+                if (type === "congruent") {
+                    let flankerChar = targetChar;
+                    if (isChallenge && Math.random() < 0.5) {
+                        const sameGroup = targetDir === "left" ? leftChars : rightChars;
+                        const otherChars = sameGroup.filter(c => c !== targetChar);
+                        if (otherChars.length > 0) {
+                            flankerChar = otherChars[Math.floor(Math.random() * otherChars.length)];
+                        }
+                    }
+                    stimulus = flankerChar.repeat(halfFlankers) + targetChar + flankerChar.repeat(halfFlankers);
+                } else {
+                    if (mode === "Challenge-Mixed-Random") {
+                        const oppositeGroup = targetDir === "left" ? rightChars : leftChars;
+                        let leftFlankers = "";
+                        let rightFlankers = "";
+                        for (let k = 0; k < halfFlankers; k++) {
+                            leftFlankers += oppositeGroup[Math.floor(Math.random() * oppositeGroup.length)];
+                            rightFlankers += oppositeGroup[Math.floor(Math.random() * oppositeGroup.length)];
+                        }
+                        stimulus = leftFlankers + targetChar + rightFlankers;
+                    } else {
+                        const oppositeGroup = targetDir === "left" ? rightChars : leftChars;
+                        const flankerChar = oppositeGroup[Math.floor(Math.random() * oppositeGroup.length)];
+                        stimulus = flankerChar.repeat(halfFlankers) + targetChar + flankerChar.repeat(halfFlankers);
+                    }
+                }
+            }
+
+            trials.push({
+                type: type,
+                target: targetDir,
+                stimulus: stimulus,
+            });
+        }
+
+        // Shuffle
+        for (let i = trials.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [trials[i], trials[j]] = [trials[j], trials[i]];
+        }
+
+        return trials;
+    }
+
+    function updateLiveStats() {
+        let correctCount = 0;
+        let totalCount = congruentTrials.length + incongruentTrials.length;
+        let score = 0;
+
+        congruentTrials.forEach(t => {
+            if (t.isCorrect) {
+                correctCount++;
+                score += 10;
+                if (t.rt < 600) {
+                    score += Math.round((600 - t.rt) / 10);
+                }
+            }
+        });
+
+        incongruentTrials.forEach(t => {
+            if (t.isCorrect) {
+                correctCount++;
+                score += 20;
+                if (t.rt < 750) {
+                    score += Math.round((750 - t.rt) / 10);
+                }
+            }
+        });
+
+        const accuracy = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+        statScore.textContent = score;
+        statAccuracy.textContent = `${accuracy}%`;
+    }
+
+    function getSessionResults() {
+        const congruentCorrect = congruentTrials.filter(t => t.isCorrect && t.rt !== null);
+        const incongruentCorrect = incongruentTrials.filter(t => t.isCorrect && t.rt !== null);
+
+        const avgCongruentRT = congruentCorrect.length > 0
+            ? Math.round(congruentCorrect.reduce((sum, t) => sum + t.rt, 0) / congruentCorrect.length)
+            : null;
+
+        const avgIncongruentRT = incongruentCorrect.length > 0
+            ? Math.round(incongruentCorrect.reduce((sum, t) => sum + t.rt, 0) / incongruentCorrect.length)
+            : null;
+
+        const flankerEffect = (avgCongruentRT !== null && avgIncongruentRT !== null)
+            ? (avgIncongruentRT - avgCongruentRT)
+            : null;
+
+        const totalTrialsCount = congruentTrials.length + incongruentTrials.length;
+        const totalCorrect = congruentTrials.filter(t => t.isCorrect).length + incongruentTrials.filter(t => t.isCorrect).length;
+        const overallAccuracy = totalTrialsCount > 0 ? Math.round((totalCorrect / totalTrialsCount) * 100) : 0;
+
+        const congruentAcc = congruentTrials.length > 0
+            ? Math.round((congruentTrials.filter(t => t.isCorrect).length / congruentTrials.length) * 100)
+            : null;
+
+        const incongruentAcc = incongruentTrials.length > 0
+            ? Math.round((incongruentTrials.filter(t => t.isCorrect).length / incongruentTrials.length) * 100)
+            : null;
+
+        return {
+            overallAccuracy,
+            congruentAcc,
+            incongruentAcc,
+            avgCongruentRT,
+            avgIncongruentRT,
+            flankerEffect,
+        };
+    }
+
+    function registerResponse(direction) {
+        if (responded || !isPlaying) return;
+
+        const now = performance.now();
+        const rt = Math.round(now - trialStartTime);
+
+        if (trialStartTime === 0) return;
+
+        responded = true;
+        responseRT = rt;
+
+        const btn = direction === "left" ? btnResponseLeft : btnResponseRight;
+        btn.classList.add("feedback-active");
+        setTimeout(() => btn.classList.remove("feedback-active"), 150);
+
+        clearTimeout(stimulusTimeout);
+        clearTimeout(trialTimeout);
+
+        const trial = trialsSequence[currentTrial];
+        isCorrect = (direction === trial.target);
+
+        const trialData = {
+            rt: rt,
+            isCorrect: isCorrect,
+            responded: true,
+        };
+
+        if (trial.type === "congruent") {
+            congruentTrials.push(trialData);
+        } else {
+            incongruentTrials.push(trialData);
+        }
+
+        if (isCorrect) {
+            displayArea.textContent = "✓";
+        } else {
+            displayArea.textContent = "✗";
+        }
+        displayArea.className = "display-area";
+
+        updateLiveStats();
+        playSound(isCorrect ? "success" : "fail");
+
+        feedbackTimeout = setTimeout(() => {
+            goToNextTrial();
+        }, 400);
+    }
+
+    function evaluateTrial() {
+        if (responded) return;
+
+        responded = true;
+        const trial = trialsSequence[currentTrial];
+
+        const trialData = {
+            rt: null,
+            isCorrect: false,
+            responded: false,
+        };
+
+        if (trial.type === "congruent") {
+            congruentTrials.push(trialData);
+        } else {
+            incongruentTrials.push(trialData);
+        }
+
+        displayArea.textContent = "✗";
+        displayArea.className = "display-area";
+
+        updateLiveStats();
+        playSound("fail");
+    }
+
+    function goToNextTrial() {
+        currentTrial++;
+        if (currentTrial < totalTrials) {
+            runTrial();
+        } else {
+            finishGame();
+        }
+    }
+
+    function runTrial() {
+        if (!isPlaying) return;
+
+        responded = false;
+        responseRT = null;
+        isCorrect = false;
+        trialStartTime = 0;
+
+        statTrial.textContent = `${currentTrial + 1} / ${totalTrials}`;
+
+        displayArea.textContent = "+";
+        displayArea.className = "display-area";
+
+        const fixationDuration = 500 + Math.random() * 500;
+
+        fixationTimeout = setTimeout(() => {
+            if (!isPlaying) return;
+
+            const trial = trialsSequence[currentTrial];
+            displayArea.textContent = trial.stimulus;
+            displayArea.className = `display-area spacing-${spacingConfig}`;
+            playSound("tick");
+
+            trialStartTime = performance.now();
+
+            stimulusTimeout = setTimeout(() => {
+                if (!isPlaying) return;
+
+                displayArea.textContent = "";
+                displayArea.className = "display-area";
+            }, stimulusDuration);
+
+            trialTimeout = setTimeout(() => {
+                if (!isPlaying) return;
+
+                evaluateTrial();
+                feedbackTimeout = setTimeout(() => {
+                    goToNextTrial();
+                }, 400);
+            }, responseDeadline);
+
+        }, fixationDuration);
+    }
+
+    const FLANKER_SETTINGS_KEY = "brain-train-flanker-settings";
+
+    function saveGameSettings() {
+        try {
+            const settings = {
+                difficulty: selectDifficulty.value,
+                spacing: selectSpacing.value,
+                trials: selectTrials.value,
+                duration: selectDuration.value,
+                deadline: selectDeadline.value,
+            };
+            localStorage.setItem(FLANKER_SETTINGS_KEY, JSON.stringify(settings));
+        } catch (e) {
+        }
+    }
+
+    function loadGameSettings() {
+        try {
+            const stored = JSON.parse(localStorage.getItem(FLANKER_SETTINGS_KEY) || "{}");
+            if (stored.difficulty) selectDifficulty.value = stored.difficulty;
+            if (stored.spacing) selectSpacing.value = stored.spacing;
+            if (stored.trials) selectTrials.value = stored.trials;
+            if (stored.duration) selectDuration.value = stored.duration;
+            if (stored.deadline) selectDeadline.value = stored.deadline;
+        } catch (e) {
+        }
+    }
+
+    function startGame() {
+        initAudio();
+        isPlaying = true;
+        currentTrial = 0;
+
+        saveGameSettings();
+
+        difficultyMode = selectDifficulty.value;
+        spacingConfig = selectSpacing.value;
+        totalTrials = parseInt(selectTrials.value) || 100;
+        stimulusDuration = parseInt(selectDuration.value) || 250;
+        responseDeadline = parseInt(selectDeadline.value) || 1200;
+
+        trialsSequence = generateTrials(difficultyMode, totalTrials);
+        congruentTrials = [];
+        incongruentTrials = [];
+
+        statTrial.textContent = `1 / ${totalTrials}`;
+        statScore.textContent = "0";
+        statAccuracy.textContent = "0%";
+
+        sessionStartTime = performance.now();
+
+        showSection("playing");
+        runTrial();
+    }
+
+    function stopGame() {
+        isPlaying = false;
+        clearTimeout(fixationTimeout);
+        clearTimeout(stimulusTimeout);
+        clearTimeout(trialTimeout);
+        clearTimeout(feedbackTimeout);
+
+        showSection("settings");
+    }
+
+    function finishGame() {
+        isPlaying = false;
+        clearTimeout(fixationTimeout);
+        clearTimeout(stimulusTimeout);
+        clearTimeout(trialTimeout);
+        clearTimeout(feedbackTimeout);
+
+        const results = getSessionResults();
+
+        resultsAccuracy.textContent = `${results.overallAccuracy}%`;
+        resultsCongruentRt.textContent = results.avgCongruentRT !== null ? `${results.avgCongruentRT} ms` : "N/A";
+        resultsIncongruentRt.textContent = results.avgIncongruentRT !== null ? `${results.avgIncongruentRT} ms` : "N/A";
+        resultsFlankerEffect.textContent = results.flankerEffect !== null ? `${results.flankerEffect} ms` : "N/A";
+
+        resultsCongruentAcc.textContent = results.congruentAcc !== null ? `${results.congruentAcc}%` : "N/A";
+        resultsIncongruentAcc.textContent = results.incongruentAcc !== null ? `${results.incongruentAcc}%` : "N/A";
+        resultsScore.textContent = statScore.textContent;
+
+        if (results.flankerEffect !== null) {
+            if (results.flankerEffect < 50) {
+                flankerFeedback.textContent = `Excellent inhibitory control! Your flanker effect is only ${results.flankerEffect} ms.`;
+            } else if (results.flankerEffect < 100) {
+                flankerFeedback.textContent = `Good focus. Your flanker effect is ${results.flankerEffect} ms. This measures your current conflict resolution speed.`;
+            } else {
+                flankerFeedback.textContent = `Your flanker effect is ${results.flankerEffect} ms. This reflects the current cost of conflict between target and flankers.`;
+            }
+        } else {
+            flankerFeedback.textContent = `Session completed! Practice focusing on the center target.`;
+        }
+
+        recordSession();
+
+        showSection("results");
+    }
+
+    // Event listeners
+    btnStart.addEventListener("click", startGame);
+    btnStop.addEventListener("click", stopGame);
+
+    btnResponseLeft.addEventListener("click", () => {
+        registerResponse("left");
+    });
+
+    btnResponseRight.addEventListener("click", () => {
+        registerResponse("right");
+    });
+
+    btnPlayAgain.addEventListener("click", () => {
+        showSection("settings");
+    });
+
+    function recordSession() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+        const results = getSessionResults();
+        const allCorrect = [...congruentTrials, ...incongruentTrials].filter(t => t.isCorrect && t.rt !== null);
+        const avgRT = allCorrect.length > 0
+            ? Math.round(allCorrect.reduce((sum, t) => sum + t.rt, 0) / allCorrect.length)
+            : 0;
+        const durationSec = Math.round((performance.now() - sessionStartTime) / 1000);
+        const newLog = {
+            date: dateStr,
+            game: "flanker",
+            difficulty: difficultyMode,
+            score: parseInt(statScore.textContent) || 0,
+            accuracy: results.overallAccuracy,
+            reactionTime: avgRT,
+            duration: durationSec,
+        };
+        try {
+            const logs = JSON.parse(localStorage.getItem("brain-train-logs") || "[]");
+            logs.push(newLog);
+            localStorage.setItem("brain-train-logs", JSON.stringify(logs));
+        } catch (err) {
+            console.error("Error saving session:", err);
+        }
+    }
+
+    btnReturnHub.addEventListener("click", () => {
+        window.location.href = "index.html";
+    });
+
+    window.addEventListener("keydown", (e) => {
+        if (!isPlaying) return;
+        if (e.repeat) return;
+
+        if (e.key === "a" || e.key === "A" || e.key === "ArrowLeft") {
+            e.preventDefault();
+            registerResponse("left");
+        } else if (e.key === "l" || e.key === "L" || e.key === "ArrowRight") {
+            e.preventDefault();
+            registerResponse("right");
+        }
+    });
+</script>
+</body>
+
+</html>

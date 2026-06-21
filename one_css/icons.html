@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en" class="layout-centered">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Material Symbols browser and copy tool for one.css framework.">
+    <title>one.css Icons</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        .layout-centered main {
+            max-width: 100%;
+        }
+
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+        }
+
+        .icon-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--surface-container-low);
+            border: 1px solid var(--outline-variant);
+            border-radius: var(--radius);
+            padding: var(--spacing-md) var(--spacing-sm);
+            cursor: pointer;
+            transition: var(--trans-interactive);
+            color: inherit;
+            font-family: inherit;
+            font-size: 0.75rem;
+            text-transform: none;
+            letter-spacing: normal;
+            width: 100%;
+            height: auto;
+            gap: 0;
+            line-height: 1.4;
+            text-align: center;
+        }
+
+        .icon-card:hover {
+            background-color: var(--surface-container-highest);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .icon-card .sym {
+            font-size: 32px;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .icon-card .icon-name {
+            font-size: 0.75rem;
+            color: var(--on-surface-variant);
+            word-break: break-all;
+        }
+
+        .search-container {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .switch-container {
+            margin-bottom: var(--spacing-lg);
+        }
+    </style>
+</head>
+
+<body>
+<main>
+    <section>
+        <h1>one.css Icons</h1>
+
+        <label for="icon-search">Search Icons</label>
+        <div role="search" class="search-container">
+            <input type="search" id="icon-search" placeholder="Type to search icons..."
+                   autocomplete="off">
+        </div>
+
+        <label id="copy-mode-label">Copy Template</label>
+        <div class="segmented-control switch-container" role="group"
+             aria-labelledby="copy-mode-label">
+            <input type="radio" name="copy-mode" id="copy-span" value="span" checked>
+            <label for="copy-span">Copy &lt;span&gt;</label>
+
+            <input type="radio" name="copy-mode" id="copy-btn" value="btn">
+            <label for="copy-btn">Copy &lt;button&gt; (btn-sym)</label>
+
+            <input type="radio" name="copy-mode" id="copy-icon" value="icon">
+            <label for="copy-icon">Copy icon()</label>
+
+            <input type="radio" name="copy-mode" id="copy-name" value="name">
+            <label for="copy-name">Copy name</label>
+        </div>
+
+        <div class="icon-grid" id="icon-grid"></div>
+
+        <div class="flex-row mt-4">
+            <a href="index.html" class="btn">Back to Showcase</a>
+        </div>
+    </section>
+</main>
+
+<script src="../one.js"></script>
+<script>
+    const ICON_NAMES = [
+        "account_circle", "add", "add_circle", "add_task", "alarm", "album", "apps", "archive",
+        "arrow_back", "arrow_downward", "arrow_drop_down", "arrow_drop_up", "arrow_forward",
+        "arrow_upward", "attach_file", "autorenew", "backspace", "bar_chart", "bedtime",
+        "block", "bolt", "book", "bookmark", "brightness_medium", "brush", "bug_report",
+        "build", "calculate", "calendar_month", "call", "cancel", "casino", "cast",
+        "category", "chat", "check", "check_circle", "checklist", "cleaning_services",
+        "close", "closed_caption", "cloud_download", "cloud_off", "cloud_upload", "code",
+        "colorize", "computer", "content_copy", "content_cut", "content_paste", "contrast",
+        "cooking", "credit_card", "crop", "crop_free", "dark_mode", "dashboard", "data_array",
+        "data_object", "dataset", "date_range", "delete", "delete_forever", "description",
+        "devices", "directions_bike", "directions_run", "directions_walk", "done_all",
+        "download", "drag_indicator", "draw", "edit", "edit_calendar", "equalizer",
+        "error", "event", "explore", "exposure", "extension", "family_restroom",
+        "fast_forward", "fast_rewind", "favorite", "feedback", "filter_alt", "filter_list",
+        "find_replace", "fitness_center", "flag", "flight", "flip", "folder", "folder_open",
+        "format_align_center", "format_align_justify", "format_align_left", "format_align_right",
+        "format_bold", "format_color_fill", "format_color_text", "format_italic",
+        "format_strikethrough", "format_underlined", "forward_media", "fullscreen",
+        "fullscreen_exit", "function", "functions", "globe", "grid_on", "grid_view",
+        "grocery", "group", "handshake", "help", "history", "home", "hourglass",
+        "hub", "image", "info", "ink_eraser", "input", "key", "keyboard_arrow_down",
+        "keyboard_arrow_left", "keyboard_arrow_right", "keyboard_arrow_up",
+        "keyboard_command_key", "keyboard_control_key", "keyboard_option_key",
+        "keyboard_return", "keyboard_tab", "label", "language", "laundry", "layers",
+        "layers_clear", "light_mode", "lightbulb", "link", "list", "local_shipping",
+        "location_on", "lock", "lock_open", "login", "logout", "mail", "map",
+        "memory", "menu", "menu_open", "mic", "mic_off", "mode_off_on", "more_horiz",
+        "more_vert", "movie", "music_note", "my_location", "notifications", "numbers",
+        "open_in_new", "palette", "pan_tool", "pause", "pause_circle", "payments",
+        "pending_actions", "person", "pets", "photo_camera", "pie_chart", "play_arrow",
+        "play_circle", "playlist_add", "playlist_play", "print", "priority_high",
+        "psychology", "qr_code", "redo", "refresh", "remove", "repeat", "repeat_one",
+        "replay", "reply", "restaurant", "rocket_launch", "rotate_left", "rotate_right",
+        "rule", "save", "schedule", "school", "search", "self_improvement", "send",
+        "sensors", "settings", "share", "shield", "shift", "shopping_cart", "show_chart",
+        "shuffle", "skip_next", "skip_previous", "skull", "smart_toy", "sort",
+        "sort_by_alpha", "space_bar", "speed", "sports_esports", "star", "star_half",
+        "stop", "stop_circle", "subtitles", "sync", "task_alt", "terminal", "thumb_down",
+        "thumb_up", "timer", "title", "today", "translate", "trending_up", "tune",
+        "undo", "upcoming", "upload", "verified", "verified_user", "vertical_align_bottom",
+        "vertical_align_center", "vertical_align_top", "videocam", "view_list",
+        "visibility", "visibility_off", "volume_down", "volume_off", "volume_up",
+        "warning", "water_drop", "wifi", "work", "wrap_text", "zoom_in", "zoom_out",
+    ];
+
+    const iconGrid = document.getElementById("icon-grid");
+    const iconSearch = document.getElementById("icon-search");
+    const copySpan = document.getElementById("copy-span");
+    const copyBtn = document.getElementById("copy-btn");
+    const copyIcon = document.getElementById("copy-icon");
+
+    function getCopyText(name) {
+        if (copySpan.checked) {
+            return `<span class="sym">${name}</span>`;
+        }
+
+        if (copyBtn.checked) {
+            return `<button class="btn-sym">${name}</button>`;
+        }
+
+        if (copyIcon.checked) {
+            return `icon(${name})`;
+        }
+
+        return name;
+    }
+
+    async function handleIconClick(event) {
+        const card = event.currentTarget;
+        const name = card.dataset.name;
+        const text = getCopyText(name);
+
+        card.classList.add("feedback-active");
+        setTimeout(() => card.classList.remove("feedback-active"), 150);
+
+        await one.copy(text);
+    }
+
+    function createIconCard(name) {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "icon-card";
+        card.dataset.name = name;
+        card.setAttribute("aria-label", `Copy ${name} icon`);
+
+        const symSpan = document.createElement("span");
+        symSpan.className = "sym";
+        symSpan.textContent = name;
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "icon-name";
+        nameSpan.textContent = name;
+
+        card.appendChild(symSpan);
+        card.appendChild(nameSpan);
+        card.addEventListener("click", handleIconClick);
+
+        return card;
+    }
+
+    function initializeGrid() {
+        const fragment = document.createDocumentFragment();
+
+        for (const name of ICON_NAMES) {
+            const card = createIconCard(name);
+            fragment.appendChild(card);
+        }
+
+        iconGrid.appendChild(fragment);
+    }
+
+    function handleSearchInput() {
+        const query = iconSearch.value.trim().toLowerCase();
+        const cards = iconGrid.getElementsByClassName("icon-card");
+
+        for (const card of cards) {
+            const name = card.dataset.name;
+            card.hidden = !name.includes(query);
+        }
+    }
+
+    iconSearch.addEventListener("input", handleSearchInput);
+
+    initializeGrid();
+</script>
+</body>
+
+</html>

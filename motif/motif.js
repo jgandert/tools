@@ -145,7 +145,7 @@ export function Arrange(sections, options = {}) {
                             duration: d,
                             from: typeof rampNode.from === "number" ? rampNode.from : 1.0,
                             to: typeof rampNode.to === "number" ? rampNode.to : 0.0,
-                            scheduled: false
+                            scheduled: false,
                         });
                     }
                 }
@@ -276,7 +276,6 @@ export class MotifEventArray extends Array {
         return this;
     }
 }
-
 
 
 export class PatternParser {
@@ -737,10 +736,12 @@ export class MotifEngine {
         this.bpmParam.setValueAtTime(this.tempo, this.ctx.currentTime);
 
         if (this.ctx.audioWorklet) {
-            const p1 = ensureGranularStretcher(this.ctx).catch(() => {});
+            const p1 = ensureGranularStretcher(this.ctx).catch(() => {
+            });
             this._loadingSamples.push(p1);
             // Pre-warm the synth voice worklet so it's ready before the first tick fires.
-            const p2 = ensureSynthWorklet(this.ctx).catch(() => {});
+            const p2 = ensureSynthWorklet(this.ctx).catch(() => {
+            });
             this._loadingSamples.push(p2);
         }
     }
@@ -926,7 +927,7 @@ export class MotifEngine {
                 }
 
                 this.stop();
-                
+
                 if (typeof this.onPlaybackFinished === "function") {
                     this.onPlaybackFinished({ looped: shouldLoop });
                 }
@@ -937,11 +938,11 @@ export class MotifEngine {
                         const delaySeconds = parseDurationToSeconds(options.loopDelay, this.tempo, this.beatsPerBar);
                         delayMs = Math.max(0, delaySeconds * 1000);
                     }
-                    
+
                     this._loopTimeout = setTimeout(() => {
                         if (this._loopTimeout) {
                             Promise.resolve(
-                                this.ctx && this.ctx.state === "suspended" ? this.ctx.resume() : null
+                                this.ctx && this.ctx.state === "suspended" ? this.ctx.resume() : null,
                             ).then(() => {
                                 if (this._loopTimeout) {
                                     this.start();
@@ -1017,7 +1018,7 @@ export class MotifEngine {
                     startBpm: this.tempo,
                     targetBpm: bpm,
                     startTime,
-                    endTime
+                    endTime,
                 };
             } else {
                 this.tempo = bpm;
@@ -1523,7 +1524,7 @@ Track.clearRegistry = function() {
             "filterNode", "pannerNode", "volumeNode",
             "eqLowNode", "eqMidNode", "eqHighNode",
             "compressorNode", "distortionNode", "dspNode",
-            "duckGainNode", "_mergerNode"
+            "duckGainNode", "_mergerNode",
         ];
         for (const prop of internalNodes) {
             safeDisconnect(track[prop]);
@@ -1575,7 +1576,7 @@ Track.pruneExcept = function(activeIds) {
                 "filterNode", "pannerNode", "volumeNode",
                 "eqLowNode", "eqMidNode", "eqHighNode",
                 "compressorNode", "distortionNode", "dspNode",
-                "duckGainNode", "_mergerNode"
+                "duckGainNode", "_mergerNode",
             ];
             for (const prop of internalNodes) {
                 safeDisconnect(track[prop]);
@@ -1697,6 +1698,7 @@ export function LFO(frequencyOrOptions, min, max) {
     }
     return createLFO("sine", options);
 }
+
 LFO.sine = function(options) {
     return createLFO("sine", options);
 };
@@ -1952,8 +1954,8 @@ const MotifSynths = {
         const p = ctx.state.phase;
 
         // Phase Distortion: bend the linear phase into two distinct slopes
-        const warpedPhase = p < pw 
-            ? (p / pw) * 0.5 
+        const warpedPhase = p < pw
+            ? (p / pw) * 0.5
             : 0.5 + ((p - pw) / (1.0 - pw)) * 0.5;
 
         // Read the sine table using warped phase, naturally bounded -1.0 to 1.0
@@ -2161,7 +2163,7 @@ const MotifSynths = {
         s.pMod = ((s.pMod || 0) + (ctx.freq * 0.5) / ctx.sampleRate) % 1.0;
 
         // Slow LFO (0.15 Hz)
-        s.pLfo = ((s.pLfo || 0) + 0.15 / ctx.sampleRate) % 1.0; 
+        s.pLfo = ((s.pLfo || 0) + 0.15 / ctx.sampleRate) % 1.0;
 
         // Slow LFO (0.15 Hz) mapped from 0.2 to 1.2
         const lfo = Math.sin(s.pLfo * TWO_PI) * 0.5 + 0.7;
@@ -2180,7 +2182,7 @@ const MotifSynths = {
         s.p1 = ((s.p1 || 0) + ctx.freq / ctx.sampleRate) % 1.0;
 
         // Subtle detuning
-        s.p2 = ((s.p2 || 0) + (ctx.freq * 1.008) / ctx.sampleRate) % 1.0; 
+        s.p2 = ((s.p2 || 0) + (ctx.freq * 1.008) / ctx.sampleRate) % 1.0;
 
         // Triangle wave approximation with no sharp aliasing edges
         const tri1 = Math.abs((s.p1 * 2.0) - 1.0) * 2.0 - 1.0;
@@ -2195,7 +2197,7 @@ const MotifSynths = {
         const g = Math.tan(Math.PI * cutoff / ctx.sampleRate);
 
         // High damping = low resonance (mellow sound)
-        const damp = 1.4; 
+        const damp = 1.4;
         s.ic1eq = s.ic1eq || 0;
         s.ic2eq = s.ic2eq || 0;
         const v3 = mix - s.ic2eq;
@@ -2205,7 +2207,7 @@ const MotifSynths = {
         s.ic2eq = v2;
 
         // Soften and scale
-        return Math.tanh(v2 * 1.5) * 0.7; 
+        return Math.tanh(v2 * 1.5) * 0.7;
     },
 
     // A deep, tectonic rumble. Uses two heavily detuned low-frequency waves passed through a dark, low-resonance State Variable Filter to simulate shifting tectonic plates.
@@ -2226,7 +2228,7 @@ const MotifSynths = {
         const g = Math.tan(Math.PI * cutoff / ctx.sampleRate);
 
         // High damping prevents resonance whistling
-        const damp = 1.6; 
+        const damp = 1.6;
         s.ic1eq = s.ic1eq || 0;
         s.ic2eq = s.ic2eq || 0;
         const v3 = mix - s.ic2eq;
@@ -2329,7 +2331,7 @@ const MotifSynths = {
         const f = 2.0 * Math.sin(Math.PI * cutoff / ctx.sampleRate);
 
         // High resonance for howling wind effect
-        const q = 0.6; 
+        const q = 0.6;
         const high = ctx.state.b0 - ctx.state.low - (q * ctx.state.band);
         ctx.state.band += f * high;
         ctx.state.low += f * ctx.state.band;
@@ -2586,14 +2588,14 @@ const MotifSynths = {
         s.pLfo = ((s.pLfo || 0) + 4.5 / ctx.sampleRate) % 1.0;
 
         // 2Hz pitch drift
-        const vibrato = Math.sin(s.pLfo * TWO_PI) * 2.0; 
+        const vibrato = Math.sin(s.pLfo * TWO_PI) * 2.0;
         const trueFreq = ctx.freq + vibrato;
 
         // Phase accumulators
         s.p1 = ((s.p1 || 0) + trueFreq / ctx.sampleRate) % 1.0;
 
         // First overtone
-        s.p2 = ((s.p2 || 0) + (trueFreq * 2.0) / ctx.sampleRate) % 1.0; 
+        s.p2 = ((s.p2 || 0) + (trueFreq * 2.0) / ctx.sampleRate) % 1.0;
         const fund = Math.sin(s.p1 * TWO_PI);
 
         // Triangle wave for the overtone to give a hollow woody shape
@@ -2605,7 +2607,7 @@ const MotifSynths = {
         s.lp = s.lp || 0;
 
         // Simple 1-pole lowpass
-        s.lp += (tri - s.lp) * alpha; 
+        s.lp += (tri - s.lp) * alpha;
         const mix = (fund * 0.8) + (s.lp * 0.2);
         return Math.tanh(mix);
     },
@@ -3270,7 +3272,7 @@ const MotifSamples = (() => {
                 p3 += (f0 * 8.933) / sampleRate;
 
                 const tine =
-                    Math.sin(TWO_PI * p0) * 0.70 * Math.exp(-t *  5.5) +
+                    Math.sin(TWO_PI * p0) * 0.70 * Math.exp(-t * 5.5) +
                     Math.sin(TWO_PI * p1) * 0.25 * Math.exp(-t * 14.0) +
                     Math.sin(TWO_PI * p2) * 0.08 * Math.exp(-t * 28.0) +
                     Math.sin(TWO_PI * p3) * 0.02 * Math.exp(-t * 50.0);
@@ -3397,7 +3399,7 @@ const MotifSamples = (() => {
             const f1 = 110.0;
 
             // 0.5Hz offset creates a slow undulating throb
-            const f2 = 110.5; 
+            const f2 = 110.5;
             const f3 = f1 * 2.76;
             const f4 = f1 * 5.41;
             for (let i = 0; i < data.length; i++) {
@@ -3441,7 +3443,7 @@ const MotifSamples = (() => {
                 const f = 2.0 * Math.sin(Math.PI * cutoff / sampleRate);
 
                 // Slight resonance for an airy tone
-                const q = 0.5; 
+                const q = 0.5;
 
                 // SVF Math
                 const hp = noise - lp - (q * bp);

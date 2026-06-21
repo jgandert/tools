@@ -361,6 +361,38 @@ a[href^="tel:"]::before {
     content: 'call';
 }
 
+img:not([src]),
+img[src=""] {
+    display: inline-block;
+    position: relative;
+    min-width: 48px;
+    min-height: 48px;
+    background-color: var(--surface-container-highest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 8px;
+}
+
+img:not([src])::before,
+img[src=""]::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--on-surface-variant);
+    opacity: 0.15;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm-40 80v-560 560Z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm-40 80v-560 560Z'/%3E%3C/svg%3E");
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    pointer-events: none;
+}
+
 /* 2. Responsive Layout Structure ------------------------------------------- */
 /* Base (mobile) uses a single-column CSS Grid */
 body {
@@ -523,6 +555,19 @@ nav a:hover {
     background-color: var(--surface-container-high);
 }
 
+.aside-state-toggle {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+#aside-state:focus-visible ~ header .aside-toggle-btn {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
+}
+
 /* 4. Sidebar Toggle Button & Icon Logic ----------------------------------- */
 /* Circular icon button used as a label for #aside-state checkbox */
 .aside-toggle-btn {
@@ -533,6 +578,11 @@ nav a:hover {
     place-items: center;
     border-radius: 50%;
     transition: var(--trans-interactive);
+}
+
+.aside-toggle-btn:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
 }
 
 .aside-toggle-btn:hover {
@@ -579,8 +629,9 @@ aside {
     border-right: 1px solid var(--outline-variant);
     overflow-y: auto;
     overflow-x: hidden;
-    transition: transform var(--trans-std), width var(--trans-std);
+    transition: transform var(--trans-std), width var(--trans-std), visibility var(--trans-std);
     padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+    visibility: hidden;
 
     /* Mobile Drawer positioning */
     position: fixed;
@@ -590,7 +641,6 @@ aside {
     width: var(--aside-width);
     z-index: 200;
     transform: translateX(-100%);
-    /* Hidden by default on mobile */
 }
 
 aside h2 {
@@ -637,6 +687,7 @@ aside .form-actions {
 /* Mobile: when checkbox is checked, slide the drawer into view */
 #aside-state:checked ~ aside {
     transform: translateX(0);
+    visibility: visible;
 }
 
 /* When sidebar is OPEN, create a full-screen overlay using the label's pseudo-element */
@@ -669,12 +720,14 @@ aside .form-actions {
         /* Fills the grid column */
         box-shadow: none;
         z-index: 1;
+        visibility: visible;
     }
 
     /* When the desktop state is 'collapsed' by the checkbox, shrink the column */
     body:has(#aside-state:checked) aside {
         width: 0;
         opacity: 0;
+        visibility: hidden;
     }
 
     /* Ensure backdrop is hidden on desktop */
@@ -982,18 +1035,17 @@ select:focus-visible {
     outline-offset: 2px;
 }
 
-/* Color picker — normalize swatch appearance across browsers */
+/* Color picker — clean rounded color swatch */
 input[type="color"] {
     -webkit-appearance: none;
     appearance: none;
     display: block;
-    width: 100%;
+    width: 80px;
     height: 40px;
-    padding: 3px;
-    background-color: var(--surface-container-highest);
-    border: none;
-    border-bottom: 1px solid var(--outline);
-    border-radius: 8px 8px 0 0;
+    padding: 0;
+    background: none;
+    border: 1px solid var(--outline-variant);
+    border-radius: 8px;
     cursor: pointer;
     transition: var(--trans-interactive);
     margin-bottom: var(--spacing-md);
@@ -1001,18 +1053,22 @@ input[type="color"] {
 
 input[type="color"]:focus {
     outline: none;
-    background-color: color-mix(in srgb, var(--surface-container-highest), var(--on-surface) 4%);
-    border-bottom: 1px solid var(--primary);
-    box-shadow: inset 0 -1px 0 0 var(--primary);
+    border-color: var(--primary);
+}
+
+input[type="color"]:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
 }
 
 input[type="color"]::-webkit-color-swatch-wrapper {
     padding: 0;
 }
 
-input[type="color"]::-webkit-color-swatch {
+input[type="color"]::-webkit-color-swatch,
+input[type="color"]::-moz-color-swatch {
     border: none;
-    border-radius: 4px;
+    border-radius: 7px;
 }
 
 /* Slider / Range input */
@@ -1083,19 +1139,23 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 /* Segmented Control */
 .segmented-control {
     display: flex;
-    flex-wrap: wrap;
+    align-items: stretch;
     background: var(--surface-container-highest);
-    border-radius: var(--radius);
-    padding: 4px;
-    gap: 4px;
+    border: 1.5px solid var(--outline);
+    border-radius: 24px;
+    padding: 3px;
+    gap: 2px;
     margin-bottom: var(--spacing-md);
 }
 
 .segmented-control label {
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    padding: 8px;
-    border-radius: calc(var(--radius) - 4px);
+    padding: 6px 12px;
+    border-radius: 20px;
     cursor: pointer;
     font-size: 0.875rem;
     font-weight: 500;
@@ -1103,7 +1163,11 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     letter-spacing: 0.05em;
     transition: var(--trans-interactive);
     margin: 0;
-    display: block;
+    color: var(--outline);
+}
+
+.segmented-control label:hover {
+    color: var(--on-surface);
 }
 
 .segmented-control input:checked + label {
@@ -1119,7 +1183,16 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 }
 
 .segmented-control input {
-    display: none !important;
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.segmented-control input:focus-visible + label {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
 }
 
 /* Custom Checkboxes and Radio Buttons */
@@ -1416,7 +1489,7 @@ input[type="file"]::file-selector-button:active {
     margin-bottom: var(--spacing-md);
 }
 
-[role="group"] {
+[role="group"]:not(.segmented-control) {
     display: flex;
     align-items: flex-end;
     /* Align elements at their bottom baseline */
@@ -2329,6 +2402,17 @@ dialog footer {
 .toast.show {
     opacity: 1;
     transform: translateY(0);
+}
+
+.toast a {
+    color: inherit;
+    text-decoration: underline;
+    border-bottom: none;
+}
+
+.toast a:hover {
+    color: inherit;
+    opacity: 0.8;
 }
 
 /* --- Tags --- */

@@ -304,12 +304,14 @@ Audio routing in Motif utilizes Directed Acyclic Graphs (DAGs). Reactivity is ac
 `LFO` (Low Frequency Oscillator) generates control-rate modulation mapped to musical timing. Calling `LFO(frequencyOrOptions, min?, max?)` returns a sine LFO signal by default.
 
 Waveform constructors:
+
 * `LFO.sine(options)`
 * `LFO.triangle(options)`
 * `LFO.square(options)`
 * `LFO.saw(options)`
 
 The `options` object supports:
+
 * `frequency`: Frequency in Hz (defaults to `1.0`).
 * `speed`: Musical duration string or number (e.g., `'4b'`, `'2s'`), which computes frequency dynamically.
 * `min` / `max`: Mapped output range.
@@ -332,12 +334,14 @@ Track('pad')
 ### Audio-Rate Modulation (FM) & Sidechaining
 
 Tracks can directly modulate the parameters of other tracks at the sample rate. Supported parameter names for `.modulate()` include:
+
 * **Filter:** `'filter.cutoff'` (or `'filter.frequency'`), `'filter.resonance'` (or `'filter.Q'`), `'filter.gain'`
 * **Spatial & Level:** `'pan'`, `'volume'`, `'gain'`
 * **EQ:** `'eq.low'`, `'eq.mid'`, `'eq.high'`
 * **Dynamics:** `'compress.threshold'`, `'compress.ratio'`, `'compress.knee'`, `'compress.attack'`, `'compress.release'`
 
 Methods & parameters:
+
 * `.modulate(parameter: string, source: Track, options: Object)`: Modulate a track parameter with another track's audio output.
 * `.sidechain(target: Track | string, options?: Object)`: Amplitude ducking driven by another track (commonly known as `duck`). Accepts either a Track instance or a track's unique string ID (e.g. `'kick'`). If the target track has not yet been instantiated, the connection is queued dynamically. `options` accepts `attack` (default: `0.005`s) and `release` (default: `0.2`s).
 
@@ -477,6 +481,7 @@ Track('bass').synth('fm').note([0, 3, 5, 7]).solo()
 To isolate tracks or sections during development:
 
 ### Arrangement Start Flag
+
 Add `s: 1` (or `start: true`) to a section inside the `Arrange` block to skip all sections prior to it, allowing you to test specific sections immediately during playback. If multiple sections have a start flag, the last one wins.
 
 ```javascript
@@ -494,58 +499,61 @@ Arrange([
 Motif includes a rich suite of built-in DSP synthesizers and procedurally generated samples, accessible directly by name.
 
 ### Built-in Synthesizers (`.synth(type)`)
+
 * **Classic Analog & Retro:**
-  * `'sine'`, `'sawtooth'`, `'square'`, `'triangle'`: Standard core geometric oscillators.
-  * `'pulse'`, `'chip-pulse'`: Retro chiptune pulse waves with 15% and 25% duty cycles.
-  * `'pwm-sweep'`: Sweeping pulse width modulation driven by an internal LFO.
-  * `'sub-bass'`: Saturated driven sub-bass.
-  * `'sub-sweep'`: Sustained sine sub with pitch-sweep transient (starts at 2× frequency, falls to played note — shape amplitude with `.envelope()`).
-  * `'supersaw'`: Five detuned sawtooth oscillators for thick pads/leads.
-  * `'soft-square'`: Warm additive square wave (fundamental + 3rd + 5th harmonics).
-  * `'bass-acid-hq'`: Silver-box emulator with 4-pole resonant lowpass sweep.
-  * `'bass-rubber-idm'`: Squelchy FM bass with punchy exponential envelopes.
-  * `'chip-lead-pd'`: Phase distortion Casio-style lead synthesizer.
-  * `'chip-bass-fm'`: FM sub-bass with 2x ratio modulator transient.
+    * `'sine'`, `'sawtooth'`, `'square'`, `'triangle'`: Standard core geometric oscillators.
+    * `'pulse'`, `'chip-pulse'`: Retro chiptune pulse waves with 15% and 25% duty cycles.
+    * `'pwm-sweep'`: Sweeping pulse width modulation driven by an internal LFO.
+    * `'sub-bass'`: Saturated driven sub-bass.
+    * `'sub-sweep'`: Sustained sine sub with pitch-sweep transient (starts at 2× frequency, falls to played note — shape amplitude with `.envelope()`).
+    * `'supersaw'`: Five detuned sawtooth oscillators for thick pads/leads.
+    * `'soft-square'`: Warm additive square wave (fundamental + 3rd + 5th harmonics).
+    * `'bass-acid-hq'`: Silver-box emulator with 4-pole resonant lowpass sweep.
+    * `'bass-rubber-idm'`: Squelchy FM bass with punchy exponential envelopes.
+    * `'chip-lead-pd'`: Phase distortion Casio-style lead synthesizer.
+    * `'chip-bass-fm'`: FM sub-bass with 2x ratio modulator transient.
 * **Tape & Ambient Textures:**
-  * `'tape-sine'`: Sine wave with tape wow and flutter pitch drift.
-  * `'ambient-pad'`: Swelling pad using slightly detuned, low-passed sines.
-  * `'keys-drift'`: Rhodes-like electric piano with pitch instability and saturation.
-  * `'pad-hauntology'`: Dusty, degraded pad with tape hiss and slow lowpass sweep.
-  * `'lead-vintage-board'`: Drifting lead synth with attack portamento slur.
-  * `'drone-abyss'`: Dark ambient drone combining sub-sine and detuned saws.
-  * `'pad-shimmer'`: Ethereal FM pad with upper-harmonic shimmer.
-  * `'drone-beating'`: Meditative dual sines spaced 1Hz apart for natural acoustic beating.
-  * `'alien-glow-pad'`: Warm, slow LFO-modulated FM pad.
-  * `'magnetic-hover'`: Muffled SVF lowpass filtered triangle waves.
-  * `'tectonic-drone'`: Heavily detuned low waves through a dark, low-resonance SVF.
+    * `'tape-sine'`: Sine wave with tape wow and flutter pitch drift.
+    * `'ambient-pad'`: Swelling pad using slightly detuned, low-passed sines.
+    * `'keys-drift'`: Rhodes-like electric piano with pitch instability and saturation.
+    * `'pad-hauntology'`: Dusty, degraded pad with tape hiss and slow lowpass sweep.
+    * `'lead-vintage-board'`: Drifting lead synth with attack portamento slur.
+    * `'drone-abyss'`: Dark ambient drone combining sub-sine and detuned saws.
+    * `'pad-shimmer'`: Ethereal FM pad with upper-harmonic shimmer.
+    * `'drone-beating'`: Meditative dual sines spaced 1Hz apart for natural acoustic beating.
+    * `'alien-glow-pad'`: Warm, slow LFO-modulated FM pad.
+    * `'magnetic-hover'`: Muffled SVF lowpass filtered triangle waves.
+    * `'tectonic-drone'`: Heavily detuned low waves through a dark, low-resonance SVF.
 * **Noise & Texture:**
-  * `'noise-white'`: Pure random digital static.
-  * `'noise-pink'`: Pink noise (-3dB/oct) using Kellett's approximation.
-  * `'noise-brown'`, `'noise-brown-deep'`: Leaky integrator lowpass filtered noise.
-  * `'crackle'`: Vinyl pop/dust crackles (approx. 5 random pops/sec).
-  * `'ambient-wind'`: Lowpass filtered noise swept by a slow LFO.
+    * `'noise-white'`: Pure random digital static.
+    * `'noise-pink'`: Pink noise (-3dB/oct) using Kellett's approximation.
+    * `'noise-brown'`, `'noise-brown-deep'`: Leaky integrator lowpass filtered noise.
+    * `'crackle'`: Vinyl pop/dust crackles (approx. 5 random pops/sec).
+    * `'ambient-wind'`: Lowpass filtered noise swept by a slow LFO.
 * **Glitch & Generative:**
-  * `'bytebeat'`: Algorithmic bitwise fractal tearing at 8kHz.
-  * `'bit-crush-sine'`: 8-level quantized amplitude sine wave.
-  * `'math-tan'`: Attenuated tangent wave clamped for metallic digital glitching.
-  * `'math-fold'`: Self-modulating wavefolded sine wave.
-  * `'neuro-fold'`: Aggressive IDM wavefolded bass wobble.
-  * `'glitch-scatter'`: Quantized amplitude with randomized sample freezing.
+    * `'bytebeat'`: Algorithmic bitwise fractal tearing at 8kHz.
+    * `'bit-crush-sine'`: 8-level quantized amplitude sine wave.
+    * `'math-tan'`: Attenuated tangent wave clamped for metallic digital glitching.
+    * `'math-fold'`: Self-modulating wavefolded sine wave.
+    * `'neuro-fold'`: Aggressive IDM wavefolded bass wobble.
+    * `'glitch-scatter'`: Quantized amplitude with randomized sample freezing.
 * **Instrument Modeling:**
-  * `'fm-epiano'`, `'keys-fm-hq'`: FM electric piano synthesizers.
-  * `'ambient-bell'`: FM bell with inharmonic overtone decay.
-  * `'tine-fm'`: Generative kalimba with thumb click transient.
-  * `'karplus-strong'`: Physically modeled plucked string (guitar/harp).
-  * `'pad-choir'`: Formant-filtered choral pad generating an "Ah" vowel.
-  * `'synth-brass'`: Resonant lowpass swept sawtooth brass section.
-  * `'glass-mallet'`: Woody/glassy pluck using inharmonic FM.
-  * `'chip-arp-pluck'`: Fast-decaying inharmonic FM pluck for rapid arpeggiation.
-  * `'hollow-wood-flute'`: Breath/vibrato modulated flute with woody overtones.
-  * `'gamelan-saron'`: Inharmonic FM model of a bronze metallophone.
-  * `'suling-flute'`: Traditional bamboo flute modeled via SVF filtered noise.
+    * `'fm-epiano'`, `'keys-fm-hq'`: FM electric piano synthesizers.
+    * `'ambient-bell'`: FM bell with inharmonic overtone decay.
+    * `'tine-fm'`: Generative kalimba with thumb click transient.
+    * `'karplus-strong'`: Physically modeled plucked string (guitar/harp).
+    * `'pad-choir'`: Formant-filtered choral pad generating an "Ah" vowel.
+    * `'synth-brass'`: Resonant lowpass swept sawtooth brass section.
+    * `'glass-mallet'`: Woody/glassy pluck using inharmonic FM.
+    * `'chip-arp-pluck'`: Fast-decaying inharmonic FM pluck for rapid arpeggiation.
+    * `'hollow-wood-flute'`: Breath/vibrato modulated flute with woody overtones.
+    * `'gamelan-saron'`: Inharmonic FM model of a bronze metallophone.
+    * `'suling-flute'`: Traditional bamboo flute modeled via SVF filtered noise.
 
 ### Procedural Samples (`.sample(name)`)
+
 Avoid loading external assets by playing procedurally rendered static one-shots:
+
 * **Drums:** `'kick-electronic'`, `'kick-lofi'`, `'snare-electronic'`, `'tom-electronic'`, `'rimshot'`, `'hihat-closed'`, `'cymbal-ride'`, `'shaker-soft'`, `'clap-vintage'`
 * **Percussion/FX:** `'water-drop'`, `'block-hollow'`, `'snare-micro'`, `'cowbell-808'`, `'perc-stutter'`, `'impact-deep'`, `'break-snare-ghost'`, `'glitch-data-burst'`, `'sub-boom'`, `'chip-kick-laser'`, `'chip-snare-burst'`, `'gravitational-ripple'`
 * **Acoustic/Physical:** `'kick-acoustic'`, `'kalimba-pluck'`, `'kalimba-warm'`, `'music-box'`, `'wineglass'`, `'timpani'`, `'ui-blip'`, `'pickup-chime'`, `'gong-tibetan'`, `'swell-oceanic'`, `'void-chime'`, `'ocean-swell'`, `'mossy-stone-strike'`
@@ -557,6 +565,7 @@ Avoid loading external assets by playing procedurally rendered static one-shots:
 Motif exports several helper functions, mathematical helpers, and scales:
 
 ### Exported Functions
+
 * `noteToMidi(note: string): number` — Converts note names (e.g. `'C4'`) to MIDI values (e.g. `60`).
 * `midiToNote(midi: number): string` — Converts MIDI values to note names.
 * `midiToHz(midi: number): number` — Converts MIDI values to frequencies in Hz.
@@ -565,7 +574,9 @@ Motif exports several helper functions, mathematical helpers, and scales:
 * `parseDurationToSeconds(duration: string | number, bpm: number, beatsPerBar: number): number` — Resolves duration strings to absolute seconds.
 
 ### Built-in Scales (`SCALES`)
+
 Passed to `.scale(root, name)`. Accessible via the exported `SCALES` object:
+
 * `major` / `ionian`
 * `minor` / `aeolian`
 * `dorian`

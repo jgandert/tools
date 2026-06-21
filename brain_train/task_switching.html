@@ -1,0 +1,1093 @@
+<!doctype html>
+<html lang="en" class="theme-orange">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="Task-Switching cognitive training task.">
+    <title>Task-Switching Game</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .simulation-container {
+            background: var(--surface-container-low);
+            border-radius: var(--radius);
+            padding: var(--spacing-md);
+            border: 1px solid var(--outline-variant);
+            margin-top: var(--spacing-lg);
+        }
+
+        .form-row {
+            display: flex;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-row > div {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .cue-display {
+            font-size: 2.2rem;
+            font-weight: 800;
+            text-align: center;
+            letter-spacing: 0.15rem;
+            color: var(--primary);
+            min-height: 3.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--spacing-sm);
+            text-transform: uppercase;
+        }
+
+        .display-container {
+            position: relative;
+            margin: var(--spacing-lg) auto;
+            max-width: 280px;
+        }
+
+        .quadrant-display {
+            display: grid;
+            grid-template-columns: repeat(2, 120px);
+            grid-template-rows: repeat(2, 120px);
+            gap: var(--spacing-md);
+            justify-content: center;
+        }
+
+        .quadrant-display.dimmed .quadrant-cell {
+            opacity: 0.35;
+        }
+
+        .quadrant-cell {
+            border: 2px dashed var(--outline-variant);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: var(--surface-container-low);
+            transition: var(--trans-interactive);
+            height: 120px;
+        }
+
+        .quadrant-cell.active-quad {
+            border: 2px solid var(--primary);
+            background: var(--surface-container-high);
+            box-shadow: 0 0 12px rgba(103, 80, 164, 0.2);
+            opacity: 1 !important;
+        }
+
+        .quadrant-text {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--on-surface);
+        }
+
+        .quadrant-cell.active-quad .quadrant-text {
+            color: var(--primary);
+        }
+
+        .quadrant-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--outline);
+            position: absolute;
+            bottom: 6px;
+            font-weight: normal;
+        }
+
+        .quadrant-cell.active-quad .quadrant-label {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .center-stimulus {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 110px;
+            height: 110px;
+            background: var(--surface-container-highest);
+            border: 3px solid var(--primary);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            color: var(--primary);
+            z-index: 10;
+        }
+
+        .game-actions {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" checked>
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Task-Switching</h1>
+        <p>Task-Switching Measurement</p>
+    </hgroup>
+    <nav aria-label="Primary">
+        <ul>
+            <li>
+                <a href="index.html" class="back-link">
+                    <span class="sym">arrow_back</span> Hub
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="content">
+    <section id="game-section">
+        <h2>Task-Switching Game</h2>
+
+        <div id="instructions-text">
+            <p>
+                Respond to the letters or digits based on the active rule.
+                Use <strong>A</strong> (Left) for Vowels or Even digits, and <strong>L</strong>
+                (Right) for Consonants or Odd digits.
+            </p>
+            <details>
+                <summary>How to Play &amp; Examples</summary>
+                <p>
+                    Each trial displays a digit-letter pair (e.g., <code>G7</code>). You must
+                    perform one of two tasks depending on the active rule:
+                </p>
+                <ul>
+                    <li><strong>Letter Task:</strong> Decide if the letter is a Vowel or Consonant.
+                    </li>
+                    <li><strong>Number Task:</strong> Decide if the digit is Even or Odd.</li>
+                </ul>
+                <p>
+                    <strong>Key Mappings (Same for both tasks):</strong>
+                </p>
+                <ul>
+                    <li><strong>Left Key (A / &larr;):</strong> Vowel OR Even</li>
+                    <li><strong>Right Key (L / &rarr;):</strong> Consonant OR Odd</li>
+                </ul>
+                <p>
+                    <strong>How to Know the Active Task:</strong>
+                </p>
+                <ul>
+                    <li><strong>Cued-Mixed Mode:</strong> A prompt (<code>LETTER</code> or <code>NUMBER</code>)
+                        appears above the stimulus.
+                    </li>
+                    <li><strong>Alternating Runs Mode:</strong> The quadrant position determines the
+                        task.
+                        <ul>
+                            <li>Top two quadrants = **Letter Task**</li>
+                            <li>Bottom two quadrants = **Number Task**</li>
+                        </ul>
+                    </li>
+                    <li><strong>Pure Blocks:</strong> Only one task is active for the whole block.
+                    </li>
+                </ul>
+                <p>
+                    <strong>Example (with <code>G7</code>):</strong>
+                </p>
+                <ul>
+                    <li>If active task is <strong>LETTER</strong>: Focus on <code>G</code> &rarr;
+                        Consonant &rarr; Press <strong>Right (L)</strong>.
+                    </li>
+                    <li>If active task is <strong>NUMBER</strong>: Focus on <code>7</code> &rarr;
+                        Odd &rarr; Press <strong>Right (L)</strong>.
+                    </li>
+                </ul>
+            </details>
+        </div>
+
+        <div id="cue-display" class="cue-display hidden"></div>
+
+        <div class="display-container">
+            <div class="quadrant-display" id="quadrant-display">
+                <div class="quadrant-cell" id="quad-tl">
+                    <span class="quadrant-text"></span>
+                    <span class="quadrant-label">Letter</span>
+                </div>
+                <div class="quadrant-cell" id="quad-tr">
+                    <span class="quadrant-text"></span>
+                    <span class="quadrant-label">Letter</span>
+                </div>
+                <div class="quadrant-cell" id="quad-br">
+                    <span class="quadrant-text"></span>
+                    <span class="quadrant-label">Number</span>
+                </div>
+                <div class="quadrant-cell" id="quad-bl">
+                    <span class="quadrant-text"></span>
+                    <span class="quadrant-label">Number</span>
+                </div>
+            </div>
+            <div class="center-stimulus hidden" id="center-stimulus"></div>
+        </div>
+
+        <div id="game-status" class="simulation-container hidden">
+            <div class="form-row">
+                <div>
+                    <strong>Trial:</strong>
+                    <span id="stat-trial">0 / 100</span>
+                </div>
+                <div>
+                    <strong>Score:</strong>
+                    <span id="stat-score">0</span>
+                </div>
+                <div>
+                    <strong>Accuracy:</strong>
+                    <span id="stat-accuracy">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-actions" class="game-actions hidden">
+            <button id="btn-response-left" class="btn btn-primary" type="button">
+                Vowel / Even (A / ←)
+            </button>
+            <button id="btn-response-right" class="btn btn-primary" type="button">
+                Consonant / Odd (L / →)
+            </button>
+            <button id="btn-stop" class="btn btn-danger" type="button">
+                <span class="sym">stop</span> Stop
+            </button>
+        </div>
+
+        <section id="config-section" class="simulation-container">
+            <h2>Game Configuration</h2>
+            <div class="form-row">
+                <div>
+                    <label for="select-difficulty">Schedule Mode</label>
+                    <select id="select-difficulty">
+                        <option value="Cued-Mixed" selected>Cued-Mixed (Random)</option>
+                        <option value="Alt-Runs">Alternating Runs (A-A-B-B)</option>
+                        <option value="Pure-Letter">Pure Letter Block</option>
+                        <option value="Pure-Number">Pure Number Block</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="select-trials">Number of Trials</label>
+                    <select id="select-trials">
+                        <option value="20">20 Trials (Quick)</option>
+                        <option value="50">50 Trials (Medium)</option>
+                        <option value="100" selected>100 Trials (Standard)</option>
+                        <option value="150">150 Trials (Extended)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label for="select-csi">Cue-Stimulus Interval (CSI)</label>
+                    <select id="select-csi">
+                        <option value="300">300 ms (Fast)</option>
+                        <option value="600" selected>600 ms (Standard)</option>
+                        <option value="1000">1000 ms (Slow)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="select-deadline">Response Deadline</label>
+                    <select id="select-deadline">
+                        <option value="1500">1500 ms (Tight)</option>
+                        <option value="2000" selected>2000 ms (Standard)</option>
+                        <option value="3000">3000 ms (Relaxed)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <button id="btn-start" class="btn btn-primary" type="button">
+                    <span class="sym">play_arrow</span> Start Training
+                </button>
+            </div>
+        </section>
+
+        <section id="results-panel" class="simulation-container hidden">
+            <h2>Session Completed!</h2>
+            <div class="form-row">
+                <div>
+                    <strong>Accuracy:</strong>
+                    <span id="results-accuracy">0%</span>
+                </div>
+                <div>
+                    <strong>Avg RT:</strong>
+                    <span id="results-avg-rt">0 ms</span>
+                </div>
+                <div>
+                    <strong>Switch Cost:</strong>
+                    <span id="results-switch-cost">0 ms</span>
+                </div>
+                <div>
+                    <strong>Mixing Cost:</strong>
+                    <span id="results-mixing-cost">0 ms</span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <strong>Switch Accuracy:</strong>
+                    <span id="results-switch-acc">0%</span>
+                </div>
+                <div>
+                    <strong>Repeat Accuracy:</strong>
+                    <span id="results-repeat-acc">0%</span>
+                </div>
+                <div>
+                    <strong>Switch RT:</strong>
+                    <span id="results-switch-rt">0 ms</span>
+                </div>
+                <div>
+                    <strong>Repeat RT:</strong>
+                    <span id="results-repeat-rt">0 ms</span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <strong>Final Score:</strong>
+                    <span id="results-score">0</span>
+                </div>
+            </div>
+            <p id="switching-feedback">...</p>
+            <div class="form-row">
+                <button id="btn-return-hub" class="btn btn-primary" type="button">
+                    <span class="sym">arrow_back</span> Return to Hub
+                </button>
+                <button id="btn-play-again" class="btn" type="button">
+                    <span class="sym">refresh</span> Play Again
+                </button>
+            </div>
+        </section>
+    </section>
+</main>
+
+<aside>
+    <h2>Game Info</h2>
+    <ul>
+        <li><strong>Stimulus:</strong> Letter-Number string (e.g. A4, E8, K3)</li>
+        <li><strong>Keys:</strong> Left Key / A (Vowel/Even), Right Key / L (Consonant/Odd)</li>
+        <li><strong>Modes:</strong> Pure block (no cost), Mixed block (switch &amp; repeat trials)
+        </li>
+        <li><strong>Focus:</strong> Switch cost calculation (Switch trial RT - Repeat trial RT)</li>
+    </ul>
+</aside>
+
+<footer>
+    <p>Brain Train suite — Task-Switching Game</p>
+</footer>
+
+<script src="../one.js"></script>
+<script>
+
+
+    // DOM Elements
+    const cueDisplay = document.getElementById("cue-display");
+    const quadrantDisplay = document.getElementById("quadrant-display");
+    const centerStimulus = document.getElementById("center-stimulus");
+    const gameStatus = document.getElementById("game-status");
+    const gameActions = document.getElementById("game-actions");
+    const configSection = document.getElementById("config-section");
+    const resultsPanel = document.getElementById("results-panel");
+    const instructionsText = document.getElementById("instructions-text");
+
+    const selectDifficulty = document.getElementById("select-difficulty");
+    const selectTrials = document.getElementById("select-trials");
+    const selectCsi = document.getElementById("select-csi");
+    const selectDeadline = document.getElementById("select-deadline");
+
+    const btnStart = document.getElementById("btn-start");
+    const btnStop = document.getElementById("btn-stop");
+    const btnResponseLeft = document.getElementById("btn-response-left");
+    const btnResponseRight = document.getElementById("btn-response-right");
+    const btnReturnHub = document.getElementById("btn-return-hub");
+    const btnPlayAgain = document.getElementById("btn-play-again");
+
+    const statTrial = document.getElementById("stat-trial");
+    const statScore = document.getElementById("stat-score");
+    const statAccuracy = document.getElementById("stat-accuracy");
+
+    const resultsAccuracy = document.getElementById("results-accuracy");
+    const resultsAvgRt = document.getElementById("results-avg-rt");
+    const resultsSwitchCost = document.getElementById("results-switch-cost");
+    const resultsMixingCost = document.getElementById("results-mixing-cost");
+    const resultsSwitchAcc = document.getElementById("results-switch-acc");
+    const resultsRepeatAcc = document.getElementById("results-repeat-acc");
+    const resultsSwitchRt = document.getElementById("results-switch-rt");
+    const resultsRepeatRt = document.getElementById("results-repeat-rt");
+    const resultsScore = document.getElementById("results-score");
+    const switchingFeedback = document.getElementById("switching-feedback");
+
+    const quadTL = document.getElementById("quad-tl");
+    const quadTR = document.getElementById("quad-tr");
+    const quadBR = document.getElementById("quad-br");
+    const quadBL = document.getElementById("quad-bl");
+
+    // Audio context initialization
+    let audioCtx = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx && audioCtx.state === "suspended") {
+            try {
+                audioCtx.resume();
+            } catch (e) {
+            }
+        }
+    }
+
+    function playSound(type) {
+        initAudio();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+
+        if (type === "tick") {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+            osc.start(now);
+            osc.stop(now + 0.05);
+        } else if (type === "success") {
+            const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+            notes.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.type = "triangle";
+                osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+                gain.gain.setValueAtTime(0, now + idx * 0.08);
+                gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.08 + 0.04);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+
+                osc.start(now + idx * 0.08);
+                osc.stop(now + idx * 0.08 + 0.35);
+            });
+        } else if (type === "fail") {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(130, now);
+            osc.frequency.linearRampToValueAtTime(80, now + 0.25);
+
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+            osc.start(now);
+            osc.stop(now + 0.25);
+        }
+    }
+
+    // Game state variables
+    let isPlaying = false;
+    let currentTrial = 0;
+    let totalTrials = 100;
+    let scheduleMode = "Cued-Mixed";
+    let csiDuration = 600;
+    let responseDeadline = 2000;
+
+    let trialsSequence = [];
+    let trialStartTime = 0;
+    let sessionStartTime = 0;
+    let responded = false;
+    let responseRT = null;
+    let isCorrect = false;
+
+    let cueTimeout = null;
+    let stimulusTimeout = null;
+    let trialTimeout = null;
+    let fixationTimeout = null;
+    let postTrialTimeout = null;
+
+    const VOWELS = ["A", "E", "I", "U"];
+    const CONSONANTS = ["G", "K", "M", "R", "P", "T", "F", "D"];
+    const EVENS = ["2", "4", "6", "8"];
+    const ODDS = ["3", "5", "7", "9"];
+
+    function getRandomElement(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function getBaselineRTFromLogs() {
+        try {
+            const logs = JSON.parse(localStorage.getItem("brain-train-logs") || "[]");
+            const pureLogs = logs.filter(log => log.game === "task_switching" && log.difficulty.startsWith("Pure"));
+            if (pureLogs.length === 0) return null;
+            pureLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+            return pureLogs[0].reactionTime;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function generateTrials(mode, count) {
+        const trials = [];
+        let prevTask = null;
+
+        for (let i = 0; i < count; i++) {
+            let task = "LETTER";
+
+            if (mode === "Pure-Letter") {
+                task = "LETTER";
+            } else if (mode === "Pure-Number") {
+                task = "NUMBER";
+            } else if (mode === "Alt-Runs") {
+                const cycle = i % 4;
+                task = (cycle === 0 || cycle === 1) ? "LETTER" : "NUMBER";
+            } else {
+                task = Math.random() < 0.5 ? "LETTER" : "NUMBER";
+            }
+
+            let trialType = "baseline";
+            if (mode === "Cued-Mixed" || mode === "Alt-Runs") {
+                if (prevTask === null) {
+                    trialType = "first";
+                } else {
+                    trialType = (task === prevTask) ? "repeat" : "switch";
+                }
+            }
+
+            prevTask = task;
+
+            let letter = "";
+            let digit = "";
+            let correctResponse = "left";
+            let targetCategory = "";
+
+            if (task === "LETTER") {
+                const isVowel = Math.random() < 0.5;
+                if (isVowel) {
+                    letter = getRandomElement(VOWELS);
+                    correctResponse = "left";
+                    targetCategory = "vowel";
+                } else {
+                    letter = getRandomElement(CONSONANTS);
+                    correctResponse = "right";
+                    targetCategory = "consonant";
+                }
+                digit = Math.random() < 0.5 ? getRandomElement(EVENS) : getRandomElement(ODDS);
+            } else {
+                const isEven = Math.random() < 0.5;
+                if (isEven) {
+                    digit = getRandomElement(EVENS);
+                    correctResponse = "left";
+                    targetCategory = "even";
+                } else {
+                    digit = getRandomElement(ODDS);
+                    correctResponse = "right";
+                    targetCategory = "odd";
+                }
+                letter = Math.random() < 0.5 ? getRandomElement(VOWELS) : getRandomElement(CONSONANTS);
+            }
+
+            const letterFirst = Math.random() < 0.5;
+            const stimulus = letterFirst ? (letter + digit) : (digit + letter);
+
+            trials.push({
+                task: task,
+                trialType: trialType,
+                stimulus: stimulus,
+                targetCategory: targetCategory,
+                correctResponse: correctResponse,
+                responded: false,
+                isCorrect: false,
+                rt: null,
+            });
+        }
+
+        return trials;
+    }
+
+    function showSection(section) {
+        window.scrollTo(0, 0);
+        configSection.classList.add("hidden");
+        gameStatus.classList.add("hidden");
+        gameActions.classList.add("hidden");
+        resultsPanel.classList.add("hidden");
+        instructionsText.classList.add("hidden");
+        cueDisplay.classList.add("hidden");
+
+        if (section === "settings") {
+            configSection.classList.remove("hidden");
+            instructionsText.classList.remove("hidden");
+            quadrantDisplay.classList.remove("dimmed");
+            centerStimulus.classList.add("hidden");
+            clearGrid();
+        } else if (section === "playing") {
+            gameStatus.classList.remove("hidden");
+            gameActions.classList.remove("hidden");
+        } else if (section === "results") {
+            resultsPanel.classList.remove("hidden");
+        }
+    }
+
+    function clearGrid() {
+        const cells = [quadTL, quadTR, quadBR, quadBL];
+        cells.forEach(cell => {
+            cell.classList.remove("active-quad");
+            cell.querySelector(".quadrant-text").textContent = "";
+        });
+    }
+
+    function runTrial() {
+        if (!isPlaying) return;
+
+        responded = false;
+        responseRT = null;
+        isCorrect = false;
+        trialStartTime = 0;
+
+        statTrial.textContent = `${currentTrial + 1} / ${totalTrials}`;
+
+        const trial = trialsSequence[currentTrial];
+
+        cueDisplay.classList.add("hidden");
+        cueDisplay.textContent = "";
+        centerStimulus.classList.add("hidden");
+        centerStimulus.textContent = "";
+
+        clearGrid();
+
+        let activeCell = null;
+        if (scheduleMode === "Alt-Runs") {
+            quadrantDisplay.classList.remove("dimmed");
+            const cycle = currentTrial % 4;
+            if (cycle === 0) activeCell = quadTL;
+            else if (cycle === 1) activeCell = quadTR;
+            else if (cycle === 2) activeCell = quadBR;
+            else activeCell = quadBL;
+
+            activeCell.classList.add("active-quad");
+            activeCell.querySelector(".quadrant-text").textContent = "+";
+        } else {
+            quadrantDisplay.classList.add("dimmed");
+            centerStimulus.classList.remove("hidden");
+            centerStimulus.textContent = "+";
+        }
+
+        const fixationDuration = 500;
+
+        fixationTimeout = setTimeout(() => {
+            if (!isPlaying) return;
+
+            if (scheduleMode === "Cued-Mixed") {
+                centerStimulus.textContent = "";
+                cueDisplay.classList.remove("hidden");
+                cueDisplay.textContent = trial.task;
+
+                cueTimeout = setTimeout(() => {
+                    if (!isPlaying) return;
+                    showStimulus();
+                }, csiDuration);
+            } else {
+                showStimulus();
+            }
+        }, fixationDuration);
+    }
+
+    function showStimulus() {
+        if (!isPlaying) return;
+
+        const trial = trialsSequence[currentTrial];
+        playSound("tick");
+
+        if (scheduleMode === "Alt-Runs") {
+            const cycle = currentTrial % 4;
+            let activeCell = null;
+            if (cycle === 0) activeCell = quadTL;
+            else if (cycle === 1) activeCell = quadTR;
+            else if (cycle === 2) activeCell = quadBR;
+            else activeCell = quadBL;
+
+            activeCell.querySelector(".quadrant-text").textContent = trial.stimulus;
+        } else {
+            centerStimulus.classList.remove("hidden");
+            centerStimulus.textContent = trial.stimulus;
+
+            if (scheduleMode.startsWith("Pure")) {
+                cueDisplay.classList.remove("hidden");
+                cueDisplay.textContent = trial.task;
+            }
+        }
+
+        trialStartTime = performance.now();
+
+        trialTimeout = setTimeout(() => {
+            if (!isPlaying) return;
+            evaluateMiss();
+        }, responseDeadline);
+    }
+
+    function registerResponse(response) {
+        if (responded || !isPlaying) return;
+
+        const now = performance.now();
+        const rt = Math.round(now - trialStartTime);
+
+        if (trialStartTime === 0) return;
+
+        responded = true;
+
+        const btn = response === "left" ? btnResponseLeft : btnResponseRight;
+        btn.classList.add("feedback-active");
+        setTimeout(() => btn.classList.remove("feedback-active"), 150);
+
+        clearTimeout(trialTimeout);
+
+        const trial = trialsSequence[currentTrial];
+        isCorrect = (response === trial.correctResponse);
+        trial.responded = true;
+        trial.isCorrect = isCorrect;
+        trial.rt = rt;
+
+        const feedbackChar = isCorrect ? "✓" : "✗";
+        playSound(isCorrect ? "success" : "fail");
+
+        if (scheduleMode === "Alt-Runs") {
+            const cycle = currentTrial % 4;
+            let activeCell = null;
+            if (cycle === 0) activeCell = quadTL;
+            else if (cycle === 1) activeCell = quadTR;
+            else if (cycle === 2) activeCell = quadBR;
+            else activeCell = quadBL;
+
+            activeCell.querySelector(".quadrant-text").textContent = feedbackChar;
+        } else {
+            centerStimulus.textContent = feedbackChar;
+        }
+
+        updateLiveStats();
+
+        postTrialTimeout = setTimeout(() => {
+            goToNextTrial();
+        }, 400);
+    }
+
+    function evaluateMiss() {
+        if (responded) return;
+
+        responded = true;
+        const trial = trialsSequence[currentTrial];
+        trial.responded = false;
+        trial.isCorrect = false;
+        trial.rt = null;
+
+        playSound("fail");
+        const feedbackChar = "✗";
+
+        if (scheduleMode === "Alt-Runs") {
+            const cycle = currentTrial % 4;
+            let activeCell = null;
+            if (cycle === 0) activeCell = quadTL;
+            else if (cycle === 1) activeCell = quadTR;
+            else if (cycle === 2) activeCell = quadBR;
+            else activeCell = quadBL;
+
+            activeCell.querySelector(".quadrant-text").textContent = feedbackChar;
+        } else {
+            centerStimulus.textContent = feedbackChar;
+        }
+
+        updateLiveStats();
+
+        postTrialTimeout = setTimeout(() => {
+            goToNextTrial();
+        }, 400);
+    }
+
+    function updateLiveStats() {
+        let correctCount = 0;
+        let answeredCount = 0;
+        let score = 0;
+
+        for (let i = 0; i <= currentTrial; i++) {
+            const t = trialsSequence[i];
+            if (t.responded || t.rt === null) {
+                answeredCount++;
+                if (t.isCorrect) {
+                    correctCount++;
+                    const isSwitch = t.trialType === "switch";
+                    const basePoints = isSwitch ? 20 : 10;
+                    score += basePoints;
+
+                    if (t.rt !== null && t.rt < 1000) {
+                        score += Math.round((1000 - t.rt) / 10);
+                    }
+                }
+            }
+        }
+
+        const accuracy = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
+        statScore.textContent = score;
+        statAccuracy.textContent = `${accuracy}%`;
+    }
+
+    function goToNextTrial() {
+        currentTrial++;
+        if (currentTrial < totalTrials) {
+            runTrial();
+        } else {
+            finishGame();
+        }
+    }
+
+    function getSessionResults() {
+        const correctTrials = trialsSequence.filter(t => t.isCorrect && t.rt !== null);
+
+        const totalCorrect = correctTrials.length;
+        const overallAccuracy = totalTrials > 0 ? Math.round((trialsSequence.filter(t => t.isCorrect).length / totalTrials) * 100) : 0;
+        const avgRT = totalCorrect > 0
+            ? Math.round(correctTrials.reduce((sum, t) => sum + t.rt, 0) / totalCorrect)
+            : 0;
+
+        const switchCorrect = correctTrials.filter(t => t.trialType === "switch");
+        const repeatCorrect = correctTrials.filter(t => t.trialType === "repeat");
+
+        const avgSwitchRT = switchCorrect.length > 0
+            ? Math.round(switchCorrect.reduce((sum, t) => sum + t.rt, 0) / switchCorrect.length)
+            : null;
+
+        const avgRepeatRT = repeatCorrect.length > 0
+            ? Math.round(repeatCorrect.reduce((sum, t) => sum + t.rt, 0) / repeatCorrect.length)
+            : null;
+
+        const switchCost = (avgSwitchRT !== null && avgRepeatRT !== null)
+            ? (avgSwitchRT - avgRepeatRT)
+            : null;
+
+        const switchTotal = trialsSequence.filter(t => t.trialType === "switch");
+        const repeatTotal = trialsSequence.filter(t => t.trialType === "repeat");
+
+        const switchAcc = switchTotal.length > 0
+            ? Math.round((switchTotal.filter(t => t.isCorrect).length / switchTotal.length) * 100)
+            : null;
+
+        const repeatAcc = repeatTotal.length > 0
+            ? Math.round((repeatTotal.filter(t => t.isCorrect).length / repeatTotal.length) * 100)
+            : null;
+
+        const baselineRT = getBaselineRTFromLogs();
+        const mixingCost = (avgRepeatRT !== null && baselineRT !== null)
+            ? (avgRepeatRT - baselineRT)
+            : null;
+
+        return {
+            overallAccuracy,
+            avgRT,
+            avgSwitchRT,
+            avgRepeatRT,
+            switchCost,
+            switchAcc,
+            repeatAcc,
+            baselineRT,
+            mixingCost,
+        };
+    }
+
+    const SWITCHING_SETTINGS_KEY = "brain-train-switching-settings";
+
+    function saveGameSettings() {
+        try {
+            const settings = {
+                difficulty: selectDifficulty.value,
+                trials: selectTrials.value,
+                csi: selectCsi.value,
+                deadline: selectDeadline.value,
+            };
+            localStorage.setItem(SWITCHING_SETTINGS_KEY, JSON.stringify(settings));
+        } catch (e) {
+        }
+    }
+
+    function loadGameSettings() {
+        try {
+            const stored = JSON.parse(localStorage.getItem(SWITCHING_SETTINGS_KEY) || "{}");
+            if (stored.difficulty) selectDifficulty.value = stored.difficulty;
+            if (stored.trials) selectTrials.value = stored.trials;
+            if (stored.csi) selectCsi.value = stored.csi;
+            if (stored.deadline) selectDeadline.value = stored.deadline;
+        } catch (e) {
+        }
+    }
+
+    function startGame() {
+        initAudio();
+        isPlaying = true;
+        currentTrial = 0;
+
+        saveGameSettings();
+
+        scheduleMode = selectDifficulty.value;
+        totalTrials = parseInt(selectTrials.value) || 100;
+        csiDuration = parseInt(selectCsi.value) || 600;
+        responseDeadline = parseInt(selectDeadline.value) || 2000;
+
+        trialsSequence = generateTrials(scheduleMode, totalTrials);
+
+        statTrial.textContent = `1 / ${totalTrials}`;
+        statScore.textContent = "0";
+        statAccuracy.textContent = "0%";
+
+        sessionStartTime = performance.now();
+
+        showSection("playing");
+        runTrial();
+    }
+
+    function stopGame() {
+        isPlaying = false;
+        clearTimeout(fixationTimeout);
+        clearTimeout(cueTimeout);
+        clearTimeout(stimulusTimeout);
+        clearTimeout(trialTimeout);
+        clearTimeout(postTrialTimeout);
+
+        showSection("settings");
+    }
+
+    function finishGame() {
+        isPlaying = false;
+        clearTimeout(fixationTimeout);
+        clearTimeout(cueTimeout);
+        clearTimeout(stimulusTimeout);
+        clearTimeout(trialTimeout);
+        clearTimeout(postTrialTimeout);
+
+        const results = getSessionResults();
+
+        resultsAccuracy.textContent = `${results.overallAccuracy}%`;
+        resultsAvgRt.textContent = `${results.avgRT} ms`;
+
+        resultsSwitchCost.textContent = results.switchCost !== null ? `${results.switchCost} ms` : "N/A";
+        resultsMixingCost.textContent = results.mixingCost !== null ? `${results.mixingCost} ms` : "N/A";
+
+        resultsSwitchAcc.textContent = results.switchAcc !== null ? `${results.switchAcc}%` : "N/A";
+        resultsRepeatAcc.textContent = results.repeatAcc !== null ? `${results.repeatAcc}%` : "N/A";
+
+        resultsSwitchRt.textContent = results.avgSwitchRT !== null ? `${results.avgSwitchRT} ms` : "N/A";
+        resultsRepeatRt.textContent = results.avgRepeatRT !== null ? `${results.avgRepeatRT} ms` : "N/A";
+
+        resultsScore.textContent = statScore.textContent;
+
+        if (scheduleMode.startsWith("Pure")) {
+            switchingFeedback.textContent = "Baseline established successfully! Try running a Mixed session next to measure your switch cost.";
+        } else if (results.switchCost !== null) {
+            if (results.switchCost < 0) {
+                switchingFeedback.textContent = `Your switch cost is ${results.switchCost} ms. A negative switch cost can occur due to random reaction time variance or temporary learning effects.`;
+            } else if (results.switchCost < 100) {
+                switchingFeedback.textContent = `Outstanding cognitive flexibility! Your switch cost is only ${results.switchCost} ms.`;
+            } else if (results.switchCost < 250) {
+                switchingFeedback.textContent = `Good switching capability. Your switch cost is ${results.switchCost} ms. Regular practice will help you ignore set-shifting interference.`;
+            } else {
+                switchingFeedback.textContent = `Your switch cost is ${results.switchCost} ms. This measures how quickly you adapt when switching between rules.`;
+            }
+        } else {
+            switchingFeedback.textContent = "Session completed! Practice shifting focus between number and letter rules.";
+        }
+
+        recordSession();
+
+        showSection("results");
+    }
+
+    // Event listeners
+    btnStart.addEventListener("click", startGame);
+    btnStop.addEventListener("click", stopGame);
+
+    btnResponseLeft.addEventListener("click", () => {
+        registerResponse("left");
+    });
+
+    btnResponseRight.addEventListener("click", () => {
+        registerResponse("right");
+    });
+
+    btnPlayAgain.addEventListener("click", () => {
+        showSection("settings");
+    });
+
+    function recordSession() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+        const results = getSessionResults();
+        const durationSec = Math.round((performance.now() - sessionStartTime) / 1000);
+        const newLog = {
+            date: dateStr,
+            game: "task_switching",
+            difficulty: scheduleMode,
+            score: parseInt(statScore.textContent) || 0,
+            accuracy: results.overallAccuracy,
+            reactionTime: results.avgRT,
+            duration: durationSec,
+        };
+        try {
+            const logs = JSON.parse(localStorage.getItem("brain-train-logs") || "[]");
+            logs.push(newLog);
+            localStorage.setItem("brain-train-logs", JSON.stringify(logs));
+        } catch (err) {
+            console.error("Error saving session:", err);
+        }
+    }
+
+    btnReturnHub.addEventListener("click", () => {
+        window.location.href = "index.html";
+    });
+
+    window.addEventListener("keydown", (e) => {
+        if (!isPlaying) return;
+        if (e.repeat) return;
+
+        if (e.key === "a" || e.key === "A" || e.key === "ArrowLeft") {
+            e.preventDefault();
+            registerResponse("left");
+        } else if (e.key === "l" || e.key === "L" || e.key === "ArrowRight") {
+            e.preventDefault();
+            registerResponse("right");
+        }
+    });
+
+    loadGameSettings();
+</script>
+</body>
+
+</html>

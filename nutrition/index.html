@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Clinical Diet Formulation Tool: Mediterranean, DASH, and MIND">
+    <title>Clinical Diet Formulation Tool</title>
+    <link rel="icon" href="./icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        /* Minimal custom layout styles specific to the calculator results */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-md);
+        }
+
+        .stat-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: var(--spacing-md);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: var(--spacing-sm) 0;
+            color: var(--text-main);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .macro-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            padding: var(--spacing-sm) 0;
+        }
+
+        .macro-row:last-child {
+            border-bottom: none;
+        }
+
+        .warning-notice {
+            background-color: rgba(255, 152, 0, 0.1);
+            border-left: 4px solid #ff9800;
+            padding: var(--spacing-sm) var(--spacing-md);
+            margin-top: var(--spacing-md);
+            font-size: 0.875rem;
+        }
+
+        .food-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .food-list li {
+            padding: var(--spacing-sm) 0;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        /* Gives consistent alignment to the bold labels in the lists */
+        .food-list li strong {
+            display: inline-block;
+            width: 140px;
+            vertical-align: top;
+        }
+
+        .food-list li span.desc {
+            display: inline-block;
+            width: calc(100% - 145px);
+        }
+
+        .guide-text {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Clinical Diet Tool</h1>
+        <p>Evidence-based modeling for Mediterranean, DASH, & MIND protocols.</p>
+    </hgroup>
+</header>
+
+<main id="content">
+    <section>
+        <h2>Metabolic Profile & Macronutrients</h2>
+        <div class="results-grid">
+            <div class="stat-box">
+                <div class="stat-label">Total Daily Energy (TDEE)</div>
+                <div class="stat-value" id="out-tdee">-- kcal</div>
+                <div class="stat-label" id="out-bmr-label">BMR: --</div>
+            </div>
+            <div class="stat-box" style="border-color: var(--primary);">
+                <div class="stat-label">Dietary Target</div>
+                <div class="stat-value" id="out-target" style="color: var(--primary);">-- kcal</div>
+                <div class="stat-label" id="out-deficit-label">Maintenance</div>
+            </div>
+        </div>
+
+        <!-- Alert shown when PROT-AGE scaling alters the strict dietary percentages to prevent sarcopenia -->
+        <div id="prot-age-warning" class="warning-notice hidden">
+            <strong>Clinical Note (PROT-AGE):</strong> Standard dietary percentages failed to meet
+            the absolute minimum protein requirement (1.2 g/kg/day) for older adults. Macronutrient
+            ratios have been dynamically adjusted to preserve lean muscle mass.
+        </div>
+
+        <article class="mt-2">
+            <header>
+                <h3 id="macro-title">Macronutrient Distribution</h3>
+            </header>
+            <div class="macro-row">
+                <span><strong>Protein</strong> (<span id="pct-p">--</span>%)</span>
+                <span id="out-p">-- g</span>
+            </div>
+            <div class="macro-row">
+                <span><strong>Carbohydrates</strong> (<span id="pct-c">--</span>%)</span>
+                <span id="out-c">-- g</span>
+            </div>
+            <div class="macro-row">
+                <span><strong>Total Fat</strong> (<span id="pct-f">--</span>%)</span>
+                <span id="out-f">-- g</span>
+            </div>
+            <div class="macro-row text-muted" style="font-size: 0.875rem;">
+                <span>↳ Saturated Fat Limit</span>
+                <span id="out-sf">-- g</span>
+            </div>
+        </article>
+    </section>
+
+    <section>
+        <h2>Actionable Meal Planning</h2>
+
+        <!-- Daily Allocations -->
+        <article class="mt-2">
+            <header>
+                <h3 id="daily-title">Daily Targets</h3>
+                <p class="guide-text">Scaled dynamically to your caloric envelope.</p>
+            </header>
+            <ul class="food-list" id="food-daily">
+                <!-- Injected via JS -->
+            </ul>
+        </article>
+
+        <!-- Weekly Allocations -->
+        <article class="mt-2" id="weekly-article">
+            <header>
+                <h3>Weekly Targets</h3>
+                <p class="guide-text">Distribute these throughout the week.</p>
+            </header>
+            <ul class="food-list" id="food-weekly">
+                <!-- Injected via JS -->
+            </ul>
+        </article>
+
+        <!-- Dietary Restrictions -->
+        <article class="mt-2">
+            <header>
+                <h3>Protocol Restrictions</h3>
+                <p class="guide-text">Items strictly penalized by the selected framework.</p>
+            </header>
+            <ul class="food-list" id="food-restrictions">
+                <!-- Injected via JS -->
+            </ul>
+        </article>
+    </section>
+
+    <section>
+        <h2>Practical Serving Guide & Examples</h2>
+        <article class="mt-2">
+            <header>
+                <h3>What is one serving?</h3>
+                <p class="guide-text">Use these concrete food matrices and examples to build your
+                    meals.</p>
+            </header>
+            <ul class="food-list" id="serving-guide">
+                <!-- Injected via JS to match the specific diet selected -->
+            </ul>
+        </article>
+    </section>
+</main>
+
+<aside>
+    <form id="calc-form">
+        <fieldset>
+            <legend>Dietary Framework</legend>
+            <div class="segmented-control" role="group" aria-label="Diet Selection">
+                <input type="radio" name="diet" id="diet-med" value="med" checked>
+                <label for="diet-med">MedDiet</label>
+
+                <input type="radio" name="diet" id="diet-dash" value="dash">
+                <label for="diet-dash">DASH</label>
+
+                <input type="radio" name="diet" id="diet-mind" value="mind">
+                <label for="diet-mind">MIND</label>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Units & Target</legend>
+            <div class="segmented-control" role="group" aria-label="Units">
+                <input type="radio" name="units" id="unit-metric" value="metric" checked>
+                <label for="unit-metric">Metric</label>
+
+                <input type="radio" name="units" id="unit-imp" value="imperial">
+                <label for="unit-imp">Imperial</label>
+            </div>
+
+            <label class="mt-2">
+                <input type="checkbox" id="weight-loss" role="switch">
+                Apply Weight Loss Deficit (-500 kcal)
+            </label>
+        </fieldset>
+
+        <fieldset>
+            <legend>Patient Biometrics</legend>
+
+            <div class="input-row">
+                <label style="width:50%">
+                    Age
+                    <input type="number" id="age" min="18" max="120" value="45" required>
+                </label>
+                <label style="width:50%">
+                    Gender
+                    <select id="gender">
+                        <option value="male">Male</option>
+                        <option value="female" selected>Female</option>
+                    </select>
+                </label>
+            </div>
+
+            <label id="lbl-weight">
+                Weight (kg)
+                <input type="number" id="weight" step="0.1" value="70" required>
+            </label>
+
+            <!-- Metric Height -->
+            <label id="lbl-height-metric">
+                Height (cm)
+                <input type="number" id="height-cm" value="165">
+            </label>
+
+            <!-- Imperial Height -->
+            <div class="input-row hidden" id="lbl-height-imp">
+                <label>
+                    Height (ft)
+                    <input type="number" id="height-ft" value="5">
+                </label>
+                <label>
+                    (in)
+                    <input type="number" id="height-in" value="5">
+                </label>
+            </div>
+
+            <label>
+                Body Fat % <span class="text-muted">(Optional)</span>
+                <input type="number" id="body-fat" placeholder="Auto-estimate via formula if blank"
+                       min="3" max="60" step="0.1">
+            </label>
+        </fieldset>
+
+        <fieldset>
+            <legend>Activity Level</legend>
+            <label>
+                Total Daily Energy Expenditure Multiplier
+                <select id="activity">
+                    <option value="1.2">Sedentary (Desk job, no exercise)</option>
+                    <option value="1.375">Lightly Active (Exercise 1-3 days/wk)</option>
+                    <option value="1.55" selected>Moderately Active (Exercise 3-5 days/wk)</option>
+                    <option value="1.725">Very Active (Exercise 6-7 days/wk)</option>
+                    <option value="1.9">Extra Active (Manual labor / intense sports)</option>
+                </select>
+            </label>
+        </fieldset>
+    </form>
+</aside>
+
+<script>
+    // ==========================================
+    // UI Toggle Logic (Metric vs Imperial)
+    // ==========================================
+    const unitMetric = document.getElementById("unit-metric");
+    const unitImp = document.getElementById("unit-imp");
+    const lblWeight = document.getElementById("lbl-weight");
+    const inpWeight = document.getElementById("weight");
+    const grpHeightMetric = document.getElementById("lbl-height-metric");
+    const grpHeightImp = document.getElementById("lbl-height-imp");
+
+    function toggleUnits() {
+        const isMetric = unitMetric.checked;
+        if (isMetric) {
+            lblWeight.childNodes[0].nodeValue = "Weight (kg) ";
+            let lbs = parseFloat(inpWeight.value);
+            if (!isNaN(lbs)) inpWeight.value = (lbs / 2.20462).toFixed(1);
+
+            grpHeightMetric.classList.remove("hidden");
+            grpHeightImp.classList.add("hidden");
+
+            let ft = parseFloat(document.getElementById("height-ft").value) || 0;
+            let inc = parseFloat(document.getElementById("height-in").value) || 0;
+            document.getElementById("height-cm").value = Math.round((ft * 12 + inc) * 2.54);
+        } else {
+            lblWeight.childNodes[0].nodeValue = "Weight (lbs) ";
+            let kg = parseFloat(inpWeight.value);
+            if (!isNaN(kg)) inpWeight.value = (kg * 2.20462).toFixed(1);
+
+            grpHeightMetric.classList.add("hidden");
+            grpHeightImp.classList.remove("hidden");
+
+            let cm = parseFloat(document.getElementById("height-cm").value) || 0;
+            let totalInches = Math.round(cm / 2.54);
+            document.getElementById("height-ft").value = Math.floor(totalInches / 12);
+            document.getElementById("height-in").value = totalInches % 12;
+        }
+        calculateMetrics();
+    }
+
+    unitMetric.addEventListener("change", toggleUnits);
+    unitImp.addEventListener("change", toggleUnits);
+
+    // ==========================================
+    // Core Math & Nutritional Logic
+    // ==========================================
+    const form = document.getElementById("calc-form");
+    form.addEventListener("input", calculateMetrics);
+    form.addEventListener("change", calculateMetrics);
+
+    function calculateMetrics() {
+        // 1. Gather Inputs
+        const age = parseInt(document.getElementById("age").value) || 0;
+        const gender = document.getElementById("gender").value;
+        let weight = parseFloat(inpWeight.value) || 0;
+        const bfStr = document.getElementById("body-fat").value;
+        const bodyFat = bfStr !== "" ? parseFloat(bfStr) : null;
+        const activity = parseFloat(document.getElementById("activity").value);
+        const wantLoss = document.getElementById("weight-loss").checked;
+        const dietType = document.querySelector("input[name=\"diet\"]:checked").value;
+        const isMetric = unitMetric.checked;
+
+        if (age === 0 || weight === 0) return;
+
+        // Base conversions for internal calculation math (Math is strictly metric)
+        let w_kg = isMetric ? weight : weight / 2.20462;
+        let h_cm = 0;
+        if (isMetric) {
+            h_cm = parseFloat(document.getElementById("height-cm").value) || 0;
+        } else {
+            let ft = parseFloat(document.getElementById("height-ft").value) || 0;
+            let inc = parseFloat(document.getElementById("height-in").value) || 0;
+            h_cm = (ft * 12 + inc) * 2.54;
+        }
+
+        // 2. Metabolic Rate Calculation
+        let bmr = 0;
+        if (bodyFat !== null && bodyFat > 0) {
+            // Katch-McArdle Formula: Highly accurate if Lean Body Mass is known.
+            let lbm = w_kg * (1 - (bodyFat / 100));
+            bmr = 370 + (21.6 * lbm);
+        } else {
+            // Mifflin-St Jeor Equation: Clinical standard for non-critical adult populations.
+            bmr = (10 * w_kg) + (6.25 * h_cm) - (5 * age);
+            bmr += (gender === "male") ? 5 : -161;
+        }
+
+        let tdee = bmr * activity;
+
+        // 3. Target Calories (Linear Adjustment for Deficit)
+        let targetCals = tdee;
+        let deficitText = "Maintenance";
+        if (wantLoss) {
+            // Clinical safety limit: caloric deficit should not exceed 35% of TDEE to prevent metabolic down-regulation
+            let limitCals = tdee * 0.65;
+            // Standard heuristic: 3,500 kcal = 1 lb body mass. 500 kcal deficit/day = ~1 lb loss/week.
+            let idealTarget = tdee - 500;
+            targetCals = Math.max(limitCals, idealTarget);
+            let deficit = tdee - targetCals;
+            deficitText = `Deficit: -${Math.round(deficit)} kcal`;
+        }
+
+        // Apply visual updates to top metrics
+        document.getElementById("out-tdee").innerText = `${Math.round(tdee)} kcal`;
+        document.getElementById("out-bmr-label").innerText = `BMR: ${Math.round(bmr)} kcal`;
+        document.getElementById("out-target").innerText = `${Math.round(targetCals)} kcal`;
+        document.getElementById("out-deficit-label").innerText = deficitText;
+
+        // 4. Macro Baselines based on lipid and clinical paradigms of each diet
+        let pctCarb, pctPro, pctFat, pctSatFat;
+        if (dietType === "med") {
+            // MedDiet: Highly fat-tolerant (mostly MUFAs from EVOO). Aggressive suppression of Saturated Fats.
+            pctCarb = 0.55;
+            pctPro = 0.15;
+            pctFat = 0.30;
+            pctSatFat = 0.08;
+        } else if (dietType === "dash") {
+            // DASH: Hemodynamic focus. Moderate fat. Extremely strict ceiling on Saturated Fats to downregulate LDL.
+            pctCarb = 0.55;
+            pctPro = 0.18;
+            pctFat = 0.27;
+            pctSatFat = 0.06;
+        } else {
+            // MIND: Neuroprotective focus. Hybrid macros prioritizing brain-healthy fats and minimizing trans/saturated fat.
+            pctCarb = 0.55;
+            pctPro = 0.20;
+            pctFat = 0.25;
+            pctSatFat = 0.05;
+        }
+
+        // 5. Apply PROT-AGE Paradox Logic
+        // Older adults (65+) experience age-related anabolic resistance, requiring 1.2g/kg absolute protein rather than 0.8g/kg.
+        let requiredProtein_g = age >= 65 ? w_kg * 1.2 : w_kg * 0.8;
+        let requiredProtein_cals = requiredProtein_g * 4;
+        let baselineProtein_cals = targetCals * pctPro;
+
+        const warningEl = document.getElementById("prot-age-warning");
+        if (baselineProtein_cals < requiredProtein_cals) {
+            warningEl.classList.remove("hidden");
+            // Re-calculate the protein percentage to hit the absolute floor in grams
+            let extraProCals = requiredProtein_cals - baselineProtein_cals;
+            pctPro = requiredProtein_cals / targetCals;
+
+            // Re-allocate the "stolen" calories proportionally from Carbs and Fat to maintain balance
+            let carbRatio = pctCarb / (pctCarb + pctFat);
+            let fatRatio = pctFat / (pctCarb + pctFat);
+
+            pctCarb = pctCarb - ((extraProCals * carbRatio) / targetCals);
+            pctFat = pctFat - ((extraProCals * fatRatio) / targetCals);
+        } else {
+            warningEl.classList.add("hidden");
+        }
+
+        // Convert finalized percentages to physical grams (Carb/Pro = 4 kcal/g, Fat = 9 kcal/g)
+        let gPro = (targetCals * pctPro) / 4;
+        let gCarb = (targetCals * pctCarb) / 4;
+        let gFat = (targetCals * pctFat) / 9;
+        let gSatFat = (targetCals * pctSatFat) / 9;
+
+        document.getElementById("pct-p").innerText = Math.round(pctPro * 100);
+        document.getElementById("pct-c").innerText = Math.round(pctCarb * 100);
+        document.getElementById("pct-f").innerText = Math.round(pctFat * 100);
+
+        document.getElementById("out-p").innerText = `${Math.round(gPro)} g`;
+        document.getElementById("out-c").innerText = `${Math.round(gCarb)} g`;
+        document.getElementById("out-f").innerText = `${Math.round(gFat)} g`;
+        document.getElementById("out-sf").innerText = `< ${Math.round(gSatFat)} g`;
+
+        // 6. Calculate Actionable Food Allocations
+        // The DGA standardizes volumetric recommendations against a 2,000-kcal baseline. We linearly scale this to the user's target.
+        const scale = targetCals / 2000;
+        let daily = "";
+        let weekly = "";
+        let restrictions = "";
+        let guide = "";
+
+        if (dietType === "med") {
+            document.getElementById("macro-title").innerText = "Mediterranean Macros";
+
+            // Daily
+            daily += `<li><strong>Vegetables:</strong> <span class="desc">${isMetric ? `~${Math.round(scale * 375)} g` : `${(scale * 2.5).toFixed(1)} Cup-Eq`}</span></li>`;
+            daily += `<li><strong>Fruits:</strong> <span class="desc">${isMetric ? `~${Math.round(scale * 375)} g` : `${(scale * 2.5).toFixed(1)} Cup-Eq`}</span></li>`;
+            daily += `<li><strong>Whole Grains:</strong> <span class="desc">${isMetric ? `~${Math.round(scale * 180)} g` : `${Math.round(scale * 6)} Oz-Eq`}</span></li>`;
+            daily += `<li><strong>Dairy:</strong> <span class="desc">${isMetric ? `~${Math.max(500, Math.round(scale * 500))} ml (Fermented preferred)` : `${Math.max(2, Math.round(scale * 2))} Cup-Eq (Fermented preferred)`}</span></li>`;
+            daily += `<li><strong>Extra Virgin Olive Oil:</strong> <span class="desc">~${Math.max(2, Math.round(scale * 4))} Tablespoons (Primary cooking fat)</span></li>`;
+
+            // Weekly
+            let totalProPerWeek = Math.round((scale * 6.5) * 7);
+            weekly += `<li><strong>Seafood:</strong> <span class="desc">${isMetric ? `~${Math.round(totalProPerWeek * 0.32 * 30)} g per week` : `~${Math.round(totalProPerWeek * 0.32)} Oz-Eq per week`}</span></li>`;
+            weekly += `<li><strong>Poultry & Eggs:</strong> <span class="desc">${isMetric ? `~${Math.round(totalProPerWeek * 0.56 * 30)} g per week` : `~${Math.round(totalProPerWeek * 0.56)} Oz-Eq per week`}</span></li>`;
+            weekly += `<li><strong>Nuts, Seeds, Soy:</strong> <span class="desc">${isMetric ? `~${Math.round(totalProPerWeek * 0.12 * 30)} g per week` : `~${Math.round(totalProPerWeek * 0.12)} Oz-Eq per week`}</span></li>`;
+            weekly += `<li><strong>Legumes (Beans/Lentils):</strong> <span class="desc">Integrated heavily alongside vegetables as primary protein source.</span></li>`;
+
+            // Restrictions
+            restrictions += `<li><strong>Red/Mammalian Meat:</strong> <span class="desc">${isMetric ? `Highly Restricted (Ideally < 90 g total per week)` : `Highly Restricted (Ideally < 3 oz total per week)`}</span></li>`;
+            restrictions += `<li><strong>Added Sugars & Sweets:</strong> <span class="desc">< 3 servings per week. Substitute liquid oils for solid fats in homemade baking.</span></li>`;
+
+            // Comprehensive Serving Guide
+            if (isMetric) {
+                guide += `<li><strong>Vegetables:</strong> <span class="desc"><strong>1 serving</strong> = ~150 g cooked/cut vegetables OR ~30 g raw leafy greens. <em>Focus heavily on tomatoes (red/orange group).</em></span></li>`;
+                guide += `<li><strong>Fruits:</strong> <span class="desc"><strong>1 serving</strong> = ~150 g fresh fruit (approx. 1 medium piece) OR ~40 g dried fruit.</span></li>`;
+                guide += `<li><strong>Whole Grains:</strong> <span class="desc"><strong>1 serving</strong> = 1 slice whole-wheat bread (~30 g), ~80 g cooked grains/pasta, OR ~30 g dry oats/cereal.</span></li>`;
+                guide += `<li><strong>Dairy:</strong> <span class="desc"><strong>1 serving</strong> = 250 ml milk/yogurt OR ~40 g natural cheese (feta, mozzarella).</span></li>`;
+                guide += `<li><strong>Proteins:</strong> <span class="desc"><strong>1 serving</strong> = ~30 g cooked meat/fish, 1 egg, OR ~15 g nuts/seeds. <em>Prioritize fatty fish like salmon, sardines, mackerel, and trout.</em></span></li>`;
+            } else {
+                guide += `<li><strong>Vegetables:</strong> <span class="desc"><strong>1 Cup-Eq</strong> = 1 cup raw leafy greens (spinach, arugula) OR 0.5 cup cooked veg (zucchini, eggplant). <em>Focus heavily on tomatoes (red/orange group).</em></span></li>`;
+                guide += `<li><strong>Fruits:</strong> <span class="desc"><strong>1 Cup-Eq</strong> = 1 medium whole fruit roughly the size of a tennis ball (apple, peach, orange) OR 0.5 cup dried fruit.</span></li>`;
+                guide += `<li><strong>Whole Grains:</strong> <span class="desc"><strong>1 Oz-Eq</strong> = 1 slice whole-wheat bread, 0.5 cup cooked ancient grains (farro, quinoa, brown rice, whole-wheat pasta), OR 1 cup whole-grain ready-to-eat cereal.</span></li>`;
+                guide += `<li><strong>Dairy:</strong> <span class="desc"><strong>1 Cup-Eq</strong> = 1 cup (250ml) milk/yogurt OR 1.5 oz natural cheese (feta, mozzarella).</span></li>`;
+                guide += `<li><strong>Proteins:</strong> <span class="desc"><strong>1 Oz-Eq</strong> = 1 oz cooked meat, 1 egg, OR 0.5 oz nuts/seeds (walnuts, almonds, chia, pine nuts). <em>Prioritize fatty fish like salmon, sardines, mackerel, and trout.</em></span></li>`;
+            }
+
+        } else if (dietType === "dash") {
+            document.getElementById("macro-title").innerText = "DASH Diet Macros";
+
+            // Daily
+            daily += `<li><strong>Whole Grains:</strong> <span class="desc">${isMetric ? `~${Math.round(scale * 210)} g` : `${Math.round(scale * 7)} Servings`}</span></li>`;
+            daily += `<li><strong>Vegetables:</strong> <span class="desc">${isMetric ? `~${Math.round(scale * 4.5 * 75)} g (Primary Potassium/Magnesium vector)` : `${Math.max(4, Math.round(scale * 4.5))} Servings (Primary Potassium/Magnesium vector)`}</span></li>`;
+            daily += `<li><strong>Fruits:</strong> <span class="desc">${isMetric ? `~${Math.round(scale * 4.5 * 150)} g` : `${Math.max(4, Math.round(scale * 4.5))} Servings`}</span></li>`;
+            daily += `<li><strong>Dairy (Strictly Low/Non-fat):</strong> <span class="desc">${isMetric ? `~${Math.max(625, Math.round(scale * 625))} ml (Crucial for 1,250 mg Calcium target)` : `${Math.max(2.5, Math.round(scale * 2.5))} Servings (Crucial for 1,250 mg Calcium target)`}</span></li>`;
+            daily += `<li><strong>Lean Meats, Poultry, Fish:</strong> <span class="desc">${isMetric ? `≤ ${Math.max(90, Math.round(scale * 170))} g` : `≤ ${Math.max(3, Math.round(scale * 6))} Oz`}</span></li>`;
+            daily += `<li><strong>Fats & Oils:</strong> <span class="desc">${isMetric ? `~${Math.max(10, Math.round(scale * 12.5))} g (~${Math.max(2, Math.round(scale * 2.5))} Servings)` : `${Math.max(2, Math.round(scale * 2.5))} Servings`}</span></li>`;
+
+            // Weekly
+            weekly += `<li><strong>Nuts, Seeds, Legumes:</strong> <span class="desc">${isMetric ? `4 to 5 Servings per week (~160 g to 200 g nuts/seeds, or ~320 g cooked legumes)` : `4 to 5 Servings per week`}</span></li>`;
+
+            // Restrictions
+            let sodiumTarget = targetCals <= 1600 ? "1,500 mg (Extreme restriction needed to balance low caloric density)" : "2,300 mg (Optimal hemodynamic effect at 1,500 mg)";
+            restrictions += `<li><strong>Sodium Ceiling:</strong> <span class="desc">≤ ${sodiumTarget}</span></li>`;
+            restrictions += `<li><strong>Saturated Fat:</strong> <span class="desc">Aggressively suppressed (≤ 6% of calories) to downregulate LDL cholesterol synthesis.</span></li>`;
+            restrictions += `<li><strong>Added Sugars:</strong> <span class="desc">≤ 5 servings per week to prevent hyperinsulinemia.</span></li>`;
+
+            // Comprehensive Serving Guide
+            if (isMetric) {
+                guide += `<li><strong>Grains:</strong> <span class="desc"><strong>1 Serving</strong> = 1 slice whole-wheat bread (~30 g), ~30 g dry cereal, OR ~80 g cooked brown rice, whole-wheat pasta, or oatmeal.</span></li>`;
+                guide += `<li><strong>Vegetables:</strong> <span class="desc"><strong>1 Serving</strong> = ~30 g raw leafy greens OR ~75 g cut/cooked vegetables (carrots, broccoli, tomatoes). <em>Keep skins on potatoes to retain intracellular potassium!</em></span></li>`;
+                guide += `<li><strong>Fruits:</strong> <span class="desc"><strong>1 Serving</strong> = 1 medium fruit (~150 g), ~150 g fresh/frozen, OR ~40 g dried fruit.</span></li>`;
+                guide += `<li><strong>Dairy:</strong> <span class="desc"><strong>1 Serving</strong> = 250 ml skim or 1% milk / low-fat yogurt OR ~40 g low-fat/fat-free cheese.</span></li>`;
+                guide += `<li><strong>Meat/Poultry/Fish:</strong> <span class="desc"><strong>1 Serving</strong> = ~30 g cooked skinless poultry, lean meat, or fish (an 85 g cooked portion is visually comparable to a deck of cards).</span></li>`;
+                guide += `<li><strong>Nuts & Legumes:</strong> <span class="desc"><strong>1 Serving</strong> = ~40 g nuts, 2 Tablespoons peanut butter, ~15 g seeds, OR ~80 g cooked dry beans or peas.</span></li>`;
+                guide += `<li><strong>Fats:</strong> <span class="desc"><strong>1 Serving</strong> = 1 Teaspoon vegetable oil / soft margarine OR 2 Tablespoons light salad dressing.</span></li>`;
+            } else {
+                guide += `<li><strong>Grains:</strong> <span class="desc"><strong>1 Serving</strong> = 1 slice whole-wheat bread, 1 oz dry cereal, OR 0.5 cup cooked brown rice, whole-wheat pasta, or oatmeal.</span></li>`;
+                guide += `<li><strong>Vegetables:</strong> <span class="desc"><strong>1 Serving</strong> = 1 cup raw leafy greens (spinach, kale) OR 0.5 cup cut/cooked vegetables (carrots, broccoli, tomatoes). <em>Keep skins on potatoes to retain intracellular potassium!</em></span></li>`;
+                guide += `<li><strong>Fruits:</strong> <span class="desc"><strong>1 Serving</strong> = 1 medium fruit (apple, banana, orange), 0.5 cup fresh/frozen, OR 0.25 cup dried fruit.</span></li>`;
+                guide += `<li><strong>Dairy:</strong> <span class="desc"><strong>1 Serving</strong> = 1 cup skim or 1% milk / low-fat yogurt OR 1.5 oz low-fat/fat-free cheese.</span></li>`;
+                guide += `<li><strong>Meat/Poultry/Fish:</strong> <span class="desc"><strong>1 Serving</strong> = 1 oz cooked skinless poultry, lean meat, or fish. <em>(A 3-oz portion is visually comparable to a deck of cards)</em>.</span></li>`;
+                guide += `<li><strong>Nuts & Legumes:</strong> <span class="desc"><strong>1 Serving</strong> = 0.33 cups (1.5 oz) nuts, 2 tbsp peanut butter, 0.5 oz seeds, OR 0.5 cup cooked dry beans or peas.</span></li>`;
+                guide += `<li><strong>Fats:</strong> <span class="desc"><strong>1 Serving</strong> = 1 tsp soft margarine / vegetable oil (olive, canola, safflower) OR 2 tbsp light salad dressing.</span></li>`;
+            }
+
+        } else {
+            document.getElementById("macro-title").innerText = "MIND Diet Macros";
+
+            // MIND is a hybrid evaluation based heavily on frequency to ensure specific neuroprotective compounds hit the brain.
+            // Caloric scaling dictates the volume of the "un-scored" filler foods (like extra grains or basic proteins).
+
+            // Daily
+            daily += `<li><strong>Whole Grains:</strong> <span class="desc">${isMetric ? `≥ 3 Servings (~90 g total; provides B-vitamins & glycemic stability)` : `≥ 3 Servings (Provides B-vitamins & glycemic stability)`}</span></li>`;
+            daily += `<li><strong>Other Vegetables:</strong> <span class="desc">${isMetric ? `≥ 1 Serving (~75 g; broad-spectrum antioxidants)` : `≥ 1 Serving (Broad-spectrum antioxidants)`}</span></li>`;
+            daily += `<li><strong>EVOO:</strong> <span class="desc">Primary culinary oil used for all cooking</span></li>`;
+
+            // Weekly
+            weekly += `<li><strong>Green Leafy Vegetables:</strong> <span class="desc">${isMetric ? `≥ 6 Servings / Week (~180 g raw or ~450 g cooked total)` : `≥ 6 Servings / Week (Crucial vector for folate, lutein, and phylloquinone)`}</span></li>`;
+            weekly += `<li><strong>Nuts:</strong> <span class="desc">${isMetric ? `≥ 5 Servings / Week (~150 g total; Vitamin E support)` : `≥ 5 Servings / Week (Delivers natural Vitamin E to neuronal membranes)`}</span></li>`;
+            weekly += `<li><strong>Beans & Legumes:</strong> <span class="desc">≥ 4 Meals / Week</span></li>`;
+            weekly += `<li><strong>Berries:</strong> <span class="desc">${isMetric ? `≥ 2 Servings / Week (~150 g to 300 g total)` : `≥ 2 Servings / Week (Anthocyanins uniquely cross the blood-brain barrier)`}</span></li>`;
+            weekly += `<li><strong>Poultry:</strong> <span class="desc">${isMetric ? `≥ 2 Meals / Week (~170 g to 230 g cooked total; non-fried)` : `≥ 2 Meals / Week (Strictly non-fried)`}</span></li>`;
+            weekly += `<li><strong>Fish / Seafood:</strong> <span class="desc">${isMetric ? `≥ 1 Meal / Week (~85 g to 115 g cooked)` : `≥ 1 Meal / Week (Delivers DHA/EPA Omega-3s)`}</span></li>`;
+
+            // Restrictions
+            restrictions += `<li><strong>Butter & Margarine:</strong> <span class="desc">${isMetric ? `< 1 Tablespoon (~14 g) / Day` : `< 1 Tablespoon / Day`} (Trans fats are highly neurotoxic)</span></li>`;
+            restrictions += `<li><strong>Cheese (Full-Fat):</strong> <span class="desc">${isMetric ? `< 1 Serving (~40 g) / Week` : `< 1 Serving / Week`} (MIND views dairy fat as hazardous to cognitive preservation)</span></li>`;
+            restrictions += `<li><strong>Red & Processed Meat:</strong> <span class="desc">${isMetric ? `< 4 Meals (~340 g to 450 g total) / Week` : `< 4 Meals / Week`} (Inflammatory precursors)</span></li>`;
+            restrictions += `<li><strong>Fried / Fast Food:</strong> <span class="desc">< 1 Meal / Week (Eliminates exposure to pro-inflammatory industrial seed oils)</span></li>`;
+            restrictions += `<li><strong>Pastries & Sweets:</strong> <span class="desc">< 5 Servings / Week (Exacerbates "Type 3 diabetes" pathways)</span></li>`;
+
+            // Comprehensive Serving Guide
+            if (isMetric) {
+                guide += `<li><strong>Whole Grains:</strong> <span class="desc"><strong>1 Serving</strong> = ~80 g cooked oatmeal, quinoa, brown rice OR 1 slice whole-wheat bread (~30 g).</span></li>`;
+                guide += `<li><strong>Green Leafy Veg:</strong> <span class="desc"><strong>1 Serving</strong> = ~30 g raw (spinach, kale, romaine) OR ~75 g cooked.</span></li>`;
+                guide += `<li><strong>Other Veg:</strong> <span class="desc"><strong>1 Serving</strong> = ~75 g cooked OR ~75 g raw/chopped (broccoli, carrots, peppers, squash).</span></li>`;
+                guide += `<li><strong>Nuts:</strong> <span class="desc"><strong>1 Serving</strong> = 30 g (approx. a small handful of walnuts, almonds, peanuts).</span></li>`;
+                guide += `<li><strong>Berries:</strong> <span class="desc"><strong>1 Serving</strong> = ~75 g to 150 g fresh or frozen (specifically blueberries, strawberries, blackberries).</span></li>`;
+                guide += `<li><strong>Beans & Legumes:</strong> <span class="desc"><strong>1 Meal</strong> = ~80 g cooked black beans, lentils, or soybeans.</span></li>`;
+                guide += `<li><strong>Poultry / Fish:</strong> <span class="desc"><strong>1 Meal</strong> = ~85 g to 115 g cooked chicken/turkey OR fatty fish (salmon, sardines, trout, scallops).</span></li>`;
+            } else {
+                guide += `<li><strong>Whole Grains:</strong> <span class="desc"><strong>1 Serving</strong> = 0.5 cup cooked oatmeal, quinoa, brown rice OR 1 slice whole-wheat bread.</span></li>`;
+                guide += `<li><strong>Green Leafy Veg:</strong> <span class="desc"><strong>1 Serving</strong> = 1 cup raw (spinach, kale, romaine) OR 0.5 cup cooked.</span></li>`;
+                guide += `<li><strong>Other Veg:</strong> <span class="desc"><strong>1 Serving</strong> = 0.5 cup cooked OR 1 cup raw (broccoli, carrots, peppers, squash).</span></li>`;
+                guide += `<li><strong>Nuts:</strong> <span class="desc"><strong>1 Serving</strong> = 1 oz (approx. 30 grams or a small handful of walnuts, almonds, peanuts).</span></li>`;
+                guide += `<li><strong>Berries:</strong> <span class="desc"><strong>1 Serving</strong> = 0.5 to 1 cup fresh or frozen (specifically blueberries, strawberries, blackberries).</span></li>`;
+                guide += `<li><strong>Beans & Legumes:</strong> <span class="desc"><strong>1 Meal</strong> = 0.5 cup cooked black beans, lentils, or soybeans.</span></li>`;
+                guide += `<li><strong>Poultry / Fish:</strong> <span class="desc"><strong>1 Meal</strong> = 3 to 4 ounces cooked chicken/turkey OR fatty fish (salmon, sardines, trout, scallops).</span></li>`;
+            }
+        }
+
+        document.getElementById("food-daily").innerHTML = daily;
+        document.getElementById("food-weekly").innerHTML = weekly;
+        document.getElementById("food-restrictions").innerHTML = restrictions;
+        document.getElementById("serving-guide").innerHTML = guide;
+    }
+
+    // Initialize metrics on window load
+    window.onload = calculateMetrics;
+
+</script>
+</body>
+</html>

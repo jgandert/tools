@@ -114,6 +114,7 @@
                 opacity: 1;
             }
         }
+
         #playback-hud {
             background-color: var(--surface-container-low);
             border: 1px solid var(--outline-variant);
@@ -159,10 +160,12 @@
             background-color: var(--surface-container-highest);
             border-radius: 3px;
         }
+
         #playback-progress::-webkit-progress-value {
             background-color: var(--primary);
             border-radius: 3px;
         }
+
         #playback-progress::-moz-progress-bar {
             background-color: var(--primary);
             border-radius: 3px;
@@ -171,7 +174,7 @@
 </head>
 
 <body>
-<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<input type="checkbox" id="aside-state" class="aside-state-toggle">
 
 <header>
     <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle settings"></label>
@@ -207,20 +210,27 @@
     <form id="settings-form" onsubmit="event.preventDefault();">
         <fieldset>
             <legend>Compositions</legend>
-            <select id="preset-select" name="preset-select" aria-label="Presets"><option value="Default">Showcase (builtin)</option></select>
+            <select id="preset-select" name="preset-select" aria-label="Presets">
+                <option value="Default">Showcase (builtin)</option>
+            </select>
             <div class="input-row">
-                <button type="button" class="btn-sym" id="add-preset-btn" data-tooltip="New Composition">
+                <button type="button" class="btn-sym" id="add-preset-btn"
+                        data-tooltip="New Composition">
                     add
                 </button>
-                <button type="button" class="btn-sym" id="paste-preset-btn" data-tooltip="Paste Composition">
+                <button type="button" class="btn-sym" id="paste-preset-btn"
+                        data-tooltip="Paste Composition">
                     content_paste
                 </button>
-                <button type="button" class="btn-sym" id="edit-preset-btn" data-tooltip="Edit Composition Name" disabled>
+                <button type="button" class="btn-sym" id="edit-preset-btn"
+                        data-tooltip="Edit Composition Name" disabled>
                     edit
                 </button>
-                <button type="button" class="btn-sym btn-danger" id="delete-preset-btn" data-tooltip="Delete Composition" disabled>delete
+                <button type="button" class="btn-sym btn-danger" id="delete-preset-btn"
+                        data-tooltip="Delete Composition" disabled>delete
                 </button>
-                <button type="button" class="btn-sym" id="download-preset-btn" data-tooltip="Download Composition JS">download
+                <button type="button" class="btn-sym" id="download-preset-btn"
+                        data-tooltip="Download Composition JS">download
                 </button>
             </div>
             <div class="mt-1">
@@ -755,11 +765,31 @@ return runShowcase().then(() => "STOP_MOTIF");
 `;
 
     const EXAMPLES = [
-        { name: "chiptune_1.motif.js", path: "examples/chiptune_1.motif.js", datetime: "1970-01-01T00:00:00.090Z" },
-        { name: "chiptune_1_loop.motif.js", path: "examples/chiptune_1_loop.motif.js", datetime: "1970-01-01T00:00:00.080Z" },
-        { name: "chiptune_2.motif.js", path: "examples/chiptune_2.motif.js", datetime: "1970-01-01T00:00:00.070Z" },
-        { name: "soundscape.motif.js", path: "examples/soundscape.motif.js", datetime: "1970-01-01T00:00:00.060Z" },
-        { name: "test_all_features.motif.js", path: "examples/test_all_features.motif.js", datetime: "1970-01-01T00:00:00.050Z" }
+        {
+            name: "chiptune_1.motif.js",
+            path: "examples/chiptune_1.motif.js",
+            datetime: "1970-01-01T00:00:00.090Z",
+        },
+        {
+            name: "chiptune_1_loop.motif.js",
+            path: "examples/chiptune_1_loop.motif.js",
+            datetime: "1970-01-01T00:00:00.080Z",
+        },
+        {
+            name: "chiptune_2.motif.js",
+            path: "examples/chiptune_2.motif.js",
+            datetime: "1970-01-01T00:00:00.070Z",
+        },
+        {
+            name: "soundscape.motif.js",
+            path: "examples/soundscape.motif.js",
+            datetime: "1970-01-01T00:00:00.060Z",
+        },
+        {
+            name: "test_all_features.motif.js",
+            path: "examples/test_all_features.motif.js",
+            datetime: "1970-01-01T00:00:00.050Z",
+        },
     ];
 
     let compositions = [];
@@ -786,7 +816,7 @@ return runShowcase().then(() => "STOP_MOTIF");
             const customCompositions = compositions.filter(c => !c.isBuiltin).map(c => ({
                 name: c.name,
                 code: c.code,
-                datetime: c.datetime
+                datetime: c.datetime,
             }));
             await Storage.set("motif_custom_compositions", customCompositions);
             await Storage.set("motif_current_composition", currentCompositionName);
@@ -850,7 +880,7 @@ return runShowcase().then(() => "STOP_MOTIF");
 
         if (currentComposition.datetime && !isBuiltin) {
             const date = new Date(currentComposition.datetime);
-            presetDatetimeDisplay.textContent = date.toISOString().replace('T', ' ').replace(/\..+/, '') + ' UTC';
+            presetDatetimeDisplay.textContent = date.toISOString().replace("T", " ").replace(/\..+/, "") + " UTC";
         } else {
             presetDatetimeDisplay.textContent = "";
         }
@@ -868,13 +898,13 @@ return runShowcase().then(() => "STOP_MOTIF");
                             name: ex.name,
                             code: code,
                             datetime: ex.datetime,
-                            isBuiltin: true
+                            isBuiltin: true,
                         });
                     }
                 } catch (err) {
                     console.warn(`Failed to fetch example ${ex.name}:`, err);
                 }
-            })
+            }),
         );
 
         try {
@@ -894,16 +924,16 @@ return runShowcase().then(() => "STOP_MOTIF");
                     name: "Showcase (builtin)",
                     code: defaultCode,
                     datetime: "1970-01-01T00:00:00.100Z",
-                    isBuiltin: true
+                    isBuiltin: true,
                 },
                 ...fetchedExamples,
                 {
                     name: DYNAMIC_SHOWCASE_COMPOSITION_NAME,
                     code: generatedShowcaseCode,
                     datetime: "1970-01-01T00:00:00.010Z",
-                    isBuiltin: true
+                    isBuiltin: true,
                 },
-                ...customCompositions.map(c => ({ ...c, isBuiltin: false }))
+                ...customCompositions.map(c => ({ ...c, isBuiltin: false })),
             ];
 
             let savedCurrentComposition = await Storage.get("motif_current_composition");
@@ -926,15 +956,15 @@ return runShowcase().then(() => "STOP_MOTIF");
                     name: "Showcase (builtin)",
                     code: defaultCode,
                     datetime: "1970-01-01T00:00:00.100Z",
-                    isBuiltin: true
+                    isBuiltin: true,
                 },
                 ...fetchedExamples,
                 {
                     name: DYNAMIC_SHOWCASE_COMPOSITION_NAME,
                     code: generatedShowcaseCode,
                     datetime: "1970-01-01T00:00:00.010Z",
-                    isBuiltin: true
-                }
+                    isBuiltin: true,
+                },
             ];
             currentCompositionName = "Showcase (builtin)";
             updatePresetSelect();
@@ -1001,7 +1031,7 @@ return runShowcase().then(() => "STOP_MOTIF");
             name: trimmed,
             code: COMPOSITION_TEMPLATE,
             datetime: new Date().toISOString(),
-            isBuiltin: false
+            isBuiltin: false,
         };
         compositions.push(newComposition);
         currentCompositionName = trimmed;
@@ -1073,7 +1103,7 @@ return runShowcase().then(() => "STOP_MOTIF");
         const customCompositions = compositions.filter(c => !c.isBuiltin).map(c => ({
             name: c.name,
             code: c.code,
-            datetime: c.datetime
+            datetime: c.datetime,
         }));
         const blob = new Blob([JSON.stringify(customCompositions, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
@@ -1114,7 +1144,7 @@ return runShowcase().then(() => "STOP_MOTIF");
                                     name: newComp.name,
                                     code: newComp.code,
                                     datetime: newComp.datetime || new Date().toISOString(),
-                                    isBuiltin: false
+                                    isBuiltin: false,
                                 };
                             }
                         } else {
@@ -1122,7 +1152,7 @@ return runShowcase().then(() => "STOP_MOTIF");
                                 name: newComp.name,
                                 code: newComp.code,
                                 datetime: newComp.datetime || new Date().toISOString(),
-                                isBuiltin: false
+                                isBuiltin: false,
                             });
                         }
                     });
@@ -1170,7 +1200,7 @@ return runShowcase().then(() => "STOP_MOTIF");
                 name: chosenName,
                 code: trimmedCode,
                 datetime: new Date().toISOString(),
-                isBuiltin: false
+                isBuiltin: false,
             };
             compositions.push(newComposition);
             currentCompositionName = chosenName;
@@ -1289,7 +1319,7 @@ return runShowcase().then(() => "STOP_MOTIF");
                 name: randomName,
                 code: codeEditor.value,
                 datetime: new Date().toISOString(),
-                isBuiltin: false
+                isBuiltin: false,
             };
             compositions.push(newComposition);
             currentCompositionName = randomName;
@@ -1309,7 +1339,7 @@ return runShowcase().then(() => "STOP_MOTIF");
             saveCompositionsToStorage();
             if (presetDatetimeDisplay) {
                 const date = new Date(currentComposition.datetime);
-                presetDatetimeDisplay.textContent = date.toISOString().replace('T', ' ').replace(/\..+/, '') + ' UTC';
+                presetDatetimeDisplay.textContent = date.toISOString().replace("T", " ").replace(/\..+/, "") + " UTC";
             }
         }
 
@@ -1390,7 +1420,7 @@ return runShowcase().then(() => "STOP_MOTIF");
                     const sectionDuration = (section.bars || 0) * barDuration;
 
                     if (!activeSecFound && elapsed >= cumulativeTime && elapsed < cumulativeTime + sectionDuration) {
-                        currentSectionName = `Phase ${i + 1}${section.name ? ': ' + section.name : ''}`;
+                        currentSectionName = `Phase ${i + 1}${section.name ? ": " + section.name : ""}`;
                         activeSecFound = true;
                     }
                     cumulativeTime += sectionDuration;
@@ -1437,7 +1467,7 @@ return runShowcase().then(() => "STOP_MOTIF");
                 for (const voice of track._activeVoices.values()) {
                     if (now >= voice.startTime && now < voice.endTime) {
                         if (track._useSample) {
-                            const name = track._sampleUrl ? track._sampleUrl.split('/').pop().replace(/\.[^/.]+$/, "") : "sample";
+                            const name = track._sampleUrl ? track._sampleUrl.split("/").pop().replace(/\.[^/.]+$/, "") : "sample";
                             activeSamples.add(name);
                         } else if (track._useSampler) {
                             activeSamples.add(track.id || "sampler");
@@ -1448,11 +1478,11 @@ return runShowcase().then(() => "STOP_MOTIF");
                 }
             }
 
-            activeSynthsList.innerHTML = activeSynths.size > 0 
-                ? `Synths: ${[...activeSynths].join(", ")}` 
+            activeSynthsList.innerHTML = activeSynths.size > 0
+                ? `Synths: ${[...activeSynths].join(", ")}`
                 : "";
-            activeSamplesList.innerHTML = activeSamples.size > 0 
-                ? `Samples: ${[...activeSamples].join(", ")}` 
+            activeSamplesList.innerHTML = activeSamples.size > 0
+                ? `Samples: ${[...activeSamples].join(", ")}`
                 : "";
         } else {
             playbackTime.textContent = "Bar 1 | Time: 0:00";
@@ -1502,7 +1532,7 @@ return runShowcase().then(() => "STOP_MOTIF");
                     isDirty = false;
                     await Motif.ctx.resume();
                 }
-                
+
                 if (Motif._debugPlaybackStart !== null) {
                     // Resume from pause without rebuilding/re-registering tracks
                     await Motif.start();

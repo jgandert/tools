@@ -608,7 +608,7 @@ console.log("\n=== BlockTraceDiff: Edge cases & Bugs ===");
         { srcStart: 5, srcEnd: 10, targetStart: 105, targetEnd: 110, length: 6 }, // Claims src 5..10
         { srcStart: 200, srcEnd: 205, targetStart: 6, targetEnd: 11, length: 6 }, // Claims target 6..11
         { srcStart: 14, srcEnd: 19, targetStart: 300, targetEnd: 305, length: 6 }, // Claims src 14..19
-        { srcStart: 10, srcEnd: 14, targetStart: 10, targetEnd: 14, length: 5 }   // Candidate to trim
+        { srcStart: 10, srcEnd: 14, targetStart: 10, targetEnd: 14, length: 5 },   // Candidate to trim
     ];
     const result1 = engine1._greedyMasking(candidates);
     const hasTrimmedCand = result1.some(c => c.srcStart === 12 && c.srcEnd === 13 && c.targetStart === 12 && c.targetEnd === 13);

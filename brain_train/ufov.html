@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="en" class="theme-turquoise">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="UFOV (Useful Field of View) cognitive training task.">
+    <title>UFOV Game</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .ufov-board {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            border: 2px dashed var(--outline-variant);
+            margin: var(--spacing-lg) auto;
+            background-color: var(--surface-container-low);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .ufov-center-node {
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            background-color: var(--surface-container-high);
+            border-radius: 50%;
+            border: 2px solid var(--outline-variant);
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--on-surface);
+        }
+
+        .ufov-peripheral-node {
+            position: absolute;
+            width: 46px;
+            height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border-radius: 50%;
+            transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
+        }
+
+        .ufov-peripheral-node.clickable {
+            cursor: pointer;
+            border: 2px solid var(--primary);
+            background-color: var(--surface-container-high);
+        }
+
+        .ufov-peripheral-node.clickable:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .ufov-peripheral-node.clickable:hover svg {
+            color: var(--on-primary) !important;
+        }
+
+        .ufov-peripheral-node.correct {
+            background-color: var(--primary) !important;
+            border: 2px solid var(--primary) !important;
+            color: var(--on-primary) !important;
+        }
+
+        .ufov-peripheral-node.incorrect {
+            background-color: var(--error) !important;
+            border: 2px solid var(--error) !important;
+        }
+
+        #vehicle-prompt h3 {
+            text-align: center;
+        }
+
+        .vehicle-svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            color: var(--primary);
+        }
+
+        .sign-svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            color: inherit;
+        }
+
+        .ufov-mask {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+        }
+
+        .vehicle-choices {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            flex-wrap: wrap;
+        }
+
+        .vehicle-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-md);
+            border: 2px solid var(--outline-variant);
+            background-color: var(--surface-container-high);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--trans-interactive);
+            width: 120px;
+            height: 120px;
+        }
+
+        .vehicle-btn:hover {
+            border-color: var(--primary);
+            background-color: var(--surface-container-highest);
+            transform: scale(1.05);
+        }
+
+        .vehicle-btn svg {
+            width: 64px;
+            height: 64px;
+        }
+
+        .vehicle-btn span {
+            margin-top: var(--spacing-sm);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .status-container {
+            background: var(--surface-container-low);
+            border-radius: var(--radius);
+            padding: var(--spacing-md);
+            border: 1px solid var(--outline-variant);
+            margin-top: var(--spacing-md);
+        }
+
+        .form-row {
+            display: flex;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-row > div {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .game-actions {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" checked>
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>UFOV / Speed</h1>
+        <p>Divided Attention &amp; Visual Speed</p>
+    </hgroup>
+    <nav aria-label="Primary">
+        <ul>
+            <li>
+                <a href="index.html" class="back-link">
+                    <span class="sym">arrow_back</span> Hub
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="content">
+    <section id="game-section">
+        <h2>UFOV / Speed-of-Processing Task</h2>
+
+        <div id="instructions-text">
+            <p>
+                Train your visual processing speed and field of view. Identify the vehicle in the
+                center and locate the peripheral road sign.
+            </p>
+            <details>
+                <summary>How to Play &amp; Controls</summary>
+                <p>
+                    <strong>Trial Sequence:</strong>
+                </p>
+                <ol>
+                    <li>Fixation cross (<code>+</code>) appears. Focus on the center.</li>
+                    <li>Stimulus flashes very briefly (50–300 ms): a vehicle in the center
+                        (Car/Truck) and a sign in the periphery.
+                    </li>
+                    <li>A noise mask covers the board to prevent retinal persistence.</li>
+                    <li><strong>Prompt 1:</strong> Identify the central vehicle.</li>
+                    <li><strong>Prompt 2:</strong> Select which of the 8 peripheral locations
+                        contained the sign.
+                    </li>
+                </ol>
+                <p>
+                    <strong>Controls:</strong>
+                </p>
+                <ul>
+                    <li><strong>Central Vehicle:</strong> Click the Car or Truck button, or press
+                        <strong>A</strong> / <strong>&larr;</strong> (Car) or <strong>L</strong> /
+                        <strong>&rarr;</strong> (Truck).
+                    </li>
+                    <li><strong>Peripheral Location:</strong> Click the matching peripheral circle,
+                        or press keys <strong>1</strong> to <strong>8</strong> (starting clockwise
+                        from top-most circle).
+                    </li>
+                </ul>
+                <p>
+                    <strong>Subtest Modes:</strong>
+                </p>
+                <ul>
+                    <li><strong>Central Processing Only:</strong> Only identify the center vehicle
+                        (no peripheral signs).
+                    </li>
+                    <li><strong>Divided Attention:</strong> Identify the center vehicle AND locate
+                        the peripheral sign.
+                    </li>
+                    <li><strong>Selective Attention:</strong> Center vehicle AND peripheral sign,
+                        but other lanes contain circular distractors.
+                    </li>
+                </ul>
+            </details>
+        </div>
+
+        <p id="game-prompt" class="hidden"></p>
+
+        <div id="game-status" class="status-container hidden">
+            <div class="form-row">
+                <div>
+                    <strong>Trial:</strong>
+                    <span id="stat-trial">0 / 30</span>
+                </div>
+                <div>
+                    <strong>Exposure Speed:</strong>
+                    <span id="stat-duration">200 ms</span>
+                </div>
+                <div>
+                    <strong>Score:</strong>
+                    <span id="stat-score">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ufov-board" id="ufov-board">
+            <canvas id="noise-mask" class="ufov-mask hidden" width="320" height="320"></canvas>
+            <div class="ufov-center-node" id="ufov-center">+</div>
+            <div class="ufov-peripheral-node" data-lane="0"></div>
+            <div class="ufov-peripheral-node" data-lane="1"></div>
+            <div class="ufov-peripheral-node" data-lane="2"></div>
+            <div class="ufov-peripheral-node" data-lane="3"></div>
+            <div class="ufov-peripheral-node" data-lane="4"></div>
+            <div class="ufov-peripheral-node" data-lane="5"></div>
+            <div class="ufov-peripheral-node" data-lane="6"></div>
+            <div class="ufov-peripheral-node" data-lane="7"></div>
+        </div>
+
+        <div id="vehicle-prompt" class="hidden">
+            <h3>Which vehicle was in the center?</h3>
+            <div class="vehicle-choices">
+                <button type="button" class="vehicle-btn" id="btn-vehicle-car">
+                    <span>Car (A / ←)</span>
+                </button>
+                <button type="button" class="vehicle-btn" id="btn-vehicle-truck">
+                    <span>Truck (L / →)</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="game-actions" class="game-actions hidden">
+            <button id="btn-stop" class="btn btn-danger" type="button">
+                <span class="sym">stop</span> Stop Training
+            </button>
+        </div>
+
+        <section id="config-section" class="status-container">
+            <h2>Game Configuration</h2>
+            <div class="form-row">
+                <div>
+                    <label for="select-mode">Subtest Mode</label>
+                    <select id="select-mode">
+                        <option value="Central">Central Processing Only</option>
+                        <option value="Divided" selected>Divided Attention (Center + Peripheral)
+                        </option>
+                        <option value="Selective">Selective Attention (With Distractors)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="select-trials">Number of Trials</label>
+                    <select id="select-trials">
+                        <option value="15">15 Trials (Quick)</option>
+                        <option value="30" selected>30 Trials (Standard)</option>
+                        <option value="45">45 Trials (Extended)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label for="select-start-duration">Starting Speed</label>
+                    <select id="select-start-duration">
+                        <option value="100">100 ms (Fast)</option>
+                        <option value="200" selected>200 ms (Standard)</option>
+                        <option value="300">300 ms (Slow)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <button id="btn-start" class="btn btn-primary" type="button">
+                    <span class="sym">play_arrow</span> Start Training
+                </button>
+            </div>
+        </section>
+
+        <section id="results-panel" class="status-container hidden">
+            <h2>Session Completed!</h2>
+            <div class="form-row">
+                <div>
+                    <strong>Accuracy:</strong>
+                    <span id="results-accuracy">0%</span>
+                </div>
+                <div>
+                    <strong>Threshold Speed:</strong>
+                    <span id="results-threshold">0 ms</span>
+                </div>
+                <div>
+                    <strong>Final Score:</strong>
+                    <span id="results-score">0</span>
+                </div>
+            </div>
+            <p id="ufov-feedback">...</p>
+            <div class="form-row">
+                <button id="btn-return-hub" class="btn btn-primary" type="button">
+                    <span class="sym">arrow_back</span> Return to Hub
+                </button>
+                <button id="btn-play-again" class="btn" type="button">
+                    <span class="sym">refresh</span> Play Again
+                </button>
+            </div>
+        </section>
+    </section>
+</main>
+
+<aside>
+    <h2>Game Info</h2>
+    <ul>
+        <li><strong>Layout:</strong> Central target (Car/Truck), 8 peripheral locations</li>
+        <li><strong>Sequence:</strong> Fixation (+), Stimulus flash (50–300 ms), Full noise mask,
+            Central identification prompt, Peripheral localization prompt
+        </li>
+        <li><strong>Controls:</strong>
+            <ul>
+                <li><strong>Vehicle:</strong> Click buttons or press <strong>A</strong> /
+                    <strong>←</strong> (Car) or <strong>L</strong> / <strong>→</strong> (Truck)
+                </li>
+                <li><strong>Location:</strong> Click peripheral circle or press keys
+                    <strong>1</strong>-<strong>8</strong> (clockwise starting from top)
+                </li>
+            </ul>
+        </li>
+        <li><strong>Adaptivity:</strong> Staircase speed adjustment. Target speed decreases on
+            success, increases on failure.
+        </li>
+    </ul>
+</aside>
+
+<footer>
+    <p>Brain Train suite — UFOV / Speed Task</p>
+</footer>
+
+<script src="../one.js"></script>
+<script>
+
+
+    loadGameSettings();
+
+    // Visual assets
+    const CAR_SVG = `
+    <svg viewBox="0 0 100 100" class="vehicle-svg">
+      <rect x="15" y="45" width="70" height="23" rx="5" fill="currentColor"/>
+      <path d="M 28 45 L 38 25 L 62 25 L 72 45 Z" fill="currentColor"/>
+      <circle cx="33" cy="68" r="8" stroke="currentColor" stroke-width="5" fill="none"/>
+      <circle cx="33" cy="68" r="3" fill="currentColor"/>
+      <circle cx="67" cy="68" r="8" stroke="currentColor" stroke-width="5" fill="none"/>
+      <circle cx="67" cy="68" r="3" fill="currentColor"/>
+    </svg>
+    `;
+
+    const TRUCK_SVG = `
+    <svg viewBox="0 0 100 100" class="vehicle-svg">
+      <rect x="15" y="32" width="48" height="36" rx="3" fill="currentColor"/>
+      <rect x="63" y="42" width="22" height="26" rx="3" fill="currentColor"/>
+      <circle cx="30" cy="68" r="8" stroke="currentColor" stroke-width="5" fill="none"/>
+      <circle cx="30" cy="68" r="3" fill="currentColor"/>
+      <circle cx="70" cy="68" r="8" stroke="currentColor" stroke-width="5" fill="none"/>
+      <circle cx="70" cy="68" r="3" fill="currentColor"/>
+    </svg>
+    `;
+
+    function getTargetSignSvg() {
+        return `
+        <svg viewBox="0 0 100 100" class="sign-svg">
+          <path d="M 50 10 L 90 50 L 50 90 L 10 50 Z" fill="currentColor"/>
+          <path d="M 50 28 L 50 58 M 50 68 L 50 74" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+        </svg>
+        `;
+    }
+
+    function getDistractorSignSvg() {
+        return `
+        <svg viewBox="0 0 100 100" class="sign-svg">
+          <circle cx="50" cy="50" r="40" fill="currentColor"/>
+          <rect x="22" y="44" width="56" height="12" rx="2" fill="#ffffff"/>
+        </svg>
+        `;
+    }
+
+    // Insert SVGs to prompt buttons
+    document.getElementById("btn-vehicle-car").insertAdjacentHTML("afterbegin", CAR_SVG);
+    document.getElementById("btn-vehicle-truck").insertAdjacentHTML("afterbegin", TRUCK_SVG);
+
+    // DOM Elements
+    const instructionsText = document.getElementById("instructions-text");
+    const gamePrompt = document.getElementById("game-prompt");
+    const gameStatus = document.getElementById("game-status");
+    const ufovBoard = document.getElementById("ufov-board");
+    const noiseMask = document.getElementById("noise-mask");
+    const ufovCenter = document.getElementById("ufov-center");
+    const vehiclePrompt = document.getElementById("vehicle-prompt");
+    const gameActions = document.getElementById("game-actions");
+    const configSection = document.getElementById("config-section");
+    const resultsPanel = document.getElementById("results-panel");
+
+    const selectMode = document.getElementById("select-mode");
+    const selectTrials = document.getElementById("select-trials");
+    const selectStartDuration = document.getElementById("select-start-duration");
+
+    const btnStart = document.getElementById("btn-start");
+    const btnStop = document.getElementById("btn-stop");
+    const btnPlayAgain = document.getElementById("btn-play-again");
+    const btnReturnHub = document.getElementById("btn-return-hub");
+    const btnVehicleCar = document.getElementById("btn-vehicle-car");
+    const btnVehicleTruck = document.getElementById("btn-vehicle-truck");
+
+    const statTrial = document.getElementById("stat-trial");
+    const statDuration = document.getElementById("stat-duration");
+    const statScore = document.getElementById("stat-score");
+
+    const resultsAccuracy = document.getElementById("results-accuracy");
+    const resultsThreshold = document.getElementById("results-threshold");
+    const resultsScore = document.getElementById("results-score");
+    const ufovFeedback = document.getElementById("ufov-feedback");
+
+    const peripheralNodes = document.querySelectorAll(".ufov-peripheral-node");
+
+    // Position peripheral nodes
+    function positionPeripheralNodes() {
+        const radius = 120;
+        const centerX = 160;
+        const centerY = 160;
+        const nodeSize = 46;
+
+        peripheralNodes.forEach((node, idx) => {
+            const angle = -Math.PI / 2 + (idx * Math.PI / 4);
+            const x = centerX + radius * Math.cos(angle) - nodeSize / 2;
+            const y = centerY + radius * Math.sin(angle) - nodeSize / 2;
+
+            node.style.left = `${x}px`;
+            node.style.top = `${y}px`;
+        });
+    }
+
+    positionPeripheralNodes();
+
+    // Sound generation using Web Audio API
+    let audioCtx = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx && audioCtx.state === "suspended") {
+            try {
+                audioCtx.resume();
+            } catch (e) {
+            }
+        }
+    }
+
+    function playSound(type) {
+        initAudio();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+
+        if (type === "tick") {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+            osc.start(now);
+            osc.stop(now + 0.05);
+        } else if (type === "success") {
+            const notes = [261.63, 329.63, 392.00, 523.25];
+            notes.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.type = "triangle";
+                osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+                gain.gain.setValueAtTime(0, now + idx * 0.08);
+                gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.08 + 0.04);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+
+                osc.start(now + idx * 0.08);
+                osc.stop(now + idx * 0.08 + 0.35);
+            });
+        } else if (type === "fail") {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(130, now);
+            osc.frequency.linearRampToValueAtTime(80, now + 0.25);
+
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+            osc.start(now);
+            osc.stop(now + 0.25);
+        }
+    }
+
+    // Game state variables
+    let isPlaying = false;
+    let currentTrial = 0;
+    let totalTrials = 30;
+    let subtestMode = "Divided";
+    let currentDuration = 200;
+    let score = 0;
+    let correctTrialsCount = 0;
+
+    let trialData = null;
+    let trialStartTime = 0;
+    let sessionStartTime = 0;
+    let waitingForVehicle = false;
+    let waitingForLocation = false;
+
+    let fixationTimeout = null;
+    let stimulusTimeout = null;
+    let maskTimeout = null;
+    let feedbackTimeout = null;
+
+    function showSection(section) {
+        configSection.classList.add("hidden");
+        gameStatus.classList.add("hidden");
+        gameActions.classList.add("hidden");
+        resultsPanel.classList.add("hidden");
+        instructionsText.classList.add("hidden");
+        gamePrompt.classList.add("hidden");
+        vehiclePrompt.classList.add("hidden");
+        noiseMask.classList.add("hidden");
+
+        // Remove styling modifiers
+        peripheralNodes.forEach(node => {
+            node.className = "ufov-peripheral-node";
+        });
+
+        if (section === "settings") {
+            configSection.classList.remove("hidden");
+            instructionsText.classList.remove("hidden");
+            ufovCenter.textContent = "+";
+            clearBoard();
+        } else if (section === "playing") {
+            gameStatus.classList.remove("hidden");
+            gameActions.classList.remove("hidden");
+            gamePrompt.classList.remove("hidden");
+        } else if (section === "results") {
+            resultsPanel.classList.remove("hidden");
+        }
+    }
+
+    function clearBoard() {
+        ufovCenter.innerHTML = "+";
+        peripheralNodes.forEach(node => {
+            node.innerHTML = "";
+            node.style.color = "";
+        });
+    }
+
+    function runTrial() {
+        if (!isPlaying) return;
+
+        waitingForVehicle = false;
+        waitingForLocation = false;
+        clearBoard();
+
+        // Clear styles
+        peripheralNodes.forEach(node => {
+            node.className = "ufov-peripheral-node";
+        });
+
+        statTrial.textContent = `${currentTrial + 1} / ${totalTrials}`;
+        statDuration.textContent = `${currentDuration} ms`;
+        statScore.textContent = score;
+
+        gamePrompt.textContent = "Focus on the center...";
+
+        const targetLane = Math.floor(Math.random() * 8);
+        const centerVehicle = Math.random() < 0.5 ? "car" : "truck";
+        const targetHue = Math.floor(Math.random() * 360);
+        const distractorHue = (targetHue + 180) % 360;
+
+        trialData = {
+            centerTarget: centerVehicle,
+            targetLane: targetLane,
+            hue: targetHue,
+            distractorHue: distractorHue,
+            vehicleResponse: null,
+            locationResponse: null,
+            vehicleRT: null,
+            vehicleCorrect: false,
+            locationCorrect: false,
+        };
+
+        const fixationDuration = 800;
+
+        fixationTimeout = setTimeout(() => {
+            if (!isPlaying) return;
+            showStimulus();
+        }, fixationDuration);
+    }
+
+    function showStimulus() {
+        if (!isPlaying) return;
+
+        playSound("tick");
+
+        // Draw center vehicle
+        if (trialData.centerTarget === "car") {
+            ufovCenter.innerHTML = CAR_SVG;
+        } else {
+            ufovCenter.innerHTML = TRUCK_SVG;
+        }
+
+        // Draw peripheral target / distractors
+        if (subtestMode === "Divided" || subtestMode === "Selective") {
+            const targetColor = `oklch(60% 0.22 ${trialData.hue})`;
+            const targetSvg = getTargetSignSvg();
+
+            peripheralNodes[trialData.targetLane].style.color = targetColor;
+            peripheralNodes[trialData.targetLane].innerHTML = targetSvg;
+
+            if (subtestMode === "Selective") {
+                const distractorColor = `oklch(60% 0.22 ${trialData.distractorHue})`;
+                peripheralNodes.forEach((node, idx) => {
+                    if (idx !== trialData.targetLane) {
+                        node.style.color = distractorColor;
+                        node.innerHTML = getDistractorSignSvg();
+                    }
+                });
+            }
+        }
+
+        stimulusTimeout = setTimeout(() => {
+            if (!isPlaying) return;
+            showMask();
+        }, currentDuration);
+    }
+
+    function showMask() {
+        if (!isPlaying) return;
+
+        clearBoard();
+        showNoiseMask();
+
+        maskTimeout = setTimeout(() => {
+            if (!isPlaying) return;
+            noiseMask.classList.add("hidden");
+            promptVehicle();
+        }, 500);
+    }
+
+    function showNoiseMask() {
+        noiseMask.classList.remove("hidden");
+        const ctx = noiseMask.getContext("2d");
+        const w = noiseMask.width;
+        const h = noiseMask.height;
+
+        ctx.fillStyle = "#111111";
+        ctx.fillRect(0, 0, w, h);
+
+        // Populate visual noise shapes to mask persistence
+        for (let i = 0; i < 150; i++) {
+            ctx.fillStyle = Math.random() < 0.5 ? "#ffffff" : "#666666";
+            ctx.beginPath();
+            if (Math.random() < 0.5) {
+                ctx.rect(Math.random() * w, Math.random() * h, Math.random() * 40 + 10, Math.random() * 40 + 10);
+            } else {
+                ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 20 + 5, 0, Math.PI * 2);
+            }
+            ctx.fill();
+        }
+    }
+
+    function promptVehicle() {
+        waitingForVehicle = true;
+        trialStartTime = performance.now();
+
+        gamePrompt.textContent = "Which vehicle was in the center?";
+        vehiclePrompt.classList.remove("hidden");
+    }
+
+    function registerVehicleResponse(response) {
+        if (!isPlaying || !waitingForVehicle) return;
+
+        waitingForVehicle = false;
+
+        const btn = response === "car" ? btnVehicleCar : btnVehicleTruck;
+        btn.classList.add("feedback-active");
+        setTimeout(() => btn.classList.remove("feedback-active"), 150);
+
+        trialData.vehicleRT = Math.round(performance.now() - trialStartTime);
+        trialData.vehicleResponse = response;
+        trialData.vehicleCorrect = (response === trialData.centerTarget);
+
+        vehiclePrompt.classList.add("hidden");
+
+        if (subtestMode === "Central") {
+            evaluateTrial();
+        } else {
+            promptLocation();
+        }
+    }
+
+    function promptLocation() {
+        waitingForLocation = true;
+        gamePrompt.textContent = "Click where the road sign was located (or press 1-8).";
+
+        peripheralNodes.forEach(node => {
+            node.classList.add("clickable");
+        });
+    }
+
+    function registerLocationResponse(lane) {
+        if (!isPlaying || !waitingForLocation) return;
+
+        waitingForLocation = false;
+        trialData.locationResponse = lane;
+        trialData.locationCorrect = (lane === trialData.targetLane);
+
+        peripheralNodes.forEach(node => {
+            node.classList.remove("clickable");
+        });
+
+        evaluateTrial();
+    }
+
+    function evaluateTrial() {
+        let isCorrect = false;
+
+        if (subtestMode === "Central") {
+            isCorrect = trialData.vehicleCorrect;
+        } else {
+            isCorrect = trialData.vehicleCorrect && trialData.locationCorrect;
+        }
+
+        // Show feedback in board
+        ufovCenter.textContent = trialData.vehicleCorrect ? "✓" : "✗";
+
+        if (subtestMode !== "Central") {
+            // Correct location in green/primary
+            peripheralNodes[trialData.targetLane].classList.add("correct");
+            peripheralNodes[trialData.targetLane].style.color = "";
+            peripheralNodes[trialData.targetLane].innerHTML = getTargetSignSvg();
+
+            if (!trialData.locationCorrect && trialData.locationResponse !== null) {
+                // Wrong user choice in red/error
+                peripheralNodes[trialData.locationResponse].classList.add("incorrect");
+            }
+        }
+
+        // Play feedback audio
+        playSound(isCorrect ? "success" : "fail");
+
+        // Adapt score & staircase
+        if (isCorrect) {
+            score += 50;
+            correctTrialsCount++;
+            // Response speed bonus
+            score += Math.max(0, Math.round((1000 - trialData.vehicleRT) / 10));
+            // Exposure challenge bonus
+            score += Math.max(0, Math.round((500 - currentDuration) / 5));
+
+            currentDuration = Math.max(16, Math.round(currentDuration * 0.85));
+        } else {
+            currentDuration = Math.min(600, Math.round(currentDuration * 1.25));
+        }
+
+        statScore.textContent = score;
+
+        feedbackTimeout = setTimeout(() => {
+            goToNextTrial();
+        }, 1200);
+    }
+
+    function goToNextTrial() {
+        currentTrial++;
+        if (currentTrial < totalTrials) {
+            runTrial();
+        } else {
+            finishGame();
+        }
+    }
+
+    const UFOV_SETTINGS_KEY = "brain-train-ufov-settings";
+
+    function saveGameSettings() {
+        try {
+            const settings = {
+                mode: selectMode.value,
+                trials: selectTrials.value,
+                startDuration: selectStartDuration.value,
+            };
+            localStorage.setItem(UFOV_SETTINGS_KEY, JSON.stringify(settings));
+        } catch (e) {
+        }
+    }
+
+    function loadGameSettings() {
+        try {
+            const stored = JSON.parse(localStorage.getItem(UFOV_SETTINGS_KEY) || "{}");
+            if (stored.mode) selectMode.value = stored.mode;
+            if (stored.trials) selectTrials.value = stored.trials;
+            if (stored.startDuration) selectStartDuration.value = stored.startDuration;
+        } catch (e) {
+        }
+    }
+
+    function startGame() {
+        initAudio();
+        isPlaying = true;
+        currentTrial = 0;
+        score = 0;
+        correctTrialsCount = 0;
+
+        saveGameSettings();
+
+        subtestMode = selectMode.value;
+        totalTrials = parseInt(selectTrials.value) || 30;
+        currentDuration = parseInt(selectStartDuration.value) || 200;
+
+        sessionStartTime = performance.now();
+
+        showSection("playing");
+        runTrial();
+    }
+
+    function stopGame() {
+        isPlaying = false;
+        clearTimeout(fixationTimeout);
+        clearTimeout(stimulusTimeout);
+        clearTimeout(maskTimeout);
+        clearTimeout(feedbackTimeout);
+
+        showSection("settings");
+    }
+
+    function finishGame() {
+        isPlaying = false;
+        clearTimeout(fixationTimeout);
+        clearTimeout(stimulusTimeout);
+        clearTimeout(maskTimeout);
+        clearTimeout(feedbackTimeout);
+
+        clearBoard();
+
+        const accuracy = Math.round((correctTrialsCount / totalTrials) * 100);
+        recordSession();
+        showSection("results");
+
+        resultsScore.textContent = score;
+        resultsThreshold.textContent = `${currentDuration} ms`;
+        resultsAccuracy.textContent = `${accuracy}%`;
+
+        const speedVal = currentDuration;
+
+        if (speedVal < 50) {
+            ufovFeedback.textContent = `Exceptional visual processing speed! Your threshold is below 50 ms (${speedVal} ms).`;
+        } else if (speedVal < 150) {
+            ufovFeedback.textContent = `Great attention and speed threshold. Your threshold is ${speedVal} ms. Keep practicing to reach sub-50 ms speeds.`;
+        } else {
+            ufovFeedback.textContent = `Your visual speed threshold is ${speedVal} ms. Regular training will significantly expand your Useful Field of View and processing speed.`;
+        }
+    }
+
+    // Bind event listeners to vehicle buttons
+    btnVehicleCar.addEventListener("click", () => registerVehicleResponse("car"));
+    btnVehicleTruck.addEventListener("click", () => registerVehicleResponse("truck"));
+
+    // Bind location nodes
+    peripheralNodes.forEach(node => {
+        node.addEventListener("click", () => {
+            if (!waitingForLocation) return;
+            const lane = parseInt(node.getAttribute("data-lane"));
+            registerLocationResponse(lane);
+        });
+    });
+
+    btnStart.addEventListener("click", startGame);
+    btnStop.addEventListener("click", stopGame);
+
+    btnPlayAgain.addEventListener("click", () => {
+        showSection("settings");
+    });
+
+    function recordSession() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+        const durationSec = Math.round((performance.now() - sessionStartTime) / 1000);
+        const accuracy = Math.round((correctTrialsCount / totalTrials) * 100);
+        const newLog = {
+            date: dateStr,
+            game: "ufov",
+            difficulty: subtestMode,
+            score: score,
+            accuracy: accuracy,
+            reactionTime: currentDuration,
+            duration: durationSec,
+        };
+        try {
+            const logs = JSON.parse(localStorage.getItem("brain-train-logs") || "[]");
+            logs.push(newLog);
+            localStorage.setItem("brain-train-logs", JSON.stringify(logs));
+        } catch (err) {
+            console.error("Error saving session:", err);
+        }
+    }
+
+    btnReturnHub.addEventListener("click", () => {
+        window.location.href = "index.html";
+    });
+
+    // Keyboard bindings
+    window.addEventListener("keydown", (e) => {
+        if (!isPlaying) return;
+        if (e.repeat) return;
+
+        if (waitingForVehicle) {
+            if (e.key === "a" || e.key === "A" || e.key === "ArrowLeft") {
+                e.preventDefault();
+                registerVehicleResponse("car");
+            } else if (e.key === "l" || e.key === "L" || e.key === "ArrowRight") {
+                e.preventDefault();
+                registerVehicleResponse("truck");
+            }
+        } else if (waitingForLocation) {
+            const keyVal = parseInt(e.key);
+            if (keyVal >= 1 && keyVal <= 8) {
+                e.preventDefault();
+                registerLocationResponse(keyVal - 1);
+            }
+        }
+    });
+
+    // Initialize section
+    showSection("settings");
+</script>
+</body>
+
+</html>

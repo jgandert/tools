@@ -226,7 +226,7 @@ export const TrackAudioChain = {
                 "filterNode", "pannerNode", "volumeNode",
                 "eqLowNode", "eqMidNode", "eqHighNode",
                 "compressorNode", "distortionNode", "dspNode",
-                "duckGainNode", "_mergerNode"
+                "duckGainNode", "_mergerNode",
             ];
             for (const prop of internalNodes) {
                 if (this[prop]) {

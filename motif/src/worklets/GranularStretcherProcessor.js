@@ -4,7 +4,7 @@ class GranularStretcherProcessor extends AudioWorkletProcessor {
             { name: "stretchFactor", defaultValue: 1.0, minValue: 0.1, maxValue: 10.0 },
             { name: "pitchRatio", defaultValue: 1.0, minValue: 0.001, maxValue: 128.0 },
             { name: "grainSize", defaultValue: 0.05, minValue: 0.001 },
-            { name: "overlap", defaultValue: 4, minValue: 1 }
+            { name: "overlap", defaultValue: 4, minValue: 1 },
         ];
     }
 
@@ -88,7 +88,7 @@ class GranularStretcherProcessor extends AudioWorkletProcessor {
                     this.grains.push({
                         position: this.virtualReadPointer,
                         age: 0,
-                        length: grainLength
+                        length: grainLength,
                     });
                     this.lastSpawnCount = this.outputSampleCount;
                 }
@@ -111,7 +111,7 @@ class GranularStretcherProcessor extends AudioWorkletProcessor {
 
                 // Hann window
                 const windowVal = 0.5 * (1.0 - Math.cos((2.0 * Math.PI * grain.age) / grain.length));
-                
+
                 leftSum += leftVal * windowVal;
                 rightSum += rightVal * windowVal;
 

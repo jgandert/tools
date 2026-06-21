@@ -1,0 +1,6 @@
+{
+    "dependencies": {},
+    "devDependencies": {
+        "happy-dom": "^20.10.6"
+    }
+}

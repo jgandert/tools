@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="en" class="theme-blue">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="Dual N-Back cognitive training task.">
+    <title>Dual N-Back Task</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .simulation-container {
+            background: var(--surface-container-low);
+            border-radius: var(--radius);
+            padding: var(--spacing-md);
+            border: 1px solid var(--outline-variant);
+            margin-top: var(--spacing-lg);
+        }
+
+        .form-row {
+            display: flex;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-row > div {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 80px);
+            gap: var(--spacing-sm);
+            margin: var(--spacing-lg) auto;
+            justify-content: center;
+            align-content: center;
+        }
+
+        .grid-cell {
+            background-color: var(--surface-container-highest);
+            border-radius: 8px;
+            border: 1px solid var(--outline-variant);
+            transition: background-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .grid-cell.active-cell {
+            background-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        .game-actions {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" checked>
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Dual N-Back</h1>
+        <p>Working Memory Task</p>
+    </hgroup>
+    <nav aria-label="Primary">
+        <ul>
+            <li>
+                <a href="index.html" class="back-link">
+                    <span class="sym">arrow_back</span> Hub
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="content">
+    <section id="game-section">
+        <h2>Dual N-Back Task</h2>
+
+        <div id="instructions-text">
+            <p>
+                Monitor a sequence of visual locations (flashing squares) and auditory letter cues.
+                Press the match keys or buttons when the current stimulus matches the one presented
+                <strong>N steps back</strong>.
+            </p>
+            <details>
+                <summary>How to Play &amp; Examples</summary>
+                <p>
+                    The game presents a sequence of trials. On each trial, a square flashes in a 3x3
+                    grid (Visual) and a letter is spoken (Auditory) at the same time.
+                </p>
+                <p>
+                    <strong>N-Back Concept:</strong>
+                </p>
+                <ul>
+                    <li>If <strong>N=1</strong>: Match with the immediately preceding trial.</li>
+                    <li>If <strong>N=2</strong>: Match with the trial shown two steps ago.</li>
+                </ul>
+                <p>
+                    <strong>Example (Visual 2-Back):</strong>
+                </p>
+                <ol>
+                    <li>Trial 1: Top-Left square</li>
+                    <li>Trial 2: Center square</li>
+                    <li>Trial 3: Top-Left square &rarr; <strong>Match!</strong> (Same as Trial 1,
+                        two steps back)
+                    </li>
+                    <li>Trial 4: Center square &rarr; <strong>Match!</strong> (Same as Trial 2, two
+                        steps back)
+                    </li>
+                </ol>
+                <p>
+                    <strong>Key Mappings:</strong>
+                </p>
+                <ul>
+                    <li><strong>Visual Match:</strong> Press <strong>A</strong> or <strong>Left
+                        Arrow</strong> (&larr;)
+                    </li>
+                    <li><strong>Auditory Match:</strong> Press <strong>L</strong> or <strong>Right
+                        Arrow</strong> (&rarr;)
+                    </li>
+                </ul>
+                <p>
+                    <em>Note: In Visual-only or Auditory-only mode, only monitor and respond to that
+                        single modality.</em>
+                </p>
+            </details>
+        </div>
+
+        <div class="preview-grid" id="game-grid">
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+        </div>
+
+        <div id="game-status" class="simulation-container hidden">
+            <div class="form-row">
+                <div>
+                    <strong>Trial:</strong>
+                    <span id="stat-trial">0 / 22</span>
+                </div>
+                <div>
+                    <strong>N-Level:</strong>
+                    <span id="stat-n-level">2</span>
+                </div>
+                <div>
+                    <strong>Score:</strong>
+                    <span id="stat-score">0</span>
+                </div>
+                <div>
+                    <strong>Accuracy:</strong>
+                    <span id="stat-accuracy">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-actions" class="game-actions hidden">
+            <button id="btn-match-visual" class="btn btn-primary" type="button">
+                Match Visual (A / &larr;)
+            </button>
+            <button id="btn-match-auditory" class="btn btn-primary" type="button">
+                Match Auditory (L / &rarr;)
+            </button>
+            <button id="btn-stop" class="btn btn-danger" type="button">
+                <span class="sym">stop</span> Stop
+            </button>
+        </div>
+
+        <section id="config-section" class="simulation-container">
+            <h2>Game Configuration</h2>
+            <div class="form-row">
+                <div>
+                    <label for="select-n-level">N-Back Level</label>
+                    <select id="select-n-level">
+                        <option value="1">N=1</option>
+                        <option value="2" selected>N=2</option>
+                        <option value="3">N=3</option>
+                        <option value="4">N=4</option>
+                        <option value="5">N=5</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="select-mode">Modality</label>
+                    <select id="select-mode">
+                        <option value="dual" selected>Dual (Visual &amp; Auditory)</option>
+                        <option value="visual">Visual Only</option>
+                        <option value="auditory">Auditory Only</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="select-speed">Trial Speed</label>
+                    <select id="select-speed">
+                        <option value="3000" selected>Standard (3.0s)</option>
+                        <option value="2500">Fast (2.5s)</option>
+                        <option value="2000">Rapid (2.0s)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <button id="btn-start" class="btn btn-primary" type="button">
+                    <span class="sym">play_arrow</span> Start Training
+                </button>
+            </div>
+        </section>
+
+        <section id="results-panel" class="simulation-container hidden">
+            <h2>Session Completed!</h2>
+            <div class="form-row">
+                <div>
+                    <strong>Corrected Recognition:</strong>
+                    <span id="results-cr">0%</span>
+                </div>
+                <div>
+                    <strong>Accuracy:</strong>
+                    <span id="results-accuracy">0%</span>
+                </div>
+                <div>
+                    <strong>Avg Reaction Time:</strong>
+                    <span id="results-rt">0 ms</span>
+                </div>
+                <div>
+                    <strong>Score:</strong>
+                    <span id="results-score">0</span>
+                </div>
+            </div>
+            <p id="staircase-feedback">N level remains N=2.</p>
+            <div class="form-row">
+                <button id="btn-return-hub" class="btn btn-primary" type="button">
+                    <span class="sym">arrow_back</span> Return to Hub
+                </button>
+                <button id="btn-play-again" class="btn" type="button">
+                    <span class="sym">refresh</span> Play Again
+                </button>
+            </div>
+        </section>
+    </section>
+</main>
+
+<aside>
+    <h2>Game Info</h2>
+    <ul>
+        <li><strong> modality:</strong> Dual (Visual &amp; Auditory)</li>
+        <li><strong>Keys:</strong> Left Arrow / A (Visual), Right Arrow / L (Auditory)</li>
+        <li><strong>Interval:</strong> 3.0 s per trial</li>
+        <li><strong>Staircase:</strong> Adaptive (&ge; 80% to level up)</li>
+    </ul>
+</aside>
+
+<footer>
+    <p>Brain Train suite — Dual N-Back</p>
+</footer>
+
+<script src="../one.js"></script>
+<script>
+    const gameGrid = document.getElementById("game-grid");
+    const gameStatus = document.getElementById("game-status");
+    const gameActions = document.getElementById("game-actions");
+    const configSection = document.getElementById("config-section");
+    const resultsPanel = document.getElementById("results-panel");
+    const instructionsText = document.getElementById("instructions-text");
+
+    const selectNLevel = document.getElementById("select-n-level");
+    const selectMode = document.getElementById("select-mode");
+    const selectSpeed = document.getElementById("select-speed");
+
+    const btnStart = document.getElementById("btn-start");
+    const btnStop = document.getElementById("btn-stop");
+    const btnMatchVisual = document.getElementById("btn-match-visual");
+    const btnMatchAuditory = document.getElementById("btn-match-auditory");
+    const btnReturnHub = document.getElementById("btn-return-hub");
+    const btnPlayAgain = document.getElementById("btn-play-again");
+
+    const statTrial = document.getElementById("stat-trial");
+    const statNLevel = document.getElementById("stat-n-level");
+    const statScore = document.getElementById("stat-score");
+    const statAccuracy = document.getElementById("stat-accuracy");
+
+    const resultsCR = document.getElementById("results-cr");
+    const resultsAccuracy = document.getElementById("results-accuracy");
+    const resultsRT = document.getElementById("results-rt");
+    const resultsScore = document.getElementById("results-score");
+    const staircaseFeedback = document.getElementById("staircase-feedback");
+
+    let nLevel = 2;
+    let mode = "dual";
+    let trialSpeed = 3000;
+
+    let isPlaying = false;
+    let currentTrial = 0;
+    let totalTrials = 22;
+    let sessionStartTime = 0;
+
+    let visualSequence = [];
+    let auditorySequence = [];
+
+    const visualOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    const auditoryOptions = ["B", "F", "H", "L", "M", "Q", "R", "X"];
+
+    let visualResponded = false;
+    let auditoryResponded = false;
+    let visualRT = null;
+    let auditoryRT = null;
+    let trialStartTime = 0;
+
+    let trialTimeout = null;
+    let presentationTimeout = null;
+    let audioCtx = null;
+
+    let sessionStats = {
+        visualHits: 0,
+        visualMisses: 0,
+        visualFAs: 0,
+        visualCRs: 0,
+        auditoryHits: 0,
+        auditoryMisses: 0,
+        auditoryFAs: 0,
+        auditoryCRs: 0,
+        reactionTimes: [],
+    };
+
+    let nextNLevel = 2;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        if (audioCtx && audioCtx.state === "suspended") {
+            try {
+                audioCtx.resume().catch(() => {
+                });
+            } catch (e) {
+            }
+        }
+    }
+
+    function playTickSound() {
+        initAudio();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+        osc.start(now);
+        osc.stop(now + 0.05);
+    }
+
+    function playToneForLetter(letter) {
+        initAudio();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+        const letterFrequencies = {
+            "B": 261.63,
+            "F": 293.66,
+            "H": 329.63,
+            "L": 349.23,
+            "M": 392.00,
+            "Q": 440.00,
+            "R": 493.88,
+            "X": 523.25,
+        };
+
+        const freq = letterFrequencies[letter] || 440.00;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.12, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+        osc.start(now);
+        osc.stop(now + 0.4);
+    }
+
+    function speakLetter(letter) {
+        try {
+            if ("speechSynthesis" in window && window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(letter);
+                utterance.lang = "en-US";
+                utterance.rate = 1.3;
+                utterance.onerror = () => {
+                    playToneForLetter(letter);
+                };
+                window.speechSynthesis.speak(utterance);
+            } else {
+                playToneForLetter(letter);
+            }
+        } catch (e) {
+            playToneForLetter(letter);
+        }
+    }
+
+    function generateSequence(length, level, numTargets, options) {
+        const seq = [];
+        for (let i = 0; i < length; i++) {
+            seq.push(options[Math.floor(Math.random() * options.length)]);
+        }
+
+        const candidates = [];
+        for (let i = level; i < length; i++) {
+            candidates.push(i);
+        }
+
+        for (let i = candidates.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+        }
+
+        const count = Math.min(numTargets, candidates.length);
+        const chosen = candidates.slice(0, count).sort((a, b) => a - b);
+        for (let i = 0; i < chosen.length; i++) {
+            const idx = chosen[i];
+            seq[idx] = seq[idx - level];
+        }
+
+        return seq;
+    }
+
+    function countModalityTargets(seq) {
+        let count = 0;
+        for (let i = nLevel; i < seq.length; i++) {
+            if (seq[i] === seq[i - nLevel]) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    function getLiveStats() {
+        let hits = 0;
+        let misses = 0;
+        let fas = 0;
+        let crs = 0;
+
+        if (mode === "visual" || mode === "dual") {
+            hits += sessionStats.visualHits;
+            misses += sessionStats.visualMisses;
+            fas += sessionStats.visualFAs;
+            crs += sessionStats.visualCRs;
+        }
+
+        if (mode === "auditory" || mode === "dual") {
+            hits += sessionStats.auditoryHits;
+            misses += sessionStats.auditoryMisses;
+            fas += sessionStats.auditoryFAs;
+            crs += sessionStats.auditoryCRs;
+        }
+
+        const totalDecisions = hits + misses + fas + crs;
+        const correctDecisions = hits + crs;
+        const accuracy = totalDecisions > 0 ? Math.round((correctDecisions / totalDecisions) * 100) : 0;
+        const baseScore = Math.max(0, (hits * 150) - (fas * 75));
+        const speedMultiplier = 3000 / trialSpeed;
+        const score = Math.round(baseScore * speedMultiplier * nLevel);
+
+        return { accuracy, score };
+    }
+
+    function showSection(section) {
+        configSection.classList.add("hidden");
+        gameStatus.classList.add("hidden");
+        gameActions.classList.add("hidden");
+        resultsPanel.classList.add("hidden");
+        instructionsText.classList.add("hidden");
+
+        if (section === "settings") {
+            configSection.classList.remove("hidden");
+            instructionsText.classList.remove("hidden");
+        } else if (section === "playing") {
+            gameStatus.classList.remove("hidden");
+            gameActions.classList.remove("hidden");
+        } else if (section === "results") {
+            resultsPanel.classList.remove("hidden");
+        }
+    }
+
+    function registerVisualResponse(rt) {
+        if (visualResponded) return;
+
+        visualResponded = true;
+        visualRT = rt;
+        sessionStats.reactionTimes.push(rt);
+
+        btnMatchVisual.classList.add("feedback-active");
+        setTimeout(() => btnMatchVisual.classList.remove("feedback-active"), 150);
+    }
+
+    function registerAuditoryResponse(rt) {
+        if (auditoryResponded) return;
+
+        auditoryResponded = true;
+        auditoryRT = rt;
+        sessionStats.reactionTimes.push(rt);
+
+        btnMatchAuditory.classList.add("feedback-active");
+        setTimeout(() => btnMatchAuditory.classList.remove("feedback-active"), 150);
+    }
+
+    function evaluateTrial(idx) {
+        if (idx < nLevel) return;
+
+        const isVisual = (mode === "visual" || mode === "dual");
+        if (isVisual) {
+            const isMatch = idx >= nLevel && visualSequence[idx] === visualSequence[idx - nLevel];
+            if (isMatch) {
+                if (visualResponded) {
+                    sessionStats.visualHits++;
+                } else {
+                    sessionStats.visualMisses++;
+                }
+            } else {
+                if (visualResponded) {
+                    sessionStats.visualFAs++;
+                } else {
+                    sessionStats.visualCRs++;
+                }
+            }
+        }
+
+        const isAuditory = (mode === "auditory" || mode === "dual");
+        if (isAuditory) {
+            const isMatch = idx >= nLevel && auditorySequence[idx] === auditorySequence[idx - nLevel];
+            if (isMatch) {
+                if (auditoryResponded) {
+                    sessionStats.auditoryHits++;
+                } else {
+                    sessionStats.auditoryMisses++;
+                }
+            } else {
+                if (auditoryResponded) {
+                    sessionStats.auditoryFAs++;
+                } else {
+                    sessionStats.auditoryCRs++;
+                }
+            }
+        }
+    }
+
+    function runTrial() {
+        if (!isPlaying) return;
+
+        playTickSound();
+
+        visualResponded = false;
+        auditoryResponded = false;
+        visualRT = null;
+        auditoryRT = null;
+        trialStartTime = performance.now();
+
+        statTrial.textContent = `${currentTrial + 1} / ${totalTrials}`;
+
+        const isVisual = (mode === "visual" || mode === "dual");
+        if (isVisual) {
+            const targetCell = visualSequence[currentTrial];
+            const cells = gameGrid.querySelectorAll(".grid-cell");
+            cells.forEach((cell, idx) => {
+                if (idx === targetCell) {
+                    cell.classList.add("active-cell");
+                } else {
+                    cell.classList.remove("active-cell");
+                }
+            });
+        }
+
+        const isAuditory = (mode === "auditory" || mode === "dual");
+        if (isAuditory) {
+            const letter = auditorySequence[currentTrial];
+            speakLetter(letter);
+        }
+
+        const presentationTime = trialSpeed / 3;
+
+        presentationTimeout = setTimeout(() => {
+            const cells = gameGrid.querySelectorAll(".grid-cell");
+            cells.forEach(cell => cell.classList.remove("active-cell"));
+        }, presentationTime);
+
+        trialTimeout = setTimeout(() => {
+            evaluateTrial(currentTrial);
+
+            const live = getLiveStats();
+            statAccuracy.textContent = `${live.accuracy}%`;
+            statScore.textContent = live.score;
+
+            currentTrial++;
+            if (currentTrial < totalTrials) {
+                runTrial();
+            } else {
+                finishGame();
+            }
+        }, trialSpeed);
+    }
+
+    const NBACK_SETTINGS_KEY = "brain-train-nback-settings";
+
+    function saveGameSettings() {
+        try {
+            const settings = {
+                nLevel: selectNLevel.value,
+                mode: selectMode.value,
+                trialSpeed: selectSpeed.value,
+            };
+            localStorage.setItem(NBACK_SETTINGS_KEY, JSON.stringify(settings));
+        } catch (e) {
+        }
+    }
+
+    function loadGameSettings() {
+        try {
+            const stored = JSON.parse(localStorage.getItem(NBACK_SETTINGS_KEY) || "{}");
+            if (stored.nLevel) {
+                const n = parseInt(stored.nLevel);
+                let hasOption = false;
+                for (let option of selectNLevel.options) {
+                    if (parseInt(option.value) === n) {
+                        hasOption = true;
+                        break;
+                    }
+                }
+                if (!hasOption) {
+                    const opt = document.createElement("option");
+                    opt.value = n;
+                    opt.textContent = `N=${n}`;
+                    selectNLevel.appendChild(opt);
+                }
+                selectNLevel.value = n;
+            }
+            if (stored.mode) {
+                selectMode.value = stored.mode;
+            }
+            if (stored.trialSpeed) {
+                selectSpeed.value = stored.trialSpeed;
+            }
+        } catch (e) {
+        }
+    }
+
+    function startGame() {
+        initAudio();
+
+        isPlaying = true;
+        currentTrial = 0;
+
+        nLevel = parseInt(selectNLevel.value) || 2;
+        mode = selectMode.value;
+        trialSpeed = parseInt(selectSpeed.value) || 3000;
+        totalTrials = 20 + nLevel;
+
+        saveGameSettings();
+        sessionStartTime = performance.now();
+
+        sessionStats = {
+            visualHits: 0,
+            visualMisses: 0,
+            visualFAs: 0,
+            visualCRs: 0,
+            auditoryHits: 0,
+            auditoryMisses: 0,
+            auditoryFAs: 0,
+            auditoryCRs: 0,
+            reactionTimes: [],
+        };
+
+        const targetCount = 6;
+        visualSequence = generateSequence(totalTrials, nLevel, targetCount, visualOptions);
+        auditorySequence = generateSequence(totalTrials, nLevel, targetCount, auditoryOptions);
+
+        statNLevel.textContent = nLevel;
+        statScore.textContent = "0";
+        statAccuracy.textContent = "0%";
+
+        if (mode === "visual") {
+            btnMatchVisual.removeAttribute("disabled");
+            btnMatchAuditory.setAttribute("disabled", "true");
+        } else if (mode === "auditory") {
+            btnMatchVisual.setAttribute("disabled", "true");
+            btnMatchAuditory.removeAttribute("disabled");
+        } else {
+            btnMatchVisual.removeAttribute("disabled");
+            btnMatchAuditory.removeAttribute("disabled");
+        }
+
+        showSection("playing");
+        runTrial();
+    }
+
+    function stopGame() {
+        isPlaying = false;
+        clearTimeout(presentationTimeout);
+        clearTimeout(trialTimeout);
+
+        if ("speechSynthesis" in window && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+
+        const cells = gameGrid.querySelectorAll(".grid-cell");
+        cells.forEach(cell => cell.classList.remove("active-cell"));
+
+        showSection("settings");
+    }
+
+    function finishGame() {
+        isPlaying = false;
+        clearTimeout(presentationTimeout);
+        clearTimeout(trialTimeout);
+
+        if ("speechSynthesis" in window && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+
+        const cells = gameGrid.querySelectorAll(".grid-cell");
+        cells.forEach(cell => cell.classList.remove("active-cell"));
+
+        const visualTargets = countModalityTargets(visualSequence);
+        const auditoryTargets = countModalityTargets(auditorySequence);
+
+        let totalTargets = 0;
+        let totalHits = 0;
+        let totalFAs = 0;
+
+        if (mode === "visual" || mode === "dual") {
+            totalTargets += visualTargets;
+            totalHits += sessionStats.visualHits;
+            totalFAs += sessionStats.visualFAs;
+        }
+
+        if (mode === "auditory" || mode === "dual") {
+            totalTargets += auditoryTargets;
+            totalHits += sessionStats.auditoryHits;
+            totalFAs += sessionStats.auditoryFAs;
+        }
+
+        const crValue = totalTargets > 0 ? (totalHits - totalFAs) / totalTargets : 0;
+        const crPercent = Math.max(0, Math.round(crValue * 100));
+
+        const live = getLiveStats();
+        const avgRT = sessionStats.reactionTimes.length > 0
+            ? Math.round(sessionStats.reactionTimes.reduce((a, b) => a + b, 0) / sessionStats.reactionTimes.length)
+            : 0;
+
+        if (crPercent >= 80) {
+            nextNLevel = nLevel + 1;
+            staircaseFeedback.textContent = `Excellent performance! N increases to ${nextNLevel} for the next session.`;
+        } else if (crPercent < 60) {
+            nextNLevel = Math.max(1, nLevel - 1);
+            if (nextNLevel < nLevel) {
+                staircaseFeedback.textContent = `N decreases to ${nextNLevel} to match your pace. Keep practicing!`;
+            } else {
+                staircaseFeedback.textContent = `N remains at 1. Keep practicing!`;
+            }
+        } else {
+            nextNLevel = nLevel;
+            staircaseFeedback.textContent = `Consistent performance. N remains at ${nLevel} for the next session.`;
+        }
+
+        let hasOption = false;
+        for (let option of selectNLevel.options) {
+            if (parseInt(option.value) === nextNLevel) {
+                hasOption = true;
+                break;
+            }
+        }
+        if (!hasOption) {
+            const opt = document.createElement("option");
+            opt.value = nextNLevel;
+            opt.textContent = `N=${nextNLevel}`;
+            selectNLevel.appendChild(opt);
+        }
+        selectNLevel.value = nextNLevel;
+        saveGameSettings();
+
+        resultsCR.textContent = `${crPercent}%`;
+        resultsAccuracy.textContent = `${live.accuracy}%`;
+        resultsRT.textContent = `${avgRT} ms`;
+        resultsScore.textContent = live.score;
+
+        recordSession();
+
+        showSection("results");
+    }
+
+
+    loadGameSettings();
+
+    window.addEventListener("keydown", (e) => {
+        if (!isPlaying) return;
+
+        if (e.repeat) return;
+
+        const now = performance.now();
+        const rt = Math.round(now - trialStartTime);
+
+        const isVisual = (mode === "visual" || mode === "dual");
+        const isAuditory = (mode === "auditory" || mode === "dual");
+
+        if (isVisual && (e.key === "a" || e.key === "A" || e.key === "ArrowLeft")) {
+            e.preventDefault();
+            registerVisualResponse(rt);
+        }
+
+        if (isAuditory && (e.key === "l" || e.key === "L" || e.key === "ArrowRight")) {
+            e.preventDefault();
+            registerAuditoryResponse(rt);
+        }
+    });
+
+    btnStart.addEventListener("click", startGame);
+    btnStop.addEventListener("click", stopGame);
+
+    btnMatchVisual.addEventListener("click", () => {
+        if (!isPlaying) return;
+        const rt = Math.round(performance.now() - trialStartTime);
+        registerVisualResponse(rt);
+    });
+
+    btnMatchAuditory.addEventListener("click", () => {
+        if (!isPlaying) return;
+        const rt = Math.round(performance.now() - trialStartTime);
+        registerAuditoryResponse(rt);
+    });
+
+    btnPlayAgain.addEventListener("click", () => {
+        nLevel = nextNLevel;
+        selectNLevel.value = nLevel;
+        saveGameSettings();
+        showSection("settings");
+    });
+
+    function recordSession() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+        const live = getLiveStats();
+        const avgRT = sessionStats.reactionTimes.length > 0
+            ? Math.round(sessionStats.reactionTimes.reduce((a, b) => a + b, 0) / sessionStats.reactionTimes.length)
+            : 0;
+        const newLog = {
+            date: dateStr,
+            game: "dual_n_back",
+            difficulty: `N=${nLevel}`,
+            score: live.score,
+            accuracy: live.accuracy,
+            reactionTime: avgRT,
+            duration: Math.round((performance.now() - sessionStartTime) / 1000),
+        };
+        try {
+            const logs = JSON.parse(localStorage.getItem("brain-train-logs") || "[]");
+            logs.push(newLog);
+            localStorage.setItem("brain-train-logs", JSON.stringify(logs));
+        } catch (err) {
+            console.error("Error saving session:", err);
+        }
+    }
+
+    btnReturnHub.addEventListener("click", () => {
+        window.location.href = "index.html";
+    });
+</script>
+</body>
+
+</html>

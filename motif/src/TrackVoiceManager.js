@@ -606,7 +606,8 @@ export const TrackVoiceManager = {
             if (_synthWorkletLoaded) {
                 _createWorkletNode();
             } else {
-                _synthWorkletPromise.then(_createWorkletNode).catch(() => {});
+                _synthWorkletPromise.then(_createWorkletNode).catch(() => {
+                });
             }
 
             const wrapper = {
@@ -732,8 +733,9 @@ export const TrackVoiceManager = {
             source.port.postMessage({ leftBuffer, rightBuffer });
 
             source.playbackRate = {
-                setValueAtTime: (val, time) => {},
-                value: 1.0
+                setValueAtTime: (val, time) => {
+                },
+                value: 1.0,
             };
             source.start = (t, offset = 0, dur) => {
                 source.port.postMessage({ type: "START", startTime: t, offset });

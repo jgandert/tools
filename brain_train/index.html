@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="en" class="theme-green">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Brain Train Hub — A suite of established cognitive science tasks with session tracking and statistics.">
+    <title>Brain Train Hub</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .game-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: var(--surface-container);
+            border-radius: var(--radius);
+            padding: var(--spacing-md);
+            border: 1px solid var(--outline-variant);
+        }
+
+        .game-card h3 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .game-card p {
+            font-size: 0.9rem;
+            color: var(--on-surface-variant);
+            flex-grow: 1;
+        }
+
+        .chart-container {
+            margin-top: var(--spacing-md);
+            background: var(--surface-container-low);
+            border-radius: var(--radius);
+            padding: var(--spacing-md);
+            border: 1px solid var(--outline-variant);
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        .chart-controls > div {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .daily-summary {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .daily-summary > div {
+            flex: 1;
+            min-width: 200px;
+        }
+    </style>
+</head>
+
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" checked>
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Brain Train Hub</h1>
+        <p>Cognitive Training &amp; Task Practice</p>
+    </hgroup>
+
+    <nav aria-label="Primary">
+        <ul>
+            <li>
+                <a href="#games">Games</a>
+            </li>
+            <li>
+                <a href="#dashboard">Dashboard</a>
+            </li>
+            <li>
+                <a href="#logs">Session Logs</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="content">
+
+    <section id="daily-target">
+        <h2>
+            <span class="sym">task_alt</span> Daily Training Goal
+        </h2>
+        <div class="daily-summary">
+            <div>
+                <p>
+                    Complete <strong>20 minutes</strong> of daily task practice to track and
+                    challenge your
+                    reaction time, accuracy, and attention.
+                </p>
+                <progress id="daily-progress" value="0" max="1200"></progress>
+            </div>
+            <div>
+                <p id="daily-status-text">
+                    Loading today's training status...
+                </p>
+                <div id="congrats-message" class="tag tag-highlight" hidden>
+                    🎉 Daily Target Complete! Keep going or rest.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="games">
+        <h2>
+            <span class="sym">psychology</span> Training Games
+        </h2>
+        <div class="games-grid">
+            <div class="game-card">
+                <div>
+                    <h3>
+                        <span class="sym">filter_list</span> Dual N-Back
+                    </h3>
+                    <p>
+                        Challenge your working memory by simultaneously tracking visual positions
+                        and auditory letters.
+                    </p>
+                    <div class="tag-list">
+                        <span class="tag">Working Memory</span>
+                        <span class="tag">Fluid IQ</span>
+                        <span class="tag" id="nback-status">Not played</span>
+                    </div>
+                </div>
+                <a href="dual_n_back.html" class="btn btn-primary">
+                    <span class="sym">play_arrow</span> Play Game
+                </a>
+            </div>
+
+            <div class="game-card">
+                <div>
+                    <h3>
+                        <span class="sym">code</span> Eriksen Flanker
+                    </h3>
+                    <p>
+                        Measure your selective attention and conflict resolution speed by
+                        identifying a central target amidst distracting flankers.
+                    </p>
+                    <div class="tag-list">
+                        <span class="tag">Inhibitory Control</span>
+                        <span class="tag">Attention</span>
+                        <span class="tag" id="flanker-status">Not played</span>
+                    </div>
+                </div>
+                <a href="flanker.html" class="btn btn-primary">
+                    <span class="sym">play_arrow</span> Play Game
+                </a>
+            </div>
+
+            <div class="game-card">
+                <div>
+                    <h3>
+                        <span class="sym">shuffle</span> Task-Switching
+                    </h3>
+                    <p>
+                        Measure your task-switching speed and switch cost by alternating between
+                        number and letter classification rules.
+                    </p>
+                    <div class="tag-list">
+                        <span class="tag">Cognitive Flexibility</span>
+                        <span class="tag">Set Shifting</span>
+                        <span class="tag" id="switching-status">Not played</span>
+                    </div>
+                </div>
+                <a href="task_switching.html" class="btn btn-primary">
+                    <span class="sym">play_arrow</span> Play Game
+                </a>
+            </div>
+
+            <div class="game-card">
+                <div>
+                    <h3>
+                        <span class="sym">rocket_launch</span> UFOV
+                    </h3>
+                    <p>
+                        Train your visual processing speed and expand your Useful Field of View — a
+                        paradigm with evidence of real-world transfer.
+                    </p>
+                    <div class="tag-list">
+                        <span class="tag">Processing Speed</span>
+                        <span class="tag">Divided Attention</span>
+                        <span class="tag" id="ufov-status">Not played</span>
+                    </div>
+                </div>
+                <a href="ufov.html" class="btn btn-primary">
+                    <span class="sym">play_arrow</span> Play Game
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section id="dashboard">
+        <h2>
+            <span class="sym">bar_chart</span> Progression Dashboard
+        </h2>
+        <div class="chart-controls">
+            <div>
+                <label for="chart-game">Game</label>
+                <select id="chart-game">
+                    <option value="dual_n_back">Dual N-Back</option>
+                    <option value="flanker">Eriksen Flanker</option>
+                    <option value="task_switching">Task-Switching</option>
+                    <option value="ufov">UFOV / Speed-of-Processing</option>
+                </select>
+            </div>
+            <div>
+                <label for="chart-metric">Performance Metric</label>
+                <select id="chart-metric">
+                    <option value="score">Score</option>
+                    <option value="accuracy">Accuracy (%)</option>
+                    <option value="reactionTime">Reaction Time (ms)</option>
+                </select>
+            </div>
+        </div>
+        <div class="chart-container">
+            <svg id="stats-chart" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet"
+                 width="100%">
+                <!-- Chart rendered dynamically via JS -->
+            </svg>
+        </div>
+    </section>
+
+    <section id="logs">
+        <h2>
+            <span class="sym">calendar_month</span> Session History
+        </h2>
+        <div class="table-container">
+            <table id="logs-table">
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Game</th>
+                    <th>Difficulty</th>
+                    <th>Score</th>
+                    <th>Accuracy</th>
+                    <th>Reaction Time</th>
+                    <th>Duration</th>
+                </tr>
+                </thead>
+                <tbody id="logs-body">
+                <tr>
+                    <td colspan="7">No training logs recorded yet.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<aside>
+    <h2>Training Controls</h2>
+    <form id="settings-form" autocomplete="off">
+        <fieldset>
+            <legend>Active Session</legend>
+            <label for="input-daily-goal">Daily Target (Minutes)</label>
+            <input type="number" id="input-daily-goal" name="daily-goal" min="1" max="120"
+                   value="20">
+        </fieldset>
+
+
+        <fieldset>
+            <legend>Data Administration</legend>
+            <div class="form-actions">
+                <button type="button" id="btn-load-demo" class="btn">
+                    <span class="sym">dataset</span> Load Demo Data
+                </button>
+                <button type="button" id="btn-clear-data" class="btn btn-danger">
+                    <span class="sym">delete</span> Reset Data
+                </button>
+            </div>
+        </fieldset>
+    </form>
+</aside>
+
+<script src="../one.js"></script>
+<script>
+    // --- State and Local Storage Keys ---
+    const LOGS_STORAGE_KEY = "brain-train-logs";
+    const SETTINGS_STORAGE_KEY = "brain-train-settings";
+
+    const state = {
+        logs: [],
+        dailyGoalMinutes: 20,
+    };
+
+    // --- DOM Elements ---
+    const progressDaily = document.getElementById("daily-progress");
+    const statusTextDaily = document.getElementById("daily-status-text");
+    const congratsMsg = document.getElementById("congrats-message");
+
+    const statusNback = document.getElementById("nback-status");
+    const statusFlanker = document.getElementById("flanker-status");
+    const statusSwitching = document.getElementById("switching-status");
+    const statusUfov = document.getElementById("ufov-status");
+
+    const chartGameSelect = document.getElementById("chart-game");
+    const chartMetricSelect = document.getElementById("chart-metric");
+
+    const logsBody = document.getElementById("logs-body");
+    const settingsForm = document.getElementById("settings-form");
+    const inputDailyGoal = document.getElementById("input-daily-goal");
+
+    // --- Date Utility ---
+    function getLocalDateString() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // --- Load/Save Settings & Logs ---
+    function loadData() {
+        // Logs
+        try {
+            state.logs = JSON.parse(localStorage.getItem(LOGS_STORAGE_KEY) || "[]");
+        } catch (e) {
+            state.logs = [];
+        }
+
+        // Settings
+        try {
+            const storedSettings = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) || "{}");
+            if (storedSettings.dailyGoal) {
+                state.dailyGoalMinutes = storedSettings.dailyGoal;
+                inputDailyGoal.value = storedSettings.dailyGoal;
+            }
+        } catch (e) {
+            // Defaults are fine
+        }
+    }
+
+    function saveSettings() {
+        const settings = {
+            dailyGoal: parseInt(inputDailyGoal.value) || 20,
+        };
+        state.dailyGoalMinutes = settings.dailyGoal;
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    }
+
+    // --- UI Renderers ---
+    function renderHub() {
+        updateDailyProgress();
+        updateGameTags();
+        updateLogsTable();
+        updateChart();
+    }
+
+    function updateDailyProgress() {
+        const today = getLocalDateString();
+        const todayLogs = state.logs.filter(log => log.date === today);
+        const totalDurationSec = todayLogs.reduce((acc, log) => acc + (log.duration || 0), 0);
+
+        const targetSec = state.dailyGoalMinutes * 60;
+        progressDaily.max = targetSec;
+        progressDaily.value = totalDurationSec;
+
+        const durationMin = (totalDurationSec / 60).toFixed(1);
+        statusTextDaily.innerHTML = `<strong>${durationMin}</strong> of <strong>${state.dailyGoalMinutes}</strong> minutes completed today.`;
+
+        if (totalDurationSec >= targetSec) {
+            congratsMsg.removeAttribute("hidden");
+        } else {
+            congratsMsg.setAttribute("hidden", "true");
+        }
+    }
+
+    function updateGameTags() {
+        const games = {
+            dual_n_back: statusNback,
+            flanker: statusFlanker,
+            task_switching: statusSwitching,
+            ufov: statusUfov,
+        };
+
+        for (const [gameId, element] of Object.entries(games)) {
+            const gameLogs = state.logs.filter(log => log.game === gameId);
+            if (gameLogs.length > 0) {
+                gameLogs.sort((a, b) => b.date.localeCompare(a.date));
+                const latest = gameLogs[0];
+                element.textContent = `Last: ${latest.difficulty}`;
+                element.classList.add("tag-highlight");
+            } else {
+                element.textContent = "Not played";
+                element.classList.remove("tag-highlight");
+            }
+        }
+    }
+
+    function updateLogsTable() {
+        logsBody.innerHTML = "";
+
+        if (state.logs.length === 0) {
+            logsBody.innerHTML = "<tr><td colspan=\"7\">No training logs recorded yet.</td></tr>";
+            return;
+        }
+
+        const sortedLogs = [...state.logs].sort((a, b) => b.date.localeCompare(a.date));
+
+        sortedLogs.forEach(log => {
+            const tr = document.createElement("tr");
+
+            const tdDate = document.createElement("td");
+            tdDate.textContent = log.date;
+
+            const tdGame = document.createElement("td");
+            tdGame.textContent = formatGameName(log.game);
+
+            const tdDiff = document.createElement("td");
+            tdDiff.textContent = log.difficulty;
+
+            const tdScore = document.createElement("td");
+            tdScore.textContent = log.score;
+
+            const tdAcc = document.createElement("td");
+            tdAcc.textContent = `${log.accuracy}%`;
+
+            const tdRt = document.createElement("td");
+            tdRt.textContent = `${log.reactionTime} ms`;
+
+            const tdDur = document.createElement("td");
+            tdDur.textContent = `${Math.round(log.duration / 60)} min`;
+
+            tr.append(tdDate, tdGame, tdDiff, tdScore, tdAcc, tdRt, tdDur);
+            logsBody.appendChild(tr);
+        });
+    }
+
+    function formatGameName(gameId) {
+        if (gameId === "dual_n_back") return "Dual N-Back";
+        if (gameId === "flanker") return "Eriksen Flanker";
+        if (gameId === "task_switching") return "Task-Switching";
+        if (gameId === "ufov") return "UFOV";
+        return gameId;
+    }
+
+    function updateChart() {
+        const game = chartGameSelect.value;
+        const metric = chartMetricSelect.value;
+
+        const svg = document.getElementById("stats-chart");
+        if (!svg) return;
+
+        svg.innerHTML = "";
+
+        const gameLogs = state.logs
+            .filter(log => log.game === game)
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .slice(-10);
+
+        if (gameLogs.length < 1) {
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", "300");
+            text.setAttribute("y", "150");
+            text.setAttribute("text-anchor", "middle");
+            text.setAttribute("fill", "var(--on-surface-variant)");
+            text.textContent = "No data recorded. Complete sessions to view trend line.";
+            svg.appendChild(text);
+            return;
+        }
+
+        const paddingX = 60;
+        const paddingY = 40;
+        const chartW = 600;
+        const chartH = 300;
+        const plotW = chartW - paddingX - 30;
+        const plotH = chartH - 2 * paddingY;
+
+        const values = gameLogs.map(log => {
+            if (metric === "accuracy") return log.accuracy;
+            if (metric === "reactionTime") return log.reactionTime;
+            return log.score;
+        });
+
+        const minVal = metric === "accuracy" ? 0 : Math.max(0, Math.min(...values) * 0.9);
+        const maxVal = metric === "accuracy" ? 100 : Math.max(...values) * 1.1 || 10;
+        const range = maxVal - minVal;
+
+        // Grid lines & Y Axis Labels
+        const gridCount = 4;
+        for (let i = 0; i <= gridCount; i++) {
+            const yVal = minVal + (i / gridCount) * range;
+            const y = paddingY + plotH - (i / gridCount) * plotH;
+
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", paddingX);
+            line.setAttribute("y1", y);
+            line.setAttribute("x2", chartW - 30);
+            line.setAttribute("y2", y);
+            line.setAttribute("stroke", "var(--outline-variant)");
+            line.setAttribute("stroke-dasharray", "4");
+            line.setAttribute("opacity", "0.4");
+            svg.appendChild(line);
+
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", paddingX - 10);
+            text.setAttribute("y", y + 4);
+            text.setAttribute("text-anchor", "end");
+            text.setAttribute("fill", "var(--on-surface-variant)");
+            text.setAttribute("font-size", "11");
+            text.textContent = metric === "accuracy" ? `${Math.round(yVal)}%` : Math.round(yVal);
+            svg.appendChild(text);
+        }
+
+        // Coordinate points mapping
+        const points = gameLogs.map((log, idx) => {
+            const x = paddingX + (gameLogs.length > 1 ? (idx / (gameLogs.length - 1)) * plotW : plotW / 2);
+            const val = metric === "accuracy" ? log.accuracy : (metric === "reactionTime" ? log.reactionTime : log.score);
+            const y = paddingY + plotH - ((val - minVal) / (range || 1)) * plotH;
+            return { x, y, val, date: log.date, difficulty: log.difficulty };
+        });
+
+        // Date X Axis Labels
+        points.forEach(pt => {
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", pt.x);
+            text.setAttribute("y", chartH - paddingY + 22);
+            text.setAttribute("text-anchor", "middle");
+            text.setAttribute("fill", "var(--on-surface-variant)");
+            text.setAttribute("font-size", "10");
+
+            const dateParts = pt.date.split("-");
+            const displayDate = dateParts.length > 2 ? `${dateParts[1]}/${dateParts[2]}` : pt.date;
+            text.textContent = displayDate;
+            svg.appendChild(text);
+        });
+
+        // Draw Area under the curve
+        if (points.length > 1) {
+            const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+            const grad = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+            grad.setAttribute("id", "chart-grad");
+            grad.setAttribute("x1", "0");
+            grad.setAttribute("y1", "0");
+            grad.setAttribute("x2", "0");
+            grad.setAttribute("y2", "1");
+
+            const stop1 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+            stop1.setAttribute("offset", "0%");
+            stop1.setAttribute("stop-color", "var(--primary)");
+            stop1.setAttribute("stop-opacity", "0.2");
+
+            const stop2 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+            stop2.setAttribute("offset", "100%");
+            stop2.setAttribute("stop-color", "var(--primary)");
+            stop2.setAttribute("stop-opacity", "0.0");
+
+            grad.appendChild(stop1);
+            grad.appendChild(stop2);
+            defs.appendChild(grad);
+            svg.appendChild(defs);
+
+            const areaPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            let areaD = `M ${points[0].x} ${paddingY + plotH} `;
+            points.forEach(pt => {
+                areaD += `L ${pt.x} ${pt.y} `;
+            });
+            areaD += `L ${points[points.length - 1].x} ${paddingY + plotH} Z`;
+            areaPath.setAttribute("d", areaD);
+            areaPath.setAttribute("fill", "url(#chart-grad)");
+            svg.appendChild(areaPath);
+        }
+
+        // Draw Main Path Line
+        const linePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        let lineD = "";
+        points.forEach((pt, idx) => {
+            lineD += (idx === 0 ? "M" : "L") + ` ${pt.x} ${pt.y}`;
+        });
+        linePath.setAttribute("d", lineD);
+        linePath.setAttribute("fill", "none");
+        linePath.setAttribute("stroke", "var(--primary)");
+        linePath.setAttribute("stroke-width", "3");
+        linePath.setAttribute("stroke-linecap", "round");
+        linePath.setAttribute("stroke-linejoin", "round");
+        svg.appendChild(linePath);
+
+        // Draw Circles & Text Value Labels
+        points.forEach(pt => {
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", pt.x);
+            circle.setAttribute("cy", pt.y);
+            circle.setAttribute("r", "4");
+            circle.setAttribute("fill", "var(--surface)");
+            circle.setAttribute("stroke", "var(--primary)");
+            circle.setAttribute("stroke-width", "2");
+            svg.appendChild(circle);
+
+            const valLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            valLabel.setAttribute("x", pt.x);
+            valLabel.setAttribute("y", pt.y - 10);
+            valLabel.setAttribute("text-anchor", "middle");
+            valLabel.setAttribute("fill", "var(--on-surface)");
+            valLabel.setAttribute("font-size", "10");
+            valLabel.setAttribute("font-weight", "500");
+
+            const suffix = metric === "accuracy" ? "%" : (metric === "reactionTime" ? "ms" : "");
+            valLabel.textContent = `${pt.val}${suffix}`;
+            svg.appendChild(valLabel);
+        });
+    }
+
+    // --- Demo Data Generation ---
+    function loadDemoData() {
+        const today = new Date();
+        const demoLogs = [];
+
+        // Helper to format past date
+        function getPastDateString(daysAgo) {
+            const d = new Date();
+            d.setDate(today.getDate() - daysAgo);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, "0");
+            const dd = String(d.getDate()).padStart(2, "0");
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        // Dual N-Back demo progression (last 10 days)
+        const nbackDays = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+        nbackDays.forEach((daysAgo, idx) => {
+            // N increases, accuracy gets higher, RT goes down, score goes up
+            const n = idx < 3 ? 1 : (idx < 7 ? 2 : 3);
+            const score = 250 + idx * 80 + Math.round(Math.random() * 50);
+            const accuracy = 60 + idx * 3 + Math.round(Math.random() * 8);
+            const reactionTime = 600 - idx * 22 - Math.round(Math.random() * 20);
+            demoLogs.push({
+                date: getPastDateString(daysAgo),
+                game: "dual_n_back",
+                difficulty: `N=${n}`,
+                score: score,
+                accuracy: Math.min(98, accuracy),
+                reactionTime: Math.max(350, reactionTime),
+                duration: 180, // 3 minutes
+            });
+        });
+
+        // Flanker demo progression
+        const flankerDays = [8, 6, 5, 4, 3, 1, 0];
+        flankerDays.forEach((daysAgo, idx) => {
+            const score = 400 + idx * 95 + Math.round(Math.random() * 40);
+            const accuracy = 70 + idx * 4 + Math.round(Math.random() * 6);
+            const reactionTime = 550 - idx * 25 - Math.round(Math.random() * 15);
+            demoLogs.push({
+                date: getPastDateString(daysAgo),
+                game: "flanker",
+                difficulty: "Arrow-Mixed",
+                score: score,
+                accuracy: Math.min(99, accuracy),
+                reactionTime: Math.max(280, reactionTime),
+                duration: 150, // 2.5 minutes
+            });
+        });
+
+        // Task Switching demo progression
+        const switchingDays = [7, 5, 4, 3, 2, 0];
+        switchingDays.forEach((daysAgo, idx) => {
+            const score = 300 + idx * 110 + Math.round(Math.random() * 50);
+            const accuracy = 65 + idx * 5 + Math.round(Math.random() * 5);
+            const reactionTime = 800 - idx * 40 - Math.round(Math.random() * 25);
+            demoLogs.push({
+                date: getPastDateString(daysAgo),
+                game: "task_switching",
+                difficulty: "Cued-Mixed",
+                score: score,
+                accuracy: Math.min(97, accuracy),
+                reactionTime: Math.max(450, reactionTime),
+                duration: 200, // 3.3 minutes
+            });
+        });
+
+        // UFOV demo progression
+        const ufovDays = [6, 4, 3, 1, 0];
+        ufovDays.forEach((daysAgo, idx) => {
+            const score = 350 + idx * 130 + Math.round(Math.random() * 60);
+            const accuracy = 75 + idx * 5 + Math.round(Math.random() * 4);
+            const reactionTime = 450 - idx * 40 - Math.round(Math.random() * 20);
+            demoLogs.push({
+                date: getPastDateString(daysAgo),
+                game: "ufov",
+                difficulty: idx < 2 ? "Divided" : "Selective",
+                score: score,
+                accuracy: Math.min(98, accuracy),
+                reactionTime: Math.max(180, reactionTime),
+                duration: 220, // 3.6 minutes
+            });
+        });
+
+        state.logs = demoLogs;
+        localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(demoLogs));
+        one.alert("Demo logs populated successfully!");
+        renderHub();
+    }
+
+    // --- Clear All Data ---
+    async function clearAllData() {
+        const confirmClear = await one.confirm(
+            "This will delete all training logs, difficulty progress, and statistics. Are you sure?",
+            "Reset Local Data",
+        );
+        if (confirmClear) {
+            state.logs = [];
+            localStorage.removeItem(LOGS_STORAGE_KEY);
+            one.alert("All local data reset.");
+            renderHub();
+        }
+    }
+
+    // --- Event Bindings ---
+    chartGameSelect.addEventListener("change", updateChart);
+    chartMetricSelect.addEventListener("change", updateChart);
+
+
+    inputDailyGoal.addEventListener("change", () => {
+        saveSettings();
+        updateDailyProgress();
+    });
+
+    inputDailyGoal.addEventListener("input", () => {
+        saveSettings();
+        updateDailyProgress();
+    });
+
+    document.getElementById("btn-load-demo").addEventListener("click", loadDemoData);
+    document.getElementById("btn-clear-data").addEventListener("click", clearAllData);
+
+    settingsForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+    });
+
+    window.addEventListener("pageshow", () => {
+        loadData();
+        renderHub();
+    });
+
+    window.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            loadData();
+            renderHub();
+        }
+    });
+
+    window.addEventListener("storage", (e) => {
+        if (e.key === LOGS_STORAGE_KEY || e.key === SETTINGS_STORAGE_KEY) {
+            loadData();
+            renderHub();
+        }
+    });
+
+    loadData();
+    renderHub();
+</script>
+</body>
+
+</html>

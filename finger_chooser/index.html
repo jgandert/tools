@@ -41,12 +41,14 @@
                     "aside main"
                     "aside footer" !important;
             }
+
             body:has(#aside-state:not(:checked)) aside {
                 width: 0 !important;
                 opacity: 0 !important;
                 padding: 0 !important;
                 border-right: none !important;
             }
+
             body:has(#aside-state:checked) {
                 grid-template-columns: var(--aside-width) 1fr !important;
                 grid-template-areas:
@@ -54,15 +56,18 @@
                     "aside main"
                     "aside footer" !important;
             }
+
             body:has(#aside-state:checked) aside {
                 width: 100% !important;
                 opacity: 1 !important;
                 padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md) !important;
                 border-right: 1px solid var(--outline-variant) !important;
             }
+
             #aside-state:not(:checked) ~ header .aside-toggle-btn::before {
                 content: 'menu' !important;
             }
+
             #aside-state:checked ~ header .aside-toggle-btn::before {
                 content: 'menu_open' !important;
             }
@@ -117,8 +122,14 @@
         }
 
         @keyframes pulse-icon {
-            0%, 100% { transform: scale(1); opacity: 0.6; }
-            50% { transform: scale(1.1); opacity: 0.9; }
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.9;
+            }
         }
 
         /* --- Finger Circles --- */
@@ -218,8 +229,12 @@
         }
 
         @keyframes bounce-crown {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-6px); }
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(-6px);
+            }
         }
 
         .finger.rejected {
@@ -280,7 +295,7 @@
 </head>
 
 <body>
-<input type="checkbox" id="aside-state" class="aside-state-toggle" hidden aria-hidden="true">
+<input type="checkbox" id="aside-state" class="aside-state-toggle">
 
 <header>
     <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
@@ -320,38 +335,43 @@
 
         <fieldset>
             <legend>Options</legend>
-            
+
             <div id="config-select-only">
                 <label for="input-chosen-count">
                     Choose Count
-                    <input type="number" id="input-chosen-count" name="chosen-count" min="1" max="10" value="1">
+                    <input type="number" id="input-chosen-count" name="chosen-count" min="1"
+                           max="10" value="1">
                 </label>
             </div>
 
             <div id="config-teams-only" hidden>
                 <label for="input-team-count">
                     Number of Teams
-                    <input type="number" id="input-team-count" name="team-count" min="2" max="10" value="2">
+                    <input type="number" id="input-team-count" name="team-count" min="2" max="10"
+                           value="2">
                 </label>
             </div>
 
             <label for="input-countdown-sec">
                 Countdown (sec)
-                <input type="number" id="input-countdown-sec" name="countdown-sec" min="1" max="10" value="2">
+                <input type="number" id="input-countdown-sec" name="countdown-sec" min="1" max="10"
+                       value="2">
             </label>
 
             <label for="input-cooldown-sec">
                 Results Cooldown (sec)
-                <input type="number" id="input-cooldown-sec" name="cooldown-sec" min="0" max="10" value="3">
+                <input type="number" id="input-cooldown-sec" name="cooldown-sec" min="0" max="10"
+                       value="3">
             </label>
         </fieldset>
 
         <fieldset>
             <legend>Feedback &amp; Control</legend>
-            
+
             <label for="input-sound-effects">
                 Sound Effects
-                <input type="checkbox" role="switch" id="input-sound-effects" name="sound-effects" checked>
+                <input type="checkbox" role="switch" id="input-sound-effects" name="sound-effects"
+                       checked>
             </label>
 
             <label for="input-haptics">
@@ -376,10 +396,11 @@
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
 
-        if (audioCtx && audioCtx.state === 'suspended') {
+        if (audioCtx && audioCtx.state === "suspended") {
             try {
                 audioCtx.resume();
-            } catch (e) {}
+            } catch (e) {
+            }
         }
     }
 
@@ -396,52 +417,52 @@
 
         const now = audioCtx.currentTime;
 
-        if (type === 'tick') {
+        if (type === "tick") {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
-            osc.type = 'sine';
+
+            osc.type = "sine";
             osc.frequency.setValueAtTime(600, now);
             osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
-            
+
             gain.gain.setValueAtTime(0.08, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-            
+
             osc.start(now);
             osc.stop(now + 0.05);
-        } else if (type === 'success') {
+        } else if (type === "success") {
             const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
             notes.forEach((freq, idx) => {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
-                
-                osc.type = 'triangle';
+
+                osc.type = "triangle";
                 osc.frequency.setValueAtTime(freq, now + idx * 0.08);
-                
+
                 gain.gain.setValueAtTime(0, now + idx * 0.08);
                 gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.08 + 0.04);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
-                
+
                 osc.start(now + idx * 0.08);
                 osc.stop(now + idx * 0.08 + 0.35);
             });
-        } else if (type === 'reset') {
+        } else if (type === "reset") {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
-            osc.type = 'sine';
+
+            osc.type = "sine";
             osc.frequency.setValueAtTime(180, now);
             osc.frequency.exponentialRampToValueAtTime(540, now + 0.12);
-            
+
             gain.gain.setValueAtTime(0.08, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-            
+
             osc.start(now);
             osc.stop(now + 0.12);
         }
@@ -451,80 +472,81 @@
         if (settings.haptic && navigator.vibrate) {
             try {
                 navigator.vibrate(pattern);
-            } catch (e) {}
+            } catch (e) {
+            }
         }
     }
 
     // --- State & Settings ---
     const state = {
         fingers: new Map(), // identifier -> { id, x, y, color, element, isChosen, team, rank }
-        status: 'waiting',  // 'waiting', 'counting', 'chosen'
+        status: "waiting",  // 'waiting', 'counting', 'chosen'
         countdownStartTime: 0,
         lastFingerCount: 0,
         lastTickSecond: -1,
-        decisionTime: 0
+        decisionTime: 0,
     };
 
     let particles = [];
 
     const settings = {
         get mode() {
-            return new FormData(settingsForm).get('tool-mode');
+            return new FormData(settingsForm).get("tool-mode");
         },
         get chosenCount() {
-            const el = document.getElementById('input-chosen-count');
+            const el = document.getElementById("input-chosen-count");
             return el ? (parseInt(el.value) || 1) : 1;
         },
         get teamCount() {
-            const el = document.getElementById('input-team-count');
+            const el = document.getElementById("input-team-count");
             return el ? (parseInt(el.value) || 2) : 2;
         },
         get countdownSec() {
-            const el = document.getElementById('input-countdown-sec');
+            const el = document.getElementById("input-countdown-sec");
             return el ? (parseFloat(el.value) || 2) : 2;
         },
         get cooldownSec() {
-            const el = document.getElementById('input-cooldown-sec');
+            const el = document.getElementById("input-cooldown-sec");
             return el ? (parseFloat(el.value) || 3) : 3;
         },
         get sound() {
-            const el = document.getElementById('input-sound-effects');
+            const el = document.getElementById("input-sound-effects");
             return el ? el.checked : true;
         },
         get haptic() {
-            const el = document.getElementById('input-haptics');
+            const el = document.getElementById("input-haptics");
             return el ? el.checked : true;
         },
         get simulator() {
-            const el = document.getElementById('input-simulator');
+            const el = document.getElementById("input-simulator");
             return el ? el.checked : false;
-        }
+        },
     };
 
     // --- Dom Elements ---
-    const canvas = document.getElementById('touch-canvas');
-    const fingersContainer = document.getElementById('fingers-container');
-    const particlesContainer = document.getElementById('particles-container');
-    const statusText = document.getElementById('status-text');
-    const settingsForm = document.getElementById('settings-form');
+    const canvas = document.getElementById("touch-canvas");
+    const fingersContainer = document.getElementById("fingers-container");
+    const particlesContainer = document.getElementById("particles-container");
+    const statusText = document.getElementById("status-text");
+    const settingsForm = document.getElementById("settings-form");
 
-    const configSelectOnly = document.getElementById('config-select-only');
-    const configTeamsOnly = document.getElementById('config-teams-only');
+    const configSelectOnly = document.getElementById("config-select-only");
+    const configTeamsOnly = document.getElementById("config-teams-only");
 
     // --- Settings Storage ---
-    const STORAGE_KEY = 'finger-chooser-settings';
+    const STORAGE_KEY = "finger-chooser-settings";
 
     function saveSettings() {
         const formData = new FormData(settingsForm);
         const data = {
-            mode: formData.get('tool-mode'),
+            mode: formData.get("tool-mode"),
             chosenCount: settings.chosenCount,
             teamCount: settings.teamCount,
             countdownSec: settings.countdownSec,
             cooldownSec: settings.cooldownSec,
             sound: settings.sound,
             haptic: settings.haptic,
-            simulator: settings.simulator
+            simulator: settings.simulator,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
@@ -534,34 +556,34 @@
             const stored = localStorage.getItem(STORAGE_KEY);
             if (!stored) return;
             const data = JSON.parse(stored);
-            
+
             if (data.mode) {
                 const radio = settingsForm.querySelector(`input[name="tool-mode"][value="${data.mode}"]`);
                 if (radio) radio.checked = true;
             }
-            
-            const elChosenCount = document.getElementById('input-chosen-count');
+
+            const elChosenCount = document.getElementById("input-chosen-count");
             if (elChosenCount && data.chosenCount !== undefined) elChosenCount.value = data.chosenCount;
 
-            const elTeamCount = document.getElementById('input-team-count');
+            const elTeamCount = document.getElementById("input-team-count");
             if (elTeamCount && data.teamCount !== undefined) elTeamCount.value = data.teamCount;
 
-            const elCountdownSec = document.getElementById('input-countdown-sec');
+            const elCountdownSec = document.getElementById("input-countdown-sec");
             if (elCountdownSec && data.countdownSec !== undefined) elCountdownSec.value = data.countdownSec;
 
-            const elCooldownSec = document.getElementById('input-cooldown-sec');
+            const elCooldownSec = document.getElementById("input-cooldown-sec");
             if (elCooldownSec && data.cooldownSec !== undefined) elCooldownSec.value = data.cooldownSec;
 
-            const elSound = document.getElementById('input-sound-effects');
+            const elSound = document.getElementById("input-sound-effects");
             if (elSound && data.sound !== undefined) elSound.checked = data.sound;
 
-            const elHaptic = document.getElementById('input-haptics');
+            const elHaptic = document.getElementById("input-haptics");
             if (elHaptic && data.haptic !== undefined) elHaptic.checked = data.haptic;
 
-            const elSimulator = document.getElementById('input-simulator');
+            const elSimulator = document.getElementById("input-simulator");
             if (elSimulator && data.simulator !== undefined) elSimulator.checked = data.simulator;
         } catch (e) {
-            console.error('Failed to load settings', e);
+            console.error("Failed to load settings", e);
         }
     }
 
@@ -576,19 +598,19 @@
         }
 
         // Toggle configuration visibility
-        configSelectOnly.hidden = settings.mode !== 'select';
-        configTeamsOnly.hidden = settings.mode !== 'teams';
+        configSelectOnly.hidden = settings.mode !== "select";
+        configTeamsOnly.hidden = settings.mode !== "teams";
     }
 
     // Load stored settings on load
     loadSettings();
 
-    settingsForm.addEventListener('change', () => {
+    settingsForm.addEventListener("change", () => {
         initAudio();
         saveSettings();
         updateSettings();
     });
-    settingsForm.addEventListener('input', () => {
+    settingsForm.addEventListener("input", () => {
         initAudio();
         saveSettings();
         updateSettings();
@@ -604,21 +626,21 @@
     function updateFingerColors() {
         const count = state.fingers.size;
         if (count === 0) return;
-        
+
         let index = 0;
         state.fingers.forEach((finger) => {
             const color = getFingerColor(index, count);
             finger.color = color;
-            finger.element.style.setProperty('--finger-color', color);
+            finger.element.style.setProperty("--finger-color", color);
             index++;
         });
     }
 
     function createFingerElement(id, color) {
-        const fingerDiv = document.createElement('div');
-        fingerDiv.className = 'finger';
+        const fingerDiv = document.createElement("div");
+        fingerDiv.className = "finger";
         fingerDiv.id = `finger-${id}`;
-        fingerDiv.style.setProperty('--finger-color', color);
+        fingerDiv.style.setProperty("--finger-color", color);
 
         fingerDiv.innerHTML = `
             <svg class="progress-ring" width="130" height="130">
@@ -633,7 +655,7 @@
 
         fingersContainer.appendChild(fingerDiv);
         // Trigger entrance animation next frame
-        requestAnimationFrame(() => fingerDiv.classList.add('active'));
+        requestAnimationFrame(() => fingerDiv.classList.add("active"));
         return fingerDiv;
     }
 
@@ -642,7 +664,7 @@
         const r = 65; // radius is half of 130px
         return {
             x: Math.max(r, Math.min(x, rect.width - r)),
-            y: Math.max(r, Math.min(y, rect.height - r))
+            y: Math.max(r, Math.min(y, rect.height - r)),
         };
     }
 
@@ -650,14 +672,14 @@
         if (state.fingers.has(id)) return;
 
         // If a choice was active, any new finger resets the game
-        if (state.status === 'chosen') {
+        if (state.status === "chosen") {
             resetToWaiting();
         }
 
         const color = getFingerColor(state.fingers.size, state.fingers.size + 1);
         const element = createFingerElement(id, color);
         const coords = clampCoords(x, y);
-        
+
         const finger = {
             id,
             x: coords.x,
@@ -667,32 +689,32 @@
             isChosen: false,
             isReleased: false,
             team: null,
-            rank: null
+            rank: null,
         };
 
-        finger.element.style.setProperty('--x', `${coords.x}px`);
-        finger.element.style.setProperty('--y', `${coords.y}px`);
+        finger.element.style.setProperty("--x", `${coords.x}px`);
+        finger.element.style.setProperty("--y", `${coords.y}px`);
 
         state.fingers.set(id, finger);
         updateFingerColors();
-        playSound('tick');
+        playSound("tick");
         triggerVibration(40);
         handleFingerCountChange();
     }
 
     function moveFinger(id, x, y) {
-        if (state.status === 'chosen') return;
+        if (state.status === "chosen") return;
         const finger = state.fingers.get(id);
         if (!finger) return;
         const coords = clampCoords(x, y);
         finger.x = coords.x;
         finger.y = coords.y;
-        finger.element.style.setProperty('--x', `${coords.x}px`);
-        finger.element.style.setProperty('--y', `${coords.y}px`);
+        finger.element.style.setProperty("--x", `${coords.x}px`);
+        finger.element.style.setProperty("--y", `${coords.y}px`);
     }
 
     function removeFinger(id) {
-        if (state.status === 'chosen') {
+        if (state.status === "chosen") {
             const finger = state.fingers.get(id);
             if (finger) {
                 finger.isReleased = true;
@@ -702,7 +724,7 @@
         const finger = state.fingers.get(id);
         if (!finger) return;
 
-        finger.element.classList.remove('active');
+        finger.element.classList.remove("active");
         // Remove after transition
         setTimeout(() => finger.element.remove(), 250);
         state.fingers.delete(id);
@@ -718,49 +740,49 @@
     }
 
     function resetToWaiting() {
-        state.status = 'waiting';
+        state.status = "waiting";
         state.countdownStartTime = 0;
         state.lastFingerCount = 0;
         state.lastTickSecond = -1;
         particles = [];
-        particlesContainer.innerHTML = '';
-        
+        particlesContainer.innerHTML = "";
+
         // Clean up released fingers, reset active ones
         state.fingers.forEach((finger, id) => {
             if (finger.isReleased) {
                 finger.element.remove();
                 state.fingers.delete(id);
             } else {
-                finger.element.className = 'finger active';
+                finger.element.className = "finger active";
                 finger.isChosen = false;
                 finger.team = null;
                 finger.rank = null;
-                const lbl = finger.element.querySelector('.finger-label');
-                if (lbl) lbl.textContent = '';
+                const lbl = finger.element.querySelector(".finger-label");
+                if (lbl) lbl.textContent = "";
             }
         });
         updateFingerColors();
 
-        statusText.textContent = 'Place 2 or more fingers';
+        statusText.textContent = "Place 2 or more fingers";
     }
 
     // --- Decision Orchestration ---
     function handleFingerCountChange() {
         const count = state.fingers.size;
 
-        if (state.status === 'chosen') {
+        if (state.status === "chosen") {
             return;
         }
 
         if (count < 2) {
-            state.status = 'waiting';
-            statusText.textContent = 'Place 2 or more fingers';
+            state.status = "waiting";
+            statusText.textContent = "Place 2 or more fingers";
             state.countdownStartTime = 0;
             state.lastFingerCount = count;
         } else {
             // Restart countdown if finger count changed
-            state.status = 'counting';
-            statusText.textContent = 'Hold steady...';
+            state.status = "counting";
+            statusText.textContent = "Hold steady...";
             state.countdownStartTime = Date.now();
             state.lastFingerCount = count;
             state.lastTickSecond = -1;
@@ -768,55 +790,55 @@
     }
 
     function makeChoice() {
-        state.status = 'chosen';
+        state.status = "chosen";
         state.decisionTime = Date.now();
-        playSound('success');
+        playSound("success");
         triggerVibration([120, 60, 120]);
 
         const fingerArray = Array.from(state.fingers.values());
-        
-        if (settings.mode === 'select') {
+
+        if (settings.mode === "select") {
             // Shuffle and choose N
             const shuffled = [...fingerArray].sort(() => Math.random() - 0.5);
             const actualChooseCount = Math.min(settings.chosenCount, shuffled.length);
-            
+
             for (let i = 0; i < shuffled.length; i++) {
                 const finger = shuffled[i];
                 if (i < actualChooseCount) {
                     finger.isChosen = true;
-                    finger.element.classList.add('chosen');
+                    finger.element.classList.add("chosen");
                     spawnConfetti(finger.x, finger.y, finger.color);
                 } else {
-                    finger.element.classList.add('rejected');
+                    finger.element.classList.add("rejected");
                 }
             }
-            statusText.textContent = actualChooseCount === 1 ? 'Winner Selected!' : 'Winners Selected!';
-        } else if (settings.mode === 'rank') {
+            statusText.textContent = actualChooseCount === 1 ? "Winner Selected!" : "Winners Selected!";
+        } else if (settings.mode === "rank") {
             // Shuffle and rank all
             const shuffled = [...fingerArray].sort(() => Math.random() - 0.5);
             shuffled.forEach((finger, index) => {
                 const rank = index + 1;
                 finger.rank = rank;
-                finger.element.classList.add('result-labeled');
-                const label = finger.element.querySelector('.finger-label');
+                finger.element.classList.add("result-labeled");
+                const label = finger.element.querySelector(".finger-label");
                 if (label) label.textContent = rank;
                 spawnConfetti(finger.x, finger.y, finger.color);
             });
-            statusText.textContent = 'Rankings Assigned!';
-        } else if (settings.mode === 'teams') {
+            statusText.textContent = "Rankings Assigned!";
+        } else if (settings.mode === "teams") {
             // Assign teams
             const shuffled = [...fingerArray].sort(() => Math.random() - 0.5);
             shuffled.forEach((finger, index) => {
                 const team = (index % settings.teamCount) + 1;
                 const teamColor = getFingerColor(team - 1, settings.teamCount);
-                finger.element.style.setProperty('--finger-color', teamColor);
-                finger.element.classList.add('result-labeled');
-                
-                const label = finger.element.querySelector('.finger-label');
+                finger.element.style.setProperty("--finger-color", teamColor);
+                finger.element.classList.add("result-labeled");
+
+                const label = finger.element.querySelector(".finger-label");
                 if (label) label.textContent = `T${team}`;
                 spawnConfetti(finger.x, finger.y, teamColor);
             });
-            statusText.textContent = 'Teams Divided!';
+            statusText.textContent = "Teams Divided!";
         }
     }
 
@@ -831,14 +853,14 @@
             this.gravity = 0.25;
             this.alpha = 1;
             this.decay = Math.random() * 0.015 + 0.012;
-            
-            this.el = document.createElement('div');
-            this.el.className = 'confetti-particle';
+
+            this.el = document.createElement("div");
+            this.el.className = "confetti-particle";
             this.el.style.backgroundColor = color;
             this.el.style.width = `${this.size}px`;
             this.el.style.height = `${this.size}px`;
-            this.el.style.setProperty('--x', `${this.x}px`);
-            this.el.style.setProperty('--y', `${this.y}px`);
+            this.el.style.setProperty("--x", `${this.x}px`);
+            this.el.style.setProperty("--y", `${this.y}px`);
             particlesContainer.appendChild(this.el);
         }
 
@@ -847,11 +869,11 @@
             this.speedY += this.gravity;
             this.y += this.speedY;
             this.alpha -= this.decay;
-            
-            this.el.style.setProperty('--x', `${this.x}px`);
-            this.el.style.setProperty('--y', `${this.y}px`);
+
+            this.el.style.setProperty("--x", `${this.x}px`);
+            this.el.style.setProperty("--y", `${this.y}px`);
             this.el.style.opacity = this.alpha;
-            
+
             if (this.alpha <= 0) {
                 this.el.remove();
                 return false;
@@ -873,24 +895,24 @@
     // --- Game Tick Loop ---
     function updateLoop() {
         const now = Date.now();
-        
-        if (state.status === 'counting' && state.countdownStartTime > 0) {
+
+        if (state.status === "counting" && state.countdownStartTime > 0) {
             const elapsed = now - state.countdownStartTime;
             const totalDuration = settings.countdownSec * 1000;
             const progress = Math.min(elapsed / totalDuration, 1);
-            
+
             // Audio Tick Sound Triggers
             const currentTickSec = Math.floor(elapsed / 1000);
             if (state.lastTickSecond !== currentTickSec && currentTickSec < settings.countdownSec) {
-                playSound('tick');
+                playSound("tick");
                 triggerVibration(60);
                 state.lastTickSecond = currentTickSec;
             }
-            
+
             // Update Countdown Circle Offset
             const offset = 314.16 - (progress * 314.16);
             state.fingers.forEach(finger => {
-                const fgRing = finger.element.querySelector('.progress-ring-fg');
+                const fgRing = finger.element.querySelector(".progress-ring-fg");
                 if (fgRing) {
                     fgRing.style.strokeDashoffset = offset;
                 }
@@ -899,10 +921,10 @@
             if (progress >= 1) {
                 makeChoice();
             }
-        } else if (state.status !== 'chosen') {
+        } else if (state.status !== "chosen") {
             // Keep circles at 0% progress if not counting
             state.fingers.forEach(finger => {
-                const fgRing = finger.element.querySelector('.progress-ring-fg');
+                const fgRing = finger.element.querySelector(".progress-ring-fg");
                 if (fgRing) {
                     fgRing.style.strokeDashoffset = 314.16;
                 }
@@ -912,6 +934,7 @@
         updateParticles();
         requestAnimationFrame(updateLoop);
     }
+
     requestAnimationFrame(updateLoop);
 
     // --- Unified Pointer & Simulator Interaction ---
@@ -924,14 +947,14 @@
 
         return {
             x: e.clientX - rect.left,
-            y: e.clientY - rect.top
+            y: e.clientY - rect.top,
         };
     }
 
-    canvas.addEventListener('pointerdown', (e) => {
+    canvas.addEventListener("pointerdown", (e) => {
         initAudio();
 
-        if (state.status === 'chosen') {
+        if (state.status === "chosen") {
             const elapsed = Date.now() - state.decisionTime;
 
             if (elapsed < settings.cooldownSec * 1000) {
@@ -973,7 +996,7 @@
         canvas.setPointerCapture(e.pointerId);
     });
 
-    canvas.addEventListener('pointermove', (e) => {
+    canvas.addEventListener("pointermove", (e) => {
         if (settings.simulator) {
             if (!dragFingerId) {
                 return;
@@ -992,7 +1015,7 @@
         }
     });
 
-    canvas.addEventListener('pointerup', (e) => {
+    canvas.addEventListener("pointerup", (e) => {
         if (settings.simulator) {
             if (!dragFingerId) {
                 return;
@@ -1015,10 +1038,11 @@
 
         try {
             canvas.releasePointerCapture(e.pointerId);
-        } catch (err) {}
+        } catch (err) {
+        }
     });
 
-    canvas.addEventListener('pointercancel', (e) => {
+    canvas.addEventListener("pointercancel", (e) => {
         if (settings.simulator) {
             dragFingerId = null;
         } else {
@@ -1029,7 +1053,8 @@
 
         try {
             canvas.releasePointerCapture(e.pointerId);
-        } catch (err) {}
+        } catch (err) {
+        }
     });
 </script>
 </body>

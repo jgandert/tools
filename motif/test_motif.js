@@ -7062,8 +7062,11 @@ console.log("\n=== Arrange(): macro-arrangement ===");
             this.stopTime = t;
         }
 
-        connect() {}
-        disconnect() {}
+        connect() {
+        }
+
+        disconnect() {
+        }
     }
 
     class ArrangeOfflineCtx {
@@ -7076,21 +7079,36 @@ console.log("\n=== Arrange(): macro-arrangement ===");
         createGain() {
             return {
                 gain: {
-                    value: 1.0, setValueAtTime() {},
-                }, connect() {}, disconnect() {},
+                    value: 1.0, setValueAtTime() {
+                    },
+                }, connect() {
+                }, disconnect() {
+                },
             };
         }
 
         createBiquadFilter() {
-            return { connect() {}, disconnect() {} };
+            return {
+                connect() {
+                }, disconnect() {
+                },
+            };
         }
 
         createDynamicsCompressor() {
-            return { connect() {}, disconnect() {} };
+            return {
+                connect() {
+                }, disconnect() {
+                },
+            };
         }
 
         createWaveShaper() {
-            return { connect() {}, disconnect() {} };
+            return {
+                connect() {
+                }, disconnect() {
+                },
+            };
         }
 
         createOscillator() {
@@ -7122,7 +7140,7 @@ console.log("\n=== Arrange(): macro-arrangement ===");
     const tLoop = Track("t-loop").synth("sine").note([60]);
     Motif.tempo = 120; // bar = 2s
     Arrange([
-        { tracks: [tLoop], bars: 1 } // 0-2s
+        { tracks: [tLoop], bars: 1 }, // 0-2s
     ], { loop: true, loopDelay: "1s" });
 
     const offline = new ArrangeOfflineCtx();
@@ -7284,20 +7302,20 @@ console.log("\n=== MotifEventArray: Modifier Prototypes (.transpose(), .fast(), 
     // 6. Test degrade()
     const degEvents = new MotifEventArray(
         { value: "A", startTime: 0, duration: 0.25 },
-        { value: "B", startTime: 0.25, duration: 0.25 }
+        { value: "B", startTime: 0.25, duration: 0.25 },
     );
     degEvents.degrade(1.0); // 100% drop chance
     assert(degEvents.length === 0, "degrade(1.0) should drop all events");
 
     const degEventsNone = new MotifEventArray(
-        { value: "A", startTime: 0, duration: 0.25 }
+        { value: "A", startTime: 0, duration: 0.25 },
     );
     degEventsNone.degrade(0.0); // 0% drop chance
     assert(degEventsNone.length === 1, "degrade(0.0) should keep all events");
 
     // 7. Test mutate()
     const mutEvents = new MotifEventArray(
-        { value: "A", startTime: 0, duration: 0.5 }
+        { value: "A", startTime: 0, duration: 0.5 },
     );
     // Mutate with 100% chance and ratchet action
     mutEvents.mutate({ chance: 1.0, actions: { ratchet: true } });
@@ -7307,7 +7325,7 @@ console.log("\n=== MotifEventArray: Modifier Prototypes (.transpose(), .fast(), 
 
     const mutEventsRev = new MotifEventArray(
         { value: "A", startTime: 0, duration: 0.25 },
-        { value: "B", startTime: 0.25, duration: 0.75 }
+        { value: "B", startTime: 0.25, duration: 0.75 },
     );
     mutEventsRev.mutate({ chance: 1.0, actions: { reverse: true } });
     // reverse: startTime = 1.0 - (startTime + duration)
@@ -7321,7 +7339,7 @@ console.log("\n=== MotifEventArray: Modifier Prototypes (.transpose(), .fast(), 
 
     // 8. Test offset()
     const offEvents = new MotifEventArray(
-        { value: "A", startTime: 0, duration: 0.25 }
+        { value: "A", startTime: 0, duration: 0.25 },
     );
     offEvents.offset("1/8", (e) => {
         e.value = "B";
@@ -7473,10 +7491,12 @@ console.log("\n=== Support Ramp() in gain() & Warn on Unsupported Ramp Usage ===
                     linearRampToValueAtTime(v, t) {
                         mockGain.rampValue = v;
                         mockGain.rampTime = t;
-                    }
+                    },
                 },
-                connect() {},
-                disconnect() {}
+                connect() {
+                },
+                disconnect() {
+                },
             };
             return mockGain;
         }
@@ -7484,12 +7504,17 @@ console.log("\n=== Support Ramp() in gain() & Warn on Unsupported Ramp Usage ===
         createOscillator() {
             return {
                 frequency: {
-                    setValueAtTime() {}
+                    setValueAtTime() {
+                    },
                 },
-                connect() {},
-                disconnect() {},
-                start() {},
-                stop() {}
+                connect() {
+                },
+                disconnect() {
+                },
+                start() {
+                },
+                stop() {
+                },
             };
         }
     }
@@ -7515,7 +7540,7 @@ console.log("\n=== Support Ramp() in gain() & Warn on Unsupported Ramp Usage ===
     const tArrange = Track("t-arrange").synth("sine").note([60]);
     Motif.tempo = 120; // 1 bar = 2s
     Arrange([
-        { tracks: [tArrange.gain(Ramp(0.8, 0.2))], bars: 1 } // Ramp 0.8 to 0.2 over 1 bar (2 seconds)
+        { tracks: [tArrange.gain(Ramp(0.8, 0.2))], bars: 1 }, // Ramp 0.8 to 0.2 over 1 bar (2 seconds)
     ]);
 
     const mockCtx = new TestRampOfflineCtx();
@@ -7566,7 +7591,7 @@ console.log("\n=== Track Solo: Isolation and Arrangement Bypassing ===");
     const tSolo = Track("t-solo").synth("sine").note([60]);
     tSolo._activeSegments = [{ start: 0, end: 4 }];
     assert(tSolo._isSolo === false, "initially not soloed");
-    
+
     tSolo.solo();
     assert(tSolo._isSolo === true, "solo() sets _isSolo to true");
     assert(tSolo._activeSegments.length === 0, "solo() clears active segments");
@@ -7586,8 +7611,26 @@ console.log("\n=== Track Solo: Isolation and Arrangement Bypassing ===");
     const mockCtx = {
         currentTime: 0.1,
         sampleRate: 44100,
-        createGain() { return { gain: { setValueAtTime() {} }, connect() {} }; },
-        createOscillator() { return { frequency: { setValueAtTime() {} }, connect() {}, start() {}, stop() {} }; }
+        createGain() {
+            return {
+                gain: {
+                    setValueAtTime() {
+                    },
+                }, connect() {
+                },
+            };
+        },
+        createOscillator() {
+            return {
+                frequency: {
+                    setValueAtTime() {
+                    },
+                }, connect() {
+                }, start() {
+                }, stop() {
+                },
+            };
+        },
     };
     Motif.ctx = mockCtx;
     Motif.tempo = 120;
@@ -7605,7 +7648,7 @@ console.log("\n=== Track Solo: Isolation and Arrangement Bypassing ===");
     Track.clearRegistry();
     const tSoloArrange = Track("solo-arrange").synth("sine").note([60]).solo();
     Arrange([
-        { tracks: [tSoloArrange], bars: 1 }
+        { tracks: [tSoloArrange], bars: 1 },
     ]);
     assert(tSoloArrange._activeSegments.length === 0, "Arrange should skip soloed track, keeping its active segments empty");
 
@@ -7648,8 +7691,11 @@ console.log("\n=== Arrangement Start Parameter: Skip Previous Sections ===");
             this.stopTime = t;
         }
 
-        connect() {}
-        disconnect() {}
+        connect() {
+        }
+
+        disconnect() {
+        }
     }
 
     class ArrangeOfflineCtx {
@@ -7662,21 +7708,36 @@ console.log("\n=== Arrangement Start Parameter: Skip Previous Sections ===");
         createGain() {
             return {
                 gain: {
-                    value: 1.0, setValueAtTime() {},
-                }, connect() {}, disconnect() {},
+                    value: 1.0, setValueAtTime() {
+                    },
+                }, connect() {
+                }, disconnect() {
+                },
             };
         }
 
         createBiquadFilter() {
-            return { connect() {}, disconnect() {} };
+            return {
+                connect() {
+                }, disconnect() {
+                },
+            };
         }
 
         createDynamicsCompressor() {
-            return { connect() {}, disconnect() {} };
+            return {
+                connect() {
+                }, disconnect() {
+                },
+            };
         }
 
         createWaveShaper() {
-            return { connect() {}, disconnect() {} };
+            return {
+                connect() {
+                }, disconnect() {
+                },
+            };
         }
 
         createOscillator() {
@@ -7758,37 +7819,38 @@ console.log("\n=== Arrangement Start Parameter: Skip Previous Sections ===");
     if (procSrcMatch) {
         let processorCode = procSrcMatch[1];
         processorCode = processorCode.replace("registerProcessor('motif-synth-voice', MotifSynthProcessor);", "");
-        
+
         const prevAWP = globalThis.AudioWorkletProcessor;
         globalThis.AudioWorkletProcessor = class {
             constructor() {
                 this.port = {
-                    postMessage() {},
-                    onmessage: null
+                    postMessage() {
+                    },
+                    onmessage: null,
                 };
             }
         };
         globalThis.currentTime = 0;
         globalThis.sampleRate = 44100;
-        
+
         const fn = new Function(processorCode + "\nreturn MotifSynthProcessor;");
         const MotifSynthProcessorClass = fn();
-        
+
         const inst = new MotifSynthProcessorClass();
         const portMsgs = [];
         inst.port = {
             postMessage(msg) {
                 portMsgs.push(msg);
-            }
+            },
         };
         inst._startTime = 0;
-        
+
         inst._synthFn = () => 0.5;
         let outputs = [[new Float32Array(128)]];
         inst.process([], outputs, { frequency: [440] });
         assert(outputs[0][0][0] === 0.5, "Processor should output normal sample values");
         assert(portMsgs.length === 0, "No error messages should be posted for normal values");
-        
+
         inst._synthFn = () => NaN;
         let threw = false;
         try {
@@ -7800,7 +7862,7 @@ console.log("\n=== Arrangement Start Parameter: Skip Previous Sections ===");
         assert(threw === true, "Processor should throw on NaN output");
         assert(portMsgs.some(m => m.type === "SYNTH_ERROR"), "Should post SYNTH_ERROR port message");
         assert(portMsgs.some(m => m.type === "VOICE_ENDED"), "Should post VOICE_ENDED port message");
-        
+
         globalThis.AudioWorkletProcessor = prevAWP;
         delete globalThis.currentTime;
         delete globalThis.sampleRate;
