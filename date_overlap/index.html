@@ -257,6 +257,9 @@
     const WORD_DATE_RE = /^(\d{1,2})\.?\s+([a-zA-Z]+)\.?\s*,?\s*(\d{2,4})?$/;
     const WORD_FIRST_DATE_RE = /^([a-zA-Z]+)\.?\s+(\d{1,2})\b\s*,?\s*(\d{2,4})?$/;
 
+    const currentYear = new Date().getFullYear();
+    const nextYearTwoDigits = String(currentYear + 1).slice(-2);
+
     const PRESETS = {
         complex: "Max 2.5 - 10.6\nJulia 7.6 - 16.06\nAlex 9.6 - 22.06\nSarah 15.06 - 30.06",
         // intentionally full of whitespace, irregularities and different formats
@@ -264,9 +267,9 @@
 
 Susie – 20.07  – 05.08.
 
-Jan: 10. 8 -21. Aug. 2026 + 14/22/2026 OR 2026-06-24
+Jan: 10. 8 -21. Aug. ${currentYear} + 12/22/${currentYear} OR ${currentYear}-06-24
 
-  Tom - 07.08 - 21.08 + 31.08 - 04.09 + 21.12 - 31.12 
+  Tom - 07.08 - 21.08 + 31.08 - 04.09 + 21.12 - 3.01.${nextYearTwoDigits}
 
 Julia 26.08. + 27.08.`,
     };
@@ -306,29 +309,38 @@ Julia 26.08. + 27.08.`,
 
         let m = str.match(ISO_DATE_RE);
         if (m) {
-            return {
-                year: parseInt(m[1], 10),
-                month: parseInt(m[2], 10),
-                day: parseInt(m[3], 10),
-            };
+            const year = parseInt(m[1], 10);
+            const month = parseInt(m[2], 10);
+            const day = parseInt(m[3], 10);
+            if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                return { year, month, day };
+            }
         }
 
         m = str.match(US_DATE_RE);
         if (m) {
-            return {
-                month: parseInt(m[1], 10),
-                day: parseInt(m[2], 10),
-                year: m[3] ? parseInt(m[3], 10) : undefined,
-            };
+            const month = parseInt(m[1], 10);
+            const day = parseInt(m[2], 10);
+            if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                return {
+                    month,
+                    day,
+                    year: m[3] ? parseInt(m[3], 10) : undefined,
+                };
+            }
         }
 
         m = str.match(EUR_DATE_RE);
         if (m) {
-            return {
-                day: parseInt(m[1], 10),
-                month: parseInt(m[2], 10),
-                year: m[3] ? parseInt(m[3], 10) : undefined,
-            };
+            const day = parseInt(m[1], 10);
+            const month = parseInt(m[2], 10);
+            if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                return {
+                    day,
+                    month,
+                    year: m[3] ? parseInt(m[3], 10) : undefined,
+                };
+            }
         }
 
         m = str.match(WORD_DATE_RE);
@@ -344,11 +356,14 @@ Julia 26.08. + 27.08.`,
             }
 
             if (month) {
-                return {
-                    day: parseInt(m[1], 10),
-                    month,
-                    year: m[3] ? parseInt(m[3], 10) : undefined,
-                };
+                const day = parseInt(m[1], 10);
+                if (day >= 1 && day <= 31) {
+                    return {
+                        day,
+                        month,
+                        year: m[3] ? parseInt(m[3], 10) : undefined,
+                    };
+                }
             }
         }
 
@@ -365,11 +380,14 @@ Julia 26.08. + 27.08.`,
             }
 
             if (month) {
-                return {
-                    day: parseInt(m[2], 10),
-                    month,
-                    year: m[3] ? parseInt(m[3], 10) : undefined,
-                };
+                const day = parseInt(m[2], 10);
+                if (day >= 1 && day <= 31) {
+                    return {
+                        day,
+                        month,
+                        year: m[3] ? parseInt(m[3], 10) : undefined,
+                    };
+                }
             }
         }
 
@@ -380,58 +398,44 @@ Julia 26.08. + 27.08.`,
         const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
 
-        let sD = startObj.day;
+        const sD = startObj.day;
         let sM = startObj.month;
         let sY = startObj.year;
 
-        let eD = endObj ? endObj.day : null;
+        const eD = endObj ? endObj.day : null;
         let eM = endObj ? endObj.month : null;
         let eY = endObj ? endObj.year : null;
 
-        if (sY && !eY) {
-            eY = sY;
-        }
+        sM = sM || eM || currentMonth;
+        eM = eM || sM;
 
-        if (eY && !sY) {
-            sY = eY;
-        }
+        const isCrossYear = endObj && (eM < sM || (eM === sM && eD < sD));
 
-        if (sM && !eM) {
-            eM = sM;
-        }
+        if (endObj) {
+            if (sY && !eY) {
+                eY = isCrossYear ? sY + 1 : sY;
+            }
 
-        if (eM && !sM) {
-            sM = eM;
+            if (eY && !sY) {
+                sY = isCrossYear ? eY - 1 : eY;
+            }
+
+            if (!sY && !eY) {
+                sY = currentYear;
+                eY = isCrossYear ? currentYear + 1 : currentYear;
+            }
         }
 
         if (!sY) {
             sY = currentYear;
         }
 
-        if (!eY) {
-            eY = currentYear;
-        }
-
-        if (!sM) {
-            sM = currentMonth;
-        }
-
-        if (!eM) {
-            eM = currentMonth;
-        }
-
         if (sY < 100) {
             sY += 2000;
         }
 
-        if (eY < 100) {
+        if (eY && eY < 100) {
             eY += 2000;
-        }
-
-        if (!startObj.year && (!endObj || !endObj.year)) {
-            if (eM < sM || (eM === sM && eD < sD)) {
-                eY = sY + 1;
-            }
         }
 
         const startDate = new Date(sY, sM - 1, sD, 12, 0, 0, 0);
@@ -726,7 +730,7 @@ Julia 26.08. + 27.08.`,
         });
 
         if (errors.length > 0) {
-            errorAlert.innerHTML = errors.join("<br>");
+            errorAlert.innerHTML = Array.from(new Set(errors)).join("<br>");
             errorAlert.classList.remove("hidden");
         }
 
@@ -820,7 +824,7 @@ Julia 26.08. + 27.08.`,
         });
 
         if (errors.length > 0) {
-            errorAlert.innerHTML = errors.join("<br>");
+            errorAlert.innerHTML = Array.from(new Set(errors)).join("<br>");
             errorAlert.classList.remove("hidden");
         }
     }
