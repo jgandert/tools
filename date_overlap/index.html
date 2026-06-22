@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Date Overlap Visualizer: Parse date ranges and display overlaps as tubes.">
+    <title>Date Overlap Visualizer</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        .timeline-wrapper {
+            margin-top: 1.5rem;
+        }
+
+        .timeline-wrapper .timeline-container {
+            margin-top: 0;
+        }
+
+        .timeline-title {
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            padding: var(--spacing-md);
+            border: 1px solid var(--outline-variant);
+            border-radius: 8px;
+            background: var(--surface-container);
+            margin-top: 1rem;
+        }
+
+        .tube {
+            display: inline-flex;
+            align-items: stretch;
+            border-radius: 9999px;
+            border: 1px solid var(--outline-variant);
+            background: var(--surface-container-highest);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            font-size: 0.95rem;
+            white-space: nowrap;
+            box-sizing: border-box;
+            min-width: 200px;
+            flex-shrink: 0;
+            overflow: hidden;
+            padding: 0;
+            transition: all 0.2s ease;
+        }
+
+        .empty-gap {
+            background: transparent;
+            border: 1px dashed var(--outline);
+            color: var(--on-surface-variant);
+            box-shadow: none;
+        }
+
+        .tube-start,
+        .tube-end {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.8rem;
+            background-color: var(--surface-container-highest);
+            color: var(--on-surface-variant);
+            font-weight: 500;
+        }
+
+        .tube-start {
+            padding: 0.5rem 0.5rem 0.5rem 1rem;
+        }
+
+        .tube-end {
+            padding: 0.5rem 1rem 0.5rem 0.5rem;
+        }
+
+        .tube-name {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            padding: 0.5rem 1.25rem;
+            text-align: center;
+            flex: 1;
+        }
+
+        .tube-arrow {
+            width: 12px;
+            flex-shrink: 0;
+            display: block;
+        }
+
+        .tube.flat-left {
+            border-top-left-radius: 4px;
+            border-bottom-left-radius: 4px;
+        }
+
+        .tube.flat-right {
+            border-top-right-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+
+        .arrow-1 path {
+            fill: var(--surface-container-highest);
+        }
+
+        .arrow-2 {
+            background-color: var(--surface-container-highest);
+        }
+
+        .highlight {
+            color: var(--primary);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        :root {
+            --name-l: 0.55;
+            --name-c: 0.125;
+            --date-l: 0.92;
+            --date-c: 0.04;
+            --date-text-l: 0.25;
+            --date-text: oklch(var(--date-text-l) 0.04 var(--hue, 0));
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --name-l: 0.5;
+                --name-c: 0.125;
+                --date-l: 0.82;
+                --date-c: 0.05;
+                --date-text-l: 0.2;
+                --date-text: oklch(var(--date-text-l) 0.04 var(--hue, 0));
+            }
+        }
+
+        .tube:not(.empty-gap) > * {
+            --bg-name: oklch(var(--name-l) var(--name-c) var(--hue, 0));
+            --bg-date: oklch(var(--date-l) var(--date-c) var(--hue, 0));
+        }
+
+        .tube.multi-user > * {
+            --bg-date: oklch(var(--date-l) 0 0);
+            --date-text: oklch(var(--date-text-l) 0 0);
+        }
+
+        .tube:not(.empty-gap) .tube-name {
+            background-color: var(--bg-name);
+            color: #fff;
+        }
+
+        .tube:not(.empty-gap) .tube-start,
+        .tube:not(.empty-gap) .tube-end {
+            background-color: var(--bg-date);
+            color: var(--date-text);
+        }
+
+        .tube:not(.empty-gap) .arrow-1 {
+            background-color: var(--bg-name);
+        }
+
+        .tube:not(.empty-gap) .arrow-1 path {
+            fill: var(--bg-date);
+        }
+
+        .tube:not(.empty-gap) .arrow-2 {
+            background-color: var(--bg-date);
+        }
+
+        .tube:not(.empty-gap) .arrow-2 path {
+            fill: var(--bg-name);
+        }
+    </style>
+</head>
+
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Date Overlap Visualizer</h1>
+        <p>Parse date ranges and display overlaps as sequential tubes.</p>
+    </hgroup>
+</header>
+
+<aside>
+    <h2>Input &amp; Configuration</h2>
+    <form id="overlap-form">
+        <fieldset>
+            <legend>Enter Ranges</legend>
+            <label for="date-input">
+                Ranges (Format: Name Start - End)
+                <!-- prettier-ignore-start -->
+                <!-- beautify ignore:start -->
+                <textarea id="date-input" rows="8"
+                          placeholder="Max 2.5 - 10.6&#10;Julia 7.6 - 16.06"></textarea>
+                <!-- beautify ignore:end -->
+                <!-- prettier-ignore-end -->
+            </label>
+        </fieldset>
+
+        <fieldset>
+            <legend>Presets</legend>
+            <div class="group">
+                <button type="button" id="preset-complex">Complex</button>
+                <button type="button" id="preset-permutations">Permutations</button>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Settings</legend>
+            <label for="hide-gaps">
+                <input type="checkbox" id="hide-gaps" checked> Hide gap tubes
+            </label>
+        </fieldset>
+    </form>
+</aside>
+
+<main id="content">
+    <div class="header-row">
+        <h2>Visualization</h2>
+        <div class="group">
+            <button type="button" id="btn-copy-share" class="btn-sym">share</button>
+            <button type="button" id="btn-clear" class="btn-sym btn-danger">delete</button>
+        </div>
+    </div>
+
+    <div id="visualization" class="timeline-container"></div>
+
+    <div id="error-alert" class="hidden" role="alert"
+         style="color: var(--error); margin-top: 1rem;"></div>
+</main>
+
+<script src="../one.js"></script>
+<script>
+    const dateInput = document.getElementById("date-input");
+    const errorAlert = document.getElementById("error-alert");
+    const btnClear = document.getElementById("btn-clear");
+    const btnCopyShare = document.getElementById("btn-copy-share");
+    const hideGapsCheckbox = document.getElementById("hide-gaps");
+
+    const LINE_CLEAN_RE = /[\u202F\u00A0]/g;
+    const EXTRACT_RE = /^(.+?)\s*(?:[-–—:]\s*)?((?:\d{1,4}|(?:jan|feb|mar|mär|maer|apr|may|mai|jun|jul|aug|sep|oct|okt|nov|dec|dez)[a-z]*)(?:[\.\s\-\/–,+].*|$))$/i;
+    const OR_SPLIT_RE = /\s+\bOR\b\s+/i;
+    const PART_SPLIT_RE = /[,+]/;
+    const RANGE_SPLIT_RE = /(?:[-–]|to)/;
+    const ISO_DATE_RE = /^(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})$/;
+    const US_DATE_RE = /^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/;
+    const EUR_DATE_RE = /^(\d{1,2})[\.\s](\d{1,2})(?:[\.\s](\d{2,4}))?$/;
+    const WORD_DATE_RE = /^(\d{1,2})\.?\s+([a-zA-Z]+)\.?\s*,?\s*(\d{2,4})?$/;
+    const WORD_FIRST_DATE_RE = /^([a-zA-Z]+)\.?\s+(\d{1,2})\b\s*,?\s*(\d{2,4})?$/;
+
+    const PRESETS = {
+        complex: "Max 2.5 - 10.6\nJulia 7.6 - 16.06\nAlex 9.6 - 22.06\nSarah 15.06 - 30.06",
+        // intentionally full of whitespace, irregularities and different formats
+        permutations: `Max -  10-21 August OR   3-14 August
+
+Susie – 20.07  – 05.08.
+
+Jan: 10. 8 -21. Aug. 2026 + 14/22/2026 OR 2026-06-24
+
+  Tom - 07.08 - 21.08 + 31.08 - 04.09 + 21.12 - 31.12 
+
+Julia 26.08. + 27.08.`,
+    };
+
+    const MONTH_NAMES = {
+        // English
+        jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3,
+        apr: 4, april: 4, may: 5, jun: 6, june: 6, jul: 7, july: 7,
+        aug: 8, august: 8, sep: 9, september: 9, oct: 10, october: 10,
+        nov: 11, november: 11, dec: 12, december: 12,
+        // German
+        januar: 1, februar: 2, märz: 3, maerz: 3, mär: 3, mai: 5, juni: 6,
+        juli: 7, oktober: 10, okt: 10, november: 11, dezember: 12, dez: 12,
+    };
+
+    function extractNameAndDates(line) {
+        const cleaned = line.replace(LINE_CLEAN_RE, " ").trim();
+        const m = cleaned.match(EXTRACT_RE);
+        if (!m) {
+            return null;
+        }
+
+        return {
+            name: m[1].trim().replace(/\s*[-–—:]+$/, ""),
+            datesStr: m[2].trim(),
+        };
+    }
+
+    function parseSingleDateString(str) {
+        str = str.replace(/\.+$/, "").trim();
+        str = str.replace(/\s+/g, " ");
+        str = str.replace(/(\d+)\.\s+(\d+)/, "$1.$2");
+
+        if (/^\d{1,2}$/.test(str)) {
+            return { day: parseInt(str, 10) };
+        }
+
+        let m = str.match(ISO_DATE_RE);
+        if (m) {
+            return {
+                year: parseInt(m[1], 10),
+                month: parseInt(m[2], 10),
+                day: parseInt(m[3], 10),
+            };
+        }
+
+        m = str.match(US_DATE_RE);
+        if (m) {
+            return {
+                month: parseInt(m[1], 10),
+                day: parseInt(m[2], 10),
+                year: m[3] ? parseInt(m[3], 10) : undefined,
+            };
+        }
+
+        m = str.match(EUR_DATE_RE);
+        if (m) {
+            return {
+                day: parseInt(m[1], 10),
+                month: parseInt(m[2], 10),
+                year: m[3] ? parseInt(m[3], 10) : undefined,
+            };
+        }
+
+        m = str.match(WORD_DATE_RE);
+        if (m) {
+            const mName = m[2].toLowerCase();
+            let month;
+
+            for (const k in MONTH_NAMES) {
+                if (mName.startsWith(k)) {
+                    month = MONTH_NAMES[k];
+                    break;
+                }
+            }
+
+            if (month) {
+                return {
+                    day: parseInt(m[1], 10),
+                    month,
+                    year: m[3] ? parseInt(m[3], 10) : undefined,
+                };
+            }
+        }
+
+        m = str.match(WORD_FIRST_DATE_RE);
+        if (m) {
+            const mName = m[1].toLowerCase();
+            let month;
+
+            for (const k in MONTH_NAMES) {
+                if (mName.startsWith(k)) {
+                    month = MONTH_NAMES[k];
+                    break;
+                }
+            }
+
+            if (month) {
+                return {
+                    day: parseInt(m[2], 10),
+                    month,
+                    year: m[3] ? parseInt(m[3], 10) : undefined,
+                };
+            }
+        }
+
+        return null;
+    }
+
+    function resolveDates(startObj, endObj) {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+
+        let sD = startObj.day;
+        let sM = startObj.month;
+        let sY = startObj.year;
+
+        let eD = endObj ? endObj.day : null;
+        let eM = endObj ? endObj.month : null;
+        let eY = endObj ? endObj.year : null;
+
+        if (sY && !eY) {
+            eY = sY;
+        }
+
+        if (eY && !sY) {
+            sY = eY;
+        }
+
+        if (sM && !eM) {
+            eM = sM;
+        }
+
+        if (eM && !sM) {
+            sM = eM;
+        }
+
+        if (!sY) {
+            sY = currentYear;
+        }
+
+        if (!eY) {
+            eY = currentYear;
+        }
+
+        if (!sM) {
+            sM = currentMonth;
+        }
+
+        if (!eM) {
+            eM = currentMonth;
+        }
+
+        if (sY < 100) {
+            sY += 2000;
+        }
+
+        if (eY < 100) {
+            eY += 2000;
+        }
+
+        if (!startObj.year && (!endObj || !endObj.year)) {
+            if (eM < sM || (eM === sM && eD < sD)) {
+                eY = sY + 1;
+            }
+        }
+
+        const startDate = new Date(sY, sM - 1, sD, 12, 0, 0, 0);
+        let endDate = startDate;
+
+        if (eD) {
+            endDate = new Date(eY, eM - 1, eD, 12, 0, 0, 0);
+        }
+
+        return { start: startDate, end: endDate };
+    }
+
+    function formatDate(d) {
+        const currentYear = new Date().getFullYear();
+        const day = String(d.getDate()).padStart(2, "0");
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+
+        if (d.getFullYear() !== currentYear) {
+            return `${day}.${month}.${d.getFullYear()}`;
+        }
+
+        return `${day}.${month}`;
+    }
+
+    function cartesianProduct(arrays) {
+        return arrays.reduce((acc, curr) => {
+            const res = [];
+
+            for (const a of acc) {
+                for (const c of curr) {
+                    res.push([...a, c]);
+                }
+            }
+
+            return res;
+        }, [[]]);
+    }
+
+    function countOverlapDays(ranges) {
+        if (ranges.length === 0) {
+            return { total: 0, work: 0 };
+        }
+
+        const allDates = ranges.flatMap(r => [r.start, r.end]);
+        const minDate = new Date(Math.min(...allDates));
+        const maxDate = new Date(Math.max(...allDates));
+
+        minDate.setHours(12, 0, 0, 0);
+        maxDate.setHours(12, 0, 0, 0);
+
+        let total = 0;
+        let work = 0;
+        const d = new Date(minDate);
+
+        while (d <= maxDate) {
+            let activeCount = 0;
+
+            for (const r of ranges) {
+                if (d >= r.start && d <= r.end) {
+                    activeCount++;
+                }
+            }
+
+            if (activeCount >= 2) {
+                total++;
+                const day = d.getDay();
+                if (day !== 0 && day !== 6) {
+                    work++;
+                }
+            }
+
+            d.setDate(d.getDate() + 1);
+            d.setHours(12, 0, 0, 0);
+        }
+
+        return { total, work };
+    }
+
+    function renderTimelineContainer(ranges, allPeople, overlapDays, optionIdx) {
+        const allDates = ranges.flatMap(r => [r.start, r.end]);
+        const minDate = new Date(Math.min(...allDates));
+        const maxDate = new Date(Math.max(...allDates));
+
+        minDate.setHours(12, 0, 0, 0);
+        maxDate.setHours(12, 0, 0, 0);
+
+        const diffDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 1;
+        if (diffDays > 1000) {
+            errorAlert.textContent = "Date range exceeds 1000 days. Please reduce the span.";
+            errorAlert.classList.remove("hidden");
+            return;
+        }
+
+        const intervals = [];
+        let currentInterval = null;
+        const d = new Date(minDate);
+
+        while (d <= maxDate) {
+            const active = [];
+
+            for (const r of ranges) {
+                if (d >= r.start && d <= r.end) {
+                    active.push(r.name);
+                }
+            }
+
+            active.sort();
+            const activeKey = active.join(" + ");
+
+            if (currentInterval === null) {
+                currentInterval = {
+                    key: activeKey,
+                    people: active,
+                    start: new Date(d),
+                    end: new Date(d),
+                };
+            } else if (currentInterval.key === activeKey) {
+                currentInterval.end = new Date(d);
+            } else {
+                intervals.push(currentInterval);
+                currentInterval = {
+                    key: activeKey,
+                    people: active,
+                    start: new Date(d),
+                    end: new Date(d),
+                };
+            }
+
+            d.setDate(d.getDate() + 1);
+            d.setHours(12, 0, 0, 0);
+        }
+
+        if (currentInterval !== null) {
+            intervals.push(currentInterval);
+        }
+
+        const { total, work } = overlapDays;
+
+        const wrapperEl = document.createElement("div");
+        wrapperEl.className = "timeline-wrapper";
+
+        const titleEl = document.createElement("h3");
+        titleEl.className = "timeline-title";
+        titleEl.innerHTML = `Option ${optionIdx} has <span class="highlight">${total}</span> overlapping day${total === 1 ? "" : "s"}, of which <span class="highlight">${work}</span> ${work === 1 ? "is a" : "are"} work day${work === 1 ? "" : "s"}`;
+        wrapperEl.appendChild(titleEl);
+
+        const containerEl = document.createElement("div");
+        containerEl.className = "timeline-container";
+
+        const hideGaps = hideGapsCheckbox.checked;
+
+        intervals.forEach((interval, idx) => {
+            if (!interval.key && hideGaps) {
+                return;
+            }
+            const tubeEl = document.createElement("div");
+            let classes = `tube tube-id-${idx}`;
+
+            if (!interval.key) {
+                classes += " empty-gap";
+            } else {
+                if (idx > 0 && intervals[idx - 1].key) {
+                    classes += " flat-left";
+                }
+                if (idx < intervals.length - 1 && intervals[idx + 1].key) {
+                    classes += " flat-right";
+                }
+                if (interval.people.length > 1) {
+                    classes += " multi-user";
+                }
+            }
+
+            tubeEl.className = classes;
+
+            if (!interval.key) {
+                const startSpan = document.createElement("span");
+                startSpan.className = "tube-start";
+                startSpan.textContent = formatDate(interval.start);
+
+                const nameSpan = document.createElement("span");
+                nameSpan.className = "tube-name";
+                nameSpan.textContent = "—";
+
+                const endSpan = document.createElement("span");
+                endSpan.className = "tube-end";
+                endSpan.textContent = formatDate(interval.end);
+
+                tubeEl.appendChild(startSpan);
+                tubeEl.appendChild(nameSpan);
+                tubeEl.appendChild(endSpan);
+            } else {
+                interval.people.forEach((person, pIdx) => {
+                    const personIndex = allPeople.indexOf(person);
+                    const hue = (personIndex / Math.max(allPeople.length, 1)) * 360;
+
+                    if (pIdx === 0) {
+                        const startSpan = document.createElement("span");
+                        startSpan.className = "tube-start";
+                        startSpan.style.setProperty("--hue", hue);
+                        startSpan.textContent = formatDate(interval.start);
+                        tubeEl.appendChild(startSpan);
+                    }
+
+                    const arrow1 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    arrow1.setAttribute("class", "tube-arrow arrow-1");
+                    arrow1.style.setProperty("--hue", hue);
+                    arrow1.setAttribute("viewBox", "0 0 10 20");
+                    arrow1.setAttribute("preserveAspectRatio", "none");
+
+                    const path1 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path1.setAttribute("d", "M0,0 L10,10 L0,20 Z");
+                    arrow1.appendChild(path1);
+                    tubeEl.appendChild(arrow1);
+
+                    const nameSpan = document.createElement("span");
+                    nameSpan.className = "tube-name";
+                    nameSpan.style.setProperty("--hue", hue);
+                    nameSpan.textContent = person;
+                    tubeEl.appendChild(nameSpan);
+
+                    const arrow2 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    arrow2.setAttribute("class", "tube-arrow arrow-2");
+                    arrow2.style.setProperty("--hue", hue);
+                    arrow2.setAttribute("viewBox", "0 0 10 20");
+                    arrow2.setAttribute("preserveAspectRatio", "none");
+
+                    const path2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path2.setAttribute("d", "M0,0 L10,10 L0,20 Z");
+                    arrow2.appendChild(path2);
+                    tubeEl.appendChild(arrow2);
+
+                    if (pIdx === interval.people.length - 1) {
+                        const endSpan = document.createElement("span");
+                        endSpan.className = "tube-end";
+                        endSpan.style.setProperty("--hue", hue);
+                        endSpan.textContent = formatDate(interval.end);
+                        tubeEl.appendChild(endSpan);
+                    }
+                });
+            }
+
+            containerEl.appendChild(tubeEl);
+        });
+
+        wrapperEl.appendChild(containerEl);
+        errorAlert.before(wrapperEl);
+    }
+
+    function updateVisualization() {
+        const text = dateInput.value.trim();
+
+        const existingTimelines = document.querySelectorAll("main > .timeline-wrapper, main > .timeline-container");
+        existingTimelines.forEach(el => el.remove());
+
+        errorAlert.textContent = "";
+        errorAlert.classList.add("hidden");
+
+        if (!text) {
+            const placeholder = document.createElement("div");
+            placeholder.id = "visualization";
+            placeholder.className = "timeline-container";
+            placeholder.innerHTML = "<p class='text-muted'>Enter date ranges in the textarea to visualize overlaps.</p>";
+            errorAlert.before(placeholder);
+            return;
+        }
+
+        const lines = text.split("\n");
+        const peopleOptions = [];
+        const errors = [];
+
+        lines.forEach((line, idx) => {
+            const trimmed = line.trim();
+            if (!trimmed) {
+                return;
+            }
+
+            const ext = extractNameAndDates(trimmed);
+            if (!ext) {
+                errors.push(`Line ${idx + 1}: Could not parse line ("${trimmed}")`);
+                return;
+            }
+
+            const { name, datesStr } = ext;
+            const options = datesStr.split(OR_SPLIT_RE).map(o => o.trim()).filter(Boolean);
+
+            if (options.length === 0) {
+                errors.push(`Line ${idx + 1}: No valid dates found`);
+                return;
+            }
+
+            peopleOptions.push({ name, options, lineIdx: idx + 1 });
+        });
+
+        if (errors.length > 0) {
+            errorAlert.innerHTML = errors.join("<br>");
+            errorAlert.classList.remove("hidden");
+        }
+
+        if (peopleOptions.length === 0) {
+            const placeholder = document.createElement("div");
+            placeholder.id = "visualization";
+            placeholder.className = "timeline-container";
+            placeholder.innerHTML = "<p class='text-muted'>No valid date ranges to visualize.</p>";
+            errorAlert.before(placeholder);
+            return;
+        }
+
+        const allPeople = Array.from(new Set(peopleOptions.map(p => p.name))).sort();
+        const optionCombos = cartesianProduct(peopleOptions.map(p => p.options));
+        const combosWithRanges = [];
+
+        optionCombos.forEach(combo => {
+            const ranges = [];
+            let comboError = false;
+
+            combo.forEach((optionStr, personIdx) => {
+                if (comboError) {
+                    return;
+                }
+                const name = peopleOptions[personIdx].name;
+                const lineIdx = peopleOptions[personIdx].lineIdx;
+                const parts = optionStr.split(PART_SPLIT_RE).map(s => s.trim()).filter(Boolean);
+
+                for (const part of parts) {
+                    let startObj = null;
+                    let endObj = null;
+
+                    const singleObj = parseSingleDateString(part);
+                    if (singleObj) {
+                        startObj = singleObj;
+                    } else {
+                        const tokens = part.split(RANGE_SPLIT_RE).map(s => s.trim()).filter(Boolean);
+                        if (tokens.length === 0 || tokens.length > 2) {
+                            errors.push(`Line ${lineIdx}: Invalid date range format ("${part}")`);
+                            comboError = true;
+                            break;
+                        }
+
+                        startObj = parseSingleDateString(tokens[0]);
+                        if (tokens.length === 2) {
+                            endObj = parseSingleDateString(tokens[1]);
+                            if (!endObj) {
+                                errors.push(`Line ${lineIdx}: Invalid end date format in "${part}"`);
+                                comboError = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!startObj) {
+                        errors.push(`Line ${lineIdx}: Invalid date format in "${part}"`);
+                        comboError = true;
+                        break;
+                    }
+
+                    const range = resolveDates(startObj, endObj);
+
+                    if (isNaN(range.start.getTime()) || isNaN(range.end.getTime())) {
+                        errors.push(`Line ${lineIdx}: Invalid date value in "${part}"`);
+                        comboError = true;
+                        break;
+                    }
+
+                    if (range.start > range.end) {
+                        errors.push(`Line ${lineIdx}: Start date cannot be after end date in "${part}"`);
+                        comboError = true;
+                        break;
+                    }
+
+                    ranges.push({ name, start: range.start, end: range.end });
+                }
+            });
+
+            if (comboError || ranges.length === 0) {
+                return;
+            }
+
+            const overlapDays = countOverlapDays(ranges);
+            combosWithRanges.push({ ranges, overlapDays });
+        });
+
+        combosWithRanges.sort((a, b) => a.overlapDays.total - b.overlapDays.total);
+
+        combosWithRanges.forEach((item, idx) => {
+            renderTimelineContainer(item.ranges, allPeople, item.overlapDays, idx + 1);
+        });
+
+        if (errors.length > 0) {
+            errorAlert.innerHTML = errors.join("<br>");
+            errorAlert.classList.remove("hidden");
+        }
+    }
+
+    function loadPreset(presetText) {
+        dateInput.value = presetText;
+        localStorage.setItem("date_overlap_input", presetText);
+        if (location.hash) {
+            history.replaceState(null, "", location.href.split("#")[0]);
+        }
+        updateVisualization();
+    }
+
+    dateInput.addEventListener("input", () => {
+        localStorage.setItem("date_overlap_input", dateInput.value);
+        if (location.hash) {
+            history.replaceState(null, "", location.href.split("#")[0]);
+        }
+        updateVisualization();
+    });
+
+    btnClear.addEventListener("click", () => {
+        dateInput.value = "";
+        localStorage.removeItem("date_overlap_input");
+        if (location.hash) {
+            history.replaceState(null, "", location.href.split("#")[0]);
+        }
+        updateVisualization();
+    });
+
+    function loadFromHash() {
+        if (!location.hash) {
+            return false;
+        }
+        try {
+            const json = decodeURIComponent(escape(atob(location.hash.slice(1))));
+            const parsed = JSON.parse(json);
+            if (parsed.input !== undefined) {
+                dateInput.value = parsed.input;
+                if (parsed.hideGaps !== undefined) {
+                    hideGapsCheckbox.checked = parsed.hideGaps;
+                }
+                return true;
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        return false;
+    }
+
+    btnCopyShare.addEventListener("click", async () => {
+        const state = {
+            input: dateInput.value,
+            hideGaps: hideGapsCheckbox.checked,
+        };
+        const json = JSON.stringify(state);
+        try {
+            const b64 = btoa(unescape(encodeURIComponent(json)));
+            const url = location.href.split("#")[0] + "#" + b64;
+            history.replaceState(null, "", url);
+            await one.copy(url);
+        } catch (e) {
+            console.error(e);
+        }
+    });
+
+    hideGapsCheckbox.addEventListener("change", () => {
+        localStorage.setItem("date_overlap_hide_gaps", hideGapsCheckbox.checked);
+        updateVisualization();
+    });
+
+    document.getElementById("preset-complex").addEventListener("click", () => loadPreset(PRESETS.complex));
+    document.getElementById("preset-permutations").addEventListener("click", () => loadPreset(PRESETS.permutations));
+
+    const savedHideGaps = localStorage.getItem("date_overlap_hide_gaps");
+    if (savedHideGaps !== null) {
+        hideGapsCheckbox.checked = savedHideGaps === "true";
+    }
+
+    const loadedFromHash = loadFromHash();
+
+    if (!loadedFromHash) {
+        const savedInput = localStorage.getItem("date_overlap_input");
+        if (savedInput !== null) {
+            dateInput.value = savedInput;
+            updateVisualization();
+        } else {
+            loadPreset(PRESETS.complex);
+        }
+    } else {
+        updateVisualization();
+    }
+</script>
+</body>
+
+</html>
