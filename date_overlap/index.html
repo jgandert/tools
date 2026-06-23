@@ -250,9 +250,13 @@
                 Hide gap tubes
                 <input type="checkbox" id="hide-gaps" role="switch" checked>
             </label>
-            <label for="pre-remove">
-                Pre-remove non-workdays
-                <input type="checkbox" id="pre-remove" role="switch" checked>
+            <label for="show-non-workdays">
+                Show non-workdays
+                <input type="checkbox" id="show-non-workdays" role="switch">
+            </label>
+            <label for="merge-non-workdays">
+                Merge tubes if non-workdays between
+                <input type="checkbox" id="merge-non-workdays" role="switch">
             </label>
             <label for="date-format-select">
                 Date format for copy
@@ -296,7 +300,8 @@
     const btnClear = document.getElementById("btn-clear");
     const btnCopyShare = document.getElementById("btn-copy-share");
     const hideGapsCheckbox = document.getElementById("hide-gaps");
-    const preRemoveCheckbox = document.getElementById("pre-remove");
+    const showNonWorkdaysCheckbox = document.getElementById("show-non-workdays");
+    const mergeNonWorkdaysCheckbox = document.getElementById("merge-non-workdays");
     const dateFormatSelect = document.getElementById("date-format-select");
     const workdaysInput = document.getElementById("workdays-input");
     const holidaysInput = document.getElementById("holidays-input");
@@ -779,11 +784,11 @@ Julia 26.08. + 27.08.`,
 
         const workdaysSet = parseWorkdays(workdaysInput.value);
         const holidayRanges = parseHolidays(holidaysInput.value);
-        const preRemove = preRemoveCheckbox.checked;
+        const showNonWorkdays = showNonWorkdaysCheckbox.checked;
 
         while (d <= maxDate) {
             const isWork = isWorkday(d, workdaysSet, holidayRanges);
-            if (preRemove && !isWork) {
+            if (!showNonWorkdays && !isWork) {
                 d.setDate(d.getDate() + 1);
                 d.setHours(12, 0, 0, 0);
                 continue;
@@ -832,11 +837,11 @@ Julia 26.08. + 27.08.`,
 
         const workdaysSet = parseWorkdays(workdaysInput.value);
         const holidayRanges = parseHolidays(holidaysInput.value);
-        const preRemove = preRemoveCheckbox.checked;
+        const showNonWorkdays = showNonWorkdaysCheckbox.checked;
 
         while (d <= maxDate) {
             const isWork = isWorkday(d, workdaysSet, holidayRanges);
-            if (preRemove && !isWork) {
+            if (!showNonWorkdays && !isWork) {
                 d.setDate(d.getDate() + 1);
                 d.setHours(12, 0, 0, 0);
                 continue;
@@ -853,6 +858,9 @@ Julia 26.08. + 27.08.`,
             active.sort();
             const activeKey = active.join(" + ");
 
+            const mergeNonWorkdays = mergeNonWorkdaysCheckbox.checked;
+            const isConsecutive = currentInterval !== null && Math.round((d.getTime() - currentInterval.end.getTime()) / 86400000) === 1;
+
             if (currentInterval === null) {
                 currentInterval = {
                     key: activeKey,
@@ -860,7 +868,7 @@ Julia 26.08. + 27.08.`,
                     start: new Date(d),
                     end: new Date(d),
                 };
-            } else if (currentInterval.key === activeKey) {
+            } else if (currentInterval.key === activeKey && (isConsecutive || mergeNonWorkdays)) {
                 currentInterval.end = new Date(d);
             } else {
                 intervals.push(currentInterval);
@@ -890,7 +898,7 @@ Julia 26.08. + 27.08.`,
 
         const textSpan = document.createElement("span");
 
-        if (preRemove) {
+        if (!showNonWorkdays) {
             textSpan.innerHTML = `Option ${optionIdx} has <span class="highlight">${work}</span> overlapping work day${work === 1 ? "" : "s"}`;
         } else {
             textSpan.innerHTML = `Option ${optionIdx} has <span class="highlight">${total}</span> overlapping day${total === 1 ? "" : "s"}, of which <span class="highlight">${work}</span> ${work === 1 ? "is a" : "are"} work day${work === 1 ? "" : "s"}`;
@@ -1223,7 +1231,8 @@ Julia 26.08. + 27.08.`,
         const state = {
             input: dateInput.value,
             hideGaps: hideGapsCheckbox.checked,
-            preRemove: preRemoveCheckbox.checked,
+            showNonWorkdays: showNonWorkdaysCheckbox.checked,
+            mergeNonWorkdays: mergeNonWorkdaysCheckbox.checked,
             workdays: workdaysInput.value,
             holidays: holidaysInput.value,
             dateFormat: dateFormatSelect.value,
@@ -1250,8 +1259,11 @@ Julia 26.08. + 27.08.`,
                 if (parsed.hideGaps !== undefined) {
                     hideGapsCheckbox.checked = parsed.hideGaps;
                 }
-                if (parsed.preRemove !== undefined) {
-                    preRemoveCheckbox.checked = parsed.preRemove;
+                if (parsed.showNonWorkdays !== undefined) {
+                    showNonWorkdaysCheckbox.checked = parsed.showNonWorkdays;
+                }
+                if (parsed.mergeNonWorkdays !== undefined) {
+                    mergeNonWorkdaysCheckbox.checked = parsed.mergeNonWorkdays;
                 }
                 if (parsed.workdays !== undefined) {
                     workdaysInput.value = parsed.workdays;
@@ -1262,6 +1274,7 @@ Julia 26.08. + 27.08.`,
                 if (parsed.dateFormat !== undefined) {
                     dateFormatSelect.value = parsed.dateFormat;
                 }
+                updateToggleStates();
                 return true;
             }
         } catch (e) {
@@ -1274,7 +1287,7 @@ Julia 26.08. + 27.08.`,
         const state = {
             input: dateInput.value,
             hideGaps: hideGapsCheckbox.checked,
-            preRemove: preRemoveCheckbox.checked,
+            showNonWorkdays: showNonWorkdaysCheckbox.checked,
             workdays: workdaysInput.value,
             holidays: holidaysInput.value,
             dateFormat: dateFormatSelect.value,
@@ -1296,8 +1309,19 @@ Julia 26.08. + 27.08.`,
         updateVisualization();
     });
 
-    preRemoveCheckbox.addEventListener("change", () => {
-        localStorage.setItem("date_overlap_pre_remove", preRemoveCheckbox.checked);
+    function updateToggleStates() {
+        mergeNonWorkdaysCheckbox.disabled = showNonWorkdaysCheckbox.checked;
+    }
+
+    showNonWorkdaysCheckbox.addEventListener("change", () => {
+        localStorage.setItem("date_overlap_show_non_workdays", showNonWorkdaysCheckbox.checked);
+        updateToggleStates();
+        updateHashIfPresent();
+        updateVisualization();
+    });
+
+    mergeNonWorkdaysCheckbox.addEventListener("change", () => {
+        localStorage.setItem("date_overlap_merge_non_workdays", mergeNonWorkdaysCheckbox.checked);
         updateHashIfPresent();
         updateVisualization();
     });
@@ -1327,10 +1351,17 @@ Julia 26.08. + 27.08.`,
         hideGapsCheckbox.checked = savedHideGaps === "true";
     }
 
-    const savedPreRemove = localStorage.getItem("date_overlap_pre_remove");
-    if (savedPreRemove !== null) {
-        preRemoveCheckbox.checked = savedPreRemove === "true";
+    const savedShowNonWorkdays = localStorage.getItem("date_overlap_show_non_workdays");
+    if (savedShowNonWorkdays !== null) {
+        showNonWorkdaysCheckbox.checked = savedShowNonWorkdays === "true";
     }
+
+    const savedMergeNonWorkdays = localStorage.getItem("date_overlap_merge_non_workdays");
+    if (savedMergeNonWorkdays !== null) {
+        mergeNonWorkdaysCheckbox.checked = savedMergeNonWorkdays === "true";
+    }
+
+    updateToggleStates();
 
     const savedWorkdays = localStorage.getItem("date_overlap_workdays");
     if (savedWorkdays !== null) {
