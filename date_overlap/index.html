@@ -217,7 +217,20 @@
         <fieldset>
             <legend>Settings</legend>
             <label for="hide-gaps">
-                <input type="checkbox" id="hide-gaps" checked> Hide gap tubes
+                Hide gap tubes
+                <input type="checkbox" id="hide-gaps" role="switch" checked>
+            </label>
+            <label for="pre-remove">
+                Pre-remove non-workdays
+                <input type="checkbox" id="pre-remove" role="switch" checked>
+            </label>
+            <label for="workdays-input">
+                Workdays
+                <input type="text" id="workdays-input" value="Mo, Tu, We, Th, Fr">
+            </label>
+            <label for="holidays-input">
+                Public Holidays
+                <input type="text" id="holidays-input" placeholder="e.g. 25.12, 01.01">
             </label>
         </fieldset>
     </form>
@@ -245,9 +258,12 @@
     const btnClear = document.getElementById("btn-clear");
     const btnCopyShare = document.getElementById("btn-copy-share");
     const hideGapsCheckbox = document.getElementById("hide-gaps");
+    const preRemoveCheckbox = document.getElementById("pre-remove");
+    const workdaysInput = document.getElementById("workdays-input");
+    const holidaysInput = document.getElementById("holidays-input");
 
     const LINE_CLEAN_RE = /[\u202F\u00A0]/g;
-    const EXTRACT_RE = /^(.+?)\s*(?:[-–—:]\s*)?((?:\d{1,4}|(?:jan|feb|mar|mär|maer|apr|may|mai|jun|jul|aug|sep|oct|okt|nov|dec|dez)[a-z]*)(?:[\.\s\-\/–,+].*|$))$/i;
+    const EXTRACT_RE = /^(.+?)\s*(?:[-–—:]\s*)?([\(]*(?:\d{1,4}|(?:jan|feb|mar|mär|maer|apr|may|mai|jun|jul|aug|sep|oct|okt|nov|dec|dez)[a-z]*)(?:[\.\s\-\/–,+)(].*|$))$/i;
     const OR_SPLIT_RE = /\s+\bOR\b\s+/i;
     const PART_SPLIT_RE = /[,+]/;
     const RANGE_SPLIT_RE = /(?:[-–]|to)/;
@@ -263,11 +279,12 @@
     const PRESETS = {
         complex: "Max 2.5 - 10.6\nJulia 7.6 - 16.06\nAlex 9.6 - 22.06\nSarah 15.06 - 30.06",
         // intentionally full of whitespace, irregularities and different formats
-        permutations: `Max -  10-21 August OR   3-14 August
+        permutations: `Max -  10-21 August
+Maria (3.4. + 6.6 - 10.6) OR (4.4 + 17.7. - 27.7)
 
 Susie – 20.07  – 05.08.
 
-Jan: 10. 8 -21. Aug. ${currentYear} + 12/22/${currentYear} OR ${currentYear}-06-24
+Jan: 10. 8 -21. Aug. ${currentYear} + 12/22/${currentYear} OR   ${currentYear}-06-24
 
   Tom - 07.08 - 21.08 + 31.08 - 04.09 + 21.12 - 3.01.${nextYearTwoDigits}
 
@@ -296,6 +313,26 @@ Julia 26.08. + 27.08.`,
             name: m[1].trim().replace(/\s*[-–—:]+$/, ""),
             datesStr: m[2].trim(),
         };
+    }
+
+    function expandOptions(datesStr) {
+        const innermostRe = /\(([^()]+)\)/;
+        const m = datesStr.match(innermostRe);
+        if (m) {
+            const innerStr = m[1];
+            const subOptions = innerStr.split(OR_SPLIT_RE).map(s => s.trim()).filter(Boolean);
+            if (subOptions.length === 0) {
+                const replaced = datesStr.substring(0, m.index) + datesStr.substring(m.index + m[0].length);
+                return expandOptions(replaced);
+            }
+            const results = [];
+            for (const sub of subOptions) {
+                const replaced = datesStr.substring(0, m.index) + sub + datesStr.substring(m.index + m[0].length);
+                results.push(...expandOptions(replaced));
+            }
+            return results;
+        }
+        return datesStr.split(OR_SPLIT_RE).map(o => o.trim()).filter(Boolean);
     }
 
     function parseSingleDateString(str) {
@@ -460,6 +497,28 @@ Julia 26.08. + 27.08.`,
         return `${day}.${month}`;
     }
 
+    function countDaysInRange(start, end) {
+        const workdaysSet = parseWorkdays(workdaysInput.value);
+        const holidayRanges = parseHolidays(holidaysInput.value);
+        let total = 0;
+        let work = 0;
+        const d = new Date(start);
+        d.setHours(12, 0, 0, 0);
+        const limit = new Date(end);
+        limit.setHours(12, 0, 0, 0);
+
+        while (d <= limit) {
+            total++;
+            if (isWorkday(d, workdaysSet, holidayRanges)) {
+                work++;
+            }
+            d.setDate(d.getDate() + 1);
+            d.setHours(12, 0, 0, 0);
+        }
+
+        return { total, work };
+    }
+
     function cartesianProduct(arrays) {
         return arrays.reduce((acc, curr) => {
             const res = [];
@@ -472,6 +531,94 @@ Julia 26.08. + 27.08.`,
 
             return res;
         }, [[]]);
+    }
+
+    function parseWorkdays(inputStr) {
+        const weekdayMap = {
+            su: 0, sun: 0, so: 0,
+            mo: 1, mon: 1,
+            tu: 2, tue: 2, di: 2,
+            we: 3, wed: 3, mi: 3,
+            th: 4, thu: 4, do: 4,
+            fr: 5, fri: 5,
+            sa: 6, sat: 6
+        };
+
+        const parts = inputStr.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+        const days = new Set();
+
+        for (const part of parts) {
+            for (const [key, val] of Object.entries(weekdayMap)) {
+                if (part.startsWith(key)) {
+                    days.add(val);
+                    break;
+                }
+            }
+        }
+
+        return days;
+    }
+
+    function parseHolidays(text) {
+        if (!text.trim()) {
+            return [];
+        }
+
+        const parts = text.split(PART_SPLIT_RE).map(s => s.trim()).filter(Boolean);
+        const holidayRanges = [];
+
+        for (const part of parts) {
+            let startObj = null;
+            let endObj = null;
+
+            const singleObj = parseSingleDateString(part);
+            if (singleObj) {
+                startObj = singleObj;
+            } else {
+                const tokens = part.split(RANGE_SPLIT_RE).map(s => s.trim()).filter(Boolean);
+                if (tokens.length === 1 || tokens.length === 2) {
+                    startObj = parseSingleDateString(tokens[0]);
+
+                    if (tokens.length === 2) {
+                        endObj = parseSingleDateString(tokens[1]);
+                    }
+                }
+            }
+
+            if (startObj) {
+                const resolved = resolveDates(startObj, endObj);
+                if (resolved && !isNaN(resolved.start.getTime()) && !isNaN(resolved.end.getTime())) {
+                    holidayRanges.push(resolved);
+                }
+            }
+        }
+
+        return holidayRanges;
+    }
+
+    function isHoliday(date, holidayRanges) {
+        const time = date.getTime();
+
+        for (const range of holidayRanges) {
+            if (time >= range.start.getTime() && time <= range.end.getTime()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function isWorkday(date, workdaysSet, holidayRanges) {
+        const day = date.getDay();
+        if (!workdaysSet.has(day)) {
+            return false;
+        }
+
+        if (isHoliday(date, holidayRanges)) {
+            return false;
+        }
+
+        return true;
     }
 
     function countOverlapDays(ranges) {
@@ -490,7 +637,18 @@ Julia 26.08. + 27.08.`,
         let work = 0;
         const d = new Date(minDate);
 
+        const workdaysSet = parseWorkdays(workdaysInput.value);
+        const holidayRanges = parseHolidays(holidaysInput.value);
+        const preRemove = preRemoveCheckbox.checked;
+
         while (d <= maxDate) {
+            const isWork = isWorkday(d, workdaysSet, holidayRanges);
+            if (preRemove && !isWork) {
+                d.setDate(d.getDate() + 1);
+                d.setHours(12, 0, 0, 0);
+                continue;
+            }
+
             let activeCount = 0;
 
             for (const r of ranges) {
@@ -501,8 +659,7 @@ Julia 26.08. + 27.08.`,
 
             if (activeCount >= 2) {
                 total++;
-                const day = d.getDay();
-                if (day !== 0 && day !== 6) {
+                if (isWork) {
                     work++;
                 }
             }
@@ -533,7 +690,18 @@ Julia 26.08. + 27.08.`,
         let currentInterval = null;
         const d = new Date(minDate);
 
+        const workdaysSet = parseWorkdays(workdaysInput.value);
+        const holidayRanges = parseHolidays(holidaysInput.value);
+        const preRemove = preRemoveCheckbox.checked;
+
         while (d <= maxDate) {
+            const isWork = isWorkday(d, workdaysSet, holidayRanges);
+            if (preRemove && !isWork) {
+                d.setDate(d.getDate() + 1);
+                d.setHours(12, 0, 0, 0);
+                continue;
+            }
+
             const active = [];
 
             for (const r of ranges) {
@@ -579,7 +747,12 @@ Julia 26.08. + 27.08.`,
 
         const titleEl = document.createElement("h3");
         titleEl.className = "timeline-title";
-        titleEl.innerHTML = `Option ${optionIdx} has <span class="highlight">${total}</span> overlapping day${total === 1 ? "" : "s"}, of which <span class="highlight">${work}</span> ${work === 1 ? "is a" : "are"} work day${work === 1 ? "" : "s"}`;
+
+        if (preRemove) {
+            titleEl.innerHTML = `Option ${optionIdx} has <span class="highlight">${work}</span> overlapping work day${work === 1 ? "" : "s"}`;
+        } else {
+            titleEl.innerHTML = `Option ${optionIdx} has <span class="highlight">${total}</span> overlapping day${total === 1 ? "" : "s"}, of which <span class="highlight">${work}</span> ${work === 1 ? "is a" : "are"} work day${work === 1 ? "" : "s"}`;
+        }
         wrapperEl.appendChild(titleEl);
 
         const containerEl = document.createElement("div");
@@ -593,6 +766,8 @@ Julia 26.08. + 27.08.`,
             }
             const tubeEl = document.createElement("div");
             let classes = `tube tube-id-${idx}`;
+
+            const stats = countDaysInRange(interval.start, interval.end);
 
             if (!interval.key) {
                 classes += " empty-gap";
@@ -608,6 +783,7 @@ Julia 26.08. + 27.08.`,
                 }
             }
 
+            tubeEl.setAttribute("data-tooltip", `Total: ${stats.total} day${stats.total === 1 ? "" : "s"}, Work: ${stats.work} day${stats.work === 1 ? "" : "s"}`);
             tubeEl.className = classes;
 
             if (!interval.key) {
@@ -719,7 +895,7 @@ Julia 26.08. + 27.08.`,
             }
 
             const { name, datesStr } = ext;
-            const options = datesStr.split(OR_SPLIT_RE).map(o => o.trim()).filter(Boolean);
+            const options = expandOptions(datesStr);
 
             if (options.length === 0) {
                 errors.push(`Line ${idx + 1}: No valid dates found`);
@@ -867,6 +1043,15 @@ Julia 26.08. + 27.08.`,
                 if (parsed.hideGaps !== undefined) {
                     hideGapsCheckbox.checked = parsed.hideGaps;
                 }
+                if (parsed.preRemove !== undefined) {
+                    preRemoveCheckbox.checked = parsed.preRemove;
+                }
+                if (parsed.workdays !== undefined) {
+                    workdaysInput.value = parsed.workdays;
+                }
+                if (parsed.holidays !== undefined) {
+                    holidaysInput.value = parsed.holidays;
+                }
                 return true;
             }
         } catch (e) {
@@ -879,6 +1064,9 @@ Julia 26.08. + 27.08.`,
         const state = {
             input: dateInput.value,
             hideGaps: hideGapsCheckbox.checked,
+            preRemove: preRemoveCheckbox.checked,
+            workdays: workdaysInput.value,
+            holidays: holidaysInput.value,
         };
         const json = JSON.stringify(state);
         try {
@@ -896,12 +1084,55 @@ Julia 26.08. + 27.08.`,
         updateVisualization();
     });
 
+    preRemoveCheckbox.addEventListener("change", () => {
+        localStorage.setItem("date_overlap_pre_remove", preRemoveCheckbox.checked);
+        if (location.hash) {
+            history.replaceState(null, "", location.href.split("#")[0]);
+        }
+        updateVisualization();
+    });
+
+    workdaysInput.addEventListener("input", () => {
+        localStorage.setItem("date_overlap_workdays", workdaysInput.value);
+        if (location.hash) {
+            history.replaceState(null, "", location.href.split("#")[0]);
+        }
+        updateVisualization();
+    });
+
+    holidaysInput.addEventListener("input", () => {
+        localStorage.setItem("date_overlap_holidays", holidaysInput.value);
+        if (location.hash) {
+            history.replaceState(null, "", location.href.split("#")[0]);
+        }
+        updateVisualization();
+    });
+
     document.getElementById("preset-complex").addEventListener("click", () => loadPreset(PRESETS.complex));
     document.getElementById("preset-permutations").addEventListener("click", () => loadPreset(PRESETS.permutations));
 
     const savedHideGaps = localStorage.getItem("date_overlap_hide_gaps");
     if (savedHideGaps !== null) {
         hideGapsCheckbox.checked = savedHideGaps === "true";
+    }
+
+    const savedPreRemove = localStorage.getItem("date_overlap_pre_remove");
+    if (savedPreRemove !== null) {
+        preRemoveCheckbox.checked = savedPreRemove === "true";
+    }
+
+    const savedWorkdays = localStorage.getItem("date_overlap_workdays");
+    if (savedWorkdays !== null) {
+        workdaysInput.value = savedWorkdays;
+    } else {
+        workdaysInput.value = "Mo, Tu, We, Th, Fr";
+    }
+
+    const savedHolidays = localStorage.getItem("date_overlap_holidays");
+    if (savedHolidays !== null) {
+        holidaysInput.value = savedHolidays;
+    } else {
+        holidaysInput.value = "";
     }
 
     const loadedFromHash = loadFromHash();
