@@ -719,7 +719,7 @@ aside .form-actions {
         width: 100%;
         /* Fills the grid column */
         box-shadow: none;
-        z-index: 1;
+        z-index: auto;
         visibility: visible;
     }
 
@@ -2242,19 +2242,14 @@ dialog footer {
     margin-bottom: 8px;
     margin-inline: 12px;
 
-    /* The fallback evaluation sequence
-     * Try top-center.
-     * If top overflows, flip to bottom-center.
-     * If bottom-center overflows left, try shifting it flush-right.
-     * If bottom-center overflows right, try shifting it flush-left.
-     * If top-center overflows left, try shifting it flush-right.
-     * If top-center overflows right, try shifting it flush-left.
-     */
+    /* The fallback evaluation sequence */
     position-try-fallbacks: flip-block,
-    --bottom-shift-right,
     --bottom-shift-left,
+    --bottom-shift-right,
+    --shift-left,
     --shift-right,
-    --shift-left;
+    --left,
+    --right;
 
     /* Visual styling */
     background-color: var(--on-surface-variant);
@@ -2287,6 +2282,38 @@ dialog footer {
 [data-tooltip-mobile]::after {
     /* Extracts the text payload directly from the HTML attribute */
     content: attr(data-tooltip-mobile);
+}
+
+@position-try --bottom-shift-right {
+    position-area: bottom;
+    justify-self: start;
+}
+
+@position-try --bottom-shift-left {
+    position-area: bottom;
+    justify-self: end;
+}
+
+@position-try --shift-right {
+    justify-self: start;
+}
+
+@position-try --shift-left {
+    justify-self: end;
+}
+
+@position-try --left {
+    position-area: left;
+    margin-bottom: 0;
+    margin-inline: 0;
+    margin-right: 8px;
+}
+
+@position-try --right {
+    position-area: right;
+    margin-bottom: 0;
+    margin-inline: 0;
+    margin-left: 8px;
 }
 
 [data-tooltip]:hover::after,
