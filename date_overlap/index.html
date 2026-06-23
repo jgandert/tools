@@ -220,6 +220,21 @@
     </hgroup>
 </header>
 
+<main id="content">
+    <div class="header-row">
+        <h2>Visualization</h2>
+        <div class="group">
+            <button type="button" id="btn-copy-share" class="btn-sym">share</button>
+            <button type="button" id="btn-clear" class="btn-sym btn-danger">delete</button>
+        </div>
+    </div>
+
+    <div id="visualization" class="timeline-container"></div>
+
+    <div id="error-alert" class="hidden" role="alert"
+         style="color: var(--error); margin-top: 1rem;"></div>
+</main>
+
 <aside>
     <h2>Input &amp; Configuration</h2>
     <form id="overlap-form">
@@ -241,6 +256,7 @@
             <div class="group">
                 <button type="button" id="preset-complex">Complex</button>
                 <button type="button" id="preset-permutations">Permutations</button>
+                <button type="button" id="preset-ft">FT &amp; Half</button>
             </div>
         </fieldset>
 
@@ -255,7 +271,7 @@
                 <input type="checkbox" id="show-non-workdays" role="switch">
             </label>
             <label for="merge-non-workdays">
-                Merge tubes if non-workdays between
+                Merge ranges if non-workdays between
                 <input type="checkbox" id="merge-non-workdays" role="switch">
             </label>
             <label for="date-format-select">
@@ -278,21 +294,6 @@
     </form>
 </aside>
 
-<main id="content">
-    <div class="header-row">
-        <h2>Visualization</h2>
-        <div class="group">
-            <button type="button" id="btn-copy-share" class="btn-sym">share</button>
-            <button type="button" id="btn-clear" class="btn-sym btn-danger">delete</button>
-        </div>
-    </div>
-
-    <div id="visualization" class="timeline-container"></div>
-
-    <div id="error-alert" class="hidden" role="alert"
-         style="color: var(--error); margin-top: 1rem;"></div>
-</main>
-
 <script src="../one.js"></script>
 <script>
     const dateInput = document.getElementById("date-input");
@@ -310,7 +311,32 @@
     const EXTRACT_RE = /^(.+?)\s*(?:[-–—:]\s*)?([\(]*(?:\d{1,4}|(?:jan|feb|mar|mär|maer|apr|may|mai|jun|jul|aug|sep|oct|okt|nov|dec|dez)[a-z]*)(?:[\.\s\-\/–,+)(].*|$))$/i;
     const OR_SPLIT_RE = /\s+\bOR\b\s+/i;
     const PART_SPLIT_RE = /[,+]/;
-    const RANGE_SPLIT_RE = /(?:[-–]|to)/;
+    function splitRange(str) {
+        const spacedMatch = str.match(/\s+(?:[-–—]|to)\s+/i);
+        if (spacedMatch) {
+            const idx = spacedMatch.index;
+            const len = spacedMatch[0].length;
+            return [str.slice(0, idx).trim(), str.slice(idx + len).trim()].filter(Boolean);
+        }
+
+        const dashMatch = str.match(/[–—]/);
+        if (dashMatch) {
+            const idx = dashMatch.index;
+            return [str.slice(0, idx).trim(), str.slice(idx + 1).trim()].filter(Boolean);
+        }
+
+        const parts = str.split('-');
+        if (parts.length === 2) {
+            return parts.map(s => s.trim()).filter(Boolean);
+        }
+        if (parts.length === 6) {
+            return [
+                parts.slice(0, 3).join('-').trim(),
+                parts.slice(3).join('-').trim()
+            ].filter(Boolean);
+        }
+        return [str.trim()].filter(Boolean);
+    }
     const ISO_DATE_RE = /^(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})$/;
     const US_DATE_RE = /^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/;
     const EUR_DATE_RE = /^(\d{1,2})[\.\s](\d{1,2})(?:[\.\s](\d{2,4}))?$/;
@@ -333,6 +359,9 @@ Jan: 10. 8 -21. Aug. ${currentYear} + 12/22/${currentYear} OR   ${currentYear}-0
   Tom - 07.08 - 21.08 + 31.08 - 04.09 + 21.12 - 3.01.${nextYearTwoDigits}
 
 Julia 26.08. + 27.08.`,
+        ft: `Max (3.6 - 8.6) OR (3.6 - 15.6)
+Julia 5.6 - 12.6
+Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
     };
 
     const MONTH_NAMES = {
@@ -353,8 +382,13 @@ Julia 26.08. + 27.08.`,
             return null;
         }
 
+        const namePart = m[1].trim().replace(/\s*[-–—:]+$/, "");
+        const isHalf = /\{h(alf)?\}/i.test(namePart);
+        const name = namePart.replace(/\s*\{h(alf)?\}\s*/i, "").trim();
+
         return {
-            name: m[1].trim().replace(/\s*[-–—:]+$/, ""),
+            name,
+            isHalf,
             datesStr: m[2].trim(),
         };
     }
@@ -557,7 +591,7 @@ Julia 26.08. + 27.08.`,
         return `${year}-${month}-${day}`;
     }
 
-    function getNormalizedRangesText(ranges) {
+    function getNormalizedRangesText(ranges, halfTimePeople = new Set()) {
         const format = dateFormatSelect.value;
         const grouped = {};
         const names = [];
@@ -587,7 +621,8 @@ Julia 26.08. + 27.08.`,
                 return `${startStr} - ${endStr}`;
             });
 
-            lines.push(`${name}: ${rangeStrings.join(", ")}`);
+            const displayName = name + (halfTimePeople.has(name) ? " {h}" : "");
+            lines.push(`${displayName}: ${rangeStrings.join(", ")}`);
         }
 
         return lines.join("\n");
@@ -601,7 +636,7 @@ Julia 26.08. + 27.08.`,
         return `${year}${month}${day}`;
     }
 
-    function generateICS(ranges) {
+    function generateICS(ranges, halfTimePeople = new Set()) {
         const lines = [
             "BEGIN:VCALENDAR",
             "VERSION:2.0",
@@ -615,9 +650,10 @@ Julia 26.08. + 27.08.`,
             nextDay.setDate(nextDay.getDate() + 1);
             const endStr = formatICSDate(nextDay);
             const uid = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}@date-overlap`;
+            const summaryName = r.name + (halfTimePeople.has(r.name) ? " {h}" : "");
 
             lines.push("BEGIN:VEVENT");
-            lines.push(`SUMMARY:${r.name}`);
+            lines.push(`SUMMARY:${summaryName}`);
             lines.push(`DTSTART;VALUE=DATE:${startStr}`);
             lines.push(`DTEND;VALUE=DATE:${endStr}`);
             lines.push(`UID:${uid}`);
@@ -720,7 +756,7 @@ Julia 26.08. + 27.08.`,
             if (singleObj) {
                 startObj = singleObj;
             } else {
-                const tokens = part.split(RANGE_SPLIT_RE).map(s => s.trim()).filter(Boolean);
+                const tokens = splitRange(part);
                 if (tokens.length === 1 || tokens.length === 2) {
                     startObj = parseSingleDateString(tokens[0]);
 
@@ -766,9 +802,86 @@ Julia 26.08. + 27.08.`,
         return true;
     }
 
-    function countOverlapDays(ranges) {
+    function areAllNonWorkdays(start, end) {
+        const workdaysSet = parseWorkdays(workdaysInput.value);
+        const holidayRanges = parseHolidays(holidaysInput.value);
+        const d = new Date(start);
+        d.setHours(12, 0, 0, 0);
+
+        const limit = new Date(end);
+        limit.setHours(12, 0, 0, 0);
+
+        while (d <= limit) {
+            if (isWorkday(d, workdaysSet, holidayRanges)) {
+                return false;
+            }
+
+            d.setDate(d.getDate() + 1);
+            d.setHours(12, 0, 0, 0);
+        }
+
+        return true;
+    }
+
+    function getExportableRanges(ranges) {
+        if (!mergeNonWorkdaysCheckbox.checked || showNonWorkdaysCheckbox.checked) {
+            return ranges;
+        }
+
+        const grouped = {};
+
+        for (const r of ranges) {
+            if (!grouped[r.name]) {
+                grouped[r.name] = [];
+            }
+
+            grouped[r.name].push(r);
+        }
+
+        const mergedRanges = [];
+
+        for (const name in grouped) {
+            const personRanges = [...grouped[name]];
+            personRanges.sort((a, b) => a.start - b.start);
+
+            const merged = [];
+
+            for (const r of personRanges) {
+                if (merged.length === 0) {
+                    merged.push({ name, start: new Date(r.start), end: new Date(r.end) });
+                    continue;
+                }
+
+                const last = merged[merged.length - 1];
+
+                if (r.start <= last.end) {
+                    last.end = new Date(Math.max(last.end, r.end));
+                    continue;
+                }
+
+                const gapStart = new Date(last.end);
+                gapStart.setDate(gapStart.getDate() + 1);
+
+                const gapEnd = new Date(r.start);
+                gapEnd.setDate(gapEnd.getDate() - 1);
+
+                if (gapStart > gapEnd || areAllNonWorkdays(gapStart, gapEnd)) {
+                    last.end = new Date(Math.max(last.end, r.end));
+                    continue;
+                }
+
+                merged.push({ name, start: new Date(r.start), end: new Date(r.end) });
+            }
+
+            mergedRanges.push(...merged);
+        }
+
+        return mergedRanges;
+    }
+
+    function countOverlapDays(ranges, halfTimePeople = new Set()) {
         if (ranges.length === 0) {
-            return { total: 0, work: 0 };
+            return { total: 0, work: 0, ftTotal: 0, ftWork: 0 };
         }
 
         const allDates = ranges.flatMap(r => [r.start, r.end]);
@@ -780,6 +893,8 @@ Julia 26.08. + 27.08.`,
 
         let total = 0;
         let work = 0;
+        let ftTotal = 0;
+        let ftWork = 0;
         const d = new Date(minDate);
 
         const workdaysSet = parseWorkdays(workdaysInput.value);
@@ -795,10 +910,14 @@ Julia 26.08. + 27.08.`,
             }
 
             let activeCount = 0;
+            let activeFtCount = 0;
 
             for (const r of ranges) {
                 if (d >= r.start && d <= r.end) {
                     activeCount++;
+                    if (!halfTimePeople.has(r.name)) {
+                        activeFtCount++;
+                    }
                 }
             }
 
@@ -809,14 +928,21 @@ Julia 26.08. + 27.08.`,
                 }
             }
 
+            if (activeFtCount >= 2) {
+                ftTotal++;
+                if (isWork) {
+                    ftWork++;
+                }
+            }
+
             d.setDate(d.getDate() + 1);
             d.setHours(12, 0, 0, 0);
         }
 
-        return { total, work };
+        return { total, work, ftTotal, ftWork };
     }
 
-    function renderTimelineContainer(ranges, allPeople, overlapDays, optionIdx) {
+    function renderTimelineContainer(ranges, allPeople, overlapDays, optionIdx, halfTimePeople = new Set()) {
         const allDates = ranges.flatMap(r => [r.start, r.end]);
         const minDate = new Date(Math.min(...allDates));
         const maxDate = new Date(Math.max(...allDates));
@@ -888,7 +1014,7 @@ Julia 26.08. + 27.08.`,
             intervals.push(currentInterval);
         }
 
-        const { total, work } = overlapDays;
+        const { total, work, ftTotal, ftWork } = overlapDays;
 
         const wrapperEl = document.createElement("div");
         wrapperEl.className = "timeline-wrapper";
@@ -899,9 +1025,17 @@ Julia 26.08. + 27.08.`,
         const textSpan = document.createElement("span");
 
         if (!showNonWorkdays) {
-            textSpan.innerHTML = `Option ${optionIdx} has <span class="highlight">${work}</span> overlapping work day${work === 1 ? "" : "s"}`;
+            let info = `Option ${optionIdx} has <span class="highlight">${work}</span> overlapping work day${work === 1 ? "" : "s"}`;
+            if (halfTimePeople.size > 0) {
+                info += `, of which <span class="highlight">${ftWork}</span> day${ftWork === 1 ? "" : "s"} of FT people overlap`;
+            }
+            textSpan.innerHTML = info;
         } else {
-            textSpan.innerHTML = `Option ${optionIdx} has <span class="highlight">${total}</span> overlapping day${total === 1 ? "" : "s"}, of which <span class="highlight">${work}</span> ${work === 1 ? "is a" : "are"} work day${work === 1 ? "" : "s"}`;
+            let info = `Option ${optionIdx} has <span class="highlight">${total}</span> overlapping day${total === 1 ? "" : "s"}, of which <span class="highlight">${work}</span> ${work === 1 ? "is a" : "are"} work day${work === 1 ? "" : "s"}`;
+            if (halfTimePeople.size > 0) {
+                info += `, of which <span class="highlight">${ftTotal}</span> day${ftTotal === 1 ? "" : "s"} of FT people overlap`;
+            }
+            textSpan.innerHTML = info;
         }
 
         titleEl.appendChild(textSpan);
@@ -916,7 +1050,8 @@ Julia 26.08. + 27.08.`,
         copyBtn.textContent = "content_copy";
 
         copyBtn.addEventListener("click", async () => {
-            const textToCopy = getNormalizedRangesText(ranges);
+            const exportableRanges = getExportableRanges(ranges);
+            const textToCopy = getNormalizedRangesText(exportableRanges, halfTimePeople);
 
             try {
                 await one.copy(textToCopy, true);
@@ -933,9 +1068,10 @@ Julia 26.08. + 27.08.`,
         downloadBtn.textContent = "download";
 
         downloadBtn.addEventListener("click", () => {
-            const icsContent = generateICS(ranges);
+            const exportableRanges = getExportableRanges(ranges);
+            const icsContent = generateICS(exportableRanges, halfTimePeople);
             const todayStr = one.getTimestamp().split("_")[0];
-            const names = Array.from(new Set(ranges.map(r => r.name.toLowerCase())))
+            const names = Array.from(new Set(exportableRanges.map(r => r.name.toLowerCase())))
                 .map(n => n.replace(/[^a-z0-9]/g, ""))
                 .filter(Boolean);
             let baseName = `${todayStr}_${names.join("-")}`;
@@ -1026,7 +1162,7 @@ Julia 26.08. + 27.08.`,
                     const nameSpan = document.createElement("span");
                     nameSpan.className = "tube-name";
                     nameSpan.style.setProperty("--hue", hue);
-                    nameSpan.textContent = person;
+                    nameSpan.textContent = person + (halfTimePeople.has(person) ? " {h}" : "");
                     tubeEl.appendChild(nameSpan);
 
                     const arrow2 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -1078,6 +1214,7 @@ Julia 26.08. + 27.08.`,
         const lines = text.split("\n");
         const peopleOptions = [];
         const errors = [];
+        const halfTimePeople = new Set();
 
         lines.forEach((line, idx) => {
             const trimmed = line.trim();
@@ -1091,7 +1228,10 @@ Julia 26.08. + 27.08.`,
                 return;
             }
 
-            const { name, datesStr } = ext;
+            const { name, isHalf, datesStr } = ext;
+            if (isHalf) {
+                halfTimePeople.add(name);
+            }
             const options = expandOptions(datesStr);
 
             if (options.length === 0) {
@@ -1140,7 +1280,7 @@ Julia 26.08. + 27.08.`,
                     if (singleObj) {
                         startObj = singleObj;
                     } else {
-                        const tokens = part.split(RANGE_SPLIT_RE).map(s => s.trim()).filter(Boolean);
+                        const tokens = splitRange(part);
                         if (tokens.length === 0 || tokens.length > 2) {
                             errors.push(`Line ${lineIdx}: Invalid date range format ("${part}")`);
                             comboError = true;
@@ -1186,14 +1326,18 @@ Julia 26.08. + 27.08.`,
                 return;
             }
 
-            const overlapDays = countOverlapDays(ranges);
+            const overlapDays = countOverlapDays(ranges, halfTimePeople);
             combosWithRanges.push({ ranges, overlapDays });
         });
 
-        combosWithRanges.sort((a, b) => a.overlapDays.total - b.overlapDays.total);
+        if (halfTimePeople.size > 0) {
+            combosWithRanges.sort((a, b) => a.overlapDays.ftWork - b.overlapDays.ftWork || a.overlapDays.ftTotal - b.overlapDays.ftTotal || a.overlapDays.work - b.overlapDays.work || a.overlapDays.total - b.overlapDays.total);
+        } else {
+            combosWithRanges.sort((a, b) => a.overlapDays.work - b.overlapDays.work || a.overlapDays.total - b.overlapDays.total);
+        }
 
         combosWithRanges.forEach((item, idx) => {
-            renderTimelineContainer(item.ranges, allPeople, item.overlapDays, idx + 1);
+            renderTimelineContainer(item.ranges, allPeople, item.overlapDays, idx + 1, halfTimePeople);
         });
 
         if (errors.length > 0) {
@@ -1202,7 +1346,20 @@ Julia 26.08. + 27.08.`,
         }
     }
 
-    function loadPreset(presetText) {
+    async function loadPreset(presetText) {
+        const currentValue = dateInput.value.trim();
+        const matchesPreset = currentValue === "" ||
+            currentValue === PRESETS.complex.trim() ||
+            currentValue === PRESETS.permutations.trim() ||
+            currentValue === PRESETS.ft.trim();
+
+        if (!matchesPreset) {
+            const confirmLoad = await one.confirm("Are you sure you want to load this preset? Your current input will be overwritten.");
+            if (!confirmLoad) {
+                return;
+            }
+        }
+
         dateInput.value = presetText;
         localStorage.setItem("date_overlap_input", presetText);
         updateHashIfPresent();
@@ -1345,6 +1502,7 @@ Julia 26.08. + 27.08.`,
 
     document.getElementById("preset-complex").addEventListener("click", () => loadPreset(PRESETS.complex));
     document.getElementById("preset-permutations").addEventListener("click", () => loadPreset(PRESETS.permutations));
+    document.getElementById("preset-ft").addEventListener("click", () => loadPreset(PRESETS.ft));
 
     const savedHideGaps = localStorage.getItem("date_overlap_hide_gaps");
     if (savedHideGaps !== null) {
