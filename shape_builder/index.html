@@ -101,6 +101,22 @@
     </nav>
 </header>
 
+<main id="content">
+    <section class="editor-container">
+        <h3>Code</h3>
+        <textarea id="code-input" autocomplete="off" spellcheck="false"
+                  placeholder="Write shapebuilder JS code here..."></textarea>
+    </section>
+
+    <section class="output-container">
+        <h3>Output</h3>
+        <div id="shape-container"></div>
+        <pre id="error-container">
+<code id="error-output"></code>
+</pre>
+    </section>
+</main>
+
 <aside>
     <h2>Clickable Reference Guide</h2>
 
@@ -341,22 +357,6 @@
         </ul>
     </details>
 </aside>
-
-<main id="content">
-    <section class="editor-container">
-        <h3>Code</h3>
-        <textarea id="code-input" autocomplete="off" spellcheck="false"
-                  placeholder="Write shapebuilder JS code here..."></textarea>
-    </section>
-
-    <section class="output-container">
-        <h3>Output</h3>
-        <div id="shape-container"></div>
-        <pre id="error-container">
-<code id="error-output"></code>
-</pre>
-    </section>
-</main>
 
 <footer>
     Uses <a href="./paper.js" target="_blank">paper.js</a> (an thus straps.js and acorn.js), all of

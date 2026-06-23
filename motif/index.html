@@ -204,85 +204,6 @@
     </nav>
 </header>
 
-<aside>
-    <h2>Settings &amp; Compositions</h2>
-
-    <form id="settings-form" onsubmit="event.preventDefault();">
-        <fieldset>
-            <legend>Compositions</legend>
-            <select id="preset-select" name="preset-select" aria-label="Presets">
-                <option value="Default">Showcase (builtin)</option>
-            </select>
-            <div class="input-row">
-                <button type="button" class="btn-sym" id="add-preset-btn"
-                        data-tooltip="New Composition">
-                    add
-                </button>
-                <button type="button" class="btn-sym" id="paste-preset-btn"
-                        data-tooltip="Paste Composition">
-                    content_paste
-                </button>
-                <button type="button" class="btn-sym" id="edit-preset-btn"
-                        data-tooltip="Edit Composition Name" disabled>
-                    edit
-                </button>
-                <button type="button" class="btn-sym btn-danger" id="delete-preset-btn"
-                        data-tooltip="Delete Composition" disabled>delete
-                </button>
-                <button type="button" class="btn-sym" id="download-preset-btn"
-                        data-tooltip="Download Composition JS">download
-                </button>
-            </div>
-            <div class="mt-1">
-                <small id="preset-datetime-display" class="timestamp"></small>
-            </div>
-        </fieldset>
-
-        <fieldset>
-            <legend>Data</legend>
-            <div class="input-row">
-                <button type="button" id="export-btn">
-                    <span class="sym">save</span>
-                    Export
-                </button>
-                <button type="button" id="import-btn">
-                    <span class="sym">folder_open</span>
-                    Import
-                </button>
-            </div>
-            <input type="file" id="import-file" accept=".json" hidden aria-hidden="true">
-        </fieldset>
-
-        <fieldset>
-            <legend>Theme Color</legend>
-            <label for="color-selector">
-                Color Theme
-                <select id="color-selector">
-                    <option value="" selected>Default (Purple-Green)</option>
-                    <option value="blue">Blue</option>
-                    <option value="green">Green</option>
-                    <option value="olive">Olive</option>
-                    <option value="turquoise">Turquoise</option>
-                    <option value="teal">Teal</option>
-                    <option value="ocker">Ocker</option>
-                    <option value="orange">Orange</option>
-                    <option value="pink">Pink</option>
-                    <option value="purple">Purple</option>
-                    <option value="red">Red</option>
-                </select>
-            </label>
-        </fieldset>
-    </form>
-
-    <details open id="logs-details">
-        <summary>Engine Output & Console Logs</summary>
-        <div id="logs-panel">
-            <pre id="console-logs"><code class="log-info">[System] Ready. Press play_arrow to start playing!
-</code></pre>
-        </div>
-    </details>
-</aside>
-
 <main id="content">
     <div id="playback-hud" hidden>
         <div id="playback-stats">
@@ -559,6 +480,85 @@ Arrange([
         <!-- prettier-ignore-end -->
     </div>
 </main>
+
+<aside>
+    <h2>Settings &amp; Compositions</h2>
+
+    <form id="settings-form" onsubmit="event.preventDefault();">
+        <fieldset>
+            <legend>Compositions</legend>
+            <select id="preset-select" name="preset-select" aria-label="Presets">
+                <option value="Default">Showcase (builtin)</option>
+            </select>
+            <div class="input-row">
+                <button type="button" class="btn-sym" id="add-preset-btn"
+                        data-tooltip="New Composition">
+                    add
+                </button>
+                <button type="button" class="btn-sym" id="paste-preset-btn"
+                        data-tooltip="Paste Composition">
+                    content_paste
+                </button>
+                <button type="button" class="btn-sym" id="edit-preset-btn"
+                        data-tooltip="Edit Composition Name" disabled>
+                    edit
+                </button>
+                <button type="button" class="btn-sym btn-danger" id="delete-preset-btn"
+                        data-tooltip="Delete Composition" disabled>delete
+                </button>
+                <button type="button" class="btn-sym" id="download-preset-btn"
+                        data-tooltip="Download Composition JS">download
+                </button>
+            </div>
+            <div class="mt-1">
+                <small id="preset-datetime-display" class="timestamp"></small>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Data</legend>
+            <div class="input-row">
+                <button type="button" id="export-btn">
+                    <span class="sym">save</span>
+                    Export
+                </button>
+                <button type="button" id="import-btn">
+                    <span class="sym">folder_open</span>
+                    Import
+                </button>
+            </div>
+            <input type="file" id="import-file" accept=".json" hidden aria-hidden="true">
+        </fieldset>
+
+        <fieldset>
+            <legend>Theme Color</legend>
+            <label for="color-selector">
+                Color Theme
+                <select id="color-selector">
+                    <option value="" selected>Default (Purple-Green)</option>
+                    <option value="blue">Blue</option>
+                    <option value="green">Green</option>
+                    <option value="olive">Olive</option>
+                    <option value="turquoise">Turquoise</option>
+                    <option value="teal">Teal</option>
+                    <option value="ocker">Ocker</option>
+                    <option value="orange">Orange</option>
+                    <option value="pink">Pink</option>
+                    <option value="purple">Purple</option>
+                    <option value="red">Red</option>
+                </select>
+            </label>
+        </fieldset>
+    </form>
+
+    <details open id="logs-details">
+        <summary>Engine Output & Console Logs</summary>
+        <div id="logs-panel">
+            <pre id="console-logs"><code class="log-info">[System] Ready. Press play_arrow to start playing!
+</code></pre>
+        </div>
+    </details>
+</aside>
 
 <script src="../one.js"></script>
 <script type="module">
