@@ -601,7 +601,7 @@ Julia 26.08. + 27.08.`,
             "BEGIN:VCALENDAR",
             "VERSION:2.0",
             "PRODID:-//Date Overlap Visualizer//EN",
-            "CALSCALE:GREGORIAN"
+            "CALSCALE:GREGORIAN",
         ];
 
         for (const r of ranges) {
@@ -681,7 +681,7 @@ Julia 26.08. + 27.08.`,
             we: 3, wed: 3, mi: 3,
             th: 4, thu: 4, do: 4,
             fr: 5, fri: 5,
-            sa: 6, sat: 6
+            sa: 6, sat: 6,
         };
 
         const parts = inputStr.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -1197,28 +1197,46 @@ Julia 26.08. + 27.08.`,
     function loadPreset(presetText) {
         dateInput.value = presetText;
         localStorage.setItem("date_overlap_input", presetText);
-        if (location.hash) {
-            history.replaceState(null, "", location.href.split("#")[0]);
-        }
+        updateHashIfPresent();
         updateVisualization();
     }
 
     dateInput.addEventListener("input", () => {
         localStorage.setItem("date_overlap_input", dateInput.value);
-        if (location.hash) {
-            history.replaceState(null, "", location.href.split("#")[0]);
-        }
+        updateHashIfPresent();
         updateVisualization();
     });
 
     btnClear.addEventListener("click", () => {
         dateInput.value = "";
         localStorage.removeItem("date_overlap_input");
-        if (location.hash) {
-            history.replaceState(null, "", location.href.split("#")[0]);
-        }
+        history.replaceState(null, "", location.href.split("#")[0]);
         updateVisualization();
     });
+
+    let isInitialized = false;
+
+    function updateHashIfPresent() {
+        if (!location.hash || !isInitialized) {
+            return;
+        }
+        const state = {
+            input: dateInput.value,
+            hideGaps: hideGapsCheckbox.checked,
+            preRemove: preRemoveCheckbox.checked,
+            workdays: workdaysInput.value,
+            holidays: holidaysInput.value,
+            dateFormat: dateFormatSelect.value,
+        };
+        const json = JSON.stringify(state);
+        try {
+            const b64 = btoa(unescape(encodeURIComponent(json)));
+            const url = location.href.split("#")[0] + "#" + b64;
+            history.replaceState(null, "", url);
+        } catch (e) {
+            console.error(e);
+        }
+    }
 
     function loadFromHash() {
         if (!location.hash) {
@@ -1274,38 +1292,31 @@ Julia 26.08. + 27.08.`,
 
     hideGapsCheckbox.addEventListener("change", () => {
         localStorage.setItem("date_overlap_hide_gaps", hideGapsCheckbox.checked);
+        updateHashIfPresent();
         updateVisualization();
     });
 
     preRemoveCheckbox.addEventListener("change", () => {
         localStorage.setItem("date_overlap_pre_remove", preRemoveCheckbox.checked);
-        if (location.hash) {
-            history.replaceState(null, "", location.href.split("#")[0]);
-        }
+        updateHashIfPresent();
         updateVisualization();
     });
 
     workdaysInput.addEventListener("input", () => {
         localStorage.setItem("date_overlap_workdays", workdaysInput.value);
-        if (location.hash) {
-            history.replaceState(null, "", location.href.split("#")[0]);
-        }
+        updateHashIfPresent();
         updateVisualization();
     });
 
     holidaysInput.addEventListener("input", () => {
         localStorage.setItem("date_overlap_holidays", holidaysInput.value);
-        if (location.hash) {
-            history.replaceState(null, "", location.href.split("#")[0]);
-        }
+        updateHashIfPresent();
         updateVisualization();
     });
 
     dateFormatSelect.addEventListener("change", () => {
         localStorage.setItem("date_overlap_date_format", dateFormatSelect.value);
-        if (location.hash) {
-            history.replaceState(null, "", location.href.split("#")[0]);
-        }
+        updateHashIfPresent();
     });
 
     document.getElementById("preset-complex").addEventListener("click", () => loadPreset(PRESETS.complex));
@@ -1355,6 +1366,8 @@ Julia 26.08. + 27.08.`,
     } else {
         updateVisualization();
     }
+
+    isInitialized = true;
 </script>
 </body>
 
