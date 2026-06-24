@@ -379,6 +379,15 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
         const cleaned = line.replace(LINE_CLEAN_RE, " ").trim();
         const m = cleaned.match(EXTRACT_RE);
         if (!m) {
+            const isHalf = /\{h(alf)?\}/i.test(cleaned);
+            const name = cleaned.replace(/\s*\{h(alf)?\}\s*/i, "").trim().replace(/\s*[-–—:]+$/, "");
+            if (name.length > 0 && !/^\d/.test(name)) {
+                return {
+                    name,
+                    isHalf,
+                    datesStr: "",
+                };
+            }
             return null;
         }
 
@@ -591,38 +600,42 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
         return `${year}-${month}-${day}`;
     }
 
-    function getNormalizedRangesText(ranges, halfTimePeople = new Set()) {
+    function getNormalizedRangesText(ranges, halfTimePeople = new Set(), allPeople = []) {
         const format = dateFormatSelect.value;
         const grouped = {};
-        const names = [];
+
+        for (const name of allPeople) {
+            grouped[name] = [];
+        }
 
         for (const r of ranges) {
             if (!grouped[r.name]) {
                 grouped[r.name] = [];
-                names.push(r.name);
             }
-
             grouped[r.name].push(r);
         }
 
         const lines = [];
 
-        for (const name of names) {
+        for (const name of allPeople) {
             const personRanges = grouped[name];
-            const rangeStrings = personRanges.map(r => {
-                const startStr = formatDateForCopy(r.start, format);
-
-                if (r.start.getTime() === r.end.getTime()) {
-                    return startStr;
-                }
-
-                const endStr = formatDateForCopy(r.end, format);
-
-                return `${startStr} - ${endStr}`;
-            });
-
             const displayName = name + (halfTimePeople.has(name) ? " {h}" : "");
-            lines.push(`${displayName}: ${rangeStrings.join(", ")}`);
+            if (personRanges.length === 0) {
+                lines.push(displayName);
+            } else {
+                const rangeStrings = personRanges.map(r => {
+                    const startStr = formatDateForCopy(r.start, format);
+
+                    if (r.start.getTime() === r.end.getTime()) {
+                        return startStr;
+                    }
+
+                    const endStr = formatDateForCopy(r.end, format);
+
+                    return `${startStr} - ${endStr}`;
+                });
+                lines.push(`${displayName}: ${rangeStrings.join(", ")}`);
+            }
         }
 
         return lines.join("\n");
@@ -881,7 +894,7 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
 
     function countOverlapDays(ranges, halfTimePeople = new Set()) {
         if (ranges.length === 0) {
-            return { total: 0, work: 0, ftTotal: 0, ftWork: 0 };
+            return { total: 0, work: 0, ftTotal: 0, ftWork: 0, ftTotalCounts: {}, ftWorkCounts: {}, risk: 0 };
         }
 
         const allDates = ranges.flatMap(r => [r.start, r.end]);
@@ -895,6 +908,10 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
         let work = 0;
         let ftTotal = 0;
         let ftWork = 0;
+        const ftTotalCounts = {};
+        const ftWorkCounts = {};
+        let riskSum = 0;
+        let dayCount = 0;
         const d = new Date(minDate);
 
         const workdaysSet = parseWorkdays(workdaysInput.value);
@@ -935,11 +952,39 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
                 }
             }
 
+            if (activeFtCount > 0) {
+                ftTotalCounts[activeFtCount] = (ftTotalCounts[activeFtCount] || 0) + 1;
+                if (isWork) {
+                    ftWorkCounts[activeFtCount] = (ftWorkCounts[activeFtCount] || 0) + 1;
+                }
+            }
+
+            const staffOnDay = activeFtCount + 0.5 * (activeCount - activeFtCount);
+            riskSum += Math.pow(2, -staffOnDay);
+            dayCount++;
+
             d.setDate(d.getDate() + 1);
             d.setHours(12, 0, 0, 0);
         }
 
-        return { total, work, ftTotal, ftWork };
+        const risk = dayCount > 0 ? riskSum / dayCount : 0;
+
+        return { total, work, ftTotal, ftWork, ftTotalCounts, ftWorkCounts, risk };
+    }
+
+    function formatFtBreakdown(counts) {
+        if (!counts) {
+            return "";
+        }
+        const keys = Object.keys(counts).map(Number).sort((a, b) => a - b);
+        if (keys.length === 0) {
+            return "";
+        }
+        const parts = keys.map(n => {
+            const days = counts[n];
+            return `${days} day${days === 1 ? "" : "s"} ${n} FT`;
+        });
+        return parts.join(", ");
     }
 
     function renderTimelineContainer(ranges, allPeople, overlapDays, optionIdx, halfTimePeople = new Set()) {
@@ -1028,12 +1073,20 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
             let info = `Option ${optionIdx} has <span class="highlight">${work}</span> overlapping work day${work === 1 ? "" : "s"}`;
             if (halfTimePeople.size > 0) {
                 info += `, of which <span class="highlight">${ftWork}</span> day${ftWork === 1 ? "" : "s"} of FT people overlap`;
+                const breakdown = formatFtBreakdown(overlapDays.ftWorkCounts);
+                if (breakdown) {
+                    info += ` (${breakdown})`;
+                }
             }
             textSpan.innerHTML = info;
         } else {
             let info = `Option ${optionIdx} has <span class="highlight">${total}</span> overlapping day${total === 1 ? "" : "s"}, of which <span class="highlight">${work}</span> ${work === 1 ? "is a" : "are"} work day${work === 1 ? "" : "s"}`;
             if (halfTimePeople.size > 0) {
                 info += `, of which <span class="highlight">${ftTotal}</span> day${ftTotal === 1 ? "" : "s"} of FT people overlap`;
+                const breakdown = formatFtBreakdown(overlapDays.ftTotalCounts);
+                if (breakdown) {
+                    info += ` (${breakdown})`;
+                }
             }
             textSpan.innerHTML = info;
         }
@@ -1051,7 +1104,7 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
 
         copyBtn.addEventListener("click", async () => {
             const exportableRanges = getExportableRanges(ranges);
-            const textToCopy = getNormalizedRangesText(exportableRanges, halfTimePeople);
+            const textToCopy = getNormalizedRangesText(exportableRanges, halfTimePeople, allPeople);
 
             try {
                 await one.copy(textToCopy, true);
@@ -1232,12 +1285,7 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
             if (isHalf) {
                 halfTimePeople.add(name);
             }
-            const options = expandOptions(datesStr);
-
-            if (options.length === 0) {
-                errors.push(`Line ${idx + 1}: No valid dates found`);
-                return;
-            }
+            const options = datesStr ? expandOptions(datesStr) : [""];
 
             peopleOptions.push({ name, options, lineIdx: idx + 1 });
         });
@@ -1330,15 +1378,23 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
             combosWithRanges.push({ ranges, overlapDays });
         });
 
-        if (halfTimePeople.size > 0) {
-            combosWithRanges.sort((a, b) => a.overlapDays.ftWork - b.overlapDays.ftWork || a.overlapDays.ftTotal - b.overlapDays.ftTotal || a.overlapDays.work - b.overlapDays.work || a.overlapDays.total - b.overlapDays.total);
-        } else {
-            combosWithRanges.sort((a, b) => a.overlapDays.work - b.overlapDays.work || a.overlapDays.total - b.overlapDays.total);
-        }
+        combosWithRanges.sort((a, b) => {
+            return a.overlapDays.risk - b.overlapDays.risk ||
+                   a.overlapDays.work - b.overlapDays.work ||
+                   a.overlapDays.total - b.overlapDays.total;
+        });
 
         combosWithRanges.forEach((item, idx) => {
             renderTimelineContainer(item.ranges, allPeople, item.overlapDays, idx + 1, halfTimePeople);
         });
+
+        if (combosWithRanges.length === 0) {
+            const placeholder = document.createElement("div");
+            placeholder.id = "visualization";
+            placeholder.className = "timeline-container";
+            placeholder.innerHTML = "<p class='text-muted'>No valid date ranges to visualize.</p>";
+            errorAlert.before(placeholder);
+        }
 
         if (errors.length > 0) {
             errorAlert.innerHTML = Array.from(new Set(errors)).join("<br>");
