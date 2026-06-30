@@ -83,6 +83,15 @@
             transition: all 0.2s ease;
         }
 
+        .tube:not(.empty-gap) {
+            cursor: pointer;
+        }
+
+        .tube:not(.empty-gap):hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            filter: brightness(0.95);
+        }
+
         .empty-gap {
             background: transparent;
             border: 1px dashed var(--outline);
@@ -206,6 +215,15 @@
         .tube:not(.empty-gap) .arrow-2 path {
             fill: var(--bg-name);
         }
+
+        .syntax-ref {
+            display: block;
+            margin-top: 4px;
+            margin-bottom: var(--spacing-md);
+            font-size: 0.75rem;
+            color: var(--on-surface-variant);
+            line-height: 1.4;
+        }
     </style>
 </head>
 
@@ -241,7 +259,7 @@
         <fieldset>
             <legend>Enter Ranges</legend>
             <label for="date-input">
-                Ranges (Format: Name Start - End)
+                Ranges
                 <!-- prettier-ignore-start -->
                 <!-- beautify ignore:start -->
                 <textarea id="date-input" rows="8"
@@ -249,19 +267,34 @@
                 <!-- beautify ignore:end -->
                 <!-- prettier-ignore-end -->
             </label>
+            Format:
+            <div class="syntax-ref">
+                • <code>Name: Start - End</code> (range; end inclusive)<br>
+                • <code>Name: Date</code> (single day)<br>
+                • <code>Name1, Name2: ...</code> (multi-name)<br>
+                • <code>... + ...</code> (multi-range)<br>
+                • <code>... OR ...</code> (alternatives)<br>
+                • <code>Name {h}</code> (half-time modifier)
+            </div>
+            <small>Supports various date formats (auto-detect).</small>
         </fieldset>
 
         <fieldset>
             <legend>Presets</legend>
             <div class="group">
-                <button type="button" id="preset-complex">Complex</button>
+                <button type="button" id="preset-basic">Basic</button>
                 <button type="button" id="preset-permutations">Permutations</button>
                 <button type="button" id="preset-ft">FT &amp; Half</button>
+                <button type="button" id="preset-multi">Multi-Name</button>
             </div>
         </fieldset>
 
         <fieldset>
             <legend>Settings</legend>
+            <label for="only-show-overlaps">
+                Only show overlaps
+                <input type="checkbox" id="only-show-overlaps" role="switch" checked>
+            </label>
             <label for="hide-gaps">
                 Hide gap tubes
                 <input type="checkbox" id="hide-gaps" role="switch" checked>
@@ -275,12 +308,16 @@
                 <input type="checkbox" id="merge-non-workdays" role="switch">
             </label>
             <label for="date-format-select">
-                Date format for copy
+                Date format
                 <select id="date-format-select">
                     <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
                     <option value="DD.MM.YYYY">DD.MM.YYYY (European)</option>
                     <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
                 </select>
+            </label>
+            <label for="drop-current-year">
+                Drop current year
+                <input type="checkbox" id="drop-current-year" role="switch" checked>
             </label>
             <label for="workdays-input">
                 Workdays
@@ -300,10 +337,12 @@
     const errorAlert = document.getElementById("error-alert");
     const btnClear = document.getElementById("btn-clear");
     const btnCopyShare = document.getElementById("btn-copy-share");
+    const onlyShowOverlapsCheckbox = document.getElementById("only-show-overlaps");
     const hideGapsCheckbox = document.getElementById("hide-gaps");
     const showNonWorkdaysCheckbox = document.getElementById("show-non-workdays");
     const mergeNonWorkdaysCheckbox = document.getElementById("merge-non-workdays");
     const dateFormatSelect = document.getElementById("date-format-select");
+    const dropCurrentYearCheckbox = document.getElementById("drop-current-year");
     const workdaysInput = document.getElementById("workdays-input");
     const holidaysInput = document.getElementById("holidays-input");
 
@@ -347,7 +386,7 @@
     const nextYearTwoDigits = String(currentYear + 1).slice(-2);
 
     const PRESETS = {
-        complex: "Max 2.5 - 10.6\nJulia 7.6 - 16.06\nAlex 9.6 - 22.06\nSarah 15.06 - 30.06",
+        basic: "Max 2.5 - 10.6\nJulia 7.6 - 16.06\nAlex 9.6 - 22.06\nSarah 15.06 - 30.06",
         // intentionally full of whitespace, irregularities and different formats
         permutations: `Max -  10-21 August
 Maria (3.4. + 6.6 - 10.6) OR (4.4 + 17.7. - 27.7)
@@ -362,6 +401,9 @@ Julia 26.08. + 27.08.`,
         ft: `Max (3.6 - 8.6) OR (3.6 - 15.6)
 Julia 5.6 - 12.6
 Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
+        multi: `Jan, Tom: 3.6 - 8.6
+Jan {h}, Susie: 15.6 - 22.6
+Susie, Alex, Tom {h}: 25.6 - 30.6`,
     };
 
     const MONTH_NAMES = {
@@ -375,31 +417,55 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
         juli: 7, oktober: 10, okt: 10, november: 11, dezember: 12, dez: 12,
     };
 
+    function parseNames(namePart) {
+        const nameParts = namePart.split(",").map(s => s.trim()).filter(Boolean);
+
+        return nameParts.map(part => {
+            const isHalf = /\{h(alf)?\}/i.test(part);
+            const cleanName = part.replace(/\s*\{h(alf)?\}\s*/i, "").trim();
+            const name = isHalf ? `${cleanName} {h}` : cleanName;
+
+            return { name, isHalf };
+        });
+    }
+
+    function parseNamesOnly(cleaned) {
+        const names = parseNames(cleaned);
+
+        if (names.length > 0) {
+            return {
+                names,
+                datesStr: "",
+            };
+        }
+
+        return null;
+    }
+
     function extractNameAndDates(line) {
         const cleaned = line.replace(LINE_CLEAN_RE, " ").trim();
         const m = cleaned.match(EXTRACT_RE);
-        if (!m) {
-            const isHalf = /\{h(alf)?\}/i.test(cleaned);
-            const name = cleaned.replace(/\s*\{h(alf)?\}\s*/i, "").trim().replace(/\s*[-–—:]+$/, "");
-            if (name.length > 0 && !/^\d/.test(name)) {
-                return {
-                    name,
-                    isHalf,
-                    datesStr: "",
-                };
+
+        if (m) {
+            const separatorPart = cleaned.slice(m[1].length, cleaned.length - m[2].length);
+            const separatorPresent = /[-–—:]/.test(separatorPart);
+            const datesStr = m[2].trim();
+            const hasDigits = /\d/.test(datesStr);
+
+            if (!separatorPresent && !hasDigits) {
+                return parseNamesOnly(cleaned);
             }
-            return null;
+
+            const namePart = m[1].trim().replace(/\s*[-–—:]+$/, "");
+            const names = parseNames(namePart);
+
+            return {
+                names,
+                datesStr,
+            };
         }
 
-        const namePart = m[1].trim().replace(/\s*[-–—:]+$/, "");
-        const isHalf = /\{h(alf)?\}/i.test(namePart);
-        const name = namePart.replace(/\s*\{h(alf)?\}\s*/i, "").trim();
-
-        return {
-            name,
-            isHalf,
-            datesStr: m[2].trim(),
-        };
+        return parseNamesOnly(cleaned);
     }
 
     function expandOptions(datesStr) {
@@ -573,21 +639,28 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
     }
 
     function formatDate(d) {
-        const currentYear = new Date().getFullYear();
-        const day = String(d.getDate()).padStart(2, "0");
-        const month = String(d.getMonth() + 1).padStart(2, "0");
-
-        if (d.getFullYear() !== currentYear) {
-            return `${day}.${month}.${d.getFullYear()}`;
-        }
-
-        return `${day}.${month}`;
+        const format = dateFormatSelect.value;
+        const dropCurrentYear = dropCurrentYearCheckbox.checked;
+        return formatDateForCopy(d, format, dropCurrentYear);
     }
 
-    function formatDateForCopy(d, format) {
+    function formatDateForCopy(d, format, dropCurrentYear = false) {
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, "0");
         const day = String(d.getDate()).padStart(2, "0");
+        const currentYear = new Date().getFullYear();
+
+        if (dropCurrentYear && year === currentYear) {
+            if (format === "DD.MM.YYYY") {
+                return `${day}.${month}`;
+            }
+
+            if (format === "MM/DD/YYYY") {
+                return `${month}/${day}`;
+            }
+
+            return `${month}-${day}`;
+        }
 
         if (format === "DD.MM.YYYY") {
             return `${day}.${month}.${year}`;
@@ -602,6 +675,7 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
 
     function getNormalizedRangesText(ranges, halfTimePeople = new Set(), allPeople = []) {
         const format = dateFormatSelect.value;
+        const dropCurrentYear = dropCurrentYearCheckbox.checked;
         const grouped = {};
 
         for (const name of allPeople) {
@@ -619,18 +693,18 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
 
         for (const name of allPeople) {
             const personRanges = grouped[name];
-            const displayName = name + (halfTimePeople.has(name) ? " {h}" : "");
+            const displayName = name.endsWith(" {h}") ? name : name + (halfTimePeople.has(name) ? " {h}" : "");
             if (personRanges.length === 0) {
                 lines.push(displayName);
             } else {
                 const rangeStrings = personRanges.map(r => {
-                    const startStr = formatDateForCopy(r.start, format);
+                    const startStr = formatDateForCopy(r.start, format, dropCurrentYear);
 
                     if (r.start.getTime() === r.end.getTime()) {
                         return startStr;
                     }
 
-                    const endStr = formatDateForCopy(r.end, format);
+                    const endStr = formatDateForCopy(r.end, format, dropCurrentYear);
 
                     return `${startStr} - ${endStr}`;
                 });
@@ -663,7 +737,7 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
             nextDay.setDate(nextDay.getDate() + 1);
             const endStr = formatICSDate(nextDay);
             const uid = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}@date-overlap`;
-            const summaryName = r.name + (halfTimePeople.has(r.name) ? " {h}" : "");
+            const summaryName = r.name.endsWith(" {h}") ? r.name : r.name + (halfTimePeople.has(r.name) ? " {h}" : "");
 
             lines.push("BEGIN:VEVENT");
             lines.push(`SUMMARY:${summaryName}`);
@@ -1009,6 +1083,7 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
         const workdaysSet = parseWorkdays(workdaysInput.value);
         const holidayRanges = parseHolidays(holidaysInput.value);
         const showNonWorkdays = showNonWorkdaysCheckbox.checked;
+        const mergeNonWorkdays = mergeNonWorkdaysCheckbox.checked;
 
         while (d <= maxDate) {
             const isWork = isWorkday(d, workdaysSet, holidayRanges);
@@ -1029,7 +1104,6 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
             active.sort();
             const activeKey = active.join(" + ");
 
-            const mergeNonWorkdays = mergeNonWorkdaysCheckbox.checked;
             const isConsecutive = currentInterval !== null && Math.round((d.getTime() - currentInterval.end.getTime()) / 86400000) === 1;
 
             if (currentInterval === null) {
@@ -1145,8 +1219,12 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
         containerEl.className = "timeline-container";
 
         const hideGaps = hideGapsCheckbox.checked;
+        const onlyShowOverlaps = onlyShowOverlapsCheckbox.checked;
 
         intervals.forEach((interval, idx) => {
+            if (onlyShowOverlaps && interval.people.length < 2) {
+                return;
+            }
             if (!interval.key && hideGaps) {
                 return;
             }
@@ -1169,8 +1247,31 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
                 }
             }
 
-            tubeEl.setAttribute("data-tooltip", `Total: ${stats.total} day${stats.total === 1 ? "" : "s"}, Work: ${stats.work} day${stats.work === 1 ? "" : "s"}`);
+            const tooltipText = (!showNonWorkdays && !mergeNonWorkdays)
+                ? `Work: ${stats.work} day${stats.work === 1 ? "" : "s"}`
+                : `Total: ${stats.total} day${stats.total === 1 ? "" : "s"}, Work: ${stats.work} day${stats.work === 1 ? "" : "s"}`;
+            tubeEl.setAttribute("data-tooltip", tooltipText);
             tubeEl.className = classes;
+
+            if (interval.key) {
+                tubeEl.addEventListener("click", async () => {
+                    const format = dateFormatSelect.value;
+                    const dropCurrentYear = dropCurrentYearCheckbox.checked;
+                    const startStr = formatDateForCopy(interval.start, format, dropCurrentYear);
+                    const endStr = formatDateForCopy(interval.end, format, dropCurrentYear);
+                    const dateRangeStr = interval.start.getTime() === interval.end.getTime()
+                        ? startStr
+                        : `${startStr} - ${endStr}`;
+                    const textToCopy = `${interval.people.join(", ")}: ${dateRangeStr}`;
+
+                    try {
+                        await one.copy(textToCopy, true);
+                        one.alert(`Copied: ${textToCopy}`);
+                    } catch (err) {
+                        console.error("Failed to copy tube info: ", err);
+                    }
+                });
+            }
 
             if (!interval.key) {
                 const startSpan = document.createElement("span");
@@ -1215,7 +1316,7 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
                     const nameSpan = document.createElement("span");
                     nameSpan.className = "tube-name";
                     nameSpan.style.setProperty("--hue", hue);
-                    nameSpan.textContent = person + (halfTimePeople.has(person) ? " {h}" : "");
+                    nameSpan.textContent = person.endsWith(" {h}") ? person : person + (halfTimePeople.has(person) ? " {h}" : "");
                     tubeEl.appendChild(nameSpan);
 
                     const arrow2 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -1281,13 +1382,15 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
                 return;
             }
 
-            const { name, isHalf, datesStr } = ext;
-            if (isHalf) {
-                halfTimePeople.add(name);
-            }
+            const { names, datesStr } = ext;
             const options = datesStr ? expandOptions(datesStr) : [""];
 
-            peopleOptions.push({ name, options, lineIdx: idx + 1 });
+            names.forEach(({ name, isHalf }) => {
+                if (isHalf) {
+                    halfTimePeople.add(name);
+                }
+                peopleOptions.push({ name, options, lineIdx: idx + 1 });
+            });
         });
 
         if (errors.length > 0) {
@@ -1405,9 +1508,10 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
     async function loadPreset(presetText) {
         const currentValue = dateInput.value.trim();
         const matchesPreset = currentValue === "" ||
-            currentValue === PRESETS.complex.trim() ||
+            currentValue === PRESETS.basic.trim() ||
             currentValue === PRESETS.permutations.trim() ||
-            currentValue === PRESETS.ft.trim();
+            currentValue === PRESETS.ft.trim() ||
+            currentValue === PRESETS.multi.trim();
 
         if (!matchesPreset) {
             const confirmLoad = await one.confirm("Are you sure you want to load this preset? Your current input will be overwritten.");
@@ -1443,12 +1547,14 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
         }
         const state = {
             input: dateInput.value,
+            onlyShowOverlaps: onlyShowOverlapsCheckbox.checked,
             hideGaps: hideGapsCheckbox.checked,
             showNonWorkdays: showNonWorkdaysCheckbox.checked,
             mergeNonWorkdays: mergeNonWorkdaysCheckbox.checked,
             workdays: workdaysInput.value,
             holidays: holidaysInput.value,
             dateFormat: dateFormatSelect.value,
+            dropCurrentYear: dropCurrentYearCheckbox.checked,
         };
         const json = JSON.stringify(state);
         try {
@@ -1469,6 +1575,9 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
             const parsed = JSON.parse(json);
             if (parsed.input !== undefined) {
                 dateInput.value = parsed.input;
+                if (parsed.onlyShowOverlaps !== undefined) {
+                    onlyShowOverlapsCheckbox.checked = parsed.onlyShowOverlaps;
+                }
                 if (parsed.hideGaps !== undefined) {
                     hideGapsCheckbox.checked = parsed.hideGaps;
                 }
@@ -1487,6 +1596,9 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
                 if (parsed.dateFormat !== undefined) {
                     dateFormatSelect.value = parsed.dateFormat;
                 }
+                if (parsed.dropCurrentYear !== undefined) {
+                    dropCurrentYearCheckbox.checked = parsed.dropCurrentYear;
+                }
                 updateToggleStates();
                 return true;
             }
@@ -1499,11 +1611,14 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
     btnCopyShare.addEventListener("click", async () => {
         const state = {
             input: dateInput.value,
+            onlyShowOverlaps: onlyShowOverlapsCheckbox.checked,
             hideGaps: hideGapsCheckbox.checked,
             showNonWorkdays: showNonWorkdaysCheckbox.checked,
+            mergeNonWorkdays: mergeNonWorkdaysCheckbox.checked,
             workdays: workdaysInput.value,
             holidays: holidaysInput.value,
             dateFormat: dateFormatSelect.value,
+            dropCurrentYear: dropCurrentYearCheckbox.checked,
         };
         const json = JSON.stringify(state);
         try {
@@ -1516,6 +1631,13 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
         }
     });
 
+    onlyShowOverlapsCheckbox.addEventListener("change", () => {
+        localStorage.setItem("date_overlap_only_show_overlaps", onlyShowOverlapsCheckbox.checked);
+        updateToggleStates();
+        updateHashIfPresent();
+        updateVisualization();
+    });
+
     hideGapsCheckbox.addEventListener("change", () => {
         localStorage.setItem("date_overlap_hide_gaps", hideGapsCheckbox.checked);
         updateHashIfPresent();
@@ -1524,6 +1646,7 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
 
     function updateToggleStates() {
         mergeNonWorkdaysCheckbox.disabled = showNonWorkdaysCheckbox.checked;
+        hideGapsCheckbox.disabled = onlyShowOverlapsCheckbox.checked;
     }
 
     showNonWorkdaysCheckbox.addEventListener("change", () => {
@@ -1554,11 +1677,24 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
     dateFormatSelect.addEventListener("change", () => {
         localStorage.setItem("date_overlap_date_format", dateFormatSelect.value);
         updateHashIfPresent();
+        updateVisualization();
     });
 
-    document.getElementById("preset-complex").addEventListener("click", () => loadPreset(PRESETS.complex));
+    dropCurrentYearCheckbox.addEventListener("change", () => {
+        localStorage.setItem("date_overlap_drop_current_year", dropCurrentYearCheckbox.checked);
+        updateHashIfPresent();
+        updateVisualization();
+    });
+
+    document.getElementById("preset-basic").addEventListener("click", () => loadPreset(PRESETS.basic));
     document.getElementById("preset-permutations").addEventListener("click", () => loadPreset(PRESETS.permutations));
     document.getElementById("preset-ft").addEventListener("click", () => loadPreset(PRESETS.ft));
+    document.getElementById("preset-multi").addEventListener("click", () => loadPreset(PRESETS.multi));
+
+    const savedOnlyShowOverlaps = localStorage.getItem("date_overlap_only_show_overlaps");
+    if (savedOnlyShowOverlaps !== null) {
+        onlyShowOverlapsCheckbox.checked = savedOnlyShowOverlaps === "true";
+    }
 
     const savedHideGaps = localStorage.getItem("date_overlap_hide_gaps");
     if (savedHideGaps !== null) {
@@ -1595,7 +1731,17 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
     if (savedDateFormat !== null) {
         dateFormatSelect.value = savedDateFormat;
     } else {
-        dateFormatSelect.value = "YYYY-MM-DD";
+        const isGerman = navigator.languages
+            ? navigator.languages.some(lang => lang.toLowerCase().startsWith("de"))
+            : (navigator.language && navigator.language.toLowerCase().startsWith("de"));
+        dateFormatSelect.value = isGerman ? "DD.MM.YYYY" : "YYYY-MM-DD";
+    }
+
+    const savedDropCurrentYear = localStorage.getItem("date_overlap_drop_current_year");
+    if (savedDropCurrentYear !== null) {
+        dropCurrentYearCheckbox.checked = savedDropCurrentYear === "true";
+    } else {
+        dropCurrentYearCheckbox.checked = true;
     }
 
     const loadedFromHash = loadFromHash();
@@ -1606,7 +1752,7 @@ Alex {h} 1.6 - 5.6 + 12.6 - 20.6`,
             dateInput.value = savedInput;
             updateVisualization();
         } else {
-            loadPreset(PRESETS.complex);
+            loadPreset(PRESETS.basic);
         }
     } else {
         updateVisualization();

@@ -59,6 +59,13 @@
             margin-left: var(--spacing-lg);
             margin-bottom: var(--spacing-md);
         }
+
+        :root.theme-compact {
+            --spacing-sm: 4px;
+            --spacing-md: 8px;
+            --spacing-lg: 16px;
+            --radius: 8px;
+        }
     </style>
 </head>
 
@@ -88,6 +95,31 @@
             </li>
         </ul>
     </nav>
+
+    <div class="dropdown">
+        <button id="more-menu-btn" class="dropdown-trigger" aria-label="More options" aria-haspopup="true" aria-expanded="false">
+            <span class="sym">more_vert</span>
+        </button>
+        <div class="dropdown-menu" role="menu" aria-labelledby="more-menu-btn">
+            <button class="dropdown-item checked" role="menuitemcheckbox" aria-checked="true" id="opt-cloud-sync">
+                <span class="sym check-icon">check</span>
+                Cloud Sync
+            </button>
+            <button class="dropdown-item" role="menuitemcheckbox" aria-checked="false" id="opt-compact">
+                <span class="sym check-icon">check</span>
+                Compact View
+            </button>
+            <div class="dropdown-divider"></div>
+            <a href="#about" class="dropdown-item" role="menuitem">
+                <span class="sym">info</span>
+                About
+            </a>
+            <a href="#controls" class="dropdown-item" role="menuitem">
+                <span class="sym">settings</span>
+                Controls
+            </a>
+        </div>
+    </div>
 </header>
 
 <main id="content">
@@ -652,6 +684,59 @@ Done!
         if (color) {
             document.documentElement.classList.add("theme-" + color);
         }
+    });
+
+    // --- Dropdown Menu Logic ---
+    const dropdown = document.querySelector(".dropdown");
+    const dropdownBtn = document.getElementById("more-menu-btn");
+    const optCloudSync = document.getElementById("opt-cloud-sync");
+    const optCompact = document.getElementById("opt-compact");
+    const cloudSyncInput = document.querySelector('input[name="cloud-sync"]');
+
+    dropdownBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = dropdown.classList.toggle("open");
+        dropdownBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    });
+
+    document.addEventListener("click", (e) => {
+        if (!dropdown.contains(e.target)) {
+            dropdown.classList.remove("open");
+            dropdownBtn.setAttribute("aria-expanded", "false");
+        }
+    });
+
+    optCloudSync.addEventListener("click", () => {
+        const isChecked = optCloudSync.getAttribute("aria-checked") === "true";
+        const newChecked = !isChecked;
+        optCloudSync.setAttribute("aria-checked", newChecked ? "true" : "false");
+        optCloudSync.classList.toggle("checked", newChecked);
+
+        if (cloudSyncInput) {
+            cloudSyncInput.checked = newChecked;
+        }
+    });
+
+    if (cloudSyncInput) {
+        cloudSyncInput.addEventListener("change", () => {
+            optCloudSync.setAttribute("aria-checked", cloudSyncInput.checked ? "true" : "false");
+            optCloudSync.classList.toggle("checked", cloudSyncInput.checked);
+        });
+    }
+
+    optCompact.addEventListener("click", () => {
+        const isChecked = optCompact.getAttribute("aria-checked") === "true";
+        const newChecked = !isChecked;
+        optCompact.setAttribute("aria-checked", newChecked ? "true" : "false");
+        optCompact.classList.toggle("checked", newChecked);
+        document.documentElement.classList.toggle("theme-compact", newChecked);
+    });
+
+    dropdown.querySelectorAll("a.dropdown-item").forEach((item) => {
+        item.addEventListener("click", () => {
+            dropdown.classList.remove("open");
+            dropdownBtn.setAttribute("aria-expanded", "false");
+        });
     });
 </script>
 
