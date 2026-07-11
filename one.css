@@ -258,6 +258,11 @@ button.btn-sym {
 html {
     scroll-padding-top: calc(var(--header-height) + var(--spacing-md));
     scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+}
+
+html:has(dialog[open]) {
+    overflow: hidden;
 }
 
 /* Base body typography and layout defaults */
@@ -407,11 +412,11 @@ body {
 }
 
 /* Area assignments - min-width: 0 prevents CSS grid from blowing out past the viewport */
-header, main, aside, footer {
+body > header, main, aside, footer {
     min-width: 0;
 }
 
-header {
+body > header {
     grid-area: header;
 }
 
@@ -453,7 +458,7 @@ footer {
 
 /* 3. Header & Navigation --------------------------------------------------- */
 /* Top App Bar styling */
-header {
+body > header {
     background-color: var(--surface-container);
     color: var(--on-surface);
     display: flex;
@@ -468,7 +473,7 @@ header {
 }
 
 /* Header content layout */
-header hgroup {
+body > header hgroup {
     flex-grow: 1;
     flex-shrink: 9999; /* Title yields space to nav when Cramped */
     min-width: 0;
@@ -479,7 +484,7 @@ h1 {
     margin: 15px 0px;
 }
 
-header h1 {
+body > header h1 {
     font-size: 1.25rem;
     margin: 0;
     font-weight: 500;
@@ -488,7 +493,7 @@ header h1 {
     text-overflow: ellipsis; /* Or clip to just vanish */
 }
 
-header p {
+body > header p {
     margin: 0;
     font-size: 0.875rem;
     opacity: 0.8;
@@ -500,13 +505,13 @@ header p {
 }
 
 @media (min-width: 600px) {
-    header p {
+    body > header p {
         display: block;
     }
 }
 
 /* Flexible nav row that scrolls horizontally when space runs out */
-header nav {
+body > header nav {
     min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
@@ -525,7 +530,7 @@ header nav {
     background-attachment: local, local, scroll, scroll;
 }
 
-header nav::-webkit-scrollbar {
+body > header nav::-webkit-scrollbar {
     display: none;
 }
 
@@ -1943,6 +1948,7 @@ dialog {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     max-width: 400px;
     width: 90%;
+    overscroll-behavior: contain;
 }
 
 /* Modals with larger content (e.g. documentation) */
