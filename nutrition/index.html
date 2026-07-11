@@ -75,13 +75,13 @@
         /* Gives consistent alignment to the bold labels in the lists */
         .food-list li strong {
             display: inline-block;
-            width: 140px;
+            width: 220px;
             vertical-align: top;
         }
 
         .food-list li span.desc {
             display: inline-block;
-            width: calc(100% - 145px);
+            width: calc(100% - 225px);
         }
 
         .guide-text {
@@ -310,27 +310,84 @@
     const inpWeight = document.getElementById("weight");
     const grpHeightMetric = document.getElementById("lbl-height-metric");
     const grpHeightImp = document.getElementById("lbl-height-imp");
+    const STORAGE_KEY = "clinical-diet-settings";
 
-    function toggleUnits() {
+    function updateUnitUI() {
         const isMetric = unitMetric.checked;
         if (isMetric) {
             lblWeight.childNodes[0].nodeValue = "Weight (kg) ";
-            let lbs = parseFloat(inpWeight.value);
-            if (!isNaN(lbs)) inpWeight.value = (lbs / 2.20462).toFixed(1);
-
             grpHeightMetric.classList.remove("hidden");
             grpHeightImp.classList.add("hidden");
+        } else {
+            lblWeight.childNodes[0].nodeValue = "Weight (lbs) ";
+            grpHeightMetric.classList.add("hidden");
+            grpHeightImp.classList.remove("hidden");
+        }
+    }
+
+    function saveSettings() {
+        try {
+            const settings = {
+                diet: document.querySelector('input[name="diet"]:checked')?.value,
+                units: document.querySelector('input[name="units"]:checked')?.value,
+                weightLoss: document.getElementById("weight-loss").checked,
+                age: document.getElementById("age").value,
+                gender: document.getElementById("gender").value,
+                weight: document.getElementById("weight").value,
+                heightCm: document.getElementById("height-cm").value,
+                heightFt: document.getElementById("height-ft").value,
+                heightIn: document.getElementById("height-in").value,
+                bodyFat: document.getElementById("body-fat").value,
+                activity: document.getElementById("activity").value
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+        } catch (e) {
+            console.error("Failed to save settings", e);
+        }
+    }
+
+    function loadSettings() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (!data) return;
+            const settings = JSON.parse(data);
+            if (settings.diet) {
+                const el = document.querySelector(`input[name="diet"][value="${settings.diet}"]`);
+                if (el) el.checked = true;
+            }
+            if (settings.units) {
+                const el = document.querySelector(`input[name="units"][value="${settings.units}"]`);
+                if (el) el.checked = true;
+            }
+            if (settings.weightLoss !== undefined) {
+                document.getElementById("weight-loss").checked = settings.weightLoss;
+            }
+            if (settings.age !== undefined) document.getElementById("age").value = settings.age;
+            if (settings.gender !== undefined) document.getElementById("gender").value = settings.gender;
+            if (settings.weight !== undefined) document.getElementById("weight").value = settings.weight;
+            if (settings.heightCm !== undefined) document.getElementById("height-cm").value = settings.heightCm;
+            if (settings.heightFt !== undefined) document.getElementById("height-ft").value = settings.heightFt;
+            if (settings.heightIn !== undefined) document.getElementById("height-in").value = settings.heightIn;
+            if (settings.bodyFat !== undefined) document.getElementById("body-fat").value = settings.bodyFat;
+            if (settings.activity !== undefined) document.getElementById("activity").value = settings.activity;
+        } catch (e) {
+            console.error("Failed to load settings", e);
+        }
+    }
+
+    function toggleUnits() {
+        const isMetric = unitMetric.checked;
+        updateUnitUI();
+        if (isMetric) {
+            let lbs = parseFloat(inpWeight.value);
+            if (!isNaN(lbs)) inpWeight.value = (lbs / 2.20462).toFixed(1);
 
             let ft = parseFloat(document.getElementById("height-ft").value) || 0;
             let inc = parseFloat(document.getElementById("height-in").value) || 0;
             document.getElementById("height-cm").value = Math.round((ft * 12 + inc) * 2.54);
         } else {
-            lblWeight.childNodes[0].nodeValue = "Weight (lbs) ";
             let kg = parseFloat(inpWeight.value);
             if (!isNaN(kg)) inpWeight.value = (kg * 2.20462).toFixed(1);
-
-            grpHeightMetric.classList.add("hidden");
-            grpHeightImp.classList.remove("hidden");
 
             let cm = parseFloat(document.getElementById("height-cm").value) || 0;
             let totalInches = Math.round(cm / 2.54);
@@ -351,7 +408,7 @@
     form.addEventListener("change", calculateMetrics);
 
     function calculateMetrics() {
-        // 1. Gather Inputs
+        // Gather Inputs
         const age = parseInt(document.getElementById("age").value) || 0;
         const gender = document.getElementById("gender").value;
         let weight = parseFloat(inpWeight.value) || 0;
@@ -375,7 +432,7 @@
             h_cm = (ft * 12 + inc) * 2.54;
         }
 
-        // 2. Metabolic Rate Calculation
+        // Metabolic Rate Calculation
         let bmr = 0;
         if (bodyFat !== null && bodyFat > 0) {
             // Katch-McArdle Formula: Highly accurate if Lean Body Mass is known.
@@ -389,7 +446,7 @@
 
         let tdee = bmr * activity;
 
-        // 3. Target Calories (Linear Adjustment for Deficit)
+        // Target Calories (Linear Adjustment for Deficit)
         let targetCals = tdee;
         let deficitText = "Maintenance";
         if (wantLoss) {
@@ -408,7 +465,7 @@
         document.getElementById("out-target").innerText = `${Math.round(targetCals)} kcal`;
         document.getElementById("out-deficit-label").innerText = deficitText;
 
-        // 4. Macro Baselines based on lipid and clinical paradigms of each diet
+        // Macro Baselines based on lipid and clinical paradigms of each diet
         let pctCarb, pctPro, pctFat, pctSatFat;
         if (dietType === "med") {
             // MedDiet: Highly fat-tolerant (mostly MUFAs from EVOO). Aggressive suppression of Saturated Fats.
@@ -430,7 +487,7 @@
             pctSatFat = 0.05;
         }
 
-        // 5. Apply PROT-AGE Paradox Logic
+        // Apply PROT-AGE Paradox Logic
         // Older adults (65+) experience age-related anabolic resistance, requiring 1.2g/kg absolute protein rather than 0.8g/kg.
         let requiredProtein_g = age >= 65 ? w_kg * 1.2 : w_kg * 0.8;
         let requiredProtein_cals = requiredProtein_g * 4;
@@ -468,7 +525,7 @@
         document.getElementById("out-f").innerText = `${Math.round(gFat)} g`;
         document.getElementById("out-sf").innerText = `< ${Math.round(gSatFat)} g`;
 
-        // 6. Calculate Actionable Food Allocations
+        // Calculate Actionable Food Allocations
         // The DGA standardizes volumetric recommendations against a 2,000-kcal baseline. We linearly scale this to the user's target.
         const scale = targetCals / 2000;
         let daily = "";
@@ -560,7 +617,7 @@
             // Daily
             daily += `<li><strong>Whole Grains:</strong> <span class="desc">${isMetric ? `≥ 3 Servings (~90 g total; provides B-vitamins & glycemic stability)` : `≥ 3 Servings (Provides B-vitamins & glycemic stability)`}</span></li>`;
             daily += `<li><strong>Other Vegetables:</strong> <span class="desc">${isMetric ? `≥ 1 Serving (~75 g; broad-spectrum antioxidants)` : `≥ 1 Serving (Broad-spectrum antioxidants)`}</span></li>`;
-            daily += `<li><strong>EVOO:</strong> <span class="desc">Primary culinary oil used for all cooking</span></li>`;
+            daily += `<li><strong>Extra Virgin Olive Oil:</strong> <span class="desc">Primary culinary oil used for all cooking</span></li>`;
 
             // Weekly
             weekly += `<li><strong>Green Leafy Vegetables:</strong> <span class="desc">${isMetric ? `≥ 6 Servings / Week (~180 g raw or ~450 g cooked total)` : `≥ 6 Servings / Week (Crucial vector for folate, lutein, and phylloquinone)`}</span></li>`;
@@ -601,10 +658,16 @@
         document.getElementById("food-weekly").innerHTML = weekly;
         document.getElementById("food-restrictions").innerHTML = restrictions;
         document.getElementById("serving-guide").innerHTML = guide;
+
+        saveSettings();
     }
 
     // Initialize metrics on window load
-    window.onload = calculateMetrics;
+    window.onload = () => {
+        loadSettings();
+        updateUnitUI();
+        calculateMetrics();
+    };
 
 </script>
 </body>
