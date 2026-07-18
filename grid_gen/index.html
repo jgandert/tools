@@ -69,22 +69,11 @@
             margin: 0;
         }
 
-        .dialog-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-        }
-
         .dialog-body {
             padding: var(--spacing-md);
             display: flex;
             flex-direction: column;
             gap: var(--spacing-md);
-        }
-
-        .close-btn {
-            margin: 0 !important;
         }
 
         @media (max-width: 900px) {
@@ -298,9 +287,9 @@
 
 <dialog id="code-dialog" class="modal-info">
     <article>
-        <header class="dialog-header">
+        <header>
             <h3>SVG Source Code</h3>
-            <button onclick="toggleCode()" class="btn-sym close-btn" type="button">
+            <button onclick="toggleCode()" class="btn-sym modal-close" type="button" aria-label="Close dialog">
                 <span class="sym">close</span>
             </button>
         </header>

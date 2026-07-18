@@ -322,19 +322,8 @@
 
         /* --- Scores grid: horizontal scroll on overflow --- */
         .scores-grid {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-
-            /* Scroll Shadows (Lea Verou trick) */
-            background: linear-gradient(to right, var(--surface-container-low) 30%, transparent),
-            linear-gradient(to left, var(--surface-container-low) 30%, transparent),
-            radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.15), transparent),
-            radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.15), transparent);
+            --scroll-shadow-bg: var(--surface-container-low);
             background-color: var(--surface-container-low);
-            background-repeat: no-repeat;
-            background-position: left center, right center, left center, right center;
-            background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
-            background-attachment: local, local, scroll, scroll;
         }
 
         /* --- Active layer toggle buttons --- */
@@ -566,7 +555,7 @@
                         <option value="cost-benefit">Cost-Benefit</option>
                     </select>
                 </div>
-                <div class="scores-grid" id="scores-grid"></div>
+                <div class="scores-grid scroll-shadow-x" id="scores-grid"></div>
             </fieldset>
         </div>
 
@@ -651,21 +640,19 @@
 </dialog>
 
 <!-- ═══════════════════ HISTORY DIALOG ═══════════════════ -->
-<dialog id="dialog-history" aria-labelledby="history-title" aria-modal="true">
+<dialog id="dialog-history" class="modal-info" aria-labelledby="history-title" aria-modal="true">
     <article>
         <header>
             <h3 id="history-title">History</h3>
+            <button class="btn-sym modal-close" type="button" aria-label="Close history" id="btn-close-history">
+                <span class="sym">close</span>
+            </button>
         </header>
         <div role="search">
             <input type="search" id="history-search" placeholder="Search decisions…"
                    aria-label="Search history">
         </div>
         <div id="history-list"></div>
-        <footer>
-            <button type="button" class="btn-sym" data-action="cancel" id="btn-close-history">
-                close
-            </button>
-        </footer>
     </article>
 </dialog>
 

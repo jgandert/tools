@@ -269,11 +269,6 @@
             opacity: 0.6;
         }
 
-        .modal-body {
-            overflow-y: auto;
-            max-height: 60vh;
-            padding-right: var(--spacing-sm);
-        }
 
         dialog h4 {
             margin-top: var(--spacing-lg);
@@ -733,11 +728,14 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
     <article>
         <header>
             <h3 id="dialog-title">MockML Reference</h3>
+            <button class="btn-sym modal-close" type="button" aria-label="Close dialog" data-action="close">
+                <span class="sym">close</span>
+            </button>
         </header>
         <p id="dialog-desc">A text-based markup language for building interactive wireframes and
             mockups.</p>
 
-        <div class="modal-body">
+        <div class="dialog-content">
             <h4>1. Structure & Layout</h4>
             <div class="table-container">
                 <table>
@@ -959,9 +957,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
             </div>
         </div>
 
-        <footer>
-            <button type="button" data-action="close">Close</button>
-        </footer>
+
     </article>
 </dialog>
 </body>
