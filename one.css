@@ -529,8 +529,7 @@ body > header nav,
 .table-container {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    background: 
-        /* Left cover */ linear-gradient(to right, var(--scroll-shadow-bg, var(--surface-container)) 30%, transparent),
+    background: /* Left cover */ linear-gradient(to right, var(--scroll-shadow-bg, var(--surface-container)) 30%, transparent),
         /* Right cover */ linear-gradient(to left, var(--scroll-shadow-bg, var(--surface-container)) 30%, transparent),
         /* Left shadow */ radial-gradient(farthest-side at 0% 50%, var(--scroll-shadow), transparent),
         /* Right shadow */ radial-gradient(farthest-side at 100% 50%, var(--scroll-shadow), transparent);
@@ -545,8 +544,7 @@ body > header nav,
 dialog .dialog-content {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    background: 
-        /* Top cover */ linear-gradient(to bottom, var(--scroll-shadow-bg, var(--surface-container-highest)) 30%, transparent),
+    background: /* Top cover */ linear-gradient(to bottom, var(--scroll-shadow-bg, var(--surface-container-highest)) 30%, transparent),
         /* Bottom cover */ linear-gradient(to top, var(--scroll-shadow-bg, var(--surface-container-highest)) 30%, transparent),
         /* Top shadow */ radial-gradient(farthest-side at 50% 0%, var(--scroll-shadow), transparent),
         /* Bottom shadow */ radial-gradient(farthest-side at 50% 100%, var(--scroll-shadow), transparent);

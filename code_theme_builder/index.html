@@ -1,0 +1,2883 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Interactive OKLCH syntax highlighting theme builder using one.css layout.">
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <title>Code Theme Builder</title>
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        main {
+            font: 18px/1.8 var(--font-sans);
+            padding: var(--spacing-lg);
+            color: var(--color-keyword);
+            border-radius: var(--radius);
+        }
+
+        pre {
+            background-color: transparent;
+            color: inherit;
+        }
+
+        .token-legend {
+            display: flex;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+            margin-bottom: var(--spacing-md);
+            font-size: 0.9em;
+        }
+
+        .keyword, .keyword-soft, .modifier, .operator, .punctuation {
+            color: var(--color-keyword);
+        }
+
+        .keyword, .keyword-soft, .modifier {
+            font-weight: var(--keyword-font-weight, bold);
+        }
+
+        .comment, .kdoc-text, .kdoc-tag, .kdoc-param, .kdoc-link, .docstring {
+            color: var(--color-comment);
+        }
+
+        .variable, .parameter, .named-argument, .self-parameter, .keyword-argument,
+        .reassignable-variable, .smart-cast-value, .label, .implicit-parameter,
+        .property, .reassignable-property, .instance-attribute, .constant,
+        .annotation-attribute, .package-name {
+            color: var(--color-Variable);
+        }
+
+        .stringliteral, .string, .string-template, .string-escape,
+        .f-string-format-specifier {
+            color: var(--color-StringLiteral);
+        }
+
+        .type, .class-name, .typealias-name, .enum-name, .interface-name,
+        .type-parameter, .type-argument, .builtin-type, .builtin-exception {
+            color: var(--color-Type);
+        }
+
+        .function, .annotation, .function-call, .extension-function-call,
+        .package-level-function-call, .callable-reference, .builtin-function,
+        .constructor-call, .function-declaration, .decorator, .dunder {
+            color: var(--color-Function);
+        }
+
+        .otherliteral, .number, .todo {
+            color: var(--color-OtherLiteral);
+        }
+
+        .segmented-control + small {
+            margin-top: calc(var(--spacing-md) * -1 + 4px);
+        }
+    </style>
+</head>
+<body>
+<input type="checkbox" id="aside-state" class="aside-state-toggle">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <hgroup>
+        <h1>Code Theme Builder</h1>
+        <p>Interactive OKLCH syntax highlighting builder</p>
+    </hgroup>
+    <nav aria-label="Downloads">
+        <ul>
+            <li>
+                <button data-tooltip="IntelliJ IDEs">
+                    <span class="sym">download</span> ij
+                </button>
+            </li>
+            <li>
+                <button data-tooltip="KDE Kate">
+                    <span class="sym">download</span> kate
+                </button>
+            </li>
+            <li>
+                <button data-tooltip="KDE Konsole">
+                    <span class="sym">download</span> konsole
+                </button>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="content">
+    <div class="token-legend">
+        <div class="keyword">Keyword</div>
+        <div class="comment">Comment</div>
+        <div class="variable"></div>
+        <div class="stringliteral"></div>
+        <div class="type"></div>
+        <div class="function"></div>
+        <div class="otherliteral"></div>
+    </div>
+
+    <!-- prettier-ignore-start -->
+    <!-- beautify ignore:start -->
+    <pre><code class="language-kotlin">
+<span class="annotation">@file:JvmName</span>(<span class="string">"ComprehensiveDemo"</span>)
+
+<span class="keyword">package</span> <span class="package-name">org.example.highlighting</span>
+
+<span class="keyword">import</span> <span class="package-name">java.io.Serializable</span>
+<span class="keyword">import</span> <span class="package-name">java.util.concurrent.Callable</span> <span
+        class="keyword-soft">as</span> <span class="class-name">JavaCallable</span>
+
+<span class="comment">/**</span>
+<span class="comment"> * </span><span class="kdoc-text">KDoc block demonstrating documentation highlighting.</span>
+<span class="comment"> * </span><span class="kdoc-tag">@param</span> <span
+        class="kdoc-param">T</span> <span class="kdoc-text">This is a generic type parameter.</span>
+<span class="comment"> * </span><span class="kdoc-tag">@property</span> <span class="kdoc-param">immutableValue</span> <span
+        class="kdoc-text">A read-only property.</span>
+<span class="comment"> * </span><span class="kdoc-tag">@see</span> <span class="kdoc-link">JavaCallable</span>
+<span class="comment"> */</span>
+<span class="annotation">@Deprecated</span>(
+    <span class="annotation-attribute">message</span> <span class="operator">=</span> <span
+        class="string">"Demonstrating annotation and named argument highlighting"</span><span
+        class="punctuation">,</span>
+    <span class="annotation-attribute">replaceWith</span> <span class="operator">=</span> <span
+        class="constructor-call">ReplaceWith</span>(<span class="string">"NewClass"</span>)
+)
+<span class="annotation">@Target</span>(<span class="enum-name">AnnotationTarget</span><span
+        class="punctuation">.</span><span class="constant">CLASS</span><span
+        class="punctuation">,</span> <span class="enum-name">AnnotationTarget</span><span
+        class="punctuation">.</span><span class="constant">FUNCTION</span>)
+<span class="keyword-soft">annotation</span> <span class="keyword">class</span> <span
+        class="class-name">CustomMarker</span>
+
+<span class="modifier">const</span> <span class="keyword">val</span> <span class="constant">COMPILE_TIME_CONSTANT</span> <span
+        class="operator">=</span> <span class="number">3.14159f</span>
+<span class="modifier">const</span> <span class="keyword">val</span> <span class="constant">HEXADECIMAL_VALUE</span> <span
+        class="operator">=</span> <span class="number">0xFF_EC_42</span>
+<span class="modifier">const</span> <span class="keyword">val</span> <span class="constant">BINARY_VALUE</span> <span
+        class="operator">=</span> <span class="number">0b10101010</span>
+<span class="modifier">const</span> <span class="keyword">val</span> <span class="constant">LONG_VALUE</span> <span
+        class="operator">=</span> <span class="number">123456789L</span>
+
+<span class="comment">/*</span>
+<span class="comment">  Standard block comment.</span>
+<span class="comment">  // </span><span class="todo">TODO: TODOs have a distinct highlight color and background.</span>
+<span class="comment">*/</span>
+
+<span class="keyword">typealias</span> <span class="typealias-name">StringMap</span> <span
+        class="operator">=</span> <span class="interface-name">Map</span><span
+        class="operator">&lt;</span><span class="class-name">String</span><span class="punctuation">,</span> <span
+        class="class-name">String</span><span class="operator">&gt;</span>
+
+<span class="annotation">@CustomMarker</span>
+<span class="modifier">abstract</span> <span class="keyword">class</span> <span class="class-name">AbstractProcessor</span><span
+        class="operator">&lt;</span><span class="keyword-soft">out</span> <span
+        class="type-parameter">T</span> <span class="operator">:</span> <span
+        class="class-name">Any</span><span class="operator">&gt;</span>(
+    <span class="modifier">protected</span> <span class="keyword">val</span> <span class="property">id</span><span
+        class="operator">:</span> <span class="builtin-type">Int</span><span
+        class="punctuation">,</span>
+    <span class="modifier">private</span> <span class="keyword">var</span> <span
+        class="reassignable-property">reassignableState</span><span class="operator">:</span> <span
+        class="type-parameter">T</span>
+) <span class="operator">:</span> <span class="interface-name">Serializable</span> <span
+        class="punctuation">{</span>
+
+    <span class="modifier">abstract</span> <span class="keyword-soft">suspend</span> <span
+        class="keyword">fun</span> <span class="function-declaration">executeCoroutine</span>(<span
+        class="parameter">input</span><span class="operator">:</span> <span class="class-name">String</span><span
+        class="operator">?</span>)<span class="operator">:</span> <span class="interface-name">ResultState</span>
+<span class="punctuation">}</span>
+
+<span class="keyword">interface</span> <span class="interface-name">Executable</span> <span
+        class="punctuation">{</span>
+    <span class="keyword">fun</span> <span class="function-declaration">doWork</span>(<span
+        class="modifier">vararg</span> <span class="parameter">arguments</span><span
+        class="operator">:</span> <span class="class-name">String</span>)
+<span class="punctuation">}</span>
+
+<span class="keyword">class</span> <span class="class-name">HighlightDemo</span><span
+        class="operator">&lt;</span><span class="type-parameter">T</span> <span
+        class="operator">:</span> <span class="class-name">Number</span><span
+        class="operator">&gt;</span>(
+    <span class="parameter">id</span><span class="operator">:</span> <span
+        class="builtin-type">Int</span><span class="punctuation">,</span>
+    <span class="parameter">state</span><span class="operator">:</span> <span
+        class="type-parameter">T</span><span class="punctuation">,</span>
+    <span class="keyword">val</span> <span class="property">map</span><span
+        class="operator">:</span> <span class="typealias-name">StringMap</span>
+) <span class="operator">:</span> <span class="constructor-call">AbstractProcessor</span><span
+        class="operator">&lt;</span><span class="type-argument">T</span><span
+        class="operator">&gt;</span>(<span class="parameter">id</span><span
+        class="punctuation">,</span> <span class="parameter">state</span>)<span class="punctuation">,</span> <span
+        class="interface-name">Executable</span> <span class="punctuation">{</span>
+
+    <span class="keyword">companion</span> <span class="keyword">object</span> <span
+        class="class-name">Factory</span> <span class="punctuation">{</span>
+        <span class="annotation">@JvmStatic</span>
+        <span class="keyword">fun</span> <span
+        class="function-declaration">createInstance</span>()<span class="operator">:</span> <span
+        class="class-name">HighlightDemo</span><span class="operator">&lt;</span><span
+        class="type-argument">Int</span><span class="operator">&gt;</span> <span
+        class="punctuation">{</span>
+            <span class="keyword">return</span> <span class="constructor-call">HighlightDemo</span>(
+                <span class="named-argument">id</span> <span class="operator">=</span> <span
+        class="number">42</span><span class="punctuation">,</span>
+                <span class="named-argument">state</span> <span class="operator">=</span> <span
+        class="number">0</span><span class="punctuation">,</span>
+                <span class="named-argument">map</span> <span class="operator">=</span> <span
+        class="package-level-function-call">emptyMap</span>()
+            )
+        }
+    <span class="punctuation">}</span>
+
+    <span class="keyword">init</span> <span class="punctuation">{</span>
+        <span class="package-level-function-call">require</span>(<span
+        class="property">id</span> <span class="operator">&gt;=</span> <span class="number">0</span>) <span
+        class="punctuation">{</span> <span
+        class="string">"Initialization block string literal"</span> <span
+        class="punctuation">}</span>
+    <span class="punctuation">}</span>
+
+    <span class="keyword-soft">operator</span> <span class="keyword">fun</span> <span
+        class="class-name">String</span><span class="operator">?</span><span
+        class="punctuation">.</span><span class="function-declaration">plus</span>(<span
+        class="parameter">other</span><span class="operator">:</span> <span
+        class="type-parameter">T</span>)<span class="operator">:</span> <span class="class-name">String</span> <span
+        class="punctuation">{</span>
+        <span class="keyword">val</span> <span class="variable">safeString</span> <span
+        class="operator">=</span> <span class="keyword">this</span> <span class="operator">?:</span> <span
+        class="string">"default_fallback"</span>
+        <span class="keyword">return</span> <span class="string">"</span><span
+        class="string-template">$</span><span class="variable">safeString</span><span
+        class="string"> -&gt; </span><span class="string-template">${</span><span class="parameter">other</span><span
+        class="punctuation">.</span><span class="extension-function-call">toLong</span>()<span
+        class="string-template">}</span><span class="string">"</span>
+    <span class="punctuation">}</span>
+
+    <span class="annotation">@Throws</span>(<span class="class-name">Exception</span><span
+        class="operator">::</span><span class="keyword">class</span>)
+    <span class="modifier">override</span> <span class="keyword-soft">suspend</span> <span
+        class="keyword">fun</span> <span class="function-declaration">executeCoroutine</span>(<span
+        class="parameter">input</span><span class="operator">:</span> <span class="class-name">String</span><span
+        class="operator">?</span>)<span class="operator">:</span> <span class="interface-name">ResultState</span> <span
+        class="punctuation">{</span>
+        <span class="keyword">var</span> <span
+        class="reassignable-variable">mutableLocal</span> <span class="operator">=</span> <span
+        class="number">10</span>
+        <span class="reassignable-variable">mutableLocal</span> <span
+        class="operator">+=</span> <span class="number">5</span>
+
+        <span class="keyword">val</span> <span class="variable">characterLiteral</span> <span
+        class="operator">=</span> <span class="string">'K'</span>
+
+        <span class="keyword">val</span> <span class="variable">rawStringLiteral</span> <span
+        class="operator">=</span> <span class="string">"""</span>
+<span class="string">            This is a raw string.</span>
+<span class="string">            Escape sequences like \n or \t are just text here.</span>
+<span class="string">        """</span><span class="punctuation">.</span><span
+        class="extension-function-call">trimIndent</span>()
+
+        <span class="keyword">val</span> <span class="variable">standardString</span> <span
+        class="operator">=</span> <span class="string">"Escaped </span><span class="string-escape">\t</span><span
+        class="string"> </span><span class="string-escape">\n</span><span
+        class="string"> string </span><span class="string-escape">\\</span><span
+        class="string"> </span><span class="string-escape">\u00A9</span><span
+        class="string">"</span>
+
+        <span class="label">outerLoop@</span> <span class="keyword">for</span> (<span
+        class="variable">index</span> <span class="keyword">in</span> <span
+        class="number">0</span><span class="operator">..</span><span class="reassignable-variable">mutableLocal</span> <span
+        class="keyword-soft">step</span> <span class="number">2</span>) <span
+        class="punctuation">{</span>
+            <span class="keyword">if</span> (<span class="variable">index</span> <span
+        class="operator">==</span> <span class="number">5</span>) <span class="keyword">break</span><span
+        class="label">@outerLoop</span>
+
+            <span class="keyword">when</span> (<span class="variable">index</span>) <span
+        class="punctuation">{</span>
+                <span class="number">1</span> <span class="operator">-&gt;</span> <span
+        class="package-level-function-call">println</span>(<span
+        class="variable">characterLiteral</span>)
+                <span class="keyword">else</span> <span class="operator">-&gt;</span> <span
+        class="keyword">continue</span><span class="label">@outerLoop</span>
+            <span class="punctuation">}</span>
+        <span class="punctuation">}</span>
+
+        <span class="keyword">val</span> <span class="variable">closureResult</span> <span
+        class="operator">=</span> <span class="punctuation">{</span> <span
+        class="parameter">x</span><span class="operator">:</span> <span
+        class="builtin-type">Int</span><span class="punctuation">,</span> <span
+        class="parameter">y</span><span class="operator">:</span> <span
+        class="builtin-type">Int</span> <span class="operator">-&gt;</span> <span class="parameter">x</span> <span
+        class="operator">+</span> <span class="parameter">y</span> <span
+        class="punctuation">}</span>(<span class="number">1</span><span class="punctuation">,</span> <span
+        class="number">2</span>)
+        <span class="keyword">val</span> <span class="variable">methodReference</span> <span
+        class="operator">=</span> <span class="operator">::</span><span class="callable-reference">doWork</span>
+
+        <span class="keyword">try</span> <span class="punctuation">{</span>
+            <span class="keyword">val</span> <span class="variable">isInputValid</span> <span
+        class="operator">=</span> <span class="parameter">input</span><span
+        class="operator">?.</span><span class="extension-function-call">isNotEmpty</span>() <span
+        class="operator">==</span> <span class="keyword">true</span>
+            <span class="keyword">if</span> (<span class="operator">!</span><span class="variable">isInputValid</span>) <span
+        class="keyword">throw</span> <span
+        class="constructor-call">IllegalStateException</span>(<span
+        class="string">"Invalid state"</span>)
+        <span class="punctuation">}</span> <span class="keyword">catch</span> (<span
+        class="parameter">exception</span><span class="operator">:</span> <span class="class-name">IllegalStateException</span>) <span
+        class="punctuation">{</span>
+            <span class="parameter">exception</span><span class="punctuation">.</span><span
+        class="function-call">printStackTrace</span>()
+        <span class="punctuation">}</span> <span class="keyword">finally</span> <span
+        class="punctuation">{</span>
+            <span class="reassignable-variable">mutableLocal</span> <span class="operator">=</span> <span
+        class="number">0</span>
+        <span class="punctuation">}</span>
+
+        <span class="keyword">val</span> <span class="variable">unknownData</span><span
+        class="operator">:</span> <span class="class-name">Any</span> <span
+        class="operator">=</span> <span class="string">"Test Data"</span>
+        <span class="keyword">if</span> (<span class="variable">unknownData</span> <span
+        class="keyword">is</span> <span class="class-name">String</span>) <span class="punctuation">{</span>
+            <span class="package-level-function-call">println</span>(<span class="smart-cast-value">unknownData</span><span
+        class="punctuation">.</span><span class="property">length</span>)
+        <span class="punctuation">}</span>
+
+        <span class="keyword">return</span> <span class="interface-name">ResultState</span><span
+        class="punctuation">.</span><span class="class-name">Success</span>(<span class="string">"Process complete"</span>)
+    <span class="punctuation">}</span>
+
+    <span class="modifier">override</span> <span class="keyword">fun</span> <span
+        class="function-declaration">doWork</span>(<span class="modifier">vararg</span> <span
+        class="parameter">arguments</span><span class="operator">:</span> <span class="class-name">String</span>) <span
+        class="punctuation">{</span>
+        <span class="parameter">arguments</span><span class="punctuation">.</span><span
+        class="extension-function-call">forEach</span> <span class="punctuation">{</span>
+            <span class="package-level-function-call">println</span>(<span class="string">"Argument is </span><span
+        class="string-template">$</span><span class="implicit-parameter">it</span><span
+        class="string">"</span>)
+        <span class="punctuation">}</span>
+    <span class="punctuation">}</span>
+
+    <span class="modifier">inline</span> <span class="keyword">fun</span> <span class="operator">&lt;</span><span
+        class="type-parameter">R</span><span class="operator">&gt;</span> <span
+        class="function-declaration">typeSafeCast</span>(
+        <span class="modifier">crossinline</span> <span class="parameter">block</span><span
+        class="operator">:</span> () <span class="operator">-&gt;</span> <span class="class-name">Any</span>
+    )<span class="operator">:</span> <span class="type-parameter">R</span><span
+        class="operator">?</span> <span class="punctuation">{</span>
+        <span class="keyword">val</span> <span class="variable">result</span> <span
+        class="operator">=</span> <span class="parameter">block</span>()
+        <span class="keyword">return</span> <span class="variable">result</span> <span
+        class="keyword-soft">as?</span> <span class="type-parameter">R</span>
+    <span class="punctuation">}</span>
+<span class="punctuation">}</span>
+
+<span class="keyword">enum</span> <span class="keyword">class</span> <span class="enum-name">LifecycleState</span>(<span
+        class="keyword">val</span> <span class="property">code</span><span class="operator">:</span> <span
+        class="builtin-type">Int</span>) <span class="punctuation">{</span>
+    <span class="constant">INITIALIZED</span>(<span class="number">0</span>)<span
+        class="punctuation">,</span>
+    <span class="constant">RUNNING</span>(<span class="number">1</span>)<span
+        class="punctuation">,</span>
+    <span class="constant">TERMINATED</span>(<span class="number">2</span>)
+<span class="punctuation">}</span>
+
+<span class="keyword-soft">sealed</span> <span class="keyword">interface</span> <span
+        class="interface-name">ResultState</span> <span class="punctuation">{</span>
+    <span class="keyword-soft">data</span> <span class="keyword">class</span> <span
+        class="class-name">Success</span>(<span class="keyword">val</span> <span class="property">payload</span><span
+        class="operator">:</span> <span class="class-name">String</span>) <span
+        class="operator">:</span> <span class="interface-name">ResultState</span>
+    <span class="keyword">object</span> <span class="class-name">Failure</span> <span
+        class="operator">:</span> <span class="interface-name">ResultState</span>
+<span class="punctuation">}</span>
+</code></pre>
+    <!-- beautify ignore:end -->
+    <!-- prettier-ignore-end -->
+
+    <!-- prettier-ignore-start -->
+    <!-- beautify ignore:start -->
+    <pre><code class="language-python">
+<span class="comment">#!/usr/bin/env python3</span>
+<span class="comment"># -*- coding: utf-8 -*-</span>
+
+<span class="docstring">"""</span>
+<span class="docstring">Module-level docstring mapped to 'Docstring' highlighting.</span>
+<span class="docstring">Provides classes for exhaustive token lexing evaluation.</span>
+<span class="docstring">"""</span>
+
+<span class="keyword">import</span> <span class="package-name">sys</span>
+<span class="keyword">import</span> <span class="package-name">asyncio</span>
+<span class="keyword">from</span> <span class="package-name">typing</span> <span class="keyword">import</span> <span
+        class="class-name">List</span><span class="punctuation">,</span> <span class="class-name">Dict</span><span
+        class="punctuation">,</span> <span class="class-name">Any</span><span
+        class="punctuation">,</span> <span class="class-name">Callable</span><span
+        class="punctuation">,</span> <span class="class-name">Optional</span><span
+        class="punctuation">,</span> <span class="class-name">Generator</span>
+
+<span class="constant">GLOBAL_CONSTANT</span><span class="operator">:</span> <span
+        class="builtin-type">int</span> <span class="operator">=</span> <span
+        class="number">42</span>
+<span class="constant">SCIENTIFIC_FLOAT</span> <span class="operator">=</span> <span class="number">1.5e-3</span>
+<span class="constant">COMPLEX_NUMBER</span> <span class="operator">=</span> <span
+        class="number">1j</span>
+
+<span class="keyword">def</span> <span class="function-declaration">timing_decorator</span>(<span
+        class="parameter">func</span><span class="operator">:</span> <span class="class-name">Callable</span>) <span
+        class="operator">-&gt;</span> <span class="class-name">Callable</span><span
+        class="operator">:</span>
+    <span class="docstring">"""</span>
+<span
+    class="docstring">    Function-level docstring demonstrating standard string literal mapping.</span>
+<span class="docstring">    """</span>
+    <span class="keyword">def</span> <span class="function-declaration">wrapper</span>(<span
+        class="operator">*</span><span class="parameter">args</span><span
+        class="punctuation">,</span> <span class="operator">**</span><span
+        class="parameter">kwargs</span>)<span class="operator">:</span>
+        <span class="variable">execution_time</span> <span class="operator">=</span> <span
+        class="number">0.0154</span>
+        <span class="builtin-function">print</span>(<span class="string">f"Timing: </span><span
+        class="string-template">{</span><span class="variable">execution_time</span><span
+        class="f-string-format-specifier">:.2f</span><span class="string-template">}</span><span
+        class="string"> seconds"</span>)
+        <span class="builtin-function">print</span>(<span class="string">f"Executing built-in function with f-string on </span><span
+        class="string-template">{</span><span class="parameter">func</span><span
+        class="punctuation">.</span><span class="dunder">__name__</span><span
+        class="string-template">}</span><span class="string">"</span>)
+        <span class="variable">result</span> <span class="operator">=</span> <span
+        class="parameter">func</span>(<span class="operator">*</span><span
+        class="parameter">args</span><span class="punctuation">,</span> <span
+        class="operator">**</span><span class="parameter">kwargs</span>)
+        <span class="keyword">return</span> <span class="variable">result</span>
+    <span class="keyword">return</span> <span class="function-call">wrapper</span>
+
+<span class="keyword">class</span> <span class="class-name">BaseProcessor</span><span
+        class="operator">:</span>
+    <span class="docstring">"""Class docstring."""</span>
+
+    <span class="property">class_level_attribute</span><span class="operator">:</span> <span
+        class="class-name">List</span><span class="operator">[</span><span
+        class="builtin-type">int</span><span class="operator">]</span> <span
+        class="operator">=</span> <span class="operator">[]</span>
+
+    <span class="keyword">def</span> <span class="dunder">__init__</span>(
+        <span class="self-parameter">self</span><span class="punctuation">,</span>
+        <span class="parameter">dataset</span><span class="operator">:</span> <span
+        class="class-name">List</span><span class="operator">[</span><span
+        class="builtin-type">int</span><span class="operator">]</span><span
+        class="punctuation">,</span>
+        <span class="parameter">label</span><span class="operator">:</span> <span
+        class="builtin-type">str</span> <span class="operator">=</span> <span class="string">"Default Label"</span>
+    )<span class="operator">:</span>
+        <span class="self-parameter">self</span><span class="punctuation">.</span><span
+        class="instance-attribute">dataset</span> <span class="operator">=</span> <span
+        class="parameter">dataset</span>
+        <span class="self-parameter">self</span><span class="punctuation">.</span><span
+        class="instance-attribute">label</span> <span class="operator">=</span> <span
+        class="parameter">label</span>
+        <span class="self-parameter">self</span><span class="punctuation">.</span><span
+        class="instance-attribute">_protected_var</span> <span class="operator">=</span> <span
+        class="keyword">True</span>
+        <span class="self-parameter">self</span><span class="punctuation">.</span><span
+        class="instance-attribute">__private_var</span> <span class="operator">=</span> <span
+        class="keyword">False</span>
+
+    <span class="decorator">@timing_decorator</span>
+    <span class="decorator">@classmethod</span>
+    <span class="keyword">def</span> <span class="function-declaration">factory_method</span>(<span
+        class="self-parameter">cls</span><span class="punctuation">,</span> <span class="parameter">items</span><span
+        class="operator">:</span> <span class="builtin-type">tuple</span>) <span class="operator">-&gt;</span> <span
+        class="string">'BaseProcessor'</span><span class="operator">:</span>
+        <span class="keyword">return</span> <span class="self-parameter">cls</span>(<span
+        class="keyword-argument">dataset</span><span class="operator">=</span><span
+        class="builtin-type">list</span>(<span class="parameter">items</span>)<span
+        class="punctuation">,</span> <span class="keyword-argument">label</span><span
+        class="operator">=</span> <span class="string">"Factory Generated"</span>)
+
+    <span class="keyword">def</span> <span
+        class="function-declaration">generate_transformed_values</span>(<span
+        class="self-parameter">self</span>) <span class="operator">-&gt;</span> <span
+        class="class-name">Generator</span><span class="operator">[</span><span
+        class="builtin-type">int</span><span class="punctuation">,</span> <span
+        class="keyword">None</span><span class="punctuation">,</span> <span
+        class="keyword">None</span><span class="operator">]</span><span class="operator">:</span>
+        <span class="keyword">for</span> <span class="variable">item</span> <span
+        class="keyword">in</span> <span class="self-parameter">self</span><span class="punctuation">.</span><span
+        class="instance-attribute">dataset</span><span class="operator">:</span>
+            <span class="keyword">if</span> <span class="variable">item</span> <span
+        class="keyword">is</span> <span class="keyword">None</span><span class="operator">:</span>
+                <span class="keyword">continue</span>
+            <span class="keyword">elif</span> <span class="variable">item</span> <span
+        class="operator">==</span> <span class="number">0</span><span class="operator">:</span>
+                <span class="keyword">pass</span>
+            <span class="keyword">else</span><span class="operator">:</span>
+                <span class="keyword">yield</span> <span class="variable">item</span> <span
+        class="operator">**</span> <span class="number">2</span>
+
+    <span class="keyword">async</span> <span class="keyword">def</span> <span
+        class="function-declaration">fetch_remote_data_async</span>(<span class="self-parameter">self</span>) <span
+        class="operator">-&gt;</span> <span class="keyword">None</span><span
+        class="operator">:</span>
+        <span class="keyword">await</span> <span class="package-name">asyncio</span><span
+        class="punctuation">.</span><span class="function-call">sleep</span>(<span class="number">0.5</span>)
+
+    <span class="keyword">def</span> <span
+        class="function-declaration">process_data_structures</span>(<span class="self-parameter">self</span>) <span
+        class="operator">-&gt;</span> <span class="keyword">None</span><span
+        class="operator">:</span>
+        <span class="keyword">global</span> <span class="constant">GLOBAL_CONSTANT</span>
+        <span class="variable">nonlocal_tracker</span> <span class="operator">=</span> <span
+        class="number">0</span>
+
+        <span class="keyword">def</span> <span
+        class="function-declaration">inner_function</span>()<span class="operator">:</span>
+            <span class="keyword">nonlocal</span> <span class="variable">nonlocal_tracker</span>
+            <span class="variable">nonlocal_tracker</span> <span class="operator">+=</span> <span
+        class="number">1</span>
+
+        <span class="variable">configuration_map</span><span class="operator">:</span> <span
+        class="class-name">Dict</span><span class="operator">[</span><span
+        class="builtin-type">str</span><span class="punctuation">,</span> <span class="class-name">Any</span><span
+        class="operator">]</span> <span class="operator">=</span> <span class="punctuation">{</span>
+            <span class="string">"key_alpha"</span><span class="operator">:</span> <span
+        class="number">1</span><span class="punctuation">,</span>
+            <span class="string">"key_beta"</span><span class="operator">:</span> <span
+        class="keyword">False</span><span class="punctuation">,</span>
+            <span class="string">"nested_dict"</span><span class="operator">:</span> <span
+        class="punctuation">{</span><span class="string">"a"</span><span
+        class="operator">:</span> <span class="constant">SCIENTIFIC_FLOAT</span><span
+        class="punctuation">}</span>
+        <span class="punctuation">}</span>
+
+        <span class="keyword">try</span><span class="operator">:</span>
+            <span class="keyword">assert</span> <span class="builtin-function">len</span>(<span
+        class="self-parameter">self</span><span class="punctuation">.</span><span
+        class="instance-attribute">dataset</span>) <span class="operator">&gt;=</span> <span
+        class="number">0</span><span class="punctuation">,</span> <span class="string">"Assertion failure string"</span>
+            <span class="keyword">del</span> <span class="self-parameter">self</span><span
+        class="punctuation">.</span><span class="instance-attribute">dataset</span><span
+        class="operator">[</span><span class="number">0</span><span class="operator">]</span>
+
+            <span class="keyword">with</span> <span class="builtin-function">open</span>(<span
+        class="string">"dummy.txt"</span><span class="punctuation">,</span> <span
+        class="string">"w"</span>) <span class="keyword">as</span> <span class="variable">file_handle</span><span
+        class="operator">:</span>
+                <span class="variable">file_handle</span><span class="punctuation">.</span><span
+        class="function-call">write</span>(<span class="string">"Data"</span>)
+
+        <span class="keyword">except</span> <span class="builtin-exception">IndexError</span> <span
+        class="keyword">as</span> <span class="variable">index_error</span><span
+        class="operator">:</span>
+            <span class="builtin-function">print</span>(<span
+        class="string">f"Caught exception: </span><span class="string-template">{</span><span
+        class="variable">index_error</span><span class="string-template}</span><span class=" string">"</span>
+        )
+        <span class="keyword">finally</span><span class="operator">:</span>
+            <span class="function-call">inner_function</span>()
+
+<span class="function-declaration">calculate_square</span> <span class="operator">=</span> <span
+        class="keyword">lambda</span> <span class="parameter">x</span><span
+        class="operator">:</span> <span class="parameter">x</span> <span
+        class="operator">*</span> <span class="parameter">x</span>
+</code></pre>
+    <!-- beautify ignore:end -->
+    <!-- prettier-ignore-end -->
+
+    <!-- prettier-ignore-start -->
+    <!-- beautify ignore:start -->
+    <pre><code class="language-python">
+<span class="keyword">from</span> <span class="package-name">enum</span> <span class="keyword">import</span> <span
+        class="class-name">Enum</span><span class="punctuation">,</span> <span
+        class="function-call">auto</span>
+<span class="keyword">from</span> <span class="package-name">dataclasses</span> <span
+        class="keyword">import</span> <span class="function-call">dataclass</span><span
+        class="punctuation">,</span> <span class="function-call">field</span>
+<span class="keyword">from</span> <span class="package-name">typing</span> <span class="keyword">import</span> <span
+        class="class-name">Final</span><span class="punctuation">,</span> <span class="class-name">Literal</span><span
+        class="punctuation">,</span> <span class="class-name">ParamSpec</span><span
+        class="punctuation">,</span> <span class="class-name">TypeAlias</span><span
+        class="punctuation">,</span> <span class="class-name">TypeGuard</span><span
+        class="punctuation">,</span> <span class="class-name">TypeVar</span><span
+        class="punctuation">,</span> <span class="function-call">overload</span>
+
+<span class="variable">T</span> <span class="operator">=</span> <span class="constructor-call">TypeVar</span><span
+        class="punctuation">(</span><span class="string">'T'</span><span
+        class="punctuation">)</span>
+<span class="variable">P</span> <span class="operator">=</span> <span class="constructor-call">ParamSpec</span><span
+        class="punctuation">(</span><span class="string">'P'</span><span
+        class="punctuation">)</span>
+<span class="typealias-name">JsonDict</span><span class="operator">:</span> <span
+        class="class-name">TypeAlias</span> <span class="operator">=</span> <span
+        class="builtin-type">dict</span><span class="operator">[</span><span class="builtin-type">str</span><span
+        class="punctuation">,</span> <span class="class-name">Any</span><span
+        class="operator">]</span>
+<span class="constant">MAX_RETRIES</span><span class="operator">:</span> <span class="class-name">Final</span><span
+        class="operator">[</span><span class="builtin-type">int</span><span
+        class="operator">]</span> <span class="operator">=</span> <span class="number">3</span>
+<span class="constant">MODE</span><span class="operator">:</span> <span
+        class="class-name">Literal</span><span class="operator">[</span><span
+        class="string">"fast"</span><span class="punctuation">,</span> <span
+        class="string">"slow"</span><span class="operator">]</span> <span class="operator">=</span> <span
+        class="string">"fast"</span>
+
+<span class="keyword">class</span> <span class="class-name">Status</span><span
+        class="punctuation">(</span><span class="class-name">Enum</span><span
+        class="punctuation">)</span><span class="operator">:</span>
+    <span class="constant">PENDING</span> <span class="operator">=</span> <span
+        class="function-call">auto</span><span class="punctuation">()</span>
+    <span class="constant">DONE</span> <span class="operator">=</span> <span class="function-call">auto</span><span
+        class="punctuation">()</span>
+
+<span class="decorator">@dataclass</span><span class="punctuation">(</span><span
+        class="keyword-argument">slots</span><span class="operator">=</span><span class="keyword">True</span><span
+        class="punctuation">)</span>
+<span class="keyword">class</span> <span class="class-name">Record</span><span
+        class="operator">:</span>
+    <span class="instance-attribute">name</span><span class="operator">:</span> <span
+        class="builtin-type">str</span>
+    <span class="instance-attribute">tags</span><span class="operator">:</span> <span
+        class="builtin-type">set</span><span class="operator">[</span><span
+        class="builtin-type">str</span><span class="operator">]</span> <span
+        class="operator">=</span> <span class="function-call">field</span><span class="punctuation">(</span><span
+        class="keyword-argument">default_factory</span><span class="operator">=</span><span
+        class="builtin-type">set</span><span class="punctuation">)</span>
+
+    <span class="decorator">@property</span>
+    <span class="keyword">def</span> <span class="function-declaration">label</span><span
+        class="punctuation">(</span><span class="self-parameter">self</span><span
+        class="punctuation">)</span> <span class="operator">-&gt;</span> <span class="builtin-type">str</span><span
+        class="operator">:</span>
+        <span class="keyword">return</span> <span class="self-parameter">self</span><span
+        class="punctuation">.</span><span class="instance-attribute">name</span><span
+        class="punctuation">.</span><span class="function-call">upper</span><span
+        class="punctuation">()</span>
+
+    <span class="decorator">@label.setter</span>
+    <span class="keyword">def</span> <span class="function-declaration">label</span><span
+        class="punctuation">(</span><span class="self-parameter">self</span><span
+        class="punctuation">,</span> <span class="parameter">value</span><span
+        class="operator">:</span> <span class="builtin-type">str</span><span
+        class="punctuation">)</span> <span class="operator">-&gt;</span> <span
+        class="keyword">None</span><span class="operator">:</span>
+        <span class="self-parameter">self</span><span class="punctuation">.</span><span
+        class="instance-attribute">name</span> <span class="operator">=</span> <span
+        class="parameter">value</span><span class="punctuation">.</span><span class="function-call">lower</span><span
+        class="punctuation">()</span>
+
+    <span class="decorator">@staticmethod</span>
+    <span class="keyword">def</span> <span class="function-declaration">validate</span><span
+        class="punctuation">(</span><span class="parameter">name</span><span
+        class="operator">:</span> <span class="builtin-type">str</span>) <span class="operator">-&gt;</span> <span
+        class="builtin-type">bool</span><span class="operator">:</span>
+        <span class="keyword">return</span> <span class="builtin-function">bool</span><span
+        class="punctuation">(</span><span class="parameter">name</span><span
+        class="punctuation">.</span><span class="function-call">strip</span><span
+        class="punctuation">())</span>
+
+    <span class="keyword">def</span> <span class="dunder">__str__</span><span
+        class="punctuation">(</span><span class="self-parameter">self</span><span
+        class="punctuation">)</span> <span class="operator">-&gt;</span> <span class="builtin-type">str</span><span
+        class="operator">:</span>
+        <span class="keyword">return</span> <span class="string">f"Record(</span><span
+        class="string-template">{</span><span class="self-parameter">self</span><span
+        class="punctuation">.</span><span class="instance-attribute">name</span><span
+        class="string-template}</span><span class=" string">)"</span>
+
+        <span class="keyword">class</span> <span class="class-name">AppError</span><span
+        class="punctuation">(</span><span class="class-name">Exception</span><span
+        class="punctuation">)</span><span class="operator">:</span>
+    <span class="keyword">def</span> <span class="dunder">__init__</span>(
+        <span class="self-parameter">self</span><span class="punctuation">,</span>
+        <span class="parameter">message</span><span class="operator">:</span> <span
+        class="builtin-type">str</span><span class="punctuation">,</span>
+        <span class="parameter">code</span><span class="operator">:</span> <span
+        class="builtin-type">int</span>
+    ) <span class="operator">-&gt;</span> <span class="keyword">None</span><span
+        class="operator">:</span>
+        <span class="builtin-function">super</span><span class="punctuation">().</span><span
+        class="dunder">__init__</span><span class="punctuation">(</span><span class="parameter">message</span><span
+        class="punctuation">)</span>
+        <span class="self-parameter">self</span><span class="punctuation">.</span><span
+        class="instance-attribute">code</span> <span class="operator">=</span> <span
+        class="parameter">code</span>
+
+<span class="keyword">class</span> <span class="class-name">ManagedResource</span><span
+        class="operator">:</span>
+    <span class="keyword">def</span> <span class="dunder">__enter__</span><span class="punctuation">(</span><span
+        class="self-parameter">self</span><span class="punctuation">)</span> <span class="operator">-&gt;</span> <span
+        class="string">'ManagedResource'</span><span class="operator">:</span>
+        <span class="keyword">return</span> <span class="self-parameter">self</span>
+
+    <span class="keyword">def</span> <span class="dunder">__exit__</span>(
+        <span class="self-parameter">self</span><span class="punctuation">,</span>
+        <span class="parameter">exc_type</span><span class="operator">:</span> <span
+        class="builtin-type">type</span><span class="operator">[</span><span
+        class="builtin-exception">BaseException</span><span class="operator">]</span> <span
+        class="operator">|</span> <span class="keyword">None</span><span
+        class="punctuation">,</span>
+        <span class="parameter">exc_val</span><span class="operator">:</span> <span
+        class="builtin-exception">BaseException</span> <span class="operator">|</span> <span
+        class="keyword">None</span><span class="punctuation">,</span>
+        <span class="parameter">exc_tb</span><span class="operator">:</span> <span
+        class="class-name">Any</span> <span class="operator">|</span> <span
+        class="keyword">None</span><span class="punctuation">,</span>
+    ) <span class="operator">-&gt;</span> <span class="builtin-type">bool</span><span
+        class="operator">:</span>
+        <span class="keyword">return</span> <span class="keyword">False</span>
+
+<span class="decorator">@overload</span>
+<span class="keyword">def</span> <span class="function-declaration">combine</span><span
+        class="punctuation">(</span><span class="parameter">a</span><span class="operator">:</span> <span
+        class="builtin-type">int</span><span class="punctuation">,</span> <span
+        class="parameter">b</span><span class="operator">:</span> <span
+        class="builtin-type">int</span><span class="punctuation">)</span> <span class="operator">-&gt;</span> <span
+        class="builtin-type">int</span><span class="operator">:</span> <span
+        class="keyword">...</span>
+<span class="decorator">@overload</span>
+<span class="keyword">def</span> <span class="function-declaration">combine</span><span
+        class="punctuation">(</span><span class="parameter">a</span><span class="operator">:</span> <span
+        class="builtin-type">str</span><span class="punctuation">,</span> <span
+        class="parameter">b</span><span class="operator">:</span> <span
+        class="builtin-type">str</span><span class="punctuation">)</span> <span class="operator">-&gt;</span> <span
+        class="builtin-type">str</span><span class="operator">:</span> <span
+        class="keyword">...</span>
+<span class="keyword">def</span> <span class="function-declaration">combine</span><span
+        class="punctuation">(</span><span class="parameter">a</span><span class="operator">:</span> <span
+        class="class-name">Any</span><span class="punctuation">,</span> <span
+        class="parameter">b</span><span class="operator">:</span> <span
+        class="class-name">Any</span><span class="punctuation">)</span> <span
+        class="operator">-&gt;</span> <span class="class-name">Any</span><span
+        class="operator">:</span>
+    <span class="keyword">return</span> <span class="parameter">a</span> <span
+        class="operator">+</span> <span class="parameter">b</span>
+
+<span class="keyword">def</span> <span class="function-declaration">configure</span>(
+    <span class="parameter">host</span><span class="operator">:</span> <span class="builtin-type">str</span><span
+        class="punctuation">,</span>
+    <span class="parameter">port</span><span class="operator">:</span> <span class="builtin-type">int</span><span
+        class="punctuation">,</span>
+    <span class="operator">/</span><span class="punctuation">,</span>
+    <span class="parameter">timeout</span><span class="operator">:</span> <span
+        class="builtin-type">float</span> <span class="operator">=</span> <span
+        class="number">5.0</span><span class="punctuation">,</span>
+    <span class="operator">*</span><span class="punctuation">,</span>
+    <span class="parameter">retries</span><span class="operator">:</span> <span
+        class="builtin-type">int</span> <span class="operator">=</span> <span
+        class="number">3</span>
+) <span class="operator">-&gt;</span> <span class="keyword">None</span><span
+        class="operator">:</span>
+    <span class="keyword">raise</span> <span class="constructor-call">AppError</span><span
+        class="punctuation">(</span><span class="string">"not implemented"</span><span
+        class="punctuation">,</span> <span class="number">501</span><span
+        class="punctuation">)</span>
+
+<span class="keyword">def</span> <span class="function-declaration">is_json</span><span
+        class="punctuation">(</span><span class="parameter">data</span><span
+        class="operator">:</span> <span class="class-name">Any</span><span
+        class="punctuation">)</span> <span class="operator">-&gt;</span> <span class="class-name">TypeGuard</span><span
+        class="operator">[</span><span class="typealias-name">JsonDict</span><span class="operator">]</span><span
+        class="operator">:</span>
+    <span class="keyword">return</span> <span class="builtin-function">isinstance</span><span
+        class="punctuation">(</span><span class="parameter">data</span><span
+        class="punctuation">,</span> <span class="builtin-type">dict</span><span
+        class="punctuation">)</span>
+
+<span class="keyword">def</span> <span class="function-declaration">sub_gen</span><span
+        class="punctuation">()</span> <span class="operator">-&gt;</span> <span class="class-name">Generator</span><span
+        class="operator">[</span><span class="builtin-type">int</span><span
+        class="punctuation">,</span> <span class="keyword">None</span><span
+        class="punctuation">,</span> <span class="keyword">None</span><span
+        class="operator">]</span><span class="operator">:</span>
+    <span class="keyword">yield</span> <span class="keyword">from</span> <span
+        class="builtin-function">range</span><span class="punctuation">(</span><span class="number">3</span><span
+        class="punctuation">)</span>
+
+<span class="keyword">def</span> <span class="function-declaration">search</span><span
+        class="punctuation">(</span><span class="parameter">items</span><span
+        class="operator">:</span> <span class="builtin-type">list</span><span
+        class="operator">[</span><span class="builtin-type">int</span><span
+        class="operator">]</span><span class="punctuation">,</span> <span
+        class="parameter">target</span><span class="operator">:</span> <span class="builtin-type">int</span><span
+        class="punctuation">)</span> <span class="operator">-&gt;</span> <span class="builtin-type">str</span><span
+        class="operator">:</span>
+    <span class="keyword">for</span> <span class="variable">item</span> <span
+        class="keyword">in</span> <span class="parameter">items</span><span
+        class="operator">:</span>
+        <span class="keyword">if</span> <span class="variable">item</span> <span
+        class="operator">==</span> <span class="parameter">target</span><span
+        class="operator">:</span>
+            <span class="keyword">break</span>
+    <span class="keyword">else</span><span class="operator">:</span>
+        <span class="keyword">return</span> <span class="string">"not found"</span>
+    <span class="keyword">return</span> <span class="string">"found"</span>
+
+<span class="keyword">def</span> <span class="function-declaration">retry</span><span
+        class="punctuation">(</span><span class="parameter">limit</span><span
+        class="operator">:</span> <span class="builtin-type">int</span><span
+        class="punctuation">)</span> <span class="operator">-&gt;</span> <span class="builtin-type">int</span><span
+        class="operator">:</span>
+    <span class="variable">attempts</span> <span class="operator">=</span> <span
+        class="number">0</span>
+    <span class="keyword">while</span> <span class="variable">attempts</span> <span
+        class="operator">&lt;</span> <span class="parameter">limit</span><span
+        class="operator">:</span>
+        <span class="keyword">if</span> <span class="package-name">random</span><span
+        class="punctuation">.</span><span class="function-call">random</span><span
+        class="punctuation">()</span> <span class="operator">&gt;</span> <span
+        class="number">0.5</span><span class="operator">:</span>
+            <span class="keyword">break</span>
+        <span class="variable">attempts</span> <span class="operator">+=</span> <span
+        class="number">1</span>
+    <span class="keyword">else</span><span class="operator">:</span>
+        <span class="keyword">return</span> <span class="operator">-</span><span
+        class="number">1</span>
+    <span class="keyword">return</span> <span class="variable">attempts</span>
+
+<span class="keyword">def</span> <span class="function-declaration">process</span><span
+        class="punctuation">(</span><span class="parameter">data</span><span
+        class="operator">:</span> <span class="builtin-type">list</span><span
+        class="operator">[</span><span class="builtin-type">int</span><span
+        class="operator">]</span><span class="punctuation">)</span> <span
+        class="operator">-&gt;</span> <span class="keyword">None</span><span
+        class="operator">:</span>
+    <span class="variable">squares</span> <span class="operator">=</span> <span class="punctuation">[</span><span
+        class="parameter">x</span> <span class="operator">**</span> <span
+        class="number">2</span> <span class="keyword">for</span> <span
+        class="parameter">x</span> <span class="keyword">in</span> <span
+        class="parameter">data</span> <span class="keyword">if</span> <span
+        class="parameter">x</span> <span class="operator">%</span> <span
+        class="number">2</span> <span class="operator">==</span> <span class="number">0</span><span
+        class="punctuation">]</span>
+    <span class="variable">index_map</span> <span class="operator">=</span> <span
+        class="punctuation">{</span><span class="parameter">x</span><span class="operator">:</span> <span
+        class="variable">i</span> <span class="keyword">for</span> <span
+        class="variable">i</span><span class="punctuation">,</span> <span class="parameter">x</span> <span
+        class="keyword">in</span> <span class="builtin-function">enumerate</span><span
+        class="punctuation">(</span><span class="parameter">data</span><span
+        class="punctuation">)</span><span class="punctuation">}</span>
+    <span class="variable">unique</span> <span class="operator">=</span> <span
+        class="punctuation">{</span><span class="parameter">x</span> <span class="operator">%</span> <span
+        class="number">5</span> <span class="keyword">for</span> <span
+        class="parameter">x</span> <span class="keyword">in</span> <span
+        class="parameter">data</span><span class="punctuation">}</span>
+    <span class="variable">lazy</span> <span class="operator">=</span> <span
+        class="punctuation">(</span><span class="parameter">x</span> <span class="operator">*</span> <span
+        class="number">1.5</span> <span class="keyword">for</span> <span class="parameter">x</span> <span
+        class="keyword">in</span> <span class="parameter">data</span> <span
+        class="keyword">if</span> <span class="parameter">x</span> <span
+        class="operator">&gt;</span> <span class="number">0</span><span class="punctuation">)</span>
+    <span class="keyword">if</span> <span class="punctuation">(</span><span
+        class="variable">n</span> <span class="operator">:=</span> <span class="builtin-function">len</span><span
+        class="punctuation">(</span><span class="parameter">data</span><span
+        class="punctuation">))</span> <span class="operator">&gt;</span> <span
+        class="number">10</span><span class="operator">:</span>
+        <span class="builtin-function">print</span><span class="punctuation">(</span><span
+        class="string">f"large: </span><span class="string-template">{</span><span class="variable">n</span><span
+        class="string-template}</span><span class=" string"> items"</span><span class="punctuation">)</span>
+
+<span class="keyword">async</span> <span class="keyword">def</span> <span
+        class="function-declaration">pipeline</span><span class="punctuation">(</span><span
+        class="parameter">source</span><span class="operator">:</span> <span class="class-name">AsyncGenerator</span><span
+        class="operator">[</span><span class="typealias-name">JsonDict</span><span
+        class="punctuation">,</span> <span class="keyword">None</span><span
+        class="operator">]</span><span class="punctuation">)</span> <span
+        class="operator">-&gt;</span> <span class="keyword">None</span><span
+        class="operator">:</span>
+    <span class="keyword">async</span> <span class="keyword">with</span> <span
+        class="function-call">async_database_transaction</span><span
+        class="punctuation">(</span><span class="string">"db://host"</span><span
+        class="punctuation">)</span> <span class="keyword">as</span> <span
+        class="variable">txn</span><span class="operator">:</span>
+        <span class="keyword">async</span> <span class="keyword">for</span> <span class="variable">item</span> <span
+        class="keyword">in</span> <span class="parameter">source</span><span
+        class="operator">:</span>
+            <span class="keyword-soft">match</span> <span class="variable">item</span><span
+        class="punctuation">.</span><span class="function-call">get</span><span class="punctuation">(</span><span
+        class="string">"type"</span><span class="punctuation">)</span><span
+        class="operator">:</span>
+                <span class="keyword-soft">case</span> <span class="string">"start"</span> <span
+        class="operator">|</span> <span class="string">"init"</span><span class="operator">:</span>
+                    <span class="keyword">pass</span>
+                <span class="keyword-soft">case</span> <span class="string">"data"</span> <span
+        class="keyword">if</span> <span class="punctuation">(</span><span
+        class="variable">val</span> <span class="operator">:=</span> <span
+        class="variable">item</span><span class="punctuation">.</span><span class="function-call">get</span><span
+        class="punctuation">(</span><span class="string">"value"</span><span
+        class="punctuation">))</span> <span class="keyword">is</span> <span
+        class="keyword">not</span> <span class="keyword">None</span><span class="operator">:</span>
+                    <span class="builtin-function">print</span><span
+        class="punctuation">(</span><span class="string">f"got </span><span class="string-template">{</span><span
+        class="variable">val</span><span class="string-template}</span><span class="
+                                         string">"</span><span class="punctuation">)</span>
+                <span class="keyword-soft">case</span> <span class="punctuation">{</span>
+                    <span class="string">"key"</span><span class="operator">:</span> <span
+        class="builtin-type">str</span><span class="punctuation">(</span><span
+        class="variable">k</span><span class="punctuation">)</span><span
+        class="punctuation">,</span>
+                    <span class="string">"value"</span><span class="operator">:</span> <span
+        class="builtin-type">int</span><span class="punctuation">(</span><span
+        class="variable">v</span><span class="punctuation">)</span> <span class="operator">|</span> <span
+        class="builtin-type">float</span><span class="punctuation">(</span><span
+        class="variable">v</span><span class="punctuation">)</span>
+                <span class="punctuation">}</span><span class="operator">:</span>
+                    <span class="builtin-function">print</span><span
+        class="punctuation">(</span><span class="string">f"</span><span
+        class="string-template">{</span><span class="variable">k</span><span
+        class="string-template">}</span><span class="string"> = </span><span
+        class="string-template">{</span><span class="variable">v</span><span
+        class="string-template">}</span><span class="string">"</span><span
+        class="punctuation">)</span>
+                <span class="keyword-soft">case</span> <span class="punctuation">[</span><span
+        class="operator">*</span><span class="variable">rest</span><span
+        class="punctuation">]</span><span class="operator">:</span>
+                    <span class="builtin-function">print</span><span
+        class="punctuation">(</span><span class="string">f"list: </span><span
+        class="string-template">{</span><span class="variable">rest</span><span
+        class="string-template">}</span><span class="string">"</span><span
+        class="punctuation">)</span>
+                <span class="keyword-soft">case</span> <span class="variable">_</span><span
+        class="operator">:</span>
+                    <span class="keyword">raise</span> <span
+        class="constructor-call">AppError</span><span class="punctuation">(</span><span
+        class="string">"unknown"</span><span class="punctuation">,</span> <span
+        class="number">400</span><span class="punctuation">)</span>
+
+<span class="keyword">if</span> <span class="dunder">__name__</span> <span
+        class="operator">==</span> <span class="string">"__main__"</span><span
+        class="operator">:</span>
+    <span class="package-name">asyncio</span><span class="punctuation">.</span><span
+        class="function-call">run</span><span class="punctuation">(</span><span
+        class="function-call">pipeline</span><span class="punctuation">(</span><span
+        class="keyword">None</span><span class="punctuation">))</span>
+</code></pre>
+    <!-- beautify ignore:end -->
+    <!-- prettier-ignore-end -->
+</main>
+
+<aside>
+    <h2>Settings</h2>
+    <form id="config-form">
+        <fieldset>
+            <legend>Theme</legend>
+            <label for="custom-theme-title">
+                Name
+                <input type="text" id="custom-theme-title" placeholder="Code Theme Builder">
+            </label>
+
+            <div class="segmented-control" role="group" aria-label="Theme mode">
+                <input type="radio" name="theme-mode" id="theme-light" value="light">
+                <label for="theme-light">Light</label>
+
+                <input type="radio" name="theme-mode" id="theme-dark" value="dark">
+                <label for="theme-dark">Dark</label>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Color Controls</legend>
+
+            <label for="saturation-slider">
+                Chroma (<span id="saturation-value">100%</span>)
+                <input type="range" id="saturation-slider" min="0" max="100" value="100">
+            </label>
+
+            <label for="hue-offset-slider">
+                Hue offset (<span id="hue-offset-value">235</span>)
+                <input type="range" id="hue-offset-slider" min="0" max="359" value="235">
+            </label>
+
+            <label for="reverse-hue">
+                Reverse hue direction
+                <input type="checkbox" role="switch" id="reverse-hue">
+            </label>
+        </fieldset>
+
+        <fieldset>
+            <legend>Chroma</legend>
+            <div class="segmented-control" role="group" aria-label="Chroma mode">
+                <input type="radio" name="chroma-mode" id="chroma-shared" value="shared">
+                <label for="chroma-shared">Shared max</label>
+                <input type="radio" name="chroma-mode" id="chroma-gamut" value="gamut" checked>
+                <label for="chroma-gamut">Scale to gamut</label>
+                <input type="radio" name="chroma-mode" id="chroma-raw" value="raw">
+                <label for="chroma-raw">Raw</label>
+            </div>
+            <small id="chroma-description">Scale colors dynamically to match each hue's full
+                gamut.</small>
+
+            <label for="reduce-bottleneck">
+                Reduce chroma bottleneck
+                <input type="checkbox" role="switch" id="reduce-bottleneck" checked>
+            </label>
+        </fieldset>
+
+        <fieldset>
+            <legend>Background</legend>
+            <label for="bg-base-select">
+                Base background on
+                <select id="bg-base-select">
+                    <option value="Variable">Variable</option>
+                    <option value="StringLiteral">StringLiteral</option>
+                    <option value="Type" selected>Type</option>
+                    <option value="Function">Function</option>
+                    <option value="OtherLiteral">OtherLiteral</option>
+                </select>
+            </label>
+
+            <label for="bg-brightness-slider">
+                Background brightness (<span id="bg-brightness-value">12%</span>)
+                <input type="range" id="bg-brightness-slider" min="0" max="100" value="12">
+            </label>
+
+            <label for="bg-override-toggle">
+                Override background color
+                <input type="checkbox" role="switch" id="bg-override-toggle">
+            </label>
+
+            <label for="bg-color-picker">
+                Background color
+                <input type="color" id="bg-color-picker">
+            </label>
+        </fieldset>
+
+        <fieldset>
+            <legend>Typography</legend>
+            <label for="bold-keywords">
+                Bold keywords
+                <input type="checkbox" role="switch" id="bold-keywords" checked>
+            </label>
+        </fieldset>
+    </form>
+
+    <div class="form-actions">
+        <button type="button" id="btn-export">Export Settings</button>
+
+        <label class="btn" for="import-file">
+            Import Settings
+            <input type="file" id="import-file" hidden accept=".json">
+        </label>
+
+        <button class="btn-danger" onclick="resetSettings()" type="button">
+            <span class="sym">refresh</span>
+            Reset to Defaults
+        </button>
+    </div>
+</aside>
+
+<script src="../one.js"></script>
+<script src="../client-zip.js"></script>
+<script>
+    // --- OKLCH → sRGB gamut mapping ---
+    function oklchToLinearRgb(L, C, H) {
+        const hRad = H * Math.PI / 180;
+        const a = C * Math.cos(hRad);
+        const b = C * Math.sin(hRad);
+        const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+        const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+        const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+        const l = l_ * l_ * l_;
+        const m = m_ * m_ * m_;
+        const s = s_ * s_ * s_;
+        return [
+            +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+            -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+            -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+        ];
+    }
+
+    function isInGamut(L, C, H) {
+        const [r, g, b] = oklchToLinearRgb(L, C, H);
+        const eps = -0.0001;
+        return r >= eps && r <= 1.0001 && g >= eps && g <= 1.0001 && b >= eps && b <= 1.0001;
+    }
+
+    function maxChroma(L, H, precision = 0.001) {
+        let lo = 0, hi = 0.4;
+        while (hi - lo > precision) {
+            const mid = (lo + hi) / 2;
+            if (isInGamut(L, mid, H)) lo = mid; else hi = mid;
+        }
+        return lo;
+    }
+
+    function hexToOklch(hex) {
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
+        const fn = c => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        const lr = fn(r);
+        const lg = fn(g);
+        const lb = fn(b);
+        const l = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
+        const m = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073974577 * lb;
+        const s = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
+        const l_ = Math.cbrt(l);
+        const m_ = Math.cbrt(m);
+        const s_ = Math.cbrt(s);
+        const L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_;
+        const a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_;
+        const b_ = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_;
+        const C = Math.hypot(a, b_);
+        let H = Math.atan2(b_, a) * 180 / Math.PI;
+        if (H < 0) H += 360;
+        return `oklch(${L.toFixed(4)} ${C.toFixed(4)} ${H.toFixed(2)})`;
+    }
+
+    const BASE_L = 0.75;
+    const LIGHT_L = 0.42;
+
+    // Compute average max chroma across category hues for each mode.
+    // Used to convert between a mode-independent "saturation" (0–1)
+    // and the per-mode chroma ratio needed to achieve 
+    function avgMaxChroma(L, hueOffset = 0) {
+        return categories.reduce((s, { hue }) => {
+            const H = (((settings.reverseHue ? -hue : hue) + hueOffset) % 360 + 360) % 360 || 360;
+            return s + maxChroma(L, H);
+        }, 0) / categories.length;
+    }
+
+    // Colors on dark backgrounds look ~10% more colorful (Hunt effect).
+    const HUNT_COMPENSATION = 0.20;
+
+    // Per-mode saturation: 0–1 where 1.0 = that mode's full sRGB gamut.
+    // When matchSaturation is true, changing one auto-derives the other
+    // so both modes look perceptually equivalent (accounting for Hunt effect).
+    //
+    // 'shared': all hues use the same absolute chroma, capped at the smallest
+    //   hue's gamut max — equal C ≈ equal perceived saturation (OKLCH uniformity).
+    // 'gamut':  each hue is scaled to its own gamut ceiling (maxChroma * sat),
+    //   equalizing relative gamut utilization; hues with larger gamuts appear more saturated.
+    // 'raw':    slider maps to C in [0, 0.4] (sat × 0.4); colors that exceed a hue's
+    //   gamut boundary clip to the nearest in-gamut value.
+    const settings = {
+        themeName: "Code Theme Builder",
+        darkSaturation: 1.0,
+        lightSaturation: 1.0,
+        chromaMode: "gamut",
+        darkBgBrightness: 12,
+        lightBgBrightness: 100,
+        bgOverrideEnabled: false,
+        darkBgOverrideColor: null,
+        lightBgOverrideColor: null,
+        boldKeywords: true,
+        manualHueOffset: 235,
+        reduceBottleneck: true,
+        reverseHue: false,
+        bgBaseName: "Type",
+        currentIsLight: window.matchMedia("(prefers-color-scheme: light)").matches,
+    };
+    const matchSaturation = true;
+
+    // Convert one mode's slider value to the perceptually equivalent value in the other.
+    // Hunt compensation reduces dark mode: dark backgrounds make colors look more vibrant,
+    // so dark mode needs less physical chroma to match light mode perceptually.
+    // Perceptual match: lightSat * lightAvg = darkSat * darkAvg / (1 - HUNT)
+    // i.e. dark's physical chroma is perceptually amplified by 1/(1-HUNT).
+    function darkToLightSaturation(darkSat, hueOffset = 0) {
+        const darkAvg = avgMaxChroma(BASE_L, hueOffset);
+        const lightAvg = avgMaxChroma(LIGHT_L, hueOffset);
+        return Math.min(1, darkSat * darkAvg / ((1 - HUNT_COMPENSATION) * lightAvg));
+    }
+
+    function lightToDarkSaturation(lightSat, hueOffset = 0) {
+        const darkAvg = avgMaxChroma(BASE_L, hueOffset);
+        const lightAvg = avgMaxChroma(LIGHT_L, hueOffset);
+        return Math.min(1, lightSat * lightAvg * (1 - HUNT_COMPENSATION) / darkAvg);
+    }
+
+    // Call when the user changes dark mode saturation (e.g. slider).
+    function setDarkSaturation(value, hueOffset = 0) {
+        settings.darkSaturation = value;
+        if (matchSaturation) settings.lightSaturation = darkToLightSaturation(value, hueOffset);
+    }
+
+    // Call when the user changes light mode saturation (e.g. slider).
+    function setLightSaturation(value, hueOffset = 0) {
+        settings.lightSaturation = value;
+        if (matchSaturation) settings.darkSaturation = lightToDarkSaturation(value, hueOffset);
+    }
+
+    const THEME = {
+        dark: { bg: null, keyword: null },
+        light: { bg: null, keyword: null },
+    };
+
+    function parseOklch(str) {
+        const m = str.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/);
+        return { L: parseFloat(m[1]), C: parseFloat(m[2]), H: parseFloat(m[3]) };
+    }
+
+    function computeCommentColor(keywordStr, isLight) {
+        const { L, C, H } = parseOklch(keywordStr);
+        const commentL = isLight ? L + 0.42 : L - 0.42;
+        const commentC = Math.max(0, C - 0.05);
+        return `oklch(${Math.min(1, Math.max(0, commentL))} ${commentC} ${H})`;
+    }
+
+    function applyThemeColors(isLight) {
+        const { bg, keyword } = isLight ? THEME.light : THEME.dark;
+        const comment = computeCommentColor(keyword, isLight);
+        const main = document.querySelector("main");
+        main.style.background = bg;
+        main.style.setProperty("--color-keyword", keyword);
+        main.style.setProperty("--color-comment", comment);
+    }
+
+    const categories = [
+        { name: "Variable", hue: 72 },
+        { name: "StringLiteral", hue: 144 },
+        { name: "Type", hue: 216 },
+        { name: "Function", hue: 288 },
+        { name: "OtherLiteral", hue: 360 },
+    ];
+
+    const sheet = new CSSStyleSheet();
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+
+    let bottleneckOffset = 0;
+
+    // Effective hue offset combines manual + bottleneck (when enabled).
+    function effectiveHueOffset() {
+        return settings.reduceBottleneck ? settings.manualHueOffset + bottleneckOffset : settings.manualHueOffset;
+    }
+
+    // Find the hue offset (0–359) that maximizes the bottleneck (weakest) max chroma
+    // across all category hues for the given lightness, on top of the manual offset.
+    function findOptimalHueOffset(L) {
+        let bestOffset = 0, bestMin = 0;
+        for (let offset = 0; offset < 360; offset++) {
+            let min = Infinity;
+            for (const { hue } of categories) {
+                const H = (((settings.reverseHue ? -hue : hue) + settings.manualHueOffset + offset) % 360 + 360) % 360 || 360;
+                min = Math.min(min, maxChroma(L, H));
+            }
+            if (min > bestMin) {
+                bestMin = min;
+                bestOffset = offset;
+            }
+        }
+        return { offset: bestOffset, bottleneckChroma: bestMin };
+    }
+
+    // Recalculate bottleneck offset for current mode and log results.
+    function updateBottleneckOffset() {
+        const L = settings.currentIsLight ? LIGHT_L : BASE_L;
+        const modeName = settings.currentIsLight ? "light" : "dark";
+
+        let beforeMin = Infinity;
+        for (const { hue } of categories) {
+            const H = (((settings.reverseHue ? -hue : hue) + settings.manualHueOffset) % 360 + 360) % 360 || 360;
+            beforeMin = Math.min(beforeMin, maxChroma(L, H));
+        }
+
+        const { offset, bottleneckChroma: after } = findOptimalHueOffset(L);
+        bottleneckOffset = offset;
+
+        console.log(`=== Reduce Chroma Bottleneck (${modeName} mode, L=${L}) ===`);
+        console.log(`  Auto offset: +${offset}° (manual: ${settings.manualHueOffset}°, effective: ${effectiveHueOffset() % 360}°)`);
+        console.log(`  Bottleneck chroma: ${after.toFixed(4)} (was ${beforeMin.toFixed(4)} without)`);
+        console.log("  Resulting hues:");
+        for (const { name, hue } of categories) {
+            const H = (((settings.reverseHue ? -hue : hue) + effectiveHueOffset()) % 360 + 360) % 360 || 360;
+            console.log(`    ${name.padEnd(14)} H=${String(H).padStart(3)}  maxChroma = ${maxChroma(L, H).toFixed(4)}`);
+        }
+    }
+
+    // Call when hueOffset, baseL, or saturation changes (e.g. from a slider or theme toggle).
+    function applyColors(hueOffset = 0, baseL = BASE_L) {
+        // Clear all previous rules
+        while (sheet.cssRules.length) sheet.deleteRule(0);
+
+        const root = document.documentElement;
+        root.style.setProperty("--keyword-font-weight", settings.boldKeywords ? "bold" : "normal");
+        const isLight = baseL === LIGHT_L;
+        const sat = isLight ? settings.lightSaturation : settings.darkSaturation;
+
+        // For 'shared' mode: find the smallest gamut ceiling across all hues so the
+        // fixed chroma fits every hue without clipping.
+        let sharedC;
+        if (settings.chromaMode === "shared") {
+            let minMax = Infinity;
+            for (const { hue } of categories) {
+                const H = (((settings.reverseHue ? -hue : hue) + hueOffset) % 360 + 360) % 360 || 360;
+                minMax = Math.min(minMax, maxChroma(baseL, H));
+            }
+            sharedC = minMax * sat;
+        }
+
+        let typeC, typeH;
+        for (const { name, hue } of categories) {
+            const H = (((settings.reverseHue ? -hue : hue) + hueOffset) % 360 + 360) % 360 || 360;
+            const C = settings.chromaMode === "gamut" ? maxChroma(baseL, H) * sat
+                : settings.chromaMode === "raw" ? sat * 0.4
+                    : sharedC;
+            root.style.setProperty(`--color-${name}`, `oklch(${baseL} ${C} ${H})`);
+            if (name === settings.bgBaseName) {
+                typeC = C;
+                typeH = H;
+            }
+        }
+
+        const bgBaseC = Math.min(typeC, maxChroma(baseL, typeH));
+        const bgWhiteL = settings.lightBgBrightness / 100;
+        const bgDarkL = settings.darkBgBrightness / 100;
+        const keywordWhiteL = BASE_L + 0.249;
+        const keywordLightL = LIGHT_L - 0.27;
+        const blackish_light = `oklch(${keywordLightL} ${bgBaseC} ${typeH})`;
+        let blackish_dark = `oklch(${bgDarkL}  ${bgBaseC} ${typeH})`;
+        let whiteish = `oklch(${bgWhiteL} ${Math.max(0, bgBaseC - 0.07)} ${typeH})`;
+        const whiteish_keyword = `oklch(${keywordWhiteL} ${Math.max(0, bgBaseC - 0.07)} ${typeH})`;
+
+        if (settings.bgOverrideEnabled) {
+            if (isLight) {
+                if (settings.lightBgOverrideColor) {
+                    whiteish = hexToOklch(settings.lightBgOverrideColor);
+                }
+            } else {
+                if (settings.darkBgOverrideColor) {
+                    blackish_dark = hexToOklch(settings.darkBgOverrideColor);
+                }
+            }
+        } else {
+            const computedBg = isLight ? whiteish : blackish_dark;
+            const hex = "#" + cssColorToHex(computedBg);
+            const picker = document.getElementById("bg-color-picker");
+            if (picker) {
+                picker.value = hex;
+            }
+            if (isLight) {
+                settings.lightBgOverrideColor = hex;
+            } else {
+                settings.darkBgOverrideColor = hex;
+            }
+        }
+
+        THEME.dark = { bg: blackish_dark, keyword: whiteish_keyword };
+        THEME.light = { bg: whiteish, keyword: blackish_light };
+        applyThemeColors(isLight);
+    }
+
+    function saveSettings() {
+        try {
+            localStorage.setItem("codeThemeBuilderState", JSON.stringify(settings));
+        } catch (e) {
+            console.error("Failed to save settings to localStorage", e);
+        }
+    }
+
+    function updateChromaDescription() {
+        const descEl = document.getElementById("chroma-description");
+        if (!descEl) {
+            return;
+        }
+
+        const descriptions = {
+            shared: "Uniform chroma capped at the smallest hue's limit.",
+            gamut: "Scale colors dynamically to match each hue's full gamut.",
+            raw: "Direct chroma value mapping, clipping out-of-gamut colors.",
+        };
+        descEl.textContent = descriptions[settings.chromaMode] || "";
+    }
+
+    function refresh() {
+        if (settings.reduceBottleneck) updateBottleneckOffset();
+        applyColors(effectiveHueOffset(), settings.currentIsLight ? LIGHT_L : BASE_L);
+        updateChromaDescription();
+        saveSettings();
+    }
+
+    function sanitizeSettings() {
+        if (typeof settings.themeName !== "string") settings.themeName = "Code Theme Builder";
+        if (typeof settings.darkSaturation !== "number" || isNaN(settings.darkSaturation)) settings.darkSaturation = 1.0;
+        if (typeof settings.lightSaturation !== "number" || isNaN(settings.lightSaturation)) settings.lightSaturation = 1.0;
+        if (!["shared", "gamut", "raw"].includes(settings.chromaMode)) settings.chromaMode = "gamut";
+        if (typeof settings.darkBgBrightness !== "number" || isNaN(settings.darkBgBrightness)) settings.darkBgBrightness = 12;
+        if (typeof settings.lightBgBrightness !== "number" || isNaN(settings.lightBgBrightness)) settings.lightBgBrightness = 100;
+        if (typeof settings.bgOverrideEnabled !== "boolean") settings.bgOverrideEnabled = false;
+        if (typeof settings.boldKeywords !== "boolean") settings.boldKeywords = true;
+        if (typeof settings.manualHueOffset !== "number" || isNaN(settings.manualHueOffset)) settings.manualHueOffset = 235;
+        if (typeof settings.reduceBottleneck !== "boolean") settings.reduceBottleneck = true;
+        if (typeof settings.reverseHue !== "boolean") settings.reverseHue = false;
+        if (typeof settings.bgBaseName !== "string") settings.bgBaseName = "Type";
+        if (typeof settings.currentIsLight !== "boolean") settings.currentIsLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+    }
+
+    try {
+        const saved = localStorage.getItem("codeThemeBuilderState");
+        if (saved) {
+            Object.assign(settings, JSON.parse(saved));
+            sanitizeSettings();
+        } else {
+            setLightSaturation(1.0);
+        }
+    } catch (e) {
+        console.error("Failed to load settings from localStorage", e);
+        setLightSaturation(1.0);
+    }
+
+    function updateUIFromSettings() {
+        document.getElementById("custom-theme-title").value = settings.themeName || "";
+
+        if (settings.currentIsLight) {
+            document.querySelector("main").classList.add("light");
+        } else {
+            document.querySelector("main").classList.remove("light");
+        }
+
+        const activeThemeInput = document.getElementById(settings.currentIsLight ? "theme-light" : "theme-dark");
+        if (activeThemeInput) activeThemeInput.checked = true;
+        document.documentElement.setAttribute("data-theme", settings.currentIsLight ? "light" : "dark");
+
+        const initSat = settings.currentIsLight ? settings.lightSaturation : settings.darkSaturation;
+        document.getElementById("saturation-slider").value = Math.round(initSat * 100);
+        document.getElementById("saturation-value").textContent = Math.round(initSat * 100) + "%";
+
+        const initBgBrightness = settings.currentIsLight ? settings.lightBgBrightness : settings.darkBgBrightness;
+        document.getElementById("bg-brightness-slider").value = Math.round(initBgBrightness);
+        document.getElementById("bg-brightness-value").textContent = Math.round(initBgBrightness) + "%";
+        document.getElementById("bg-override-toggle").checked = settings.bgOverrideEnabled;
+        document.getElementById("bold-keywords").checked = settings.boldKeywords;
+
+        document.getElementById("hue-offset-slider").value = settings.manualHueOffset;
+        document.getElementById("hue-offset-value").textContent = settings.manualHueOffset;
+        document.getElementById("reverse-hue").checked = settings.reverseHue;
+
+        const activeChromaInput = document.querySelector(`input[name="chroma-mode"][value="${settings.chromaMode}"]`);
+        if (activeChromaInput) activeChromaInput.checked = true;
+
+        document.getElementById("reduce-bottleneck").checked = settings.reduceBottleneck;
+        document.getElementById("bg-base-select").value = settings.bgBaseName;
+
+        const initBgColor = settings.currentIsLight ? settings.lightBgOverrideColor : settings.darkBgOverrideColor;
+        if (initBgColor) {
+            document.getElementById("bg-color-picker").value = initBgColor;
+        }
+    }
+
+    // Set up DOM (once)
+    for (const { name } of categories) {
+        const el = document.querySelector(`.${name.toLowerCase()}`);
+        if (el) el.textContent = name;
+    }
+
+    updateUIFromSettings();
+    refresh();
+    applyThemeColors(settings.currentIsLight);
+
+    document.querySelectorAll("input[name=\"theme-mode\"]").forEach(el => {
+        el.addEventListener("change", (e) => {
+            settings.currentIsLight = e.target.value === "light";
+            document.documentElement.setAttribute("data-theme", settings.currentIsLight ? "light" : "dark");
+            const slider = document.getElementById("saturation-slider");
+            const sat = settings.currentIsLight ? settings.lightSaturation : settings.darkSaturation;
+            slider.value = Math.round(sat * 100);
+            document.getElementById("saturation-value").textContent = slider.value + "%";
+
+            // Update background brightness slider
+            const bgSlider = document.getElementById("bg-brightness-slider");
+            const bgBrightness = settings.currentIsLight ? settings.lightBgBrightness : settings.darkBgBrightness;
+            bgSlider.value = Math.round(bgBrightness);
+            document.getElementById("bg-brightness-value").textContent = Math.round(bgBrightness) + "%";
+
+            // Update color picker
+            const currentOverrideColor = settings.currentIsLight ? settings.lightBgOverrideColor : settings.darkBgOverrideColor;
+            if (currentOverrideColor) {
+                document.getElementById("bg-color-picker").value = currentOverrideColor;
+            }
+
+            refresh();
+        });
+    });
+
+    document.getElementById("custom-theme-title").addEventListener("input", (e) => {
+        settings.themeName = e.target.value;
+        saveSettings();
+    });
+
+    document.getElementById("saturation-slider").addEventListener("input", (e) => {
+        const val = e.target.value / 100;
+        document.getElementById("saturation-value").textContent = e.target.value + "%";
+        if (settings.currentIsLight) {
+            setLightSaturation(val, effectiveHueOffset());
+        } else {
+            setDarkSaturation(val, effectiveHueOffset());
+        }
+        refresh();
+    });
+
+    document.getElementById("hue-offset-slider").addEventListener("input", (e) => {
+        settings.manualHueOffset = parseInt(e.target.value);
+        document.getElementById("hue-offset-value").textContent = settings.manualHueOffset;
+        refresh();
+    });
+
+    document.querySelectorAll("input[name=\"chroma-mode\"]").forEach(el => {
+        el.addEventListener("change", (e) => {
+            settings.chromaMode = e.target.value;
+            refresh();
+        });
+    });
+
+    document.getElementById("reduce-bottleneck").addEventListener("change", (e) => {
+        settings.reduceBottleneck = e.target.checked;
+        if (!settings.reduceBottleneck) bottleneckOffset = 0;
+        refresh();
+    });
+
+    document.getElementById("reverse-hue").addEventListener("change", (e) => {
+        settings.reverseHue = e.target.checked;
+        refresh();
+    });
+
+    document.getElementById("bg-base-select").addEventListener("change", (e) => {
+        settings.bgBaseName = e.target.value;
+        if (settings.bgOverrideEnabled) {
+            settings.bgOverrideEnabled = false;
+            document.getElementById("bg-override-toggle").checked = false;
+        }
+        refresh();
+    });
+
+    document.getElementById("bg-brightness-slider").addEventListener("input", (e) => {
+        const val = parseInt(e.target.value);
+        document.getElementById("bg-brightness-value").textContent = val + "%";
+        if (settings.currentIsLight) {
+            settings.lightBgBrightness = val;
+        } else {
+            settings.darkBgBrightness = val;
+        }
+        if (settings.bgOverrideEnabled) {
+            settings.bgOverrideEnabled = false;
+            document.getElementById("bg-override-toggle").checked = false;
+        }
+        refresh();
+    });
+
+    document.getElementById("bg-override-toggle").addEventListener("change", (e) => {
+        settings.bgOverrideEnabled = e.target.checked;
+        refresh();
+    });
+
+    document.getElementById("bold-keywords").addEventListener("change", (e) => {
+        settings.boldKeywords = e.target.checked;
+        refresh();
+    });
+
+    document.getElementById("bg-color-picker").addEventListener("input", (e) => {
+        const val = e.target.value;
+        if (settings.currentIsLight) {
+            settings.lightBgOverrideColor = val;
+        } else {
+            settings.darkBgOverrideColor = val;
+        }
+        if (!settings.bgOverrideEnabled) {
+            settings.bgOverrideEnabled = true;
+            document.getElementById("bg-override-toggle").checked = true;
+        }
+        refresh();
+    });
+    // --- Local Tool Form Logic ---
+    const configForm = document.getElementById("config-form");
+    configForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        console.log("Local tool settings saved, processing data...");
+    });
+
+    // --- IntelliJ Theme JAR Export ---
+
+    function linearToSrgb(c) {
+        return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+    }
+
+    function oklchToHex(L, C, H) {
+        const [lr, lg, lb] = oklchToLinearRgb(L, C, H);
+        const r = Math.round(Math.min(1, Math.max(0, linearToSrgb(lr))) * 255);
+        const g = Math.round(Math.min(1, Math.max(0, linearToSrgb(lg))) * 255);
+        const b = Math.round(Math.min(1, Math.max(0, linearToSrgb(lb))) * 255);
+        return ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
+    }
+
+    function parseOklchComponents(str) {
+        const m = str.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/);
+        return { L: parseFloat(m[1]), C: parseFloat(m[2]), H: parseFloat(m[3]) };
+    }
+
+    function cssColorToHex(cssStr) {
+        const { L, C, H } = parseOklchComponents(cssStr);
+        return oklchToHex(L, C, H);
+    }
+
+    // Shift bg lightness for structural IDE colors
+    function shiftBgHex(bgStr, deltaL) {
+        const { L, C, H } = parseOklchComponents(bgStr);
+        const newL = Math.min(1, Math.max(0, L + deltaL));
+        return oklchToHex(newL, C, H);
+    }
+
+    const TOKEN_MAP = {
+        DEFAULT_KEYWORD: { color: "keyword", fontType: 1 },
+        TEXT: { color: "keyword", isFg: true },
+
+        DEFAULT_LINE_COMMENT: { color: "comment", fontType: 2 },
+        DEFAULT_BLOCK_COMMENT: { color: "comment", fontType: 2 },
+        DEFAULT_DOC_COMMENT: { color: "comment", fontType: 2 },
+        DEFAULT_DOC_COMMENT_TAG: { color: "comment" },
+        DEFAULT_DOC_COMMENT_TAG_VALUE: { color: "comment", fontType: 2 },
+        TODO_DEFAULT_ATTRIBUTES: { color: "OtherLiteral", fontType: 3 },
+
+        DEFAULT_IDENTIFIER: { color: "Variable" },
+        DEFAULT_PARAMETER: { color: "Variable" },
+        DEFAULT_INSTANCE_FIELD: { color: "Variable" },
+        DEFAULT_STATIC_FIELD: { color: "Variable", fontType: 2 },
+        DEFAULT_PREDEFINED_SYMBOL: { color: "Variable", fontType: 2 },
+        "PY.KEYWORD_ARGUMENT": { color: "Variable" },
+
+        DEFAULT_STRING: { color: "StringLiteral" },
+        DEFAULT_VALID_STRING_ESCAPE: { color: "StringLiteral" },
+
+        DEFAULT_CLASS_NAME: { color: "Type" },
+        DEFAULT_INTERFACE_NAME: { color: "Type", fontType: 2 },
+        TYPE_PARAMETER_NAME_ATTRIBUTES: { color: "Type" },
+        ENUM_NAME_ATTRIBUTES: { color: "Type" },
+
+        DEFAULT_FUNCTION_CALL: { color: "Function" },
+        DEFAULT_FUNCTION_DECLARATION: { color: "Function" },
+        DEFAULT_INSTANCE_METHOD: { color: "Function" },
+        DEFAULT_STATIC_METHOD: { color: "Function", fontType: 2 },
+        DEFAULT_METADATA: { color: "Function" },
+        "PY.BUILTIN_NAME": { color: "Function", fontType: 2 },
+
+        DEFAULT_NUMBER: { color: "OtherLiteral" },
+        DEFAULT_CONSTANT: { color: "OtherLiteral", fontType: 2 },
+
+        CONSOLE_NORMAL_OUTPUT: { color: "keyword" },
+        CONSOLE_ERROR_OUTPUT: { color: "_red" },
+        CONSOLE_RED_OUTPUT: { color: "_red" },
+        CONSOLE_GREEN_OUTPUT: { color: "Variable" },
+        CONSOLE_YELLOW_OUTPUT: { color: "OtherLiteral" },
+        CONSOLE_BLUE_OUTPUT: { color: "Type" },
+        CONSOLE_MAGENTA_OUTPUT: { color: "StringLiteral" },
+        CONSOLE_CYAN_OUTPUT: { color: "Function" },
+        LOG_ERROR_OUTPUT: { color: "_red" },
+        LOG_WARNING_OUTPUT: { color: "OtherLiteral" },
+        LOG_INFO_OUTPUT: { color: "Variable" },
+        LOG_DEBUG_OUTPUT: { color: "comment" },
+    };
+
+    const BASE_ATTRIBUTES = [
+        ["ANNOTATION_NAME_ATTRIBUTES", "DEFAULT_METADATA"],
+        ["INSTANCE_FIELD_ATTRIBUTES", "DEFAULT_INSTANCE_FIELD"],
+        ["STATIC_FIELD_ATTRIBUTES", "DEFAULT_STATIC_FIELD"],
+        ["STATIC_FINAL_FIELD_ATTRIBUTES", "STATIC_FIELD_ATTRIBUTES"],
+        ["CUSTOM_KEYWORD1_ATTRIBUTES", "DEFAULT_KEYWORD"],
+        ["CUSTOM_NUMBER_ATTRIBUTES", "DEFAULT_NUMBER"],
+        ["CUSTOM_STRING_ATTRIBUTES", "DEFAULT_STRING"],
+    ];
+
+    function collectThemeState() {
+        const root = document.documentElement;
+        const cs = getComputedStyle(root);
+        const isLight = settings.currentIsLight;
+        const baseName = (settings.themeName || "Code Theme Builder").trim();
+        const modeSuffix = isLight ? "Light" : "Dark";
+        const themeName = `${baseName} ${modeSuffix}`;
+        const slug = themeName.toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
+
+        const { bg, keyword } = isLight ? THEME.light : THEME.dark;
+        const comment = computeCommentColor(keyword, isLight);
+
+        const colors = {
+            keyword: cssColorToHex(keyword),
+            comment: cssColorToHex(comment),
+            bg: cssColorToHex(bg),
+            _red: "cc3333",
+        };
+
+        for (const { name } of categories) {
+            const raw = cs.getPropertyValue(`--color-${name}`).trim();
+            colors[name] = cssColorToHex(raw);
+        }
+
+        const baseL = isLight ? LIGHT_L : BASE_L;
+        const sat = isLight ? settings.lightSaturation : settings.darkSaturation;
+        const hueOffset = effectiveHueOffset();
+        let sharedC;
+        if (settings.chromaMode === "shared") {
+            let minMax = Infinity;
+            for (const { hue } of categories) {
+                const H = (((settings.reverseHue ? -hue : hue) + hueOffset) % 360 + 360) % 360 || 360;
+                minMax = Math.min(minMax, maxChroma(baseL, H));
+            }
+            sharedC = minMax * sat;
+        }
+        const cyanHue = (((settings.reverseHue ? -180 : 180) + hueOffset) % 360 + 360) % 360 || 360;
+        const cyanC = settings.chromaMode === "gamut" ? maxChroma(baseL, cyanHue) * sat
+            : settings.chromaMode === "raw" ? sat * 0.4
+                : sharedC;
+        colors.cyan = oklchToHex(baseL, cyanC, cyanHue);
+
+        return { isLight, themeName, slug, colors, bgStr: bg, overrides: {} };
+    }
+
+    function resolveColor(attrName, colors, overrides) {
+        if (overrides[attrName]) return overrides[attrName];
+        const entry = TOKEN_MAP[attrName];
+        return entry ? colors[entry.color] : null;
+    }
+
+    function buildEditorXml(state) {
+        const { themeName, colors, bgStr, isLight, overrides } = state;
+        const d = isLight ? -1 : 1;
+
+        const caretRow = shiftBgHex(bgStr, d * 0.04);
+        const selection = shiftBgHex(bgStr, d * 0.09);
+        const border = shiftBgHex(bgStr, d * 0.07);
+
+        let attrs = "";
+        for (const [name, entry] of Object.entries(TOKEN_MAP)) {
+            const hex = resolveColor(name, colors, overrides);
+            if (!hex) continue;
+            let ft = entry.fontType ?? 0;
+            if (name === "DEFAULT_KEYWORD") {
+                ft = settings.boldKeywords ? 1 : 0;
+            }
+            attrs += `\n    <option name="${name}">\n      <value>\n        <option name="FOREGROUND" value="${hex}" />`;
+            if (ft) attrs += `\n        <option name="FONT_TYPE" value="${ft}" />`;
+            attrs += `\n      </value>\n    </option>`;
+        }
+
+        for (const [name, base] of BASE_ATTRIBUTES) {
+            attrs += `\n    <option name="${name}" baseAttributes="${base}" />`;
+        }
+
+        attrs += `\n    <option name="WRONG_REFERENCES_ATTRIBUTES">\n      <value>\n        <option name="FOREGROUND" value="cc3333" />\n        <option name="EFFECT_TYPE" value="2" />\n      </value>\n    </option>`;
+
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<scheme name="${themeName} Editor" version="142" parent_scheme="${isLight ? "Default" : "Darcula"}">
+  <option name="FONT_SCALE" value="1.0" />
+  <metaInfo>
+    <property name="ide">idea</property>
+    <property name="ideVersion">2025.3.0.0</property>
+    <property name="originalScheme">${themeName} Editor</property>
+  </metaInfo>
+  <option name="LINE_SPACING" value="1.0" />
+  <option name="EDITOR_FONT_SIZE" value="14" />
+  <option name="EDITOR_FONT_NAME" value="JetBrains Mono" />
+  <colors>
+    <option name="CARET_ROW_COLOR" value="${caretRow}" />
+    <option name="SELECTION_BACKGROUND" value="${selection}" />
+    <option name="GUTTER_BACKGROUND" value="${colors.bg}" />
+    <option name="INDENT_GUIDE" value="${border}" />
+    <option name="SELECTED_INDENT_GUIDE" value="${colors.comment}" />
+    <option name="RIGHT_MARGIN_COLOR" value="${border}" />
+    <option name="TEARLINE_COLOR" value="${border}" />
+    <option name="ADDED_LINES_COLOR" value="${colors.Variable}" />
+    <option name="MODIFIED_LINES_COLOR" value="${colors.OtherLiteral}" />
+    <option name="ERROR_HINT" value="cc3333" />
+  </colors>
+  <attributes>${attrs}
+  </attributes>
+</scheme>`;
+    }
+
+    function buildThemeJson(state) {
+        const { themeName, isLight, slug, colors, bgStr } = state;
+        const d = isLight ? -1 : 1;
+
+        const bgSubtle = shiftBgHex(bgStr, d * 0.03);
+        const bgHover = shiftBgHex(bgStr, d * 0.06);
+        const bgActive = shiftBgHex(bgStr, d * 0.10);
+        const border = shiftBgHex(bgStr, d * 0.08);
+        const bg = colors.bg;
+        const fg = colors.keyword;
+        const comment = colors.comment;
+
+        const ui = {
+            "*": {
+                "background": `#${bg}`,
+                "foreground": `#${fg}`,
+                "selectionBackground": `#${bgActive}`,
+                "selectionForeground": `#${fg}`,
+                "borderColor": `#${border}`,
+                "separatorColor": `#${border}`,
+                "disabledForeground": `#${comment}`,
+            },
+            "Panel": { "background": `#${bg}` },
+            "TabbedPane": { "background": `#${bgSubtle}`, "tabAreaBackground": `#${bgSubtle}` },
+            "ToolWindow": { "HeaderTab.underlineColor": `#${colors.Function}` },
+            "Button": {
+                "default.background": `#${colors.Type}`,
+                "default.foreground": `#${bg}`,
+                "default.startBackground": `#${colors.Type}`,
+                "default.endBackground": `#${colors.Type}`,
+                "default.focusedBorderColor": `#${colors.Type}`,
+                "background": `#${bgHover}`,
+                "foreground": `#${fg}`,
+            },
+            "TextField": { "background": `#${bgHover}`, "foreground": `#${fg}` },
+            "PasswordField": { "background": `#${bgHover}`, "foreground": `#${fg}` },
+            "TextArea": { "background": `#${bgHover}`, "foreground": `#${fg}` },
+            "SearchEverywhere": { "background": `#${bg}` },
+            "Popup": { "background": `#${bgSubtle}`, "borderColor": `#${border}` },
+            "ScrollBar": { "thumbColor": `#${border}`, "thumbBorderColor": `#${border}` },
+            "ProgressBar": { "progressColor": `#${colors.Function}`, "trackColor": `#${bgHover}` },
+            "ToggleButton": {
+                "onBackground": `#${colors.Function}`,
+                "offBackground": `#${bgHover}`,
+            },
+            "Link": {
+                "activeForeground": `#${colors.Function}`,
+                "hoverForeground": `#${colors.Function}`,
+                "visitedForeground": `#${colors.StringLiteral}`,
+            },
+            "Notification": {
+                "background": `#${bgSubtle}`,
+                "errorBackground": `#${bgSubtle}`,
+                "warningBackground": `#${bgSubtle}`,
+            },
+            "Menu": { "background": `#${bgSubtle}`, "selectionBackground": `#${bgActive}` },
+            "MenuItem": { "background": `#${bgSubtle}`, "selectionBackground": `#${bgActive}` },
+            "Tree": { "background": `#${bg}`, "selectionBackground": `#${bgActive}` },
+            "List": { "background": `#${bg}`, "selectionBackground": `#${bgActive}` },
+            "Table": { "background": `#${bg}`, "selectionBackground": `#${bgActive}` },
+            "ComboBox": { "background": `#${bgHover}` },
+            "SpinnerUI": { "background": `#${bgHover}` },
+            "CheckBox": { "background": `#${bg}` },
+            "RadioButton": { "background": `#${bg}` },
+        };
+
+        const icons = {
+            "ColorPalette": {
+                "Actions.Red": "#cc3333",
+                "Actions.Yellow": `#${colors.OtherLiteral}`,
+                "Actions.Green": `#${colors.Variable}`,
+                "Actions.Blue": `#${colors.Type}`,
+                "Actions.Grey": `#${comment}`,
+            },
+        };
+
+        return JSON.stringify({
+            name: themeName,
+            dark: !isLight,
+            author: "Code Theme Builder",
+            parentTheme: isLight ? "IntelliJ" : "Darcula",
+            editorScheme: `/theme/${slug}-editor-theme.xml`,
+            ui,
+            icons,
+        }, null, 2);
+    }
+
+    function buildPluginXml(state) {
+        const { slug, themeName } = state;
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<idea-plugin>
+    <id>${slug}-theme</id>
+    <version>1.0.0</version>
+    <name>${themeName}</name>
+    <category>UI</category>
+    <vendor>Code Theme Builder</vendor>
+    <idea-version since-build="252.25557"/>
+    <description><![CDATA[
+        Generated by Code Theme Builder.
+    ]]></description>
+    <change-notes><![CDATA[Generated theme.]]></change-notes>
+    <depends>com.intellij.modules.platform</depends>
+    <extensions defaultExtensionNs="com.intellij">
+        <themeProvider id="code-theme-builder.${slug}"
+                       path="/theme/${slug}.theme.json"/>
+    </extensions>
+</idea-plugin>`;
+    }
+
+    function buildManifest() {
+        return "Manifest-Version: 1.0\r\nCreated-By: Code Theme Builder\r\n\r\n";
+    }
+
+    function getPluginIcon(state) {
+        const fg = state.colors.Function;
+        const bg = state.colors.bg;
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <rect width="40" height="40" rx="8" fill="#${bg}"/>
+  <circle cx="20" cy="20" r="10" fill="none" stroke="#${fg}" stroke-width="3"/>
+  <circle cx="20" cy="20" r="4" fill="#${fg}"/>
+</svg>`;
+    }
+
+    function hexToRgbString(hex) {
+        const r = parseInt(hex.slice(0, 2), 16);
+        const g = parseInt(hex.slice(2, 4), 16);
+        const b = parseInt(hex.slice(4, 6), 16);
+        return `${r},${g},${b}`;
+    }
+
+    function buildKonsoleColorScheme(state) {
+        const { themeName, colors, bgStr, isLight } = state;
+        const d = isLight ? -1 : 1;
+
+        const bg = colors.bg;
+        const fg = colors.keyword;
+
+        const color0 = isLight ? colors.keyword : shiftBgHex(bgStr, -0.04);
+        const color0Intense = colors.comment;
+
+        const color1 = colors.OtherLiteral;
+        const color2 = colors.StringLiteral;
+        const color3 = colors.Variable;
+        const color4 = colors.Type;
+        const color5 = colors.Function;
+        const color6 = colors.cyan;
+
+        const color7 = isLight ? colors.bg : shiftBgHex(bgStr, 0.40);
+        const color7Intense = isLight ? shiftBgHex(bgStr, 0.05) : colors.keyword;
+
+        const foregroundFaint = colors.comment;
+        const cursor = fg;
+        const cursorText = color0;
+        const selectionBg = shiftBgHex(bgStr, d * 0.09);
+        const selectionFg = fg;
+
+        return `[Background]
+Color=${hexToRgbString(bg)}
+
+[BackgroundFaint]
+Color=${hexToRgbString(bg)}
+
+[BackgroundIntense]
+Color=${hexToRgbString(bg)}
+
+[Color0]
+Color=${hexToRgbString(color0)}
+
+[Color0Faint]
+Color=${hexToRgbString(color0)}
+
+[Color0Intense]
+Color=${hexToRgbString(color0Intense)}
+
+[Color1]
+Color=${hexToRgbString(color1)}
+
+[Color1Faint]
+Color=${hexToRgbString(color1)}
+
+[Color1Intense]
+Color=${hexToRgbString(color1)}
+
+[Color2]
+Color=${hexToRgbString(color2)}
+
+[Color2Faint]
+Color=${hexToRgbString(color2)}
+
+[Color2Intense]
+Color=${hexToRgbString(color2)}
+
+[Color3]
+Color=${hexToRgbString(color3)}
+
+[Color3Faint]
+Color=${hexToRgbString(color3)}
+
+[Color3Intense]
+Color=${hexToRgbString(color3)}
+
+[Color4]
+Color=${hexToRgbString(color4)}
+
+[Color4Faint]
+Color=${hexToRgbString(color4)}
+
+[Color4Intense]
+Color=${hexToRgbString(color4)}
+
+[Color5]
+Color=${hexToRgbString(color5)}
+
+[Color5Faint]
+Color=${hexToRgbString(color5)}
+
+[Color5Intense]
+Color=${hexToRgbString(color5)}
+
+[Color6]
+Color=${hexToRgbString(color6)}
+
+[Color6Faint]
+Color=${hexToRgbString(color6)}
+
+[Color6Intense]
+Color=${hexToRgbString(color6)}
+
+[Color7]
+Color=${hexToRgbString(color7)}
+
+[Color7Faint]
+Color=${hexToRgbString(color7)}
+
+[Color7Intense]
+Color=${hexToRgbString(color7Intense)}
+
+[Cursor]
+Color=${hexToRgbString(cursor)}
+
+[CursorFaint]
+Color=${hexToRgbString(cursor)}
+
+[CursorText]
+Color=${hexToRgbString(cursorText)}
+
+[Foreground]
+Color=${hexToRgbString(fg)}
+
+[ForegroundBold]
+Color=${hexToRgbString(fg)}
+
+[ForegroundFaint]
+Color=${hexToRgbString(foregroundFaint)}
+
+[ForegroundIntense]
+Color=${hexToRgbString(fg)}
+
+[General]
+Description=${themeName}
+
+[SelectionBackground]
+Color=${hexToRgbString(selectionBg)}
+
+[SelectionBackgroundFaint]
+Color=${hexToRgbString(selectionBg)}
+
+[SelectionForeground]
+Color=${hexToRgbString(selectionFg)}
+`;
+    }
+
+    function generateKonsoleColorScheme() {
+        const state = collectThemeState();
+        const content = buildKonsoleColorScheme(state);
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${state.slug}.konsole.colorscheme`;
+        a.click();
+        URL.revokeObjectURL(url);
+        one.alert("Save this in ~/.local/share/konsole");
+    }
+
+    async function generateIjJar() {
+        const state = collectThemeState();
+        const files = [
+            { name: "META-INF/MANIFEST.MF", input: buildManifest() },
+            { name: "META-INF/plugin.xml", input: buildPluginXml(state) },
+            { name: "META-INF/pluginIcon.svg", input: getPluginIcon(state) },
+            { name: `theme/${state.slug}.theme.json`, input: buildThemeJson(state) },
+            { name: `theme/${state.slug}-editor-theme.xml`, input: buildEditorXml(state) },
+        ];
+        const blob = await downloadZip(files).blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${state.slug}.ij.theme.jar`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    const KATE_THEME_TEMPLATE = {
+        "custom-styles": {
+            "Alerts": {
+                "Alert Level 1": {
+                    "background-color": "@Red",
+                    "selected-text-color": "@Crust",
+                    "text-color": "@Crust",
+                },
+                "Alert Level 2": {
+                    "background-color": "@Yellow",
+                    "selected-text-color": "@Crust",
+                    "text-color": "@Crust",
+                },
+                "Alert Level 3": {
+                    "background-color": "@Green",
+                    "selected-text-color": "@Crust",
+                    "text-color": "@Crust",
+                },
+            },
+            "Bash": {
+                "Backquote": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+                "Builtin": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+                "Command": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+                "Control": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Dollar Prefix": {
+                    "italic": true,
+                    "selected-text-color": "@Maroon",
+                    "text-color": "@Maroon",
+                },
+                "Escape": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Expression": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Glob": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Option": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Parameter Expansion": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "String Escape": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Variable": {
+                    "italic": true,
+                    "selected-text-color": "@Maroon",
+                    "text-color": "@Maroon",
+                },
+            },
+            "BibTeX": {
+                "Command": {
+                    "selected-text-color": "@Flamingo",
+                    "text-color": "@Flamingo",
+                },
+                "Entry": { "selected-text-color": "@Flamingo", "text-color": "@Flamingo" },
+                "Field": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Ref Key": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+            },
+            "C": {
+                "Attribute": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Prep. Lib": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Preprocessor": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Standard Attribute": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Standard Suffix": { "selected-text-color": "@Text", "text-color": "@Text" },
+            },
+            "C++": {
+                "Qt Classes": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Qt Functions": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Qt Types": { "selected-text-color": "@Text", "text-color": "@Text" },
+            },
+            "CMake": {
+                "Aliased Targets": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Builtin Variable": {
+                    "selected-text-color": "@Rosewater",
+                    "text-color": "@Rosewater",
+                },
+                "Command": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Environment Variable Substitution": {
+                    "selected-text-color": "@Text",
+                    "text-color": "@Text",
+                },
+                "False Special Arg": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Generator Expression": {
+                    "selected-text-color": "@Yellow",
+                    "text-color": "@Yellow",
+                },
+                "Generator Expression Keyword": {
+                    "selected-text-color": "@Peach",
+                    "text-color": "@Peach",
+                },
+                "Internal Name": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Named Args": {
+                    "bold": true,
+                    "selected-text-color": "@Text",
+                    "text-color": "@Text",
+                },
+                "Property": { "bold": true, "selected-text-color": "@Text", "text-color": "@Text" },
+                "Region Marker": { "selected-text-color": "@Overlay1", "text-color": "@Overlay1" },
+                "Special Args": {
+                    "bold": true,
+                    "selected-text-color": "@Text",
+                    "text-color": "@Text",
+                },
+                "True Special Arg": {
+                    "bold": true,
+                    "selected-text-color": "@Text",
+                    "text-color": "@Text",
+                },
+                "User Function/Macro": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Variable Substitution": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Version Arg": { "selected-text-color": "@Text", "text-color": "@Text" },
+            },
+            "CSS": {
+                "At Rule": {
+                    "italic": true,
+                    "selected-text-color": "@Red",
+                    "text-color": "@Red",
+                },
+                "Color": { "selected-text-color": "@Yellow", "text-color": "@Yellow" },
+                "Function": { "selected-text-color": "@Teal", "text-color": "@Teal" },
+                "Operator": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Property": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Selector Attribute": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Selector Class": { "selected-text-color": "@Teal", "text-color": "@Teal" },
+                "Selector Id": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Selector Pseudo": { "selected-text-color": "@Teal", "text-color": "@Teal" },
+                "Selector Tag": { "selected-text-color": "@Yellow", "text-color": "@Yellow" },
+                "Separator Symbol": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+                "Unit": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Value": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+            },
+            "Diff": {
+                "Added line": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Changed line (new)": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Changed line (old)": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Removed line": { "selected-text-color": "@Red", "text-color": "@Red" },
+            },
+            "Doxygen": {
+                "Custom Tags": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Dot Graph": { "text-color": "@Green" },
+                "Entities": { "text-color": "@Peach" },
+                "Formulas": { "text-color": "@Green" },
+                "Message Sequence Chart": { "text-color": "@Green" },
+                "Tags": { "selected-text-color": "@Red", "text-color": "@Red" },
+            },
+            "Fish": {
+                "Builtin": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+                "Escape": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+                "Option": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Redirection": { "selected-text-color": "@Sky", "text-color": "@Sky" },
+                "Separator": { "selected-text-color": "@Teal", "text-color": "@Teal" },
+                "Variable": { "selected-text-color": "@Text", "text-color": "@Text" },
+            },
+            "GCCExtensions": {
+                "GNU Extensions": {
+                    "selected-text-color": "@Text",
+                    "text-color": "@Text",
+                },
+                "GNU Functions": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "GNU Macros": { "selected-text-color": "@Text", "text-color": "@Text" },
+            },
+            "Go": {
+                "Builtin Function": {
+                    "selected-text-color": "@Flamingo",
+                    "text-color": "@Flamingo",
+                },
+                "Data Type": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Keyword": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+                "Predeclared Identifier": { "bold": true },
+            },
+            "Godot": {
+                "Definition Keyword": {
+                    "italic": true,
+                    "selected-text-color": "@Yellow",
+                    "text-color": "@Yellow",
+                },
+                "Function Call": { "italic": true },
+                "Special Variable": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+                "UnusedVariable": {
+                    "italic": false,
+                    "selected-text-color": "@Text",
+                    "text-color": "@Text",
+                },
+            },
+            "HTML": {
+                "Attribute": { "selected-text-color": "@Yellow", "text-color": "@Yellow" },
+                "Element": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Element Symbols": { "selected-text-color": "@Teal", "text-color": "@Teal" },
+                "Other Text": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+            },
+            "ISO C++": {
+                "Boost Stuff": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Keyword": {
+                    "italic": true,
+                    "selected-text-color": "@Peach",
+                    "text-color": "@Peach",
+                },
+                "Prep. Lib": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Preprocessor": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Raw String": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Standard Classes": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Standard Macros": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Standard Suffix": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Type Modifiers": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+            },
+            "JSON": {
+                "Style_Seperator_Array": {
+                    "selected-text-color": "@Text",
+                    "text-color": "@Text",
+                },
+                "Style_Seperator_Pair": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Style_String_Key": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+            },
+            "Java": {
+                "Function": {
+                    "italic": true,
+                    "selected-text-color": "@Blue",
+                    "text-color": "@Blue",
+                },
+                "Java15": {
+                    "italic": true,
+                    "selected-text-color": "@Yellow",
+                    "text-color": "@Yellow",
+                },
+            },
+            "JavaScript": {
+                "Built-in Objects": {
+                    "selected-text-color": "@Text",
+                    "text-color": "@Text",
+                },
+                "Constant": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Function Declaration": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Function Name": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "JSON": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Object Member": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Object Method (Built-in)": {
+                    "selected-text-color": "@Text",
+                    "text-color": "@Text",
+                },
+                "Pattern Character Class": {
+                    "selected-text-color": "@Text",
+                    "text-color": "@Text",
+                },
+                "Pattern Internal Operator": {
+                    "selected-text-color": "@Text",
+                    "text-color": "@Text",
+                },
+                "Regular Expression": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Reserved": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Template": { "selected-text-color": "@Text", "text-color": "@Text" },
+            },
+            "Javadoc": {
+                "BlockTag": {
+                    "italic": true,
+                    "selected-text-color": "@Red",
+                    "text-color": "@Red",
+                },
+            },
+            "Kconfig": {
+                "Help Text": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Property": { "selected-text-color": "@Flamingo", "text-color": "@Flamingo" },
+                "Source": { "text-color": "@PureRed" },
+            },
+            "Kotlin": {
+                "Function": { "italic": true },
+                "Keyword": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "String Interpolation": { "selected-text-color": "@Green", "text-color": "@Green" },
+            },
+            "LaTeX": {
+                "Ampersand": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+                "Builtin Macro": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Column Separator": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Environment": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+                "Macro": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Math": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+                "Option Text": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+                "Reference": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+                "Region Marker": {
+                    "italic": true,
+                    "selected-text-color": "@Overlay1",
+                    "text-color": "@Overlay1",
+                },
+                "Sectioning Macro": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Sectioning Math": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Structure": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Verbatim": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+                "Verbatim Code": { "selected-text-color": "@Text", "text-color": "@Text" },
+            },
+            "Lua": {
+                "Constant": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Keyword": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Special Variable": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+            },
+            "Makefile": { "Silent": { "selected-text-color": "@Peach", "text-color": "@Peach" } },
+            "Markdown": {
+                "Auto-Link": {
+                    "italic": true,
+                    "selected-text-color": "@Rosewater",
+                    "text-color": "@Rosewater",
+                    "underline": true,
+                },
+                "Blockquote": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Blockquote: Emphasis Text": {
+                    "selected-text-color": "@Red",
+                    "text-color": "@Red",
+                },
+                "Blockquote: Link": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Blockquote: Normal Text": {
+                    "selected-text-color": "@Green",
+                    "text-color": "@Green",
+                },
+                "Blockquote: Strikethrough Text": {
+                    "selected-text-color": "@Green",
+                    "text-color": "@Green",
+                },
+                "Blockquote: Strong Text": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Blockquote: Strong-Emphasis Text": {
+                    "selected-text-color": "@Red",
+                    "text-color": "@Red",
+                },
+                "Code": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Email": { "selected-text-color": "@Rosewater", "text-color": "@Rosewater" },
+                "Emphasis Text": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Fenced Code": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Inline Image": { "selected-text-color": "@Subtext1", "text-color": "@Subtext1" },
+                "Inline Image: Link": {
+                    "italic": true,
+                    "selected-text-color": "@Rosewater",
+                    "text-color": "@Rosewater",
+                },
+                "Line Break": { "text-color": "@Text" },
+                "Link": {
+                    "italic": true,
+                    "selected-text-color": "@Rosewater",
+                    "text-color": "@Rosewater",
+                },
+                "List": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "List: Checkbox": { "selected-text-color": "@Teal", "text-color": "@Teal" },
+                "List: Emphasis Text": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "List: Link": {
+                    "italic": true,
+                    "selected-text-color": "@Rosewater",
+                    "text-color": "@Rosewater",
+                },
+                "List: Normal Text": { "selected-text-color": "@Teal", "text-color": "@Teal" },
+                "List: Strong Text": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "List: Strong-Emphasis Text": {
+                    "selected-text-color": "@Red",
+                    "text-color": "@Red",
+                },
+                "Mailto-Link": {
+                    "italic": true,
+                    "selected-text-color": "@Rosewater",
+                    "text-color": "@Rosewater",
+                    "underline": true,
+                },
+                "Metadata": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Metadata Title": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Normal Text: Link": {
+                    "selected-text-color": "@Rosewater",
+                    "text-color": "@Rosewater",
+                },
+                "Number List": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Reference Image": {
+                    "bold": true,
+                    "selected-text-color": "@Rosewater",
+                    "text-color": "@Rosewater",
+                    "underline": true,
+                },
+                "Reference-Link": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Reference-Link ID": {
+                    "italic": true,
+                    "selected-text-color": "@Subtext1",
+                    "text-color": "@Subtext1",
+                },
+                "Reference-Link Name": {
+                    "italic": true,
+                    "selected-text-color": "@Subtext1",
+                    "text-color": "@Subtext1",
+                },
+                "Reference-Link Target": {
+                    "selected-text-color": "@Subtext1",
+                    "text-color": "@Subtext1",
+                },
+                "Reference-Link Target: Link": {
+                    "italic": true,
+                    "selected-text-color": "@Rosewater",
+                    "text-color": "@Rosewater",
+                },
+                "Reference-Link: Email": {
+                    "selected-text-color": "@Rosewater",
+                    "text-color": "@Rosewater",
+                },
+                "Reference-Link: Link": {
+                    "italic": true,
+                    "selected-text-color": "@Rosewater",
+                    "text-color": "@Rosewater",
+                },
+                "Strong Text": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Strong-Emphasis Text": { "selected-text-color": "@Red", "text-color": "@Red" },
+            },
+            "Python": {
+                "Builtin Function": {
+                    "italic": true,
+                    "selected-text-color": "@Peach",
+                    "text-color": "@Peach",
+                },
+                "F-String": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Import": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+                "Raw B-String": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Raw F-String": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Raw String": { "selected-text-color": "@Green", "text-color": "@Green" },
+            },
+            "Ruby": {
+                "Constant": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Default globals": {
+                    "selected-text-color": "@Flamingo",
+                    "text-color": "@Flamingo",
+                },
+                "Global Constant": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Global Variable": {
+                    "selected-text-color": "@Flamingo",
+                    "text-color": "@Flamingo",
+                },
+                "Here Document": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Instance Variable": {
+                    "selected-text-color": "@Flamingo",
+                    "text-color": "@Flamingo",
+                },
+                "Kernel methods": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+                "Message": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Raw String": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Regular Expression": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+            },
+            "Rust": {
+                "Attribute": { "italic": true },
+                "CharEscape": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Definition": {
+                    "italic": true,
+                    "selected-text-color": "@Blue",
+                    "text-color": "@Blue",
+                },
+                "Macro": { "selected-text-color": "@Sky", "text-color": "@Sky" },
+                "Scope": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Self": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+                "Trait": {
+                    "italic": true,
+                    "selected-text-color": "@Yellow",
+                    "text-color": "@Yellow",
+                },
+            },
+            "SQL": {
+                "Operator Keyword": {
+                    "selected-text-color": "@Mauve",
+                    "text-color": "@Mauve",
+                },
+            },
+            "TOML": {
+                "Key": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "LitString": { "selected-text-color": "@Green", "text-color": "@Green" },
+            },
+            "XML": {
+                "Attribute": { "selected-text-color": "@Yellow", "text-color": "@Yellow" },
+                "Doctype": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Doctype Name": { "selected-text-color": "@Yellow", "text-color": "@Yellow" },
+                "Doctype Symbols": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Element": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "PI Symbols": { "selected-text-color": "@Yellow", "text-color": "@Yellow" },
+                "Processing Instruction": {
+                    "selected-text-color": "@Yellow",
+                    "text-color": "@Yellow",
+                },
+            },
+            "YAML": {
+                "Alert": {
+                    "background-color": "@Red",
+                    "selected-text-color": "@Crust",
+                    "text-color": "@Crust",
+                },
+                "Alias": { "selected-text-color": "@Surface2", "text-color": "@Surface2" },
+                "Attribute": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Boolean": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Data Types": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Document Header": { "selected-text-color": "@Teal", "text-color": "@Teal" },
+                "Escaped Character": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Float": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Integer": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Key Points Operator": { "selected-text-color": "@Teal", "text-color": "@Teal" },
+                "List": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Literal/Folded Block": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Literal/Folded Operator": {
+                    "selected-text-color": "@Green",
+                    "text-color": "@Green",
+                },
+                "Normal Text": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Null": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Operator": { "selected-text-color": "@Teal", "text-color": "@Teal" },
+            },
+            "sed": {
+                "Last Line": { "text-color": "@Peach" },
+                "Negation": { "text-color": "@Peach" },
+                "Separator": { "selected-text-color": "@Red", "text-color": "@Red" },
+            },
+            "CSV": {
+                "Column 1": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 2": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 3": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 4": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Column 5": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Column 6": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 7": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 8": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 1 Separator": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 2 Separator": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 3 Separator": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 4 Separator": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Column 5 Separator": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Column 6 Separator": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 7 Separator": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 8 Separator": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+            },
+            "TSV": {
+                "Column 1": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 2": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 3": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 4": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Column 5": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Column 6": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 7": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 8": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 1 Separator": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 2 Separator": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 3 Separator": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 4 Separator": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Column 5 Separator": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Column 6 Separator": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 7 Separator": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 8 Separator": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+            },
+            "CSV (semicolon)": {
+                "Column 1": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 2": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 3": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 4": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Column 5": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Column 6": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 7": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 8": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 1 Separator": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 2 Separator": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 3 Separator": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 4 Separator": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Column 5 Separator": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Column 6 Separator": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 7 Separator": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 8 Separator": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+            },
+            "CSV (whitespace)": {
+                "Column 1": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 2": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 3": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 4": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Column 5": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Column 6": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 7": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 8": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 1 Separator": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 2 Separator": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 3 Separator": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 4 Separator": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Column 5 Separator": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Column 6 Separator": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 7 Separator": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 8 Separator": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+            },
+            "CSV (pipe)": {
+                "Column 1": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 2": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 3": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 4": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Column 5": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Column 6": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 7": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 8": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 1 Separator": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 2 Separator": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 3 Separator": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+                "Column 4 Separator": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+                "Column 5 Separator": { "selected-text-color": "@Text", "text-color": "@Text" },
+                "Column 6 Separator": { "selected-text-color": "@Green", "text-color": "@Green" },
+                "Column 7 Separator": { "selected-text-color": "@Red", "text-color": "@Red" },
+                "Column 8 Separator": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+            },
+        },
+        "editor-colors": {
+            "BackgroundColor": "@Base",
+            "BracketMatching": "@Flamingo:32",
+            "CodeFolding": "@Sky:1a",
+            "CurrentLine": "@Surface0",
+            "CurrentLineNumber": "@Text",
+            "IconBorder": "@Base",
+            "IndentationLine": "@Surface0",
+            "LineNumbers": "@Subtext0",
+            "MarkBookmark": "@Mauve",
+            "MarkBreakpointActive": "@Pink",
+            "MarkBreakpointDisabled": "@Overlay0",
+            "MarkBreakpointReached": "@Green",
+            "MarkError": "@Red",
+            "MarkExecution": "@Overlay2",
+            "MarkWarning": "@Peach",
+            "ModifiedLines": "@Peach",
+            "ReplaceHighlight": "@Green:66",
+            "SavedLines": "@Green",
+            "SearchHighlight": "@Blue:66",
+            "Separator": "@Crust",
+            "SpellChecking": "@Maroon",
+            "TabMarker": "@Surface0",
+            "TemplateBackground": "@Surface2",
+            "TemplateFocusedPlaceholder": "@Teal",
+            "TemplatePlaceholder": "@Sapphire",
+            "TemplateReadOnlyPlaceholder": "@Maroon",
+            "TextSelection": "@Surface1:8c",
+            "WordWrapMarker": "@Surface2",
+        },
+        "metadata": {
+            "copyright": ["SPDX-FileCopyrightText: 2021 Catppuccin Org"],
+            "license": "SPDX-License-Identifier: MIT",
+            "name": "Catppuccin Frapp\u00e9",
+            "revision": 4,
+        },
+        "text-styles": {
+            "Alert": { "bold": true, "selected-text-color": "@Red", "text-color": "@Red" },
+            "Annotation": { "selected-text-color": "@Yellow", "text-color": "@Yellow" },
+            "Attribute": { "selected-text-color": "@Lavender", "text-color": "@Lavender" },
+            "BaseN": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+            "BuiltIn": { "selected-text-color": "@Red", "text-color": "@Red" },
+            "Char": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+            "Comment": {
+                "italic": true,
+                "selected-text-color": "@Overlay0",
+                "text-color": "@Overlay0",
+            },
+            "CommentVar": {
+                "italic": true,
+                "selected-text-color": "@Overlay0",
+                "text-color": "@Overlay0",
+            },
+            "Constant": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+            "ControlFlow": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+            "DataType": { "selected-text-color": "@Sapphire", "text-color": "@Sapphire" },
+            "DecVal": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+            "Documentation": { "selected-text-color": "@Red", "text-color": "@Red" },
+            "Error": { "selected-text-color": "@Red", "text-color": "@Red", "underline": true },
+            "Extension": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+            "Float": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+            "Function": { "selected-text-color": "@Blue", "text-color": "@Blue" },
+            "Import": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+            "Information": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+            "Keyword": { "selected-text-color": "@Mauve", "text-color": "@Mauve" },
+            "Normal": { "selected-text-color": "@Text", "text-color": "@Text" },
+            "Operator": { "selected-text-color": "@Sky", "text-color": "@Sky" },
+            "Others": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+            "Preprocessor": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+            "RegionMarker": {
+                "italic": true,
+                "selected-text-color": "@Overlay0",
+                "text-color": "@Overlay0",
+            },
+            "SpecialChar": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+            "SpecialString": { "selected-text-color": "@Red", "text-color": "@Red" },
+            "String": { "selected-text-color": "@Green", "text-color": "@Green" },
+            "Variable": { "selected-text-color": "@Pink", "text-color": "@Pink" },
+            "VerbatimString": { "selected-text-color": "@Red", "text-color": "@Red" },
+            "Warning": { "selected-text-color": "@Peach", "text-color": "@Peach" },
+        },
+    };
+
+    function generateKateTheme() {
+        const state = collectThemeState();
+        const d = state.isLight ? -1 : 1;
+
+        const mapping = {
+            Base: state.colors.bg,
+            Mantle: shiftBgHex(state.bgStr, -0.02),
+            Crust: shiftBgHex(state.bgStr, -0.04),
+            Surface0: shiftBgHex(state.bgStr, d * 0.04),
+            Surface1: shiftBgHex(state.bgStr, d * 0.08),
+            Surface2: state.colors.comment,
+            Overlay0: state.colors.comment,
+            Overlay1: state.colors.comment,
+            Overlay2: state.colors.comment,
+            Subtext0: state.colors.comment,
+            Subtext1: state.colors.keyword,
+            Text: state.colors.keyword,
+            Lavender: state.colors.Function,
+            Blue: state.colors.Function,
+            Sapphire: state.colors.Type,
+            Sky: state.colors.cyan,
+            Teal: state.colors.cyan,
+            Green: state.colors.StringLiteral,
+            Yellow: state.colors.Variable,
+            Peach: state.colors.OtherLiteral,
+            Maroon: state.colors._red,
+            Red: state.colors._red,
+            PureRed: state.colors._red,
+            Pink: state.colors.Variable,
+            Mauve: state.colors.keyword,
+            Rosewater: state.colors.Variable,
+            Flamingo: state.colors.Variable,
+        };
+
+        const theme = JSON.parse(JSON.stringify(KATE_THEME_TEMPLATE));
+        if (settings.boldKeywords) {
+            theme["text-styles"]["Keyword"].bold = true;
+            theme["text-styles"]["ControlFlow"].bold = true;
+            theme["text-styles"]["Import"].bold = true;
+        } else {
+            delete theme["text-styles"]["Keyword"].bold;
+            delete theme["text-styles"]["ControlFlow"].bold;
+            delete theme["text-styles"]["Import"].bold;
+        }
+
+        function resolve(obj) {
+            for (const k in obj) {
+                if (typeof obj[k] === "string" && obj[k].startsWith("@")) {
+                    const parts = obj[k].slice(1).split(":");
+                    const name = parts[0];
+                    const alpha = parts[1] || "";
+                    const hex = mapping[name] || "000000";
+                    obj[k] = "#" + alpha + hex;
+                } else if (typeof obj[k] === "object" && obj[k] !== null) {
+                    resolve(obj[k]);
+                }
+            }
+        }
+
+        resolve(theme);
+
+        theme.metadata = {
+            copyright: null,
+            license: "SPDX-License-Identifier: Apache-2.0",
+            name: state.themeName,
+            revision: 1,
+        };
+
+        const themeContent = JSON.stringify(theme, null, 4);
+        const blob = new Blob([themeContent], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${state.slug}.kate.theme`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async function resetSettings() {
+        if (await one.confirm("Reset all settings to default?")) {
+            localStorage.removeItem("codeThemeBuilderState");
+            location.reload();
+        }
+    }
+
+    document.getElementById("btn-export").addEventListener("click", () => {
+        const { slug } = collectThemeState();
+
+        const blob = new Blob([JSON.stringify(settings, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${slug}-settings.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("import-file").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const importedSettings = JSON.parse(event.target.result);
+                Object.assign(settings, importedSettings);
+                sanitizeSettings();
+                updateUIFromSettings();
+                refresh();
+                applyThemeColors(settings.currentIsLight);
+            } catch (err) {
+                one.alert("Error parsing JSON file: " + err.message);
+            }
+        };
+
+        reader.readAsText(file);
+        e.target.value = "";
+    });
+
+    document.querySelector("[data-tooltip=\"KDE Konsole\"]").addEventListener("click", generateKonsoleColorScheme);
+    document.querySelector("[data-tooltip=\"IntelliJ IDEs\"]").addEventListener("click", generateIjJar);
+    document.querySelector("[data-tooltip=\"KDE Kate\"]").addEventListener("click", generateKateTheme);
+</script>
+</body>
+</html>
