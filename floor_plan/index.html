@@ -357,296 +357,305 @@ office at north west required
     <article>
         <header>
             <h3 id="dialog-title">Floor Plan DSL Specification</h3>
-            <button class="btn-sym modal-close" type="button" aria-label="Close dialog" data-action="close">
+            <button class="btn-sym modal-close" type="button" aria-label="Close dialog"
+                    data-action="close">
                 <span class="sym">close</span>
             </button>
         </header>
 
         <div class="dialog-content">
 
-        <p id="dialog-desc">A declarative DSL for constraint-based room layout optimization.</p>
+            <p id="dialog-desc">A declarative DSL for constraint-based room layout optimization.</p>
 
-        <div class="note">
-            <strong>Parameters:</strong>
-            append <code>weight=1.5</code>
-            to any rule to increase its importance (default <code>1</code>
-            ). Append <code>required</code> to mark a rule as a hard constraint — the optimizer
-            retries until it is satisfied.
-        </div>
+            <div class="note">
+                <strong>Parameters:</strong>
+                append <code>weight=1.5</code>
+                to any rule to increase its importance (default <code>1</code>
+                ). Append <code>required</code> to mark a rule as a hard constraint — the optimizer
+                retries until it is satisfied.
+            </div>
 
-        <h2>1. Global Settings</h2>
-        <div class="table-container">
-            <table>
-                <tr>
-                    <th>Syntax</th>
-                    <th>Description</th>
-                </tr>
-                <tr>
-                    <td>
-                        <code>canvas 500 500</code>
-                        <br>
-                        <code>canvas 500x500</code>
-                        <br>
-                        <code>canvas 500 500 flexible</code>
-                    </td>
-                    <td>
-                        Constrains layout to fixed bounds. Without <code>flexible</code>
-                        , the floor plan is always compressed to fit the canvas. With
-                        <code>flexible</code>, the canvas is a soft constraint — overflow is
-                        penalized
-                        but not forced out.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>seed 42</code>
-                    </td>
-                    <td>Deterministic PRNG seed.</td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>iter 2</code>
-                    </td>
-                    <td>Multiplies the default iteration budget.</td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>ratio_max 3:1</code>
-                    </td>
-                    <td>Global maximum aspect ratio for any room.</td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>area_min 100</code>
-                        <br>
-                        <code>side_min 10</code>
-                        <br>
-                        <code>side_min 10 flexible</code>
-                        <br>
-                        <code>side_max 50</code>
-                    </td>
-                    <td>
-                        Global area and side length constraints. <code>side_min</code>
-                        is enforced as a hard constraint by default — room shape curves are clamped
-                        so
-                        no dimension falls below the limit. Append <code>flexible</code> to treat it
-                        as
-                        a soft hint only.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>cwl 100</code>
-                        <br>
-                        <code>cwc 2</code>
-                    </td>
-                    <td>
-                        Default connected wall length (<code>cwl</code>
-                        ) and min connected wall count (<code>cwc</code>).
-                    </td>
-                </tr>
-            </table>
-        </div>
+            <h2>1. Global Settings</h2>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Syntax</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>canvas 500 500</code>
+                            <br>
+                            <code>canvas 500x500</code>
+                            <br>
+                            <code>canvas 500 500 flexible</code>
+                        </td>
+                        <td>
+                            Constrains layout to fixed bounds. Without <code>flexible</code>
+                            , the floor plan is always compressed to fit the canvas. With
+                            <code>flexible</code>, the canvas is a soft constraint — overflow is
+                            penalized
+                            but not forced out.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>seed 42</code>
+                        </td>
+                        <td>Deterministic PRNG seed.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>iter 2</code>
+                        </td>
+                        <td>Multiplies the default iteration budget.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>ratio_max 3:1</code>
+                        </td>
+                        <td>Global maximum aspect ratio for any room.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>area_min 100</code>
+                            <br>
+                            <code>side_min 10</code>
+                            <br>
+                            <code>side_min 10 flexible</code>
+                            <br>
+                            <code>side_max 50</code>
+                        </td>
+                        <td>
+                            Global area and side length constraints. <code>side_min</code>
+                            is enforced as a hard constraint by default — room shape curves are
+                            clamped
+                            so
+                            no dimension falls below the limit. Append <code>flexible</code> to
+                            treat it
+                            as
+                            a soft hint only.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>cwl 100</code>
+                            <br>
+                            <code>cwc 2</code>
+                        </td>
+                        <td>
+                            Default connected wall length (<code>cwl</code>
+                            ) and min connected wall count (<code>cwc</code>).
+                        </td>
+                    </tr>
+                </table>
+            </div>
 
-        <hr>
+            <hr>
 
-        <h2>2. Rooms &amp; Variables</h2>
-        <div class="table-container">
-            <table>
-                <tr>
-                    <th>Syntax</th>
-                    <th>Description</th>
-                </tr>
-                <tr>
-                    <td>
-                        <code>room A</code>
-                    </td>
-                    <td>
-                        Declare a room named <code>A</code>.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>room A area=200</code>
-                        <br>
-                        <code>room A area=10x20</code>
-                    </td>
-                    <td>Set target area or target dimensions for the room.</td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>room A area_min=50 side_min=5</code>
-                    </td>
-                    <td>Override global constraints for this room.</td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>room A ratio=3:2</code>
-                    </td>
-                    <td>Target aspect ratio for the room.</td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>room A ratio_max=2:1</code>
-                    </td>
-                    <td>Override global maximum aspect ratio for this room.</td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>group = [A, B]</code>
-                    </td>
-                    <td>Define a variable containing multiple rooms.</td>
-                </tr>
-            </table>
-        </div>
+            <h2>2. Rooms &amp; Variables</h2>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Syntax</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>room A</code>
+                        </td>
+                        <td>
+                            Declare a room named <code>A</code>.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>room A area=200</code>
+                            <br>
+                            <code>room A area=10x20</code>
+                        </td>
+                        <td>Set target area or target dimensions for the room.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>room A area_min=50 side_min=5</code>
+                        </td>
+                        <td>Override global constraints for this room.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>room A ratio=3:2</code>
+                        </td>
+                        <td>Target aspect ratio for the room.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>room A ratio_max=2:1</code>
+                        </td>
+                        <td>Override global maximum aspect ratio for this room.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>group = [A, B]</code>
+                        </td>
+                        <td>Define a variable containing multiple rooms.</td>
+                    </tr>
+                </table>
+            </div>
 
-        <hr>
+            <hr>
 
-        <h2>3. Rules &amp; Constraints</h2>
-        <div class="table-container">
-            <table>
-                <tr>
-                    <th>Syntax</th>
-                    <th>Description</th>
-                </tr>
-                <tr>
-                    <td>
-                        <code>A close B</code>
-                    </td>
-                    <td>Minimize distance between rooms.</td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>A far B</code>
-                    </td>
-                    <td>Maximize distance between rooms.</td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>A connect B</code>
-                    </td>
-                    <td>
-                        Rooms must share a wall. Append <code>cwl=50</code> to override the required
-                        wall length.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>A {rule} any [B, C]</code>
-                        <br>
-                        <code>A {rule} any list</code>
-                    </td>
-                    <td>
-                        Target-side <code>any</code>
-                        : <b>OR</b>
-                        across targets — rule satisfied if it holds for at least one target. Works
-                        with
-                        <code>connect</code>
-                        , <code>close</code>
-                        , and <code>far</code>.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>any [A, B] {rule} C</code>
-                        <br>
-                        <code>any list {rule} C</code>
-                    </td>
-                    <td>
-                        Subject-side <code>any</code>
-                        : <b>OR</b>
-                        across subjects — rule satisfied if it holds for at least one room in the
-                        subject list. Combine freely with target-side <code>any</code>
-                        : <code>any [A, B] connect any [C, D]</code>.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>A {rule} [all but B]</code>
-                        <br>
-                        <code>A {rule} [all but B, C]</code>
-                        <br>
-                        <code>A {rule} [all but group]</code>
-                    </td>
-                    <td>
-                        Expands to every declared room except those listed. Works as subject too:
-                        <code>[all
-                            but A] {rule} B</code>. Exclusion is comma-separated rooms and/or group
-                        names.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>A at north</code>
-                    </td>
-                    <td>Snap room to the layout edge (north, south, east, west, edge).</td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>A not at north</code>
-                    </td>
-                    <td>Penalize touching the specified layout bound.</td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>A enclosed</code>
-                    </td>
-                    <td>Avoid placing the room on any outer edge.</td>
-                </tr>
-            </table>
-        </div>
+            <h2>3. Rules &amp; Constraints</h2>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Syntax</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>A close B</code>
+                        </td>
+                        <td>Minimize distance between rooms.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>A far B</code>
+                        </td>
+                        <td>Maximize distance between rooms.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>A connect B</code>
+                        </td>
+                        <td>
+                            Rooms must share a wall. Append <code>cwl=50</code> to override the
+                            required
+                            wall length.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>A {rule} any [B, C]</code>
+                            <br>
+                            <code>A {rule} any list</code>
+                        </td>
+                        <td>
+                            Target-side <code>any</code>
+                            : <b>OR</b>
+                            across targets — rule satisfied if it holds for at least one target.
+                            Works
+                            with
+                            <code>connect</code>
+                            , <code>close</code>
+                            , and <code>far</code>.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>any [A, B] {rule} C</code>
+                            <br>
+                            <code>any list {rule} C</code>
+                        </td>
+                        <td>
+                            Subject-side <code>any</code>
+                            : <b>OR</b>
+                            across subjects — rule satisfied if it holds for at least one room in
+                            the
+                            subject list. Combine freely with target-side <code>any</code>
+                            : <code>any [A, B] connect any [C, D]</code>.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>A {rule} [all but B]</code>
+                            <br>
+                            <code>A {rule} [all but B, C]</code>
+                            <br>
+                            <code>A {rule} [all but group]</code>
+                        </td>
+                        <td>
+                            Expands to every declared room except those listed. Works as subject
+                            too:
+                            <code>[all
+                                but A] {rule} B</code>. Exclusion is comma-separated rooms and/or
+                            group
+                            names.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>A at north</code>
+                        </td>
+                        <td>Snap room to the layout edge (north, south, east, west, edge).</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>A not at north</code>
+                        </td>
+                        <td>Penalize touching the specified layout bound.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>A enclosed</code>
+                        </td>
+                        <td>Avoid placing the room on any outer edge.</td>
+                    </tr>
+                </table>
+            </div>
 
-        <hr>
+            <hr>
 
-        <h2>
-            4. Nested Floor Plans (<code>inside</code>)
-        </h2>
-        <div class="table-container">
-            <table>
-                <tr>
-                    <th>Syntax</th>
-                    <th>Description</th>
-                </tr>
-                <tr>
-                    <td>
+            <h2>
+                4. Nested Floor Plans (<code>inside</code>)
+            </h2>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Syntax</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>
 <pre>
 <code>inside A {
   room x
   room y
   x connect y
 }</code></pre>
-                    </td>
-                    <td>
-                        Defines a sub-floor-plan <em>inside</em>
-                        room <code>A</code>.
-                        The outer plan is optimized first. Once <code>A</code>'s dimensions
-                        are known, its inner plan is optimized using those dimensions as the canvas.
-                        The inner scope is isolated — inner room IDs do not conflict with outer
-                        ones.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <code>canvas</code> inside a block
-                    </td>
-                    <td>
-                        <strong>Error.</strong> The canvas for an inner plan is always the
-                        resolved dimensions of the parent room. Declaring it explicitly is not
-                        allowed.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        Nested <code>inside</code>
-                    </td>
-                    <td>
-                        Works recursively. An <code>inside</code> block can itself contain
-                        further <code>inside</code> blocks. Each level is optimized after
-                        its parent's dimensions are resolved.
-                    </td>
-                </tr>
-                <tr>
-                    <td>
+                        </td>
+                        <td>
+                            Defines a sub-floor-plan <em>inside</em>
+                            room <code>A</code>.
+                            The outer plan is optimized first. Once <code>A</code>'s dimensions
+                            are known, its inner plan is optimized using those dimensions as the
+                            canvas.
+                            The inner scope is isolated — inner room IDs do not conflict with outer
+                            ones.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>canvas</code> inside a block
+                        </td>
+                        <td>
+                            <strong>Error.</strong> The canvas for an inner plan is always the
+                            resolved dimensions of the parent room. Declaring it explicitly is not
+                            allowed.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Nested <code>inside</code>
+                        </td>
+                        <td>
+                            Works recursively. An <code>inside</code> block can itself contain
+                            further <code>inside</code> blocks. Each level is optimized after
+                            its parent's dimensions are resolved.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
 <pre>
 <code>inside suite {
   room bed area=80000
@@ -654,32 +663,35 @@ office at north west required
   bed far loud
   bed close any meal
 }</code></pre>
-                    </td>
-                    <td>
-                        Inner rooms may reference <strong>outer rooms and groups</strong>
-                        as targets in <code>close</code>
-                        , <code>far</code>
-                        , and <code>connect</code> rules.
-                        The outer room is treated as a fixed reference — its position relative to
-                        the
-                        parent room is known after the outer plan is solved.<br>
-                        <br>
-                        A cross-boundary <code>connect</code>
-                        is translated to <code>at &lt;dir&gt;</code>
-                        : the direction (north/south/east/west) is inferred from the outer room's
-                        position relative to the parent room, so the inner room is pushed to the
-                        nearest
-                        wall facing that outer room.<br>
-                        <br>
-                        <code>required</code> is not supported on all cross-boundary rules and will
-                        be
-                        ignored with a warning.
-                        Outer rooms cannot be rule <em>subjects</em>
-                        inside an <code>inside</code> block.
-                    </td>
-                </tr>
-            </table>
-        </div>
+                        </td>
+                        <td>
+                            Inner rooms may reference <strong>outer rooms and groups</strong>
+                            as targets in <code>close</code>
+                            , <code>far</code>
+                            , and <code>connect</code> rules.
+                            The outer room is treated as a fixed reference — its position relative
+                            to
+                            the
+                            parent room is known after the outer plan is solved.<br>
+                            <br>
+                            A cross-boundary <code>connect</code>
+                            is translated to <code>at &lt;dir&gt;</code>
+                            : the direction (north/south/east/west) is inferred from the outer
+                            room's
+                            position relative to the parent room, so the inner room is pushed to the
+                            nearest
+                            wall facing that outer room.<br>
+                            <br>
+                            <code>required</code> is not supported on all cross-boundary rules and
+                            will
+                            be
+                            ignored with a warning.
+                            Outer rooms cannot be rule <em>subjects</em>
+                            inside an <code>inside</code> block.
+                        </td>
+                    </tr>
+                </table>
+            </div>
 
         </div>
 

@@ -350,6 +350,7 @@
     const EXTRACT_RE = /^(.+?)\s*(?:[-–—:]\s*)?([\(]*(?:\d{1,4}|(?:jan|feb|mar|mär|maer|apr|may|mai|jun|jul|aug|sep|oct|okt|nov|dec|dez)[a-z]*)(?:[\.\s\-\/–,+)(].*|$))$/i;
     const OR_SPLIT_RE = /\s+\bOR\b\s+/i;
     const PART_SPLIT_RE = /[,+]/;
+
     function splitRange(str) {
         const spacedMatch = str.match(/\s+(?:[-–—]|to)\s+/i);
         if (spacedMatch) {
@@ -364,18 +365,19 @@
             return [str.slice(0, idx).trim(), str.slice(idx + 1).trim()].filter(Boolean);
         }
 
-        const parts = str.split('-');
+        const parts = str.split("-");
         if (parts.length === 2) {
             return parts.map(s => s.trim()).filter(Boolean);
         }
         if (parts.length === 6) {
             return [
-                parts.slice(0, 3).join('-').trim(),
-                parts.slice(3).join('-').trim()
+                parts.slice(0, 3).join("-").trim(),
+                parts.slice(3).join("-").trim(),
             ].filter(Boolean);
         }
         return [str.trim()].filter(Boolean);
     }
+
     const ISO_DATE_RE = /^(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})$/;
     const US_DATE_RE = /^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/;
     const EUR_DATE_RE = /^(\d{1,2})[\.\s](\d{1,2})(?:[\.\s](\d{2,4}))?$/;
@@ -968,7 +970,15 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
 
     function countOverlapDays(ranges, halfTimePeople = new Set()) {
         if (ranges.length === 0) {
-            return { total: 0, work: 0, ftTotal: 0, ftWork: 0, ftTotalCounts: {}, ftWorkCounts: {}, risk: 0 };
+            return {
+                total: 0,
+                work: 0,
+                ftTotal: 0,
+                ftWork: 0,
+                ftTotalCounts: {},
+                ftWorkCounts: {},
+                risk: 0,
+            };
         }
 
         const allDates = ranges.flatMap(r => [r.start, r.end]);
@@ -1483,8 +1493,8 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
 
         combosWithRanges.sort((a, b) => {
             return a.overlapDays.risk - b.overlapDays.risk ||
-                   a.overlapDays.work - b.overlapDays.work ||
-                   a.overlapDays.total - b.overlapDays.total;
+                a.overlapDays.work - b.overlapDays.work ||
+                a.overlapDays.total - b.overlapDays.total;
         });
 
         combosWithRanges.forEach((item, idx) => {

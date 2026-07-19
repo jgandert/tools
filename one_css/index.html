@@ -96,15 +96,19 @@
     </hgroup>
 
     <nav aria-label="Primary">
-        <button type="button" id="download-zip-btn" class="btn-sym" data-tooltip="Download one.css bundle (ZIP)">download</button>
+        <button type="button" id="download-zip-btn" class="btn-sym"
+                data-tooltip="Download one.css bundle (ZIP)">download
+        </button>
     </nav>
 
     <div class="dropdown">
-        <button id="more-menu-btn" class="dropdown-trigger" aria-label="More options" aria-haspopup="true" aria-expanded="false">
+        <button id="more-menu-btn" class="dropdown-trigger" aria-label="More options"
+                aria-haspopup="true" aria-expanded="false">
             <span class="sym">more_vert</span>
         </button>
         <div class="dropdown-menu" role="menu" aria-labelledby="more-menu-btn">
-            <button class="dropdown-item" role="menuitemcheckbox" aria-checked="false" id="opt-compact">
+            <button class="dropdown-item" role="menuitemcheckbox" aria-checked="false"
+                    id="opt-compact">
                 <span class="sym check-icon">check</span>
                 Compact View
             </button>
@@ -155,7 +159,8 @@
                 <strong>Dark Mode &amp; Themes:</strong>
                 Built-in <code>light dark</code> support. Change the whole
                 color scheme by adding a single class (e.g., <code>.theme-blue</code>)
-                to the <code>&lt;html&gt;</code> element. (See the bottom of the sidebar for available themes; append the lowercase name to <code>.theme-</code>).
+                to the <code>&lt;html&gt;</code> element. (See the bottom of the sidebar for
+                available themes; append the lowercase name to <code>.theme-</code>).
             </li>
             <li>
                 <strong>Premium Aesthetics:</strong> Modern typography (Inter), smooth transitions,
@@ -196,12 +201,14 @@
             </li>
             <li>
                 <div>
-                    Place the <a href="../Inter-VariableFont_opsz,wght.ttf">Inter</a> and <a href="../material-symbols.woff2">Material Symbols</a> fonts in the same folder.
+                    Place the <a href="../Inter-VariableFont_opsz,wght.ttf">Inter</a> and <a
+                    href="../material-symbols.woff2">Material Symbols</a> fonts in the same folder.
                 </div>
             </li>
             <li>
                 <div>
-                    <strong>Optional:</strong> Add <a href="../one.js">one.js</a> for toasts and dialogs:
+                    <strong>Optional:</strong> Add <a href="../one.js">one.js</a> for toasts and
+                    dialogs:
                     <pre><code>&lt;script src="one.js"&gt;&lt;/script&gt;</code></pre>
                 </div>
             </li>
@@ -321,7 +328,10 @@
             Links like <a href="#">this one</a> benefit from the medium-weight baseline the
             font stack provides.</p>
         <p>
-            Track changes using semantic markup: <del>Old deleted text</del> <ins>New inserted text</ins>.
+            Track changes using semantic markup:
+            <del>Old deleted text</del>
+            <ins>New inserted text</ins>
+            .
         </p>
         <p class="text-muted">
             Small / muted text at <code>0.875rem</code> — still fully legible because Inter's
@@ -350,7 +360,8 @@
 
     <section id="layout">
         <h2>Layout</h2>
-        <p>Structuring clean layout containers, responsive table elements, dividers, and scroll boundaries.</p>
+        <p>Structuring clean layout containers, responsive table elements, dividers, and scroll
+            boundaries.</p>
 
         <h3>Responsive Tables</h3>
         <div class="table-container">
@@ -424,25 +435,42 @@
 
         <h3>Scroll Shadows</h3>
         <p>
-            Use scroll shadow utility classes to indicate scrollable content boundaries. These utilities dynamically reveal top/bottom or left/right shadows as content overflows and scrolls.
+            Use scroll shadow utility classes to indicate scrollable content boundaries. These
+            utilities dynamically reveal top/bottom or left/right shadows as content overflows and
+            scrolls.
         </p>
 
         <h4>Horizontal Scroll Shadows</h4>
         <p>
-            Apply the <code>.scroll-shadow-x</code> class to a container. By default, it expects a background matching <code>var(--surface-container)</code>. For containers with other background colors, define the <code>--scroll-shadow-bg</code> custom property.
+            Apply the <code>.scroll-shadow-x</code> class to a container. By default, it expects a
+            background matching <code>var(--surface-container)</code>. For containers with other
+            background colors, define the <code>--scroll-shadow-bg</code> custom property.
         </p>
         <div class="scroll-shadow-x demo-scroll-x">
-            <code>.scroll-shadow-x</code> &mdash; Scroll this row to see the left/right shadows fade in and out dynamically &mdash; Aerethiel gylbioorth vychronoyn psivlegix kaezylion vormorth belquivoth pyzorta aer'striluth gar'kraxv farbrimaris.
+            <code>.scroll-shadow-x</code> &mdash; Scroll this row to see the left/right shadows fade
+            in and out dynamically &mdash; Aerethiel gylbioorth vychronoyn psivlegix kaezylion
+            vormorth belquivoth pyzorta aer'striluth gar'kraxv farbrimaris.
         </div>
 
         <h4>Vertical Scroll Shadows</h4>
         <p>
-            Apply the <code>.scroll-shadow-y</code> class to a container. By default, it expects a background matching <code>var(--surface-container-highest)</code> (like dialogs). To customize, define the <code>--scroll-shadow-bg</code> custom property to match your container's background.
+            Apply the <code>.scroll-shadow-y</code> class to a container. By default, it expects a
+            background matching <code>var(--surface-container-highest)</code> (like dialogs). To
+            customize, define the <code>--scroll-shadow-bg</code> custom property to match your
+            container's background.
         </p>
         <div class="scroll-shadow-y demo-scroll-y">
-            <p><strong>First Paragraph:</strong> Scroll down to reveal the top/bottom shadows. Aerethiel gylbioorth vychronoyn psivlegix kaezylion vormorth belquivoth pyzorta aer'striluth gar'kraxv farbrimaris.</p>
-            <p><strong>Second Paragraph:</strong> The rebrand of proprietary feedback-loops is unleashing actionable insights in real-time. We have the opportunity to drill-down across the reach if we can properly onboard the best-in-class experience strategy.</p>
-            <p><strong>Third Paragraph:</strong> By adopting a year-over-year frequency architecture, we expect to heavily funnel our core stakeholders post-hoc. It's mission-critical to take this offline and capability-model the predictive conversion-rate for Q3.</p>
+            <p><strong>First Paragraph:</strong> Scroll down to reveal the top/bottom shadows.
+                Aerethiel gylbioorth vychronoyn psivlegix kaezylion vormorth belquivoth pyzorta
+                aer'striluth gar'kraxv farbrimaris.</p>
+            <p><strong>Second Paragraph:</strong> The rebrand of proprietary feedback-loops is
+                unleashing actionable insights in real-time. We have the opportunity to drill-down
+                across the reach if we can properly onboard the best-in-class experience strategy.
+            </p>
+            <p><strong>Third Paragraph:</strong> By adopting a year-over-year frequency
+                architecture, we expect to heavily funnel our core stakeholders post-hoc. It's
+                mission-critical to take this offline and capability-model the predictive
+                conversion-rate for Q3.</p>
         </div>
     </section>
 
@@ -492,7 +520,8 @@
         </div>
 
         <h3>Form Controls &amp; States</h3>
-        <p>A demonstration of multiline text areas, custom inputs (dates, file picking), custom standalone radio buttons, and disabled form elements.</p>
+        <p>A demonstration of multiline text areas, custom inputs (dates, file picking), custom
+            standalone radio buttons, and disabled form elements.</p>
         <div class="input-row">
             <label for="demo-textarea">Comments</label>
             <textarea id="demo-textarea" rows="2" placeholder="Enter multiline text..."></textarea>
@@ -518,7 +547,8 @@
             <label for="demo-disabled-text">Disabled Input</label>
             <input type="text" id="demo-disabled-text" value="Read-only or locked value" disabled>
             <label for="demo-disabled-check">
-                <input type="checkbox" id="demo-disabled-check" checked disabled> Checked &amp; Disabled
+                <input type="checkbox" id="demo-disabled-check" checked disabled> Checked &amp;
+                Disabled
             </label>
         </div>
 
@@ -527,7 +557,8 @@
         <input type="color" id="demo-accent-color" name="accent" value="#6750a4">
 
         <h3>Buttons</h3>
-        <p>Includes outline-danger variant for destructive actions, primary and secondary styles, and icon alignments.</p>
+        <p>Includes outline-danger variant for destructive actions, primary and secondary styles,
+            and icon alignments.</p>
         <div class="group mt-2">
             <button type="button">Secondary (default)</button>
             <button type="submit">Primary (submit)</button>
@@ -578,7 +609,8 @@
 
     <section id="feedback">
         <h2>Feedback &amp; Overlays</h2>
-        <p>Feedback indicators communicate system states, while modals and toasts provide interactive overlays.</p>
+        <p>Feedback indicators communicate system states, while modals and toasts provide
+            interactive overlays.</p>
         <p>
             Press <kbd>Ctrl</kbd>
             + <kbd>Shift</kbd>
@@ -588,16 +620,16 @@
         <h3>Disclosure &amp; Logs</h3>
         <details>
             <summary>View debug logs</summary>
-<!-- prettier-ignore-start -->
-<!-- beautify ignore:start -->
+            <!-- prettier-ignore-start -->
+            <!-- beautify ignore:start -->
             <pre><code>
 Init local processing...
 Loading configuration...
 Processing data...
 Done!
             </code></pre>
-<!-- beautify ignore:end -->
-<!-- prettier-ignore-end -->
+            <!-- beautify ignore:end -->
+            <!-- prettier-ignore-end -->
         </details>
 
         <h3>System Status</h3>
@@ -635,7 +667,8 @@ Done!
 
         <div class="group mb-2">
             <button type="button" id="demo-confirm">Test Confirm</button>
-            <code>const confirmed = await one.confirm("Do you really want to delete this item?");</code>
+            <code>const confirmed = await one.confirm("Do you really want to delete this
+                item?");</code>
         </div>
 
         <div class="group mb-2">
@@ -687,11 +720,13 @@ Done!
             </select>
 
             <label for="config-optimization">Optimization Level</label>
-            <input type="range" id="config-optimization" name="optimization" min="1" max="5" value="3">
+            <input type="range" id="config-optimization" name="optimization" min="1" max="5"
+                   value="3">
 
             <label for="config-cloud-sync">
                 Enable Cloud Sync
-                <input type="checkbox" role="switch" id="config-cloud-sync" name="cloud-sync" checked>
+                <input type="checkbox" role="switch" id="config-cloud-sync" name="cloud-sync"
+                       checked>
             </label>
         </fieldset>
 
@@ -746,36 +781,83 @@ Done!
 
         <footer>
             <button type="button" data-action="cancel">Cancel</button>
-            <button type="button" class="btn-danger" data-action="confirm" autofocus>Confirm</button>
+            <button type="button" class="btn-danger" data-action="confirm" autofocus>Confirm
+            </button>
         </footer>
     </article>
 </dialog>
 
-<dialog id="modal-info-example" class="modal-info" aria-labelledby="info-dialog-title" aria-describedby="info-dialog-desc"
+<dialog id="modal-info-example" class="modal-info" aria-labelledby="info-dialog-title"
+        aria-describedby="info-dialog-desc"
         aria-modal="true">
     <article>
         <header>
             <h3 id="info-dialog-title">Documentation &amp; System Overview</h3>
-            <button class="btn-sym modal-close" type="button" aria-label="Close dialog" data-action="cancel">
+            <button class="btn-sym modal-close" type="button" aria-label="Close dialog"
+                    data-action="cancel">
                 <span class="sym">close</span>
             </button>
         </header>
 
         <div class="dialog-content">
 
-        <p id="info-dialog-desc">This is a wider modal dialog variation (using the <code>.modal-info</code> class) designed for displaying documentation, large datasets, or detailed forms.</p>
+            <p id="info-dialog-desc">This is a wider modal dialog variation (using the <code>.modal-info</code>
+                class) designed for displaying documentation, large datasets, or detailed forms.</p>
 
-        <p>Aerethiel gylbioorth vychronoyn psivlegix kaezylion vormorth belquivoth pyzorta aer'striluth gar'kraxv farbrimaris :: thaldrandn krogritith my'phurox za'phayemis hylglostv syl'blurim korquaxeth. Phaslatuth naastrais ilgritax zavyret taumorgus pyrpheliel velwynn navhexus jae'astraz noxfennyr nyvostis thalkrynl fencryneth syllumum geomalaxas morwynel noxphurr zyltrylyr. Il'straka najora aerdrakis geotrylom phadrynaris myvrekez ilmgrynex zyl'myleox geomorgz... hydrynuth nyskonaris elstryus rhostrilix lux'vexem. Nabrimel hydstemeth zyl'vhorar krogryng pyvreka aermyllis lylbrimum velpaxon glaphyrs gargrynv noxzandum elakraxa krovaxux... zyllothem glagaleis vor'morgix caerienol fenraxyn sylmonkaris! Carblenath sylmuldar crydrutum xy'bluro gyl'vrekr kromundus?</p>
+            <p>Aerethiel gylbioorth vychronoyn psivlegix kaezylion vormorth belquivoth pyzorta
+                aer'striluth gar'kraxv farbrimaris :: thaldrandn krogritith my'phurox za'phayemis
+                hylglostv syl'blurim korquaxeth. Phaslatuth naastrais ilgritax zavyret taumorgus
+                pyrpheliel velwynn navhexus jae'astraz noxfennyr nyvostis thalkrynl fencryneth
+                syllumum geomalaxas morwynel noxphurr zyltrylyr. Il'straka najora aerdrakis
+                geotrylom phadrynaris myvrekez ilmgrynex zyl'myleox geomorgz... hydrynuth nyskonaris
+                elstryus rhostrilix lux'vexem. Nabrimel hydstemeth zyl'vhorar krogryng pyvreka
+                aermyllis lylbrimum velpaxon glaphyrs gargrynv noxzandum elakraxa krovaxux...
+                zyllothem glagaleis vor'morgix caerienol fenraxyn sylmonkaris! Carblenath sylmuldar
+                crydrutum xy'bluro gyl'vrekr kromundus?</p>
 
-        <p>Rho'taxum-ly'zaxenis zygriten mystivth kyvornm lylphayel aermospom ry'waxyr noxmyleal. Garstrokoz darbrimix-vordrynox velmospum pyfluxaris dardraxs psivlegil mybrimi kyraxeth tauslatom el'trylam taustema vae'myllil elvhexorth vorjrynem. Symithus, aerquorr dar'vornis sy'mundz noxmospae kaevrekil — aelmoraris. Kaeraxux darphalv omega'gramen korwaxenis draastraorth --- myezaltaris amglanus ruzelduth naglimam gylblonu hydglexet myebrynilth nafrynoxis wyshonaris aerzaxg pyslivul zyl'hrynoxis dradrandia vaewaxunth. Omega'phyrathis cryvlegia vaetaxim kroethorth drastrakaris crytrylus darskonemis cae'grabz sygaleen aervyrilth farpridith tyglanyn zygryna har'vashenis eladrynemis!</p>
+            <p>Rho'taxum-ly'zaxenis zygriten mystivth kyvornm lylphayel aermospom ry'waxyr
+                noxmyleal. Garstrokoz darbrimix-vordrynox velmospum pyfluxaris dardraxs psivlegil
+                mybrimi kyraxeth tauslatom el'trylam taustema vae'myllil elvhexorth vorjrynem.
+                Symithus, aerquorr dar'vornis sy'mundz noxmospae kaevrekil — aelmoraris. Kaeraxux
+                darphalv omega'gramen korwaxenis draastraorth --- myezaltaris amglanus ruzelduth
+                naglimam gylblonu hydglexet myebrynilth nafrynoxis wyshonaris aerzaxg pyslivul
+                zyl'hrynoxis dradrandia vaewaxunth. Omega'phyrathis cryvlegia vaetaxim kroethorth
+                drastrakaris crytrylus darskonemis cae'grabz sygaleen aervyrilth farpridith tyglanyn
+                zygryna har'vashenis eladrynemis!</p>
 
-        <p>The chef's intent is clear: carbonize the endive until the espresso bitterness is purely springy, then serve atop prawn-head oil. At the pass, strategically confit the chimichurri atop a candied curry leaves foundation, completing the composition with a buttery sprinkling of guanciale. Utilizing a rondeau, begin quenelling the mussels to isolate its delicate core, ensuring the resulting texture remains uncompromisingly blackened. Beyond the vibrant herbaceousness, this dish transcends the smooth limits of bulgur by boiling it in pomegranate reduction. A well-executed dish relies on crushing the finger limes and carefully broiling the prosciutto di parma to maintain the aggressive heat.</p>
+            <p>The chef's intent is clear: carbonize the endive until the espresso bitterness is
+                purely springy, then serve atop prawn-head oil. At the pass, strategically confit
+                the chimichurri atop a candied curry leaves foundation, completing the composition
+                with a buttery sprinkling of guanciale. Utilizing a rondeau, begin quenelling the
+                mussels to isolate its delicate core, ensuring the resulting texture remains
+                uncompromisingly blackened. Beyond the vibrant herbaceousness, this dish transcends
+                the smooth limits of bulgur by boiling it in pomegranate reduction. A well-executed
+                dish relies on crushing the finger limes and carefully broiling the prosciutto di
+                parma to maintain the aggressive heat.</p>
 
-        <p>A whisper of dark rum provides the foundational aged complexity upon which the fragrant turnips is meticulously chopped. Never underestimate the power of dolloping the gochujang; even a seemingly cooling component can yield woody resonance. The chef's intent is clear: render the bluefin tuna belly until the ethereal lightness is purely oceanic, then serve atop mirin. Rare venison loin is first whisked for 72 hours, then flash-bloomed to preserve its caramelized sweetness. To finish, the sago is spirit-glazed with a whetstone to achieve a tangy finish.</p>
+            <p>A whisper of dark rum provides the foundational aged complexity upon which the
+                fragrant turnips is meticulously chopped. Never underestimate the power of dolloping
+                the gochujang; even a seemingly cooling component can yield woody resonance. The
+                chef's intent is clear: render the bluefin tuna belly until the ethereal lightness
+                is purely oceanic, then serve atop mirin. Rare venison loin is first whisked for 72
+                hours, then flash-bloomed to preserve its caramelized sweetness. To finish, the sago
+                is spirit-glazed with a whetstone to achieve a tangy finish.</p>
 
-        <p>The rebrand of proprietary feedback-loops is unleashing actionable insights in real-time. We have the opportunity to drill-down across the reach if we can properly onboard the best-in-class experience strategy. The focus group expects us to democratize these annual solution-sets and eventually trim the fat for maximum impact. Can we cross-sell more blockchain-adjacent wheelhouses for our roadmaps to help us fail fast? To truly operationalize our market presence, we must cross-pollinate ideas and embrace tangible verticals.</p>
+            <p>The rebrand of proprietary feedback-loops is unleashing actionable insights in
+                real-time. We have the opportunity to drill-down across the reach if we can properly
+                onboard the best-in-class experience strategy. The focus group expects us to
+                democratize these annual solution-sets and eventually trim the fat for maximum
+                impact. Can we cross-sell more blockchain-adjacent wheelhouses for our roadmaps to
+                help us fail fast? To truly operationalize our market presence, we must
+                cross-pollinate ideas and embrace tangible verticals.</p>
 
-        <p>By adopting a year-over-year frequency architecture, we expect to heavily funnel our core stakeholders post-hoc. It's mission-critical to take this offline and capability-model the predictive conversion-rate for Q3. We need to troubleshoot our frameworks if we're going to truly fail forward and reach our core alignment goals. Can we ensure that our tactical procedure will consistently generate a positive ROI when we actually friction-remove the product? The invisible nature of our churn-rate allows us to orchestrate without losing focus on our impressions.</p>
+            <p>By adopting a year-over-year frequency architecture, we expect to heavily funnel our
+                core stakeholders post-hoc. It's mission-critical to take this offline and
+                capability-model the predictive conversion-rate for Q3. We need to troubleshoot our
+                frameworks if we're going to truly fail forward and reach our core alignment goals.
+                Can we ensure that our tactical procedure will consistently generate a positive ROI
+                when we actually friction-remove the product? The invisible nature of our churn-rate
+                allows us to orchestrate without losing focus on our impressions.</p>
 
         </div>
 
@@ -792,38 +874,44 @@ Done!
         triggerEl.dataset.loading = "true";
         const originalText = triggerEl.textContent;
         const isButton = triggerEl.tagName === "BUTTON";
-        
+
         try {
             if (isButton) {
                 triggerEl.disabled = true;
             }
             triggerEl.textContent = "downloading";
-            
+
             const [htmlRes, cssRes, jsRes, fontInterRes, fontSymbolsRes] = await Promise.all([
                 fetch(window.location.href),
                 fetch("../one.css"),
                 fetch("../one.js"),
                 fetch("../Inter-VariableFont_opsz,wght.ttf"),
-                fetch("../material-symbols.woff2")
+                fetch("../material-symbols.woff2"),
             ]);
 
             let htmlText = await htmlRes.text();
 
             // Adjust paths in HTML text for a flat local structure
             htmlText = htmlText
-                .replace('href="../one.css"', 'href="one.css"')
-                .replace('src="../one.js"', 'src="one.js"')
-                .replace('href="../Inter-VariableFont_opsz,wght.ttf"', 'href="Inter-VariableFont_opsz,wght.ttf"')
-                .replace('href="../material-symbols.woff2"', 'href="material-symbols.woff2"')
+                .replace("href=\"../one.css\"", "href=\"one.css\"")
+                .replace("src=\"../one.js\"", "src=\"one.js\"")
+                .replace("href=\"../Inter-VariableFont_opsz,wght.ttf\"", "href=\"Inter-VariableFont_opsz,wght.ttf\"")
+                .replace("href=\"../material-symbols.woff2\"", "href=\"material-symbols.woff2\"")
                 // Remove the downloader script tag from the downloaded bundle
-                .replace(/<script src="\.\.\/client-zip\.js"><\/script>\s*/g, '');
+                .replace(/<script src="\.\.\/client-zip\.js"><\/script>\s*/g, "");
 
             const files = [
                 { name: "index.html", input: htmlText },
                 { name: "one.css", input: new Uint8Array(await cssRes.arrayBuffer()) },
                 { name: "one.js", input: new Uint8Array(await jsRes.arrayBuffer()) },
-                { name: "Inter-VariableFont_opsz,wght.ttf", input: new Uint8Array(await fontInterRes.arrayBuffer()) },
-                { name: "material-symbols.woff2", input: new Uint8Array(await fontSymbolsRes.arrayBuffer()) }
+                {
+                    name: "Inter-VariableFont_opsz,wght.ttf",
+                    input: new Uint8Array(await fontInterRes.arrayBuffer()),
+                },
+                {
+                    name: "material-symbols.woff2",
+                    input: new Uint8Array(await fontSymbolsRes.arrayBuffer()),
+                },
             ];
 
             const response = downloadZip(files);

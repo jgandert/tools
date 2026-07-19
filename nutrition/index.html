@@ -328,8 +328,8 @@
     function saveSettings() {
         try {
             const settings = {
-                diet: document.querySelector('input[name="diet"]:checked')?.value,
-                units: document.querySelector('input[name="units"]:checked')?.value,
+                diet: document.querySelector("input[name=\"diet\"]:checked")?.value,
+                units: document.querySelector("input[name=\"units\"]:checked")?.value,
                 weightLoss: document.getElementById("weight-loss").checked,
                 age: document.getElementById("age").value,
                 gender: document.getElementById("gender").value,
@@ -338,7 +338,7 @@
                 heightFt: document.getElementById("height-ft").value,
                 heightIn: document.getElementById("height-in").value,
                 bodyFat: document.getElementById("body-fat").value,
-                activity: document.getElementById("activity").value
+                activity: document.getElementById("activity").value,
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
         } catch (e) {

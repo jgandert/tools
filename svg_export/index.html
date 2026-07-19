@@ -71,6 +71,14 @@
         #canvas {
             display: none;
         }
+
+        section {
+            background: color-mix(in srgb, var(--surface-container) 40%, transparent) !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            position: relative;
+            z-index: 1;
+        }
     </style>
 </head>
 
