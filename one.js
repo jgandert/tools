@@ -193,5 +193,90 @@ const one = (() => {
         return `${yyyy}-${mm}-${dd}_${hh}-${min}`;
     };
 
-    return { alert, prompt, confirm, copy, getTimestamp };
+    const closeAsideDrawerOnEscape = (e) => {
+        if (e.key !== "Escape" || e.defaultPrevented) return;
+
+        // Desktop sidebar is persistent; only the mobile overlay drawer closes on Esc.
+        const asideState = document.getElementById("aside-state");
+        const isDesktop = window.matchMedia("(min-width: 900px)").matches;
+        if (!asideState || !asideState.checked || isDesktop) return;
+
+        // Open modals own the Escape key.
+        if (document.querySelector("dialog[open]")) return;
+
+        asideState.checked = false;
+        asideState.focus();
+    };
+
+    const storage = (() => {
+        const dbName = "one-storage";
+        const storeName = "keyval";
+        let dbPromise = null;
+
+        const getDB = () => {
+            if (dbPromise) return dbPromise;
+            dbPromise = new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, 1);
+                request.onupgradeneeded = () => {
+                    request.result.createObjectStore(storeName);
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+            return dbPromise;
+        };
+
+        const withStore = async (mode, callback) => {
+            const db = await getDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(storeName, mode);
+                const store = transaction.objectStore(storeName);
+                const request = callback(store);
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        };
+
+        return {
+            /**
+             * Retrieve a value by key.
+             * @param {string} key
+             * @returns {Promise<any>}
+             */
+            get: (key) => withStore("readonly", (store) => store.get(key)),
+
+            /**
+             * Set a value by key.
+             * @param {string} key
+             * @param {any} value
+             * @returns {Promise<void>}
+             */
+            set: (key, value) => withStore("readwrite", (store) => store.put(value, key)),
+
+            /**
+             * Remove a value by key.
+             * @param {string} key
+             * @returns {Promise<void>}
+             */
+            del: (key) => withStore("readwrite", (store) => store.delete(key)),
+
+            /**
+             * Clear all values in the store.
+             * @returns {Promise<void>}
+             */
+            clear: () => withStore("readwrite", (store) => store.clear()),
+
+            /**
+             * Retrieve all keys in the store.
+             * @returns {Promise<string[]>}
+             */
+            keys: () => withStore("readonly", (store) => store.getAllKeys()),
+        };
+    })();
+
+    document.addEventListener("keydown", closeAsideDrawerOnEscape);
+
+    return { alert, prompt, confirm, copy, getTimestamp, storage };
 })();
+

@@ -5,8 +5,9 @@ const {
 } = require("./layout_optimizer.js");
 const { parseDSL } = require("./parser.js");
 const fs = require("fs");
+const path = require("path");
 
-const text = fs.readFileSync("index.html", "utf8");
+const text = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const dslMatch = text.match(/<textarea[^>]*>([\s\S]*?)<\/textarea>/);
 const dsl = dslMatch[1];
 const { config, modules } = parseDSL(dsl);

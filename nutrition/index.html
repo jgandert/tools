@@ -21,7 +21,7 @@
         }
 
         .stat-box {
-            background: var(--bg-surface);
+            background: var(--surface-container-low);
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: var(--spacing-md);
@@ -97,10 +97,10 @@
 </head>
 
 <body>
-<input type="checkbox" id="aside-state" class="aside-state-toggle">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
 
 <header>
-    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <label for="aside-state" class="aside-toggle-btn"></label>
     <hgroup>
         <h1>Clinical Diet Tool</h1>
         <p>Evidence-based modeling for Mediterranean, DASH, & MIND protocols.</p>
@@ -423,7 +423,7 @@
 
         // Base conversions for internal calculation math (Math is strictly metric)
         let w_kg = isMetric ? weight : weight / 2.20462;
-        let h_cm = 0;
+        let h_cm;
         if (isMetric) {
             h_cm = parseFloat(document.getElementById("height-cm").value) || 0;
         } else {
@@ -433,7 +433,7 @@
         }
 
         // Metabolic Rate Calculation
-        let bmr = 0;
+        let bmr;
         if (bodyFat !== null && bodyFat > 0) {
             // Katch-McArdle Formula: Highly accurate if Lean Body Mass is known.
             let lbm = w_kg * (1 - (bodyFat / 100));

@@ -489,6 +489,28 @@ A close a
 }
 
 // =============================================================================
+// ratio_max normalization (ratio_max ≥ 1, orientation-agnostic; target ratio untouched)
+// =============================================================================
+console.log("\n=== ratio_max normalization ===");
+{
+    const inverted = parseDSL("canvas 100x100\nroom A area=100000 ratio_max=1:6");
+    const normal = parseDSL("canvas 100x100\nroom A area=100000 ratio_max=6:1");
+    const Ai = inverted.modules.find(m => m.id === "A");
+    const An = normal.modules.find(m => m.id === "A");
+
+    assert(Ai?.ratioMax === 6, `ratio_max: 1:6 normalizes to 6 (got ${Ai?.ratioMax})`);
+    assert(An?.ratioMax === 6, `ratio_max: 6:1 stays 6 (got ${An?.ratioMax})`);
+    assert(Ai?.ratioMax === An?.ratioMax, "ratio_max: 1:6 behaves identically to 6:1");
+
+    const globalInverted = parseDSL("canvas 100x100\nratio_max 1:6\nroom B area=100000");
+    assert(globalInverted.config.ratioMax === 6, `ratio_max: global 1:6 normalizes to 6 (got ${globalInverted.config.ratioMax})`);
+
+    const targetRatio = parseDSL("canvas 100x100\nroom A area=100000 ratio=1:6");
+    const Ar = targetRatio.modules.find(m => m.id === "A");
+    assert(Math.abs((Ar?.ratio ?? 0) - (1 / 6)) < 1e-9, `ratio: target ratio=1:6 stays raw n/d=0.1667 (got ${Ar?.ratio})`);
+}
+
+// =============================================================================
 // Summary
 // =============================================================================
 console.log(`\n${"=".repeat(60)}`);

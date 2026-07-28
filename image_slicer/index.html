@@ -88,7 +88,7 @@
 
         .preview-container {
             position: relative;
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--elevation-2, 0 3px 6px rgba(0,0,0,0.16));
             transition: width 0.3s;
             line-height: 0;
         }
@@ -113,7 +113,7 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 0%;
+            width: 0;
             height: 4px;
             background: var(--primary);
             z-index: 100;
@@ -130,7 +130,7 @@
         .placeholder-note {
             color: var(--on-surface-variant);
             text-align: center;
-            padding-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
         }
 
         .summary-note {
@@ -142,11 +142,11 @@
 </head>
 
 <body>
-<input type="checkbox" id="aside-state" class="aside-state-toggle">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
 <div class="progress-bar" id="progress-bar"></div>
 
 <header>
-    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <label for="aside-state" class="aside-toggle-btn"></label>
     <hgroup>
         <h1>Image Slicer</h1>
     </hgroup>
@@ -335,11 +335,7 @@
     }
 
     function updatePresetVisibility() {
-        if (state.config.preset === "custom") {
-            els.customRow.hidden = false;
-        } else {
-            els.customRow.hidden = true;
-        }
+        els.customRow.hidden = state.config.preset !== "custom";
     }
 
     // --- INIT & EVENT LISTENERS ---
@@ -457,7 +453,7 @@
     // --- CORE LOGIC ---
 
     function getTargetRatio() {
-        let ratio = 1;
+        let ratio;
         if (state.config.preset === "custom") {
             ratio = state.config.customW / state.config.customH;
         } else {

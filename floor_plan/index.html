@@ -216,10 +216,10 @@
 </head>
 
 <body>
-<input type="checkbox" id="aside-state" class="aside-state-toggle">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
 
 <header>
-    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <label for="aside-state" class="aside-toggle-btn"></label>
     <hgroup>
         <h1>Floor Plan Optimizer</h1>
         <p>Optimize room layouts using constraint-based simulated annealing.</p>
@@ -251,7 +251,7 @@ side_min 175
 cwl 125
 
 # Areas (1 sqm = 10,000 sq cm)
-room loud area=300000
+room loud area=300000 ratio_max=3:1
 room dining area=140000
 room guest_bath area=40000
 room hallway_1 ratio_max=1:6
@@ -298,7 +298,7 @@ main_bath far hallways weight=2
 
 # Dining bridges kitchen and living
 [dining, pantry] connect kitchen required
-living connect any meal
+living connect any meal required
 
 [office, parents] far loud
 
@@ -699,205 +699,7 @@ office at north west required
     </article>
 </dialog>
 
-<script id="default-result-cache" type="application/json">{
-    "dsl": "seed 42\ncanvas 1400x1100\nratio_max 5:3\nside_min 175\ncwl 125\nroom loud area=300000\nroom dining area=140000\nroom guest_bath area=40000\nroom hallway_1 ratio_max=1:6\nroom hallway_2 ratio_max=1:6\nroom office area=80000\nroom kitchen area=150000\nroom living area=250000\nroom main_bath area=80000\nroom parents area=180000\nroom pantry area=50000\nroom utility area=40000\nroom dressing area=30000\nhallways = [hallway_1, hallway_2]\nmeal = [kitchen, dining]\ninside loud {\nroom child_1 area=100000\nroom child_2 area=100000\nroom child_3 area=100000\n[child_1, child_2, child_3] connect any hallways required\n}\nhallway_1 connect hallway_2 required\nhallways at edge weight=200\nparents connect dressing required\ndressing enclosed\npantry enclosed\nparents connect main_bath required\nmain_bath far hallways weight=2\n[all but hallways, pantry, dressing, main_bath] connect any hallways required\n[dining, pantry] connect kitchen required\nliving connect any meal\n[office, parents] far loud\nmeal at edge required\nparents at edge required\nparents not at south required\nliving at east south required\noffice at north west required",
-    "config": {
-        "seed": 42,
-        "canvasW": 1400,
-        "canvasH": 1100,
-        "canvasFlexible": false,
-        "ratioMax": 1.6666666666666667,
-        "sideMin": 175,
-        "sideMinFlexible": false,
-        "cwl": 125
-    },
-    "result": {
-        "cost": 1015911949.9956266,
-        "breakdown": {
-            "total": 1015911949.9956266,
-            "area": 1540000,
-            "aspectPenalty": 0,
-            "canvasPenalty": 0,
-            "topologicalPenalty": 968824436.8731543,
-            "roomPenalty": 45547513.122472234
-        },
-        "rooms": [
-            {
-                "id": "office",
-                "x": 0,
-                "y": 0,
-                "w": 755.8951080891308,
-                "h": 194.27584005424634,
-                "centerX": 377.9475540445654,
-                "centerY": 97.13792002712317,
-                "name": "office"
-            },
-            {
-                "id": "loud",
-                "x": 0,
-                "y": 194.27584005424634,
-                "w": 592.8654319353504,
-                "h": 418.01505172252877,
-                "centerX": 296.4327159676752,
-                "centerY": 403.28336591551073,
-                "name": "loud",
-                "inside": {
-                    "cost": 2856492.964447212,
-                    "breakdown": {
-                        "total": 2856492.964447212,
-                        "area": 247826.67419495486,
-                        "aspectPenalty": 0,
-                        "canvasPenalty": 0,
-                        "topologicalPenalty": 0,
-                        "roomPenalty": 2608666.290252257
-                    },
-                    "rooms": [
-                        {
-                            "id": "child_1",
-                            "x": 0,
-                            "y": 0,
-                            "w": 197.6218106451168,
-                            "h": 418.01505172252877,
-                            "centerX": 98.8109053225584,
-                            "centerY": 209.00752586126438,
-                            "name": "child_1"
-                        },
-                        {
-                            "id": "child_2",
-                            "x": 197.6218106451168,
-                            "y": 0,
-                            "w": 197.6218106451168,
-                            "h": 418.01505172252877,
-                            "centerX": 296.4327159676752,
-                            "centerY": 209.00752586126438,
-                            "name": "child_2"
-                        },
-                        {
-                            "id": "child_3",
-                            "x": 395.2436212902336,
-                            "y": 0,
-                            "w": 197.6218106451168,
-                            "h": 418.01505172252877,
-                            "centerX": 494.05452661279196,
-                            "centerY": 209.00752586126438,
-                            "name": "child_3"
-                        }
-                    ]
-                }
-            },
-            {
-                "id": "utility",
-                "x": 592.8654319353504,
-                "y": 194.27584005424634,
-                "w": 163.0296761537803,
-                "h": 418.01505172252877,
-                "centerX": 674.3802700122405,
-                "centerY": 403.28336591551073,
-                "name": "utility"
-            },
-            {
-                "id": "hallway_1",
-                "x": 755.8951080891308,
-                "y": 0,
-                "w": 163.0296761537803,
-                "h": 612.2908917767751,
-                "centerX": 837.4099461660209,
-                "centerY": 306.14544588838754,
-                "name": "hallway_1"
-            },
-            {
-                "id": "hallway_2",
-                "x": 0,
-                "y": 612.2908917767751,
-                "w": 918.9247842429111,
-                "h": 155.1801707982989,
-                "centerX": 459.46239212145554,
-                "centerY": 689.8809771759245,
-                "name": "hallway_2"
-            },
-            {
-                "id": "pantry",
-                "x": 0,
-                "y": 767.4710625750739,
-                "w": 167.26201010357275,
-                "h": 332.52893742492614,
-                "centerX": 83.63100505178637,
-                "centerY": 933.735531287537,
-                "name": "pantry"
-            },
-            {
-                "id": "kitchen",
-                "x": 167.26201010357275,
-                "y": 767.4710625750739,
-                "w": 382.3131659510234,
-                "h": 332.52893742492614,
-                "centerX": 358.4185930790844,
-                "centerY": 933.735531287537,
-                "name": "kitchen"
-            },
-            {
-                "id": "dining",
-                "x": 549.5751760545961,
-                "y": 767.4710625750739,
-                "w": 369.34960818831496,
-                "h": 332.52893742492614,
-                "centerX": 734.2499801487536,
-                "centerY": 933.735531287537,
-                "name": "dining"
-            },
-            {
-                "id": "parents",
-                "x": 918.9247842429111,
-                "y": 0,
-                "w": 481.0752157570891,
-                "h": 335.4247471299523,
-                "centerX": 1159.4623921214557,
-                "centerY": 167.71237356497616,
-                "name": "parents"
-            },
-            {
-                "id": "dressing",
-                "x": 918.9247842429111,
-                "y": 335.4247471299523,
-                "w": 227.1079335790704,
-                "h": 159.1059276775014,
-                "centerX": 1032.4787510324463,
-                "centerY": 414.97771096870304,
-                "name": "dressing"
-            },
-            {
-                "id": "guest_bath",
-                "x": 918.9247842429111,
-                "y": 494.5306748074537,
-                "w": 227.1079335790704,
-                "h": 160.7547378049735,
-                "centerX": 1032.4787510324463,
-                "centerY": 574.9080437099404,
-                "name": "guest_bath"
-            },
-            {
-                "id": "main_bath",
-                "x": 1146.0327178219814,
-                "y": 335.4247471299523,
-                "w": 253.96728217801873,
-                "h": 319.8606654824749,
-                "centerX": 1273.0163589109907,
-                "centerY": 495.3550798711898,
-                "name": "main_bath"
-            },
-            {
-                "id": "living",
-                "x": 918.9247842429111,
-                "y": 655.2854126124272,
-                "w": 481.0752157570891,
-                "h": 444.71458738757286,
-                "centerX": 1159.4623921214557,
-                "centerY": 877.6427063062137,
-                "name": "living"
-            }
-        ]
-    }
-}</script>
+<script id="default-result-cache" type="application/json">{"dsl":"seed 42\ncanvas 1400x1100\nratio_max 5:3\nside_min 175\ncwl 125\nroom loud area=300000 ratio_max=3:1\nroom dining area=140000\nroom guest_bath area=40000\nroom hallway_1 ratio_max=1:6\nroom hallway_2 ratio_max=1:6\nroom office area=80000\nroom kitchen area=150000\nroom living area=250000\nroom main_bath area=80000\nroom parents area=180000\nroom pantry area=50000\nroom utility area=40000\nroom dressing area=30000\nhallways = [hallway_1, hallway_2]\nmeal = [kitchen, dining]\ninside loud {\nroom child_1 area=100000\nroom child_2 area=100000\nroom child_3 area=100000\n[child_1, child_2, child_3] connect any hallways required\n}\nhallway_1 connect hallway_2 required\nhallways at edge weight=200\nparents connect dressing required\ndressing enclosed\npantry enclosed\nparents connect main_bath required\nmain_bath far hallways weight=2\n[all but hallways, pantry, dressing, main_bath] connect any hallways required\n[dining, pantry] connect kitchen required\nliving connect any meal required\n[office, parents] far loud\nmeal at edge required\nparents at edge required\nparents not at south required\nliving at east south required\noffice at north west required","config":{"seed":42,"canvasW":1400,"canvasH":1100,"canvasFlexible":false,"ratioMax":1.6666666666666667,"sideMin":175,"sideMinFlexible":false,"cwl":125},"result":{"cost":7774011.030160218,"breakdown":{"total":7774011.030160218,"area":1540000,"aspectPenalty":0,"canvasPenalty":0,"topologicalPenalty":5650888.182998465,"roomPenalty":583122.8471617525},"rooms":[{"id":"office","x":0,"y":0,"w":794.0760406919838,"h":191.5662860371927,"centerX":397.0380203459919,"centerY":95.78314301859635,"name":"office"},{"id":"parents","x":0,"y":191.5662860371927,"w":306.3491267500088,"h":478.91571509298177,"centerX":153.1745633750044,"centerY":431.02414358368355,"name":"parents"},{"id":"main_bath","x":306.3491267500088,"y":191.5662860371927,"w":487.72691394197506,"h":234.3856281055268,"centerX":550.2125837209963,"centerY":308.75910008995606,"name":"main_bath"},{"id":"dressing","x":306.3491267500088,"y":425.9519141427195,"w":161.46016662227402,"h":244.530086987455,"centerX":387.0792100611458,"centerY":548.216957636447,"name":"dressing"},{"id":"guest_bath","x":467.8092933722828,"y":425.9519141427195,"w":163.13337365985055,"h":244.530086987455,"centerX":549.3759802022081,"centerY":548.216957636447,"name":"guest_bath"},{"id":"utility","x":630.9426670321334,"y":425.9519141427195,"w":163.13337365985055,"h":244.530086987455,"centerX":712.5093538620587,"centerY":548.216957636447,"name":"utility"},{"id":"hallway_2","x":0,"y":670.4820011301745,"w":794.0760406919838,"h":153.01588184175034,"centerX":397.0380203459919,"centerY":746.9899420510496,"name":"hallway_2"},{"id":"hallway_1","x":794.0760406919838,"y":0,"w":163.13337365985055,"h":823.4978829719248,"centerX":875.6427275219091,"centerY":411.7489414859624,"name":"hallway_1"},{"id":"loud","x":0,"y":823.4978829719248,"w":957.2094143518344,"h":276.50211702807513,"centerX":478.6047071759172,"centerY":961.7489414859624,"name":"loud","inside":{"cost":296953.73502549354,"breakdown":{"total":296953.73502549354,"area":264670.4295074862,"aspectPenalty":14618.520271750489,"canvasPenalty":0,"topologicalPenalty":0,"roomPenalty":17664.785246256884},"rooms":[{"id":"child_1","x":0,"y":0,"w":319.06980478394485,"h":276.50211702807513,"centerX":159.53490239197242,"centerY":138.25105851403757,"name":"child_1"},{"id":"child_2","x":319.06980478394485,"y":0,"w":319.06980478394485,"h":276.50211702807513,"centerX":478.60470717591727,"centerY":138.25105851403757,"name":"child_2"},{"id":"child_3","x":638.1396095678897,"y":0,"w":319.06980478394485,"h":276.50211702807513,"centerX":797.6745119598621,"centerY":138.25105851403757,"name":"child_3"}]}},{"id":"kitchen","x":957.2094143518344,"y":0,"w":279.65721198831517,"h":399.90869589102164,"centerX":1097.038020345992,"centerY":199.95434794551082,"name":"kitchen"},{"id":"pantry","x":1236.8666263401497,"y":0,"w":163.13337365985052,"h":399.90869589102164,"centerX":1318.4333131700748,"centerY":199.95434794551082,"name":"pantry"},{"id":"dining","x":957.2094143518344,"y":399.90869589102164,"w":442.7905856481657,"h":257.5656700548487,"centerX":1178.6047071759172,"centerY":528.691530918446,"name":"dining"},{"id":"living","x":957.2094143518344,"y":657.4743659458703,"w":442.7905856481657,"h":442.52563405412957,"centerX":1178.6047071759172,"centerY":878.7371829729351,"name":"living"}]}}</script>
 <script src="parser.js"></script>
 <script src="layout_optimizer.js"></script>
 <script src="orchestrator.js"></script>

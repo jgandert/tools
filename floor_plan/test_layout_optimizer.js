@@ -7,7 +7,7 @@ const { optimizeRecursive } = require("./orchestrator.js");
 
 // Load engine by appending exports to a temp file
 const engineCode = fs.readFileSync(path.join(__dirname, "layout_optimizer.js"), "utf8");
-const engineWithExports = engineCode + "\nmodule.exports = { wongLiuSimulatedAnnealing, evaluateCost, calculateTopologicalPenalties, assignCoordinates, buildInitialCandidates, orderedToNpe, buildLinearFallback, isValidNPE, buildRuleIndex, applyGuidedMove, checkRequiredSatisfied };\n";
+const engineWithExports = engineCode + "\nmodule.exports = { wongLiuSimulatedAnnealing, evaluateCost, calculateTopologicalPenalties, assignCoordinates, buildInitialCandidates, orderedToNpe, buildLinearFallback, isValidNPE, buildRuleIndex, applyGuidedMove, checkRequiredSatisfied, isPreferredRequiredAttempt, repairRequiredLayout, offendingOperandSwaps, offendingM3Swaps, collectOffendingIds, _runWithRestarts, _runSingleSA, _selectRequiredBest, _shouldUseWorkers };\n";
 const tempEnginePath = path.join(__dirname, "temp", "layout_optimizer_exported.js");
 
 if (!fs.existsSync(path.join(__dirname, "temp"))) {
@@ -27,6 +27,12 @@ const {
     buildRuleIndex,
     applyGuidedMove,
     checkRequiredSatisfied,
+    isPreferredRequiredAttempt,
+    repairRequiredLayout,
+    offendingOperandSwaps,
+    offendingM3Swaps,
+    collectOffendingIds,
+    _selectRequiredBest,
 } = require(tempEnginePath);
 
 let passed = 0, failed = 0;
@@ -1066,6 +1072,34 @@ async function runFloorPlan(dsl) {
     }
 
     // =====================================================================
+    // TEST CONNECT_FLOOR: corner-touching (no shared wall) scores a higher
+    // connect penalty than wall-sharing, thanks to the violation floor.
+    // =====================================================================
+    console.log("\n=== Test CONNECT_FLOOR: corner-touch penalty > wall-share penalty ===");
+    {
+        const rule = { type: "connect", target: ["B"], any: false, weight: 1, required: false };
+        const bounds = { w: 200, h: 200 };
+
+        const cornerLayout = [
+            { id: "A", x: 0, y: 0, w: 100, h: 100, centerX: 50, centerY: 50 },
+            { id: "B", x: 100, y: 100, w: 100, h: 100, centerX: 150, centerY: 150 },
+        ];
+        const cornerMap = { A: { id: "A", rules: [rule] }, B: { id: "B", rules: [] } };
+        const cornerPen = calculateTopologicalPenalties(cornerLayout, cornerMap, bounds, {}, 1, 1);
+
+        const wallLayout = [
+            { id: "A", x: 0, y: 0, w: 100, h: 100, centerX: 50, centerY: 50 },
+            { id: "B", x: 100, y: 0, w: 100, h: 100, centerX: 150, centerY: 50 },
+        ];
+        const wallMap = { A: { id: "A", rules: [{ ...rule }] }, B: { id: "B", rules: [] } };
+        const wallPen = calculateTopologicalPenalties(wallLayout, wallMap, bounds, {}, 1, 1);
+
+        assert(cornerPen > wallPen, `CONNECT_FLOOR corner-touch > wall-share (corner=${cornerPen.toFixed(0)}, wall=${wallPen.toFixed(0)})`);
+        assert(cornerPen > 0, `CONNECT_FLOOR corner-touch penalty positive (got ${cornerPen.toFixed(0)})`);
+        console.log(`  cornerPen: ${cornerPen.toFixed(0)}, wallPen: ${wallPen.toFixed(0)}`);
+    }
+
+    // =====================================================================
     // TEST ANY_SUBJ6: checkRequiredSatisfied — group satisfied if any subject satisfies
     // =====================================================================
     console.log("\n=== Test ANY_SUBJ6: checkRequiredSatisfied — OR logic (satisfied) ===");
@@ -1380,6 +1414,75 @@ async function runFloorPlan(dsl) {
     }
 
     // =====================================================================
+    // TEST RETRY_PREF: isPreferredRequiredAttempt — required-satisfied
+    // attempts beat cheaper unsatisfied ones, regardless of arrival order.
+    // =====================================================================
+    console.log("\n=== Test RETRY_PREF: prefer required-satisfied over cheaper unsatisfied ===");
+    {
+        const cheapUnsatisfied = { unsatisfiedCount: 2, cost: 100 };
+        const pricierSatisfied = { unsatisfiedCount: 0, cost: 500 };
+
+        const challengerWins = isPreferredRequiredAttempt(
+            pricierSatisfied.unsatisfiedCount, pricierSatisfied.cost,
+            cheapUnsatisfied.unsatisfiedCount, cheapUnsatisfied.cost);
+        assert(challengerWins, "RETRY_PREF pricier satisfied attempt beats cheap unsatisfied incumbent");
+
+        const incumbentHolds = isPreferredRequiredAttempt(
+            cheapUnsatisfied.unsatisfiedCount, cheapUnsatisfied.cost,
+            pricierSatisfied.unsatisfiedCount, pricierSatisfied.cost);
+        assert(!incumbentHolds, "RETRY_PREF cheap unsatisfied challenger does not beat satisfied incumbent");
+
+        assert(isPreferredRequiredAttempt(0, 500, 0, 600), "RETRY_PREF tie on unsatisfied count falls back to lower cost");
+        assert(!isPreferredRequiredAttempt(0, 600, 0, 500), "RETRY_PREF tie on unsatisfied count rejects higher cost");
+    }
+
+    // =====================================================================
+    // TEST SELECT_BEST: _selectRequiredBest replicates the sequential retry
+    // selection (lexicographic best over the first satisfied attempt plus a
+    // bounded SATISFIED_LOOKAHEAD) over precomputed attempt-ordered results.
+    // This is the correctness invariant the parallel worker path relies on.
+    // =====================================================================
+    console.log("\n=== Test SELECT_BEST: parallel selection == sequential lookahead ===");
+    {
+        const e = (cost, unsat, repairAttempted = false, tag = cost) => ({
+            result: { cost, repairAttempted, tag },
+            unsatisfied: new Array(unsat).fill({ roomId: "X", type: "connect" }),
+        });
+
+        // A naturally-satisfied attempt no longer ends the search: a cheaper satisfied
+        // attempt inside the lookahead window wins.
+        const cheaperWithinWindow = _selectRequiredBest([e(100, 0), e(50, 0)]);
+        assert(cheaperWithinWindow.cost === 50,
+            `SELECT_BEST cheaper satisfied attempt within lookahead wins (got ${cheaperWithinWindow.cost})`);
+
+        // The lookahead is bounded: attempts more than SATISFIED_LOOKAHEAD past the
+        // first satisfied one are never considered, however cheap they are.
+        const beyondWindow = _selectRequiredBest([e(100, 0), e(999, 1), e(999, 1), e(999, 1), e(1, 0)]);
+        assert(beyondWindow.cost === 100,
+            `SELECT_BEST stops SATISFIED_LOOKAHEAD attempts after the first satisfied one (got ${beyondWindow.cost})`);
+
+        // Unsatisfied first attempt, satisfied second: the window opens at the second,
+        // so the cheaper satisfied third still wins.
+        const secondSatisfied = _selectRequiredBest([e(10, 2), e(500, 0), e(5, 0)]);
+        assert(secondSatisfied.cost === 5, `SELECT_BEST cheapest satisfied attempt wins (got ${secondSatisfied.cost})`);
+        assert(secondSatisfied.unsatisfied.length === 0, "SELECT_BEST returns the satisfied attempt");
+
+        // A repaired-satisfied attempt does NOT stop the search; a later cheaper
+        // natural (or lexicographically better) attempt still wins.
+        const repairedThenBetter = _selectRequiredBest([e(300, 0, true), e(200, 0)]);
+        assert(repairedThenBetter.cost === 200, `SELECT_BEST repaired attempt keeps searching (got ${repairedThenBetter.cost})`);
+
+        // No attempt satisfied: fewest unsatisfied then lowest cost across all.
+        const allUnsat = _selectRequiredBest([e(100, 2), e(90, 1), e(80, 1)]);
+        assert(allUnsat.cost === 80 && allUnsat.unsatisfied.length === 1,
+            `SELECT_BEST all-unsatisfied picks fewest-unsatisfied then lowest cost (got cost ${allUnsat.cost}, unsat ${allUnsat.unsatisfied.length})`);
+
+        // Exact cost tie: the earlier attempt index holds (deterministic tie-break).
+        const costTie = _selectRequiredBest([e(70, 1, false, "first"), e(70, 1, false, "second")]);
+        assert(costTie.tag === "first" && costTie.cost === 70, "SELECT_BEST exact cost tie keeps earliest attempt");
+    }
+
+    // =====================================================================
     // TEST MUTATION: Input parameters not mutated
     // =====================================================================
     console.log("\n=== Test MUTATION: Input parameters not mutated ===");
@@ -1414,6 +1517,78 @@ async function runFloorPlan(dsl) {
         // Ensure originalModules structure remains untouched
         assert(JSON.stringify(originalModules) === JSON.stringify(cloneBeforeRun),
             "MUTATION: originalModules mutated during execution");
+    }
+
+    // =====================================================================
+    // TEST REPAIR: post-SA repair fixes a required connect via one operand swap
+    // =====================================================================
+    console.log("\n=== Test REPAIR: post-SA repair phase satisfies required connect ===");
+    {
+        const modulesMap = {
+            A: { id: "A", rules: [{ type: "connect", target: ["C"], required: true, any: false }] },
+            B: { id: "B", rules: [] },
+            C: { id: "C", rules: [] },
+        };
+
+        // Fake geometry: A and C share a wall iff they are adjacent in operand order.
+        const finalizeNpe = (npe) => {
+            const ops = npe.filter(x => x !== "H" && x !== "V");
+            const adjacent = Math.abs(ops.indexOf("A") - ops.indexOf("C")) === 1;
+            const layout = adjacent
+                ? [
+                    { id: "A", x: 0, y: 0, w: 10, h: 10 },
+                    { id: "C", x: 10, y: 0, w: 10, h: 10 },
+                    { id: "B", x: 0, y: 100, w: 10, h: 10 },
+                ]
+                : [
+                    { id: "A", x: 0, y: 0, w: 10, h: 10 },
+                    { id: "C", x: 100, y: 0, w: 10, h: 10 },
+                    { id: "B", x: 0, y: 100, w: 10, h: 10 },
+                ];
+            return { layout, cost: adjacent ? 100 : 1000, shape: { w: 120, h: 120 } };
+        };
+
+        // Start NPE puts B between A and C, so the connect is unsatisfied.
+        const startNpe = ["A", "B", "V", "C", "V"];
+        const start = { npe: startNpe, ...finalizeNpe(startNpe) };
+        assert(checkRequiredSatisfied(start.layout, modulesMap).length === 1,
+            "REPAIR start layout has the connect unsatisfied");
+
+        // Every enumerated candidate must remain a valid NPE and preserve operands.
+        const offending = collectOffendingIds([{ roomId: "A", type: "connect", target: ["C"] }]);
+        assert(offending.has("A") && offending.has("C"), "REPAIR offending set includes room and target");
+        const cands = offendingOperandSwaps(startNpe, offending).concat(offendingM3Swaps(startNpe, offending));
+        assert(cands.length > 0, "REPAIR generates candidate moves");
+        const startSorted = [...startNpe].sort().join(",");
+        let allValid = true;
+        for (const c of cands) {
+            if (!isValidNPE(c)) {
+                allValid = false;
+            }
+        }
+        assert(allValid, "REPAIR every candidate is a valid NPE");
+        const swapsPreserveOperands = offendingOperandSwaps(startNpe, offending)
+            .every(c => [...c].sort().join(",") === startSorted);
+        assert(swapsPreserveOperands, "REPAIR operand swaps preserve the operand multiset");
+
+        // M3 swaps change nesting; ensure the generator emits candidates and they stay valid.
+        const m3Npe = ["A", "B", "V", "C", "H", "D", "V"];
+        const m3Cands = offendingM3Swaps(m3Npe, new Set(["C"]));
+        assert(m3Cands.length > 0, "REPAIR M3 generator emits candidates");
+        assert(m3Cands.every(isValidNPE), "REPAIR every M3 candidate is a valid NPE");
+
+        const repaired = repairRequiredLayout(start, finalizeNpe, modulesMap);
+        assert(repaired.attempted, "REPAIR ran (attempted) on an unsatisfied layout");
+        assert(repaired.unsatisfiedAfter === 0, `REPAIR cleared all unsatisfied (got ${repaired.unsatisfiedAfter})`);
+        assert(checkRequiredSatisfied(repaired.layout, modulesMap).length === 0, "REPAIR result satisfies the required connect");
+        assert(isValidNPE(repaired.npe), "REPAIR result NPE is valid");
+
+        // Already-satisfied layout: no-op, unchanged reference to npe.
+        const satisfiedNpe = ["A", "C", "V", "B", "V"];
+        const satisfied = { npe: satisfiedNpe, ...finalizeNpe(satisfiedNpe) };
+        const noop = repairRequiredLayout(satisfied, finalizeNpe, modulesMap);
+        assert(!noop.attempted, "REPAIR is a no-op when nothing is unsatisfied");
+        assert(noop.npe === satisfiedNpe, "REPAIR leaves a satisfied layout untouched");
     }
 
     console.log(`\n${"=".repeat(60)}`);

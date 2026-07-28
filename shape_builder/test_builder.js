@@ -197,7 +197,7 @@ runTest("Snap Points Mapping (2 points)", () => {
     approx(rect2.points.top.x, rect1.points.top.x);
     approx(rect2.points.top.y, rect1.points.top.y);
 
-    const line = b.Line({ start: [0, 0], end: [100, 100] });
+    b.Line({ start: [0, 0], end: [100, 100] });
     const tri = b.Triangle({ side: 50 });
 
     // Snap triangle baseline (B, C) to the line end points

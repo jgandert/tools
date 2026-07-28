@@ -166,10 +166,12 @@
     async function requestStream(apiName, constraints) {
         showUI(true);
         messageEl.innerHTML = "";
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices[apiName] !== "function") {
+            messageEl.innerHTML = `<p class="error">The API '${apiName}' is not supported on this browser or device.</p>`;
+            stopMedia();
+            return;
+        }
         try {
-            if (typeof navigator.mediaDevices[apiName] !== "function") {
-                throw new Error(`The API '${apiName}' is not supported on this browser or device.`);
-            }
             stream = await navigator.mediaDevices[apiName](constraints);
 
             if (stream.getVideoTracks().length) {

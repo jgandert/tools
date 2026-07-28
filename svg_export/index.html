@@ -111,20 +111,20 @@
 
         <label class="mb-4 d-block" for="bg-color-input">
             Background Color
-            <div class="relative flex items-center">
+            <span class="relative flex items-center">
                 <input type="text" id="bg-color-input" placeholder="Clear for Transparent"
                        class="input-with-preview">
-                <div id="bg-preview" class="absolute color-preview"></div>
-            </div>
+                <span id="bg-preview" class="absolute color-preview"></span>
+            </span>
         </label>
 
         <label class="mb-4 d-block" for="fill-color-input">
             Change Elements Color
-            <div class="relative flex items-center">
+            <span class="relative flex items-center">
                 <input type="text" id="fill-color-input" placeholder="Leave empty for original"
                        class="input-with-preview">
-                <div id="fill-preview" class="absolute color-preview"></div>
-            </div>
+                <span id="fill-preview" class="absolute color-preview"></span>
+            </span>
         </label>
 
         <div class="flex-row mb-4 align-end">
@@ -218,11 +218,7 @@
         const w = widthInput.value.trim();
         const h = heightInput.value.trim();
 
-        if ((w && parseInt(w) > 0) || (h && parseInt(h) > 0)) {
-            actionBtn.disabled = false;
-        } else {
-            actionBtn.disabled = true;
-        }
+        actionBtn.disabled = !((w && parseInt(w, 10) > 0) || (h && parseInt(h, 10) > 0));
 
         // Save state
         localStorage.setItem("svg_width", widthInput.value);

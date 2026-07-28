@@ -625,7 +625,6 @@ console.log("\n=== BlockTraceDiff: Edge cases & Bugs ===");
     // If the interner is not cleared, reusing the same instance keeps growing the Map.
     const engine4 = new BlockTraceDiff();
     engine4.diff(["line1"], ["line2"]);
-    const sizeBefore = engine4.interner.stringToInt.size;
     engine4.diff(["line3"], ["line4"]);
     // If the interner was cleared or reset, size should not accumulate from the previous run.
     assert(engine4.interner.stringToInt.size <= 2, `interner should clear or reset on each diff call (got size ${engine4.interner.stringToInt.size})`);

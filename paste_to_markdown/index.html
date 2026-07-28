@@ -44,6 +44,12 @@
             }
         }
 
+        @media (prefers-reduced-motion: reduce) {
+            .paste-prompt {
+                animation: none;
+            }
+        }
+
         /* Footer / Credit */
         .info-footer {
             margin-top: 28px;
@@ -228,9 +234,15 @@ SOFTWARE.
                 output = document.querySelector("#output");
                 wrapper = document.querySelector("#wrapper");
                 appendToggle = document.querySelector("#append-toggle");
-                appendToggle.checked = localStorage.getItem("p2m-append") !== "0";
+                try {
+                    appendToggle.checked = localStorage.getItem("p2m-append") !== "0";
+                } catch (e) {
+                    appendToggle.checked = true;
+                }
                 appendToggle.addEventListener("change", function() {
-                    localStorage.setItem("p2m-append", appendToggle.checked ? "1" : "0");
+                    try {
+                        localStorage.setItem("p2m-append", appendToggle.checked ? "1" : "0");
+                    } catch (e) {}
                 });
 
                 // Modern paste: read HTML directly from clipboardData

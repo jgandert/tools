@@ -115,10 +115,10 @@
 </head>
 <body>
 
-<input type="checkbox" id="aside-state" class="aside-state-toggle">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
 
 <header>
-    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <label for="aside-state" class="aside-toggle-btn"></label>
     <hgroup>
         <h1>Topological SVG Animator</h1>
         <p>Interactive mathematical SMIL animation generator.</p>
@@ -144,7 +144,7 @@
 <aside id="controls">
     <fieldset>
         <legend>Presets</legend>
-        <select id="preset-select"></select>
+        <select id="preset-select" aria-label="Presets"></select>
     </fieldset>
 
     <fieldset>
@@ -538,7 +538,7 @@
 
         <!-- prettier-ignore-start -->
         <!-- beautify ignore:start -->
-        <textarea id="svg-output" readonly onclick="this.select()"></textarea>
+        <textarea id="svg-output" readonly onclick="this.select()" aria-label="SVG Output"></textarea>
         <!-- beautify ignore:end -->
         <!-- prettier-ignore-end -->
 
@@ -606,7 +606,7 @@
      * Rotation is now strictly 'loops' (multiples of 360) to guarantee a zero-cut infinite loop.
      */
     const PRESETS = {
-        "The Möbius Fold": {
+        "The M\u00f6bius Fold": {
             "num-nodes": 4, symmetry: 1.0, "rotation-loops": 1, duration: 4,
             "base-r": 25, "amp-r": 5, "freq-r": 1, "phase-offset-r": 1,
             "base-tension": 15, "amp-tension": 5, "freq-tension": 2, "phase-offset-tension": 1,
@@ -639,7 +639,7 @@
         return state;
     };
 
-    let currentState = sanitizeState({ ...DEFAULT_APPEARANCE, ...PRESETS["The Möbius Fold"] });
+    let currentState = sanitizeState({ ...DEFAULT_APPEARANCE, ...PRESETS["The M\u00f6bius Fold"] });
 
     /**
      * MATHEMATICAL CORE
@@ -647,7 +647,7 @@
 
 // Basic phase evaluation. Frequencies must be integers to ensure the wave seamlessly repeats at t=1.
     const evaluatePose = (t, base = 0, amp = 0, freq = 1, phase = 0, waveType = "sine") => {
-        let waveValue = 0;
+        let waveValue;
         switch (waveType) {
             case "triangle": {
                 const x = t * freq + phase / (2 * Math.PI) - 0.25;
@@ -679,7 +679,7 @@
 
     const lerp = (start, end, amt) => start + (end - start) * amt;
 
-    // Prevents javascript from yielding "-0" strings, which violates strict string-matching requirements
+    // Prevents JavaScript from yielding "-0" strings, which violates strict string-matching requirements
     const roundCoords = (val) => {
         const rounded = Number(val.toFixed(CONFIG.precision));
         return rounded === 0 ? 0 : rounded;

@@ -160,7 +160,12 @@ function extractInsideBlocks(rawLines) {
     return { outerLines, insideBlocks };
 }
 
-function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGroups = {}) {
+// Global geometry settings an `inside` block inherits from its enclosing scope.
+// Canvas dims are excluded on purpose — an inner plan's canvas is the parent room.
+// Search/seed settings are excluded too: the orchestrator drives those per level.
+const INHERITED_CONFIG_KEYS = ["ratioMax", "areaMin", "sideMin", "sideMinFlexible", "sideMax", "cwl", "cwc"];
+
+function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGroups = {}, outerConfig = {}) {
     const rawLines = dslString.split("\n");
     const errors = [];
     const warnings = [];
@@ -172,6 +177,12 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
         .filter(({ text }) => text && !text.startsWith("#") && !text.startsWith("//"));
 
     const config = {};
+    for (const key of INHERITED_CONFIG_KEYS) {
+        if (outerConfig[key] !== undefined) {
+            config[key] = outerConfig[key];
+        }
+    }
+
     const modulesMap = {};
     const declaredRooms = new Set();
     const groups = {};
@@ -216,6 +227,11 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
             return n / d;
         }
         return parseNum(str, lineNum, label);
+    };
+
+    const parseRatioMax = (str, lineNum, label) => {
+        const v = parseRatio(str, lineNum, label);
+        return isNaN(v) ? v : Math.max(v, 1 / v);
     };
 
     const KNOWN_RULE_PARAMS = {
@@ -313,7 +329,7 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
                 config.canvasFlexible = tokens[3] === "flexible";
             }
         } else if (cmd === "ratio_max") {
-            config.ratioMax = parseRatio(tokens[1]);
+            config.ratioMax = parseRatioMax(tokens[1] || "", lineNum, "ratio_max");
         } else if (cmd === "area_min") {
             config.areaMin = parseFloat(tokens[1]);
         } else if (cmd === "side_min") {
@@ -373,7 +389,7 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
                 } else if (key === "ratio") {
                     m.ratio = parseRatio(val, lineNum, "ratio");
                 } else if (key === "ratio_max") {
-                    m.ratioMax = parseRatio(val, lineNum, "ratio_max");
+                    m.ratioMax = parseRatioMax(val, lineNum, "ratio_max");
                 } else if (key === "cwc") {
                     m.cwc = parseNum(val, lineNum, "cwc");
                 } else {
@@ -605,7 +621,7 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
             errors.push(`'inside ${roomId}': room '${roomId}' is not declared in this scope`);
             continue;
         }
-        const inner = parseDSL(block.text, true, declaredRooms, groups);
+        const inner = parseDSL(block.text, true, declaredRooms, groups, config);
         // Prefix inner errors/warnings with context
         for (const e of inner.errors) {
             errors.push(`inside ${roomId}: ${e}`);

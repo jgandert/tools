@@ -265,10 +265,10 @@
 </head>
 
 <body>
-<input type="checkbox" id="aside-state" class="aside-state-toggle">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
 
 <header>
-    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <label for="aside-state" class="aside-toggle-btn"></label>
     <hgroup>
         <h1>Triangle Paint</h1>
     </hgroup>
@@ -291,7 +291,7 @@
             <button type="button" id="btn-eraser" title="Eraser [1]">
                 <span class="sym lg">ink_eraser</span>
             </button>
-            <input type="color" id="color-picker" value="#ff5733">
+            <input type="color" id="color-picker" value="#ff5733" aria-label="Color Picker">
             <div class="palette">
                 <div class="palette-swatch" id="swatch-1" title="Color [2]"></div>
                 <div class="palette-swatch" id="swatch-2" title="Color [3]"></div>
@@ -382,7 +382,7 @@
 <div id="export-modal">
     <div class="modal-content">
         <h3 class="mt-0 mb-0">SVG Code</h3>
-        <textarea id="svg-output" readonly></textarea>
+        <textarea id="svg-output" readonly aria-label="SVG Output"></textarea>
         <div class="flex-row mb-4">
             <button type="button" class="btn-primary flex-1" id="copy-clipboard-btn">
                 Copy to Clipboard
@@ -1091,7 +1091,7 @@
             const loop = [];
             let currEdge = startEdge;
             let safety = 0;
-            while (true && safety++ < 10000) {
+            while (safety++ < 10000) {
                 visited.add(currEdge.key);
                 loop.push(currEdge.p1);
                 const nextPtStr = `${f(currEdge.p2.x)},${f(currEdge.p2.y)}`;

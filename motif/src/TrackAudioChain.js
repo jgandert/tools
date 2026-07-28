@@ -8,6 +8,12 @@ import {
 } from "./helpers.js";
 
 let _dspProcCounter = 0;
+let _feedbackWarned = false;
+
+// Wet-mix level for the internal feedback-delay send created by Track.delay().
+// Kept below unity so the (undelayed) dry copy passing through the send bus
+// doesn't overpower the original signal.
+const DELAY_SEND_AMOUNT = 0.5;
 
 /**
  * Registry of dynamic parameter initializers and resolvers for dynamic target modulation.
@@ -110,7 +116,7 @@ defineParams(
 // 5. Compressor parameters
 defineParams(
     ["compress.threshold", "compress.ratio", "compress.knee", "compress.attack", "compress.release"],
-    (inst, ctx, time) => {
+    (inst, ctx) => {
         if (!inst.compressorNode) {
             inst.compressorNode = ctx.createDynamicsCompressor();
             inst._rebuildSignalChain();
@@ -213,24 +219,61 @@ export const TrackAudioChain = {
         this.muteGainNode.gain.setValueAtTime(currentGain, now);
         this.muteGainNode.gain.linearRampToValueAtTime(0, now + duration);
 
+        const internalNodes = [
+            "trackInputNode", "preFaderNode", "muteGainNode",
+            "filterNode", "pannerNode", "volumeNode",
+            "eqLowNode", "eqMidNode", "eqHighNode",
+            "compressorNode", "distortionNode", "dspNode",
+            "duckGainNode", "_mergerNode",
+        ];
+
+        const disconnectInternalNodes = (track) => {
+            for (const prop of internalNodes) {
+                if (track[prop]) safeDisconnect(track[prop]);
+            }
+        };
+
+        const stopTrack = (track) => {
+            if (typeof track._stopAllVoices === "function") {
+                track._stopAllVoices();
+            } else if (typeof track._resetScheduling === "function") {
+                track._resetScheduling();
+            }
+        };
+
         const oldMuteGain = this.muteGainNode;
+        const rightTrack = this._rightTrack;
         setTimeout(() => {
             safeDisconnect(oldMuteGain, dest);
-            if (typeof this._stopAllVoices === "function") {
-                this._stopAllVoices();
-            } else if (typeof this._resetScheduling === "function") {
-                this._resetScheduling();
+            stopTrack(this);
+            disconnectInternalNodes(this);
+
+            if (this._sends) {
+                for (const sendGainNode of this._sends.values()) {
+                    safeDisconnect(sendGainNode);
+                }
             }
-            const internalNodes = [
-                "trackInputNode", "preFaderNode", "muteGainNode",
-                "filterNode", "pannerNode", "volumeNode",
-                "eqLowNode", "eqMidNode", "eqHighNode",
-                "compressorNode", "distortionNode", "dspNode",
-                "duckGainNode", "_mergerNode",
-            ];
-            for (const prop of internalNodes) {
-                if (this[prop]) {
-                    safeDisconnect(this[prop]);
+            if (this._modulators) {
+                for (const m of this._modulators.values()) {
+                    safeDisconnect(m.depthGain);
+                }
+            }
+
+            if (rightTrack) {
+                stopTrack(rightTrack);
+                disconnectInternalNodes(rightTrack);
+                if (rightTrack._sends) {
+                    for (const sendGainNode of rightTrack._sends.values()) {
+                        safeDisconnect(sendGainNode);
+                    }
+                }
+                if (rightTrack._modulators) {
+                    for (const m of rightTrack._modulators.values()) {
+                        safeDisconnect(m.depthGain);
+                    }
+                }
+                if (trackRegistry.get(rightTrack.id) === rightTrack) {
+                    trackRegistry.delete(rightTrack.id);
                 }
             }
         }, duration * 1000);
@@ -524,11 +567,73 @@ export const TrackAudioChain = {
     },
 
     /**
-     * Feedback control sentinel placeholder.
-     * @param {Object} options - Feedback options.
+     * Sentinel placeholder: feedback delay is only implemented on Bus, not Track.
+     * Warns once (across all tracks) so callers notice the no-op instead of silently
+     * losing the effect.
+     * @param {Object} options - Feedback options (ignored).
      * @returns {TrackAudioChain} this
      */
     feedback(options) {
+        if (!_feedbackWarned) {
+            _feedbackWarned = true;
+            console.warn("[Motif] feedback() is only supported on Bus; Track.feedback() is a no-op.");
+        }
+        return this;
+    },
+
+    /**
+     * Sugar for a feedback-delay (echo) effect. Lazily creates an internal,
+     * per-track Bus (`<id>__delay`) carrying a feedback loop, then routes this
+     * track into it via a send. Repeated calls reuse the same bus and just
+     * update the delay time / feedback amount.
+     * @param {Object} [options] - Delay options.
+     * @param {number|string} [options.time="3/16"] - Delay time (seconds, or a musical duration string like "3/16").
+     * @param {number} [options.feedback=0.3] - Feedback amount (0..0.95); higher = longer tail.
+     * @returns {TrackAudioChain} this
+     */
+    delay({ time = "3/16", feedback = 0.3 } = {}) {
+        this._initAudio();
+        const ctx = Motif.ctx;
+        const sampleRate = ctx.sampleRate || 44100;
+        const minDelay = 128 / sampleRate;
+
+        let seconds = parseDurationToSeconds(time, Motif.tempo, Motif.beatsPerBar);
+        if (!Number.isFinite(seconds) || seconds <= 0) seconds = minDelay;
+
+        // Web Audio DelayNode default max is 1s (Bus.feedback creates createDelay(1)).
+        seconds = Math.min(Math.max(seconds, minDelay), 0.999);
+
+        let amount = typeof feedback === "number" ? feedback : 0.3;
+        if (!Number.isFinite(amount)) amount = 0.3;
+        amount = Math.min(Math.max(amount, 0), 0.95);
+
+        const delayBusId = `${this.id}__delay`;
+        const liveBus = Bus(delayBusId);
+
+        // A live-coder hot reload may have pruned+disposed the previous internal
+        // delay bus and replaced it with a fresh registry entry. If our stored
+        // reference is stale, drop the orphaned send (still wired to the disposed
+        // bus input) so we re-route to the live bus instead of a dead one.
+        if (this._delayBus && this._delayBus !== liveBus) {
+            const staleSend = this._sends.get(delayBusId);
+            if (staleSend) {
+                safeDisconnect(staleSend);
+                this._sends.delete(delayBusId);
+            }
+        }
+
+        this._delayBus = liveBus;
+
+        // Mark the bus as this track's internal delay bus so Bus.pruneExcept keeps
+        // it alive while the owner track survives a hot reload, and disposeTrack
+        // tears it down when the owner track is pruned.
+        this._delayBus._isInternalDelayBus = true;
+        this._delayBus._ownerTrackId = this.id;
+
+        this._delayBus.feedback({ amount });
+        this._delayBus.feedbackDelayNode.delayTime.setValueAtTime(seconds, ctx.currentTime);
+
+        this.send(this._delayBus, DELAY_SEND_AMOUNT);
         return this;
     },
 

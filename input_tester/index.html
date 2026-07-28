@@ -184,7 +184,7 @@
 
             // Logical string (localized layout/key)
             const keySpan = document.createElement("span");
-            let logicalLabel = "";
+            let logicalLabel;
 
             if (layoutMap && layoutMap.has(code)) {
                 const char = layoutMap.get(code);
@@ -405,7 +405,6 @@
 
     function renderGamepad(gp) {
         let card = document.getElementById(`gamepad-${gp.index}`);
-        let gLogEl = null;
 
         if (!card) {
             // Remove empty state message
@@ -430,7 +429,7 @@
             gamepadContainer.appendChild(card);
         }
 
-        gLogEl = document.getElementById(`gplog-${gp.index}`);
+        const gLogEl = document.getElementById(`gplog-${gp.index}`);
         const axesContainer = document.getElementById(`gp-${gp.index}-axes`);
         const btnsContainer = document.getElementById(`gp-${gp.index}-btns`);
 
@@ -545,7 +544,7 @@
         if (el) el.textContent = state.logs.join("\n");
     }
 
-    window.addEventListener("gamepadconnected", (e) => {
+    window.addEventListener("gamepadconnected", () => {
         if (!pollingGamepads) {
             pollingGamepads = true;
             pollGamepads();
@@ -734,7 +733,7 @@
                     }
                 }
             };
-        }).catch(e => {
+        }).catch(() => {
             midiContainer.innerHTML = "<span class=\"text-muted\">MIDI access refused or unavailable.</span>";
         });
     }

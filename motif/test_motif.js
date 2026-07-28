@@ -8,13 +8,19 @@ import {
     degreeToMidi,
     midiToHz,
     Motif,
+    MotifEngine,
     parseDurationToSeconds,
     Track,
     LFO,
     Bus,
     Arrange,
     MotifEventArray,
+    trackRegistry,
+    busRegistry,
+    SimplexNoise,
 } from "./motif.js";
+import { applyParamModulation, sampleBufferCache } from "./src/helpers.js";
+import { MockAudioParam, MockGainNode, MockOscillatorNode, MockAudioContext } from "./test/mock_webaudio.js";
 
 
 let passed = 0, failed = 0;
@@ -185,48 +191,6 @@ console.log("\n=== Scales and Note/Hz Conversions ===");
 console.log("\n=== Motif Engine: Web Audio Initialization ===");
 {
     // Define Mock AudioContext if in testing environment
-    class MockAudioParam {
-        constructor(val = 0) {
-            this.value = val;
-        }
-
-        setValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        linearRampToValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        exponentialRampToValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        cancelAndHoldAtTime(time) {
-            return this;
-        }
-
-        cancelScheduledValues(time) {
-            return this;
-        }
-    }
-
-    class MockGainNode {
-        constructor() {
-            this.gain = new MockAudioParam(1.0);
-        }
-
-        connect(dest) {
-            return dest;
-        }
-
-        disconnect() {
-        }
-    }
-
     class MockBiquadFilterNode {
         constructor() {
             this.type = "lowpass";
@@ -604,35 +568,6 @@ console.log("\n=== Motif Engine: Lookahead Scheduler ===");
 // =============================================================================
 console.log("\n=== Motif Engine: Offline Render — Kick Timing ===");
 {
-    class MockOscillatorNode {
-        constructor() {
-            this.frequency = {
-                value: 440, setValueAtTime(v, t) {
-                    this.value = v;
-                    return this;
-                },
-            };
-            this.type = "sine";
-            this.startTime = null;
-            this.stopTime = null;
-        }
-
-        start(when = 0) {
-            this.startTime = when;
-        }
-
-        stop(when = 0) {
-            this.stopTime = when;
-        }
-
-        connect(dest) {
-            return dest;
-        }
-
-        disconnect() {
-        }
-    }
-
     class MockOfflineAudioContext {
         constructor(channels, length, sampleRate) {
             this.numberOfChannels = channels;
@@ -879,35 +814,6 @@ console.log("\n=== Track Synthesis and Event Scheduling ===");
     const prevTempo = Motif.tempo;
     const sampleRate = 44100;
     const bufferDurationS = 1.5;
-
-    class MockOscillatorNode {
-        constructor() {
-            this.frequency = {
-                value: 440, setValueAtTime(v, t) {
-                    this.value = v;
-                    return this;
-                },
-            };
-            this.type = "sine";
-            this.startTime = null;
-            this.stopTime = null;
-        }
-
-        start(when = 0) {
-            this.startTime = when;
-        }
-
-        stop(when = 0) {
-            this.stopTime = when;
-        }
-
-        connect(dest) {
-            return dest;
-        }
-
-        disconnect() {
-        }
-    }
 
     class TestOfflineAudioContext {
         constructor(channels, length, sampleRate) {
@@ -1853,38 +1759,6 @@ console.log("\n=== LFO: Low Frequency Oscillator Controls ===");
     const prevCtx = Motif.ctx;
     const prevTempo = Motif.tempo;
 
-    class MockAudioParam {
-        constructor(v = 0) {
-            this.value = v;
-        }
-
-        setValueAtTime(v, t) {
-            this.value = v;
-            return this;
-        }
-    }
-
-    class MockOscillatorNode {
-        constructor() {
-            this.frequency = new MockAudioParam(1.0);
-            this.type = "sine";
-            this._started = false;
-        }
-
-        start() {
-            this._started = true;
-        }
-
-        stop() {
-        }
-
-        connect(dest) {
-        }
-
-        disconnect() {
-        }
-    }
-
     class MockConstantSourceNode {
         constructor() {
             this.offset = new MockAudioParam(0);
@@ -1893,18 +1767,6 @@ console.log("\n=== LFO: Low Frequency Oscillator Controls ===");
 
         start() {
             this._started = true;
-        }
-
-        connect(dest) {
-        }
-
-        disconnect() {
-        }
-    }
-
-    class MockGainNode {
-        constructor() {
-            this.gain = new MockAudioParam(1.0);
         }
 
         connect(dest) {
@@ -2586,35 +2448,6 @@ console.log("\n=== Track stepLength: Decoupled Cycle Duration ===");
     const sampleRate = 44100;
     const bufferDurationS = 2.0;
 
-    class MockOscillatorNode {
-        constructor() {
-            this.frequency = {
-                value: 440, setValueAtTime(v, t) {
-                    this.value = v;
-                    return this;
-                },
-            };
-            this.type = "sine";
-            this.startTime = null;
-            this.stopTime = null;
-        }
-
-        start(when = 0) {
-            this.startTime = when;
-        }
-
-        stop(when = 0) {
-            this.stopTime = when;
-        }
-
-        connect(dest) {
-            return dest;
-        }
-
-        disconnect() {
-        }
-    }
-
     class TestOfflineCtx {
         constructor(channels, length, sampleRate) {
             this.numberOfChannels = channels;
@@ -2815,35 +2648,6 @@ console.log("\n=== Track loopLength: Clamped Event Window ===");
     const prevTempo = Motif.tempo;
     const sampleRate = 44100;
     const bufferDurationS = 3.0;
-
-    class MockOscillatorNode {
-        constructor() {
-            this.frequency = {
-                value: 440, setValueAtTime(v, t) {
-                    this.value = v;
-                    return this;
-                },
-            };
-            this.type = "sine";
-            this.startTime = null;
-            this.stopTime = null;
-        }
-
-        start(when = 0) {
-            this.startTime = when;
-        }
-
-        stop(when = 0) {
-            this.stopTime = when;
-        }
-
-        connect(dest) {
-            return dest;
-        }
-
-        disconnect() {
-        }
-    }
 
     class TestOfflineCtx {
         constructor(channels, length, sampleRate) {
@@ -3051,35 +2855,6 @@ console.log("\n=== Motif Global Swing ===");
     const prevSwing = Motif._swingAmount;
     const sampleRate = 44100;
     const bufferDurationS = 3.0;
-
-    class MockOscillatorNode {
-        constructor() {
-            this.frequency = {
-                value: 440, setValueAtTime(v, t) {
-                    this.value = v;
-                    return this;
-                },
-            };
-            this.type = "sine";
-            this.startTime = null;
-            this.stopTime = null;
-        }
-
-        start(when = 0) {
-            this.startTime = when;
-        }
-
-        stop(when = 0) {
-            this.stopTime = when;
-        }
-
-        connect(dest) {
-            return dest;
-        }
-
-        disconnect() {
-        }
-    }
 
     class TestOfflineCtx {
         constructor(channels, length, sampleRate) {
@@ -3301,35 +3076,6 @@ console.log("\n=== Track-Specific Swing ===");
     const prevSwing = Motif._swingAmount;
     const sampleRate = 44100;
     const bufferDurationS = 3.0;
-
-    class MockOscillatorNode {
-        constructor() {
-            this.frequency = {
-                value: 440, setValueAtTime(v, t) {
-                    this.value = v;
-                    return this;
-                },
-            };
-            this.type = "sine";
-            this.startTime = null;
-            this.stopTime = null;
-        }
-
-        start(when = 0) {
-            this.startTime = when;
-        }
-
-        stop(when = 0) {
-            this.stopTime = when;
-        }
-
-        connect(dest) {
-            return dest;
-        }
-
-        disconnect() {
-        }
-    }
 
     class TestOfflineCtx {
         constructor(channels, length, sampleRate) {
@@ -5007,53 +4753,6 @@ console.log("\n=== Track: .every(n, callback) ===");
     const prevCtx = Motif.ctx;
     const prevTempo = Motif.tempo;
 
-    class MockAudioParam {
-        constructor(val = 0) {
-            this.value = val;
-        }
-
-        setValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        linearRampToValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        exponentialRampToValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        cancelAndHoldAtTime(time) {
-            return this;
-        }
-    }
-
-    class MockOscillatorNode {
-        constructor() {
-            this.frequency = new MockAudioParam(440);
-            this.type = "sine";
-            this.startTime = null;
-        }
-
-        start(when = 0) {
-            this.startTime = when;
-        }
-
-        stop(when = 0) {
-        }
-
-        connect(dest) {
-            return dest;
-        }
-
-        disconnect() {
-        }
-    }
-
     class EveryMockCtx {
         constructor() {
             this.state = "running";
@@ -5174,53 +4873,6 @@ console.log("\n=== Track: .mask(booleanArray, callback) ===");
     const prevCtx = Motif.ctx;
     const prevTempo = Motif.tempo;
 
-    class MockAudioParam {
-        constructor(val = 0) {
-            this.value = val;
-        }
-
-        setValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        linearRampToValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        exponentialRampToValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        cancelAndHoldAtTime(time) {
-            return this;
-        }
-    }
-
-    class MockOscillatorNode {
-        constructor() {
-            this.frequency = new MockAudioParam(440);
-            this.type = "sine";
-            this.startTime = null;
-        }
-
-        start(when = 0) {
-            this.startTime = when;
-        }
-
-        stop(when = 0) {
-        }
-
-        connect(dest) {
-            return dest;
-        }
-
-        disconnect() {
-        }
-    }
-
     class MaskMockCtx {
         constructor() {
             this.state = "running";
@@ -5334,31 +4986,6 @@ console.log("\n=== Track: .subdivide(divisions, callback) ===");
 {
     const prevCtx = Motif.ctx;
     const prevTempo = Motif.tempo;
-
-    class MockAudioParam {
-        constructor(val = 0) {
-            this.value = val;
-        }
-
-        setValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        linearRampToValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        exponentialRampToValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        cancelAndHoldAtTime(time) {
-            return this;
-        }
-    }
 
     class SubdivideMockCtx {
         constructor() {
@@ -5486,31 +5113,6 @@ console.log("\n=== Track: .degrade(probability) ===");
 {
     const prevCtx = Motif.ctx;
     const prevTempo = Motif.tempo;
-
-    class MockAudioParam {
-        constructor(val = 0) {
-            this.value = val;
-        }
-
-        setValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        linearRampToValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        exponentialRampToValueAtTime(val, time) {
-            this.value = val;
-            return this;
-        }
-
-        cancelAndHoldAtTime(time) {
-            return this;
-        }
-    }
 
     class DegradeMockCtx {
         constructor() {
@@ -7872,6 +7474,1860 @@ console.log("\n=== Arrangement Start Parameter: Skip Previous Sections ===");
     Motif.ctx = prevCtx;
     Motif.tempo = prevTempo;
     Motif.isPlaying = prevIsPlaying;
+}
+
+// =============================================================================
+// TODO: Fix degreeToMidi scale lookup - camelCase scale names unreachable
+// =============================================================================
+console.log("\n=== degreeToMidi: camelCase scale names ===");
+{
+    const harmonicMinorMidi = degreeToMidi(5, "C3", "harmonicMinor");
+    assert(harmonicMinorMidi === noteToMidi("Ab3"), `harmonicMinor degree 5 should be Ab3 (${noteToMidi("Ab3")}), got ${harmonicMinorMidi}`);
+
+    const pentatonicMinorMidi = degreeToMidi(1, "C3", "pentatonicMinor");
+    assert(pentatonicMinorMidi === noteToMidi("Eb3"), `pentatonicMinor degree 1 should be Eb3 (${noteToMidi("Eb3")}), got ${pentatonicMinorMidi}`);
+}
+
+// =============================================================================
+// TODO: Fix crash - Arrange dereferences track._isSolo before null check
+// =============================================================================
+console.log("\n=== Arrange: null/undefined track entries don't crash ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevTempo = Motif.tempo;
+    const prevIsPlaying = Motif.isPlaying;
+
+    Track.clearRegistry();
+    const t1 = Track("t1").synth("sine").note([60]);
+    Motif.tempo = 120;
+    Motif.isPlaying = false;
+
+    let threw = false;
+    try {
+        Arrange([{ tracks: [t1, null, undefined], bars: 1 }]);
+    } catch (e) {
+        threw = true;
+        console.log(`  threw: ${e.message}`);
+    }
+    assert(threw === false, "Arrange should not throw when tracks array contains null/undefined entries");
+    assert(t1._activeSegments.length === 1, "t1 should still get an active segment scheduled");
+    if (t1._activeSegments.length === 1) {
+        assert(t1._activeSegments[0].start === 0, `t1 active segment should start at 0, got ${t1._activeSegments[0].start}`);
+    }
+
+    Motif.ctx = prevCtx;
+    Motif.tempo = prevTempo;
+    Motif.isPlaying = prevIsPlaying;
+}
+
+// =============================================================================
+// TODO: Isolate errors in MotifEngine.tick()
+// =============================================================================
+console.log("\n=== MotifEngine.tick: isolates per-track scheduling errors ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevIsPlaying = Motif.isPlaying;
+    const savedTracks = new Map(trackRegistry);
+    trackRegistry.clear();
+
+    Motif.ctx = { state: "running", currentTime: 0 };
+    Motif.isPlaying = true;
+
+    let secondCalled = false;
+    const throwingTrack = { id: "throws", _schedule: () => { throw new Error("boom"); } };
+    const okTrack = { id: "ok", _schedule: () => { secondCalled = true; } };
+    trackRegistry.set("throws", throwingTrack);
+    trackRegistry.set("ok", okTrack);
+
+    const origConsoleError = console.error;
+    let errorLogged = false;
+    console.error = (...args) => { errorLogged = true; };
+
+    let threw = false;
+    try {
+        Motif.tick();
+    } catch (e) {
+        threw = true;
+    }
+
+    console.error = origConsoleError;
+
+    assert(threw === false, "tick() must not throw when a track's _schedule() throws");
+    assert(secondCalled === true, "second track's _schedule() must still run after first track throws");
+    assert(errorLogged === true, "tick() should log the per-track scheduling error");
+
+    trackRegistry.clear();
+    for (const [id, track] of savedTracks) trackRegistry.set(id, track);
+    Motif.ctx = prevCtx;
+    Motif.isPlaying = prevIsPlaying;
+}
+
+console.log("\n=== MotifEngine.tick: isolates errors in Motif.schedule() callbacks ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevIsPlaying = Motif.isPlaying;
+    const savedTracks = new Map(trackRegistry);
+    trackRegistry.clear();
+
+    Motif.ctx = { state: "running", currentTime: 0 };
+    Motif.isPlaying = true;
+
+    let secondFired = false;
+    Motif.schedule(0, () => { throw new Error("x"); });
+    Motif.schedule(0, () => { secondFired = true; });
+
+    const origConsoleError = console.error;
+    console.error = () => {};
+
+    let threw = false;
+    try {
+        Motif.tick();
+    } catch (e) {
+        threw = true;
+    }
+
+    console.error = origConsoleError;
+
+    assert(threw === false, "tick() must not throw when a schedule() callback throws");
+    assert(secondFired === true, "second scheduled callback must still fire after first throws");
+    assert(Motif._schedQueue.length === 0, `_schedQueue should be empty after one tick(), got ${Motif._schedQueue.length}`);
+
+    trackRegistry.clear();
+    for (const [id, track] of savedTracks) trackRegistry.set(id, track);
+    Motif.ctx = prevCtx;
+    Motif.isPlaying = prevIsPlaying;
+}
+
+// =============================================================================
+// TODO: Isolate errors in TrackScheduler._schedule
+// =============================================================================
+console.log("\n=== TrackScheduler._schedule: isolates modifier and _playEvent errors ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevTempo = Motif.tempo;
+    const savedTracks = new Map(trackRegistry);
+    trackRegistry.clear();
+
+    class SchedIsolationMockCtx {
+        constructor() {
+            this.state = "running";
+            this.currentTime = 0;
+        }
+    }
+
+    Track.clearRegistry();
+    const trackA = Track("sched-isolation-a").note(["C3"]).every(1, () => {
+        throw new Error("boom");
+    });
+    const trackB = Track("sched-isolation-b").note(["E3"]);
+
+    let bPlayCount = 0;
+    trackB._playEvent = function (event, startTime, duration) {
+        bPlayCount++;
+    };
+    let aPlayCount = 0;
+    trackA._playEvent = function (event, startTime, duration) {
+        aPlayCount++;
+    };
+
+    const mockCtx = new SchedIsolationMockCtx();
+    Motif.ctx = mockCtx;
+    Motif.tempo = 120; // 1 bar = 2s
+    Motif._schedQueue = [];
+
+    const origConsoleError = console.error;
+    let errorLogged = false;
+    console.error = (...args) => { errorLogged = true; };
+
+    let threw = false;
+    try {
+        Motif.tick();
+    } catch (e) {
+        threw = true;
+    }
+
+    console.error = origConsoleError;
+
+    assert(threw === false, "Motif.tick() must not throw when a track's modifier throws");
+    assert(errorLogged === true, "the modifier error should be logged");
+    assert(bPlayCount > 0, "track B's _playEvent should still fire after track A's modifier throws");
+    assert(trackA._scheduledUntil > 0, `track A's _scheduledUntil should still advance past 0 despite modifier error, got ${trackA._scheduledUntil}`);
+
+    // Second tick: both tracks keep making progress (no permanent-repeat lockup on A).
+    const aScheduledAfterFirstTick = trackA._scheduledUntil;
+    const bScheduledAfterFirstTick = trackB._scheduledUntil;
+    mockCtx.currentTime += 0.05;
+
+    let threwSecond = false;
+    console.error = () => {};
+    try {
+        Motif.tick();
+    } catch (e) {
+        threwSecond = true;
+    }
+    console.error = origConsoleError;
+
+    assert(threwSecond === false, "second tick() must not throw either");
+    assert(trackA._scheduledUntil > aScheduledAfterFirstTick, `track A should keep advancing on second tick, got ${trackA._scheduledUntil} vs previous ${aScheduledAfterFirstTick}`);
+    assert(trackB._scheduledUntil > bScheduledAfterFirstTick, `track B should keep advancing on second tick, got ${trackB._scheduledUntil} vs previous ${bScheduledAfterFirstTick}`);
+    assert(bPlayCount > 0, "track B's _playEvent still fires on second tick");
+    assert(aPlayCount > 0, "track A's own _playEvent should still fire with unmodified events after modifier error");
+
+    Track.clearRegistry();
+    trackRegistry.clear();
+    for (const [id, track] of savedTracks) trackRegistry.set(id, track);
+    Motif.ctx = prevCtx;
+    Motif.tempo = prevTempo;
+}
+
+// =============================================================================
+// TODO: Guard non-positive cycle durations (TrackScheduler._schedule)
+// =============================================================================
+console.log("\n=== TrackScheduler._schedule: guards non-positive cycle durations ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevTempo = Motif.tempo;
+    const savedTracks = new Map(trackRegistry);
+    trackRegistry.clear();
+
+    class NonPositiveCycleMockCtx {
+        constructor() {
+            this.state = "running";
+            this.currentTime = 0;
+        }
+    }
+
+    Track.clearRegistry();
+    Motif.ctx = new NonPositiveCycleMockCtx();
+    Motif.tempo = 120;
+
+    const tStep = Track("z0").note(["C3"]).stepLength(0);
+    const horizonStep = Motif.ctx.currentTime + 0.1;
+
+    let threwStep = false;
+    const startStep = Date.now();
+    try {
+        tStep._schedule(horizonStep);
+    } catch (e) {
+        threwStep = true;
+    }
+    const elapsedStep = Date.now() - startStep;
+
+    assert(threwStep === false, "_schedule() must not throw for stepLength(0)");
+    assert(elapsedStep < 1000, `_schedule() must return promptly for stepLength(0), took ${elapsedStep}ms (bug = hang)`);
+    assert(tStep._scheduledUntil >= horizonStep, `_scheduledUntil should reach horizon for stepLength(0), got ${tStep._scheduledUntil} vs horizon ${horizonStep}`);
+
+    // Analogous guard for loopLength(0): effective cycle duration collapses to 0 via the loop branch.
+    const tLoop = Track("z1").note(["C3"]).loopLength(0);
+    const horizonLoop = Motif.ctx.currentTime + 0.1;
+
+    let threwLoop = false;
+    const startLoop = Date.now();
+    try {
+        tLoop._schedule(horizonLoop);
+    } catch (e) {
+        threwLoop = true;
+    }
+    const elapsedLoop = Date.now() - startLoop;
+
+    assert(threwLoop === false, "_schedule() must not throw for loopLength(0)");
+    assert(elapsedLoop < 1000, `_schedule() must return promptly for loopLength(0), took ${elapsedLoop}ms (bug = hang)`);
+    assert(tLoop._scheduledUntil >= horizonLoop, `_scheduledUntil should reach horizon for loopLength(0), got ${tLoop._scheduledUntil} vs horizon ${horizonLoop}`);
+
+    Track.clearRegistry();
+    trackRegistry.clear();
+    for (const [id, track] of savedTracks) trackRegistry.set(id, track);
+    Motif.ctx = prevCtx;
+    Motif.tempo = prevTempo;
+}
+
+// =============================================================================
+// Task: Fix worklet voices never stopping when stopped without a time
+// Harness GranularStretcherProcessor directly: STOP_AT with undefined endTime
+// and STOP must make process() return false (was returning true forever).
+// =============================================================================
+console.log("\n=== Worklet Stop: GranularStretcherProcessor termination ===");
+{
+    const savedProcessor = globalThis.AudioWorkletProcessor;
+    const savedRegister = globalThis.registerProcessor;
+    const savedSampleRate = globalThis.sampleRate;
+    const savedCurrentTime = globalThis.currentTime;
+
+    let CapturedProcessorClass = null;
+
+    globalThis.AudioWorkletProcessor = class {
+        constructor() {
+            this.port = { onmessage: null, postMessage() {} };
+        }
+    };
+    globalThis.registerProcessor = (name, cls) => {
+        CapturedProcessorClass = cls;
+    };
+    globalThis.sampleRate = 44100;
+    globalThis.currentTime = 0;
+
+    const cacheBust = `?t=${Date.now()}`;
+    await import(`./src/worklets/GranularStretcherProcessor.js${cacheBust}`);
+
+    assert(typeof CapturedProcessorClass === "function", "GranularStretcherProcessor registered a class");
+
+    const makeOutputs = () => [[new Float32Array(128), new Float32Array(128)]];
+    const params = {
+        stretchFactor: [1],
+        pitchRatio: [1],
+        grainSize: [0.05],
+        overlap: [4],
+    };
+
+    const feedBuffer = (inst) => {
+        inst.port.onmessage({ data: { leftBuffer: new Float32Array(44100), rightBuffer: new Float32Array(44100) } });
+        inst.port.onmessage({ data: { type: "START", startTime: 0 } });
+    };
+
+    // Path A: STOP_AT with undefined endTime → immediate stop.
+    const instStopAt = new CapturedProcessorClass();
+    feedBuffer(instStopAt);
+    const activeA = instStopAt.process([], makeOutputs(), params);
+    assert(activeA === true, "STOP_AT path: process() returns true while voice active");
+    instStopAt.port.onmessage({ data: { type: "STOP_AT", endTime: undefined } });
+    const afterA = instStopAt.process([], makeOutputs(), params);
+    assert(afterA === false, "STOP_AT with undefined endTime: process() returns false after stop");
+
+    // Path B: explicit STOP message → immediate stop.
+    const instStop = new CapturedProcessorClass();
+    feedBuffer(instStop);
+    const activeB = instStop.process([], makeOutputs(), params);
+    assert(activeB === true, "STOP path: process() returns true while voice active");
+    instStop.port.onmessage({ data: { type: "STOP" } });
+    const afterB = instStop.process([], makeOutputs(), params);
+    assert(afterB === false, "STOP message: process() returns false after stop");
+
+    globalThis.AudioWorkletProcessor = savedProcessor;
+    globalThis.registerProcessor = savedRegister;
+    globalThis.sampleRate = savedSampleRate;
+    globalThis.currentTime = savedCurrentTime;
+}
+
+// =============================================================================
+// Task: Clean up splitStereo right track and sends/modulators in _crossfadeOut
+// (src/TrackAudioChain.js) - stale sx_right must be deregistered on redefine
+// =============================================================================
+console.log("\n=== Track: _crossfadeOut deregisters stale splitStereo right track ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevTempo = Motif.tempo;
+
+    class CrossfadeMockMerger {
+        constructor(inputs) {
+            this.numberOfInputs = inputs;
+        }
+        connect() {}
+        disconnect() {}
+    }
+
+    const makeParam = (v = 1.0) => ({
+        value: v,
+        setValueAtTime(val) { this.value = val; return this; },
+        linearRampToValueAtTime(val) { this.value = val; return this; },
+        exponentialRampToValueAtTime(val) { this.value = val; return this; },
+        cancelAndHoldAtTime() { return this; },
+        cancelScheduledValues() { return this; },
+    });
+
+    const makeNode = (extra = {}) => ({
+        gain: makeParam(1.0),
+        pan: makeParam(0),
+        frequency: makeParam(350),
+        Q: makeParam(1),
+        threshold: makeParam(-24),
+        knee: makeParam(30),
+        ratio: makeParam(12),
+        attack: makeParam(0.003),
+        release: makeParam(0.25),
+        type: "lowpass",
+        curve: null,
+        oversample: "none",
+        connect() {},
+        disconnect() {},
+        ...extra,
+    });
+
+    class CrossfadeMockCtx {
+        constructor() {
+            this.state = "running";
+            this.currentTime = 0;
+            this.destination = {};
+        }
+        createGain() { return makeNode(); }
+        createBiquadFilter() { return makeNode(); }
+        createDynamicsCompressor() { return makeNode(); }
+        createWaveShaper() { return makeNode(); }
+        createStereoPanner() { return makeNode(); }
+        createChannelMerger(inputs) { return new CrossfadeMockMerger(inputs); }
+    }
+
+    Motif.ctx = new CrossfadeMockCtx();
+    Motif.masterGain = Motif.ctx.createGain();
+    Motif.tempo = 120;
+    Track.clearRegistry();
+
+    const t = Track("sx").splitStereo();
+    assert(trackRegistry.has("sx_right"), "splitStereo registers shadow right track sx_right");
+    assert(trackRegistry.get("sx_right") === t._rightTrack, "sx_right entry is the shadow right track");
+
+    // Redefine sx without split; short crossfade so the test finishes quickly.
+    const oldRight = t._rightTrack;
+    const newTrack = Track("sx");
+
+    assert(trackRegistry.has("sx_right"), "sx_right still registered during crossfade");
+    assert(newTrack._rightTrack === null, "redefined track without split has no right track");
+
+    await new Promise(r => setTimeout(r, 1100));
+
+    assert(!trackRegistry.has("sx_right"), "sx_right deregistered after crossfade completes");
+    assert(trackRegistry.get("sx_right") !== oldRight, "stale right track no longer in registry");
+
+    // Guard branch: redefine WITH split re-registers a fresh sx_right before the
+    // old track's timeout fires; the `=== it` guard must NOT delete that fresh entry.
+    const t2 = Track("sx").splitStereo();
+    const firstRight = t2._rightTrack;
+    const t3 = Track("sx").splitStereo();
+    const secondRight = t3._rightTrack;
+    assert(trackRegistry.get("sx_right") === secondRight, "redefine-with-split registers fresh right track");
+
+    await new Promise(r => setTimeout(r, 1100));
+
+    assert(trackRegistry.get("sx_right") === secondRight, "guard preserves fresh right track after old crossfade timeout");
+    assert(secondRight !== firstRight, "second splitStereo created a distinct right track");
+
+    Motif.ctx = prevCtx;
+    Motif.tempo = prevTempo;
+    Track.clearRegistry();
+}
+
+// =============================================================================
+// Task: Fix async sample/sampler load races leaving stale buffers
+// (src/TrackVoiceManager.js) - generation guards must prevent a slow earlier
+// load from clobbering the current buffer, and a second sampler() from having
+// the first call's late loads write into its fresh Map / reorder _samplerKeys.
+// =============================================================================
+console.log("\n=== Sample/Sampler load races: generation guards ===");
+{
+    const prevLoad = Motif._loadAndCacheBuffer;
+    const prevRegistry = Motif.sampleRegistry;
+    Motif.sampleRegistry = new Map();
+
+    const deferred = () => {
+        let resolve, reject;
+        const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+        return { promise, resolve, reject };
+    };
+
+    // A microtask + macrotask flush so all chained .then closures have run.
+    const flush = () => new Promise(r => setTimeout(r, 0));
+
+    Track.clearRegistry();
+
+    // sample('a') then sample('b'); a's fetch resolves last.
+    {
+        const dA = deferred();
+        const dB = deferred();
+        const bufA = { tag: "a" };
+        const bufB = { tag: "b" };
+        Motif._loadAndCacheBuffer = (path) => (path === "a" ? dA.promise : dB.promise);
+
+        const t = Track("race-sample");
+        t.sample("a");
+        t.sample("b");
+        assert(t._sampleUrl === "b", "sample(): _sampleUrl reflects latest call (b)");
+
+        dB.resolve(bufB);
+        dA.resolve(bufA);
+        await dA.promise;
+        await dB.promise;
+        await flush();
+
+        assert(t._sampleBuffer === bufB, "sample(): b wins even though a resolves last");
+        assert(t._sampleBuffer !== bufA, "sample(): stale a load did not clobber current buffer");
+    }
+
+    // .synth() during an in-flight sample load must not repopulate _sampleBuffer.
+    {
+        const dC = deferred();
+        const bufC = { tag: "c" };
+        Motif._loadAndCacheBuffer = () => dC.promise;
+
+        const t = Track("race-synth");
+        t.sample("c");
+        t.synth("sine");
+        assert(t._sampleBuffer === null, "synth(): buffer nulled before load resolves");
+
+        dC.resolve(bufC);
+        await dC.promise;
+        await flush();
+
+        assert(t._sampleBuffer === null, "synth(): in-flight load does not repopulate _sampleBuffer");
+    }
+
+    // Double sampler(): first call's late loads must land in its own discarded
+    // Map, not the second call's fresh Map; _samplerKeys built from current Map.
+    {
+        const dX = deferred();
+        const dY = deferred();
+        const bufX = { tag: "x" };
+        const bufY = { tag: "y" };
+        Motif._loadAndCacheBuffer = (path) => (path === "x" ? dX.promise : dY.promise);
+
+        const t = Track("race-sampler");
+        t.sampler({ urls: { "60": "x" } });
+        const firstBuffers = t._samplerBuffers;
+        t.sampler({ urls: { "60": "y" } });
+        const secondBuffers = t._samplerBuffers;
+        assert(firstBuffers !== secondBuffers, "sampler(): second call swaps in a fresh Map");
+
+        dY.resolve(bufY);
+        dX.resolve(bufX);
+        await dX.promise;
+        await dY.promise;
+        await t._samplerLoading;
+        await flush();
+
+        assert(t._samplerBuffers === secondBuffers, "sampler(): current Map is the second call's");
+        assert(secondBuffers.get(60) === bufY, "sampler(): fresh Map holds y");
+        assert(firstBuffers.get(60) === bufX, "sampler(): late x landed in discarded first Map");
+        assert(secondBuffers.get(60) !== bufX, "sampler(): late x did not clobber the current Map");
+        assert(t._samplerKeys.length === 1 && t._samplerKeys[0] === 60, "sampler(): _samplerKeys built from current Map");
+    }
+
+    Motif._loadAndCacheBuffer = prevLoad;
+    Motif.sampleRegistry = prevRegistry;
+    Track.clearRegistry();
+}
+
+// =============================================================================
+// Task: Fix `_getMonoBuffer` cache keyed by channel only
+// (src/TrackVoiceManager.js) - cache must be keyed by buffer identity, not
+// just channel, so distinct source buffers don't share a stale mono result;
+// also must be cleared whenever sample()/sampler()/synth() swap the source.
+// =============================================================================
+console.log("\n=== _getMonoBuffer: cache keyed by buffer identity, not just channel ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevTempo = Motif.tempo;
+
+    class MonoBufferMockCtx {
+        constructor() {
+            this.state = "running";
+            this.currentTime = 0;
+            this.destination = {};
+        }
+        createBuffer(ch, len, sr) {
+            return {
+                numberOfChannels: ch,
+                length: len,
+                sampleRate: sr,
+                duration: len / sr,
+                getChannelData() {
+                    return new Float32Array(len);
+                },
+                copyToChannel(data, chIdx) {
+                    this._copiedFrom = chIdx;
+                },
+            };
+        }
+    }
+
+    Motif.ctx = new MonoBufferMockCtx();
+    Motif.tempo = 120;
+    Track.clearRegistry();
+
+    const t = Track("mono-cache-test");
+
+    const bufA = Motif.ctx.createBuffer(2, 100, 44100);
+    const bufB = Motif.ctx.createBuffer(2, 100, 44100);
+
+    const monoA = t._getMonoBuffer(bufA, 0);
+    const monoAAgain = t._getMonoBuffer(bufA, 0);
+    const monoB = t._getMonoBuffer(bufB, 0);
+
+    assert(monoA !== bufA, "_getMonoBuffer returns a derived mono buffer, not the input");
+    assert(monoAAgain === monoA, "_getMonoBuffer caches by (buffer, channel) so repeat calls hit cache");
+    assert(monoB !== monoA, "_getMonoBuffer for a different source buffer must not reuse bufA's cached mono result");
+    assert(monoB.numberOfChannels === 1, "mono result derived from bufB is monophonic");
+
+    // Cache must be cleared whenever the source buffer(s) change via
+    // sample()/sampler()/synth(), so a stale mono conversion can't be pinned
+    // in memory and served after the underlying source has moved on.
+    const monoBeforeReset = t._getMonoBuffer(bufA, 0);
+    assert(monoBeforeReset === monoA, "cache still holds bufA's mono result before any reset");
+
+    t.synth("sine");
+    assert(t._monoBufferCache === null, "synth() clears the mono buffer cache");
+
+    const monoAAfterSynth = t._getMonoBuffer(bufA, 0);
+    assert(monoAAfterSynth !== monoA, "after synth() clears cache, _getMonoBuffer recomputes rather than reusing stale entry");
+
+    t._monoBufferCache.get(bufA); // sanity: WeakMap accepts object keys without throwing
+    t.sample(null);
+    assert(t._monoBufferCache === null, "sample() clears the mono buffer cache");
+
+    t._getMonoBuffer(bufA, 0);
+    t.sampler({ urls: {} });
+    assert(t._monoBufferCache === null, "sampler() clears the mono buffer cache");
+
+    Motif.ctx = prevCtx;
+    Motif.tempo = prevTempo;
+    Track.clearRegistry();
+}
+
+// =============================================================================
+// TODO: Fix inline dB automation applied as raw linear value; guard non-finite params
+// (src/helpers.js applyParamModulation, src/TrackVoiceManager.js _playEvent)
+// =============================================================================
+console.log("\n=== Bug Fix: Inline dB Automation Guarding (Non-Finite AudioParam Safety) ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevTempo = Motif.tempo;
+
+    const dbMap = (val) => (val === -Infinity ? 0 : Math.pow(10, val / 20));
+
+    // TEST 1: numeric branch - "-6dB" string parsed then mapped through caller-supplied
+    // dB->linear mapValueFn should record ~0.501187 (not the raw -6).
+    {
+        const setCalls = [];
+        const param = { setValueAtTime(v, t) { setCalls.push(v); return this; } };
+        applyParamModulation({}, param, "-6dB", "_testModulator", dbMap);
+
+        assert(setCalls.length === 1, `expected setValueAtTime called once, got ${setCalls.length}`);
+        assert(Math.abs(setCalls[0] - Math.pow(10, -6 / 20)) < 1e-6,
+            `expected ~0.501187 recorded gain for "-6dB" with dbMap, got ${setCalls[0]}`);
+    }
+
+    // TEST 2: numeric branch - "-inf dB" string with no mapValueFn must not throw and
+    // must NOT record a non-finite value on the AudioParam.
+    {
+        const setCalls = [];
+        const param = { setValueAtTime(v, t) { setCalls.push(v); return this; } };
+
+        let threw = false;
+        try {
+            applyParamModulation({}, param, "-inf dB", "_testModulator", null);
+        } catch (e) {
+            threw = true;
+        }
+
+        assert(threw === false, "applyParamModulation should not throw for '-inf dB' with no mapValueFn");
+        assert(setCalls.length === 0,
+            `expected no setValueAtTime call recorded for raw non-finite value, got ${JSON.stringify(setCalls)}`);
+    }
+
+    // TEST 3: ramp branch guard - non-finite mapped "from"/"to" must not throw and must
+    // not schedule any AudioParam calls.
+    {
+        const setCalls = [];
+        const rampCalls = [];
+        const param = {
+            setValueAtTime(v, t) { setCalls.push(v); return this; },
+            linearRampToValueAtTime(v, t) { rampCalls.push(v); return this; },
+        };
+
+        let threw = false;
+        try {
+            applyParamModulation({}, param, { isRamp: true, from: -Infinity, to: -6, duration: 0.1 }, "_testModulator", null);
+        } catch (e) {
+            threw = true;
+        }
+
+        assert(threw === false, "applyParamModulation ramp branch should not throw for non-finite mapped 'from'");
+        assert(setCalls.length === 0 && rampCalls.length === 0,
+            "non-finite ramp endpoints must not schedule any AudioParam calls");
+    }
+
+    // Self-contained mock context (with a real recording setValueAtTime) so this section's
+    // assertions don't depend on whatever Motif.ctx happens to be left over from other tests.
+    class InlineDbAutomationMockGainNode {
+        constructor() {
+            this.gain = {
+                value: 1.0,
+                setValueAtTime(v) { this.value = v; return this; },
+                linearRampToValueAtTime(v) { this.value = v; return this; },
+            };
+        }
+        connect(dest) { return dest; }
+        disconnect() {}
+    }
+    class InlineDbAutomationMockCtx {
+        constructor() {
+            this.state = "running";
+            this.currentTime = 0;
+            this.destination = {};
+        }
+        createGain() { return new InlineDbAutomationMockGainNode(); }
+    }
+
+    // TEST 4: _playEvent inline volume automation ({type: "volume", value: "-6dB"}) must
+    // apply the dB->linear converter (mirroring EffectChain.volume), not the raw -6.
+    {
+        Motif.ctx = new InlineDbAutomationMockCtx();
+        const t = Track("inline-db-automation-test");
+        t._initAudio();
+        t._playEvent({ value: { type: "volume", value: "-6dB" } }, 0, 1);
+
+        const expectedGain = Math.pow(10, -6 / 20);
+        assert(Math.abs(t.volumeNode.gain.value - expectedGain) < 1e-6,
+            `expected volumeNode.gain ~0.501187 for inline "-6dB" automation, got ${t.volumeNode.gain.value}`);
+    }
+
+    // TEST 5: _playEvent inline volume automation with "-inf dB" must not throw and must
+    // snap to 0 gain (via the mirrored converter), never raw -Infinity.
+    {
+        Motif.ctx = new InlineDbAutomationMockCtx();
+        const t2 = Track("inline-db-automation-inf-test");
+        t2._initAudio();
+
+        let threw = false;
+        try {
+            t2._playEvent({ value: { type: "volume", value: "-inf dB" } }, 0, 1);
+        } catch (e) {
+            threw = true;
+        }
+
+        assert(threw === false, "_playEvent should not throw scheduling '-inf dB' inline volume automation");
+        assert(t2.volumeNode.gain.value === 0,
+            `expected volumeNode.gain to be 0 for '-inf dB' inline automation, got ${t2.volumeNode.gain.value}`);
+    }
+
+    Motif.ctx = prevCtx;
+    Motif.tempo = prevTempo;
+    Track.clearRegistry();
+}
+
+// =============================================================================
+// TASK: Guard createLFO against non-finite frequency (todo.md "Bugs (Edge Cases)")
+// =============================================================================
+{
+    class LfoGuardMockOscillatorNode {
+        constructor() {
+            this.frequency = {
+                value: 1.0,
+                setValueAtTime(v) {
+                    this.value = v;
+                    return this;
+                },
+            };
+            this.type = "sine";
+        }
+        connect() { return this; }
+        disconnect() {}
+        start() {}
+        stop() {}
+    }
+
+    class LfoGuardMockGainNode {
+        constructor() {
+            this.gain = {
+                value: 1.0,
+                setValueAtTime(v) {
+                    this.value = v;
+                    return this;
+                },
+            };
+        }
+        connect() { return this; }
+        disconnect() {}
+    }
+
+    class LfoGuardMockCtx {
+        constructor() {
+            this.state = "running";
+            this.currentTime = 0;
+            this.destination = {};
+        }
+        createOscillator() { return new LfoGuardMockOscillatorNode(); }
+        createGain() { return new LfoGuardMockGainNode(); }
+    }
+
+    const prevCtx = Motif.ctx;
+
+    // TEST 1: LFO.sine({ speed: 0 }) must not throw and must yield a finite oscillator frequency
+    {
+        Motif.ctx = new LfoGuardMockCtx();
+        let threw = false;
+        let lfo;
+        try {
+            lfo = LFO.sine({ speed: 0 });
+        } catch (e) {
+            threw = true;
+        }
+        assert(threw === false, "LFO.sine({ speed: 0 }) should not throw");
+        assert(Number.isFinite(lfo.osc.frequency.value),
+            `expected finite osc.frequency after speed: 0, got ${lfo.osc.frequency.value}`);
+    }
+
+    // TEST 2: LFO(NaN) must not throw and must yield a finite oscillator frequency
+    {
+        Motif.ctx = new LfoGuardMockCtx();
+        let threw = false;
+        let lfo;
+        try {
+            lfo = LFO(NaN);
+        } catch (e) {
+            threw = true;
+        }
+        assert(threw === false, "LFO(NaN) should not throw");
+        assert(Number.isFinite(lfo.osc.frequency.value),
+            `expected finite osc.frequency for LFO(NaN), got ${lfo.osc.frequency.value}`);
+    }
+
+    // TEST 3: non-finite depth/offset (via NaN min/max) must be clamped to finite defaults
+    {
+        Motif.ctx = new LfoGuardMockCtx();
+        let threw = false;
+        let lfo;
+        try {
+            lfo = LFO.sine({ frequency: 2, min: NaN, max: NaN });
+        } catch (e) {
+            threw = true;
+        }
+        assert(threw === false, "LFO.sine with non-finite min/max should not throw");
+        assert(Number.isFinite(lfo.gainNode.gain.value),
+            `expected finite gainNode.gain (depth) for non-finite min/max, got ${lfo.gainNode.gain.value}`);
+    }
+
+    Motif.ctx = prevCtx;
+}
+
+// =============================================================================
+// TODO: Fix auto-loop restart race with ctx.suspend(); make pause() -> start() resume
+// =============================================================================
+console.log("\n=== MotifEngine: auto-loop restart race with pending suspend ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevIsPlaying = Motif.isPlaying;
+    const prevOptions = Motif._arrangementOptions;
+    const prevStartScheduler = Motif._startScheduler;
+    const prevSuspendedByEngine = Motif._suspendedByEngine;
+    const prevSuspendPromise = Motif._suspendPromise;
+    const savedTracks = new Map(trackRegistry);
+    trackRegistry.clear();
+
+    const flush = () => new Promise(r => setTimeout(r, 10));
+
+    // MockAudioContext whose suspend() stays pending (state remains "running")
+    // until we resolve it manually — reproduces the window where the loop
+    // restart can fire before the engine-initiated suspend has landed.
+    let resolveSuspend = null;
+    class RaceCtx {
+        constructor() {
+            this.state = "running";
+            this.currentTime = 2;
+        }
+
+        suspend() {
+            return new Promise(res => {
+                resolveSuspend = () => {
+                    this.state = "suspended";
+                    res();
+                };
+            });
+        }
+
+        resume() {
+            this.state = "running";
+            return Promise.resolve();
+        }
+    }
+
+    const raceCtx = new RaceCtx();
+    Motif.ctx = raceCtx;
+    Motif.isPlaying = true;
+    Motif._suspendedByEngine = false;
+    Motif._suspendPromise = null;
+    Motif._arrangementOptions = { loop: true, loopDelay: 0 };
+
+    // Avoid spinning a real setInterval scheduler during the async assertions.
+    Motif._startScheduler = () => {};
+
+    // Minimal finished-arrangement track: finite segment stop reached at t=2.
+    const loopTrack = {
+        id: "loop-race",
+        _notePattern: ["C3"],
+        _activeSegments: [{ start: 0, stop: 1 }],
+        _playbackStartTime: 0,
+        _schedule() {},
+        _resetScheduling() {},
+    };
+    trackRegistry.set(loopTrack.id, loopTrack);
+
+    // Drive tick() past the arrangement end: triggers stop() (pending suspend)
+    // then schedules the loop restart.
+    Motif.tick();
+
+    assert(Motif._loopTimeout !== null, "auto-loop should schedule a restart timeout");
+
+    // Let the restart macrotask fire. With the fix it parks on the pending
+    // suspend promise; the buggy version would resume/start here while the
+    // suspend is still in flight.
+    await flush();
+
+    // Now the engine-initiated suspend finally lands.
+    if (typeof resolveSuspend === "function") resolveSuspend();
+
+    // Allow the chained resume + transport launch to settle.
+    await flush();
+
+    assert(raceCtx.state === "running",
+        `context must end "running" after restart settles, got "${raceCtx.state}"`);
+    assert(Motif.isPlaying === true,
+        "isPlaying must be true after auto-loop restart settles");
+    assert(Motif._suspendedByEngine === false,
+        "_suspendedByEngine should be cleared once the transport resumes");
+
+    // pause() -> Motif.start() must resume instead of throwing.
+    Motif._startScheduler = () => {};
+    Motif.pause();
+    assert(Motif._suspendedByEngine === true,
+        "pause() should mark the suspend as engine-initiated");
+    if (typeof resolveSuspend === "function") resolveSuspend();
+    await flush();
+    assert(raceCtx.state === "suspended",
+        `context should be suspended after pause(), got "${raceCtx.state}"`);
+
+    let pauseStartThrew = false;
+    try {
+        await Motif.start();
+    } catch (e) {
+        pauseStartThrew = true;
+    }
+    assert(pauseStartThrew === false,
+        "Motif.start() after pause() must not throw (should resume the engine-suspended context)");
+    assert(raceCtx.state === "running",
+        `Motif.start() after pause() should resume context to "running", got "${raceCtx.state}"`);
+    assert(Motif.isPlaying === true, "isPlaying must be true after pause() -> start() resume");
+
+    // Cleanup
+    if (Motif._loopTimeout) {
+        clearTimeout(Motif._loopTimeout);
+        Motif._loopTimeout = null;
+    }
+    trackRegistry.clear();
+    for (const [id, track] of savedTracks) trackRegistry.set(id, track);
+    Motif.ctx = prevCtx;
+    Motif.isPlaying = prevIsPlaying;
+    Motif._arrangementOptions = prevOptions;
+    Motif._startScheduler = prevStartScheduler;
+    Motif._suspendedByEngine = prevSuspendedByEngine;
+    Motif._suspendPromise = prevSuspendPromise;
+}
+
+// =============================================================================
+// Bugs (Edge Cases): Evict rejected promises from sampleBufferCache
+// =============================================================================
+console.log("\n=== _loadAndCacheBuffer: evicts rejected promises from sampleBufferCache ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevFetch = globalThis.fetch;
+
+    class RejectEvictionMockCtx {
+        decodeAudioData(ab, resolve) {
+            resolve({ duration: 1, sampleRate: 44100, numberOfChannels: 1 });
+        }
+    }
+    Motif.ctx = new RejectEvictionMockCtx();
+
+    const path = "/audio/flaky-eviction-test.wav";
+    sampleBufferCache.delete(path);
+
+    let fetchCallCount = 0;
+    globalThis.fetch = (url) => {
+        fetchCallCount++;
+        if (fetchCallCount === 1) return Promise.reject(new Error("network down"));
+        return Promise.resolve({
+            ok: true,
+            arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
+        });
+    };
+
+    let firstRejected = false;
+    try {
+        await Motif._loadAndCacheBuffer(path);
+    } catch (e) {
+        firstRejected = true;
+    }
+    assert(firstRejected === true, "first (failing) fetch should reject");
+
+    // Let the detached eviction .then() microtask run.
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert(sampleBufferCache.has(path) === false,
+        "rejected promise must be evicted from sampleBufferCache");
+
+    const buf = await Motif._loadAndCacheBuffer(path);
+    assert(fetchCallCount === 2, `second call should trigger a fresh fetch, got fetchCallCount=${fetchCallCount}`);
+    assert(buf && buf.numberOfChannels === 1, "second (successful) call should resolve with a decoded buffer");
+    assert(sampleBufferCache.has(path) === true, "successful load should remain cached");
+
+    // Cleanup
+    sampleBufferCache.delete(path);
+    globalThis.fetch = prevFetch;
+    Motif.ctx = prevCtx;
+}
+
+// =============================================================================
+// Bugs (Edge Cases): Array.prototype.add/sub/mul/div non-enumerable; evaluateOp
+// no longer triple-calls noteToMidi (todo.md "Make Array.prototype.add/sub/mul/div
+// non-enumerable; stop triple noteToMidi calls in evaluateOp")
+// =============================================================================
+console.log("\n=== Array.prototype arithmetic methods: non-enumerable + noteToMidi ===");
+{
+    const seenKeys = [];
+    for (const k in [1]) {
+        seenKeys.push(k);
+    }
+    assert(!seenKeys.includes("add"), "for...in over array must not yield 'add'");
+    assert(!seenKeys.includes("sub"), "for...in over array must not yield 'sub'");
+    assert(!seenKeys.includes("mul"), "for...in over array must not yield 'mul'");
+    assert(!seenKeys.includes("div"), "for...in over array must not yield 'div'");
+
+    for (const name of ["add", "sub", "mul", "div"]) {
+        const desc = Object.getOwnPropertyDescriptor(Array.prototype, name);
+        assert(desc && desc.enumerable === false, `Array.prototype.${name} descriptor must be enumerable:false`);
+        assert(desc && desc.writable === true, `Array.prototype.${name} descriptor must be writable:true`);
+        assert(desc && desc.configurable === true, `Array.prototype.${name} descriptor must be configurable:true`);
+    }
+
+    const noteResult = ["C3"].add(12);
+    assert(JSON.stringify(noteResult) === JSON.stringify(["C4"]),
+        `["C3"].add(12) should be ["C4"], got ${JSON.stringify(noteResult)}`);
+
+    const crossResult = [60].add([1, 2]);
+    assert(JSON.stringify(crossResult) === JSON.stringify([61, 62]),
+        `[60].add([1, 2]) should be [61, 62], got ${JSON.stringify(crossResult)}`);
+}
+
+// =============================================================================
+// todo.md "Extract shared dispose helpers for Track/Bus clearRegistry/pruneExcept"
+// =============================================================================
+console.log("\n=== Track.pruneExcept / Bus.pruneExcept: shared dispose helpers ===");
+{
+    const savedTracks = new Map(trackRegistry);
+    const savedBuses = new Map(busRegistry);
+    trackRegistry.clear();
+    busRegistry.clear();
+
+    let threw = false;
+    try {
+        Track("a");
+        Track("b");
+        Bus("x");
+
+        Track.pruneExcept(["a"]);
+        Bus.pruneExcept([]);
+    } catch (e) {
+        threw = true;
+    }
+
+    assert(threw === false, "Track.pruneExcept/Bus.pruneExcept must not throw under MockAudioContext");
+    assert(trackRegistry.has("a"), "Track.pruneExcept(['a']) must keep track 'a'");
+    assert(!trackRegistry.has("b"), "Track.pruneExcept(['a']) must remove track 'b'");
+    assert(trackRegistry.size === 1, `Track registry should have exactly 1 entry after pruneExcept, got ${trackRegistry.size}`);
+    assert(busRegistry.size === 0, `Bus.pruneExcept([]) should empty the bus registry, got ${busRegistry.size}`);
+
+    trackRegistry.clear();
+    busRegistry.clear();
+    for (const [id, track] of savedTracks) trackRegistry.set(id, track);
+    for (const [id, bus] of savedBuses) busRegistry.set(id, bus);
+}
+
+console.log("\n=== Track.pruneExcept: preserves \"__temp_probe__\" special case ===");
+{
+    const savedTracks = new Map(trackRegistry);
+    trackRegistry.clear();
+
+    Track("__temp_probe__");
+    Track("real");
+
+    Track.pruneExcept([]);
+
+    assert(trackRegistry.has("__temp_probe__"), "Track.pruneExcept must never remove '__temp_probe__' even when absent from activeIds");
+    assert(!trackRegistry.has("real"), "Track.pruneExcept([]) must remove non-active, non-probe tracks");
+
+    trackRegistry.clear();
+    for (const [id, track] of savedTracks) trackRegistry.set(id, track);
+}
+
+// =============================================================================
+// Docs & Tests: Fix prompt.md drift (Track.feedback silent no-op stub)
+// =============================================================================
+console.log("\n=== Track.feedback: no-op stub warns once instead of silently doing nothing ===");
+{
+    const originalWarn = console.warn;
+    const warnCalls = [];
+    console.warn = (...args) => warnCalls.push(args.join(" "));
+
+    const track = Track("__feedback_stub_probe__");
+    const result = track.feedback({ amount: 0.5 });
+    track.feedback({ amount: 0.9 });
+
+    console.warn = originalWarn;
+
+    assert(result === track, "Track.feedback() must remain a no-op that returns `this` for chaining");
+    assert(warnCalls.length === 1, `Track.feedback() must warn exactly once across calls, got ${warnCalls.length} warnings`);
+    assert(
+        warnCalls.length > 0 && /only supported on Bus/i.test(warnCalls[0]),
+        `Track.feedback() warning must mention Bus-only support, got: ${warnCalls[0] ?? "(none)"}`
+    );
+
+    trackRegistry.delete("__feedback_stub_probe__");
+}
+
+console.log("\n=== prompt.md: Audio Routing lists .feedback({ amount }) as Bus-only ===");
+{
+    const { readFileSync } = await import("node:fs");
+    const promptText = readFileSync(new URL("./prompt.md", import.meta.url), "utf8");
+    const routingLine = promptText.split("\n").find((line) => line.includes("Audio Routing (chained on Track)"));
+
+    assert(!!routingLine, "prompt.md must contain the 'Audio Routing (chained on Track)' line");
+    assert(
+        !!routingLine && !/`\.send\(bus, amount\)`, `\.feedback/.test(routingLine),
+        "prompt.md Audio Routing (Track) line must not list `.feedback({ amount })` as a plain Track-chained method"
+    );
+    assert(
+        promptText.includes("chained on `Bus`, NOT on Track"),
+        "prompt.md must explicitly state .feedback({ amount }) is Bus-only, not Track"
+    );
+}
+
+// =============================================================================
+// Docs & Tests: documented-but-untested APIs — Track.sound() router, SimplexNoise
+// =============================================================================
+console.log("\n=== Track.sound(): synth/sample routing convenience method ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevFetch = globalThis.fetch;
+
+    class SoundRouterMockCtx extends MockAudioContext {
+        decodeAudioData(ab, resolve) {
+            resolve({ getChannelData: () => new Float32Array(100), duration: 1, sampleRate: 44100, numberOfChannels: 1, length: 100 });
+        }
+    }
+    Motif.ctx = new SoundRouterMockCtx();
+
+    // Case 1: native oscillator name routes through .synth()
+    const tNative = Track("sound-router-native").sound("square");
+    assert(tNative._synthType === "square", ".sound('square') should route to .synth() and set _synthType");
+    assert(tNative._useSample === false, ".sound('square') should leave the track in synth mode");
+    trackRegistry.delete("sound-router-native");
+
+    // Case 2: name registered in Motif.synthRegistry (not a native oscillator) routes through .synth()
+    const customSynthName = "__test_sound_router_synth__";
+    Motif.synthRegistry.set(customSynthName, (ctx) => Math.sin(ctx.p * Math.PI * 2));
+    const tCustomSynth = Track("sound-router-custom-synth").sound(customSynthName);
+    assert(tCustomSynth._synthType === customSynthName, ".sound() should route registered synth names to .synth()");
+    assert(tCustomSynth._useSample === false, "registered-synth routing should leave synth mode active");
+    Motif.synthRegistry.delete(customSynthName);
+    trackRegistry.delete("sound-router-custom-synth");
+
+    // Case 3: name registered in Motif.sampleRegistry routes through .sample() and resolves from the
+    // registry directly (no network fetch)
+    const customSampleName = "__test_sound_router_sample__";
+    let fetchCalled = false;
+    globalThis.fetch = () => {
+        fetchCalled = true;
+        return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(4)) });
+    };
+    Motif.sampleRegistry.set(customSampleName, () => ({
+        getChannelData: () => new Float32Array(10),
+        duration: 0.5, sampleRate: 44100, numberOfChannels: 1, length: 10,
+    }));
+    const tCustomSample = Track("sound-router-custom-sample").sound(customSampleName);
+    await tCustomSample._sampleLoading;
+    assert(tCustomSample._useSample === true, ".sound() should route registered sample names to .sample()");
+    assert(tCustomSample._sampleBuffer !== null, "registered-sample routing should resolve a decoded buffer");
+    assert(fetchCalled === false, "a sample name resolved from the in-memory registry must not hit fetch");
+    Motif.sampleRegistry.delete(customSampleName);
+    trackRegistry.delete("sound-router-custom-sample");
+
+    // Case 4: a name absent from both registries falls through to .sample() as a literal URL/path
+    fetchCalled = false;
+    let fetchedUrl = null;
+    globalThis.fetch = (url) => {
+        fetchCalled = true;
+        fetchedUrl = url;
+        return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(4)) });
+    };
+    const unknownPath = "/audio/__unregistered_sound_router_probe__.wav";
+    const tFallthrough = Track("sound-router-fallthrough").sound(unknownPath);
+    await tFallthrough._sampleLoading;
+    assert(tFallthrough._useSample === true, "unrecognized .sound() name should fall through to .sample()");
+    assert(tFallthrough._sampleUrl === unknownPath, "fallthrough should store the literal path as the sample URL");
+    assert(fetchCalled === true && fetchedUrl === unknownPath, "fallthrough path should be fetched as a plain URL");
+    sampleBufferCache.delete(unknownPath);
+    trackRegistry.delete("sound-router-fallthrough");
+
+    Motif.ctx = prevCtx;
+    globalThis.fetch = prevFetch;
+}
+
+console.log("\n=== SimplexNoise: seeded reproducibility, cross-seed divergence, range, function-seed ===");
+{
+    // Same numeric seed -> identical noise1D/noise2D sequences
+    const seedA1 = new SimplexNoise(42);
+    const seedA2 = new SimplexNoise(42);
+    const xs = [0, 0.37, 1.5, 3.14159, -2.71, 10.001, -100.5];
+
+    let identical1D = true;
+    let identical2D = true;
+    for (const x of xs) {
+        if (seedA1.noise1D(x) !== seedA2.noise1D(x)) identical1D = false;
+        if (seedA1.noise2D(x, x * 1.3) !== seedA2.noise2D(x, x * 1.3)) identical2D = false;
+    }
+    assert(identical1D, "SimplexNoise(42) instances should produce identical noise1D sequences");
+    assert(identical2D, "SimplexNoise(42) instances should produce identical noise2D sequences");
+
+    // Different seeds -> diverging sequences
+    const seedB = new SimplexNoise(7);
+    let anyDiffer1D = false;
+    let anyDiffer2D = false;
+    for (const x of xs) {
+        if (seedA1.noise1D(x) !== seedB.noise1D(x)) anyDiffer1D = true;
+        if (seedA1.noise2D(x, x * 1.3) !== seedB.noise2D(x, x * 1.3)) anyDiffer2D = true;
+    }
+    assert(anyDiffer1D, "SimplexNoise with a different seed should diverge in noise1D outputs");
+    assert(anyDiffer2D, "SimplexNoise with a different seed should diverge in noise2D outputs");
+
+    // Outputs stay within the documented [-1, 1] range
+    const rangeProbe = new SimplexNoise(1337);
+    let allWithinRange = true;
+    for (let i = -200; i <= 200; i++) {
+        const x = i * 0.37;
+        const y = i * -0.53;
+        const n1 = rangeProbe.noise1D(x);
+        const n2 = rangeProbe.noise2D(x, y);
+        if (n1 < -1 || n1 > 1 || n2 < -1 || n2 > 1) allWithinRange = false;
+    }
+    assert(allWithinRange, "noise1D/noise2D outputs should stay within the documented [-1, 1] range");
+
+    // Function-as-seed variant: the RNG function is used verbatim, not re-wrapped through mulberry32
+    const makeDeterministicRng = () => {
+        let state = 987654321;
+        return () => {
+            state = (state * 1103515245 + 12345) & 0x7fffffff;
+            return state / 0x7fffffff;
+        };
+    };
+    const fnSeeded1 = new SimplexNoise(makeDeterministicRng());
+    const fnSeeded2 = new SimplexNoise(makeDeterministicRng());
+    let fnIdentical = true;
+    for (const x of xs) {
+        if (fnSeeded1.noise1D(x) !== fnSeeded2.noise1D(x)) fnIdentical = false;
+    }
+    assert(fnIdentical, "two SimplexNoise instances built from equivalent deterministic RNG factories should match");
+
+    const fnSample = fnSeeded1.noise1D(0.5);
+    assert(typeof fnSample === "number" && Number.isFinite(fnSample),
+        "function-seeded SimplexNoise should produce finite numeric output");
+}
+
+// =============================================================================
+// Shared MockAudioContext factory completeness (regression: runner song exec)
+// =============================================================================
+// The shared mock (test/mock_webaudio.js) drives temp/run_song.js against real
+// songs. It must expose every ctx.create* factory the library calls, or full
+// song execution throws "ctx.createX is not a function" (e.g. splitStereo hits
+// createChannelMerger, panning hits createStereoPanner, Bus feedback hits
+// createDelay). Guard the superset invariant its own docstring promises.
+console.log("\n=== Shared MockAudioContext: factory completeness ===");
+{
+    const sharedCtx = new MockAudioContext();
+
+    const requiredFactories = [
+        "createGain", "createBiquadFilter", "createDynamicsCompressor",
+        "createConstantSource", "createOscillator", "createBuffer",
+        "createBufferSource", "createWaveShaper", "createStereoPanner",
+        "createDelay", "createChannelMerger",
+    ];
+    for (const name of requiredFactories) {
+        assert(typeof sharedCtx[name] === "function",
+            `shared MockAudioContext must expose ${name}()`);
+    }
+
+    const panner = sharedCtx.createStereoPanner();
+    assert(panner && panner.pan && typeof panner.pan.setValueAtTime === "function",
+        "createStereoPanner() node exposes a .pan AudioParam");
+
+    const delay = sharedCtx.createDelay(1);
+    assert(delay && delay.delayTime && typeof delay.delayTime.setValueAtTime === "function",
+        "createDelay() node exposes a .delayTime AudioParam");
+
+    const merger = sharedCtx.createChannelMerger(2);
+    assert(merger && typeof merger.connect === "function" && merger.numberOfInputs === 2,
+        "createChannelMerger(2) node is connectable with numberOfInputs === 2");
+
+    // Drive splitStereo through the shared mock end-to-end (the runner's path):
+    // must not throw "createChannelMerger is not a function".
+    globalThis.window = globalThis;
+    globalThis.AudioContext = MockAudioContext;
+    Motif.ctx = null;
+    Motif.init();
+
+    let splitStereoThrew = null;
+    try {
+        Track("shared-mock-split").synth("saw").note(["C4", "E4"]).splitStereo((right) => {
+            right.volume(-6);
+        });
+    } catch (err) {
+        splitStereoThrew = err.message;
+    }
+    assert(splitStereoThrew === null,
+        `splitStereo through shared mock must not throw, got: ${splitStereoThrew}`);
+
+    Track.clearRegistry();
+    Bus.clearRegistry();
+}
+
+// =============================================================================
+// TASK (Performance): Granular playback — eliminate per-note full-sample copy
+// and audio-thread allocations
+// (src/TrackVoiceManager.js, src/worklets/GranularStretcherProcessor.js)
+//
+// Two behavior-preserving optimizations:
+//   1. _postGranularChannels posts channel data with a transfer list (zero-copy
+//      handoff of a throwaway Float32Array.from() copy), never detaching or
+//      mutating the live AudioBuffer. A real transfer list detaches the
+//      transferred ArrayBuffers, so this copy cannot be cached and reused
+//      across notes without worklet-side retention (out of scope here) - one
+//      copy per note is still made, but it is never the live channel data and
+//      the handoff itself is zero-copy.
+//   2. process() compacts expired grains in place instead of allocating a fresh
+//      array via .filter() on every output sample.
+//
+// The output-equivalence check harnesses the optimized processor alongside a
+// frozen pristine reference (test/fixtures/GranularStretcherProcessor.reference.js)
+// and asserts their process() output matches sample-for-sample over N blocks.
+// =============================================================================
+console.log("\n=== Granular perf: process() output equivalence (frozen reference vs optimized) ===");
+{
+    const savedProcessor = globalThis.AudioWorkletProcessor;
+    const savedRegister = globalThis.registerProcessor;
+    const savedSampleRate = globalThis.sampleRate;
+    const savedCurrentTime = globalThis.currentTime;
+
+    let captured = null;
+    globalThis.AudioWorkletProcessor = class {
+        constructor() {
+            this.port = { onmessage: null, postMessage() {} };
+        }
+    };
+    globalThis.registerProcessor = (name, cls) => { captured = cls; };
+    globalThis.sampleRate = 44100;
+    globalThis.currentTime = 0;
+
+    const bust = `?t=${Date.now()}`;
+    await import(`./test/fixtures/GranularStretcherProcessor.reference.js${bust}`);
+    const RefClass = captured;
+    captured = null;
+    await import(`./src/worklets/GranularStretcherProcessor.js${bust}`);
+    const NewClass = captured;
+
+    assert(typeof RefClass === "function", "frozen reference processor class captured");
+    assert(typeof NewClass === "function", "optimized processor class captured");
+    assert(RefClass !== NewClass, "reference and optimized processors are distinct classes");
+
+    // Non-silent stereo source so any output divergence would surface, and long
+    // enough that virtualReadPointer stays in-bounds across the whole render
+    // (stretch 1.5 advances ~0.667 samples/output; 60*128=7680 -> ~5120 < 8000).
+    const bufLen = 8000;
+    const left = new Float32Array(bufLen);
+    const right = new Float32Array(bufLen);
+    for (let i = 0; i < bufLen; i++) {
+        left[i] = Math.sin((2 * Math.PI * 3 * i) / bufLen);
+        right[i] = Math.cos((2 * Math.PI * 5 * i) / bufLen);
+    }
+
+    const params = { stretchFactor: [1.5], pitchRatio: [1.0], grainSize: [0.05], overlap: [4] };
+
+    const refInst = new RefClass();
+    const newInst = new NewClass();
+    for (const inst of [refInst, newInst]) {
+        // Each instance gets its own copy (processors mutate their buffers' owners over transfer).
+        inst.port.onmessage({ data: { leftBuffer: left.slice(), rightBuffer: right.slice() } });
+        inst.port.onmessage({ data: { type: "START", startTime: 0 } });
+    }
+
+    const N = 60;
+    const BLOCK = 128;
+    let maxDiff = 0;
+    let anyNonZero = false;
+    let sawVariation = false;
+    let firstVal = null;
+
+    for (let b = 0; b < N; b++) {
+        globalThis.currentTime = (b * BLOCK) / 44100;
+        const refOut = [new Float32Array(BLOCK), new Float32Array(BLOCK)];
+        const newOut = [new Float32Array(BLOCK), new Float32Array(BLOCK)];
+        refInst.process([], [refOut], params);
+        newInst.process([], [newOut], params);
+
+        for (let c = 0; c < 2; c++) {
+            for (let i = 0; i < BLOCK; i++) {
+                const d = Math.abs(refOut[c][i] - newOut[c][i]);
+                if (d > maxDiff) maxDiff = d;
+                const v = newOut[c][i];
+                if (v !== 0) anyNonZero = true;
+                if (firstVal === null) firstVal = v;
+                else if (v !== firstVal) sawVariation = true;
+            }
+        }
+
+        // Grain arrays must stay in lockstep every block — proves the in-place
+        // compaction removes exactly the grains .filter() would have.
+        assert(refInst.grains.length === newInst.grains.length,
+            `block ${b}: grain count must match reference (ref=${refInst.grains.length}, new=${newInst.grains.length})`);
+    }
+
+    assert(maxDiff === 0,
+        `optimized process() output must be bit-identical to the frozen reference, maxDiff=${maxDiff}`);
+    assert(anyNonZero, "render must be non-silent (otherwise the equivalence check is vacuous)");
+    assert(sawVariation, "output must vary across samples (grains actually mixed)");
+    assert(newInst.grains.length > 0 && newInst.grains.length <= 8,
+        `active grain count must stay bounded near overlap, proving compaction ran, got ${newInst.grains.length}`);
+
+    globalThis.AudioWorkletProcessor = savedProcessor;
+    globalThis.registerProcessor = savedRegister;
+    globalThis.sampleRate = savedSampleRate;
+    globalThis.currentTime = savedCurrentTime;
+}
+
+console.log("\n=== Granular perf: _postGranularChannels transfer list (throwaway copy, never the live buffer) ===");
+{
+    const prevCtx = Motif.ctx;
+    Track.clearRegistry();
+
+    const t = Track("granular-post-test");
+
+    let getChannelDataCalls = 0;
+    const chan0 = new Float32Array([1, 2, 3, 4]);
+    const chan1 = new Float32Array([5, 6, 7, 8]);
+    const buffer = {
+        numberOfChannels: 2,
+        length: 4,
+        sampleRate: 44100,
+        duration: 4 / 44100,
+        getChannelData(ch) {
+            getChannelDataCalls++;
+            return ch === 0 ? chan0 : chan1;
+        },
+    };
+
+    const posts = [];
+    const mockSource = {
+        port: {
+            postMessage(msg, transfer) { posts.push({ msg, transfer }); },
+        },
+    };
+
+    t._postGranularChannels(mockSource, buffer);
+
+    assert(posts.length === 1, "one post recorded for first trigger");
+    assert(Array.isArray(posts[0].transfer), "post supplies a transfer list");
+    assert(posts[0].transfer.length === 2, "stereo transfer list carries both channel ArrayBuffers");
+    assert(posts[0].transfer[0] === posts[0].msg.leftBuffer.buffer,
+        "transfer list entry 0 is the posted left channel's ArrayBuffer");
+    assert(posts[0].transfer[1] === posts[0].msg.rightBuffer.buffer,
+        "transfer list entry 1 is the posted right channel's ArrayBuffer");
+    assert(posts[0].msg.leftBuffer instanceof Float32Array, "posts a Float32Array");
+    assert(posts[0].msg.leftBuffer !== chan0,
+        "posted left buffer is a copy, never the AudioBuffer's live channel data");
+
+    // The live AudioBuffer must never be detached/mutated by the transfer.
+    assert(chan0.byteLength === 16 && chan1.byteLength === 16,
+        "source AudioBuffer channels are not detached by the transfer");
+    assert(chan0[2] === 3 && chan1[3] === 8,
+        "source AudioBuffer channel data intact after posting");
+
+    // A real transfer list detaches the transferred ArrayBuffers, so nothing
+    // can be cached across notes: every post re-reads the AudioBuffer and
+    // makes a fresh throwaway copy (this mock's postMessage does not detach,
+    // but the code makes no caching assumption about that either way).
+    const callsAfterFirst = getChannelDataCalls;
+    t._postGranularChannels(mockSource, buffer);
+    assert(getChannelDataCalls === callsAfterFirst + 2,
+        "second post re-reads both channels (no cross-note caching of the transferred copy)");
+    assert(posts.length === 2, "second post recorded");
+
+    // Mono source: the transfer list must not list the same ArrayBuffer twice
+    // (a duplicate entry throws DataCloneError in a real worklet post).
+    const monoChan = new Float32Array([1, 2, 3]);
+    const monoBuffer = {
+        numberOfChannels: 1,
+        length: 3,
+        sampleRate: 44100,
+        getChannelData() { return monoChan; },
+    };
+    t._postGranularChannels(mockSource, monoBuffer);
+    const monoPost = posts[posts.length - 1];
+    assert(monoPost.msg.leftBuffer === monoPost.msg.rightBuffer,
+        "mono: left and right reference one shared copied array");
+    assert(monoPost.transfer.length === 1,
+        "mono transfer list lists the single ArrayBuffer once, not twice");
+
+    Motif.ctx = prevCtx;
+    Track.clearRegistry();
+}
+
+// =============================================================================
+// Track.delay() feedback-delay send sugar
+// (task: Resolve .delay() gap exposed by "why fail Thermodynamic Sugar Rush")
+// =============================================================================
+console.log("\n=== Track.delay(): feedback-delay send sugar ===");
+{
+    Track.clearRegistry();
+    Bus.clearRegistry();
+    const prevTempo = Motif.tempo;
+    Motif.tempo = 120;
+
+    // Chainable and does not throw for the exact call from the why-fail song
+    const bells = Track("bells").sample("music-box");
+    const returned = bells.delay({ time: "3/16", feedback: 0.5 });
+    assert(returned === bells, "Track.delay() returns the track instance (chainable)");
+
+    // An internal delay bus "<id>__delay" is created and registered
+    assert(bells._delayBus !== undefined && bells._delayBus !== null, "Track.delay() creates an internal _delayBus");
+    assert(busRegistry.has("bells__delay"), "internal delay bus registered as '<id>__delay'");
+
+    // A send from the track feeds the delay bus
+    assert(bells._sends.has("bells__delay"), "Track.delay() opens a send to the internal delay bus");
+    assert(Math.abs(bells._sends.get("bells__delay").gain.value - 0.5) < 1e-9,
+        `delay send amount should be 0.5, got ${bells._sends.get("bells__delay").gain.value}`);
+
+    // The bus feedback loop exists with the requested feedback amount
+    assert(bells._delayBus.feedbackGainNode !== null, "delay bus has a feedback gain node");
+    assert(Math.abs(bells._delayBus.feedbackGainNode.gain.value - 0.5) < 1e-9,
+        `feedback gain should be 0.5, got ${bells._delayBus.feedbackGainNode.gain.value}`);
+
+    // "3/16" at 120 BPM, 4 beats/bar => 0.1875 * 0.5 * 4 = 0.375s
+    const expectedSeconds = (3 / 16) * (60 / 120) * 4;
+    assert(Math.abs(bells._delayBus.feedbackDelayNode.delayTime.value - expectedSeconds) < 1e-9,
+        `delay time should be ${expectedSeconds}s, got ${bells._delayBus.feedbackDelayNode.delayTime.value}`);
+
+    // Numeric time is treated as seconds
+    const t2 = Track("t2").synth("saw").delay({ time: 0.25, feedback: 0.2 });
+    assert(Math.abs(t2._delayBus.feedbackDelayNode.delayTime.value - 0.25) < 1e-9,
+        `numeric delay time 0.25s honored, got ${t2._delayBus.feedbackDelayNode.delayTime.value}`);
+
+    // Feedback is clamped to [0, 0.95] (runaway-safe)
+    const t3 = Track("t3").synth("saw").delay({ time: "1/8", feedback: 5 });
+    assert(Math.abs(t3._delayBus.feedbackGainNode.gain.value - 0.95) < 1e-9,
+        `feedback should clamp to 0.95, got ${t3._delayBus.feedbackGainNode.gain.value}`);
+
+    // Delay time is clamped below the 1s DelayNode max even for long musical values
+    const t4 = Track("t4").synth("saw").delay({ time: "4/1", feedback: 0.3 });
+    assert(t4._delayBus.feedbackDelayNode.delayTime.value <= 0.999,
+        `delay time should clamp to <= 0.999s, got ${t4._delayBus.feedbackDelayNode.delayTime.value}`);
+
+    // Defaults apply when called with no arguments (no throw)
+    const t5 = Track("t5").synth("saw").delay();
+    assert(t5._delayBus !== null && t5._sends.has("t5__delay"), "Track.delay() with no args uses defaults and opens a send");
+
+    // Idempotent: repeated calls reuse the same bus and update parameters
+    const busRef = bells._delayBus;
+    bells.delay({ time: "1/4", feedback: 0.7 });
+    assert(bells._delayBus === busRef, "repeated Track.delay() reuses the same internal bus");
+    assert(Math.abs(bells._delayBus.feedbackGainNode.gain.value - 0.7) < 1e-9,
+        `repeated delay() updates feedback amount to 0.7, got ${bells._delayBus.feedbackGainNode.gain.value}`);
+
+    Motif.tempo = prevTempo;
+    Track.clearRegistry();
+    Bus.clearRegistry();
+}
+
+// =============================================================================
+// Track.delay(): survives live-coder hot-reload prune
+// (regression: internal `<id>__delay` bus was disposed by Bus.pruneExcept on
+//  every hot reload because it is created by library code, never declared via
+//  the wrappedBus global — silencing echo after the first live edit)
+// =============================================================================
+console.log("\n=== Track.delay(): survives live-coder hot-reload prune ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevMaster = Motif.masterGain;
+    const prevTempo = Motif.tempo;
+    Motif.tempo = 120;
+
+    // Recording context: log every connect()/disconnect() so we can inspect the
+    // live echo topology. Params support the ramp API the crossfade path needs.
+    const connections = [];
+
+    const makeParam = (value = 0) => ({
+        value,
+        setValueAtTime(v) { this.value = v; return this; },
+        linearRampToValueAtTime(v) { this.value = v; return this; },
+        exponentialRampToValueAtTime(v) { this.value = v; return this; },
+        setTargetAtTime() { return this; },
+        cancelScheduledValues() { return this; },
+        cancelAndHoldAtTime() { return this; },
+    });
+
+    const makeNode = (label) => {
+        const node = {
+            _label: label,
+            gain: makeParam(1),
+            delayTime: makeParam(0),
+            frequency: makeParam(350),
+            Q: makeParam(1),
+            offset: makeParam(0),
+            connect(dest) { connections.push({ from: node, to: dest }); return dest; },
+            disconnect() {},
+            start() {},
+            stop() {},
+        };
+        return node;
+    };
+
+    class RecCtx {
+        constructor() {
+            this.currentTime = 0;
+            this.sampleRate = 44100;
+            this.destination = makeNode("destination");
+            this.audioWorklet = { addModule: async () => {} };
+        }
+        createGain() { return makeNode("gain"); }
+        createBiquadFilter() { return makeNode("biquad"); }
+        createDynamicsCompressor() { return makeNode("compressor"); }
+        createWaveShaper() { return makeNode("waveShaper"); }
+        createStereoPanner() { return makeNode("panner"); }
+        createDelay() { return makeNode("delay"); }
+        createChannelMerger() { return makeNode("merger"); }
+        createConstantSource() { return makeNode("constantSource"); }
+    }
+
+    Motif.ctx = new RecCtx();
+    Motif.masterGain = Motif.ctx.createGain();
+    Track.clearRegistry();
+    Bus.clearRegistry();
+
+    // ---- Scenario 1: echo survives one hot-reload cycle ----
+    // Initial compile (no prune on the first, non-hot-reload run).
+    let echo = Track("echo").delay({ time: "3/16", feedback: 0.5 });
+    const firstBus = echo._delayBus;
+    assert(busRegistry.get("echo__delay") === firstBus,
+        "initial delay() registers the internal bus and stores it on the track");
+
+    // Simulate one hot reload: user code re-runs (a fresh Track("echo") replaces
+    // the old one), THEN runUserCode's success .then prunes — Track first, Bus
+    // second (index.html order). The internal bus is NOT in the declared set.
+    echo = Track("echo").delay({ time: "3/16", feedback: 0.5 });
+    Track.pruneExcept(new Set(["echo"]));
+    Bus.pruneExcept(new Set(["echo"]));
+
+    assert(busRegistry.has("echo__delay"),
+        "internal delay bus survives Bus.pruneExcept while its owner track is alive");
+    assert(echo._delayBus === busRegistry.get("echo__delay"),
+        "track's _delayBus === the live registry entry after a hot-reload prune");
+    assert(echo._delayBus === firstBus,
+        "surviving bus is the same object (not disposed + recreated)");
+
+    // Echo path is live: send routing from the current track feeds the bus input.
+    const echoSend = echo._sends.get("echo__delay");
+    assert(echoSend !== undefined, "current track holds a send to the surviving delay bus");
+    assert(connections.some(c => c.from === echo.preFaderNode && c.to === echoSend),
+        "send: preFaderNode → sendGainNode (fresh routing on the reloaded track)");
+    assert(connections.some(c => c.from === echoSend && c.to === firstBus.input),
+        "send: sendGainNode → surviving bus.input");
+
+    // Feedback loop nodes are intact on the surviving bus.
+    assert(firstBus.feedbackGainNode !== null && firstBus.feedbackDelayNode !== null,
+        "surviving bus keeps its feedback loop nodes");
+
+    // The surviving bus is still a functional, wireable node graph: rebuilding its
+    // signal chain reconnects output → master and the feedback tap.
+    connections.length = 0;
+    firstBus._rebuildSignalChain();
+    assert(connections.some(c => c.from === firstBus.output && c.to === Motif.masterGain),
+        "surviving bus output still reconnects to master (audible)");
+    assert(connections.some(c => c.from === firstBus.output && c.to === firstBus.feedbackGainNode),
+        "surviving bus feedback tap still reconnects (echo loop functional)");
+
+    // ---- Scenario 2: pruning the owner track tears down its internal delay bus ----
+    // Isolate the disposeTrack teardown: prune the track WITHOUT a following
+    // Bus.pruneExcept, so the removal must come from Track prune, not bus prune.
+    Track.clearRegistry();
+    Bus.clearRegistry();
+
+    const gone = Track("gone").delay({ time: "1/8", feedback: 0.3 });
+    assert(busRegistry.has("gone__delay"), "delay bus registered before the owner track is pruned");
+
+    Track.pruneExcept(new Set(["kept"]));
+    assert(!busRegistry.has("gone__delay"),
+        "pruning the owner track disposes and removes its internal delay bus (no leak)");
+    assert(gone._delayBus === null,
+        "pruned track's stale _delayBus reference is cleared");
+
+    Motif.tempo = prevTempo;
+    Motif.ctx = prevCtx;
+    Motif.masterGain = prevMaster;
+    Track.clearRegistry();
+    Bus.clearRegistry();
+}
+
+// =============================================================================
+// Task: Seeded procedural sample generator (Motif.sampleSeed) - same seed
+// reproduces byte-identical buffers, different seeds diverge, seed 0 is the
+// deterministic default, no-arg sampleSeed() draws a usable random seed, and
+// reseeding invalidates already-rendered registry/Track buffer caches.
+// (motif.js: mulberry32, MotifEngine._sampleSeed/.sampleSeed()/
+// ._invalidateProceduralSamples(); src/TrackVoiceManager.js: Track.sample())
+// =============================================================================
+
+// A createBuffer() that persists a real backing Float32Array so writes made
+// by the sample generator survive to be read back by the test (the base
+// MockAudioContext.createBuffer() hands out a fresh zeroed array on every
+// getChannelData() call, which throws away whatever a generator wrote).
+class SeedSampleMockCtx extends MockAudioContext {
+    createBuffer(numberOfChannels, length, sampleRate) {
+        const data = new Float32Array(length);
+        return {
+            numberOfChannels, length, sampleRate,
+            duration: length / sampleRate,
+            getChannelData: () => data,
+            copyToChannel(src) { data.set(src); },
+        };
+    }
+}
+
+console.log("\n=== Motif.sampleSeed(): default value ===");
+{
+    assert(new MotifEngine()._sampleSeed === 0,
+        "a freshly constructed MotifEngine should default _sampleSeed to 0 (canonical sound)");
+}
+
+console.log("\n=== Motif.sampleSeed(): deterministic procedural sample rendering ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevSeed = Motif._sampleSeed;
+    Motif.ctx = new SeedSampleMockCtx();
+
+    const NOISE_SAMPLE_ID = "snare-electronic";
+
+    const buffersEqual = (a, b) => {
+        const da = a.getChannelData(0);
+        const db = b.getChannelData(0);
+        if (da.length !== db.length) return false;
+        for (let i = 0; i < da.length; i++) {
+            if (da[i] !== db[i]) return false;
+        }
+        return true;
+    };
+
+    // Rendering directly through the registry-held generator function - setting the
+    // seed forces _invalidateProceduralSamples(), restoring the raw generator into
+    // the registry regardless of what an earlier test may have left cached there.
+    const renderWithSeed = (seed) => {
+        Motif.sampleSeed(seed);
+        const generator = Motif.sampleRegistry.get(NOISE_SAMPLE_ID);
+        assert(typeof generator === "function",
+            `sampleSeed(${seed}) should restore '${NOISE_SAMPLE_ID}' to its raw generator in the registry`);
+        return generator();
+    };
+
+    // Same seed -> byte-identical buffers across independent renders.
+    const seedAFirst = renderWithSeed(111);
+    const seedASecond = renderWithSeed(111);
+    assert(buffersEqual(seedAFirst, seedASecond),
+        "same seed should produce byte-identical sample buffers across renders");
+
+    // Different seed -> differing buffer.
+    const seedB = renderWithSeed(222);
+    assert(!buffersEqual(seedAFirst, seedB),
+        "different seeds should produce differing sample buffers");
+
+    // Seed 0 is the deterministic default/canonical sound.
+    const zeroFirst = renderWithSeed(0);
+    const zeroSecond = renderWithSeed(0);
+    assert(buffersEqual(zeroFirst, zeroSecond),
+        "seed 0 (default) should be just as deterministic as any other seed");
+    assert(!buffersEqual(zeroFirst, seedAFirst),
+        "seed 0's canonical sound should differ from a non-zero seed's rendering");
+
+    // Repeated render of the SAME generator instance under an unchanged seed is stable.
+    Motif.sampleSeed(333);
+    const stableGenerator = Motif.sampleRegistry.get(NOISE_SAMPLE_ID);
+    const stableA = stableGenerator();
+    const stableB = stableGenerator();
+    assert(buffersEqual(stableA, stableB),
+        "invoking the same generator repeatedly under an unchanged seed is stable/idempotent");
+
+    // sampleSeed() with no args draws and applies a usable random 32-bit seed.
+    const randomSeed = Motif.sampleSeed();
+    assert(typeof randomSeed === "number" && Number.isInteger(randomSeed)
+        && randomSeed >= 0 && randomSeed < 0x100000000,
+        "sampleSeed() with no args should return a 32-bit unsigned integer seed");
+    assert(Motif._sampleSeed === randomSeed,
+        "sampleSeed() with no args should apply the drawn seed as the new effective seed");
+
+    Motif.ctx = prevCtx;
+    Motif.sampleSeed(prevSeed);
+}
+
+console.log("\n=== Motif.sampleSeed(): reseeding invalidates already-rendered Track sample buffers ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevSeed = Motif._sampleSeed;
+    Motif.ctx = new SeedSampleMockCtx();
+    Track.clearRegistry();
+
+    const NOISE_SAMPLE_ID = "snare-electronic";
+    const dataOf = (buf) => buf.getChannelData(0);
+    const sameData = (a, b) => {
+        if (a.length !== b.length) return false;
+        for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+        return true;
+    };
+
+    Motif.sampleSeed(444);
+    const t1 = Track("seed-cache-1").sample(NOISE_SAMPLE_ID);
+    await t1._sampleLoading;
+    const firstBuffer = t1._sampleBuffer;
+    assert(firstBuffer !== null, "track should resolve a rendered buffer for a registered procedural sample");
+    assert(Motif.sampleRegistry.get(NOISE_SAMPLE_ID) === firstBuffer,
+        "after the first render, the registry caches the rendered buffer object in place of the generator");
+
+    // Negative/edge case: without a reseed, a second track sampling the same id must
+    // reuse the identical cached buffer object (no spurious re-render).
+    const t2 = Track("seed-cache-2").sample(NOISE_SAMPLE_ID);
+    await t2._sampleLoading;
+    assert(t2._sampleBuffer === firstBuffer,
+        "a second track sampling the same id without reseeding reuses the identical cached buffer object");
+
+    // Reseeding must invalidate the registry cache so the next .sample() re-renders.
+    Motif.sampleSeed(555);
+    assert(typeof Motif.sampleRegistry.get(NOISE_SAMPLE_ID) === "function",
+        "reseeding restores the raw generator into the registry, dropping the stale rendered buffer");
+
+    const t3 = Track("seed-cache-3").sample(NOISE_SAMPLE_ID);
+    await t3._sampleLoading;
+    const secondBuffer = t3._sampleBuffer;
+    assert(secondBuffer !== null && secondBuffer !== firstBuffer,
+        "reseeding then re-sampling should produce a newly rendered buffer object");
+    assert(!sameData(dataOf(firstBuffer), dataOf(secondBuffer)),
+        "the re-rendered buffer's audio data should differ from the pre-reseed buffer");
+
+    // Returning to a previously used seed re-renders (fresh object) but reproduces
+    // byte-identical audio data - the seed alone determines content, not object identity.
+    Motif.sampleSeed(444);
+    const t4 = Track("seed-cache-4").sample(NOISE_SAMPLE_ID);
+    await t4._sampleLoading;
+    const thirdBuffer = t4._sampleBuffer;
+    assert(thirdBuffer !== null && thirdBuffer !== firstBuffer,
+        "re-rendering after seed churn yields a new buffer instance even when the seed value repeats");
+    assert(sameData(dataOf(firstBuffer), dataOf(thirdBuffer)),
+        "returning to a previously used seed reproduces byte-identical audio data");
+
+    Motif.ctx = prevCtx;
+    Motif.sampleSeed(prevSeed);
+    Track.clearRegistry();
 }
 
 // =============================================================================

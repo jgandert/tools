@@ -19,7 +19,6 @@ const PENALTIES = {
     CONNECT_BASE: 1000000,  // base multiplier for connect/close/at/cwc rules (post-normalize)
     CWL_SHORT: 1000000,     // shared-wall-length-too-short, normalized by canvasDiag
     AT_CORNER: 1000000,     // at-rule corner orientation mismatch, normalized by canvasDiag
-    NOT_AT_DIR: 10000,      // not_at directional hard violation (unitless)
     NOT_AT_EDGE: 100000000, // not_at edge penetration normalized by canvasDiag²
     CANVAS: 100000000,      // canvas overflow normalized by (canvasW², canvasH²) → dimensionless
     ASPECT: 10000,          // layout aspect ratio > 2.0 per unit
@@ -31,10 +30,49 @@ const PENALTIES = {
     REQUIRED_BOOST: 50,    // weight multiplier for required rules (bypasses uwm ramp)
 };
 
+const CONNECT_VIOLATION_FLOOR = 0.1;
+
 const MIN_ACCEPT_RATE = 0.05;
 const FREEZE_T_FRACTION = 0.01;
 const INITIAL_DELTA_FALLBACK = 10000;
 const CWM_CAP = 100;
+const REPAIR_MAX_MOVES = 300;
+
+// Extra required-retry attempts explored after the first naturally-satisfied one.
+// Stopping at the first satisfied attempt returns whatever cost that attempt happened
+// to have — measured 22-46% above the cheapest satisfied attempt of the same run.
+// A bounded lookahead keeps the retry loop cheap while letting a cheaper satisfied
+// attempt win. The attempt set stays a superset of the old one and selection is a
+// lexicographic (unsatisfied, cost) minimum, so the kept result can never get worse.
+const SATISFIED_LOOKAHEAD = 3;
+
+const _OPTIMIZER_MODULE_PATH = (typeof __filename !== "undefined") ? __filename : null;
+const WORKER_POOL_SIZE = Math.max(1, (typeof navigator !== "undefined" && navigator.hardwareConcurrency) || 4);
+
+// Worker body: loads this optimizer (importScripts in a browser worker, require in
+// bun/node) and runs one `_runWithRestarts` attempt, posting the plain-data result.
+const WORKER_SOURCE = `
+self.onmessage = function(e) {
+    var d = e.data;
+    try {
+        var runner = (typeof _runWithRestarts !== "undefined") ? _runWithRestarts : null;
+        if (!runner && typeof importScripts === "function") {
+            importScripts(d.scriptUrl);
+            runner = _runWithRestarts;
+        }
+        if (!runner && typeof require === "function") {
+            runner = require(d.scriptUrl)._runWithRestarts;
+        }
+        Promise.resolve(runner(d.modules, d.config, null, d.phantoms)).then(function(result) {
+            self.postMessage({ ok: true, result: result });
+        }).catch(function(err) {
+            self.postMessage({ ok: false, error: String(err && err.stack || err) });
+        });
+    } catch (err) {
+        self.postMessage({ ok: false, error: String(err && err.stack || err) });
+    }
+};
+`;
 
 /**
  * Checks if a given Polish expression is Normalized (NPE).
@@ -281,10 +319,11 @@ function assignCoordinatesInPlace(node, shape, x, y, W, H, layoutMap) {
     }
 }
 
-function penaltyConnect(room, rule, layoutMap, config, cwm, canvasDiagSq, uwm = 1) {
+function penaltyConnect(room, rule, layoutMap, config, cwm, canvasDiagSq, uwm = 1, canvasDiag = Math.sqrt(canvasDiagSq)) {
     const baseW = rule.weight || 1;
     const weight = rule.required ? baseW * PENALTIES.REQUIRED_BOOST : 1 + (baseW - 1) * uwm;
     const targets = rule.target ?? [];
+    const cwl = rule.cwl || config.cwl || 0;
 
     if (rule.any) {
         let minP = Infinity;
@@ -302,14 +341,13 @@ function penaltyConnect(room, rule, layoutMap, config, cwm, canvasDiagSq, uwm = 
                 if (isVerticallyAdjacent && horizontalOverlap > 0) {
                     sharedWallLength = horizontalOverlap;
                 }
-                const cwl = rule.cwl || config.cwl || 0;
                 let val = 0;
                 if (sharedWallLength === 0) {
                     const dx = room.centerX - B.centerX;
                     const dy = room.centerY - B.centerY;
-                    val = ((dx * dx + dy * dy) / canvasDiagSq) * PENALTIES.CONNECT_BASE * weight * cwm;
+                    val = (CONNECT_VIOLATION_FLOOR + (dx * dx + dy * dy) / canvasDiagSq) * PENALTIES.CONNECT_BASE * weight * cwm;
                 } else if (cwl > 0 && sharedWallLength < cwl) {
-                    val = ((cwl - sharedWallLength) / Math.sqrt(canvasDiagSq)) * PENALTIES.CWL_SHORT * weight * cwm;
+                    val = ((cwl - sharedWallLength) / canvasDiag) * PENALTIES.CWL_SHORT * weight * cwm;
                 }
                 if (val < minP) {
                     minP = val;
@@ -334,13 +372,12 @@ function penaltyConnect(room, rule, layoutMap, config, cwm, canvasDiagSq, uwm = 
             if (isVerticallyAdjacent && horizontalOverlap > 0) {
                 sharedWallLength = horizontalOverlap;
             }
-            const cwl = rule.cwl || config.cwl || 0;
             if (sharedWallLength === 0) {
                 const dx = room.centerX - B.centerX;
                 const dy = room.centerY - B.centerY;
-                sum += ((dx * dx + dy * dy) / canvasDiagSq) * PENALTIES.CONNECT_BASE * weight * cwm;
+                sum += (CONNECT_VIOLATION_FLOOR + (dx * dx + dy * dy) / canvasDiagSq) * PENALTIES.CONNECT_BASE * weight * cwm;
             } else if (cwl > 0 && sharedWallLength < cwl) {
-                sum += ((cwl - sharedWallLength) / Math.sqrt(canvasDiagSq)) * PENALTIES.CWL_SHORT * weight * cwm;
+                sum += ((cwl - sharedWallLength) / canvasDiag) * PENALTIES.CWL_SHORT * weight * cwm;
             }
         }
     }
@@ -449,39 +486,42 @@ function penaltyAt(room, rule, rootW, rootH, cwm, canvasDiag, uwm = 1) {
     return p;
 }
 
-function penaltyNotAt(room, rule, mod, rootW, rootH, cwm, canvasDiagSq, uwm = 1) {
+function penaltyNotAt(room, rule, mod, rootW, rootH, cwm, canvasDiagSq, uwm = 1, canvasDiag = Math.sqrt(canvasDiagSq)) {
     const baseW = rule.weight || 1;
     const weight = rule.required ? baseW * PENALTIES.REQUIRED_BOOST : 1 + (baseW - 1) * uwm;
     const targetDepth = mod.sideMin || PENALTIES.DEFAULT_SIDE_MIN;
-    let p = 0;
 
     const d0 = rule.dir?.[0];
     if (d0 === "edge" || rule.type === "enclosed") {
         const d_min = Math.min(room.y, rootH - (room.y + room.h), room.x, rootW - (room.x + room.w));
-        if (d_min < targetDepth) {
-            const shortfall = Math.max(0, targetDepth - d_min);
-            p += ((shortfall * shortfall) / canvasDiagSq) * weight * PENALTIES.NOT_AT_EDGE * cwm;
+        if (d_min >= targetDepth) {
+            return 0;
         }
-    } else if (d0 === "north") {
-        if (room.y < targetDepth) {
-            p += PENALTIES.NOT_AT_DIR * weight * cwm;
-        }
-    } else if (d0 === "south") {
-        const d = rootH - (room.y + room.h);
-        if (d < targetDepth) {
-            p += PENALTIES.NOT_AT_DIR * weight * cwm;
-        }
-    } else if (d0 === "east") {
-        const d = rootW - (room.x + room.w);
-        if (d < targetDepth) {
-            p += PENALTIES.NOT_AT_DIR * weight * cwm;
-        }
-    } else if (d0 === "west") {
-        if (room.x < targetDepth) {
-            p += PENALTIES.NOT_AT_DIR * weight * cwm;
-        }
+        const shortfall = targetDepth - d_min;
+        return ((shortfall * shortfall) / canvasDiagSq) * weight * PENALTIES.NOT_AT_EDGE * cwm;
     }
-    return p;
+
+    let d = Infinity;
+    if (d0 === "north") {
+        d = room.y;
+    } else if (d0 === "south") {
+        d = rootH - (room.y + room.h);
+    } else if (d0 === "east") {
+        d = rootW - (room.x + room.w);
+    } else if (d0 === "west") {
+        d = room.x;
+    }
+
+    if (d >= targetDepth) {
+        return 0;
+    }
+
+    // Graded, mirroring penaltyAt in reverse: cost falls off linearly as the room leaves
+    // the forbidden band, so SA gets a direction to push it out. A flat step penalty gave
+    // no gradient at all — the room only ever escaped the wall by luck or by the repair
+    // phase. Same normalization and base as penaltyAt, so a room sitting flush against a
+    // forbidden wall costs exactly what a room `targetDepth` away from a required wall does.
+    return ((targetDepth - d) / canvasDiag) * weight * PENALTIES.CONNECT_BASE * cwm;
 }
 
 const REQUIRED_SATISFIED_EPS = 0.1;
@@ -770,7 +810,7 @@ function calculateTopologicalPenalties(layout, modulesMap, globalBounds, config 
             const rule = mod.rules[j];
             let p = 0;
             if (rule.type === "connect") {
-                p = penaltyConnect(room, rule, lMap, cfg, cwm, canvasDiagSq, u);
+                p = penaltyConnect(room, rule, lMap, cfg, cwm, canvasDiagSq, u, canvasDiag);
             } else if (rule.type === "close") {
                 p = penaltyClose(room, rule, lMap, cwm, canvasDiagSq, u);
             } else if (rule.type === "far") {
@@ -778,7 +818,7 @@ function calculateTopologicalPenalties(layout, modulesMap, globalBounds, config 
             } else if (rule.type === "at") {
                 p = penaltyAt(room, rule, rootW, rootH, cwm, canvasDiag, u);
             } else if (rule.type === "not_at" || rule.type === "enclosed") {
-                p = penaltyNotAt(room, rule, mod, rootW, rootH, cwm, canvasDiagSq, u);
+                p = penaltyNotAt(room, rule, mod, rootW, rootH, cwm, canvasDiagSq, u, canvasDiag);
             }
 
             if (rule.subjectAny && rule.subjectGroupId !== undefined) {
@@ -1013,12 +1053,12 @@ function buildTreeIncremental(prevPositionMap, npe, dirtyPositions, modulesMap) 
  * incremental rebuild). When omitted, a fresh tree is built from `npe`.
  */
 /**
- * Score a fully-assigned layout against the cost function. Used both inside the
- * rootShape sweep and by the post-SA slack-redistribution check.
- * `rootW, rootH` are the outer bounds the layout fills (rootShape for SA picks,
- * canvas for redistributed layouts).
+ * O(1) part of evaluateLayoutCost (area + aspectPenalty + canvasPenalty). Both
+ * topologicalPenalty and roomPenalty are non-negative, so this is a valid lower
+ * bound on the full cost — lets evaluateCost's rootShape sweep skip a shape
+ * without assigning coordinates or running the topological/room passes.
  */
-function evaluateLayoutCost(layout, rootW, rootH, modulesMap, config = {}, cwm = 1, uwm = 1, phantoms = [], layoutMap = null, onlyTotal = false) {
+function computeBaseCost(rootW, rootH, config, cwm) {
     const canvasW = config.canvasW || 500;
     const canvasH = config.canvasH || 500;
     const canvasTargetDiagSq = canvasW * canvasW + canvasH * canvasH;
@@ -1030,6 +1070,21 @@ function evaluateLayoutCost(layout, rootW, rootH, modulesMap, config = {}, cwm =
     const overW = Math.max(0, rootW - canvasW);
     const overH = Math.max(0, rootH - canvasH);
     const canvasPenalty = ((overW * overW + overH * overH) / canvasTargetDiagSq) * PENALTIES.CANVAS * cwm;
+
+    return { area, aspectPenalty, canvasPenalty, total: area + aspectPenalty + canvasPenalty };
+}
+
+/**
+ * Score a fully-assigned layout against the cost function. Used both inside the
+ * rootShape sweep and by the post-SA slack-redistribution check.
+ * `rootW, rootH` are the outer bounds the layout fills (rootShape for SA picks,
+ * canvas for redistributed layouts).
+ */
+function evaluateLayoutCost(layout, rootW, rootH, modulesMap, config = {}, cwm = 1, uwm = 1, phantoms = [], layoutMap = null, onlyTotal = false) {
+    const { area, aspectPenalty, canvasPenalty } = computeBaseCost(rootW, rootH, config, cwm);
+    const canvasW = config.canvasW || 500;
+    const canvasH = config.canvasH || 500;
+    const canvasTargetDiagSq = canvasW * canvasW + canvasH * canvasH;
 
     let lMap = layoutMap;
     if (!lMap) {
@@ -1087,15 +1142,31 @@ function evaluateCost(npe, modulesMap, config = {}, connectWeightMultiplier = 1,
         boundaryValid = checkBoundariesOnTree(rootNode, true, true, true, true, modulesMap);
     }
 
-    // Objective Cost Function: evaluate all possible root shapes and pick the best one
+    // Objective Cost Function: evaluate all possible root shapes and pick the best one.
+    // Strict canvas: score the layout that ships. The post-SA stretch fills the *full*
+    // canvas, so the scored geometry has to be that same stretch — clamping per axis
+    // (min(shape.w, canvasW)) scored room proportions the delivered layout never has,
+    // which let ratio_max/side_min violations ship unpaid. area/aspect/overflow then
+    // collapse to constants across overflowing shapes; that is correct, not a loss —
+    // under a fixed canvas, bounding-box compactness is not an objective.
     let bestCost = Infinity;
     let bestRootShape = null;
+
+    const strictCanvas = config.canvasW && config.canvasH && !config.canvasFlexible;
+    const canvasW = config.canvasW;
+    const canvasH = config.canvasH;
 
     if (layoutArray && layoutMap) {
         for (let i = 0; i < rootCurve.length; i++) {
             const rootShape = rootCurve[i];
-            assignCoordinatesInPlace(rootNode, rootShape, 0, 0, undefined, undefined, layoutMap);
-            const cost = evaluateLayoutCost(layoutArray, rootShape.w, rootShape.h, modulesMap, config, connectWeightMultiplier, uwm, phantoms, layoutMap, true);
+            const compress = strictCanvas && (rootShape.w > canvasW || rootShape.h > canvasH);
+            const scoreW = compress ? canvasW : rootShape.w;
+            const scoreH = compress ? canvasH : rootShape.h;
+            if (computeBaseCost(scoreW, scoreH, config, connectWeightMultiplier).total >= bestCost) {
+                continue;
+            }
+            assignCoordinatesInPlace(rootNode, rootShape, 0, 0, compress ? scoreW : undefined, compress ? scoreH : undefined, layoutMap);
+            const cost = evaluateLayoutCost(layoutArray, scoreW, scoreH, modulesMap, config, connectWeightMultiplier, uwm, phantoms, layoutMap, true);
             if (cost < bestCost) {
                 bestCost = cost;
                 bestRootShape = rootShape;
@@ -1104,8 +1175,16 @@ function evaluateCost(npe, modulesMap, config = {}, connectWeightMultiplier = 1,
     } else {
         for (let i = 0; i < rootCurve.length; i++) {
             const rootShape = rootCurve[i];
-            const layout = assignCoordinates(rootNode, rootShape, 0, 0);
-            const cost = evaluateLayoutCost(layout, rootShape.w, rootShape.h, modulesMap, config, connectWeightMultiplier, uwm, phantoms).total;
+            const compress = strictCanvas && (rootShape.w > canvasW || rootShape.h > canvasH);
+            const scoreW = compress ? canvasW : rootShape.w;
+            const scoreH = compress ? canvasH : rootShape.h;
+            if (computeBaseCost(scoreW, scoreH, config, connectWeightMultiplier).total >= bestCost) {
+                continue;
+            }
+            const layout = compress
+                ? assignCoordinates(rootNode, rootShape, 0, 0, scoreW, scoreH)
+                : assignCoordinates(rootNode, rootShape, 0, 0);
+            const cost = evaluateLayoutCost(layout, scoreW, scoreH, modulesMap, config, connectWeightMultiplier, uwm, phantoms).total;
             if (cost < bestCost) {
                 bestCost = cost;
                 bestRootShape = rootShape;
@@ -1388,6 +1467,115 @@ function applyGuidedMove(npe, randomFn, ruleIdx) {
     return { type: "M1", positions: [Math.min(pos, target), Math.max(pos, target)] };
 }
 
+// Web Worker fan-out is used only in a real browser main thread, or when a caller
+// explicitly opts in (`forceWorkers`, e.g. bun end-to-end tests). `disableWorkers`
+// (set on the config handed to a worker) prevents nested fan-out.
+function _shouldUseWorkers(config) {
+    if (config.disableWorkers) {
+        return false;
+    }
+    if (config.forceWorkers) {
+        return true;
+    }
+    return typeof Worker !== "undefined" && typeof document !== "undefined";
+}
+
+function _resolveOptimizerScriptUrl() {
+    if (typeof document !== "undefined") {
+        const el = document.querySelector('script[src*="layout_optimizer"]');
+        if (el?.src) {
+            return el.src;
+        }
+        return new URL("layout_optimizer.js", document.baseURI).href;
+    }
+    return _OPTIMIZER_MODULE_PATH;
+}
+
+function _createSaWorker() {
+    const url = URL.createObjectURL(new Blob([WORKER_SOURCE], { type: "application/javascript" }));
+    const worker = new Worker(url);
+    worker._blobUrl = url;
+    return worker;
+}
+
+// Run independent SA tasks across a worker pool, returning results in task order.
+// Each task is one `_runWithRestarts` invocation; the worker runs it with workers
+// disabled so nested fan-out never happens. Aborting terminates all workers.
+function _runTasksInWorkers(tasks, signal) {
+    return new Promise((resolve, reject) => {
+        const scriptUrl = _resolveOptimizerScriptUrl();
+        const results = new Array(tasks.length);
+        const workers = [];
+        let nextIdx = 0;
+        let doneCount = 0;
+        let settled = false;
+
+        const finish = (fn, arg) => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            if (signal) {
+                signal.removeEventListener("abort", onAbort);
+            }
+            for (const w of workers) {
+                w.terminate();
+                URL.revokeObjectURL(w._blobUrl);
+            }
+            fn(arg);
+        };
+
+        const onAbort = () => finish(reject, new DOMException("Cancelled", "AbortError"));
+
+        if (signal?.aborted) {
+            return onAbort();
+        }
+        if (signal) {
+            signal.addEventListener("abort", onAbort, { once: true });
+        }
+
+        const dispatch = (worker) => {
+            if (settled || nextIdx >= tasks.length) {
+                return;
+            }
+            const idx = nextIdx++;
+            worker._taskIdx = idx;
+            const task = tasks[idx];
+            worker.postMessage({
+                scriptUrl,
+                modules: task.modules,
+                config: { ...task.config, disableWorkers: true, forceWorkers: false },
+                phantoms: task.phantoms ?? [],
+            });
+        };
+
+        const poolSize = Math.max(1, Math.min(tasks.length, WORKER_POOL_SIZE));
+        for (let i = 0; i < poolSize; i++) {
+            const worker = _createSaWorker();
+            worker.onmessage = (e) => {
+                if (settled) {
+                    return;
+                }
+                const msg = e.data;
+                if (!msg?.ok) {
+                    return finish(reject, new Error("SA worker failed: " + (msg?.error ?? "unknown")));
+                }
+                results[worker._taskIdx] = msg.result;
+                doneCount++;
+                if (doneCount === tasks.length) {
+                    return finish(resolve, results);
+                }
+                dispatch(worker);
+            };
+            worker.onerror = (err) => finish(reject, new Error("SA worker error: " + (err?.message ?? err)));
+            workers.push(worker);
+        }
+        for (const worker of workers) {
+            dispatch(worker);
+        }
+    });
+}
+
 async function _runWithRestarts(modules, config, signal, phantoms = []) {
     const restarts = Math.max(1, config.restarts ?? 1);
     if (restarts === 1 || modules.length <= 2) {
@@ -1396,6 +1584,23 @@ async function _runWithRestarts(modules, config, signal, phantoms = []) {
 
     const baseSeed = config.seed ?? 0xDEADBEEF;
     const innerIter = Math.max(1, (config.iter ?? 1) / restarts);
+
+    if (_shouldUseWorkers(config)) {
+        const tasks = [];
+        for (let r = 0; r < restarts; r++) {
+            const innerCfg = { ...config, seed: baseSeed + r * 0x9E3779B1, iter: innerIter, restarts: 1 };
+            tasks.push({ modules, config: innerCfg, phantoms });
+        }
+        const results = await _runTasksInWorkers(tasks, signal);
+        let best = null;
+        for (const result of results) {
+            if (!best || result.cost < best.cost) {
+                best = result;
+            }
+        }
+        return best;
+    }
+
     let best = null;
     for (let r = 0; r < restarts; r++) {
         const innerCfg = { ...config, seed: baseSeed + r * 0x9E3779B1, iter: innerIter };
@@ -1408,6 +1613,186 @@ async function _runWithRestarts(modules, config, signal, phantoms = []) {
         }
     }
     return best;
+}
+
+// Replicate the required-retry loop's selection over precomputed, attempt-ordered
+// results: prefer fewest unsatisfied, then lowest cost, then lowest attempt index,
+// and stop `SATISFIED_LOOKAHEAD` attempts after the first naturally-satisfied one
+// (unsatisfied && !repaired). Fed the same deterministic per-seed results, this
+// returns exactly what the sequential loop would.
+function _selectRequiredBest(entries) {
+    let best = null;
+    let satisfiedAt = -1;
+
+    for (let i = 0; i < entries.length; i++) {
+        const { result, unsatisfied } = entries[i];
+        if (!best || isPreferredRequiredAttempt(unsatisfied.length, result.cost, best.unsatisfied.length, best.cost)) {
+            best = { ...result, unsatisfied };
+        }
+        if (satisfiedAt < 0 && unsatisfied.length === 0 && !result.repairAttempted) {
+            satisfiedAt = i;
+        }
+        if (satisfiedAt >= 0 && i >= satisfiedAt + SATISFIED_LOOKAHEAD) {
+            break;
+        }
+    }
+    return best;
+}
+
+function isPreferredRequiredAttempt(unsatisfiedCount, cost, bestUnsatisfiedCount, bestCost) {
+    if (unsatisfiedCount !== bestUnsatisfiedCount) {
+        return unsatisfiedCount < bestUnsatisfiedCount;
+    }
+    return cost < bestCost;
+}
+
+function collectOffendingIds(unsatisfied) {
+    const ids = new Set();
+    for (const u of unsatisfied) {
+        ids.add(u.roomId);
+        const targets = Array.isArray(u.target) ? u.target : (u.target !== undefined ? [u.target] : []);
+        for (const t of targets) {
+            ids.add(t);
+        }
+    }
+    return ids;
+}
+
+/**
+ * Enumerate operand-operand swaps where at least one endpoint is an offending
+ * room. Swapping two operands never breaks NPE validity (balloting/skewed depend
+ * only on the operand/operator pattern, which is unchanged), so every candidate
+ * is a valid NPE relocating an offending room to another leaf slot.
+ */
+function offendingOperandSwaps(npe, offendingIds) {
+    const operandPos = [];
+    for (let i = 0; i < npe.length; i++) {
+        if (isOperand(npe[i])) {
+            operandPos.push(i);
+        }
+    }
+    const swaps = [];
+    for (let a = 0; a < operandPos.length; a++) {
+        for (let b = a + 1; b < operandPos.length; b++) {
+            const pa = operandPos[a];
+            const pb = operandPos[b];
+            if (!offendingIds.has(npe[pa]) && !offendingIds.has(npe[pb])) {
+                continue;
+            }
+            if (npe[pa] === npe[pb]) {
+                continue;
+            }
+            const cand = [...npe];
+            const tmp = cand[pa];
+            cand[pa] = cand[pb];
+            cand[pb] = tmp;
+            swaps.push(cand);
+        }
+    }
+    return swaps;
+}
+
+/**
+ * Enumerate M3 (operand-operator swap) candidates where the operand endpoint is
+ * an offending room. Unlike operand swaps these change the tree nesting, so they
+ * can move a room onto/off an edge — the structural lever positional rules need.
+ * Validity mirrors applyM3 (balloting + skewed) so every candidate is a valid NPE.
+ */
+function offendingM3Swaps(npe, offendingIds) {
+    const n = npe.length;
+    const diffs = new Array(n);
+    let diff = 0;
+    for (let i = 0; i < n; i++) {
+        diff += isOperand(npe[i]) ? 1 : -1;
+        diffs[i] = diff;
+    }
+
+    const swaps = [];
+    for (let i = 0; i < n - 1; i++) {
+        const aIsOp = isOperand(npe[i]);
+        const bIsOp = isOperand(npe[i + 1]);
+        if (aIsOp === bIsOp) {
+            continue;
+        }
+        const operandVal = aIsOp ? npe[i] : npe[i + 1];
+        if (!offendingIds.has(operandVal)) {
+            continue;
+        }
+        if (aIsOp) {
+            if (diffs[i] <= 2) {
+                continue;
+            }
+            if (i > 0 && isOperator(npe[i - 1]) && npe[i - 1] === npe[i + 1]) {
+                continue;
+            }
+        } else if (i + 2 < n && isOperator(npe[i + 2]) && npe[i + 2] === npe[i]) {
+            continue;
+        }
+        const cand = [...npe];
+        const tmp = cand[i];
+        cand[i] = cand[i + 1];
+        cand[i + 1] = tmp;
+        swaps.push(cand);
+    }
+    return swaps;
+}
+
+/**
+ * Post-SA repair: bounded steepest-descent over single operand swaps and M3
+ * swaps that touch an offending room, ranked by (unsatisfied count, cost).
+ * Re-enumerates after each accepted move. Deterministic (no RNG) so satisfied
+ * layouts are untouched. `finalizeNpe(npe)` returns { layout, cost, shape } or null.
+ */
+function repairRequiredLayout(best, finalizeNpe, modulesMap, maxMoves = REPAIR_MAX_MOVES) {
+    const before = checkRequiredSatisfied(best.layout, modulesMap);
+    if (before.length === 0) {
+        return { ...best, attempted: false, unsatisfiedBefore: 0, unsatisfiedAfter: 0 };
+    }
+
+    let cur = best;
+    let curUnsat = before;
+    let budget = maxMoves;
+    let improved = true;
+
+    while (improved && curUnsat.length > 0 && budget > 0) {
+        improved = false;
+        const offendingIds = collectOffendingIds(curUnsat);
+        const cands = offendingOperandSwaps(cur.npe, offendingIds)
+            .concat(offendingM3Swaps(cur.npe, offendingIds))
+            .filter(isValidNPE);
+
+        let pickNpe = null;
+        let pickLayout = null;
+        let pickCost = cur.cost;
+        let pickShape = null;
+        let pickUnsat = curUnsat;
+
+        for (const candNpe of cands) {
+            if (budget-- <= 0) {
+                break;
+            }
+            const cand = finalizeNpe(candNpe);
+            if (!cand) {
+                continue;
+            }
+            const candUnsat = checkRequiredSatisfied(cand.layout, modulesMap);
+            if (isPreferredRequiredAttempt(candUnsat.length, cand.cost, pickUnsat.length, pickCost)) {
+                pickNpe = candNpe;
+                pickLayout = cand.layout;
+                pickCost = cand.cost;
+                pickShape = cand.shape;
+                pickUnsat = candUnsat;
+            }
+        }
+
+        if (pickNpe) {
+            cur = { npe: pickNpe, layout: pickLayout, cost: pickCost, shape: pickShape };
+            curUnsat = pickUnsat;
+            improved = true;
+        }
+    }
+
+    return { ...cur, attempted: true, unsatisfiedBefore: before.length, unsatisfiedAfter: curUnsat.length };
 }
 
 async function wongLiuSimulatedAnnealing(modules, config = {}, signal = null, phantoms = []) {
@@ -1442,22 +1827,48 @@ async function wongLiuSimulatedAnnealing(modules, config = {}, signal = null, ph
     const modulesMap = Object.fromEntries(clonedModules.map(m => [m.id, m]));
 
     let best = null;
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        const attemptConfig = attempt === 0 ? config : {
-            ...config,
-            seed: baseSeed + attempt * 0x17A4B3C1,
-        };
-        const result = await _runWithRestarts(clonedModules, attemptConfig, signal, phantoms);
-        if (signal?.aborted) {
-            throw new DOMException("Cancelled", "AbortError");
+    if (_shouldUseWorkers(config)) {
+        const tasks = [];
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            const attemptConfig = attempt === 0 ? config : {
+                ...config,
+                seed: baseSeed + attempt * 0x17A4B3C1,
+            };
+            tasks.push({ modules: clonedModules, config: attemptConfig, phantoms });
         }
+        const results = await _runTasksInWorkers(tasks, signal);
+        const entries = results.map(result => ({
+            result,
+            unsatisfied: checkRequiredSatisfied(result.layout, modulesMap),
+        }));
+        best = _selectRequiredBest(entries);
+    } else {
+        let satisfiedAttempt = -1;
 
-        const unsatisfied = checkRequiredSatisfied(result.layout, modulesMap);
-        if (!best || result.cost < best.cost) {
-            best = { ...result, unsatisfied };
-        }
-        if (unsatisfied.length === 0) {
-            break;
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            const attemptConfig = attempt === 0 ? config : {
+                ...config,
+                seed: baseSeed + attempt * 0x17A4B3C1,
+            };
+            const result = await _runWithRestarts(clonedModules, attemptConfig, signal, phantoms);
+            if (signal?.aborted) {
+                throw new DOMException("Cancelled", "AbortError");
+            }
+
+            const unsatisfied = checkRequiredSatisfied(result.layout, modulesMap);
+            if (!best || isPreferredRequiredAttempt(unsatisfied.length, result.cost, best.unsatisfied.length, best.cost)) {
+                best = { ...result, unsatisfied };
+            }
+
+            // A naturally-satisfied attempt starts a bounded lookahead instead of ending
+            // the search: its cost is arbitrary, and a cheaper satisfied attempt usually
+            // sits a few attempts further on. A repaired attempt never triggers it.
+            if (satisfiedAttempt < 0 && unsatisfied.length === 0 && !result.repairAttempted) {
+                satisfiedAttempt = attempt;
+            }
+            if (satisfiedAttempt >= 0 && attempt >= satisfiedAttempt + SATISFIED_LOOKAHEAD) {
+                break;
+            }
         }
     }
 
@@ -1558,7 +1969,9 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
                     curve.push({ w, h });
                     curve.push({ w: h, h: w });
                 } else {
-                    const ratioMax = m.ratioMax || 3.0;
+                    // Must match the effective ratioMax evaluateLayoutCost scores against,
+                    // otherwise the curve only offers shapes the cost function penalizes.
+                    const ratioMax = m.ratioMax || config.ratioMax || 3.0;
                     let w_max = Math.sqrt(m.area * ratioMax);
                     let w_min = Math.sqrt(m.area / ratioMax);
                     const globalSideMin = !config.sideMinFlexible && config.sideMin;
@@ -1778,7 +2191,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
 
             // Acceptance Probability
             const prevBest = bestCost;
-            if (delta < 0 || randomFn() < Math.exp(-delta / T)) {
+            if (delta < 0 || randomFn() < Math.exp(-delta / (T * connectWeightMultiplier))) {
                 currentNpe = nextNpe;
                 currentCost = nextCost;
                 currentResult = nextResult;
@@ -1855,6 +2268,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
     let finalShape = bestResult?.bestShape ?? null;
     if (bestResult && bestResult.rootNode && bestResult.bestShape) {
         layout = assignCoordinates(bestResult.rootNode, bestResult.bestShape, 0, 0);
+        finalCost = evaluateLayoutCost(layout, finalShape.w, finalShape.h, modulesMap, config, 1, 1, phantoms).total;
 
         // Post-SA slack redistribution: stretch the slicing tree to fit the canvas
         // exactly. assignCoordinates already does proportional dimension distribution
@@ -1866,10 +2280,13 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
         const overflow = Math.max(0, bestResult.bestShape.w - canvasW) + Math.max(0, bestResult.bestShape.h - canvasH);
         if (overflow > 0) {
             const redistLayout = assignCoordinates(bestResult.rootNode, bestResult.bestShape, 0, 0, canvasW, canvasH);
-            const origCost = evaluateLayoutCost(layout, bestResult.bestShape.w, bestResult.bestShape.h, modulesMap, config, connectWeightMultiplier, 1, phantoms).total;
-            const redistCost = evaluateLayoutCost(redistLayout, canvasW, canvasH, modulesMap, config, connectWeightMultiplier, 1, phantoms).total;
+            const origCost = evaluateLayoutCost(layout, bestResult.bestShape.w, bestResult.bestShape.h, modulesMap, config, 1, 1, phantoms).total;
+            const redistCost = evaluateLayoutCost(redistLayout, canvasW, canvasH, modulesMap, config, 1, 1, phantoms).total;
             if (strict) {
-                console.log(`Compress to canvas: cost ${origCost.toExponential(3)} → ${redistCost.toExponential(3)} (required)`);
+                // No cost jump by construction: evaluateCost scored this same stretch,
+                // so `redistCost` is the landscape SA optimized. `origCost` is only the
+                // freestanding shape it never ships at.
+                console.log(`Compress to canvas: freestanding ${origCost.toExponential(3)} → delivered ${redistCost.toExponential(3)} (scored geometry)`);
                 layout = redistLayout;
                 finalCost = redistCost;
                 finalShape = { w: canvasW, h: canvasH };
@@ -1894,7 +2311,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
                 let flippedLayout = assignCoordinates(flippedRes.rootNode, flippedRes.bestShape, 0, 0);
                 let flippedCost = evaluateLayoutCost(
                     flippedLayout, flippedRes.bestShape.w, flippedRes.bestShape.h,
-                    modulesMap, config, connectWeightMultiplier, 1, phantoms,
+                    modulesMap, config, 1, 1, phantoms,
                 ).total;
 
                 const canvasW = config.canvasW || 500;
@@ -1904,7 +2321,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
                     + Math.max(0, flippedRes.bestShape.h - canvasH);
                 if (overflowF > 0) {
                     const redist = assignCoordinates(flippedRes.rootNode, flippedRes.bestShape, 0, 0, canvasW, canvasH);
-                    const redistCost = evaluateLayoutCost(redist, canvasW, canvasH, modulesMap, config, connectWeightMultiplier, 1, phantoms).total;
+                    const redistCost = evaluateLayoutCost(redist, canvasW, canvasH, modulesMap, config, 1, 1, phantoms).total;
                     if (strictF || redistCost < flippedCost) {
                         flippedLayout = redist;
                         flippedCost = redistCost;
@@ -1925,12 +2342,52 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
         }
     }
 
+    // Post-SA repair: targeted local search to satisfy any still-unsatisfied
+    // required rules before the retry loop's verdict, cutting expensive full SA
+    // reruns. No-op (and zero-cost) when the layout already satisfies everything.
+    const finalizeNpe = (npe) => {
+        const res = evaluateCost(npe, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms, layoutArray, layoutMap);
+        if (!res.valid || !res.rootNode || !res.bestShape) {
+            return null;
+        }
+        let repairLayout = assignCoordinates(res.rootNode, res.bestShape, 0, 0);
+        let repairCost = evaluateLayoutCost(repairLayout, res.bestShape.w, res.bestShape.h, modulesMap, config, 1, 1, phantoms).total;
+        let repairShape = res.bestShape;
+
+        const cW = config.canvasW || 500;
+        const cH = config.canvasH || 500;
+        const strictC = config.canvasW && config.canvasH && !config.canvasFlexible;
+        const overflowC = Math.max(0, res.bestShape.w - cW) + Math.max(0, res.bestShape.h - cH);
+        if (overflowC > 0) {
+            const redist = assignCoordinates(res.rootNode, res.bestShape, 0, 0, cW, cH);
+            const redistCost = evaluateLayoutCost(redist, cW, cH, modulesMap, config, 1, 1, phantoms).total;
+            if (strictC || redistCost < repairCost) {
+                repairLayout = redist;
+                repairCost = redistCost;
+                repairShape = { w: cW, h: cH };
+            }
+        }
+        return { layout: repairLayout, cost: repairCost, shape: repairShape };
+    };
+
+    const repaired = repairRequiredLayout(
+        { npe: bestNpe, layout, cost: finalCost, shape: finalShape },
+        finalizeNpe, modulesMap,
+    );
+    if (repaired.attempted) {
+        console.log(`Repair phase: unsatisfied ${repaired.unsatisfiedBefore} → ${repaired.unsatisfiedAfter}, cost ${finalCost.toExponential(3)} → ${repaired.cost.toExponential(3)}`);
+        bestNpe = repaired.npe;
+        layout = repaired.layout;
+        finalCost = repaired.cost;
+        finalShape = repaired.shape;
+    }
+
     const breakdown = layout.length > 0 && finalShape
-        ? evaluateLayoutCost(layout, finalShape.w, finalShape.h, modulesMap, config, connectWeightMultiplier, 1, phantoms)
+        ? evaluateLayoutCost(layout, finalShape.w, finalShape.h, modulesMap, config, 1, 1, phantoms)
         : null;
 
     console.log(`Finished! Total Iterations: ${totalIterations}. Best Cost: ${finalCost}`);
-    return { npe: bestNpe, cost: finalCost, layout, breakdown };
+    return { npe: bestNpe, cost: finalCost, layout, breakdown, repairAttempted: repaired.attempted };
 }
 
 // ==========================================
@@ -1967,5 +2424,6 @@ if (typeof module !== "undefined" && module.exports) {
         calculateTopologicalPenalties, buildInitialCandidates, orderedToNpe,
         buildLinearFallback, buildRuleIndex, applyGuidedMove,
         checkRequiredSatisfied, isRuleSatisfied,
+        _runWithRestarts, _runSingleSA, _selectRequiredBest, _shouldUseWorkers,
     };
 }

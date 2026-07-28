@@ -11,7 +11,6 @@
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
-    <script src="../storage.js"></script>
     <style>
         main {
             display: flex;
@@ -134,20 +133,28 @@
 
         #playback-instruments {
             color: var(--on-surface-variant);
-            opacity: 0.8;
             font-size: 0.8em;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            min-height: 48px;
         }
 
-        #active-samples-list {
-            text-align: right;
-        }
-
-        #playback-instruments span:not(:empty) {
-            background-color: var(--surface-container-high);
+        #playback-instruments span {
+            display: inline-block;
             padding: 2px 6px;
             border-radius: 4px;
+            opacity: 0.4;
+            background-color: transparent;
+            border: 1px solid transparent;
+            transition: opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+        }
+
+        #playback-instruments span.active {
+            opacity: 1;
+            background-color: var(--surface-container-high);
+            border-color: var(--outline-variant);
+            font-weight: 500;
         }
 
         #playback-progress {
@@ -174,10 +181,10 @@
 </head>
 
 <body>
-<input type="checkbox" id="aside-state" class="aside-state-toggle">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle settings">
 
 <header>
-    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle settings"></label>
+    <label for="aside-state" class="aside-toggle-btn"></label>
     <hgroup>
         <h1>Motif Live Coder</h1>
         <p>Interactive algorithmic synth playground</p>
@@ -211,8 +218,8 @@
             <span id="playback-section"></span>
         </div>
         <div id="playback-instruments">
-            <span id="active-synths-list"></span>
-            <span id="active-samples-list"></span>
+            <span id="active-synths-list"><strong>Synths:</strong> —</span>
+            <span id="active-samples-list"><strong>Samples:</strong> —</span>
         </div>
         <progress id="playback-progress" value="0" max="100"></progress>
     </div>
@@ -527,7 +534,7 @@ Arrange([
                     Import
                 </button>
             </div>
-            <input type="file" id="import-file" accept=".json" hidden aria-hidden="true">
+            <input type="file" id="import-file" accept=".json" hidden aria-hidden="true" aria-label="Import file">
         </fieldset>
 
         <fieldset>
@@ -570,6 +577,40 @@ Arrange([
 
     const DYNAMIC_SHOWCASE_COMPOSITION_NAME = "Samples & Synths (builtin)";
     const TITLE_COMMENT_REGEX = /^\/\/\s*Title:\s*(.+)$/m;
+    const MAX_LOG_ENTRIES = 500;
+    const LOG_AUTOSCROLL_THRESHOLD_PX = 40;
+
+    // --- User-Code Compiler Line Mapping ---
+    // `runUserCode` wraps user code as `"use strict";\n${code}` inside a
+    // dynamically-constructed AsyncFunction. Per the CreateDynamicFunction
+    // spec, that adds 3 header lines ahead of the body ("(async function
+    // anonymous(params", ") {", then the body's own `"use strict";` line)
+    // before the user's line 1. This default matches that spec behavior;
+    // `calibrateWrapperLineOffset` below refines it at startup by probing
+    // the actual engine, since stack-trace line reporting is not spec'd
+    // and differs across engines (e.g. Firefox).
+    let WRAPPER_LINE_OFFSET = 3;
+    const STACK_LOCATION_REGEX = /(?:<anonymous>|AsyncFunction|Function):(\d+):(\d+)/;
+
+    async function calibrateWrapperLineOffset() {
+        try {
+            const AsyncFunction = Object.getPrototypeOf(async function() {
+            }).constructor;
+            const probeFn = new AsyncFunction(
+                "Motif", "Track", "Bus", "Parallel", "Ramp", "LFO", "Arrange", "Tie",
+                "noteToMidi", "midiToNote", "degreeToMidi", "midiToHz", "SCALES", "SimplexNoise",
+                '"use strict";\nthrow new Error("__wrapper_line_probe__");',
+            );
+            await probeFn();
+        } catch (err) {
+            const match = err && err.stack && err.stack.match(STACK_LOCATION_REGEX);
+            if (!match) return;
+
+            // Probe throws on user-code line 1, so offset = reportedLine - 1.
+            WRAPPER_LINE_OFFSET = parseInt(match[1], 10) - 1;
+        }
+    }
+    calibrateWrapperLineOffset();
 
     const COMPOSITION_TEMPLATE = `// Motif Composition
 //
@@ -628,13 +669,54 @@ Track("bell")
             log: "[Console]",
         };
 
+        const atBottom = logsPanel.scrollHeight - logsPanel.scrollTop - logsPanel.clientHeight < LOG_AUTOSCROLL_THRESHOLD_PX;
+
         const span = document.createElement("span");
         span.className = classMap[type] || "log-info";
         span.textContent = `${prefixMap[type] || "[System]"} ${message}\n`;
         consoleLogs.appendChild(span);
 
-        // Auto scroll to bottom
-        logsPanel.scrollTop = logsPanel.scrollHeight;
+        while (consoleLogs.childNodes.length > MAX_LOG_ENTRIES) {
+            consoleLogs.firstChild.remove();
+        }
+
+        // Auto scroll to bottom, only if user was already there
+        if (atBottom) logsPanel.scrollTop = logsPanel.scrollHeight;
+    }
+
+    // --- Vendor Dependency Guard ---
+    // `../one.js` (prompt/confirm/alert, one.storage) is expected to be vendored.
+    // If it fails to load, `one` stays undefined and `one.storage` is unavailable.
+    function checkVendorDependencies() {
+        const missing = [];
+        if (typeof one === "undefined") missing.push("one.js");
+        if (typeof one?.storage?.get !== "function") missing.push("one.storage");
+        if (missing.length > 0) {
+            logToConsole(`Missing vendor file(s): ${missing.join(", ")}. Preset dialogs and/or persistence will not work.`, "error");
+        }
+        return missing.length === 0;
+    }
+    checkVendorDependencies();
+
+    // Catches rejections from fire-and-forget async calls (e.g. loadPersistedState())
+    // that would otherwise vanish from both the page console and the log panel.
+    window.addEventListener("unhandledrejection", (event) => {
+        const reason = event.reason;
+        const message = reason instanceof Error ? reason.message : String(reason);
+        logToConsole(`Unhandled rejection: ${message}`, "error");
+    });
+
+    // Wraps async event handlers so a thrown/rejected error (e.g. a missing
+    // `one`/`Storage` vendor global) is reported to the log panel instead of
+    // disappearing as a silent failure or an unhandled rejection.
+    function withErrorLog(fn) {
+        return async (...args) => {
+            try {
+                await fn(...args);
+            } catch (err) {
+                logToConsole(`Error: ${err.message}`, "error");
+            }
+        };
     }
 
     // --- Global Console Redirection ---
@@ -818,8 +900,8 @@ return runShowcase().then(() => "STOP_MOTIF");
                 code: c.code,
                 datetime: c.datetime,
             }));
-            await Storage.set("motif_custom_compositions", customCompositions);
-            await Storage.set("motif_current_composition", currentCompositionName);
+            await one.storage.set("motif_custom_compositions", customCompositions);
+            await one.storage.set("motif_current_composition", currentCompositionName);
         } catch (e) {
             console.warn("Failed to save compositions to Storage:", e);
         }
@@ -830,7 +912,7 @@ return runShowcase().then(() => "STOP_MOTIF");
             const settings = {
                 color: colorSelector.value,
             };
-            await Storage.set("motif_live_settings", settings);
+            await one.storage.set("motif_live_settings", settings);
         } catch (e) {
             console.warn("Failed to save settings to Storage:", e);
         }
@@ -886,7 +968,37 @@ return runShowcase().then(() => "STOP_MOTIF");
         }
     }
 
+    // `getLoadTimeControls()` is called (not a top-level const) so it can
+    // reference `pastePresetBtn`/`importBtn`, which are declared further
+    // down in the script — by the time `loadPersistedState()` actually runs
+    // (invoked at the bottom of the script, after all controls exist), the
+    // lookup is safe.
+    //
+    // Disabled for the load window: any control whose handler can mutate
+    // `compositions`/`currentCompositionName`/`codeEditor.value` (add, paste,
+    // import all create/overwrite compositions synchronously, which the
+    // later `compositions = [...]` assignment in `loadPersistedStateBody`
+    // would clobber). `editPresetBtn`/`deletePresetBtn` are excluded: their
+    // disabled state is derived from `currentComposition.isBuiltin` inside
+    // `updateUI()`, and blanket re-enabling them here would incorrectly
+    // enable them for a builtin composition. `downloadPresetBtn`/`exportBtn`
+    // are read-only and left out of the mutation guard, but the former is
+    // still parked here since it's meaningless before compositions load.
+    function getLoadTimeControls() {
+        return [codeEditor, presetSelect, addPresetBtn, downloadPresetBtn, pastePresetBtn, importBtn];
+    }
+
     async function loadPersistedState() {
+        const controls = getLoadTimeControls();
+        controls.forEach(el => el.disabled = true);
+        try {
+            await loadPersistedStateBody();
+        } finally {
+            controls.forEach(el => el.disabled = false);
+        }
+    }
+
+    async function loadPersistedStateBody() {
         const fetchedExamples = [];
         await Promise.all(
             EXAMPLES.map(async (ex) => {
@@ -908,15 +1020,15 @@ return runShowcase().then(() => "STOP_MOTIF");
         );
 
         try {
-            const settings = await Storage.get("motif_live_settings");
+            const settings = await one.storage.get("motif_live_settings");
             if (settings && settings.color !== undefined) {
                 colorSelector.value = settings.color;
                 applyThemeColor(settings.color);
             }
 
-            let customCompositions = await Storage.get("motif_custom_compositions");
+            let customCompositions = await one.storage.get("motif_custom_compositions");
             if (!customCompositions) {
-                customCompositions = await Storage.get("motif_custom_tracks") || [];
+                customCompositions = await one.storage.get("motif_custom_tracks") || [];
             }
 
             compositions = [
@@ -936,9 +1048,9 @@ return runShowcase().then(() => "STOP_MOTIF");
                 ...customCompositions.map(c => ({ ...c, isBuiltin: false })),
             ];
 
-            let savedCurrentComposition = await Storage.get("motif_current_composition");
+            let savedCurrentComposition = await one.storage.get("motif_current_composition");
             if (!savedCurrentComposition) {
-                savedCurrentComposition = await Storage.get("motif_current_track") || "Showcase (builtin)";
+                savedCurrentComposition = await one.storage.get("motif_current_track") || "Showcase (builtin)";
             }
 
             if (compositions.some(c => c.name === savedCurrentComposition)) {
@@ -972,14 +1084,12 @@ return runShowcase().then(() => "STOP_MOTIF");
         }
     }
 
-    loadPersistedState();
-
     async function handlePresetSwitch() {
         if (!Motif.isPlaying) {
             return;
         }
 
-        await Motif.stop();
+        Motif.stop();
 
         try {
             if (runUserCode()) {
@@ -1008,12 +1118,12 @@ return runShowcase().then(() => "STOP_MOTIF");
         const val = e.target.value;
         currentCompositionName = val;
 
-        saveCompositionsToStorage();
+        await saveCompositionsToStorage();
         updateUI();
         await handlePresetSwitch();
     });
 
-    addPresetBtn.addEventListener("click", async () => {
+    addPresetBtn.addEventListener("click", withErrorLog(async () => {
         const defaultName = generateRandomName();
         const name = await one.prompt("Enter composition name:", defaultName);
         if (!name) return;
@@ -1036,13 +1146,13 @@ return runShowcase().then(() => "STOP_MOTIF");
         compositions.push(newComposition);
         currentCompositionName = trimmed;
 
-        saveCompositionsToStorage();
+        await saveCompositionsToStorage();
         updatePresetSelect();
         updateUI();
-    });
+    }));
 
 
-    editPresetBtn.addEventListener("click", async () => {
+    editPresetBtn.addEventListener("click", withErrorLog(async () => {
         const currentComposition = compositions.find(c => c.name === currentCompositionName);
         if (!currentComposition || currentComposition.isBuiltin) return;
         const name = await one.prompt("Enter new composition name:", currentCompositionName);
@@ -1059,12 +1169,12 @@ return runShowcase().then(() => "STOP_MOTIF");
         currentCompositionName = trimmed;
         currentComposition.datetime = new Date().toISOString();
 
-        saveCompositionsToStorage();
+        await saveCompositionsToStorage();
         updatePresetSelect();
         updateUI();
-    });
+    }));
 
-    deletePresetBtn.addEventListener("click", async () => {
+    deletePresetBtn.addEventListener("click", withErrorLog(async () => {
         const currentComposition = compositions.find(c => c.name === currentCompositionName);
         if (!currentComposition || currentComposition.isBuiltin) return;
 
@@ -1073,13 +1183,13 @@ return runShowcase().then(() => "STOP_MOTIF");
             const builtinComposition = compositions.find(c => c.isBuiltin);
             currentCompositionName = builtinComposition ? builtinComposition.name : "";
 
-            saveCompositionsToStorage();
+            await saveCompositionsToStorage();
             updatePresetSelect();
             updateUI();
 
             await handlePresetSwitch();
         }
-    });
+    }));
 
     downloadPresetBtn.addEventListener("click", () => {
         const currentComposition = compositions.find(c => c.name === currentCompositionName);
@@ -1122,7 +1232,7 @@ return runShowcase().then(() => "STOP_MOTIF");
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = async (ev) => {
+        reader.onload = withErrorLog(async (ev) => {
             try {
                 const imported = JSON.parse(ev.target.result);
                 if (!Array.isArray(imported)) {
@@ -1146,6 +1256,8 @@ return runShowcase().then(() => "STOP_MOTIF");
                                     datetime: newComp.datetime || new Date().toISOString(),
                                     isBuiltin: false,
                                 };
+                            } else {
+                                logToConsole(`Skipped importing "${newComp.name}": name collides with a builtin composition.`, "warn");
                             }
                         } else {
                             compositions.push({
@@ -1157,7 +1269,7 @@ return runShowcase().then(() => "STOP_MOTIF");
                         }
                     });
 
-                    saveCompositionsToStorage();
+                    await saveCompositionsToStorage();
                     updatePresetSelect();
                     updateUI();
                     one.alert("Compositions imported successfully.");
@@ -1165,7 +1277,7 @@ return runShowcase().then(() => "STOP_MOTIF");
             } catch (err) {
                 one.alert("Failed to parse JSON: " + err.message);
             }
-        };
+        });
         reader.readAsText(file);
         e.target.value = "";
     });
@@ -1177,11 +1289,10 @@ return runShowcase().then(() => "STOP_MOTIF");
                 try {
                     clipboardText = await navigator.clipboard.readText();
                 } catch (err) {
-                    if (err.name === "NotAllowedError" || err.name === "SecurityError") {
-                        clipboardText = await one.prompt("Clipboard access blocked. Please paste your composition code below:");
-                    } else {
-                        throw err;
-                    }
+                    const promptMsg = (err && (err.name === "NotAllowedError" || err.name === "SecurityError"))
+                        ? "Clipboard access blocked. Please paste your composition code below:"
+                        : "Please paste your composition code below:";
+                    clipboardText = await one.prompt(promptMsg);
                 }
             } else {
                 clipboardText = await one.prompt("Please paste your composition code below:");
@@ -1205,7 +1316,7 @@ return runShowcase().then(() => "STOP_MOTIF");
             compositions.push(newComposition);
             currentCompositionName = chosenName;
 
-            saveCompositionsToStorage();
+            await saveCompositionsToStorage();
             updatePresetSelect();
             updateUI();
 
@@ -1256,6 +1367,8 @@ return runShowcase().then(() => "STOP_MOTIF");
             );
 
             resultPromise.then((returnValue) => {
+                logToConsole(isHotReload ? "Live changes applied." : "Code compiled and applied successfully.", "success");
+
                 if (isHotReload) {
                     Track.pruneExcept(declaredTrackIds);
                     Bus.pruneExcept(declaredBusIds);
@@ -1272,9 +1385,9 @@ return runShowcase().then(() => "STOP_MOTIF");
             }).catch(err => {
                 let errorMsg = `Async execution error: ${err.message}`;
                 if (err.stack) {
-                    const match = err.stack.match(/(?:<anonymous>|AsyncFunction|Function):(\d+):(\d+)/);
+                    const match = err.stack.match(STACK_LOCATION_REGEX);
                     if (match) {
-                        const lineNum = parseInt(match[1], 10) - 1;
+                        const lineNum = parseInt(match[1], 10) - WRAPPER_LINE_OFFSET;
                         if (lineNum > 0) {
                             errorMsg += ` (at line ${lineNum})`;
                         }
@@ -1283,16 +1396,23 @@ return runShowcase().then(() => "STOP_MOTIF");
                 logToConsole(errorMsg, "error");
                 if (err.stack) logToConsole(err.stack, "warn");
                 console.error(err);
+
+                if (!isHotReload && Motif.isPlaying) {
+                    Motif.stop();
+                    playPauseBtn.textContent = "play_arrow";
+                    playPauseBtn.setAttribute("data-tooltip", "Play / Resume");
+                    stopHudLoop();
+                    updateHud();
+                }
             });
 
-            logToConsole(isHotReload ? "Live changes applied." : "Code compiled and applied successfully.", "success");
             return true;
         } catch (err) {
             let errorMsg = err.message;
             if (err.stack) {
-                const match = err.stack.match(/(?:<anonymous>|AsyncFunction|Function):(\d+):(\d+)/);
+                const match = err.stack.match(STACK_LOCATION_REGEX);
                 if (match) {
-                    const lineNum = parseInt(match[1], 10) - 1;
+                    const lineNum = parseInt(match[1], 10) - WRAPPER_LINE_OFFSET;
                     if (lineNum > 0) {
                         errorMsg += ` (at line ${lineNum})`;
                     }
@@ -1357,6 +1477,15 @@ return runShowcase().then(() => "STOP_MOTIF");
     });
 
     codeEditor.addEventListener("keydown", (e) => {
+        if (e.key === "Tab") {
+            e.preventDefault();
+            const start = codeEditor.selectionStart;
+            const end = codeEditor.selectionEnd;
+            codeEditor.setRangeText("    ", start, end, "end");
+            codeEditor.dispatchEvent(new Event("input", { bubbles: true }));
+            return;
+        }
+
         // Ctrl+Enter or Cmd+Enter
         if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
             e.preventDefault();
@@ -1478,22 +1607,27 @@ return runShowcase().then(() => "STOP_MOTIF");
                 }
             }
 
-            activeSynthsList.innerHTML = activeSynths.size > 0
-                ? `Synths: ${[...activeSynths].join(", ")}`
-                : "";
-            activeSamplesList.innerHTML = activeSamples.size > 0
-                ? `Samples: ${[...activeSamples].join(", ")}`
-                : "";
+            const hasSynths = activeSynths.size > 0;
+            activeSynthsList.innerHTML = `<strong>Synths:</strong> ${hasSynths ? [...activeSynths].join(", ") : "—"}`;
+            activeSynthsList.classList.toggle("active", hasSynths);
+
+            const hasSamples = activeSamples.size > 0;
+            activeSamplesList.innerHTML = `<strong>Samples:</strong> ${hasSamples ? [...activeSamples].join(", ") : "—"}`;
+            activeSamplesList.classList.toggle("active", hasSamples);
         } else {
             playbackTime.textContent = "Bar 1 | Time: 0:00";
             playbackSection.textContent = "";
             playbackProgress.value = 0;
-            activeSynthsList.innerHTML = "";
-            activeSamplesList.innerHTML = "";
+            activeSynthsList.innerHTML = "<strong>Synths:</strong> —";
+            activeSamplesList.innerHTML = "<strong>Samples:</strong> —";
+            activeSynthsList.classList.remove("active");
+            activeSamplesList.classList.remove("active");
         }
 
         if (Motif.isPlaying || (Motif._loadingSamples && Motif._loadingSamples.length > 0)) {
             hudAnimationId = requestAnimationFrame(updateHud);
+        } else {
+            hudAnimationId = null;
         }
     }
 
@@ -1528,7 +1662,7 @@ return runShowcase().then(() => "STOP_MOTIF");
                 updateHud();
             } else {
                 if (isDirty) {
-                    await Motif.stop();
+                    Motif.stop();
                     isDirty = false;
                     await Motif.ctx.resume();
                 }
@@ -1559,7 +1693,7 @@ return runShowcase().then(() => "STOP_MOTIF");
     async function restartPlayback() {
         try {
             Motif.init();
-            await Motif.stop();
+            Motif.stop();
             isDirty = false;
 
             if (runUserCode()) {
@@ -1588,7 +1722,9 @@ return runShowcase().then(() => "STOP_MOTIF");
     restartBtn.addEventListener("click", restartPlayback);
 
     // --- Lossless Stereo WAV Recording Engine ---
+    const MAX_RECORDING_SECONDS = 600; // ~10 min safety cap (~210 MB stereo) to bound recordBuffer growth
     let recording = false;
+    let recordingCapWarned = false;
     let recordBuffer = {
         sampleRate: 44100,
         channels: [[], []],
@@ -1602,11 +1738,23 @@ return runShowcase().then(() => "STOP_MOTIF");
         recordBuffer.sampleRate = Motif.ctx.sampleRate;
         recordBuffer.channels = [[], []];
         recordBuffer.length = 0;
+        recordingCapWarned = false;
 
         // Create stereo recorder script processor
         recorderNode = Motif.ctx.createScriptProcessor(4096, 2, 2);
         recorderNode.onaudioprocess = (e) => {
             if (!recording) return;
+
+            const elapsedSec = recordBuffer.length / recordBuffer.sampleRate;
+            if (elapsedSec >= MAX_RECORDING_SECONDS) {
+                if (!recordingCapWarned) {
+                    recordingCapWarned = true;
+                    logToConsole(`Recording reached the ${MAX_RECORDING_SECONDS}s safety cap; stopping and downloading automatically.`, "warn");
+                    setTimeout(() => { if (recording) stopRecordingAndDownload(); }, 0);
+                }
+                return;
+            }
+
             const left = e.inputBuffer.getChannelData(0);
             const right = e.inputBuffer.getChannelData(1);
 
@@ -1614,6 +1762,9 @@ return runShowcase().then(() => "STOP_MOTIF");
             recordBuffer.channels[0].push(new Float32Array(left));
             recordBuffer.channels[1].push(new Float32Array(right));
             recordBuffer.length += left.length;
+
+            downloadBtn.setAttribute("data-tooltip",
+                `Stop & Download WAV (${formatTime(elapsedSec)}, ~${(recordBuffer.length * 2 * 4 / 1e6).toFixed(1)} MB)`);
         };
 
         // Connect Motif's master output into recorder and then pass to destination
@@ -1631,6 +1782,12 @@ return runShowcase().then(() => "STOP_MOTIF");
         recording = false;
 
         if (recorderNode) {
+            try {
+                Motif.masterGain.disconnect(recorderNode);
+            } catch (e) {
+                // already disconnected
+            }
+            recorderNode.onaudioprocess = null;
             recorderNode.disconnect();
             recorderNode = null;
         }
@@ -1730,7 +1887,9 @@ return runShowcase().then(() => "STOP_MOTIF");
                 if (!Motif.isPlaying) {
                     if (runUserCode()) {
                         await Motif.start();
-                        playPauseBtn.textContent = "stop";
+                        playPauseBtn.textContent = "pause";
+                        playPauseBtn.setAttribute("data-tooltip", "Pause");
+                        startHudLoop();
                     } else {
                         return; // Don't record if code compilation failed
                     }
@@ -1748,7 +1907,10 @@ return runShowcase().then(() => "STOP_MOTIF");
             logToConsole("Arrangement loop completed. Repeating...");
         } else {
             playPauseBtn.textContent = "play_arrow";
+            playPauseBtn.setAttribute("data-tooltip", "Play / Resume");
             logToConsole("Playback finished.");
+            stopHudLoop();
+            updateHud();
         }
         if (recording) {
             stopRecordingAndDownload();
@@ -1760,6 +1922,10 @@ return runShowcase().then(() => "STOP_MOTIF");
     globalThis.stopRecordingAndDownload = stopRecordingAndDownload;
 
     downloadBtn.addEventListener("click", handleDownloadClick);
+
+    // Invoked last (all DOM control consts above are initialized by now) so
+    // `getLoadTimeControls()` can safely reference every control it disables.
+    loadPersistedState().catch(err => logToConsole(`Failed to load persisted state: ${err.message}`, "error"));
 </script>
 </body>
 

@@ -124,7 +124,7 @@ class BaseGenerator {
     toGerund(verb) {
         const exceptions = {
             "puree": "pureeing",
-            "flambé": "flambéing",
+            "flamb\u00e9": "flambéing",
             "pan-fry": "pan-frying",
             "deep-fry": "deep-frying",
             "sous-vide": "sous-viding",
@@ -153,6 +153,11 @@ class BaseGenerator {
             "deep-fry": "deep-fried",
             "bake-blind": "baked-blind",
             "A/B test": "A/B tested",
+            "unbind": "unbound",
+            "lose": "lost",
+            "hide": "hidden",
+            "bind": "bound",
+            "weep": "wept",
         };
         if (exceptions[verb]) {
             return exceptions[verb];
@@ -376,8 +381,7 @@ class AlienLanguageGenerator extends BaseGenerator {
 
         const w1 = this.generatePhoneticWord(), w2 = this.generatePhoneticWord(),
             w3 = this.generatePhoneticWord();
-        const w4 = this.generatePhoneticWord(), w5 = this.generatePhoneticWord(),
-            w6 = this.generatePhoneticWord();
+        const w4 = this.generatePhoneticWord(), w5 = this.generatePhoneticWord();
         const p1 = getPhrase(3, 5), p2 = getPhrase(4, 7), p3 = getPhrase(6, 10),
             p4 = getPhrase(5, 8);
 
@@ -459,7 +463,7 @@ class FantasyLoreGenerator extends BaseGenerator {
         this.ancientArtifacts = ["the Sun-Blade", "the Soul-Forge", "the Dream-Weaver", "the Crown of Thorns", "the Staff of Ages", "the Orb of Destruction", "the Amulet of Power", "the Ring of Shadows", "the Cloak of Invisibility", "the Sword of Destiny", "the Shield of Valor", "the Chalice of Life", "the Tome of Knowledge", "the Grimoire of Spells", "the Book of Shadows", "the Crystal Skull", "the Obsidian Monolith", "the Celestial Astrolabe", "the Void-Prism", "the Blood-Chalice", "the Star-Map", "the Bone-Flute", "the Spirit-Lantern", "the Shadow-Mirror", "the Time-Turner", "the Dream-Catcher", "the Soul-Stone", "The Key of Seven Veils", "The Aegis of Infinity", "The Heart of the Void", "The Scepter of Silence", "the Mirror of Truth", "the Soul-Stealer", "the Void-Dagger", "the Solar-Scepter", "the Lunar-Bow", "the Earth-Hammer", "the Wind-Staff", "the Fire-Whip", "the Blood-Axe", "the Time-Dial", "the Echoing Horn", "the Aegis of Ages", "the Shattered Key", "the Mirror of Eternity", "the Bell of Oblivion", "the Thread of Fate", "the Empty Throne", "the Crimson Seal", "the Obsidian Rose", "the Starlight Lantern", "the Void-Compass", "the Iron Crown", "the Scepter of Dust", "the Horn of Valor"];
         this.mythicRealms = ["Eldoria", "the Obsidian Wastes", "the Astral Sea", "Kaz-Môran", "the Crystal Spires", "the Whispering Woods", "the Shattered Isles", "the Crimson Peaks", "the Sunken City of Atlantis", "the Floating Islands", "the Under-Realm", "the Ethereal Plane", "the Fey-Wilds", "the Shadow-Lands", "the Frost-Wastes", "the Ash-Barrens", "the Void-Abyss", "the Celestial Heavens", "the Demon-Wastes", "the Spirit-Realm", "the Dream-Scape", "the Nightmare-Realm", "the Bone-Deserts", "the Blood-Swamps", "the Fire-Mountains", "the Ice-Canyons", "The Whispering Void", "The Sunken Archives", "The Garden of Forgetting", "The Silver City", "The Bleeding Sands", "The Sea of Sighs", "The Iron Citadel", "The Garden of Statues", "The Echoing Canyons", "The Verdant Abyss", "The Frozen Spire", "The Midnight Plateau", "The Celestial Cradle", "the Radiant Valley", "the Serpentine Reef"];
         this.esotericMaterials = ["star-metal", "void-glass", "blood-iron", "ether", "dragon-bone", "mithril", "adamantium", "orichalcum", "dark-matter", "celestial-bronze", "infernal-iron", "spirit-wood", "shadow-silk", "moon-stone", "sun-gold", "frost-ice", "storm-lightning", "earth-stone", "fire-flame", "water-ice", "abyssal-obsidian", "chronos-crystal", "soul-amber", "dream-dust", "nightmare-ash", "bone-ash", "blood-crystal", "shadow-glass", "light-metal", "spirit-iron", "plasma-glass", "singularity-core", "chrono-steel", "living-gold", "cold-iron", "ghost-thread", "starlight-silk", "earth-blood", "void-tendril", "solar-flare"];
-        this.epicVerbs = ["banished", "forged", "shattered", "unbound", "consumed", "awakened", "sealed", "conquered", "destroyed", "created", "summoned", "repelled", "corrupted", "purified", "discovered", "lost", "hidden", "revealed", "defended", "betrayed", "usurped", "enslaved", "liberated", "obliterated", "transcended", "ascended", "descended", "devoured", "resurrected", "sacrificed", "reforged", "annihilated", "manifested", "contained", "severed", "ignited", "hollowed", "bound", "echoed", "wept", "scourged", "knighted"];
+        this.epicVerbs = ["banish", "forge", "shatter", "unbind", "consume", "awaken", "seal", "conquer", "destroy", "create", "summon", "repel", "corrupt", "purify", "discover", "lose", "hide", "reveal", "defend", "betray", "usurp", "enslave", "liberate", "obliterate", "transcend", "ascend", "descend", "devour", "resurrect", "sacrifice", "reforge", "annihilate", "manifest", "contain", "sever", "ignite", "hollow", "bind", "echo", "weep", "scourge", "knight"];
         this.arcaneDisciplines = ["necromancy", "chronomancy", "elemental weaving", "blood magic", "shadow manipulation", "light weaving", "soul binding", "mind control", "illusion magic", "transmutation", "divination", "abjuration", "conjuration", "enchantment", "evocation", "void magic", "chaos magic", "order magic", "nature magic", "arcane magic", "divine magic", "astromancy", "geomancy", "pyromancy", "cryomancy", "aeromancy", "hydromancy", "oneiromancy", "sanguimancy", "thaumaturgy", "runecraft", "ether-tuning", "lithomancy", "psionics", "kinetic-weaving", "spatial-folding", "echo-magic", "dream-shaping"];
         this.cataclysmicEvents = ["the Great Sundering", "the Crimson Eclipse", "the Star-Fall", "the Void-Rift", "the Celestial Alignment", "the Blood-Moon", "the Night of Shadows", "the Day of Fire", "the Winter of Discontent", "the War of the Gods", "the Rebellion of the Angels", "the Fall of Man", "the Awakening of the Deep", "the Shattering of the Sky", "the Boiling of the Seas", "the Freezing of the Sun", "the Dying of the Light", "the Birth of the Dark", "the Return of the King", "the End of Days", "the Beginning of Time", "The Silence", "The Great Emergence", "The Singularity Event", "the Night of Falling Stars", "the Second Silence", "the Thawing of the World", "the Great Forgetting", "the Unraveling", "the Crimson Tide"];
         this.loreAdjectives = ["abyssal", "luminescent", "forgotten", "cursed", "celestial", "ancient", "forbidden", "sacred", "profane", "eternal", "ephemeral", "infinite", "finite", "mortal", "immortal", "divine", "infernal", "demonic", "angelic", "spirit", "ghostly", "spectral", "phantasmal", "ethereal", "corporeal", "physical", "metaphysical", "magical", "mundane", "extraordinary", "ordinary", "supernatural", "natural", "unnatural", "primordial", "inevitable", "transcendent", "eldritch", "hallowed", "blighted", "serene", "ominous", "radiant", "obsidian", "shimmering", "hollow"];
@@ -487,10 +491,10 @@ class FantasyLoreGenerator extends BaseGenerator {
 
         switch (templateType) {
             case 0:
-                lore = `When ${event} aligns with the ascendance of ${entity1}, ${artifact} shall awaken from ${realm} to be ${verb} ${adv}.`;
+                lore = `When ${event} aligns with the ascendance of ${entity1}, ${artifact} shall awaken from ${realm} to be ${this.toPastParticiple(verb)} ${adv}.`;
                 break;
             case 1:
-                lore = `Following ${event}, ${entity1} definitively ${verb} ${artifact}, forever altering the flow of ${magic} throughout ${realm}.`;
+                lore = `Following ${event}, ${entity1} definitively ${this.toPastParticiple(verb)} ${artifact}, forever altering the flow of ${magic} throughout ${realm}.`;
                 break;
             case 2:
                 lore = `Forged from ${adj} ${material} and imbued with highly volatile ${magic}, ${artifact} granted ${entity2} the absolute power to shape ${realm}.`;
@@ -511,10 +515,10 @@ class FantasyLoreGenerator extends BaseGenerator {
                 lore = `${this.capitalize(schol)} retain a ${adj} fear of ${event}, believing it will one day ${verb} the ${material} gates.`;
                 break;
             case 8:
-                lore = `Within the ${adj} depths of ${realm}, ${entity1} remains eternally ${verb}, guarded by ${artifact}.`;
+                lore = `Within the ${adj} depths of ${realm}, ${entity1} remains eternally ${this.toPastParticiple(verb)}, guarded by ${artifact}.`;
                 break;
             case 9:
-                lore = `Should ${artifact} ever be ${verb} by ${entity2}, the age of ${magic} shall surely end in ${dest} ruin.`;
+                lore = `Should ${artifact} ever be ${this.toPastParticiple(verb)} by ${entity2}, the age of ${magic} shall surely end in ${dest} ruin.`;
                 break;
             case 10:
                 lore = `The ${adj} ${material} used to build ${realm} was allegedly stolen from ${entity1} during ${event}.`;
@@ -523,7 +527,7 @@ class FantasyLoreGenerator extends BaseGenerator {
                 lore = `It is written that ${entity1} and ${entity2} will meet at ${realm} for one final, ${dest} ${this.stripArticle(event)}.`;
                 break;
             case 12:
-                lore = `The ${magic} of ${realm} is ${adj} and wild, ever since ${artifact} was ${verb} by ${entity1}.`;
+                lore = `The ${magic} of ${realm} is ${adj} and wild, ever since ${artifact} was ${this.toPastParticiple(verb)} by ${entity1}.`;
                 break;
             case 13:
                 lore = `Ancient ${material} inscriptions found in ${realm} suggest that ${event} was actually ${this.getArticle(adj)} ritual.`;
@@ -538,7 +542,7 @@ class FantasyLoreGenerator extends BaseGenerator {
                 lore = `Whispers in the dark claim that ${entity1} has found a way to ${verb} ${artifact} once more.`;
                 break;
             case 17:
-                lore = `The ${material} soul of ${realm} can only be saved if ${entity1} is ${verb} before ${event}.`;
+                lore = `The ${material} soul of ${realm} can only be saved if ${entity1} is ${this.toPastParticiple(verb)} before ${event}.`;
                 break;
             case 18:
                 lore = `Long before ${event}, ${entity1} used ${material} to create ${this.getArticle(adj)} sanctuary in ${realm}.`;
@@ -547,7 +551,7 @@ class FantasyLoreGenerator extends BaseGenerator {
                 lore = `Even ${schol} ${magic} cannot explain why ${entity1} seeks to ${verb} ${artifact} using ${material}.`;
                 break;
             case 20:
-                lore = `Through ${adj} ${magic}, the very essence of ${realm} was ${verb} into ${artifact}.`;
+                lore = `Through ${adj} ${magic}, the very essence of ${realm} was ${this.toPastParticiple(verb)} into ${artifact}.`;
                 break;
             case 21:
                 lore = `The ${dest} reach of ${entity1} extends beyond ${realm}, driven by the power of ${artifact}.`;
@@ -559,7 +563,7 @@ class FantasyLoreGenerator extends BaseGenerator {
                 lore = `A prophecy foretells that ${entity1} will return to ${realm} to ${verb} the ${this.sample(this.mythicNumbers)} seals of ${material}.`;
                 break;
             case 24:
-                lore = `The ${magic} used by ${entity2} was said to be ${dest}, yet it was ${entity1} who ultimately ${verb} the world.`;
+                lore = `The ${magic} used by ${entity2} was said to be ${dest}, yet it was ${entity1} who ultimately ${this.toPastParticiple(verb)} the world.`;
                 break;
             case 25:
                 lore = `Hidden within ${realm}, ${artifact} remains a testament to the ${adj} legacy of ${entity1}.`;
@@ -568,22 +572,22 @@ class FantasyLoreGenerator extends BaseGenerator {
                 lore = `Before the first age of ${realm}, ${entity1} used the power of ${artifact} to create the ${material} stars that guide ${magic} users today.`;
                 break;
             case 27:
-                lore = `It is said that ${entity1} will only return from ${realm} when the ${material} heart of ${artifact} is finally ${verb}.`;
+                lore = `It is said that ${entity1} will only return from ${realm} when the ${material} heart of ${artifact} is finally ${this.toPastParticiple(verb)}.`;
                 break;
             case 28:
-                lore = `${this.capitalize(schol)} ${magic} remember the ${dest} ${this.stripArticle(event)} as the moment when ${entity1} first ${verb} the ${adj} walls of ${realm}.`;
+                lore = `${this.capitalize(schol)} ${magic} remember the ${dest} ${this.stripArticle(event)} as the moment when ${entity1} first ${this.toPastParticiple(verb)} the ${adj} walls of ${realm}.`;
                 break;
             case 29:
                 lore = `Through the use of ${artifact}, ${entity2} was able to ${verb} the ${material} chains that held ${entity1} for ${this.sample(this.mythicNumbers)} ages.`;
                 break;
             case 30:
-                lore = `Even as the shadows of ${event} loomed over ${realm}, ${entity1} secretly ${verb} ${artifact} using ${adj} ${material}.`;
+                lore = `Even as the shadows of ${event} loomed over ${realm}, ${entity1} secretly ${this.toPastParticiple(verb)} ${artifact} using ${adj} ${material}.`;
                 break;
             case 31:
                 lore = `Few among ${schol} ${magic} comprehend how ${entity1} harnessed ${material} to outlast the ${dest} ${this.stripArticle(event)}.`;
                 break;
             case 32:
-                lore = `Wrapped in the lost tomes of ${realm}, legends recall the day ${entity2} finally ${verb} ${artifact}.`;
+                lore = `Wrapped in the lost tomes of ${realm}, legends recall the day ${entity2} finally ${this.toPastParticiple(verb)} ${artifact}.`;
                 break;
             case 33:
                 lore = `The ${adj} incantations of ${magic} required to ${verb} ${artifact} were ultimately forgotten after ${event}.`;

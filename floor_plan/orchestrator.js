@@ -18,8 +18,12 @@ function crossBoundaryConnectToDirs(modules, outerRooms, parentRoom) {
     const lookup = new Map(outerRooms.map(r => [r.id, r]));
 
     const toDir = (outer) => {
-        const dx = outer.centerX - parentRoom.centerX;
-        const dy = outer.centerY - parentRoom.centerY;
+        const outerCX = outer.centerX ?? (outer.x + outer.w / 2);
+        const outerCY = outer.centerY ?? (outer.y + outer.h / 2);
+        const parentCX = parentRoom.centerX ?? (parentRoom.x + parentRoom.w / 2);
+        const parentCY = parentRoom.centerY ?? (parentRoom.y + parentRoom.h / 2);
+        const dx = outerCX - parentCX;
+        const dy = outerCY - parentCY;
         return Math.abs(dx) >= Math.abs(dy)
             ? (dx > 0 ? "east" : "west")
             : (dy > 0 ? "south" : "north");
@@ -76,11 +80,15 @@ async function optimizeRecursive(modules, config, signal, phantoms = []) {
             continue;
         }
 
-        const toInner = (p) => ({
-            id: p.id,
-            centerX: Math.max(0, Math.min(room.w, p.centerX - room.x)),
-            centerY: Math.max(0, Math.min(room.h, p.centerY - room.y)),
-        });
+        const toInner = (p) => {
+            const pCX = p.centerX ?? (p.x + p.w / 2);
+            const pCY = p.centerY ?? (p.y + p.h / 2);
+            return {
+                id: p.id,
+                centerX: Math.max(0, Math.min(room.w, pCX - room.x)),
+                centerY: Math.max(0, Math.min(room.h, pCY - room.y)),
+            };
+        };
         const innerPhantoms = [
             ...rooms.filter(r => r.id !== room.id).map(toInner),
             ...phantoms.map(toInner),

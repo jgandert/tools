@@ -47,6 +47,7 @@
                 opacity: 0 !important;
                 padding: 0 !important;
                 border-right: none !important;
+                visibility: hidden !important;
             }
 
             body:has(#aside-state:checked) {
@@ -62,6 +63,7 @@
                 opacity: 1 !important;
                 padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md) !important;
                 border-right: 1px solid var(--outline-variant) !important;
+                visibility: visible !important;
             }
 
             #aside-state:not(:checked) ~ header .aside-toggle-btn::before {
@@ -295,10 +297,10 @@
 </head>
 
 <body>
-<input type="checkbox" id="aside-state" class="aside-state-toggle">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
 
 <header>
-    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <label for="aside-state" class="aside-toggle-btn"></label>
     <hgroup>
         <h1>Finger Chooser</h1>
         <p>A touch-based group decision tool.</p>

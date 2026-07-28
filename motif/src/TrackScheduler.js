@@ -105,6 +105,16 @@ export const TrackScheduler = {
         return this;
     },
 
+    _setPatternEvents(pattern) {
+        this._parsedEvents = PatternParser.parse(pattern);
+        if (this._parsedEvents) {
+            this._parsedEvents.forEach((ev, idx) => {
+                ev.index = idx;
+            });
+        }
+        this._patternTopLevelSteps = Array.isArray(pattern) ? pattern.length : 1;
+    },
+
     /**
      * Defines a note-based pattern to be flat parsed and scheduled.
      * @param {Array|*} pattern - Sequential/parallel note symbols or strings.
@@ -113,13 +123,7 @@ export const TrackScheduler = {
     note(pattern) {
         this._notePattern = pattern;
         this._freqPattern = null;
-        this._parsedEvents = PatternParser.parse(pattern);
-        if (this._parsedEvents) {
-            this._parsedEvents.forEach((ev, idx) => {
-                ev.index = idx;
-            });
-        }
-        this._patternTopLevelSteps = Array.isArray(pattern) ? pattern.length : 1;
+        this._setPatternEvents(pattern);
         return this;
     },
 
@@ -131,13 +135,7 @@ export const TrackScheduler = {
     freq(pattern) {
         this._freqPattern = pattern;
         this._notePattern = null;
-        this._parsedEvents = PatternParser.parse(pattern);
-        if (this._parsedEvents) {
-            this._parsedEvents.forEach((ev, idx) => {
-                ev.index = idx;
-            });
-        }
-        this._patternTopLevelSteps = Array.isArray(pattern) ? pattern.length : 1;
+        this._setPatternEvents(pattern);
         return this;
     },
 
@@ -785,6 +783,12 @@ export const TrackScheduler = {
             loopFraction = cycleDuration > 0 ? loopDuration / cycleDuration : 1.0;
         }
 
+        const effectiveCycleDuration = hasLoopLength ? loopDuration : cycleDuration;
+        if (!(cycleDuration > 0) || (hasLoopLength && !(loopDuration > 0))) {
+            this._scheduledUntil = horizon;
+            return;
+        }
+
         const swingAmount = this._swingAmount !== null ? this._swingAmount : (Motif._swingAmount || 0);
         const topLevelSteps = this._patternTopLevelSteps || 1;
         const stepFractionSize = 1.0 / topLevelSteps;
@@ -802,8 +806,12 @@ export const TrackScheduler = {
 
                 for (const mod of this._modifiers) {
                     const modifierName = `_apply${mod.type.charAt(0).toUpperCase() + mod.type.slice(1)}Modifier`;
-                    if (typeof this[modifierName] === "function") {
+                    if (typeof this[modifierName] !== "function") continue;
+
+                    try {
                         eventsToPlay = this[modifierName](eventsToPlay, mod, cycleIndex);
+                    } catch (err) {
+                        console.error(`[Motif] Modifier "${mod.type}" threw on track "${this.id}", keeping unmodified events:`, err);
                     }
                 }
             }
@@ -828,7 +836,11 @@ export const TrackScheduler = {
 
                     if (eventStartTime >= this._scheduledUntil && eventStartTime < horizon) {
                         if (this._isTimeActive(eventStartTime)) {
-                            this._playEvent(event, eventStartTime, eventDuration);
+                            try {
+                                this._playEvent(event, eventStartTime, eventDuration);
+                            } catch (err) {
+                                console.error(`[Motif] _playEvent threw on track "${this.id}":`, err);
+                            }
                         }
                     }
                 } else {
@@ -844,13 +856,16 @@ export const TrackScheduler = {
 
                     if (eventStartTime >= this._scheduledUntil && eventStartTime < horizon) {
                         if (this._isTimeActive(eventStartTime)) {
-                            this._playEvent(event, eventStartTime, eventDuration);
+                            try {
+                                this._playEvent(event, eventStartTime, eventDuration);
+                            } catch (err) {
+                                console.error(`[Motif] _playEvent threw on track "${this.id}":`, err);
+                            }
                         }
                     }
                 }
             }
 
-            const effectiveCycleDuration = hasLoopLength ? loopDuration : cycleDuration;
             const nextCycleStartTime = cycleStartTime + effectiveCycleDuration;
             if (nextCycleStartTime <= horizon) {
                 this._currentCycle++;

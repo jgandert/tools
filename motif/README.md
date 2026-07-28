@@ -16,6 +16,7 @@ The `Motif` global object controls the engine lifecycle, tempo, global swing, an
 * `Motif.master(options: Object)`: Configures the master output bus — gain, limiting, and EQ applied to the final mix.
 * `Motif.swing(amount: number)`: Sets the global swing amount (from `0` for straight to `1` for full triplet swing).
 * `Motif.beatsPerBar`: Read/write property (default `4`). Controls how many beats constitute one bar, which determines the wall-clock duration of `bars:` in `Arrange()` and the default cycle length for tracks without an explicit `.stepLength()`. Set before playback for non-4/4 meters (e.g. `Motif.beatsPerBar = 3` for 3/4, `Motif.beatsPerBar = 7` for 7/4). The denominator — and therefore the beat duration — is always a quarter note; to express /8 meters halve the tempo or use `.stepLength('1/8')`.
+* `Motif.schedule(time: number, callback: (audioTime: number) => void)`: Enqueues `callback` to fire once the lookahead scheduler's clock reaches the absolute AudioContext `time` (seconds, as returned by `Motif.ctx.currentTime`). `callback` receives the actual audio time it fired at. Throws if `time` isn't a finite number or `callback` isn't a function. Useful for one-off events synced to the audio clock (e.g. triggering visuals or DOM updates) outside the normal Track/Arrange pattern flow.
 
 ```javascript
 Motif.setTempo(120); // 1 cycle = 500ms
@@ -110,6 +111,7 @@ The `Track` object is the primary unit of execution. It represents an independen
 * `.distort(amount: number)`: Applies waveshaper distortion/saturation to the track signal chain (0.0 to 100+).
 * `.eq(options: Object)`: Applies a track-level three-band EQ. Bands `low`, `mid`, `high` can be defined as a number (gain) or an object `{ gain, frequency, Q }`. Bands also support modulation. Low-shelf default is 320Hz, peaking mid default is 1000Hz (Q=1), high-shelf default is 3200Hz.
 * `.compress(options: Object)`: Applies a track-level compressor. All options (`threshold`, `knee`, `ratio`, `attack`, `release`) support control signals/modulators.
+* `.delay(options: Object)`: Adds a feedback-delay (echo) effect. Sugar that lazily creates a dedicated internal feedback bus (`<id>__delay`) and routes the track into it via a send. `time` is the delay length as seconds or a musical duration string (default `"3/16"`); `feedback` is the loop amount in `0..0.95` controlling tail length (default `0.3`). Repeated calls reuse the same bus and just update the parameters. For a delay shared across multiple tracks, build the bus manually instead (see Buses & Feedback Loops).
 * `.mute(state?: boolean)`: Mutes the track if `true` or toggles mute state if omitted.
 * `.unmute()`: Unmutes the track.
 * `.s()`: Chainable alias for `.solo()`.
@@ -510,6 +512,7 @@ Motif includes a rich suite of built-in DSP synthesizers and procedurally genera
     * `'soft-square'`: Warm additive square wave (fundamental + 3rd + 5th harmonics).
     * `'bass-acid-hq'`: Silver-box emulator with 4-pole resonant lowpass sweep.
     * `'bass-rubber-idm'`: Squelchy FM bass with punchy exponential envelopes.
+    * `'bass-reese'`: Detuned saw stack through an LFO-swept lowpass with a clean sub octave below.
     * `'chip-lead-pd'`: Phase distortion Casio-style lead synthesizer.
     * `'chip-bass-fm'`: FM sub-bass with 2x ratio modulator transient.
 * **Tape & Ambient Textures:**
@@ -544,6 +547,8 @@ Motif includes a rich suite of built-in DSP synthesizers and procedurally genera
     * `'karplus-strong'`: Physically modeled plucked string (guitar/harp).
     * `'pad-choir'`: Formant-filtered choral pad generating an "Ah" vowel.
     * `'synth-brass'`: Resonant lowpass swept sawtooth brass section.
+    * `'organ-drawbar'`: Additive tonewheel organ with percussion transient and rotary vibrato/tremolo.
+    * `'strings-ensemble'`: Solina-style string machine with per-layer chorus LFOs and bow-noise shimmer.
     * `'glass-mallet'`: Woody/glassy pluck using inharmonic FM.
     * `'chip-arp-pluck'`: Fast-decaying inharmonic FM pluck for rapid arpeggiation.
     * `'hollow-wood-flute'`: Breath/vibrato modulated flute with woody overtones.
@@ -554,9 +559,15 @@ Motif includes a rich suite of built-in DSP synthesizers and procedurally genera
 
 Avoid loading external assets by playing procedurally rendered static one-shots:
 
-* **Drums:** `'kick-electronic'`, `'kick-lofi'`, `'snare-electronic'`, `'tom-electronic'`, `'rimshot'`, `'hihat-closed'`, `'cymbal-ride'`, `'shaker-soft'`, `'clap-vintage'`
+* **Drums:** `'kick-electronic'`, `'kick-lofi'`, `'snare-electronic'`, `'tom-electronic'`, `'rimshot'`, `'hihat-closed'`, `'hihat-open'`, `'hihat-pedal'`, `'cymbal-ride'`, `'cymbal-crash'`, `'cymbal-reverse'`, `'shaker-soft'`, `'clap-vintage'`
 * **Percussion/FX:** `'water-drop'`, `'block-hollow'`, `'snare-micro'`, `'cowbell-808'`, `'perc-stutter'`, `'impact-deep'`, `'break-snare-ghost'`, `'glitch-data-burst'`, `'sub-boom'`, `'chip-kick-laser'`, `'chip-snare-burst'`, `'gravitational-ripple'`
-* **Acoustic/Physical:** `'kick-acoustic'`, `'kalimba-pluck'`, `'kalimba-warm'`, `'music-box'`, `'wineglass'`, `'timpani'`, `'ui-blip'`, `'pickup-chime'`, `'gong-tibetan'`, `'swell-oceanic'`, `'void-chime'`, `'ocean-swell'`, `'mossy-stone-strike'`
+* **Acoustic/Physical:** `'kick-acoustic'`, `'snare-acoustic'`, `'tambourine'`, `'conga'`, `'bongo'`, `'kalimba-pluck'`, `'kalimba-warm'`, `'music-box'`, `'wineglass'`, `'timpani'`, `'ui-blip'`, `'pickup-chime'`, `'gong-tibetan'`, `'swell-oceanic'`, `'void-chime'`, `'ocean-swell'`, `'mossy-stone-strike'`
+
+Every noise-based procedural sample renders deterministically: seed `0` (the default) always produces the same canonical buffer, so a given sample sounds identical across sessions and machines. Use `Motif.sampleSeed(n)` to explore variations:
+
+* `Motif.sampleSeed(42)` — sets an explicit seed. Same seed always re-renders byte-identical audio.
+* `Motif.sampleSeed()` — no argument picks a random 32-bit seed, applies it, and returns it so you can log or replay that exact variation later.
+* Re-seeding mid-session invalidates already-rendered buffers — the next time each procedural sample plays, it re-renders under the new seed. Real-time synths (`'noise-white'`, `'crackle'`, etc.) are unaffected; only offline one-shot buffers are seeded.
 
 ---
 

@@ -68,14 +68,13 @@
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
-    <script src="../storage.js"></script>
     <script src="../one.js"></script>
 </head>
 
 <body>
-<input type="checkbox" id="aside-state" class="aside-state-toggle">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
 <header>
-    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <label for="aside-state" class="aside-toggle-btn"></label>
     <hgroup>
         <h1>Time Tracker</h1>
         <p>Track your working hours and overtime.</p>
@@ -326,7 +325,7 @@
     const STORAGE_KEY = "timetable";
 
     // ArbZG §4 Ruhepausen
-    // Die Arbeit ist durch im voraus feststehende Ruhepausen von mindestens 30
+    // Die Arbeit ist durch im Voraus feststehende Ruhepausen von mindestens 30
     // Minuten bei einer Arbeitszeit von mehr als 6 bis zu neun Stunden und 45
     // Minuten bei einer Arbeitszeit von mehr als 9 Stunden insgesamt zu
     // unterbrechen. Die Ruhepausen nach Satz 1 können in Zeitabschnitte von
@@ -370,13 +369,13 @@
             draft: "",
         };
         try {
-            let stored = await Storage.get(STORAGE_KEY);
+            let stored = await one.storage.get(STORAGE_KEY);
             if (!stored) {
                 const localStored = localStorage.getItem(STORAGE_KEY);
                 if (localStored) {
                     try {
                         stored = JSON.parse(localStored);
-                        await Storage.set(STORAGE_KEY, stored);
+                        await one.storage.set(STORAGE_KEY, stored);
                     } catch (e) { /* ignore migration errors */
                     }
                 }
@@ -406,7 +405,7 @@
 
     function saveData() {
         if (!appData) return;
-        Storage.set(STORAGE_KEY, appData).catch((e) => console.error(e));
+        one.storage.set(STORAGE_KEY, appData).catch((e) => console.error(e));
     }
 
     function formatDate(isoStr) {
@@ -894,8 +893,7 @@
     // --- Edit dialog ---
     function openEditDialog(index) {
         if (!appData) return;
-        const data = appData;
-        const day = data.workDays[index];
+        const day = appData.workDays[index];
         if (!day) return;
 
         document.getElementById("edit-index").value = index;
@@ -966,8 +964,7 @@
 
         function handleInsertTime(targetId, toggleId, containerId) {
             if (!appData) return;
-            const data = appData;
-            const timeStr = getRoundedCurrentTime(data.settings.divisibleWarning);
+            const timeStr = getRoundedCurrentTime(appData.settings.divisibleWarning);
             if (!timeStr) return;
 
             const useUi = document.getElementById(toggleId).checked;
@@ -1286,12 +1283,11 @@
                         return;
                     }
                     if (await one.confirm("This will replace all current data. Continue?")) {
-                        const data = {
+                        appData = {
                             settings: { ...DEFAULT_SETTINGS, ...(imported.settings || {}) },
                             workDays: imported.workDays,
                             overtimeMinutes: imported.overtimeMinutes || 0,
                         };
-                        appData = data;
                         recalculateOvertime(appData);
                         saveData();
 

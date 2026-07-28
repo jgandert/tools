@@ -254,7 +254,7 @@
         }
 
         .graph-dot-wpm:hover {
-            r: 6;
+            r: 6px;
             fill: var(--primary);
         }
 
@@ -267,7 +267,7 @@
         }
 
         .graph-dot-acc:hover {
-            r: 5;
+            r: 5px;
             fill: var(--secondary);
         }
 
@@ -276,11 +276,16 @@
             stroke-width: 1;
         }
 
+        .graph-label {
+            font-size: 11px;
+            fill: var(--on-surface-variant);
+        }
+
         .graph-grid {
             stroke: var(--outline-variant);
             stroke-width: 1;
-            stroke-opacity: 0.2;
-            stroke-dasharray: 2 2;
+            stroke-dasharray: 4 4;
+            opacity: 0.5;
         }
 
         .graph-text {
@@ -309,7 +314,7 @@
         .legend-color-wpm {
             width: 24px;
             height: 3px;
-            border-radius: 1.5px;
+            border-radius: 2px;
             background-color: var(--primary);
         }
 
@@ -506,13 +511,11 @@
     // --- DOM Elements ---
     const setupSection = document.getElementById("setup-section");
     const resultSection = document.getElementById("result-section");
-    const historySection = document.getElementById("history-section");
     const durationInput = document.getElementById("duration-input");
     const themeSelect = document.getElementById("theme-select");
     const zenToggle = document.getElementById("zen-toggle");
     const startBtn = document.getElementById("start-btn");
 
-    const typingWorkspace = document.getElementById("typing-workspace");
     const progressBar = document.getElementById("progress-bar");
     const timerDisplay = document.getElementById("timer-display");
     const textDisplay = document.getElementById("text-display");
@@ -791,9 +794,8 @@
         nextDiv.className = "sentence next-sentence";
 
         const activeText = currentSentenceText;
-        const typed = typedText;
 
-        const actions = alignText(activeText, typed);
+        const actions = alignText(activeText, typedText);
 
         // Detect if we are close to the end (5 words or fewer remaining)
         let spacesLeft = 0;

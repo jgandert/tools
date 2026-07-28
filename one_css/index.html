@@ -61,9 +61,7 @@
         }
 
         :root.theme-compact {
-            --spacing-sm: 4px;
-            --spacing-md: 8px;
-            --spacing-lg: 16px;
+            --grid: 2px;
             --radius: 8px;
         }
 
@@ -82,55 +80,89 @@
             --scroll-shadow-bg: var(--surface-container);
         }
 
+        .demo-box {
+            padding: var(--spacing-sm) var(--spacing-md);
+            background-color: var(--surface-container);
+            border: var(--border-width) solid var(--outline-variant);
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+
     </style>
 </head>
 
 <body>
-<input type="checkbox" id="aside-state" class="aside-state-toggle">
+<a href="#content" class="skip-link">Skip to content</a>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
 
 <header>
-    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <label for="aside-state" class="aside-toggle-btn"></label>
     <hgroup>
         <h1>one.css</h1>
         <p>The all-in-one class-lite, semantic stylesheet.</p>
     </hgroup>
 
     <nav aria-label="Primary">
-        <button type="button" id="download-zip-btn" class="btn-sym"
-                data-tooltip="Download one.css bundle (ZIP)">download
-        </button>
+        <ul>
+            <li>
+                <a href="#about">About</a>
+            </li>
+            <li>
+                <a href="#typography">Typography</a>
+            </li>
+            <li>
+                <a href="#layout">Layout</a>
+            </li>
+            <li>
+                <a href="#controls">Controls</a>
+            </li>
+            <li>
+                <a href="#feedback">Feedback</a>
+            </li>
+            <li>
+                <button type="button" id="download-zip-btn" class="btn-sym"
+                        aria-label="Download one.css bundle (ZIP)"
+                        data-tooltip="Download one.css bundle (ZIP)">download
+                </button>
+            </li>
+        </ul>
     </nav>
 
     <div class="dropdown">
         <button id="more-menu-btn" class="dropdown-trigger" aria-label="More options"
                 aria-haspopup="true" aria-expanded="false">
-            <span class="sym">more_vert</span>
+            <span class="sym" aria-hidden="true">more_vert</span>
         </button>
         <div class="dropdown-menu" role="menu" aria-labelledby="more-menu-btn">
             <button class="dropdown-item" role="menuitemcheckbox" aria-checked="false"
                     id="opt-compact">
-                <span class="sym check-icon">check</span>
+                <span class="sym check-icon" aria-hidden="true">check</span>
                 Compact View
             </button>
-            <div class="dropdown-divider"></div>
+            <button class="dropdown-item" role="menuitemcheckbox" aria-checked="false"
+                    id="opt-dark">
+                <span class="sym check-icon" aria-hidden="true">check</span>
+                Dark Mode
+            </button>
+            <div class="dropdown-divider" role="separator"></div>
             <a href="#about" class="dropdown-item" role="menuitem">
-                <span class="sym">info</span>
+                <span class="sym" aria-hidden="true">info</span>
                 About
             </a>
             <a href="#typography" class="dropdown-item" role="menuitem">
-                <span class="sym">format_color_text</span>
+                <span class="sym" aria-hidden="true">format_color_text</span>
                 Typography
             </a>
             <a href="#layout" class="dropdown-item" role="menuitem">
-                <span class="sym">dashboard</span>
+                <span class="sym" aria-hidden="true">dashboard</span>
                 Layout
             </a>
             <a href="#controls" class="dropdown-item" role="menuitem">
-                <span class="sym">play_circle</span>
+                <span class="sym" aria-hidden="true">play_circle</span>
                 Controls
             </a>
             <a href="#feedback" class="dropdown-item" role="menuitem">
-                <span class="sym">notifications</span>
+                <span class="sym" aria-hidden="true">notifications</span>
                 Feedback
             </a>
         </div>
@@ -158,9 +190,9 @@
             <li>
                 <strong>Dark Mode &amp; Themes:</strong>
                 Built-in <code>light dark</code> support. Change the whole
-                color scheme by adding a single class (e.g., <code>.theme-blue</code>)
-                to the <code>&lt;html&gt;</code> element. (See the bottom of the sidebar for
-                available themes; append the lowercase name to <code>.theme-</code>).
+                color scheme by adding <code>.theme-&lt;name&gt;</code> to the
+                <code>&lt;html&gt;</code> element (e.g., <code>.theme-blue</code>);
+                available names are listed in the sidebar's Theme Color select.
             </li>
             <li>
                 <strong>Premium Aesthetics:</strong> Modern typography (Inter), smooth transitions,
@@ -202,13 +234,13 @@
             <li>
                 <div>
                     Place the <a href="../Inter-VariableFont_opsz,wght.ttf">Inter</a> and <a
-                    href="../material-symbols.woff2">Material Symbols</a> fonts in the same folder.
+                    href="../material-symbols.woff2">Material Symbols</a> fonts in the same folder as <code>one.css</code>.
                 </div>
             </li>
             <li>
                 <div>
-                    <strong>Optional:</strong> Add <a href="../one.js">one.js</a> for toasts and
-                    dialogs:
+                    <strong>Optional:</strong> Add <a href="../one.js">one.js</a> for toasts,
+                    dialogs, async storage, and <kbd>Esc</kbd> closing the mobile sidebar:
                     <pre><code>&lt;script src="one.js"&gt;&lt;/script&gt;</code></pre>
                 </div>
             </li>
@@ -239,6 +271,23 @@
             design language.
         </p>
 
+        <h4>Accessible Icons</h4>
+        <p>
+            Icons are icon-font ligatures, so screen readers announce their raw text
+            (<code>more_vert</code> becomes "more underscore vert"). Hide decorative icons
+            with <code>&lt;span class="sym" aria-hidden="true"&gt;more_vert&lt;/span&gt;</code>,
+            and name icon-only buttons via <code>aria-label</code>:
+            <code>&lt;button class="btn-sym" aria-label="Add row"&gt;add&lt;/button&gt;</code>.
+        </p>
+
+        <h4>Announcements</h4>
+        <p>
+            A live region (<code>role="status"</code>, <code>aria-live="polite"</code>) whose
+            message is already visible elsewhere — a readout, the footer, a toast — gets
+            <code>class="sr-only"</code>: announced, but never printed twice on the page.
+            <code>hidden</code> would silence the announcement instead.
+        </p>
+
         <p>
             <em>This page itself is the primary showcase and documentation for one.css.</em>
         </p>
@@ -257,11 +306,12 @@
         <h3>Weight Spectrum</h3>
         <div class="table-container">
             <table>
+                <caption>Inter font weights with sample text</caption>
                 <thead>
                 <tr>
-                    <th>CSS Weight</th>
-                    <th>Name</th>
-                    <th>Sample</th>
+                    <th scope="col">CSS Weight</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Sample</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -331,8 +381,12 @@
             Track changes using semantic markup:
             <del>Old deleted text</del>
             <ins>New inserted text</ins>
-            .
+            . Draw attention to <mark>relevant passages</mark> with <code>&lt;mark&gt;</code>.
         </p>
+        <blockquote>
+            <p>Everything should be made as simple as possible, but not simpler.</p>
+            <p class="text-muted"><cite>Albert Einstein (attributed)</cite></p>
+        </blockquote>
         <p class="text-muted">
             Small / muted text at <code>0.875rem</code> — still fully legible because Inter's
             letterforms are optimized for on-screen rendering.
@@ -363,23 +417,60 @@
         <p>Structuring clean layout containers, responsive table elements, dividers, and scroll
             boundaries.</p>
 
+        <h3>Header Navigation</h3>
+        <p>
+            A <code>&lt;nav&gt;</code> with a plain <code>&lt;ul&gt;</code> of links inside the
+            page <code>&lt;header&gt;</code> becomes a horizontal link row — see the top of this
+            page. When space runs out, the row scrolls horizontally with indicator shadows instead
+            of wrapping or overflowing the header.
+        </p>
+
+        <h3>Layout &amp; Spacing Utilities</h3>
+        <p>
+            A small utility set covers the common flex and spacing needs.
+            <code>.flex-row</code> lays out equal-width children that wrap on narrow screens:
+        </p>
+        <div class="flex-row">
+            <div class="demo-box">One</div>
+            <div class="demo-box">Two</div>
+            <div class="demo-box">Three</div>
+        </div>
+        <p class="mt-4">
+            <code>.group</code> is a wrapping row for buttons and inline controls (used throughout
+            this page) and carries the standard bottom margin, and <code>.gap-1</code> &hellip;
+            <code>.gap-6</code> override the gap of any flex container. This one combines
+            <code>.group</code> with <code>.gap-6</code>:
+        </p>
+        <div class="group gap-6">
+            <button type="button">First</button>
+            <button type="button">Second</button>
+            <span class="text-muted">Inline text sits on the same row.</span>
+        </div>
+        <p class="mt-4 mb-0">
+            Margins follow the same scale: <code>.mt-1</code> &hellip; <code>.mt-6</code> and
+            <code>.mb-1</code> &hellip; <code>.mb-6</code>, plus <code>.mt-0</code> /
+            <code>.mb-0</code> to remove margins entirely. This paragraph uses
+            <code>.mt-4 .mb-0</code>.
+        </p>
+
         <h3>Responsive Tables</h3>
         <div class="table-container">
             <table>
+                <caption>Placeholder dataset demonstrating horizontal scrolling</caption>
                 <thead>
                 <tr>
-                    <th>Column&nbsp;Alpha</th>
-                    <th>Column&nbsp;Beta</th>
-                    <th>Column&nbsp;Gamma</th>
-                    <th>Column&nbsp;Delta</th>
-                    <th>Column&nbsp;Epsilon</th>
-                    <th>Column&nbsp;Zeta</th>
-                    <th>Column&nbsp;Eta</th>
-                    <th>Column&nbsp;Theta</th>
-                    <th>Column&nbsp;Iota</th>
-                    <th>Column&nbsp;Kappa</th>
-                    <th>Column&nbsp;Lambda</th>
-                    <th>Column&nbsp;Mu</th>
+                    <th scope="col">Column&nbsp;Alpha</th>
+                    <th scope="col">Column&nbsp;Beta</th>
+                    <th scope="col">Column&nbsp;Gamma</th>
+                    <th scope="col">Column&nbsp;Delta</th>
+                    <th scope="col">Column&nbsp;Epsilon</th>
+                    <th scope="col">Column&nbsp;Zeta</th>
+                    <th scope="col">Column&nbsp;Eta</th>
+                    <th scope="col">Column&nbsp;Theta</th>
+                    <th scope="col">Column&nbsp;Iota</th>
+                    <th scope="col">Column&nbsp;Kappa</th>
+                    <th scope="col">Column&nbsp;Lambda</th>
+                    <th scope="col">Column&nbsp;Mu</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -481,12 +572,15 @@
         <div role="search">
             <input type="search" placeholder="Search processing logs..."
                    aria-label="Search processing logs">
-            <button type="button">
-                <span class="sym">search</span>
+            <button type="button" aria-label="Search">
+                <span class="sym" aria-hidden="true">search</span>
             </button>
         </div>
 
-        <h3>N-way Switch</h3>
+        <h3>Segmented Control</h3>
+        <p>
+            N-way switch for selecting one of several mutually exclusive options.
+        </p>
         <div class="segmented-control" role="group" aria-label="Difficulty Level">
             <input type="radio" name="difficulty" id="diff-easy" value="easy">
             <label for="diff-easy">Easy</label>
@@ -512,11 +606,17 @@
         </div>
         <div class="input-row">
             <select aria-label="Presets Selection">
-                <option>Preset 1</option>
-                <option>Preset 2</option>
+                <optgroup label="Built-in">
+                    <option>Preset 1</option>
+                    <option>Preset 2</option>
+                </optgroup>
+                <optgroup label="Custom">
+                    <option>My Preset</option>
+                </optgroup>
             </select>
-            <button type="button" class="btn-sym">add</button>
-            <button type="button" class="btn-sym btn-danger">delete</button>
+            <button type="button" class="btn-sym" aria-label="Add row">add</button>
+            <button type="button" class="btn-sym btn-danger" aria-label="Delete row">delete
+            </button>
         </div>
 
         <h3>Form Controls &amp; States</h3>
@@ -552,6 +652,42 @@
             </label>
         </div>
 
+        <h3>Label Hints</h3>
+        <label for="demo-slug">
+            Project Slug
+            <span class="input-label-hint">Lowercase letters and dashes only — a
+                <code>.input-label-hint</code> span inside the label renders as a muted
+                second line.</span>
+        </label>
+        <input type="text" id="demo-slug" placeholder="my-project">
+
+        <h3>File Drop Area</h3>
+        <p>
+            Wrap a file input in a <code>.file-drop-area</code> container for a full
+            drag-and-drop upload zone. Hover and keyboard focus highlight it automatically;
+            toggle the <code>.drag-over</code> class from your
+            <code>dragenter</code>/<code>dragleave</code> handlers, and set the
+            <code>data-file-name</code> attribute to swap the message and icon once a file is
+            selected. Try dropping a file below:
+        </p>
+        <div class="file-drop-area" id="demo-drop-area">
+            <input type="file" id="demo-drop-input" aria-label="Upload file">
+        </div>
+        <p>
+            Setting <code>data-file-name</code> displays the selected file with a checkmark.
+            An input with <code>aria-invalid="true"</code> switches the area to the error
+            state with an error icon, and a disabled input dims it:
+        </p>
+        <div class="file-drop-area" data-file-name="document.pdf (1.2 MB)">
+            <input type="file" aria-label="Upload file (valid example)">
+        </div>
+        <div class="file-drop-area" data-file-name="report.exe (2.4 GB)">
+            <input type="file" aria-invalid="true" aria-label="Upload file (invalid example)">
+        </div>
+        <div class="file-drop-area">
+            <input type="file" disabled aria-label="Upload file (disabled example)">
+        </div>
+
         <h3>Color Picker</h3>
         <label for="demo-accent-color">Accent Color</label>
         <input type="color" id="demo-accent-color" name="accent" value="#6750a4">
@@ -566,12 +702,17 @@
             <button type="button" class="btn-danger" disabled>Delete (disabled)</button>
         </div>
         <div class="group mt-2">
+            Links styled as buttons via <code>.btn</code>:
+            <a href="#controls" class="btn">Secondary Link</a>
+            <a href="#controls" class="btn btn-primary">Primary Link</a>
+        </div>
+        <div class="group mt-2">
             Icon button:
-            <button type="button" class="btn-sym">folder_open</button>
+            <button type="button" class="btn-sym" aria-label="Open folder">folder_open</button>
             /
             Button with icon:
             <button type="button">
-                <span class="sym">folder_open</span> Open
+                <span class="sym" aria-hidden="true">folder_open</span> Open
             </button>
             /
             Empty reset button:
@@ -601,7 +742,7 @@
         </p>
         <div class="group">
             <button type="button" data-tooltip-mobile="Visible only on mobile screen widths!">
-                <span class="sym">phone</span>
+                <span class="sym" aria-hidden="true">phone</span>
                 <span class="hide-mobile">Mobile Tooltip Demo</span>
             </button>
         </div>
@@ -634,12 +775,26 @@ Done!
 
         <h3>System Status</h3>
         <progress id="progress-1" value="25" max="100">25%</progress>
+        <meter aria-label="Battery good" value="80" max="100" low="20" high="60" optimum="90">80%</meter>
+        <meter aria-label="Battery low" value="45" max="100" low="20" high="60" optimum="90">45%</meter>
+        <meter aria-label="Battery critical" value="10" max="100" low="20" high="60" optimum="90">10%</meter>
 
         <article aria-busy="true" aria-live="polite">
             Processing local data...
         </article>
 
         <button type="button" aria-busy="true">Loading...</button>
+
+        <h3>Button Press Feedback</h3>
+        <p>
+            Momentarily add the <code>.feedback-active</code> class to a button to signal that a
+            click did more than register — it actually changed state (e.g. after a successful
+            copy). Remove it again after a few hundred milliseconds.
+        </p>
+        <div class="group">
+            <button type="button" id="demo-feedback">Apply Setting</button>
+            <code>btn.classList.add("feedback-active");</code>
+        </div>
 
         <h3>Modals &amp; Toasts</h3>
         <div class="group">
@@ -674,6 +829,19 @@ Done!
         <div class="group mb-2">
             <button type="button" id="demo-copy">Test Copy</button>
             <code>const success = await one.copy("Text to copy", silent = false);</code>
+        </div>
+
+        <h3 id="js-storage">JS Storage API</h3>
+        <p>
+            <code>one.storage</code> provides a lightweight Promise-based IndexedDB key-value wrapper
+            (<code>get</code>, <code>set</code>, <code>del</code>, <code>clear</code>, <code>keys</code>).
+            It serves as an asynchronous replacement for <code>localStorage</code> to bypass its 5&nbsp;MB limit
+            and avoid blocking the main UI thread when persisting larger text buffers or app data.
+        </p>
+        <div class="group mb-2">
+            <button type="button" id="demo-storage-set">Test Storage Set</button>
+            <button type="button" id="demo-storage-get">Test Storage Get</button>
+            <code>await one.storage.set("key", val); / await one.storage.get("key");</code>
         </div>
     </section>
 
@@ -752,12 +920,12 @@ Done!
             <button type="submit">
                 Save <span class="hide-mobile">
                             Settings <kbd>
-                                <span class="sym">keyboard_command_key</span>S
+                                <span class="sym" aria-hidden="true">keyboard_command_key</span>S
                             </kbd></span></button>
             <button type="reset">
                 Reset <span class="hide-mobile">
                             <kbd>
-                                <span class="sym">keyboard_return</span>
+                                <span class="sym" aria-hidden="true">keyboard_return</span>
                             </kbd></span></button>
         </div>
     </form>
@@ -780,8 +948,8 @@ Done!
             undone.</p>
 
         <footer>
-            <button type="button" data-action="cancel">Cancel</button>
-            <button type="button" class="btn-danger" data-action="confirm" autofocus>Confirm
+            <button type="button" data-action="cancel" autofocus>Cancel</button>
+            <button type="button" class="btn-danger" data-action="confirm">Confirm
             </button>
         </footer>
     </article>
@@ -795,7 +963,7 @@ Done!
             <h3 id="info-dialog-title">Documentation &amp; System Overview</h3>
             <button class="btn-sym modal-close" type="button" aria-label="Close dialog"
                     data-action="cancel">
-                <span class="sym">close</span>
+                <span class="sym" aria-hidden="true">close</span>
             </button>
         </header>
 
@@ -893,11 +1061,18 @@ Done!
 
             // Adjust paths in HTML text for a flat local structure
             htmlText = htmlText
-                .replace("href=\"../one.css\"", "href=\"one.css\"")
-                .replace("src=\"../one.js\"", "src=\"one.js\"")
-                .replace("href=\"../Inter-VariableFont_opsz,wght.ttf\"", "href=\"Inter-VariableFont_opsz,wght.ttf\"")
-                .replace("href=\"../material-symbols.woff2\"", "href=\"material-symbols.woff2\"")
-                // Remove the downloader script tag from the downloaded bundle
+                .replaceAll("href=\"../one.css\"", "href=\"one.css\"")
+                .replaceAll("src=\"../one.js\"", "src=\"one.js\"")
+                .replaceAll("href=\"../one.js\"", "href=\"one.js\"")
+                .replaceAll("href=\"../Inter-VariableFont_opsz,wght.ttf\"", "href=\"Inter-VariableFont_opsz,wght.ttf\"")
+                .replaceAll("href=\"../material-symbols.woff2\"", "href=\"material-symbols.woff2\"")
+                // Remove the downloader UI and its script logic from the downloaded bundle:
+                // nav list item holding the download button, the Installation link (keep its
+                // text), this whole script section (up to the next section marker), and the
+                // client-zip script tag
+                .replace(/<li>\s*<button[^>]*id="download-zip-btn"[\s\S]*?<\/button>\s*<\/li>\s*/, "")
+                .replace(/<a href="#" id="download-zip-link">([\s\S]*?)<\/a>/, "$1")
+                .replace(/\/\/ --- Download Showcase ZIP Logic ---[\s\S]*?(?=\/\/ --- JS Library Logic ---)/, "")
                 .replace(/<script src="\.\.\/client-zip\.js"><\/script>\s*/g, "");
 
             const files = [
@@ -966,6 +1141,60 @@ Done!
         one.copy("Sample text copied to clipboard from one.css showcase!");
     });
 
+    document.getElementById("demo-storage-set").addEventListener("click", async () => {
+        const val = `Demo item saved at ${new Date().toLocaleTimeString()}`;
+        await one.storage.set("demo-item", val);
+        one.alert("Saved item to IndexedDB via one.storage!");
+    });
+
+    document.getElementById("demo-storage-get").addEventListener("click", async () => {
+        const val = await one.storage.get("demo-item");
+        if (val) {
+            one.alert(`Retrieved: ${val}`);
+        } else {
+            one.alert("No item found. Click 'Test Storage Set' first!");
+        }
+    });
+
+    // --- Button Press Feedback Demo ---
+    const feedbackBtn = document.getElementById("demo-feedback");
+    feedbackBtn.addEventListener("click", () => {
+        feedbackBtn.classList.add("feedback-active");
+        setTimeout(() => feedbackBtn.classList.remove("feedback-active"), 400);
+    });
+
+    // --- File Drop Area Demo ---
+    const dropArea = document.getElementById("demo-drop-area");
+    const dropInput = document.getElementById("demo-drop-input");
+
+    ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        dropArea.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const entering = eventName === "dragenter" || eventName === "dragover";
+            dropArea.classList.toggle("drag-over", entering);
+        });
+    });
+
+    dropArea.addEventListener("drop", (e) => {
+        if (e.dataTransfer.files.length) {
+            dropInput.files = e.dataTransfer.files;
+            updateDropAreaFileName();
+        }
+    });
+
+    dropInput.addEventListener("change", updateDropAreaFileName);
+
+    function updateDropAreaFileName() {
+        const file = dropInput.files?.[0];
+        if (!file) {
+            dropArea.removeAttribute("data-file-name");
+            return;
+        }
+        const sizeKB = (file.size / 1024).toFixed(1);
+        dropArea.setAttribute("data-file-name", `${file.name} (${sizeKB} KB)`);
+    }
+
     // --- Modal Logic ---
     const dialog = document.getElementById("modal-example");
     document.getElementById("open-modal").addEventListener("click", () => dialog?.showModal?.());
@@ -992,51 +1221,147 @@ Done!
         // You would run your local JavaScript tool logic here!
         console.log("Local tool settings saved, processing data...");
     });
+    // --- Preference Persistence ---
+    const PREFS_KEY = "one-css-showcase-prefs";
+
+    function loadPrefs() {
+        try {
+            return JSON.parse(localStorage.getItem(PREFS_KEY)) ?? {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function savePref(name, value) {
+        try {
+            const prefs = loadPrefs();
+            prefs[name] = value;
+            localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+        } catch (e) {
+            console.error("Failed to save preferences", e);
+        }
+    }
+
     // --- Color Toggle Logic ---
     const colorSelector = document.getElementById("color-selector");
-    colorSelector.addEventListener("change", (e) => {
-        const color = e.target.value;
+    const colorThemes = [...colorSelector.options].map(o => o.value).filter(Boolean);
+
+    function applyColorTheme(color) {
         // Remove all specific color classes
-        const themes = [...colorSelector.options].map(o => o.value).filter(Boolean);
-        document.documentElement.classList.remove(...themes.map(t => "theme-" + t));
+        document.documentElement.classList.remove(...colorThemes.map(t => "theme-" + t));
         // Add the selected color class if not default
         if (color) {
             document.documentElement.classList.add("theme-" + color);
         }
+    }
+
+    colorSelector.addEventListener("change", (e) => {
+        applyColorTheme(e.target.value);
+        savePref("color", e.target.value);
     });
 
     // --- Dropdown Menu Logic ---
     const dropdown = document.querySelector(".dropdown");
     const dropdownBtn = document.getElementById("more-menu-btn");
     const optCompact = document.getElementById("opt-compact");
+    const optDark = document.getElementById("opt-dark");
+
+    const dropdownMenu = dropdown.querySelector(".dropdown-menu");
+
+    function setDropdownOpen(open) {
+        dropdown.classList.toggle("open", open);
+        dropdownBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    function focusDropdownItem(index) {
+        const items = [...dropdownMenu.querySelectorAll(".dropdown-item")];
+        // Negative indices and index === items.length wrap around
+        items.at(index % items.length)?.focus();
+    }
 
     dropdownBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        const isOpen = dropdown.classList.toggle("open");
-        dropdownBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        const isOpen = !dropdown.classList.contains("open");
+        setDropdownOpen(isOpen);
+        if (isOpen) focusDropdownItem(0);
+    });
+
+    dropdownBtn.addEventListener("keydown", (e) => {
+        if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+        e.preventDefault();
+        setDropdownOpen(true);
+        focusDropdownItem(e.key === "ArrowDown" ? 0 : -1);
+    });
+
+    dropdownMenu.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            setDropdownOpen(false);
+            dropdownBtn.focus();
+            return;
+        }
+        if (e.key === "Tab") {
+            setDropdownOpen(false);
+            return;
+        }
+
+        const items = [...dropdownMenu.querySelectorAll(".dropdown-item")];
+        const current = items.indexOf(document.activeElement);
+        if (e.key === "ArrowDown") focusDropdownItem(current + 1);
+        else if (e.key === "ArrowUp") focusDropdownItem(current - 1);
+        else if (e.key === "Home") focusDropdownItem(0);
+        else if (e.key === "End") focusDropdownItem(-1);
+        else return;
+        e.preventDefault();
     });
 
     document.addEventListener("click", (e) => {
-        if (!dropdown.contains(e.target)) {
-            dropdown.classList.remove("open");
-            dropdownBtn.setAttribute("aria-expanded", "false");
-        }
+        if (!dropdown.contains(e.target)) setDropdownOpen(false);
     });
 
+    function setMenuChecked(item, checked) {
+        item.setAttribute("aria-checked", checked ? "true" : "false");
+        item.classList.toggle("checked", checked);
+    }
+
+    function applyCompact(checked) {
+        setMenuChecked(optCompact, checked);
+        document.documentElement.classList.toggle("theme-compact", checked);
+    }
+
+    function applyDarkTheme(dark) {
+        setMenuChecked(optDark, dark);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+    }
+
     optCompact.addEventListener("click", () => {
-        const isChecked = optCompact.getAttribute("aria-checked") === "true";
-        const newChecked = !isChecked;
-        optCompact.setAttribute("aria-checked", newChecked ? "true" : "false");
-        optCompact.classList.toggle("checked", newChecked);
-        document.documentElement.classList.toggle("theme-compact", newChecked);
+        const newChecked = optCompact.getAttribute("aria-checked") !== "true";
+        applyCompact(newChecked);
+        savePref("compact", newChecked);
+    });
+
+    optDark.addEventListener("click", () => {
+        const newDark = optDark.getAttribute("aria-checked") !== "true";
+        applyDarkTheme(newDark);
+        savePref("dark", newDark);
     });
 
     dropdown.querySelectorAll("a.dropdown-item").forEach((item) => {
-        item.addEventListener("click", () => {
-            dropdown.classList.remove("open");
-            dropdownBtn.setAttribute("aria-expanded", "false");
-        });
+        item.addEventListener("click", () => setDropdownOpen(false));
     });
+
+    // --- Restore Preferences ---
+    const prefs = loadPrefs();
+    if (prefs.color !== undefined) {
+        colorSelector.value = prefs.color;
+        applyColorTheme(prefs.color);
+    }
+    if (prefs.compact) applyCompact(true);
+    if (prefs.dark !== undefined) {
+        applyDarkTheme(prefs.dark);
+    } else {
+        // No stored choice: reflect the system scheme without forcing an override
+        setMenuChecked(optDark, matchMedia("(prefers-color-scheme: dark)").matches);
+    }
 </script>
 
 </body>

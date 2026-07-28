@@ -128,8 +128,9 @@ export function Arrange(sections, options = {}) {
         if (section.tracks && Array.isArray(section.tracks)) {
             const uniqueTracks = new Set(section.tracks);
             for (const track of uniqueTracks) {
+                if (!track) continue;
                 if (track._isSolo) continue;
-                if (track && typeof track.start === "function" && typeof track.stop === "function") {
+                if (typeof track.start === "function" && typeof track.stop === "function") {
                     track.start(sectionStart).stop(sectionEnd);
 
                     if (track._gainRampsQueue && track._gainRampsQueue.length > 0) {
@@ -432,11 +433,11 @@ function evaluateOp(a, b, op) {
         return a === Tie || b === Tie ? Tie : a;
     }
 
-    const isANoteString = typeof a === "string" && typeof noteToMidi(a) === "number" && !isNaN(noteToMidi(a));
-    const isBNoteString = typeof b === "string" && typeof noteToMidi(b) === "number" && !isNaN(noteToMidi(b));
-
     const valA = typeof a === "string" ? noteToMidi(a) : a;
     const valB = typeof b === "string" ? noteToMidi(b) : b;
+
+    const isANoteString = typeof a === "string" && typeof valA === "number" && !isNaN(valA);
+    const isBNoteString = typeof b === "string" && typeof valB === "number" && !isNaN(valB);
 
     const res = op(valA, valB);
 
@@ -458,29 +459,24 @@ function crossProduct(arr, other, op) {
 }
 
 // Extend Array prototype with arithmetic methods utilizing cross-product evaluation.
-if (!Array.prototype.add) {
-    Array.prototype.add = function(other) {
-        return crossProduct(this, other, (x, y) => evaluateOp(x, y, (a, b) => a + b));
-    };
+// Defined via defineProperty (non-enumerable) so `for...in` over any array in a
+// host page does not pick up add/sub/mul/div.
+function defineArrayOp(name, opFn) {
+    if (Array.prototype[name]) return;
+    Object.defineProperty(Array.prototype, name, {
+        value: function(other) {
+            return crossProduct(this, other, (x, y) => evaluateOp(x, y, opFn));
+        },
+        writable: true,
+        configurable: true,
+        enumerable: false,
+    });
 }
 
-if (!Array.prototype.sub) {
-    Array.prototype.sub = function(other) {
-        return crossProduct(this, other, (x, y) => evaluateOp(x, y, (a, b) => a - b));
-    };
-}
-
-if (!Array.prototype.mul) {
-    Array.prototype.mul = function(other) {
-        return crossProduct(this, other, (x, y) => evaluateOp(x, y, (a, b) => a * b));
-    };
-}
-
-if (!Array.prototype.div) {
-    Array.prototype.div = function(other) {
-        return crossProduct(this, other, (x, y) => evaluateOp(x, y, (a, b) => a / b));
-    };
-}
+defineArrayOp("add", (a, b) => a + b);
+defineArrayOp("sub", (a, b) => a - b);
+defineArrayOp("mul", (a, b) => a * b);
+defineArrayOp("div", (a, b) => a / b);
 
 
 export const SCALES = {
@@ -499,6 +495,8 @@ export const SCALES = {
     pentatonicMinor: [0, 3, 5, 7, 10],
 };
 
+const SCALES_LOWER = Object.fromEntries(Object.entries(SCALES).map(([k, v]) => [k.toLowerCase(), v]));
+
 /**
  * Maps an integer scale degree and a root note/pitch to a absolute MIDI note number.
  * @param {number} degree - The 0-indexed scale degree.
@@ -511,7 +509,7 @@ export function degreeToMidi(degree, root, scaleName = "major") {
     if (typeof rootMidi !== "number" || isNaN(rootMidi)) return NaN;
     if (typeof degree !== "number" || isNaN(degree)) return degree;
 
-    const intervals = SCALES[scaleName.toLowerCase()] || SCALES.major;
+    const intervals = SCALES_LOWER[scaleName.toLowerCase()] || SCALES.major;
     const len = intervals.length;
     const octaveOffset = Math.floor(degree / len);
     const index = ((degree % len) + len) % len;
@@ -626,6 +624,37 @@ export class MotifEngine {
         this._arrangementOptions = null;
         this._loopTimeout = null;
         this._debugPlaybackStart = null;
+        this._suspendedByEngine = false;
+        this._suspendPromise = null;
+        this._sampleSeed = 0;
+    }
+
+    /**
+     * Gets/sets the global seed mixed into every procedural sample generator.
+     * State 0 (default) yields the canonical, deterministic sound.
+     * @param {number} [n] - Seed to set. Omit to pick and set a random seed.
+     * @returns {number} The seed now in effect (useful to log/reuse).
+     */
+    sampleSeed(n) {
+        const seed = (n === undefined)
+            ? (Math.random() * 0x100000000) >>> 0
+            : (n >>> 0);
+
+        const changed = seed !== this._sampleSeed;
+        this._sampleSeed = seed;
+        if (changed) this._invalidateProceduralSamples();
+        return seed;
+    }
+
+    /**
+     * Restores every procedural generator into the registry, dropping any
+     * buffers already rendered from a prior seed so the next play re-renders.
+     */
+    _invalidateProceduralSamples() {
+        if (typeof MotifSamples === "undefined") return;
+        for (const [id, generator] of Object.entries(MotifSamples)) {
+            this.sampleRegistry.set(id, generator);
+        }
     }
 
     /**
@@ -672,6 +701,7 @@ export class MotifEngine {
                 });
             });
         sampleBufferCache.set(path, p);
+        p.then(undefined, () => sampleBufferCache.delete(path));
         return p;
     }
 
@@ -753,9 +783,25 @@ export class MotifEngine {
      */
     start() {
         if (this.ctx.state !== "running") {
+            // Engine-initiated suspend (pause/stop): resume instead of throwing.
+            if (this._suspendedByEngine && typeof this.ctx.resume === "function") {
+                this._suspendedByEngine = false;
+                return Promise.resolve(this.ctx.resume()).then(() => this._launchTransport());
+            }
             throw new Error("AudioContext is suspended. Motif.start() must be called after a user gesture has resumed the AudioContext.");
         }
 
+        this._suspendedByEngine = false;
+        return this._launchTransport();
+    }
+
+    /**
+     * Marks the transport as playing and kicks off the scheduler once any
+     * pending sample loads settle.
+     * @private
+     * @returns {Promise} Resolves when the transport is actually running.
+     */
+    _launchTransport() {
         const onReady = () => {
             this._loadingSamples = [];
             this._debugPlaybackStart = this._debugPlaybackStart !== null ? this._debugPlaybackStart : this.ctx.currentTime;
@@ -764,16 +810,17 @@ export class MotifEngine {
         };
 
         if (this._loadingSamples && this._loadingSamples.length > 0) {
-            Promise.all(this._loadingSamples)
+            return Promise.all(this._loadingSamples)
                 .then(onReady)
                 .catch(err => {
                     console.error("Failed to load some resources/samples:", err);
                     this._loadingSamples = [];
                     onReady();
                 });
-        } else {
-            onReady();
         }
+
+        onReady();
+        return Promise.resolve();
     }
 
     /**
@@ -786,8 +833,9 @@ export class MotifEngine {
             clearTimeout(this._loopTimeout);
             this._loopTimeout = null;
         }
+        this._suspendedByEngine = true;
         if (this.ctx && typeof this.ctx.suspend === "function") {
-            this.ctx.suspend().catch(err => {
+            this._suspendPromise = Promise.resolve(this.ctx.suspend()).catch(err => {
                 console.warn("Failed to suspend AudioContext inside Motif.pause():", err);
             });
         }
@@ -816,8 +864,9 @@ export class MotifEngine {
             }
         }
 
+        this._suspendedByEngine = true;
         if (this.ctx && typeof this.ctx.suspend === "function") {
-            this.ctx.suspend().catch(err => {
+            this._suspendPromise = Promise.resolve(this.ctx.suspend()).catch(err => {
                 console.warn("Failed to suspend AudioContext inside Motif.stop():", err);
             });
         }
@@ -862,8 +911,11 @@ export class MotifEngine {
 
         // Schedule track-specific events
         for (const track of trackRegistry.values()) {
-            if (typeof track._schedule === "function") {
+            if (typeof track._schedule !== "function") continue;
+            try {
                 track._schedule(horizon);
+            } catch (err) {
+                console.error(`[Motif] Error scheduling track "${track.id}":`, err);
             }
         }
 
@@ -872,7 +924,11 @@ export class MotifEngine {
             if (evt.fired) continue;
             if (evt.time <= horizon) {
                 evt.fired = true;
-                evt.callback(evt.time);
+                try {
+                    evt.callback(evt.time);
+                } catch (err) {
+                    console.error("[Motif] Error in scheduled callback:", err);
+                }
                 continue;
             }
             remaining.push(evt);
@@ -940,17 +996,20 @@ export class MotifEngine {
                     }
 
                     this._loopTimeout = setTimeout(() => {
-                        if (this._loopTimeout) {
-                            Promise.resolve(
-                                this.ctx && this.ctx.state === "suspended" ? this.ctx.resume() : null,
-                            ).then(() => {
-                                if (this._loopTimeout) {
-                                    this.start();
-                                }
-                            }).catch(err => {
+                        if (!this._loopTimeout) return;
+
+                        // Wait for the suspend started by stop() to actually land before
+                        // resuming. Checking ctx.state here would race: it can still read
+                        // "running" while the suspend is pending, so a resume would be
+                        // skipped and the late suspend would silence playback forever.
+                        Promise.resolve(this._suspendPromise)
+                            .catch(() => {})
+                            .then(() => {
+                                if (this._loopTimeout) return this.start();
+                            })
+                            .catch(err => {
                                 console.error("Motif auto-loop restart failed:", err);
                             });
-                        }
                     }, delayMs);
                 }
             }
@@ -1346,6 +1405,8 @@ class BusClass extends EffectChain {
         this.output = null;
         this.feedbackGainNode = null;
         this.feedbackDelayNode = null;
+        this._isInternalDelayBus = false;
+        this._ownerTrackId = null;
 
         this._initAudio();
     }
@@ -1418,28 +1479,76 @@ export function Bus(id) {
     return b;
 }
 
+const EFFECT_MODULATOR_PROPS = [
+    "_filterCutoffModulator",
+    "_panModulator",
+    "_eqLowModulator",
+    "_eqMidModulator",
+    "_eqHighModulator",
+    "_volumeModulator",
+    "_compressorThresholdModulator",
+    "_compressorKneeModulator",
+    "_compressorRatioModulator",
+    "_compressorAttackModulator",
+    "_compressorReleaseModulator",
+];
+
+function disposeBus(bus) {
+    safeDisconnect(bus.input);
+    safeDisconnect(bus.output);
+    safeDisconnect(bus.feedbackDelayNode);
+    safeDisconnect(bus.feedbackGainNode);
+    for (const prop of EFFECT_MODULATOR_PROPS) {
+        safeDisconnect(bus[prop]);
+    }
+}
+
+function disposeTrack(track) {
+    if (typeof track._stopAllVoices === "function") {
+        track._stopAllVoices();
+    }
+    if (typeof track._resetScheduling === "function") {
+        track._resetScheduling();
+    }
+    safeDisconnect(track.trackInputNode);
+    safeDisconnect(track.muteGainNode);
+    safeDisconnect(track.preFaderNode);
+    if (track._sends) {
+        for (const sendGainNode of track._sends.values()) {
+            safeDisconnect(sendGainNode);
+        }
+    }
+    if (track._modulators) {
+        for (const prev of track._modulators.values()) {
+            safeDisconnect(prev.depthGain);
+        }
+    }
+    const internalNodes = [
+        "filterNode", "pannerNode", "volumeNode",
+        "eqLowNode", "eqMidNode", "eqHighNode",
+        "compressorNode", "distortionNode", "dspNode",
+        "duckGainNode", "_mergerNode",
+    ];
+    for (const prop of internalNodes) {
+        safeDisconnect(track[prop]);
+    }
+    for (const prop of EFFECT_MODULATOR_PROPS) {
+        safeDisconnect(track[prop]);
+    }
+
+    // Tear down the track's internal delay bus (Track.delay) so a pruned track
+    // never leaks its feedback loop. Safe because disposeTrack runs only on
+    // registry-present tracks, i.e. the current owner of this bus.
+    if (track._delayBus) {
+        disposeBus(track._delayBus);
+        if (track._delayBus.id) busRegistry.delete(track._delayBus.id);
+        track._delayBus = null;
+    }
+}
+
 Bus.clearRegistry = function() {
     for (const bus of busRegistry.values()) {
-        safeDisconnect(bus.input);
-        safeDisconnect(bus.output);
-        safeDisconnect(bus.feedbackDelayNode);
-        safeDisconnect(bus.feedbackGainNode);
-        const modulators = [
-            "_filterCutoffModulator",
-            "_panModulator",
-            "_eqLowModulator",
-            "_eqMidModulator",
-            "_eqHighModulator",
-            "_volumeModulator",
-            "_compressorThresholdModulator",
-            "_compressorKneeModulator",
-            "_compressorRatioModulator",
-            "_compressorAttackModulator",
-            "_compressorReleaseModulator",
-        ];
-        for (const prop of modulators) {
-            safeDisconnect(bus[prop]);
-        }
+        disposeBus(bus);
     }
     busRegistry.clear();
 };
@@ -1447,29 +1556,15 @@ Bus.clearRegistry = function() {
 Bus.pruneExcept = function(activeIds) {
     const ids = new Set(activeIds || []);
     for (const [id, bus] of busRegistry.entries()) {
-        if (!ids.has(id)) {
-            safeDisconnect(bus.input);
-            safeDisconnect(bus.output);
-            safeDisconnect(bus.feedbackDelayNode);
-            safeDisconnect(bus.feedbackGainNode);
-            const modulators = [
-                "_filterCutoffModulator",
-                "_panModulator",
-                "_eqLowModulator",
-                "_eqMidModulator",
-                "_eqHighModulator",
-                "_volumeModulator",
-                "_compressorThresholdModulator",
-                "_compressorKneeModulator",
-                "_compressorRatioModulator",
-                "_compressorAttackModulator",
-                "_compressorReleaseModulator",
-            ];
-            for (const prop of modulators) {
-                safeDisconnect(bus[prop]);
-            }
-            busRegistry.delete(id);
-        }
+        if (ids.has(id)) continue;
+
+        // Internal per-track delay buses (created by Track.delay, not by user
+        // code) never appear in the declared set. Keep them while their owner
+        // track survives so hot-reload echo isn't silenced.
+        if (bus._isInternalDelayBus && trackRegistry.has(bus._ownerTrackId)) continue;
+
+        disposeBus(bus);
+        busRegistry.delete(id);
     }
 };
 
@@ -1501,50 +1596,7 @@ export function Track(id) {
 
 Track.clearRegistry = function() {
     for (const track of trackRegistry.values()) {
-        if (typeof track._stopAllVoices === "function") {
-            track._stopAllVoices();
-        }
-        if (typeof track._resetScheduling === "function") {
-            track._resetScheduling();
-        }
-        safeDisconnect(track.trackInputNode);
-        safeDisconnect(track.muteGainNode);
-        safeDisconnect(track.preFaderNode);
-        if (track._sends) {
-            for (const sendGainNode of track._sends.values()) {
-                safeDisconnect(sendGainNode);
-            }
-        }
-        if (track._modulators) {
-            for (const prev of track._modulators.values()) {
-                safeDisconnect(prev.depthGain);
-            }
-        }
-        const internalNodes = [
-            "filterNode", "pannerNode", "volumeNode",
-            "eqLowNode", "eqMidNode", "eqHighNode",
-            "compressorNode", "distortionNode", "dspNode",
-            "duckGainNode", "_mergerNode",
-        ];
-        for (const prop of internalNodes) {
-            safeDisconnect(track[prop]);
-        }
-        const modulators = [
-            "_filterCutoffModulator",
-            "_panModulator",
-            "_eqLowModulator",
-            "_eqMidModulator",
-            "_eqHighModulator",
-            "_volumeModulator",
-            "_compressorThresholdModulator",
-            "_compressorKneeModulator",
-            "_compressorRatioModulator",
-            "_compressorAttackModulator",
-            "_compressorReleaseModulator",
-        ];
-        for (const prop of modulators) {
-            safeDisconnect(track[prop]);
-        }
+        disposeTrack(track);
     }
     trackRegistry.clear();
 };
@@ -1553,50 +1605,7 @@ Track.pruneExcept = function(activeIds) {
     const ids = new Set(activeIds || []);
     for (const [id, track] of trackRegistry.entries()) {
         if (id !== "__temp_probe__" && !ids.has(id)) {
-            if (typeof track._stopAllVoices === "function") {
-                track._stopAllVoices();
-            }
-            if (typeof track._resetScheduling === "function") {
-                track._resetScheduling();
-            }
-            safeDisconnect(track.trackInputNode);
-            safeDisconnect(track.muteGainNode);
-            safeDisconnect(track.preFaderNode);
-            if (track._sends) {
-                for (const sendGainNode of track._sends.values()) {
-                    safeDisconnect(sendGainNode);
-                }
-            }
-            if (track._modulators) {
-                for (const prev of track._modulators.values()) {
-                    safeDisconnect(prev.depthGain);
-                }
-            }
-            const internalNodes = [
-                "filterNode", "pannerNode", "volumeNode",
-                "eqLowNode", "eqMidNode", "eqHighNode",
-                "compressorNode", "distortionNode", "dspNode",
-                "duckGainNode", "_mergerNode",
-            ];
-            for (const prop of internalNodes) {
-                safeDisconnect(track[prop]);
-            }
-            const modulators = [
-                "_filterCutoffModulator",
-                "_panModulator",
-                "_eqLowModulator",
-                "_eqMidModulator",
-                "_eqHighModulator",
-                "_volumeModulator",
-                "_compressorThresholdModulator",
-                "_compressorKneeModulator",
-                "_compressorRatioModulator",
-                "_compressorAttackModulator",
-                "_compressorReleaseModulator",
-            ];
-            for (const prop of modulators) {
-                safeDisconnect(track[prop]);
-            }
+            disposeTrack(track);
             trackRegistry.delete(id);
         }
     }
@@ -1643,7 +1652,7 @@ function createLFO(type, options) {
             frequency = options.frequency;
         } else if (options.speed !== undefined) {
             if (typeof options.speed === "number") {
-                frequency = 1 / options.speed;
+                frequency = options.speed > 0 ? 1 / options.speed : 1.0;
             } else {
                 const seconds = parseDurationToSeconds(options.speed, Motif.tempo, Motif.beatsPerBar);
                 frequency = seconds > 0 ? 1 / seconds : 1.0;
@@ -1664,6 +1673,10 @@ function createLFO(type, options) {
             }
         }
     }
+
+    if (!Number.isFinite(frequency)) frequency = 1.0;
+    if (!Number.isFinite(depth)) depth = 1.0;
+    if (!Number.isFinite(offset)) offset = 0.0;
 
     const osc = ctx.createOscillator();
     osc.type = type === "saw" ? "sawtooth" : type;
@@ -1810,6 +1823,20 @@ for (const method of trackMethodsToEnsureInit) {
 // Global DSP Constant caching for optimization
 const TWO_PI = Math.PI * 2.0;
 
+// Seeded PRNG factory for offline sample generation. Pure int32 ops (Math.imul,
+// >>> 0) keep the whole state under 2^32, avoiding the >2^53 float-precision
+// loss of hand-rolled LCGs. Returns a function yielding floats in [0, 1).
+function mulberry32(seed) {
+    let state = seed >>> 0;
+    return () => {
+        state = (state + 0x6d2b79f5) >>> 0;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
 // ==============================================================================
 // 1. SYNTH REGISTRY (Real-time Generative DSP Functions)
 // ==============================================================================
@@ -1942,6 +1969,50 @@ const MotifSynths = {
 
         // Hard clipping for aggression
         return Math.tanh(carrier * 2.0) * sustain;
+    },
+
+    // Reese bass: three detuned saws (+-7 cents) beat into a slow phasing growl, an ~0.85 Hz LFO sweeps a state-variable low-pass over the stack, tanh drive adds grit, and a clean sub sine one octave down is summed after the drive for weight.
+    "bass-reese": (ctx) => {
+        const s = ctx.state;
+        const sr = ctx.sampleRate;
+        const f0 = ctx.freq;
+
+        if (s.init !== 1) {
+            s.init = 1;
+            s.ph1 = 0.0;
+            s.ph2 = 0.33;
+            s.ph3 = 0.67;
+            s.phSub = 0.0;
+            s.lfo = 0.0;
+            s.lp = 0.0;
+            s.bp = 0.0;
+        }
+
+        // Detuned saw stack, ratios 2^(+-7/1200), phases wrapped mod 1
+        s.ph1 = (s.ph1 + f0 * 0.99596 / sr) % 1.0;
+        s.ph2 = (s.ph2 + f0 / sr) % 1.0;
+        s.ph3 = (s.ph3 + f0 * 1.00405 / sr) % 1.0;
+        const saws = (s.ph1 * 2 - 1) + (s.ph2 * 2 - 1) + (s.ph3 * 2 - 1);
+
+        // 0.85 Hz LFO sweeps cutoff exponentially over roughly 2x..10x the fundamental
+        s.lfo = (s.lfo + 0.85 / sr) % 1.0;
+        let fc = f0 * Math.exp(0.6931471805599453 * (2.2 + 1.2 * Math.sin(TWO_PI * s.lfo)));
+        const fcMax = sr / 8.0;
+        if (fc > fcMax) fc = fcMax;
+        if (fc < 40.0) fc = 40.0;
+
+        // Chamberlin SVF low-pass; fc <= sr/8 keeps f <= 0.765, stable with damping 0.8
+        const f = 2.0 * Math.sin(Math.PI * fc / sr);
+        s.lp = s.lp + f * s.bp;
+        const hp = saws * 0.3333 - s.lp - 0.8 * s.bp;
+        s.bp = s.bp + f * hp;
+
+        // Saturate the filtered growl, then add the untouched sub so the low end stays clean
+        const driven = Math.tanh(s.lp * 2.2);
+        s.phSub = (s.phSub + f0 * 0.5 / sr) % 1.0;
+        const sub = Math.sin(TWO_PI * s.phSub);
+
+        return driven * 0.55 + sub * 0.42;
     },
 
     // Phase distortion lead. Uses Casio-style phase distortion to warp a sine wave into a variable pulse width, avoiding the aliasing of a standard square wave.
@@ -2532,6 +2603,89 @@ const MotifSynths = {
         return ctx.state.low;
     },
 
+    // Additive tonewheel organ: four sine drawbars (888800000 jazz registration) driven off one half-rate wrapped phase, 3rd-harmonic percussion pop decaying ~0.2s, 6 Hz rotary vibrato/tremolo, tanh drive for warmth
+    "organ-drawbar": (ctx) => {
+        const s = ctx.state;
+
+        // Rotary-speaker LFO ~6 Hz, shared by pitch vibrato and tremolo
+        s.lph = ((s.lph || 0) + 6.1 / ctx.sampleRate) % 1.0;
+        const lfo = Math.sin(TWO_PI * s.lph);
+
+        // Half-rate master phase so every drawbar (16' sub, 5-1/3' quint included) is an integer multiple; subtle pitch wobble on the increment
+        s.ph = ((s.ph || 0) + (ctx.freq * 0.5 / ctx.sampleRate) * (1.0 + 0.004 * lfo)) % 1.0;
+        const w = TWO_PI * s.ph;
+
+        // Drawbars 16' / 8' / 5-1/3' / 4' pulled full out
+        let mix = 0.9 * Math.sin(w)
+                + 1.0 * Math.sin(w * 2.0)
+                + 0.8 * Math.sin(w * 3.0)
+                + 0.7 * Math.sin(w * 4.0);
+
+        // Percussion: 3rd harmonic of the fundamental, effectively gone after ~0.2s
+        mix += 0.9 * Math.sin(w * 6.0) * Math.exp(-ctx.t * 18.0);
+
+        // Tonewheel saturation, then rotary tremolo; peak stays safely below 1
+        return Math.tanh(mix * 0.55) * (0.84 + 0.10 * lfo);
+    },
+
+    // Solina-style string machine: 4 detuned saws with independent triangle-LFO pitch chorus, one-pole spectral tilt, band-filtered bow-noise shimmer, 0.5s swell into steady sustain
+    "strings-ensemble": (ctx) => {
+        const s = ctx.state;
+        const inv = 1.0 / ctx.sampleRate;
+
+        if (!s.init) {
+            s.init = 1;
+
+            // Stagger saw phases so layers never start click-aligned
+            s.p1 = 0.0; s.p2 = 0.17; s.p3 = 0.43; s.p4 = 0.71;
+
+            // Chorus LFO phases, spread so vibratos never line up
+            s.l1 = 0.0; s.l2 = 0.31; s.l3 = 0.57; s.l4 = 0.83;
+
+            // Filter states
+            s.f1 = 0.0; s.f2 = 0.0; s.nz1 = 0.0; s.nz2 = 0.0;
+
+            // One-pole tilt coefficient, cutoff clamped to sr/6 to guarantee stability
+            const cutoff = Math.min(ctx.freq * 7.0 + 1500.0, ctx.sampleRate / 6.0);
+            s.lpk = 1.0 - Math.exp(-TWO_PI * cutoff * inv);
+        }
+
+        // Independent slow chorus LFOs (0.7-5.6 Hz), cheap triangle shape from wrapped phase
+        s.l1 = (s.l1 + 0.7 * inv) % 1.0;
+        s.l2 = (s.l2 + 2.3 * inv) % 1.0;
+        s.l3 = (s.l3 + 4.1 * inv) % 1.0;
+        s.l4 = (s.l4 + 5.6 * inv) % 1.0;
+        const t1 = Math.abs(s.l1 * 4.0 - 2.0) - 1.0;
+        const t2 = Math.abs(s.l2 * 4.0 - 2.0) - 1.0;
+        const t3 = Math.abs(s.l3 * 4.0 - 2.0) - 1.0;
+        const t4 = Math.abs(s.l4 * 4.0 - 2.0) - 1.0;
+
+        // Four saw layers, static detune spread (about +/-8 cents) plus ~3 cent LFO vibrato each
+        const base = ctx.freq * inv;
+        s.p1 = (s.p1 + base * (0.9955 + 0.0018 * t1)) % 1.0;
+        s.p2 = (s.p2 + base * (0.9985 + 0.0018 * t2)) % 1.0;
+        s.p3 = (s.p3 + base * (1.0015 + 0.0018 * t3)) % 1.0;
+        s.p4 = (s.p4 + base * (1.0045 + 0.0018 * t4)) % 1.0;
+        const saws = (s.p1 * 2.0 - 1.0) + (s.p2 * 2.0 - 1.0) + (s.p3 * 2.0 - 1.0) + (s.p4 * 2.0 - 1.0);
+
+        // Gentle 12 dB/oct tilt tames saw buzz while staying bright
+        s.f1 += s.lpk * (saws * 0.25 - s.f1);
+        s.f2 += s.lpk * (s.f1 - s.f2);
+
+        // Bow-noise shimmer: band-limited noise (fast LP minus slow LP), amplitude wobbled by slowest LFO
+        const white = Math.random() * 2.0 - 1.0;
+        s.nz1 += 0.25 * (white - s.nz1);
+        s.nz2 += 0.04 * (white - s.nz2);
+        const bowNoise = (s.nz1 - s.nz2) * 0.015 * (1.0 + 0.3 * t1);
+
+        // 0.5s smoothstep attack swell, then exactly 1.0 forever: steady sustain, engine handles release
+        let env = ctx.t * 2.0;
+        if (env > 1.0) env = 1.0;
+        env = env * env * (3.0 - 2.0 * env);
+
+        return Math.tanh((s.f2 + bowNoise) * env * 1.4);
+    },
+
     // 'Glass Mallet': A highly resonant, woody/glassy pluck.
     // Uses inharmonic FM ratios (1 : 3.14) to mimic a xylophone or glass marimba.
     "glass-mallet": (ctx) => {
@@ -2735,10 +2889,11 @@ const MotifSamples = (() => {
             const buffer = createBuffer(0.35);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0x9E3779B1 ^ Motif._sampleSeed);
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
                 const tone = Math.sin(TWO_PI * 220 * t) + Math.sin(TWO_PI * 340 * t);
-                const noise = Math.random() * 2 - 1;
+                const noise = rand() * 2 - 1;
 
                 const toneEnv = Math.exp(-t * 20);
                 const noiseEnv = Math.exp(-t * 12);
@@ -2799,6 +2954,84 @@ const MotifSamples = (() => {
             return buffer;
         },
 
+        // Six square oscillators at the classic 808 inharmonic frequencies plus white noise, double high-passed and gently low-passed for a bright sustained open-hat sizzle
+        "hihat-open": () => {
+            const buffer = createBuffer(0.7);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            const freqs = [205.3, 304.4, 369.6, 522.7, 540.0, 800.0];
+            const dt = 1 / sampleRate;
+            const hpRC = 1 / (TWO_PI * 7000);
+            const hpA = hpRC / (hpRC + dt);
+            const lpRC = 1 / (TWO_PI * 11000);
+            const lpA = dt / (lpRC + dt);
+            const dur = data.length / sampleRate;
+            const rand = mulberry32(0x85EBCA77 ^ Motif._sampleSeed);
+            let hp1x = 0, hp1y = 0, hp2x = 0, hp2y = 0, lpY = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                let osc = 0;
+                for (let k = 0; k < freqs.length; k++) {
+                    osc += Math.sin(TWO_PI * freqs[k] * t) >= 0 ? 1 : -1;
+                }
+                osc /= freqs.length;
+                const noise = rand() * 2 - 1;
+                // Slow body decay plus a fast transient snap for the stick attack
+                const env = Math.exp(-9 * t);
+                const snap = Math.exp(-60 * t);
+                const attack = Math.min(1, i / 8);
+                const x = (osc * (env + 0.4 * snap) + noise * (0.7 * env + 0.5 * snap)) * attack;
+                // Two-stage one-pole high-pass strips lows and DC, one-pole low-pass tames the extreme top
+                hp1y = hpA * (hp1y + x - hp1x);
+                hp1x = x;
+                hp2y = hpA * (hp2y + hp1y - hp2x);
+                hp2x = hp1y;
+                lpY += lpA * (hp2y - lpY);
+                // Short linear fade guarantees a silent tail
+                const fade = Math.min(1, (dur - t) / 0.01);
+                data[i] = lpY * 0.55 * fade;
+            }
+            return buffer;
+        },
+
+        // Same 808-style metallic square bank with heavier noise, single darker high-pass and lower low-pass, fast decay for the dull foot-chick between closed and open
+        "hihat-pedal": () => {
+            const buffer = createBuffer(0.13);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            const freqs = [205.3, 304.4, 369.6, 522.7, 540.0, 800.0];
+            const dt = 1 / sampleRate;
+            const hpRC = 1 / (TWO_PI * 4500);
+            const hpA = hpRC / (hpRC + dt);
+            const lpRC = 1 / (TWO_PI * 6500);
+            const lpA = dt / (lpRC + dt);
+            const dur = data.length / sampleRate;
+            const rand = mulberry32(0xC2B2AE3D ^ Motif._sampleSeed);
+            let hpX = 0, hpY = 0, lpY = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                let osc = 0;
+                for (let k = 0; k < freqs.length; k++) {
+                    osc += Math.sin(TWO_PI * freqs[k] * t) >= 0 ? 1 : -1;
+                }
+                osc /= freqs.length;
+                const noise = rand() * 2 - 1;
+                // Fast body decay with an even faster chick transient on top
+                const env = Math.exp(-40 * t);
+                const snap = Math.exp(-150 * t);
+                const attack = Math.min(1, i / 6);
+                const x = (osc * (0.7 * env + 0.3 * snap) + noise * (0.9 * env + 0.3 * snap)) * attack;
+                // One-pole high-pass removes DC and body, low-pass dulls the top for the muted pedal character
+                hpY = hpA * (hpY + x - hpX);
+                hpX = x;
+                lpY += lpA * (hpY - lpY);
+                // Short linear fade guarantees a silent tail
+                const fade = Math.min(1, (dur - t) / 0.008);
+                data[i] = lpY * 0.55 * fade;
+            }
+            return buffer;
+        },
+
         "cymbal-ride": () => {
             const buffer = createBuffer(1.5);
             if (!buffer) return null;
@@ -2831,16 +3064,141 @@ const MotifSamples = (() => {
             return buffer;
         },
 
+        // Additive bank of 48 log-spaced inharmonic partials plus differentiated noise burst, exponential per-partial decay; explosive bright crash with long shimmering tail
+        "cymbal-crash": () => {
+            const buffer = createBuffer(2.2);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+
+            const rand = mulberry32(0x428A2F98 ^ Motif._sampleSeed);
+
+            // Inharmonic partials: log-distributed 400 Hz .. 14 kHz, random phases,
+            // gentle spectral tilt, faster decay for higher partials
+            const PARTIALS = 48;
+            const freqs = new Float64Array(PARTIALS);
+            const amps = new Float64Array(PARTIALS);
+            const decays = new Float64Array(PARTIALS);
+            const phases = new Float64Array(PARTIALS);
+            const nyquistCap = sampleRate * 0.45;
+            let ampSum = 0;
+            for (let p = 0; p < PARTIALS; p++) {
+                let f = 400 * Math.pow(35, rand());
+                if (f > nyquistCap) f = nyquistCap * (0.6 + 0.4 * rand());
+                freqs[p] = f;
+                amps[p] = Math.pow(400 / f, 0.25);
+                decays[p] = 2.5 + f / 2500;
+                phases[p] = rand() * TWO_PI;
+                ampSum += amps[p];
+            }
+            const partialScale = 0.6 / ampSum;
+
+            // One-pole leaky high-pass state kills DC drift from dense summation
+            let hpPrevIn = 0;
+            let hpPrevOut = 0;
+            let noisePrev = 0;
+            const fadeSamples = 256;
+            const fadeStart = data.length - fadeSamples;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                let partials = 0;
+                for (let p = 0; p < PARTIALS; p++) {
+                    partials += amps[p] * Math.exp(-decays[p] * t) * Math.sin(TWO_PI * freqs[p] * t + phases[p]);
+                }
+                partials *= partialScale;
+
+                // First-difference noise: high-passed sizzle for the attack plus a softer wash
+                const white = rand() * 2 - 1;
+                const brightNoise = white - noisePrev;
+                noisePrev = white;
+                const noise = brightNoise * (0.3 * Math.exp(-9 * t) + 0.08 * Math.exp(-3 * t));
+
+                let out = partials + noise;
+                hpPrevOut = out - hpPrevIn + 0.995 * hpPrevOut;
+                hpPrevIn = out;
+                out = hpPrevOut;
+
+                // Few-sample attack ramp and short terminal fade guarantee click-free edges
+                if (i < 32) out *= i / 32;
+                if (i >= fadeStart) out *= (data.length - 1 - i) / fadeSamples;
+                data[i] = out * 0.9;
+            }
+            return buffer;
+        },
+
+        // Same inharmonic partial bank driven by a cubic swell and an opening one-pole low-pass, then a 6 ms terminal fade to exactly zero; reverse-cymbal riser from silence to bright peak
+        "cymbal-reverse": () => {
+            const buffer = createBuffer(1.8);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+
+            const rand = mulberry32(0x71374491 ^ Motif._sampleSeed);
+
+            const PARTIALS = 40;
+            const freqs = new Float64Array(PARTIALS);
+            const amps = new Float64Array(PARTIALS);
+            const phases = new Float64Array(PARTIALS);
+            const nyquistCap = sampleRate * 0.45;
+            let ampSum = 0;
+            for (let p = 0; p < PARTIALS; p++) {
+                let f = 350 * Math.pow(34, rand());
+                if (f > nyquistCap) f = nyquistCap * (0.6 + 0.4 * rand());
+                freqs[p] = f;
+                amps[p] = Math.pow(350 / f, 0.2);
+                phases[p] = rand() * TWO_PI;
+                ampSum += amps[p];
+            }
+            const partialScale = 0.55 / ampSum;
+
+            // Peak sits right before a very fast final fade so the buffer ends at exactly 0.0
+            const fadeSamples = Math.max(1, Math.round(sampleRate * 0.006));
+            const riseSamples = data.length - fadeSamples;
+            let lpState = 0;
+            let hpPrevIn = 0;
+            let hpPrevOut = 0;
+            let noisePrev = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                const progress = Math.min(1, i / riseSamples);
+                const swell = progress * progress * progress;
+
+                let partials = 0;
+                for (let p = 0; p < PARTIALS; p++) {
+                    partials += amps[p] * Math.sin(TWO_PI * freqs[p] * t + phases[p]);
+                }
+                partials *= partialScale;
+
+                const white = rand() * 2 - 1;
+                const brightNoise = white - noisePrev;
+                noisePrev = white;
+                const noise = brightNoise * 0.35 * progress * progress;
+
+                // Time-varying one-pole low-pass opens with the swell: dark rumble grows into bright shimmer
+                const lpCoef = 0.05 + 0.85 * progress;
+                lpState += lpCoef * (partials + noise - lpState);
+
+                let out = lpState * swell;
+                hpPrevOut = out - hpPrevIn + 0.995 * hpPrevOut;
+                hpPrevIn = out;
+                out = hpPrevOut;
+
+                if (i >= riseSamples) out *= (data.length - 1 - i) / fadeSamples;
+                data[i] = out * 0.9;
+            }
+            return buffer;
+        },
+
         // A very soft, filtered noise sweep, like sand or a gentle shaker
         "shaker-soft": () => {
             const buffer = createBuffer(0.25);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0x27D4EB2F ^ Motif._sampleSeed);
             let b0 = 0; // Filter state
 
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
-                const noise = Math.random() * 2 - 1;
+                const noise = rand() * 2 - 1;
 
                 // 1-pole highpass filter at ~4000Hz to make it "sandy"
                 const cutoff = 4000 / sampleRate;
@@ -2864,9 +3222,10 @@ const MotifSamples = (() => {
             const buffer = createBuffer(0.3);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0x165667B1 ^ Motif._sampleSeed);
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
-                const noise = Math.random() * 2 - 1;
+                const noise = rand() * 2 - 1;
                 // Three staggered amplitude spikes to simulate group clapping
                 let env = 0;
                 if (t < 0.010) env = Math.exp(-t * 200);
@@ -2921,10 +3280,11 @@ const MotifSamples = (() => {
             const buffer = createBuffer(0.1);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0xD3A2646C ^ Motif._sampleSeed);
             let b0 = 0;
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
-                const noise = Math.random() * 2 - 1;
+                const noise = rand() * 2 - 1;
 
                 // Highpass filter at 2000Hz
                 const cutoff = 2000 / sampleRate;
@@ -2971,9 +3331,10 @@ const MotifSamples = (() => {
             const buffer = createBuffer(0.4);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0xFD7046C5 ^ Motif._sampleSeed);
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
-                const noise = Math.random() * 2 - 1;
+                const noise = rand() * 2 - 1;
 
                 // Amplitude is multiplied by a square LFO that speeds up exponentially
                 const lfoSpeed = 10 + Math.exp(t * 8);
@@ -2988,6 +3349,7 @@ const MotifSamples = (() => {
             const buffer = createBuffer(3.0);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0xB55A4F09 ^ Motif._sampleSeed);
             let phase = 0;
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
@@ -2996,7 +3358,7 @@ const MotifSamples = (() => {
                 const freq = 30 + 120 * Math.exp(-t * 3);
                 phase += freq / sampleRate;
                 const sub = Math.sin(TWO_PI * phase);
-                const noise = (Math.random() * 2 - 1) * Math.exp(-t * 6) * 0.1;
+                const noise = (rand() * 2 - 1) * Math.exp(-t * 6) * 0.1;
 
                 // Saturate the sub heavily at the beginning, smooth out later
                 const drive = 1.0 + Math.exp(-t * 2) * 4.0;
@@ -3011,6 +3373,7 @@ const MotifSamples = (() => {
             const buffer = createBuffer(0.2);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0x1B873593 ^ Motif._sampleSeed);
             let b0 = 0;
             let b1 = 0;
 
@@ -3023,7 +3386,7 @@ const MotifSamples = (() => {
                 const ping = Math.sin(TWO_PI * 380 * t) * Math.exp(-t * 40.0);
 
                 // The rattle representing white noise
-                const noise = (Math.random() * 2.0 - 1.0);
+                const noise = (rand() * 2.0 - 1.0);
 
                 // Filter the noise to make it sharp and thin
                 b0 += cutoff * (noise - b0);
@@ -3126,6 +3489,7 @@ const MotifSamples = (() => {
             const buffer = createBuffer(duration);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0xCC9E2D51 ^ Motif._sampleSeed);
 
             // Flat SVF state variables
             let lp = 0;
@@ -3147,7 +3511,7 @@ const MotifSamples = (() => {
                 const bodyOut = bodyWave * bodyAmp;
 
                 // Noise Burst
-                const noise = (Math.random() * 2.0 - 1.0);
+                const noise = (rand() * 2.0 - 1.0);
                 let noiseAmp = Math.exp(-t * 8.0) - Math.exp(-duration * 8.0);
                 if (noiseAmp < 0) {
                     noiseAmp = 0;
@@ -3207,6 +3571,7 @@ const MotifSamples = (() => {
             const buffer = createBuffer(0.5);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0x7FEB352D ^ Motif._sampleSeed);
             let phase = 0;
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
@@ -3215,9 +3580,155 @@ const MotifSamples = (() => {
 
                 // Muffled resonance + click of the beater hitting the skin
                 const body = Math.sin(TWO_PI * phase);
-                const beater = (Math.random() * 2 - 1) * Math.exp(-t * 200) * 0.1;
+                const beater = (rand() * 2 - 1) * Math.exp(-t * 200) * 0.1;
 
                 data[i] = (body + beater) * Math.exp(-t * 8);
+            }
+            return buffer;
+        },
+
+        // Two detuned shell modes with fast downward pitch settle plus bandpassed snare-wire noise; dry, punchy acoustic snare
+        "snare-acoustic": () => {
+            const buffer = createBuffer(0.32);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            const duration = data.length / sampleRate;
+            const svfF = 2 * Math.sin(Math.PI * 3800 / sampleRate);
+            const svfDamp = 1 / 1.1;
+            const rand = mulberry32(0x846CA68B ^ Motif._sampleSeed);
+            let phase1 = 0;
+            let phase2 = 0;
+            let low = 0;
+            let band = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                // Shell modes strike sharp and settle to pitch within ~10 ms
+                const settle = 1 + 0.5 * Math.exp(-t / 0.007);
+                phase1 += TWO_PI * 192 * settle / sampleRate;
+                phase2 += TWO_PI * 331 * settle / sampleRate;
+                const body = Math.sin(phase1) * Math.exp(-t / 0.085) * 0.62
+                    + Math.sin(phase2) * Math.exp(-t / 0.05) * 0.34;
+                // State-variable bandpass around 3.8 kHz shapes white noise into the wire rattle, decaying faster than the shell
+                const excite = (rand() * 2 - 1) * Math.exp(-t / 0.042);
+                low += svfF * band;
+                const high = excite - low - svfDamp * band;
+                band += svfF * high;
+                const attack = Math.min(1, t / 0.0015);
+                const fade = Math.min(1, (duration - t) / 0.008);
+                data[i] = (body + band * 0.45) * 0.5 * attack * fade;
+            }
+            return buffer;
+        },
+
+        // Cluster of inharmonic 5-9 kHz ring-mode partials with staggered onsets over highpassed noise; bright short jingle hit
+        "tambourine": () => {
+            const buffer = createBuffer(0.28);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            const duration = data.length / sampleRate;
+            const freqs = [5087, 5423, 5811, 6178, 6544, 6931, 7302, 7715, 8156, 8542, 8967, 9311];
+            const onsets = [0, 0.0016, 0.0031, 0.0009, 0.0048, 0.0024, 0.0067, 0.0041, 0.0083, 0.0058, 0.0102, 0.0075];
+            const taus = [0.09, 0.065, 0.078, 0.055, 0.083, 0.06, 0.072, 0.05, 0.068, 0.047, 0.058, 0.044];
+            const amps = [1, 0.85, 0.9, 0.7, 0.8, 0.65, 0.75, 0.55, 0.6, 0.5, 0.45, 0.4];
+            let ampSum = 0;
+            for (let p = 0; p < amps.length; p++) {
+                ampSum += amps[p];
+            }
+            const partialGain = 0.72 / ampSum;
+            const rand = mulberry32(0x2545F491 ^ Motif._sampleSeed);
+            let hp = 0;
+            let prevNoise = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                let jingles = 0;
+                for (let p = 0; p < freqs.length; p++) {
+                    const tl = t - onsets[p];
+                    if (tl < 0) continue;
+                    // Each partial gets its own onset, decay, and soft sub-ms attack to mimic separate jingles landing
+                    const env = Math.exp(-tl / taus[p]) * (1 - Math.exp(-tl / 0.0007));
+                    jingles += Math.sin(TWO_PI * freqs[p] * tl) * amps[p] * env;
+                }
+                // One-pole highpass keeps the noise as sizzle above the cluster and blocks DC
+                const noise = (rand() * 2 - 1) * Math.exp(-t / 0.025) * Math.min(1, t / 0.002);
+                hp = 0.62 * (hp + noise - prevNoise);
+                prevNoise = noise;
+                const fade = Math.min(1, (duration - t) / 0.008);
+                data[i] = (jingles * partialGain + hp * 0.18) * fade;
+            }
+            return buffer;
+        },
+
+        // Phase-accumulated 205 Hz membrane fundamental with fast downward pitch settle, two inharmonic overtones (1.5x, 2.2x) on shorter decays, plus a low-passed slap noise burst in the first 10 ms; warm woody open conga tone
+        "conga": () => {
+            const buffer = createBuffer(0.4);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            const duration = data.length / sampleRate;
+            const baseFreq = 205;
+            const rand = mulberry32(0x9E3779B9 ^ Motif._sampleSeed);
+            let phase1 = 0;
+            let phase2 = 0;
+            let phase3 = 0;
+            let noiseLP = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // struck head starts sharp and settles down to pitch within ~15 ms
+                const glide = 1 + 0.14 * Math.exp(-t / 0.012);
+                const f = baseFreq * glide;
+                phase1 += TWO_PI * f / sampleRate;
+                phase2 += TWO_PI * f * 1.5 / sampleRate;
+                phase3 += TWO_PI * f * 2.2 / sampleRate;
+
+                const fundamental = Math.sin(phase1) * Math.exp(-t / 0.11);
+                const mode2 = Math.sin(phase2) * Math.exp(-t / 0.05) * 0.45;
+                const mode3 = Math.sin(phase3) * Math.exp(-t / 0.028) * 0.28;
+
+                // one-pole low-passed noise keeps the slap dark and skin-like, gone by ~10 ms
+                noiseLP += 0.25 * ((rand() * 2 - 1) - noiseLP);
+                const slap = noiseLP * Math.exp(-t / 0.004) * 0.9;
+
+                const attack = Math.min(1, t / 0.0015);
+                const fadeOut = Math.min(1, (duration - t) / 0.03);
+                data[i] = (fundamental + mode2 + mode3 + slap) * attack * fadeOut * 0.45;
+            }
+            return buffer;
+        },
+
+        // Same modal recipe a register up: 470 Hz fundamental with quick pitch settle, inharmonic 1.5x/2.2x overtones on tight decays, and a high-passed skin snap transient; dry bright bongo pop
+        "bongo": () => {
+            const buffer = createBuffer(0.2);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            const duration = data.length / sampleRate;
+            const baseFreq = 470;
+            const rand = mulberry32(0x6C078965 ^ Motif._sampleSeed);
+            let phase1 = 0;
+            let phase2 = 0;
+            let phase3 = 0;
+            let noiseLP = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+
+                // tighter head, shorter pitch settle than the conga
+                const glide = 1 + 0.12 * Math.exp(-t / 0.008);
+                const f = baseFreq * glide;
+                phase1 += TWO_PI * f / sampleRate;
+                phase2 += TWO_PI * f * 1.5 / sampleRate;
+                phase3 += TWO_PI * f * 2.2 / sampleRate;
+
+                const fundamental = Math.sin(phase1) * Math.exp(-t / 0.045);
+                const mode2 = Math.sin(phase2) * Math.exp(-t / 0.022) * 0.5;
+                const mode3 = Math.sin(phase3) * Math.exp(-t / 0.012) * 0.3;
+
+                // high-passed noise (white minus its low-passed self) makes the snap bright
+                const white = rand() * 2 - 1;
+                noiseLP += 0.35 * (white - noiseLP);
+                const snap = (white - noiseLP) * Math.exp(-t / 0.003) * 0.8;
+
+                const attack = Math.min(1, t / 0.001);
+                const fadeOut = Math.min(1, (duration - t) / 0.015);
+                data[i] = (fundamental + mode2 + mode3 + snap) * attack * fadeOut * 0.45;
             }
             return buffer;
         },
@@ -3227,9 +3738,10 @@ const MotifSamples = (() => {
             const buffer = createBuffer(0.8);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0x5BD1E995 ^ Motif._sampleSeed);
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
-                const click = Math.random() * Math.exp(-t * 400) * 0.15; // Tine pluck
+                const click = rand() * Math.exp(-t * 400) * 0.15; // Tine pluck
                 const body = Math.sin(TWO_PI * 440 * t) + (Math.sin(TWO_PI * 880 * t) * 0.1);
                 data[i] = (click + body) * Math.exp(-t * 3);
             }
@@ -3258,12 +3770,13 @@ const MotifSamples = (() => {
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
             const f0 = 1046.5; // C6 — classic high music-box register
+            const rand = mulberry32(0xA24BAED4 ^ Motif._sampleSeed);
             let p0 = 0, p1 = 0, p2 = 0, p3 = 0;
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
 
                 // Sub-millisecond broadband gear-tooth pluck transient
-                const click = (Math.random() * 2 - 1) * Math.exp(-t * 3000) * 0.18;
+                const click = (rand() * 2 - 1) * Math.exp(-t * 3000) * 0.18;
 
                 // Inharmonic cantilever beam partial ratios; higher modes decay faster
                 p0 += f0 / sampleRate;
@@ -3314,6 +3827,7 @@ const MotifSamples = (() => {
             const buffer = createBuffer(1.5);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0x3243F6A8 ^ Motif._sampleSeed);
             let phase = 0;
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
@@ -3322,7 +3836,7 @@ const MotifSamples = (() => {
                 phase += freq / sampleRate;
 
                 const skin = Math.sin(TWO_PI * phase);
-                const mallet = (Math.random() * 2 - 1) * Math.exp(-t * 80) * 0.05; // Soft strike
+                const mallet = (rand() * 2 - 1) * Math.exp(-t * 80) * 0.05; // Soft strike
                 const attack = Math.min(1.0, t * 50); // slight ramping so it doesn't click
 
                 data[i] = (skin + mallet) * attack * Math.exp(-t * 2.5);
@@ -3356,9 +3870,10 @@ const MotifSamples = (() => {
             const buffer = createBuffer(0.4);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0x8DA6B343 ^ Motif._sampleSeed);
 
             // Randomize the base frequency slightly to give it an organic, overlapping feel
-            const baseFreq = 1200 + (Math.random() * 400);
+            const baseFreq = 1200 + (rand() * 400);
             let phaseC = 0;
             let phaseM = 0;
             for (let i = 0; i < data.length; i++) {
@@ -3429,11 +3944,12 @@ const MotifSamples = (() => {
             const buffer = createBuffer(duration);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
+            const rand = mulberry32(0xB7E15162 ^ Motif._sampleSeed);
             let bp = 0;
             let lp = 0;
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
-                const noise = (Math.random() * 2.0) - 1.0;
+                const noise = (rand() * 2.0) - 1.0;
 
                 // Envelope: Symmetrical half-sine wave fading in smoothly and peaking at 2s
                 const env = Math.sin((t / duration) * Math.PI);
@@ -3500,11 +4016,12 @@ const MotifSamples = (() => {
             const data = buffer.getChannelData(0);
 
             // 1-pole filter state
+            const rand = mulberry32(0x243F6A88 ^ Motif._sampleSeed);
             let lp = 0;
             for (let i = 0; i < data.length; i++) {
                 // Symmetrical zero-crossing envelope for volume
                 const env = Math.sin((i / data.length) * Math.PI);
-                const noise = Math.random() * 2.0 - 1.0;
+                const noise = rand() * 2.0 - 1.0;
 
                 // Sweeping cutoff frequency peaking in the middle of the sample
                 const targetCutoff = 150.0 + (env * 600.0);

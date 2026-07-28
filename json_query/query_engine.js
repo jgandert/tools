@@ -268,10 +268,7 @@ class JSONQuery {
                     return false;
                 }
                 const reserved = ["__rest", "omits", "__mod", "__ctx", "Math", "Date", "String", "Number", "Boolean", "Array", "Object", "RegExp", "console"];
-                if (reserved.includes(k)) {
-                    return false;
-                }
-                return true;
+                return !reserved.includes(k);
             },
             get: (t, k) => t[k],
             set: () => {

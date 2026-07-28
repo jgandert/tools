@@ -11,7 +11,6 @@
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
     <script src="../one.js"></script>
-    <script src="../storage.js"></script>
     <style>
         @media (min-width: 900px) {
             :root {
@@ -285,10 +284,10 @@
 </head>
 
 <body>
-<input type="checkbox" id="aside-state" class="aside-state-toggle">
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
 
 <header>
-    <label for="aside-state" class="aside-toggle-btn" aria-label="Toggle sidebar"></label>
+    <label for="aside-state" class="aside-toggle-btn"></label>
     <hgroup>
         <h1>MockML</h1>
         <p>Wireframe mockup markup language compiler & previewer</p>
@@ -317,8 +316,12 @@
         </select>
 
         <label for="dsl-input">DSL Input:</label>
+        <!-- prettier-ignore-start -->
+        <!-- beautify ignore:start -->
         <textarea id="dsl-input" placeholder="Enter wireframe DSL here..."
                   spellcheck="false"></textarea>
+        <!-- beautify ignore:end -->
+        <!-- prettier-ignore-end -->
 
         <label for="toggle-room-leaf-decor">
             <span>Show room-leaf background & border</span>
@@ -513,7 +516,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
     dslInput.addEventListener("input", () => {
         updatePreview();
         try {
-            Storage.set("mini-mock-dsl", dslInput.value);
+            one.storage.set("mini-mock-dsl", dslInput.value);
         } catch (e) {
             localStorage.setItem("mini-mock-dsl", dslInput.value);
         }
@@ -538,7 +541,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
         dslInput.value = TEMPLATES[val];
         updatePreview();
         try {
-            Storage.set("mini-mock-dsl", dslInput.value);
+            one.storage.set("mini-mock-dsl", dslInput.value);
         } catch (e) {
             localStorage.setItem("mini-mock-dsl", dslInput.value);
         }
@@ -549,7 +552,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
             dslInput.value = "";
             updatePreview();
             try {
-                Storage.set("mini-mock-dsl", "");
+                one.storage.set("mini-mock-dsl", "");
             } catch (e) {
                 localStorage.setItem("mini-mock-dsl", "");
             }
@@ -560,7 +563,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
         const isChecked = toggleRoomLeafDecor.checked;
         previewContainer.classList.toggle("show-room-leaf-decor", isChecked);
         try {
-            Storage.set("mini-mock-decor", isChecked);
+            one.storage.set("mini-mock-decor", isChecked);
         } catch (e) {
             localStorage.setItem("mini-mock-decor", isChecked);
         }
@@ -570,7 +573,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
         const isChecked = toggleContainerDecor.checked;
         previewContainer.classList.toggle("show-container-decor", isChecked);
         try {
-            Storage.set("mini-mock-container-decor", isChecked);
+            one.storage.set("mini-mock-container-decor", isChecked);
         } catch (e) {
             localStorage.setItem("mini-mock-container-decor", isChecked);
         }
@@ -580,7 +583,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
         const isChecked = toggleNotesAsFootnotes.checked;
         updatePreview();
         try {
-            Storage.set("mini-mock-notes-as-footnotes", isChecked);
+            one.storage.set("mini-mock-notes-as-footnotes", isChecked);
         } catch (e) {
             localStorage.setItem("mini-mock-notes-as-footnotes", isChecked);
         }
@@ -590,7 +593,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
         const isChecked = toggleHideNotes.checked;
         updatePreview();
         try {
-            Storage.set("mini-mock-hide-notes", isChecked);
+            one.storage.set("mini-mock-hide-notes", isChecked);
         } catch (e) {
             localStorage.setItem("mini-mock-hide-notes", isChecked);
         }
@@ -620,7 +623,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
     async function init() {
         let showDecor = false;
         try {
-            const savedDecor = await Storage.get("mini-mock-decor");
+            const savedDecor = await one.storage.get("mini-mock-decor");
             if (savedDecor !== undefined && savedDecor !== null) {
                 showDecor = savedDecor === true || savedDecor === "true";
             }
@@ -635,9 +638,9 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
 
         let showContainerDecor = false;
         try {
-            let savedDecor = await Storage.get("mini-mock-container-decor");
+            let savedDecor = await one.storage.get("mini-mock-container-decor");
             if (savedDecor === undefined || savedDecor === null) {
-                savedDecor = await Storage.get("mini-mock-container-borders");
+                savedDecor = await one.storage.get("mini-mock-container-borders");
             }
             if (savedDecor !== undefined && savedDecor !== null) {
                 showContainerDecor = savedDecor === true || savedDecor === "true";
@@ -656,7 +659,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
 
         let notesAsFootnotes = false;
         try {
-            const savedNotesAsFootnotes = await Storage.get("mini-mock-notes-as-footnotes");
+            const savedNotesAsFootnotes = await one.storage.get("mini-mock-notes-as-footnotes");
             if (savedNotesAsFootnotes !== undefined && savedNotesAsFootnotes !== null) {
                 notesAsFootnotes = savedNotesAsFootnotes === true || savedNotesAsFootnotes === "true";
             }
@@ -670,7 +673,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
 
         let hideNotes = false;
         try {
-            const savedHideNotes = await Storage.get("mini-mock-hide-notes");
+            const savedHideNotes = await one.storage.get("mini-mock-hide-notes");
             if (savedHideNotes !== undefined && savedHideNotes !== null) {
                 hideNotes = savedHideNotes === true || savedHideNotes === "true";
             }
@@ -684,7 +687,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
 
         let saved = null;
         try {
-            saved = await Storage.get("mini-mock-dsl");
+            saved = await one.storage.get("mini-mock-dsl");
         } catch (e) {
             console.error("Storage load failed:", e);
             saved = localStorage.getItem("mini-mock-dsl");
@@ -695,7 +698,7 @@ spacer() | ["removed from queue " link(undo)  <- 'notification' :@center]:all | 
         } else if (saved.includes(":col") || saved.includes(":row")) {
             saved = TEMPLATES.dashboard;
             try {
-                await Storage.set("mini-mock-dsl", saved);
+                await one.storage.set("mini-mock-dsl", saved);
             } catch (e) {
                 localStorage.setItem("mini-mock-dsl", saved);
             }

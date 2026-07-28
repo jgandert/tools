@@ -115,6 +115,7 @@
         /* Material Button Style */
         button {
             height: 32px;
+            min-height: 0;
             padding: 0 12px;
             background: var(--surface);
             border: 1px solid var(--border);
@@ -397,7 +398,7 @@
             font-weight: 600;
             white-space: nowrap;
             border-left: 4px solid var(--border);
-            box-shadow: var(--border) -4px 0px 5px 0px;
+            box-shadow: var(--border) -4px 0 5px 0;
         }
 
         .cell.key.is-index {
@@ -577,6 +578,7 @@
         }
 
         /* Accessibility: Visually Hidden (for screen readers only) */
+        .sr-only,
         .visually-hidden {
             position: absolute;
             width: 1px;
@@ -590,14 +592,6 @@
         }
 
         /* ARIA Live Region (hidden but announced) */
-        #aria-status {
-            position: absolute;
-            left: -10000px;
-            width: 1px;
-            height: 1px;
-            overflow: hidden;
-        }
-
         /* --- COMMAND PALETTE --- */
         .cmd-palette-overlay {
             position: fixed;
@@ -857,7 +851,7 @@
 
 <body>
 <!-- ARIA Live Region for dynamic announcements -->
-<div id="aria-status" aria-live="polite" aria-atomic="true"></div>
+<div id="aria-status" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
 <header>
     <!-- File Operations -->
@@ -2370,7 +2364,11 @@
             const s = k.querySelector("span");
             if (s) {
                 s.focus();
-                document.execCommand("selectAll", false, null);
+                const range = document.createRange();
+                range.selectNodeContents(s);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
             }
         }
         setDirty(true);
@@ -2807,7 +2805,6 @@
     window.addEventListener("beforeunload", (e) => {
         if (isDirty && !lsToggle.checked) {
             e.preventDefault();
-            e.returnValue = "";
         }
     });
 

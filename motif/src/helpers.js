@@ -175,12 +175,14 @@ export function applyParamModulation(instance, param, value, modulatorPropName, 
     } else if (value && value.isRamp === true) {
         const fromVal = mapValueFn ? mapValueFn(value.from) : value.from;
         const toVal = mapValueFn ? mapValueFn(value.to) : value.to;
+        if (!Number.isFinite(fromVal) || !Number.isFinite(toVal)) return;
         const d = duration !== undefined ? duration : (value.duration !== undefined ? parseDurationToSeconds(value.duration, Motif.tempo, Motif.beatsPerBar) : 0.05);
 
         param.setValueAtTime(fromVal, time);
         param.linearRampToValueAtTime(toVal, time + d);
     } else if (typeof value === "number" && !isNaN(value)) {
         const finalVal = mapValueFn ? mapValueFn(value) : value;
+        if (!Number.isFinite(finalVal)) return;
         param.setValueAtTime(finalVal, time);
     }
 }
@@ -191,11 +193,13 @@ export function applyParamModulation(instance, param, value, modulatorPropName, 
  * @returns {() => number} Random float generator between 0.0 (inclusive) and 1.0 (exclusive).
  */
 export function mulberry32(a) {
+    let state = a >>> 0;
     return function() {
-        var t = a += 0x6D2B79F5;
-        t = Math.imul(t ^ t >>> 15, t | 1);
-        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        state = (state + 0x6D2B79F5) >>> 0;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
 }
 

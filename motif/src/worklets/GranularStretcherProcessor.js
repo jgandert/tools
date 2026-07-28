@@ -33,7 +33,14 @@ class GranularStretcherProcessor extends AudioWorkletProcessor {
                 }
             }
             if (data.type === "STOP_AT") {
-                this._endTime = data.endTime;
+                if (data.endTime === undefined) {
+                    this._done = true;
+                } else {
+                    this._endTime = data.endTime;
+                }
+            }
+            if (data.type === "STOP") {
+                this._done = true;
             }
         };
     }
@@ -94,9 +101,16 @@ class GranularStretcherProcessor extends AudioWorkletProcessor {
                 }
             }
 
-            // 2. Sum contribution of all active grains
+            // 2. Sum contribution of all active grains and compact expired ones
+            //    in place. Survivors are shifted down to writeIdx and the array is
+            //    truncated once per output sample, reusing the same backing store —
+            //    the previous `this.grains.filter(...)` allocated a fresh array on
+            //    every sample (128 allocations per quantum on the audio thread).
+            //    writeIdx <= g always, so a survivor is never clobbered before it
+            //    is read, and iteration/summation order is identical to filter().
             let leftSum = 0;
             let rightSum = 0;
+            let writeIdx = 0;
 
             for (let g = 0; g < this.grains.length; g++) {
                 const grain = this.grains[g];
@@ -116,10 +130,13 @@ class GranularStretcherProcessor extends AudioWorkletProcessor {
                 rightSum += rightVal * windowVal;
 
                 grain.age++;
+
+                if (grain.age < grain.length) {
+                    this.grains[writeIdx++] = grain;
+                }
             }
 
-            // Remove grains that reach their length limit
-            this.grains = this.grains.filter(g => g.age < g.length);
+            this.grains.length = writeIdx;
 
             leftChan[i] = leftSum;
             if (output[1]) rightChan[i] = rightSum;

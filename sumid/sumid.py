@@ -90,8 +90,8 @@ def sum_id_from_time_ns_and_str_seed(time_ns: int, seed: str) -> str:
     return int_to_sum_id_base((time_ns << 160) + _str_to_rand_bits(seed))
 
 
-def get_time_ns_from_sum_id(sum_id: int) -> int:
-    return sum_id >> 160
+def get_time_ns_from_sum_id(sum_id_val: int) -> int:
+    return sum_id_val >> 160
 
 
 _MERGE_OVERFLOW_BITS = 18  # extra time precision borrowed from entropy
@@ -105,13 +105,13 @@ _LOG_FRAC_BITS = 16
 _LOG_FRAC_MASK = (1 << _LOG_FRAC_BITS) - 1
 
 
-def _fixed_log2(x: int) -> int:
-    """Fixed-point log2 with _LOG_FRAC_BITS fractional bits.  x must be >= 1."""
-    k = x.bit_length() - 1  # floor(log2(x))
+def _fixed_log2(x_val: int) -> int:
+    """Fixed-point log2 with _LOG_FRAC_BITS fractional bits.  x_val must be >= 1."""
+    k = x_val.bit_length() - 1  # floor(log2(x))
     if k >= _LOG_FRAC_BITS:
-        frac = (x >> (k - _LOG_FRAC_BITS)) & _LOG_FRAC_MASK
+        frac = (x_val >> (k - _LOG_FRAC_BITS)) & _LOG_FRAC_MASK
     else:
-        frac = (x << (_LOG_FRAC_BITS - k)) & _LOG_FRAC_MASK
+        frac = (x_val << (_LOG_FRAC_BITS - k)) & _LOG_FRAC_MASK
     return (k << _LOG_FRAC_BITS) + frac
 
 
