@@ -489,6 +489,63 @@ A close a
 }
 
 // =============================================================================
+// group arithmetic (+) and group references inside [ ]
+// =============================================================================
+console.log("\n=== group arithmetic ===");
+{
+    const dsl = `
+canvas 500x500
+room a area=100
+room b area=100
+room c area=100
+room d area=100
+g1 = [a, b]
+g2 = [c]
+combo = g1 + g2 + [d]
+nested = [g1, d]
+overlap = g1 + [a]
+combo at edge required
+nested enclosed
+overlap at north
+[g2, d] not at south
+`;
+    const r = parseDSL(dsl);
+    assert(r.errors.length === 0, `group-arith: no errors (got: ${JSON.stringify(r.errors)})`);
+
+    const rulesOf = (id, type) => r.modules.find(m => m.id === id)?.rules.filter(x => x.type === type) ?? [];
+
+    for (const id of ["a", "b", "c", "d"]) {
+        assert(rulesOf(id, "at").some(x => x.dir === "edge" && x.required),
+            `group-arith: '${id}' gets at-edge from 'combo = g1 + g2 + [d]'`);
+    }
+
+    for (const id of ["a", "b", "d"]) {
+        assert(rulesOf(id, "enclosed").length === 1,
+            `group-arith: '${id}' gets enclosed from 'nested = [g1, d]'`);
+    }
+    assert(rulesOf("c", "enclosed").length === 0, "group-arith: 'c' not in nested");
+
+    assert(rulesOf("a", "at").filter(x => x.dir === "north").length === 1,
+        "group-arith: overlap 'g1 + [a]' dedupes — 'a' gets at-north once");
+
+    for (const id of ["c", "d"]) {
+        assert(rulesOf(id, "not_at").some(x => x.dir === "south"),
+            `group-arith: '${id}' gets not-at-south from inline '[g2, d]'`);
+    }
+    assert(rulesOf("a", "not_at").length === 0, "group-arith: 'a' not in '[g2, d]'");
+}
+
+console.log("\n=== group arithmetic errors ===");
+{
+    const r1 = parseDSL("canvas 500x500\nroom a area=100\ng = [a] + + [a]");
+    assert(r1.errors.some(e => e.includes("empty term")), "group-arith-err: empty term reported");
+
+    const r2 = parseDSL("canvas 500x500\nroom a area=100\ng = [a + a]");
+    assert(r2.errors.some(e => e.includes("cannot parse group term")),
+        `group-arith-err: malformed term reported (got: ${JSON.stringify(r2.errors)})`);
+}
+
+// =============================================================================
 // ratio_max normalization (ratio_max ≥ 1, orientation-agnostic; target ratio untouched)
 // =============================================================================
 console.log("\n=== ratio_max normalization ===");
@@ -508,6 +565,373 @@ console.log("\n=== ratio_max normalization ===");
     const targetRatio = parseDSL("canvas 100x100\nroom A area=100000 ratio=1:6");
     const Ar = targetRatio.modules.find(m => m.id === "A");
     assert(Math.abs((Ar?.ratio ?? 0) - (1 / 6)) < 1e-9, `ratio: target ratio=1:6 stays raw n/d=0.1667 (got ${Ar?.ratio})`);
+}
+
+// =============================================================================
+// algo selection
+// =============================================================================
+console.log("\n=== algo selection ===");
+{
+    const absent = parseDSL("room A area=100");
+    assert(absent.config.algo === undefined, "algo: absent stays unset");
+
+    const sa = parseDSL("algo sa\nroom A area=100");
+    assert(sa.config.algo === "sa", `algo: 'sa' parsed (got ${sa.config.algo})`);
+    assert(sa.errors.length === 0, "algo: 'sa' has no errors");
+
+    const grid = parseDSL("algo grid\nroom A area=100");
+    assert(grid.config.algo === "grid", `algo: 'grid' parsed (got ${grid.config.algo})`);
+    assert(grid.errors.length === 0, "algo: 'grid' has no errors");
+
+    for (const invalid of ["algo", "algo anneal", "algo sa extra", "algo grid extra"]) {
+        const parsed = parseDSL(`${invalid}\nroom A area=100`);
+        assert(parsed.errors.some(e => e.includes("'algo' expects exactly 'sa' or 'grid'")),
+            `algo: '${invalid}' is rejected (got: ${JSON.stringify(parsed.errors)})`);
+        assert(parsed.config.algo === undefined, `algo: '${invalid}' stays unset`);
+    }
+
+    const nested = parseDSL("algo grid\nroom P area=100\ninside P {\nalgo sa\nroom C area=50\n}");
+    assert(nested.errors.some(e => e.includes("'algo' is not allowed inside an 'inside' block")),
+        `algo: inside override is rejected (got: ${JSON.stringify(nested.errors)})`);
+    const parent = nested.modules.find(m => m.id === "P");
+    assert(parent?.inside?.config?.algo === undefined, "algo: inside config stays unset");
+}
+
+// =============================================================================
+// shapes / shape (grid optimizer)
+// =============================================================================
+console.log("\n=== shapes / shape ===");
+{
+    const rect = parseDSL("canvas 100x100\nshapes rect\nroom A area=100");
+    assert(rect.config.shapes === "rect", `shapes: global 'rect' parsed (got ${rect.config.shapes})`);
+    assert(rect.errors.length === 0, "shapes: global 'rect' has no errors");
+
+    const free = parseDSL("canvas 100x100\nshapes free\nroom A area=100");
+    assert(free.config.shapes === "free", `shapes: global 'free' parsed (got ${free.config.shapes})`);
+
+    const required = parseDSL("canvas 100x100\nshape rect required\nroom A area=100");
+    assert(required.config.shapes === "rect" && required.config.shapeRequired === true,
+        "shape: global required rectangle parsed");
+    assert(required.errors.length === 0, "shape: global required rectangle has no errors");
+
+    const bad = parseDSL("canvas 100x100\nshapes round\nroom A area=100");
+    assert(bad.errors.some(e => e.includes("shapes")), "shapes: invalid value is an error");
+
+    const missing = parseDSL("canvas 100x100\nshapes\nroom A area=100");
+    assert(missing.errors.some(e => e.includes("shapes")), "shapes: missing value is an error");
+
+    const badGlobal = parseDSL("canvas 100x100\nshape rect\nroom A area=100");
+    assert(badGlobal.errors.length > 0, "shape: incomplete global required form is an error");
+
+    const namedShape = parseDSL("room shape area=100\nroom A area=100\nshape connect A");
+    assert(namedShape.errors.length === 0, "shape: existing room name remains valid");
+
+    const roomShape = parseDSL("canvas 100x100\nroom A area=100 shape=free\nroom B area=100 shape=rect\nroom C area=100 shape=rect:required");
+    const A = roomShape.modules.find(m => m.id === "A");
+    const B = roomShape.modules.find(m => m.id === "B");
+    const C = roomShape.modules.find(m => m.id === "C");
+    assert(A?.shape === "free", `shape: room param 'free' parsed (got ${A?.shape})`);
+    assert(B?.shape === "rect", `shape: room param 'rect' parsed (got ${B?.shape})`);
+    assert(C?.shape === "rect" && C?.shapeRequired === true,
+        "shape: per-room required rectangle parsed");
+
+    const badRoom = parseDSL("canvas 100x100\nroom A area=100 shape=blob");
+    assert(badRoom.errors.some(e => e.includes("shape")), "shape: invalid room value is an error");
+
+    const badRequiredRoom = parseDSL("canvas 100x100\nroom A area=100 shape=free:required");
+    assert(badRequiredRoom.errors.some(e => e.includes("rect:required")),
+        "shape: required free-form room is rejected");
+
+    const typo = parseDSL("canvas 100x100\nroom A area=100 shap=rect");
+    assert(typo.errors.some(e => e.includes("did you mean 'shape'")), "shape: typo suggestion offered");
+
+    const inherited = parseDSL("canvas 100x100\nshapes free\nroom P area=100\ninside P {\nroom C area=10\n}");
+    const P = inherited.modules.find(m => m.id === "P");
+    assert(P?.inside?.config?.shapes === "free", `shapes: inherited into inside block (got ${P?.inside?.config?.shapes})`);
+
+    const inheritedRequired = parseDSL("shape rect required\nroom P area=100\ninside P {\nroom C area=10\n}");
+    const requiredParent = inheritedRequired.modules.find(m => m.id === "P");
+    assert(requiredParent?.inside?.config?.shapeRequired === true,
+        "shape: global required rectangle inherited into inside block");
+}
+
+// =============================================================================
+// SA advisory weight semantics warning
+// =============================================================================
+console.log("\n=== SA advisory weight semantics warning ===");
+{
+    const weighted = parseDSL("room A area=100\nroom B area=100\nA far B weight=5");
+    const weightWarnings = weighted.warnings.filter(warning => warning.includes("SA advisory weight=N"));
+    assert(weightWarnings.length === 1, `weight-warning: emitted once (got ${JSON.stringify(weighted.warnings)})`);
+    assert(weightWarnings[0].includes("min(1 + log2(N), 25)")
+        && weightWarnings[0].includes("min(initial_t / T / 100, 1)"),
+        "weight-warning: names compressed target and temperature ramp separately");
+    assert(weightWarnings[0].includes("weight=5 therefore targets 3.322, starts at 1.023")
+        && weightWarnings[0].includes("final per-rule scores use 3.322"),
+        "weight-warning: gives concrete weight=5 target/start/report example");
+    assert(weightWarnings[0].includes("required bypasses compression and ramp"),
+        "weight-warning: distinguishes required-rule semantics");
+
+    const nested = parseDSL("room P area=200\ninside P {\nroom A area=100\nroom B area=100\nA close B weight=0.5\n}");
+    assert(nested.warnings.filter(warning => warning.includes("SA advisory weight=N")).length === 1,
+        "weight-warning: nested advisory weights produce one root warning");
+
+    const requiredOnly = parseDSL("room A area=100\nroom B area=100\nA far B weight=5 required");
+    assert(!requiredOnly.warnings.some(warning => warning.includes("SA advisory weight=N")),
+        "weight-warning: required-only weights do not produce advisory warning");
+
+    const grid = parseDSL("algo grid\nroom A area=100\nroom B area=100\nA far B weight=5");
+    assert(!grid.warnings.some(warning => warning.includes("SA advisory weight=N")),
+        "weight-warning: grid DSL does not receive SA warning");
+
+    for (const invalidWeight of ["0", "-1", "nope"]) {
+        const invalid = parseDSL(`room A area=100\nroom B area=100\nA far B weight=${invalidWeight}`);
+        assert(invalid.errors.some(error => error.includes("'weight'")),
+            `weight-warning: invalid weight '${invalidWeight}' is rejected`);
+    }
+}
+
+// =============================================================================
+// Parse-time feasibility lints
+// =============================================================================
+console.log("\n=== parse-time feasibility lints ===");
+{
+    const frontage = parseDSL(`
+        canvas 1400x1100
+        ratio_max 5:3
+        side_min 175
+        cwl 125
+        room foyer
+        room hallway
+        room loud area=300000
+        hub = [foyer, hallway]
+        inside loud {
+            room child_1 area=100000
+            room child_2 area=100000
+            room child_3 area=100000
+            [child_1, child_2, child_3] connect any hub required
+        }
+        loud connect any hub required
+    `);
+    const frontageWarnings = frontage.warnings.filter(warning => warning.includes("[FEASIBILITY_INSIDE_FRONTAGE]"));
+    assert(frontageWarnings.length === 1,
+        `feasibility-frontage: one deduplicated warning (got ${JSON.stringify(frontage.warnings)})`);
+    assert(["top / loud", "top / loud / child_1", "top / loud / child_2", "top / loud / child_3", "top / foyer", "top / hallway"]
+        .every(path => frontageWarnings[0].includes(path)),
+    "feasibility-frontage: warning names parent, children, and target room paths");
+    assert(frontageWarnings[0].includes("734.8 cm")
+        && frontageWarnings[0].includes("707.1 cm")
+        && frontageWarnings[0].includes("shortfall 27.7 cm")
+        && frontageWarnings[0].includes("area=300000 cm²")
+        && frontageWarnings[0].includes("ratio_max=1.667"),
+    `feasibility-frontage: warning quantifies inherited geometry conflict (got ${frontageWarnings[0]})`);
+    assert(frontage.errors.length === 0, `feasibility-frontage: fixture parses (got ${JSON.stringify(frontage.errors)})`);
+    assert(frontage.modules.find(module => module.id === "loud")?.inside?.modules.every(child => child.ratioMax === 5 / 3 && child.sideMin === 175),
+        "feasibility-frontage: lint reads inherited geometry without changing parsed children");
+    assert(!JSON.stringify(frontage.modules).includes("FEASIBILITY_"),
+        "feasibility-frontage: lint does not annotate parser AST");
+
+    const duplicateRule = parseDSL(`
+        ratio_max 1:1
+        side_min 60
+        room outside area=10000
+        room parent area=10000
+        inside parent {
+            room child
+            child connect outside required
+            child connect outside required
+        }
+    `);
+    assert(!duplicateRule.warnings.some(warning => warning.includes("[FEASIBILITY_INSIDE_FRONTAGE]")),
+        "feasibility-frontage: duplicate child constraint does not double-count frontage");
+
+    const feasibleFrontage = parseDSL(`
+        ratio_max 1:1
+        side_min 50
+        room outside area=10000
+        room parent area=40000
+        inside parent {
+            room child_a area=10000
+            room child_b area=10000
+            [child_a, child_b] connect outside required
+        }
+    `);
+    assert(!feasibleFrontage.warnings.some(warning => warning.includes("[FEASIBILITY_INSIDE_FRONTAGE]")),
+        "feasibility-frontage: exact-fit requested frontage is not warned");
+
+    const nestedFrontage = parseDSL(`
+        ratio_max 1:1
+        side_min 60
+        room outer area=40000
+        inside outer {
+            room outside area=10000
+            room middle area=10000
+            inside middle {
+                room child_a
+                room child_b
+                [child_a, child_b] connect outside required
+            }
+        }
+    `);
+    const nestedFrontageWarnings = nestedFrontage.warnings.filter(warning => warning.includes("[FEASIBILITY_INSIDE_FRONTAGE]"));
+    assert(nestedFrontageWarnings.length === 1 && nestedFrontageWarnings[0].includes("top / outer / middle")
+        && nestedFrontageWarnings[0].includes("top / outer / middle / child_a")
+        && nestedFrontageWarnings[0].includes("top / outer / outside"),
+    `feasibility-frontage: lint recurses with fully scoped paths (got ${JSON.stringify(nestedFrontageWarnings)})`);
+
+    const subjectAnyFrontage = parseDSL(`
+        ratio_max 1:1
+        side_min 60
+        room outside area=10000
+        room parent area=10000
+        inside parent {
+            room child_a
+            room child_b
+            any [child_a, child_b] connect outside required
+        }
+    `);
+    assert(!subjectAnyFrontage.warnings.some(warning => warning.includes("[FEASIBILITY_INSIDE_FRONTAGE]")),
+        "feasibility-frontage: subject-any group contributes one feasible frontage requirement");
+
+    const infeasibleSubjectAny = parseDSL(`
+        ratio_max 1:1
+        side_min 60
+        room outside area=10000
+        room parent area=2500
+        inside parent {
+            room child_a
+            room child_b
+            any [child_a, child_b] connect outside required
+        }
+    `);
+    const subjectAnyWarnings = infeasibleSubjectAny.warnings.filter(warning => warning.includes("[FEASIBILITY_INSIDE_FRONTAGE]"));
+    assert(subjectAnyWarnings.length === 1 && subjectAnyWarnings[0].includes("any [top / parent / child_a, top / parent / child_b] adds at least 60 cm")
+        && subjectAnyWarnings[0].includes("shortfall 10 cm"),
+    `feasibility-frontage: infeasible subject-any group contributes one conservative requirement (got ${JSON.stringify(subjectAnyWarnings)})`);
+
+    const overlappingSubjectAny = parseDSL(`
+        ratio_max 1:1
+        side_min 60
+        room outside area=10000
+        room parent area=10000
+        inside parent {
+            room child_a
+            room child_b
+            any [child_a, child_b] connect outside required
+            any [child_a, child_b] connect outside required
+        }
+    `);
+    assert(!overlappingSubjectAny.warnings.some(warning => warning.includes("[FEASIBILITY_INSIDE_FRONTAGE]")),
+        "feasibility-frontage: overlapping subject-any groups are not double-counted");
+
+    const flexibleFrontage = parseDSL(`
+        ratio_max 1:1
+        side_min 150 flexible
+        cwl 20
+        room outside area=10000
+        room parent area=10000
+        inside parent {
+            room child_a
+            room child_b
+            [child_a, child_b] connect outside required
+        }
+    `);
+    assert(!flexibleFrontage.warnings.some(warning => warning.includes("[FEASIBILITY_INSIDE_FRONTAGE]")),
+        "feasibility-frontage: flexible side_min is not claimed as required frontage");
+
+    const unknownFrontage = parseDSL(`
+        side_min 100
+        room outside area=10000
+        room parent area=10000
+        inside parent {
+            room child_a
+            room child_b
+            [child_a, child_b] connect outside required
+        }
+    `);
+    assert(!unknownFrontage.warnings.some(warning => warning.includes("[FEASIBILITY_INSIDE_FRONTAGE]")),
+        "feasibility-frontage: unknown parent area/ratio does not produce a feasibility claim");
+
+    const advisoryFrontage = parseDSL(`
+        ratio_max 1:1
+        side_min 60
+        room outside area=10000
+        room parent area=10000
+        inside parent {
+            room child_a
+            room child_b
+            [child_a, child_b] connect outside
+        }
+    `);
+    assert(!advisoryFrontage.warnings.some(warning => warning.includes("[FEASIBILITY_INSIDE_FRONTAGE]")),
+        "feasibility-frontage: advisory cross-boundary connects do not produce required-frontage warning");
+
+    const gridFrontage = parseDSL(`
+        algo grid
+        ratio_max 1:1
+        side_min 60
+        room outside area=10000
+        room parent area=10000
+        inside parent {
+            room child_a
+            room child_b
+            [child_a, child_b] connect outside required
+        }
+    `);
+    assert(!gridFrontage.warnings.some(warning => warning.includes("[FEASIBILITY_INSIDE_FRONTAGE]")),
+        "feasibility-frontage: SA rectangular bound is not claimed for grid geometry");
+
+    const contradictoryAt = parseDSL(`
+        room outer area=10000
+        inside outer {
+            room middle area=5000
+            inside middle {
+                room leaf area=1000
+                leaf at north required
+                leaf at south required
+            }
+        }
+    `);
+    const atWarnings = contradictoryAt.warnings.filter(warning => warning.includes("[FEASIBILITY_REQUIRED_AT_CONFLICT]"));
+    assert(atWarnings.length === 1 && atWarnings[0].includes("top / outer / middle / leaf")
+        && atWarnings[0].includes("at north required") && atWarnings[0].includes("at south required")
+        && atWarnings[0].includes("full scope height"),
+    `feasibility-at: recursive warning names room path and opposing constraints (got ${JSON.stringify(atWarnings)})`);
+
+    const compatibleAt = parseDSL(`
+        room A area=1000
+        room B area=1000
+        room C area=1000
+        A at north east required
+        B at north
+        B at south
+        any [B, C] at north south required
+    `);
+    assert(!compatibleAt.warnings.some(warning => warning.includes("[FEASIBILITY_REQUIRED_AT_CONFLICT]")),
+        "feasibility-at: perpendicular required, advisory opposing, and subject-any pins avoid false conflict warning");
+
+    const areaOverflow = parseDSL(`
+        canvas 100x100
+        room A area=6000
+        room B area=5000
+        room unknown
+    `);
+    const areaWarnings = areaOverflow.warnings.filter(warning => warning.includes("[FEASIBILITY_AREA_OVERFLOW]"));
+    assert(areaWarnings.length === 1 && areaWarnings[0].includes("top / A") && areaWarnings[0].includes("top / B")
+        && areaWarnings[0].includes("11000 cm²") && areaWarnings[0].includes("10000 cm²")
+        && areaWarnings[0].includes("shortfall 1000 cm²"),
+    `feasibility-area: strict-canvas warning names known rooms and quantifies shortfall (got ${JSON.stringify(areaWarnings)})`);
+
+    for (const dsl of [
+        "canvas 100x100\nroom A area=6000\nroom B area=4000",
+        "canvas 100x100 flexible\nroom A area=6000\nroom B area=5000",
+        "algo grid\ncanvas 100x100\nroom A area=6000\nroom B area=5000",
+        "room A area=6000\nroom B area=5000",
+    ]) {
+        const parsed = parseDSL(dsl);
+        assert(!parsed.warnings.some(warning => warning.includes("[FEASIBILITY_AREA_OVERFLOW]")),
+            `feasibility-area: equal, flexible, grid, or unknown canvas avoids overflow claim (got ${JSON.stringify(parsed.warnings)})`);
+    }
 }
 
 // =============================================================================

@@ -22,8 +22,9 @@ const PENALTIES = {
     NOT_AT_EDGE: 100000000, // not_at edge penetration normalized by canvasDiag²
     CANVAS: 100000000,      // canvas overflow normalized by (canvasW², canvasH²) → dimensionless
     ASPECT: 10000,          // layout aspect ratio > 2.0 per unit
-    ROOM_ASPECT: 50000,     // room aspect ratio > ratioMax per unit²
-    SIDE_MIN: 100000000,    // room dimension < sideMin, normalized by canvasDiag²
+    AREA_MISFIT: 0.5,       // room area absolute error per cm²
+    ROOM_ASPECT: 2500000,   // room aspect ratio excess, linear + quadratic
+    SIDE_MIN: 10000000,     // room side shortfall ratio, linear + quadratic
     INVALID_SOFT: 500000,   // crossing invalid NPE states (allows transitions)
     INVALID_HARD: 10000000, // hard-invalid NPE in best tracking
     DEFAULT_SIDE_MIN: 50,   // fallback for module.sideMin (cm)
@@ -32,11 +33,22 @@ const PENALTIES = {
 
 const CONNECT_VIOLATION_FLOOR = 0.1;
 
+// Required attempts are still ranked first. This only keeps advisory connections competitive while SA searches.
+const SOFT_CONNECT_VIOLATION_FLOOR = 8;
+
+const SOFT_RULE_WEIGHT_CAP = PENALTIES.REQUIRED_BOOST / 2;
+
+// Advisory far reaches zero at its configured distance cutoff. Required far retains the inverse-distance curve.
+const FAR_MAX_DISTANCE_FRACTION = 1;
+const FAR_CUTOFF_FRACTION_WITH_SOFT_CONNECT = 0.5;
+
 const MIN_ACCEPT_RATE = 0.05;
 const FREEZE_T_FRACTION = 0.01;
 const INITIAL_DELTA_FALLBACK = 10000;
 const CWM_CAP = 100;
 const REPAIR_MAX_MOVES = 300;
+const LONG_RANGE_MOVE_PROBABILITY = 0.2;
+const GEOMETRY_EPSILON = 1e-6;
 
 // Extra required-retry attempts explored after the first naturally-satisfied one.
 // Stopping at the first satisfied attempt returns whatever cost that attempt happened
@@ -224,6 +236,53 @@ function applyM3(npe, randomFn = Math.random) {
 }
 
 /**
+ * Move M4: Swap two non-neighboring operands in operand order.
+ * Operand-only swaps preserve both NPE balloting and skewed properties.
+ */
+function applyM4(npe, randomFn = Math.random) {
+    const operandPositions = [];
+    for (let i = 0; i < npe.length; i++) {
+        if (isOperand(npe[i])) {
+            operandPositions.push(i);
+        }
+    }
+
+    const candidates = [];
+    for (let first = 0; first < operandPositions.length - 2; first++) {
+        for (let second = first + 2; second < operandPositions.length; second++) {
+            candidates.push([operandPositions[first], operandPositions[second]]);
+        }
+    }
+    if (!candidates.length) {
+        return null;
+    }
+
+    const positions = candidates[Math.floor(randomFn() * candidates.length)];
+    const [first, second] = positions;
+    const tmp = npe[first];
+    npe[first] = npe[second];
+    npe[second] = tmp;
+    return { type: "M4", positions };
+}
+
+function applyRandomMove(npe, randomFn = Math.random) {
+    const roll = randomFn();
+    if (roll < LONG_RANGE_MOVE_PROBABILITY) {
+        return applyM4(npe, randomFn) ?? applyM1(npe, randomFn);
+    }
+
+    const localMove = Math.floor(((roll - LONG_RANGE_MOVE_PROBABILITY)
+        / (1 - LONG_RANGE_MOVE_PROBABILITY)) * 3);
+    if (localMove === 0) {
+        return applyM1(npe, randomFn);
+    }
+    if (localMove === 1) {
+        return applyM2(npe, randomFn);
+    }
+    return applyM3(npe, randomFn);
+}
+
+/**
  * Prunes a curve to keep only Pareto-optimal shapes (minimizing w and h).
  */
 function pruneCurve(curve) {
@@ -319,33 +378,73 @@ function assignCoordinatesInPlace(node, shape, x, y, W, H, layoutMap) {
     }
 }
 
+function connectWallRequirement(A, B, rule, config = {}) {
+    const configured = rule.cwl ?? config.cwl ?? 0;
+    if (!rule.insideFrontage) {
+        return configured;
+    }
+
+    const epsilon = REQUIRED_SATISFIED_EPS;
+    const horizontalAdjacency = Math.abs(A.x + A.w - B.x) < epsilon || Math.abs(B.x + B.w - A.x) < epsilon;
+    if (horizontalAdjacency) {
+        return Math.max(configured, A.h);
+    }
+    const verticalAdjacency = Math.abs(A.y + A.h - B.y) < epsilon || Math.abs(B.y + B.h - A.y) < epsilon;
+    if (verticalAdjacency) {
+        return Math.max(configured, A.w);
+    }
+    return configured;
+}
+
+function effectiveRuleWeight(rule, uwm = 1) {
+    const baseWeight = rule.weight || 1;
+    if (rule.required) {
+        return baseWeight * PENALTIES.REQUIRED_BOOST;
+    }
+
+    const compressedWeight = baseWeight <= 1
+        ? baseWeight
+        : Math.min(1 + Math.log2(baseWeight), SOFT_RULE_WEIGHT_CAP);
+    return 1 + (compressedWeight - 1) * uwm;
+}
+
+function advisoryWeightSemantics() {
+    const exampleRawWeight = 5;
+    const exampleTargetWeight = Math.min(1 + Math.log2(exampleRawWeight), SOFT_RULE_WEIGHT_CAP);
+    return {
+        mode: "compressed-target-temperature-ramp",
+        compressedTargetFormula: `N <= 1 ? N : min(1 + log2(N), ${SOFT_RULE_WEIGHT_CAP})`,
+        annealingEffectiveFormula: `1 + (target - 1) * min(initial_t / T / ${CWM_CAP}, 1)`,
+        initialOffsetFraction: 1 / CWM_CAP,
+        fullTargetTemperatureFraction: 1 / CWM_CAP,
+        finalReportUses: "compressed-target",
+        requiredWeightFormula: `N * ${PENALTIES.REQUIRED_BOOST}`,
+        requiredBypasses: ["compression", "temperature-ramp"],
+        example: {
+            rawWeight: exampleRawWeight,
+            compressedTargetWeight: exampleTargetWeight,
+            initialEffectiveWeight: 1 + (exampleTargetWeight - 1) / CWM_CAP,
+        },
+    };
+}
+
 function penaltyConnect(room, rule, layoutMap, config, cwm, canvasDiagSq, uwm = 1, canvasDiag = Math.sqrt(canvasDiagSq)) {
-    const baseW = rule.weight || 1;
-    const weight = rule.required ? baseW * PENALTIES.REQUIRED_BOOST : 1 + (baseW - 1) * uwm;
+    const weight = effectiveRuleWeight(rule, uwm);
+    const violationFloor = rule.required ? CONNECT_VIOLATION_FLOOR : SOFT_CONNECT_VIOLATION_FLOOR;
     const targets = rule.target ?? [];
-    const cwl = rule.cwl || config.cwl || 0;
 
     if (rule.any) {
         let minP = Infinity;
         for (let i = 0; i < targets.length; i++) {
             const B = layoutMap[targets[i]];
             if (B) {
-                const isHorizontallyAdjacent = (room.x + room.w === B.x) || (B.x + B.w === room.x);
-                const verticalOverlap = Math.max(0, Math.min(room.y + room.h, B.y + B.h) - Math.max(room.y, B.y));
-                const isVerticallyAdjacent = (room.y + room.h === B.y) || (B.y + B.h === room.y);
-                const horizontalOverlap = Math.max(0, Math.min(room.x + room.w, B.x + B.w) - Math.max(room.x, B.x));
-                let sharedWallLength = 0;
-                if (isHorizontallyAdjacent && verticalOverlap > 0) {
-                    sharedWallLength = verticalOverlap;
-                }
-                if (isVerticallyAdjacent && horizontalOverlap > 0) {
-                    sharedWallLength = horizontalOverlap;
-                }
+                const sharedWallLength = sharedWall(room, B);
+                const cwl = connectWallRequirement(room, B, rule, config);
                 let val = 0;
                 if (sharedWallLength === 0) {
                     const dx = room.centerX - B.centerX;
                     const dy = room.centerY - B.centerY;
-                    val = (CONNECT_VIOLATION_FLOOR + (dx * dx + dy * dy) / canvasDiagSq) * PENALTIES.CONNECT_BASE * weight * cwm;
+                    val = (violationFloor + (dx * dx + dy * dy) / canvasDiagSq) * PENALTIES.CONNECT_BASE * weight * cwm;
                 } else if (cwl > 0 && sharedWallLength < cwl) {
                     val = ((cwl - sharedWallLength) / canvasDiag) * PENALTIES.CWL_SHORT * weight * cwm;
                 }
@@ -361,21 +460,12 @@ function penaltyConnect(room, rule, layoutMap, config, cwm, canvasDiagSq, uwm = 
     for (let i = 0; i < targets.length; i++) {
         const B = layoutMap[targets[i]];
         if (B) {
-            const isHorizontallyAdjacent = (room.x + room.w === B.x) || (B.x + B.w === room.x);
-            const verticalOverlap = Math.max(0, Math.min(room.y + room.h, B.y + B.h) - Math.max(room.y, B.y));
-            const isVerticallyAdjacent = (room.y + room.h === B.y) || (B.y + B.h === room.y);
-            const horizontalOverlap = Math.max(0, Math.min(room.x + room.w, B.x + B.w) - Math.max(room.x, B.x));
-            let sharedWallLength = 0;
-            if (isHorizontallyAdjacent && verticalOverlap > 0) {
-                sharedWallLength = verticalOverlap;
-            }
-            if (isVerticallyAdjacent && horizontalOverlap > 0) {
-                sharedWallLength = horizontalOverlap;
-            }
+            const sharedWallLength = sharedWall(room, B);
+            const cwl = connectWallRequirement(room, B, rule, config);
             if (sharedWallLength === 0) {
                 const dx = room.centerX - B.centerX;
                 const dy = room.centerY - B.centerY;
-                sum += (CONNECT_VIOLATION_FLOOR + (dx * dx + dy * dy) / canvasDiagSq) * PENALTIES.CONNECT_BASE * weight * cwm;
+                sum += (violationFloor + (dx * dx + dy * dy) / canvasDiagSq) * PENALTIES.CONNECT_BASE * weight * cwm;
             } else if (cwl > 0 && sharedWallLength < cwl) {
                 sum += ((cwl - sharedWallLength) / canvasDiag) * PENALTIES.CWL_SHORT * weight * cwm;
             }
@@ -385,8 +475,7 @@ function penaltyConnect(room, rule, layoutMap, config, cwm, canvasDiagSq, uwm = 
 }
 
 function penaltyClose(room, rule, layoutMap, cwm, canvasDiagSq, uwm = 1) {
-    const baseW = rule.weight || 1;
-    const weight = rule.required ? baseW * PENALTIES.REQUIRED_BOOST : 1 + (baseW - 1) * uwm;
+    const weight = effectiveRuleWeight(rule, uwm);
     const targets = rule.target ?? [];
 
     if (rule.any) {
@@ -417,9 +506,22 @@ function penaltyClose(room, rule, layoutMap, cwm, canvasDiagSq, uwm = 1) {
     return sum;
 }
 
-function penaltyFar(room, rule, layoutMap, canvasDiag, cwm, uwm = 1) {
-    const baseW = rule.weight || 1;
-    const weight = rule.required ? baseW * PENALTIES.REQUIRED_BOOST : 1 + (baseW - 1) * uwm;
+function farPenaltyRatio(distance, canvasDiag, cutoffFraction) {
+    if (!cutoffFraction) {
+        return 1 / (1 + distance / canvasDiag);
+    }
+
+    const cutoffRatio = 1 / (1 + cutoffFraction);
+    const distanceRatio = distance / canvasDiag;
+    const shiftedRatio = Math.max(0, 1 / (1 + distanceRatio) - cutoffRatio);
+    return shiftedRatio / (1 - cutoffRatio);
+}
+
+function penaltyFar(room, rule, layoutMap, canvasDiag, cwm, uwm = 1, cutoffFraction = 0) {
+    const weight = effectiveRuleWeight(rule, uwm);
+    const effectiveCutoffFraction = rule.required
+        ? 0
+        : (cutoffFraction || FAR_MAX_DISTANCE_FRACTION);
     const targets = rule.target ?? [];
 
     if (rule.any) {
@@ -430,7 +532,7 @@ function penaltyFar(room, rule, layoutMap, canvasDiag, cwm, uwm = 1) {
                 const dx = room.centerX - B.centerX;
                 const dy = room.centerY - B.centerY;
                 const d = Math.sqrt(dx * dx + dy * dy);
-                const val = (1 / (1 + d / canvasDiag)) * weight * PENALTIES.CONNECT_BASE * cwm;
+                const val = farPenaltyRatio(d, canvasDiag, effectiveCutoffFraction) * weight * PENALTIES.CONNECT_BASE * cwm;
                 if (val < minP) {
                     minP = val;
                 }
@@ -446,15 +548,14 @@ function penaltyFar(room, rule, layoutMap, canvasDiag, cwm, uwm = 1) {
             const dx = room.centerX - B.centerX;
             const dy = room.centerY - B.centerY;
             const d = Math.sqrt(dx * dx + dy * dy);
-            sum += (1 / (1 + d / canvasDiag)) * weight * PENALTIES.CONNECT_BASE * cwm;
+            sum += farPenaltyRatio(d, canvasDiag, effectiveCutoffFraction) * weight * PENALTIES.CONNECT_BASE * cwm;
         }
     }
     return sum;
 }
 
 function penaltyAt(room, rule, rootW, rootH, cwm, canvasDiag, uwm = 1) {
-    const baseW = rule.weight || 1;
-    const weight = rule.required ? baseW * PENALTIES.REQUIRED_BOOST : 1 + (baseW - 1) * uwm;
+    const weight = effectiveRuleWeight(rule, uwm);
     const dirs = rule.dir ?? [];
     let p = 0;
 
@@ -487,8 +588,7 @@ function penaltyAt(room, rule, rootW, rootH, cwm, canvasDiag, uwm = 1) {
 }
 
 function penaltyNotAt(room, rule, mod, rootW, rootH, cwm, canvasDiagSq, uwm = 1, canvasDiag = Math.sqrt(canvasDiagSq)) {
-    const baseW = rule.weight || 1;
-    const weight = rule.required ? baseW * PENALTIES.REQUIRED_BOOST : 1 + (baseW - 1) * uwm;
+    const weight = effectiveRuleWeight(rule, uwm);
     const targetDepth = mod.sideMin || PENALTIES.DEFAULT_SIDE_MIN;
 
     const d0 = rule.dir?.[0];
@@ -524,6 +624,25 @@ function penaltyNotAt(room, rule, mod, rootW, rootH, cwm, canvasDiagSq, uwm = 1,
     return ((targetDepth - d) / canvasDiag) * weight * PENALTIES.CONNECT_BASE * cwm;
 }
 
+function calculateRulePenalty(room, rule, mod, layoutMap, rootW, rootH, config, cwm, uwm, canvasDiagSq, canvasDiag) {
+    if (rule.type === "connect") {
+        return penaltyConnect(room, rule, layoutMap, config, cwm, canvasDiagSq, uwm, canvasDiag);
+    }
+    if (rule.type === "close") {
+        return penaltyClose(room, rule, layoutMap, cwm, canvasDiagSq, uwm);
+    }
+    if (rule.type === "far") {
+        return penaltyFar(room, rule, layoutMap, canvasDiag, cwm, uwm, config._farCutoffFraction);
+    }
+    if (rule.type === "at") {
+        return penaltyAt(room, rule, rootW, rootH, cwm, canvasDiag, uwm);
+    }
+    if (rule.type === "not_at" || rule.type === "enclosed") {
+        return penaltyNotAt(room, rule, mod, rootW, rootH, cwm, canvasDiagSq, uwm, canvasDiag);
+    }
+    return 0;
+}
+
 const REQUIRED_SATISFIED_EPS = 0.1;
 
 function sharedWall(A, B) {
@@ -547,9 +666,13 @@ function isRuleSatisfied(rule, room, layoutMap, globalBounds) {
 
     switch (rule.type) {
         case "connect": {
-            const cwl = rule.cwl || 0;
             const ok = (t) => {
-                const swl = sharedWall(room, layoutMap[t]);
+                const target = layoutMap[t];
+                if (!target) {
+                    return false;
+                }
+                const swl = sharedWall(room, target);
+                const cwl = connectWallRequirement(room, target, rule);
                 return swl > 0 && (cwl === 0 || swl >= cwl - REQUIRED_SATISFIED_EPS);
             };
             return rule.any ? targets.some(ok) : targets.every(ok);
@@ -610,16 +733,85 @@ function isRuleSatisfied(rule, room, layoutMap, globalBounds) {
     }
 }
 
-function checkRequiredSatisfied(layout, modulesMap) {
+function requiredConnectPairKey(a, b) {
+    return a < b ? `${a}\0${b}` : `${b}\0${a}`;
+}
+
+function collectRequiredConnectPairs(modulesMap) {
+    const pairs = new Set();
+
+    for (const module of Object.values(modulesMap)) {
+        for (const rule of module.rules || []) {
+            if (rule.type !== "connect" || !rule.required || rule.subjectAny) {
+                continue;
+            }
+            const targets = Array.isArray(rule.target) ? rule.target : [rule.target];
+            if (rule.any && targets.length > 1) {
+                continue;
+            }
+            for (const target of targets) {
+                pairs.add(requiredConnectPairKey(module.id, target));
+            }
+        }
+    }
+
+    return pairs;
+}
+
+function collectRequiredFarPairs(modulesMap) {
+    const pairs = new Set();
+
+    for (const module of Object.values(modulesMap)) {
+        for (const rule of module.rules || []) {
+            if (rule.type !== "far" || !rule.required) {
+                continue;
+            }
+            const targets = Array.isArray(rule.target) ? rule.target : [rule.target];
+            for (const target of targets) {
+                pairs.add(requiredConnectPairKey(module.id, target));
+            }
+        }
+    }
+
+    return pairs;
+}
+
+function removeRequiredConnectConflicts(rule, roomId, requiredConnectPairs) {
+    if (rule.type !== "far") {
+        return rule;
+    }
+
+    // Keep `far` in the cost landscape, but do not let its incompatible binary
+    // verdict defeat a required shared wall for the same room pair.
+    const targets = Array.isArray(rule.target) ? rule.target : [rule.target];
+    const compatibleTargets = targets.filter(target => !requiredConnectPairs.has(requiredConnectPairKey(roomId, target)));
+    if (compatibleTargets.length === targets.length) {
+        return rule;
+    }
+    if (compatibleTargets.length === 0) {
+        return null;
+    }
+
+    return { ...rule, target: compatibleTargets };
+}
+
+function checkRequiredSatisfied(layout, modulesMap, phantoms = []) {
     if (!layout || layout.length === 0) {
         return [];
     }
     const layoutMap = Object.fromEntries(layout.map(r => [r.id, r]));
+    for (const phantom of phantoms) {
+        if (!layoutMap[phantom.id]) {
+            layoutMap[phantom.id] = phantom;
+        }
+    }
     const gW = layout.reduce((m, r) => Math.max(m, r.x + r.w), 0);
     const gH = layout.reduce((m, r) => Math.max(m, r.y + r.h), 0);
     const globalBounds = { w: gW, h: gH };
     const unsatisfied = [];
     const subjectAnyGroups = new Map(); // subjectGroupId -> { rule, satisfied, roomIds }
+    const requiredConnectPairs = collectRequiredConnectPairs(modulesMap);
+    const requiredFarPairs = collectRequiredFarPairs(modulesMap);
 
     for (const room of layout) {
         const mod = modulesMap[room.id];
@@ -630,28 +822,41 @@ function checkRequiredSatisfied(layout, modulesMap) {
             if (!rule.required) {
                 continue;
             }
+            const effectiveRule = removeRequiredConnectConflicts(rule, room.id, requiredConnectPairs);
+            if (!effectiveRule) {
+                continue;
+            }
 
-            if (rule.subjectAny && rule.subjectGroupId !== undefined) {
-                if (!subjectAnyGroups.has(rule.subjectGroupId)) {
-                    subjectAnyGroups.set(rule.subjectGroupId, {
-                        rule,
+            if (effectiveRule.subjectAny && effectiveRule.subjectGroupId !== undefined) {
+                if (!subjectAnyGroups.has(effectiveRule.subjectGroupId)) {
+                    subjectAnyGroups.set(effectiveRule.subjectGroupId, {
+                        rule: effectiveRule,
                         satisfied: false,
                         roomIds: [],
                     });
                 }
-                const group = subjectAnyGroups.get(rule.subjectGroupId);
+                const group = subjectAnyGroups.get(effectiveRule.subjectGroupId);
                 group.roomIds.push(room.id);
-                if (isRuleSatisfied(rule, room, layoutMap, globalBounds)) {
+                if (isRuleSatisfied(effectiveRule, room, layoutMap, globalBounds)) {
                     group.satisfied = true;
                 }
             } else {
-                if (!isRuleSatisfied(rule, room, layoutMap, globalBounds)) {
-                    unsatisfied.push({
+                if (!isRuleSatisfied(effectiveRule, room, layoutMap, globalBounds)) {
+                    const violation = {
                         roomId: room.id,
-                        type: rule.type,
-                        target: rule.target,
-                        dir: rule.dir,
-                    });
+                        type: effectiveRule.type,
+                        target: effectiveRule.target,
+                        dir: effectiveRule.dir,
+                    };
+                    if (effectiveRule.type === "connect"
+                        && (Array.isArray(effectiveRule.target) ? effectiveRule.target : [effectiveRule.target])
+                            .some(target => {
+                                const pair = requiredConnectPairKey(room.id, target);
+                                return requiredConnectPairs.has(pair) && requiredFarPairs.has(pair);
+                            })) {
+                        violation.connectFarConflict = true;
+                    }
+                    unsatisfied.push(violation);
                 }
             }
         }
@@ -808,18 +1013,7 @@ function calculateTopologicalPenalties(layout, modulesMap, globalBounds, config 
 
         for (let j = 0; j < mod.rules.length; j++) {
             const rule = mod.rules[j];
-            let p = 0;
-            if (rule.type === "connect") {
-                p = penaltyConnect(room, rule, lMap, cfg, cwm, canvasDiagSq, u, canvasDiag);
-            } else if (rule.type === "close") {
-                p = penaltyClose(room, rule, lMap, cwm, canvasDiagSq, u);
-            } else if (rule.type === "far") {
-                p = penaltyFar(room, rule, lMap, canvasDiag, cwm, u);
-            } else if (rule.type === "at") {
-                p = penaltyAt(room, rule, rootW, rootH, cwm, canvasDiag, u);
-            } else if (rule.type === "not_at" || rule.type === "enclosed") {
-                p = penaltyNotAt(room, rule, mod, rootW, rootH, cwm, canvasDiagSq, u, canvasDiag);
-            }
+            const p = calculateRulePenalty(room, rule, mod, lMap, rootW, rootH, cfg, cwm, u, canvasDiagSq, canvasDiag);
 
             if (rule.subjectAny && rule.subjectGroupId !== undefined) {
                 const prev = subjectAnyMinMap.get(rule.subjectGroupId);
@@ -839,6 +1033,264 @@ function calculateTopologicalPenalties(layout, modulesMap, globalBounds, config 
     return penalty;
 }
 
+function normalizedRuleCopy(rule) {
+    const target = rule.target === undefined || Array.isArray(rule.target) ? rule.target : [rule.target];
+    const dir = rule.dir === undefined || Array.isArray(rule.dir)
+        ? rule.dir
+        : (typeof rule.dir === "string" ? rule.dir.split(" ") : []);
+    if (target === rule.target && dir === rule.dir) {
+        return rule;
+    }
+    return { ...rule, target, dir };
+}
+
+function formatRuleText(subjects, rule) {
+    const subjectText = rule.subjectAny
+        ? `any [${subjects.join(", ")}]`
+        : subjects[0];
+    let relationship;
+    if (rule.type === "enclosed") {
+        relationship = "enclosed";
+    } else if (rule.type === "at" || rule.type === "not_at") {
+        const verb = rule.type === "not_at" ? "not at" : "at";
+        relationship = `${verb} ${(rule.dir ?? []).join(" ")}`;
+    } else {
+        const targets = rule.target ?? [];
+        const targetText = targets.length === 1 ? targets[0] : `[${targets.join(", ")}]`;
+        relationship = `${rule.type}${rule.any ? " any" : ""} ${targetText}`;
+    }
+
+    const options = [];
+    if (rule.weight !== undefined && rule.weight !== 1) {
+        options.push(`weight=${rule.weight}`);
+    }
+    if (rule.cwl !== undefined) {
+        options.push(`cwl=${rule.cwl}`);
+    }
+    if (rule.required) {
+        options.push("required");
+    }
+    return `${subjectText} ${relationship}${options.length ? ` ${options.join(" ")}` : ""}`;
+}
+
+function ruleReportOrigin(rule) {
+    if (rule.reportOrigin) {
+        return rule.reportOrigin;
+    }
+    if (rule.insideFrontage) {
+        return "derived-inside-frontage";
+    }
+    return "dsl";
+}
+
+function ruleReportParticipants(subjects, rule) {
+    return [...new Set([...subjects, ...(rule.target ?? [])])].sort();
+}
+
+function farthestScopeCornerDistance(target, scopeW, scopeH) {
+    return Math.max(
+        Math.hypot(target.centerX, target.centerY),
+        Math.hypot(scopeW - target.centerX, target.centerY),
+        Math.hypot(target.centerX, scopeH - target.centerY),
+        Math.hypot(scopeW - target.centerX, scopeH - target.centerY),
+    );
+}
+
+function requiredFarPenaltyDecomposition(room, rule, layoutMap, scopeW, scopeH, phantomIds, penalty) {
+    if (rule.type !== "far" || !rule.required) {
+        return null;
+    }
+
+    const canvasDiagonal = Math.hypot(scopeW, scopeH);
+    const subjectIsBounded = Number.isFinite(room.centerX) && Number.isFinite(room.centerY)
+        && room.centerX >= 0 && room.centerX <= scopeW
+        && room.centerY >= 0 && room.centerY <= scopeH;
+    if (!(canvasDiagonal > 0) || !subjectIsBounded) {
+        return null;
+    }
+
+    const floorTerms = [];
+    for (const targetId of rule.target ?? []) {
+        const target = layoutMap[targetId];
+        if (!target) {
+            continue;
+        }
+
+        const targetIsPhantom = phantomIds.has(targetId);
+        const targetIsBounded = Number.isFinite(target.centerX) && Number.isFinite(target.centerY)
+            && target.centerX >= 0 && target.centerX <= scopeW
+            && target.centerY >= 0 && target.centerY <= scopeH;
+        if (!Number.isFinite(target.centerX) || !Number.isFinite(target.centerY)) {
+            return null;
+        }
+        if (!targetIsPhantom && !targetIsBounded) {
+            return null;
+        }
+
+        floorTerms.push({
+            target: targetId,
+            centerDistance: Math.hypot(room.centerX - target.centerX, room.centerY - target.centerY),
+            maximumCenterDistance: targetIsPhantom
+                ? farthestScopeCornerDistance(target, scopeW, scopeH)
+                : canvasDiagonal,
+            maximumDistanceBasis: targetIsPhantom
+                ? "farthest-scope-corner-from-fixed-external-target"
+                : "scope-canvas-diagonal",
+        });
+    }
+    if (!floorTerms.length) {
+        return null;
+    }
+
+    const requiredWeight = effectiveRuleWeight(rule, 1);
+    const floors = floorTerms.map(term => requiredWeight * PENALTIES.CONNECT_BASE
+        / (1 + term.maximumCenterDistance / canvasDiagonal));
+    const irreduciblePenalty = rule.any ? Math.min(...floors) : floors.reduce((sum, floor) => sum + floor, 0);
+    if (penalty + GEOMETRY_EPSILON < irreduciblePenalty) {
+        return null;
+    }
+
+    return {
+        mode: "required-inverse-distance-floor",
+        penaltyFormula: "requiredWeight * 1000000 / (1 + centerDistance / canvasDiagonal)",
+        aggregation: rule.any ? "minimum-over-resolved-targets" : "sum-over-resolved-targets",
+        distanceBasis: "room-center-to-target-center",
+        boundedSubjectAssumption: "subject center lies within scope bounds",
+        requiredWeight,
+        penaltyScale: PENALTIES.CONNECT_BASE,
+        canvasDiagonal,
+        resolvedTargetCount: floorTerms.length,
+        floorTerms,
+        irreduciblePenalty,
+        reduciblePenalty: penalty - irreduciblePenalty,
+    };
+}
+
+function calculateRuleScores(layout, modulesMap, globalBounds, config = {}, totalCost = 0, topologicalPenalty = 0, phantoms = []) {
+    const rootW = globalBounds.w;
+    const rootH = globalBounds.h;
+    const canvasDiagSq = rootW * rootW + rootH * rootH;
+    const canvasDiag = Math.sqrt(canvasDiagSq);
+    const layoutMap = Object.fromEntries(layout.map(room => [room.id, room]));
+    const phantomIds = new Set(phantoms.map(phantom => phantom.id));
+    for (const phantom of phantoms) {
+        if (!layoutMap[phantom.id]) {
+            layoutMap[phantom.id] = phantom;
+        }
+    }
+
+    const requiredConnectPairs = collectRequiredConnectPairs(modulesMap);
+    const entries = [];
+    const subjectAnyGroups = new Map();
+    const modules = Object.values(modulesMap);
+
+    for (let moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
+        const mod = modules[moduleIndex];
+        const room = layoutMap[mod.id];
+        if (!room) {
+            continue;
+        }
+        for (let ruleIndex = 0; ruleIndex < (mod.rules ?? []).length; ruleIndex++) {
+            const rule = normalizedRuleCopy(mod.rules[ruleIndex]);
+            const penalty = calculateRulePenalty(room, rule, mod, layoutMap, rootW, rootH, config, 1, 1, canvasDiagSq, canvasDiag);
+            const farPenaltyDecomposition = requiredFarPenaltyDecomposition(
+                room,
+                rule,
+                layoutMap,
+                rootW,
+                rootH,
+                phantomIds,
+                penalty,
+            );
+            const effectiveRule = rule.required
+                ? removeRequiredConnectConflicts(rule, room.id, requiredConnectPairs)
+                : rule;
+            const verdictRule = effectiveRule?.type === "connect" && effectiveRule.cwl === undefined && config.cwl !== undefined
+                ? { ...effectiveRule, cwl: config.cwl }
+                : effectiveRule;
+            const satisfied = verdictRule
+                ? isRuleSatisfied(verdictRule, room, layoutMap, globalBounds)
+                : null;
+
+            if (rule.subjectAny && rule.subjectGroupId !== undefined) {
+                let group = subjectAnyGroups.get(rule.subjectGroupId);
+                if (!group) {
+                    group = {
+                        id: `group:${rule.subjectGroupId}`,
+                        text: "",
+                        subjects: [],
+                        participants: [],
+                        type: rule.type,
+                        required: !!rule.required,
+                        satisfied: false,
+                        penalty: Infinity,
+                        percentOfTotal: 0,
+                        origin: ruleReportOrigin(rule),
+                        rule,
+                        hasEffectiveVerdict: false,
+                    };
+                    subjectAnyGroups.set(rule.subjectGroupId, group);
+                    entries.push(group);
+                }
+                group.subjects.push(room.id);
+                if (penalty < group.penalty) {
+                    group.penalty = penalty;
+                    if (farPenaltyDecomposition) {
+                        group.farPenaltyDecomposition = farPenaltyDecomposition;
+                    } else {
+                        delete group.farPenaltyDecomposition;
+                    }
+                }
+                if (satisfied !== null) {
+                    group.hasEffectiveVerdict = true;
+                    group.satisfied ||= satisfied;
+                }
+                continue;
+            }
+
+            const entry = {
+                id: `rule:${moduleIndex}:${ruleIndex}`,
+                text: formatRuleText([room.id], rule),
+                subjects: [room.id],
+                participants: ruleReportParticipants([room.id], rule),
+                type: rule.type,
+                required: !!rule.required,
+                satisfied,
+                penalty,
+                percentOfTotal: totalCost > 0 ? penalty / totalCost * 100 : 0,
+                origin: ruleReportOrigin(rule),
+            };
+            if (farPenaltyDecomposition) {
+                entry.farPenaltyDecomposition = farPenaltyDecomposition;
+            }
+            entries.push(entry);
+        }
+    }
+
+    for (const group of subjectAnyGroups.values()) {
+        group.text = formatRuleText(group.subjects, group.rule);
+        group.participants = ruleReportParticipants(group.subjects, group.rule);
+        group.penalty = group.penalty === Infinity ? 0 : group.penalty;
+        group.percentOfTotal = totalCost > 0 ? group.penalty / totalCost * 100 : 0;
+        if (!group.hasEffectiveVerdict) {
+            group.satisfied = null;
+        }
+        delete group.rule;
+        delete group.hasEffectiveVerdict;
+    }
+
+    const reportedPenalty = entries.reduce((sum, entry) => sum + entry.penalty, 0);
+    const unreported = topologicalPenalty - reportedPenalty;
+    return {
+        totalCost,
+        topologicalPenalty,
+        reportedPenalty,
+        unreportedTopologicalPenalty: Math.abs(unreported) < 1e-6 ? 0 : unreported,
+        weightSemantics: advisoryWeightSemantics(),
+        rules: entries,
+    };
+}
+
 /**
  * Phase 1.5: Fast-Fail Topological Boundary Check on built tree.
  * Replaces NPE re-traversal — reuses the tree already built in evaluateCost.
@@ -856,7 +1308,7 @@ function checkBoundariesOnTree(node, north, south, east, west, modulesMap) {
         if (mod?.rules) {
             for (let i = 0; i < mod.rules.length; i++) {
                 const rule = mod.rules[i];
-                if (rule.type !== "at") {
+                if (rule.type !== "at" || !rule.required) {
                     continue;
                 }
                 const dirs = rule.dir ?? [];
@@ -991,6 +1443,7 @@ function buildTreeFresh(npe, modulesMap) {
  *   - M1 (operand-operand swap): the two swapped indices.
  *   - M2 (operator chain complement): every flipped operator index.
  *   - M3 (operand-operator swap): the two swapped indices.
+ *   - M4 (long-range operand swap): the two swapped indices.
  *
  * A node is rebuilt if its NPE position is in dirty, OR any descendant is dirty (curve changes
  * propagate up). Otherwise the cached node from prevPositionMap is reused by reference.
@@ -1074,6 +1527,55 @@ function computeBaseCost(rootW, rootH, config, cwm) {
     return { area, aspectPenalty, canvasPenalty, total: area + aspectPenalty + canvasPenalty };
 }
 
+function effectiveRoomGeometryLimits(roomModule, config = {}) {
+    return {
+        ratioMax: roomModule.ratio ? Infinity : (roomModule.ratioMax || config.ratioMax || 3.0),
+        sideMin: roomModule.sideMin || (!config.sideMinFlexible && config.sideMin) || 0,
+    };
+}
+
+function calculateRoomGeometryPenalty(room, roomModule, config = {}, cwm = 1) {
+    let penalty = 0;
+    const roomArea = room.w * room.h;
+    if (roomModule.area) {
+        penalty += Math.abs(roomArea - roomModule.area) * PENALTIES.AREA_MISFIT;
+    }
+
+    const { ratioMax, sideMin } = effectiveRoomGeometryLimits(roomModule, config);
+    const roomAspect = Math.max(room.w / room.h, room.h / room.w);
+    const aspectExcess = Math.max(0, roomAspect - ratioMax);
+    penalty += (aspectExcess + aspectExcess * aspectExcess) * PENALTIES.ROOM_ASPECT;
+
+    if (sideMin > 0) {
+        const shortWidthRatio = Math.max(0, sideMin - room.w) / sideMin;
+        const shortHeightRatio = Math.max(0, sideMin - room.h) / sideMin;
+        penalty += (
+            shortWidthRatio + shortWidthRatio * shortWidthRatio
+            + shortHeightRatio + shortHeightRatio * shortHeightRatio
+        ) * PENALTIES.SIDE_MIN;
+    }
+
+    return penalty * cwm;
+}
+
+function countDeliveredGeometryViolations(layout, modulesMap, config = {}) {
+    let violations = 0;
+    for (const room of layout) {
+        const roomModule = modulesMap[room.id];
+        if (!roomModule) {
+            continue;
+        }
+        const { ratioMax, sideMin } = effectiveRoomGeometryLimits(roomModule, config);
+        const aspect = Math.max(room.w / room.h, room.h / room.w);
+        const violatesAspect = aspect > ratioMax + GEOMETRY_EPSILON;
+        const violatesSideMin = Math.min(room.w, room.h) < sideMin - GEOMETRY_EPSILON;
+        if (violatesAspect || violatesSideMin) {
+            violations++;
+        }
+    }
+    return violations;
+}
+
 /**
  * Score a fully-assigned layout against the cost function. Used both inside the
  * rootShape sweep and by the post-SA slack-redistribution check.
@@ -1082,9 +1584,6 @@ function computeBaseCost(rootW, rootH, config, cwm) {
  */
 function evaluateLayoutCost(layout, rootW, rootH, modulesMap, config = {}, cwm = 1, uwm = 1, phantoms = [], layoutMap = null, onlyTotal = false) {
     const { area, aspectPenalty, canvasPenalty } = computeBaseCost(rootW, rootH, config, cwm);
-    const canvasW = config.canvasW || 500;
-    const canvasH = config.canvasH || 500;
-    const canvasTargetDiagSq = canvasW * canvasW + canvasH * canvasH;
 
     let lMap = layoutMap;
     if (!lMap) {
@@ -1102,23 +1601,7 @@ function evaluateLayoutCost(layout, rootW, rootH, modulesMap, config = {}, cwm =
         if (!m) {
             continue;
         }
-        const rArea = room.w * room.h;
-        if (m.area) {
-            roomPenalty += Math.abs(rArea - m.area) * 0.5 * cwm;
-        }
-        const rAspect = Math.max(room.w / room.h, room.h / room.w);
-        const rMax = m.ratio ? Infinity : (m.ratioMax || config.ratioMax || 3.0);
-        if (rAspect > rMax) {
-            roomPenalty += Math.pow(rAspect - rMax, 2) * PENALTIES.ROOM_ASPECT * cwm;
-        }
-        const effectiveSideMin = m.sideMin || (!config.sideMinFlexible && config.sideMin) || 0;
-        if (effectiveSideMin > 0) {
-            const shortW = Math.max(0, effectiveSideMin - room.w);
-            const shortH = Math.max(0, effectiveSideMin - room.h);
-            if (shortW > 0 || shortH > 0) {
-                roomPenalty += (shortW * shortW + shortH * shortH) / canvasTargetDiagSq * PENALTIES.SIDE_MIN * cwm;
-            }
-        }
+        roomPenalty += calculateRoomGeometryPenalty(room, m, config, cwm);
     }
 
     const total = area + aspectPenalty + canvasPenalty + topologicalPenalty + roomPenalty;
@@ -1264,10 +1747,11 @@ function buildInitialCandidates(modules, modulesMap, randomFn) {
             }
             const targets = rule.target ?? [];
             for (const t of targets) {
-                adj.get(m.id).push(t);
-                if (adj.has(t)) {
-                    adj.get(t).push(m.id);
+                if (!adj.has(t)) {
+                    continue;
                 }
+                adj.get(m.id).push(t);
+                adj.get(t).push(m.id);
                 deg.set(m.id, (deg.get(m.id) || 0) + 1);
                 deg.set(t, (deg.get(t) || 0) + 1);
             }
@@ -1378,11 +1862,15 @@ function buildRuleIndex(modules) {
     const connectPairs = [];
     const farPairs = [];
     const polePrefs = new Map();
+    const moduleIds = new Set(modules.map(module => module.id));
     for (const m of modules) {
         for (const r of m.rules ?? []) {
             if (r.type === "connect" || r.type === "far") {
                 const targets = r.target ?? [];
                 for (const t of targets) {
+                    if (!moduleIds.has(t)) {
+                        continue;
+                    }
                     (r.type === "connect" ? connectPairs : farPairs).push({ a: m.id, b: t });
                 }
             } else if (r.type === "at") {
@@ -1482,11 +1970,11 @@ function _shouldUseWorkers(config) {
 
 function _resolveOptimizerScriptUrl() {
     if (typeof document !== "undefined") {
-        const el = document.querySelector('script[src*="layout_optimizer"]');
+        const el = document.querySelector('script[src*="sa_optimized"]');
         if (el?.src) {
             return el.src;
         }
-        return new URL("layout_optimizer.js", document.baseURI).href;
+        return new URL("sa_optimized.js", document.baseURI).href;
     }
     return _OPTIMIZER_MODULE_PATH;
 }
@@ -1616,7 +2104,8 @@ async function _runWithRestarts(modules, config, signal, phantoms = []) {
 }
 
 // Replicate the required-retry loop's selection over precomputed, attempt-ordered
-// results: prefer fewest unsatisfied, then lowest cost, then lowest attempt index,
+// results: preserve explicitly conflicted connections, then prefer fewest
+// unsatisfied, fewest delivered-geometry violations, lowest cost, and lowest attempt index,
 // and stop `SATISFIED_LOOKAHEAD` attempts after the first naturally-satisfied one
 // (unsatisfied && !repaired). Fed the same deterministic per-seed results, this
 // returns exactly what the sequential loop would.
@@ -1626,7 +2115,7 @@ function _selectRequiredBest(entries) {
 
     for (let i = 0; i < entries.length; i++) {
         const { result, unsatisfied } = entries[i];
-        if (!best || isPreferredRequiredAttempt(unsatisfied.length, result.cost, best.unsatisfied.length, best.cost)) {
+        if (!best || isPreferredRequiredAttempt(result, unsatisfied, best, best.unsatisfied)) {
             best = { ...result, unsatisfied };
         }
         if (satisfiedAt < 0 && unsatisfied.length === 0 && !result.repairAttempted) {
@@ -1639,11 +2128,27 @@ function _selectRequiredBest(entries) {
     return best;
 }
 
-function isPreferredRequiredAttempt(unsatisfiedCount, cost, bestUnsatisfiedCount, bestCost) {
-    if (unsatisfiedCount !== bestUnsatisfiedCount) {
-        return unsatisfiedCount < bestUnsatisfiedCount;
+function requiredAttemptSelectionKey(result, unsatisfied) {
+    const unsatisfiedRules = Array.isArray(unsatisfied) ? unsatisfied : [];
+    const unsatisfiedCount = Array.isArray(unsatisfied) ? unsatisfied.length : unsatisfied;
+    return [
+        unsatisfiedRules.filter(rule => rule.connectFarConflict).length,
+        unsatisfiedCount,
+        result.geometryViolations ?? 0,
+        result.cost,
+    ];
+}
+
+function isPreferredRequiredAttempt(result, unsatisfied, bestResult, bestUnsatisfied) {
+    const key = requiredAttemptSelectionKey(result, unsatisfied);
+    const bestKey = requiredAttemptSelectionKey(bestResult, bestUnsatisfied);
+    for (let i = 0; i < key.length; i++) {
+        if (key[i] === bestKey[i]) {
+            continue;
+        }
+        return key[i] < bestKey[i];
     }
-    return cost < bestCost;
+    return false;
 }
 
 function collectOffendingIds(unsatisfied) {
@@ -1739,12 +2244,12 @@ function offendingM3Swaps(npe, offendingIds) {
 
 /**
  * Post-SA repair: bounded steepest-descent over single operand swaps and M3
- * swaps that touch an offending room, ranked by (unsatisfied count, cost).
+ * swaps that touch an offending room, ranked by the required-attempt key.
  * Re-enumerates after each accepted move. Deterministic (no RNG) so satisfied
  * layouts are untouched. `finalizeNpe(npe)` returns { layout, cost, shape } or null.
  */
-function repairRequiredLayout(best, finalizeNpe, modulesMap, maxMoves = REPAIR_MAX_MOVES) {
-    const before = checkRequiredSatisfied(best.layout, modulesMap);
+function repairRequiredLayout(best, finalizeNpe, modulesMap, maxMoves = REPAIR_MAX_MOVES, phantoms = []) {
+    const before = checkRequiredSatisfied(best.layout, modulesMap, phantoms);
     if (before.length === 0) {
         return { ...best, attempted: false, unsatisfiedBefore: 0, unsatisfiedAfter: 0 };
     }
@@ -1766,6 +2271,7 @@ function repairRequiredLayout(best, finalizeNpe, modulesMap, maxMoves = REPAIR_M
         let pickCost = cur.cost;
         let pickShape = null;
         let pickUnsat = curUnsat;
+        let pickGeometryViolations = cur.geometryViolations ?? 0;
 
         for (const candNpe of cands) {
             if (budget-- <= 0) {
@@ -1775,18 +2281,28 @@ function repairRequiredLayout(best, finalizeNpe, modulesMap, maxMoves = REPAIR_M
             if (!cand) {
                 continue;
             }
-            const candUnsat = checkRequiredSatisfied(cand.layout, modulesMap);
-            if (isPreferredRequiredAttempt(candUnsat.length, cand.cost, pickUnsat.length, pickCost)) {
+            const candUnsat = checkRequiredSatisfied(cand.layout, modulesMap, phantoms);
+            if (isPreferredRequiredAttempt(cand, candUnsat, {
+                cost: pickCost,
+                geometryViolations: pickGeometryViolations,
+            }, pickUnsat)) {
                 pickNpe = candNpe;
                 pickLayout = cand.layout;
                 pickCost = cand.cost;
                 pickShape = cand.shape;
                 pickUnsat = candUnsat;
+                pickGeometryViolations = cand.geometryViolations ?? 0;
             }
         }
 
         if (pickNpe) {
-            cur = { npe: pickNpe, layout: pickLayout, cost: pickCost, shape: pickShape };
+            cur = {
+                npe: pickNpe,
+                layout: pickLayout,
+                cost: pickCost,
+                shape: pickShape,
+                geometryViolations: pickGeometryViolations,
+            };
             curUnsat = pickUnsat;
             improved = true;
         }
@@ -1818,15 +2334,17 @@ async function wongLiuSimulatedAnnealing(modules, config = {}, signal = null, ph
     });
 
     const hasRequired = clonedModules.some(m => m.rules?.some(r => r.required));
+    let best;
     if (!hasRequired) {
-        return _runWithRestarts(clonedModules, config, signal, phantoms);
+        best = await _runWithRestarts(clonedModules, config, signal, phantoms);
+        return attachRuleScores(best, clonedModules, config, phantoms);
     }
 
     const maxRetries = config.requiredMaxRetries ?? 10;
     const baseSeed = config.seed ?? 0xDEADBEEF;
     const modulesMap = Object.fromEntries(clonedModules.map(m => [m.id, m]));
 
-    let best = null;
+    best = null;
     if (_shouldUseWorkers(config)) {
         const tasks = [];
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -1839,7 +2357,7 @@ async function wongLiuSimulatedAnnealing(modules, config = {}, signal = null, ph
         const results = await _runTasksInWorkers(tasks, signal);
         const entries = results.map(result => ({
             result,
-            unsatisfied: checkRequiredSatisfied(result.layout, modulesMap),
+            unsatisfied: checkRequiredSatisfied(result.layout, modulesMap, phantoms),
         }));
         best = _selectRequiredBest(entries);
     } else {
@@ -1855,8 +2373,8 @@ async function wongLiuSimulatedAnnealing(modules, config = {}, signal = null, ph
                 throw new DOMException("Cancelled", "AbortError");
             }
 
-            const unsatisfied = checkRequiredSatisfied(result.layout, modulesMap);
-            if (!best || isPreferredRequiredAttempt(unsatisfied.length, result.cost, best.unsatisfied.length, best.cost)) {
+            const unsatisfied = checkRequiredSatisfied(result.layout, modulesMap, phantoms);
+            if (!best || isPreferredRequiredAttempt(result, unsatisfied, best, best.unsatisfied)) {
                 best = { ...result, unsatisfied };
             }
 
@@ -1877,7 +2395,25 @@ async function wongLiuSimulatedAnnealing(modules, config = {}, signal = null, ph
             best.unsatisfied.map(u => `${u.roomId}.${u.type}`).join(", "));
     }
 
-    return best;
+    return attachRuleScores(best, clonedModules, config, phantoms);
+}
+
+function attachRuleScores(result, modules, config, phantoms) {
+    const modulesMap = Object.fromEntries(modules.map(module => [module.id, module]));
+    const bounds = result.layout.reduce((current, room) => ({
+        w: Math.max(current.w, room.x + room.w),
+        h: Math.max(current.h, room.y + room.h),
+    }), { w: 0, h: 0 });
+    const hasSoftConnect = modules.some(module => module.rules?.some(rule => rule.type === "connect" && !rule.required));
+    const reportConfig = hasSoftConnect
+        ? { ...config, _farCutoffFraction: FAR_CUTOFF_FRACTION_WITH_SOFT_CONNECT }
+        : config;
+    const totalCost = result.breakdown?.total ?? result.cost;
+    const topologicalPenalty = result.breakdown?.topologicalPenalty ?? 0;
+    return {
+        ...result,
+        ruleScores: calculateRuleScores(result.layout, modulesMap, bounds, reportConfig, totalCost, topologicalPenalty, phantoms),
+    };
 }
 
 /**
@@ -1896,6 +2432,10 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
     const randomFn = seed !== undefined ? mulberry32(seed) : Math.random;
 
     modules = modules.map(m => ({ ...m }));
+    const hasSoftConnect = modules.some(module => module.rules?.some(rule => rule.type === "connect" && !rule.required));
+    if (hasSoftConnect) {
+        config = { ...config, _farCutoffFraction: FAR_CUTOFF_FRACTION_WITH_SOFT_CONNECT };
+    }
     const n = modules.length;
     if (n === 0) {
         return { npe: [], cost: 0, layout: [] };
@@ -2074,14 +2614,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
             let testCost = testResult.cost + (testResult.valid ? 0 : PENALTIES.INVALID_HARD);
             for (let i = 0; i < Math.min(n * 5, 100); i++) {
                 const nextNpe = [...testNpe];
-                const moveType = Math.floor(randomFn() * 3) + 1;
-                if (moveType === 1) {
-                    applyM1(nextNpe, randomFn);
-                } else if (moveType === 2) {
-                    applyM2(nextNpe, randomFn);
-                } else {
-                    applyM3(nextNpe, randomFn);
-                }
+                applyRandomMove(nextNpe, randomFn);
 
                 const nextResult = evaluateCost(nextNpe, modulesMap, config, 1, null, 1, hasAtRules, phantoms, layoutArray, layoutMap);
                 const nextCost = nextResult.cost + (nextResult.valid ? 0 : PENALTIES.INVALID_HARD);
@@ -2113,6 +2646,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
     }
     let bestCost = currentCost;
     let bestResult = currentResult;
+    let firstTemperature = true;
 
     let stagnation = 0;
     const STAGNATION_LIMIT = Math.max(200, Math.floor(k * n * iter / 8));
@@ -2128,18 +2662,35 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
     while (T > min_t) {
         connectWeightMultiplier = Math.min(initial_t / T, CWM_CAP);
         uwm = Math.min(initial_t / T / CWM_CAP, 1);
-        // Re-evaluate current and best cost with new multiplier so delta is accurate
-        currentResult = evaluateCost(currentNpe, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms, layoutArray, layoutMap);
-        currentCost = currentResult.cost;
-        if (!currentResult.valid) {
-            currentCost += PENALTIES.INVALID_HARD;
-        }
+        // First temperature uses the identical multipliers already evaluated above.
+        if (!firstTemperature) {
+            const currentTreeBundle = {
+                tree: currentResult.rootNode,
+                positionMap: currentResult.positionMap,
+            };
+            currentResult = evaluateCost(currentNpe, modulesMap, config, connectWeightMultiplier, currentTreeBundle, uwm, hasAtRules, phantoms, layoutArray, layoutMap);
+            currentCost = currentResult.cost;
+            if (!currentResult.valid) {
+                currentCost += PENALTIES.INVALID_HARD;
+            }
 
-        bestResult = evaluateCost(bestNpe, modulesMap, config, connectWeightMultiplier, null, uwm, hasAtRules, phantoms, layoutArray, layoutMap);
-        bestCost = bestResult.cost;
-        if (!bestResult.valid) {
-            bestCost += PENALTIES.INVALID_HARD;
+            const currentMatchesBest = currentNpe.every((item, index) => item === bestNpe[index]);
+            if (currentMatchesBest) {
+                bestResult = currentResult;
+                bestCost = currentCost;
+            } else {
+                const bestTreeBundle = {
+                    tree: bestResult.rootNode,
+                    positionMap: bestResult.positionMap,
+                };
+                bestResult = evaluateCost(bestNpe, modulesMap, config, connectWeightMultiplier, bestTreeBundle, uwm, hasAtRules, phantoms, layoutArray, layoutMap);
+                bestCost = bestResult.cost;
+                if (!bestResult.valid) {
+                    bestCost += PENALTIES.INVALID_HARD;
+                }
+            }
         }
+        firstTemperature = false;
 
         const movesAtTemp = k * n * iter;
         let acceptedMoves = 0;
@@ -2164,14 +2715,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
                 move = applyGuidedMove(nextNpe, randomFn, ruleIdx);
             }
             if (!move) {
-                const moveType = Math.floor(randomFn() * 3) + 1;
-                if (moveType === 1) {
-                    move = applyM1(nextNpe, randomFn);
-                } else if (moveType === 2) {
-                    move = applyM2(nextNpe, randomFn);
-                } else {
-                    move = applyM3(nextNpe, randomFn);
-                }
+                move = applyRandomMove(nextNpe, randomFn);
             }
 
             let nextTreeBundle;
@@ -2217,13 +2761,10 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
             if (dice < 0.45) {
                 recovered = [...bestNpe];
                 for (let m = 0; m < 3; m++) {
-                    const moveType = m === 0 ? 2 : Math.floor(randomFn() * 3) + 1;
-                    if (moveType === 1) {
-                        applyM1(recovered, randomFn);
-                    } else if (moveType === 2) {
+                    if (m === 0) {
                         applyM2(recovered, randomFn);
                     } else {
-                        applyM3(recovered, randomFn);
+                        applyRandomMove(recovered, randomFn);
                     }
                 }
             } else if (dice < 0.6) {
@@ -2233,14 +2774,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
             } else {
                 recovered = [...currentNpe];
                 for (let m = 0; m < 5; m++) {
-                    const moveType = Math.floor(randomFn() * 3) + 1;
-                    if (moveType === 1) {
-                        applyM1(recovered, randomFn);
-                    } else if (moveType === 2) {
-                        applyM2(recovered, randomFn);
-                    } else {
-                        applyM3(recovered, randomFn);
-                    }
+                    applyRandomMove(recovered, randomFn);
                 }
             }
             if (isValidNPE(recovered)) {
@@ -2280,7 +2814,7 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
         const overflow = Math.max(0, bestResult.bestShape.w - canvasW) + Math.max(0, bestResult.bestShape.h - canvasH);
         if (overflow > 0) {
             const redistLayout = assignCoordinates(bestResult.rootNode, bestResult.bestShape, 0, 0, canvasW, canvasH);
-            const origCost = evaluateLayoutCost(layout, bestResult.bestShape.w, bestResult.bestShape.h, modulesMap, config, 1, 1, phantoms).total;
+            const origCost = finalCost;
             const redistCost = evaluateLayoutCost(redistLayout, canvasW, canvasH, modulesMap, config, 1, 1, phantoms).total;
             if (strict) {
                 // No cost jump by construction: evaluateCost scored this same stretch,
@@ -2367,12 +2901,23 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
                 repairShape = { w: cW, h: cH };
             }
         }
-        return { layout: repairLayout, cost: repairCost, shape: repairShape };
+        return {
+            layout: repairLayout,
+            cost: repairCost,
+            shape: repairShape,
+            geometryViolations: countDeliveredGeometryViolations(repairLayout, modulesMap, config),
+        };
     };
 
     const repaired = repairRequiredLayout(
-        { npe: bestNpe, layout, cost: finalCost, shape: finalShape },
-        finalizeNpe, modulesMap,
+        {
+            npe: bestNpe,
+            layout,
+            cost: finalCost,
+            shape: finalShape,
+            geometryViolations: countDeliveredGeometryViolations(layout, modulesMap, config),
+        },
+        finalizeNpe, modulesMap, REPAIR_MAX_MOVES, phantoms,
     );
     if (repaired.attempted) {
         console.log(`Repair phase: unsatisfied ${repaired.unsatisfiedBefore} → ${repaired.unsatisfiedAfter}, cost ${finalCost.toExponential(3)} → ${repaired.cost.toExponential(3)}`);
@@ -2387,7 +2932,14 @@ async function _runSingleSA(modules, config = {}, signal = null, phantoms = []) 
         : null;
 
     console.log(`Finished! Total Iterations: ${totalIterations}. Best Cost: ${finalCost}`);
-    return { npe: bestNpe, cost: finalCost, layout, breakdown, repairAttempted: repaired.attempted };
+    return {
+        npe: bestNpe,
+        cost: finalCost,
+        layout,
+        breakdown,
+        repairAttempted: repaired.attempted,
+        geometryViolations: countDeliveredGeometryViolations(layout, modulesMap, config),
+    };
 }
 
 // ==========================================
@@ -2420,10 +2972,11 @@ async function runFloorplanner() {
 if (typeof module !== "undefined" && module.exports) {
     module.exports = {
         wongLiuSimulatedAnnealing, evaluateCost, pruneCurve, assignCoordinates,
-        applyM1, applyM2, applyM3, isValidNPE, checkBoundariesOnTree,
-        calculateTopologicalPenalties, buildInitialCandidates, orderedToNpe,
+        applyM1, applyM2, applyM3, applyM4, isValidNPE, checkBoundariesOnTree,
+        calculateTopologicalPenalties, calculateRuleScores, buildInitialCandidates, orderedToNpe,
         buildLinearFallback, buildRuleIndex, applyGuidedMove,
         checkRequiredSatisfied, isRuleSatisfied,
+        countDeliveredGeometryViolations, requiredAttemptSelectionKey,
         _runWithRestarts, _runSingleSA, _selectRequiredBest, _shouldUseWorkers,
     };
 }

@@ -6,9 +6,9 @@ const { parseDSL } = require("./parser.js");
 const { optimizeRecursive } = require("./orchestrator.js");
 
 // Load engine by appending exports to a temp file
-const engineCode = fs.readFileSync(path.join(__dirname, "layout_optimizer.js"), "utf8");
-const engineWithExports = engineCode + "\nmodule.exports = { wongLiuSimulatedAnnealing, evaluateCost, calculateTopologicalPenalties, assignCoordinates, buildInitialCandidates, orderedToNpe, buildLinearFallback, isValidNPE, buildRuleIndex, applyGuidedMove, checkRequiredSatisfied, isPreferredRequiredAttempt, repairRequiredLayout, offendingOperandSwaps, offendingM3Swaps, collectOffendingIds, _runWithRestarts, _runSingleSA, _selectRequiredBest, _shouldUseWorkers };\n";
-const tempEnginePath = path.join(__dirname, "temp", "layout_optimizer_exported.js");
+const engineCode = fs.readFileSync(path.join(__dirname, "sa_optimized.js"), "utf8");
+const engineWithExports = engineCode + "\nmodule.exports = { wongLiuSimulatedAnnealing, evaluateCost, calculateTopologicalPenalties, calculateRuleScores, calculateRoomGeometryPenalty, countDeliveredGeometryViolations, requiredAttemptSelectionKey, assignCoordinates, buildInitialCandidates, orderedToNpe, buildLinearFallback, isValidNPE, applyM4, buildTreeFresh, buildTreeIncremental, buildRuleIndex, applyGuidedMove, checkRequiredSatisfied, checkBoundariesOnTree, isPreferredRequiredAttempt, repairRequiredLayout, offendingOperandSwaps, offendingM3Swaps, collectOffendingIds, _runWithRestarts, _runSingleSA, _selectRequiredBest, _shouldUseWorkers };\n";
+const tempEnginePath = path.join(__dirname, "temp", "sa_optimized_exported.js");
 
 if (!fs.existsSync(path.join(__dirname, "temp"))) {
     fs.mkdirSync(path.join(__dirname, "temp"));
@@ -19,14 +19,22 @@ const {
     wongLiuSimulatedAnnealing,
     evaluateCost,
     calculateTopologicalPenalties,
+    calculateRuleScores,
+    calculateRoomGeometryPenalty,
+    countDeliveredGeometryViolations,
+    requiredAttemptSelectionKey,
     assignCoordinates,
     buildInitialCandidates,
     orderedToNpe,
     buildLinearFallback,
     isValidNPE,
+    applyM4,
+    buildTreeFresh,
+    buildTreeIncremental,
     buildRuleIndex,
     applyGuidedMove,
     checkRequiredSatisfied,
+    checkBoundariesOnTree,
     isPreferredRequiredAttempt,
     repairRequiredLayout,
     offendingOperandSwaps,
@@ -111,7 +119,7 @@ async function runFloorPlan(dsl) {
         seed = parseInt(seedMatch[1]);
     }
 
-    // Fix for 1-room plans (layout_optimizer.js requires >= 2)
+    // Fix for 1-room plans (sa_optimized.js requires >= 2)
     const originalCount = modules.length;
     if (modules.length === 1) {
         modules.push({ id: "_dummy", area: 1, w: 1, h: 1, rules: [] });
@@ -364,6 +372,142 @@ async function runFloorPlan(dsl) {
             assert(d_min < 5, `T10 ${name} at edge (dist=${d_min.toFixed(1)})`);
         }
         console.log(`  Score: ${result.score.toFixed(2)}`);
+    }
+
+    // =====================================================================
+    // TEST 10B: only required at-rules constrain slicing-tree boundaries
+    // =====================================================================
+    console.log("\n=== Test 10B: soft at rules do not hard-prune slicing trees ===");
+    {
+        const softLeaf = {
+            type: "leaf",
+            id: "A",
+        };
+        const requiredLeaf = {
+            type: "leaf",
+            id: "B",
+        };
+        const modulesMap = {
+            A: { id: "A", rules: [{ type: "at", dir: ["west"], required: false }] },
+            B: { id: "B", rules: [{ type: "at", dir: ["west"], required: true }] },
+        };
+
+        assert(checkBoundariesOnTree(softLeaf, true, true, true, false, modulesMap),
+            "T10B soft west preference remains valid away from west boundary");
+        assert(!checkBoundariesOnTree(requiredLeaf, true, true, true, false, modulesMap),
+            "T10B required west rule rejects tree away from west boundary");
+    }
+
+    // =====================================================================
+    // TEST 10C: advisory far has no irreducible floor; required far is unchanged
+    // =====================================================================
+    console.log("\n=== Test 10C: distant rooms carry no far floor ===");
+    {
+        const rule = { type: "far", target: ["B"], any: false, weight: 1, required: false };
+        const modulesMap = {
+            A: { id: "A", rules: [rule] },
+            B: { id: "B", rules: [] },
+        };
+        const bounds = { w: 1000, h: 1000 };
+        const nearLayout = [
+            { id: "A", x: 0, y: 0, w: 10, h: 10, centerX: 5, centerY: 5 },
+            { id: "B", x: 100, y: 0, w: 10, h: 10, centerX: 105, centerY: 5 },
+        ];
+        const distantLayout = [
+            { id: "A", x: 0, y: 0, w: 10, h: 10, centerX: 5, centerY: 5 },
+            { id: "B", x: 800, y: 0, w: 10, h: 10, centerX: 805, centerY: 5 },
+        ];
+        const config = { _farCutoffFraction: 0.5 };
+        const nearPenalty = calculateTopologicalPenalties(nearLayout, modulesMap, bounds, config, 1, 1);
+        const distantPenalty = calculateTopologicalPenalties(distantLayout, modulesMap, bounds, config, 1, 1);
+        const maxDistanceLayout = [
+            { id: "A", x: 0, y: 0, w: 0, h: 0, centerX: 0, centerY: 0 },
+            { id: "B", x: 1000, y: 1000, w: 0, h: 0, centerX: 1000, centerY: 1000 },
+        ];
+        const defaultAdvisoryMaxPenalty = calculateTopologicalPenalties(maxDistanceLayout, modulesMap, bounds, {}, 1, 1);
+        const requiredModulesMap = {
+            A: { id: "A", rules: [{ ...rule, required: true }] },
+            B: modulesMap.B,
+        };
+        const requiredDistantPenalty = calculateTopologicalPenalties(distantLayout, requiredModulesMap, bounds, config, 1, 1);
+        const requiredMaxPenalty = calculateTopologicalPenalties(maxDistanceLayout, requiredModulesMap, bounds, {}, 1, 1);
+
+        assert(nearPenalty > 0, `T10C nearby rooms retain gradient (got ${nearPenalty})`);
+        assert(distantPenalty === 0, `T10C advisory-connect cutoff reaches zero at half diagonal (got ${distantPenalty})`);
+        assert(defaultAdvisoryMaxPenalty === 0, `T10C default advisory far reaches zero at max distance (got ${defaultAdvisoryMaxPenalty})`);
+        assert(requiredDistantPenalty > 0, `T10C required far retains gradient (got ${requiredDistantPenalty})`);
+        assert(requiredMaxPenalty === 25000000,
+            `T10C required far retains original half-floor at max distance (got ${requiredMaxPenalty})`);
+    }
+
+    // =====================================================================
+    // TEST 10D: advisory weights use bounded logarithmic compression
+    // =====================================================================
+    console.log("\n=== Test 10D: advisory weight compression is bounded ===");
+    {
+        const layout = [
+            { id: "A", x: 0, y: 0, w: 10, h: 10, centerX: 5, centerY: 5 },
+            { id: "B", x: 0, y: 0, w: 10, h: 10, centerX: 5, centerY: 5 },
+        ];
+        const bounds = { w: 1000, h: 1000 };
+        const penaltyFor = (weight, required = false, uwm = 1) => calculateTopologicalPenalties(layout, {
+            A: { id: "A", rules: [{ type: "far", target: ["B"], any: false, weight, required }] },
+            B: { id: "B", rules: [] },
+        }, bounds, {}, 1, uwm);
+
+        assert(penaltyFor(2) === 2000000, `T10D weight=2 stays 2 (got ${penaltyFor(2)})`);
+        assert(penaltyFor(512) === 10000000, `T10D weight=512 compresses to 10 (got ${penaltyFor(512)})`);
+        assert(penaltyFor(512, false, 0.5) === 5500000,
+            `T10D uwm ramps compressed weight from 1 to 10 (got ${penaltyFor(512, false, 0.5)})`);
+        const weightFiveTarget = 1 + Math.log2(5);
+        const weightFiveStart = 1 + (weightFiveTarget - 1) / 100;
+        assert(Math.abs(penaltyFor(5) / 1000000 - weightFiveTarget) < 1e-12,
+            `T10D weight=5 final target is compressed to ${weightFiveTarget} (got ${penaltyFor(5) / 1000000})`);
+        assert(Math.abs(penaltyFor(5, false, 0.01) / 1000000 - weightFiveStart) < 1e-12,
+            `T10D weight=5 starts at 1% of compressed-target offset (got ${penaltyFor(5, false, 0.01) / 1000000})`);
+        assert(penaltyFor(2 ** 50) === 25000000,
+            `T10D advisory weight caps below required boost (got ${penaltyFor(2 ** 50)})`);
+        assert(penaltyFor(512, true) === 25600000000,
+            `T10D required weight bypasses compression (got ${penaltyFor(512, true)})`);
+    }
+
+    // =====================================================================
+    // TEST 10E: geometry penalties retain scale and threshold gradients
+    // =====================================================================
+    console.log("\n=== Test 10E: room geometry penalty scaling ===");
+    {
+        const ratioModule = { ratioMax: 1.67 };
+        const thresholdAspect = calculateRoomGeometryPenalty({ w: 167, h: 100 }, ratioModule);
+        const nearAspect = calculateRoomGeometryPenalty({ w: 197, h: 100 }, ratioModule);
+        const severeAspect = calculateRoomGeometryPenalty({ w: 1167, h: 100 }, ratioModule);
+
+        assert(Math.abs(thresholdAspect) < 1e-6,
+            `T10E aspect at ratio_max is free (got ${thresholdAspect})`);
+        assert(Math.abs(nearAspect - 975000) < 1e-6,
+            `T10E aspect excess 0.3 carries linear threshold pressure (got ${nearAspect})`);
+        assert(Math.abs(severeAspect - 275000000) < 1e-5,
+            `T10E severe aspect excess remains uncapped (got ${severeAspect})`);
+
+        const sideModule = { ratio: 1, sideMin: 175 };
+        const sideAtLimit = calculateRoomGeometryPenalty({ w: 175, h: 175 }, sideModule);
+        const sideShortSmallCanvas = calculateRoomGeometryPenalty(
+            { w: 87.5, h: 175 }, sideModule, { canvasW: 500, canvasH: 500 },
+        );
+        const sideShortLargeCanvas = calculateRoomGeometryPenalty(
+            { w: 87.5, h: 175 }, sideModule, { canvasW: 5000, canvasH: 5000 },
+        );
+
+        assert(sideAtLimit === 0, `T10E side at side_min is free (got ${sideAtLimit})`);
+        assert(sideShortSmallCanvas === 7500000,
+            `T10E half-side shortfall has relative linear-plus-quadratic cost (got ${sideShortSmallCanvas})`);
+        assert(sideShortLargeCanvas === sideShortSmallCanvas,
+            `T10E side penalty is independent of canvas size (got ${sideShortLargeCanvas})`);
+
+        const areaPenalty = calculateRoomGeometryPenalty(
+            { w: 200, h: 100 }, { area: 10000, ratio: 1 },
+        );
+        assert(areaPenalty === 5000,
+            `T10E area coefficient remains 0.5 per square centimeter (got ${areaPenalty})`);
     }
 
     // =====================================================================
@@ -851,6 +995,63 @@ async function runFloorPlan(dsl) {
     }
 
     // =====================================================================
+    // TEST M4: long-range operand swaps preserve validity and incremental trees
+    // =====================================================================
+    console.log("\n=== Test M4: long-range operand swap validity and incremental rebuild ===");
+    {
+        const initialNpe = ["A", "B", "V", "C", "H", "D", "V", "E", "H"];
+        let state = [...initialNpe];
+        let randomState = 0xC0FFEE;
+        const randomFn = () => {
+            randomState = (randomState * 1664525 + 1013904223) >>> 0;
+            return randomState / 4294967296;
+        };
+        let valid = true;
+        let positionsAreLongRange = true;
+        for (let iteration = 0; iteration < 10000; iteration++) {
+            const before = [...state];
+            const move = applyM4(state, randomFn);
+            const operandPositions = before
+                .map((token, position) => token === "H" || token === "V" ? -1 : position)
+                .filter(position => position >= 0);
+            const ranks = move.positions.map(position => operandPositions.indexOf(position));
+            positionsAreLongRange = positionsAreLongRange && Math.abs(ranks[0] - ranks[1]) > 1;
+            valid = valid && move.type === "M4" && isValidNPE(state);
+        }
+        assert(valid, "M4 preserves valid NPEs across 10,000 applications");
+        assert(positionsAreLongRange, "M4 always swaps non-neighboring operands");
+
+        const modulesMap = Object.fromEntries(["A", "B", "C", "D", "E"].map((id, index) => [id, {
+            id,
+            area: 10000 + index * 1000,
+            ratioMax: 3,
+            curve: [
+                { w: 100 + index * 5, h: 100 },
+                { w: 80 + index * 4, h: 125 },
+            ],
+            rules: [],
+        }]));
+        const movedNpe = [...initialNpe];
+        const previous = buildTreeFresh(movedNpe, modulesMap);
+        const move = applyM4(movedNpe, () => 0);
+        const incremental = buildTreeIncremental(previous.positionMap, movedNpe, move.positions, modulesMap);
+        const fresh = buildTreeFresh(movedNpe, modulesMap);
+        const config = { canvasW: 600, canvasH: 500, canvasFlexible: true };
+        const incrementalResult = evaluateCost(movedNpe, modulesMap, config, 1, incremental, 1, false);
+        const freshResult = evaluateCost(movedNpe, modulesMap, config, 1, fresh, 1, false);
+
+        assert(JSON.stringify(incremental.tree) === JSON.stringify(fresh.tree),
+            "M4 incremental tree equals full rebuild");
+        assert(incrementalResult.cost === freshResult.cost
+            && JSON.stringify(incrementalResult.bestShape) === JSON.stringify(freshResult.bestShape),
+            "M4 incremental cost and selected shape equal full rebuild");
+        assert(move.positions.every(position => incremental.positionMap[position] !== previous.positionMap[position]),
+            "M4 rebuilds both dirty operand positions");
+        assert(incremental.positionMap[5] === previous.positionMap[5],
+            "M4 reuses an untouched leaf outside both dirty paths");
+    }
+
+    // =====================================================================
     // TEST GM1: applyGuidedMove — connect pair moves closer
     // NPE has A at index 0 and B at index 6 (distance 6 > 2). B is preceded
     // by operand Z (index 5), so the swap is unblocked. rfn=()=>0 is deterministic.
@@ -1095,8 +1296,42 @@ async function runFloorPlan(dsl) {
         const wallPen = calculateTopologicalPenalties(wallLayout, wallMap, bounds, {}, 1, 1);
 
         assert(cornerPen > wallPen, `CONNECT_FLOOR corner-touch > wall-share (corner=${cornerPen.toFixed(0)}, wall=${wallPen.toFixed(0)})`);
-        assert(cornerPen > 0, `CONNECT_FLOOR corner-touch penalty positive (got ${cornerPen.toFixed(0)})`);
+        assert(cornerPen > 8000000, `CONNECT_FLOOR soft violation outweighs residual far gradients (got ${cornerPen.toFixed(0)})`);
         console.log(`  cornerPen: ${cornerPen.toFixed(0)}, wallPen: ${wallPen.toFixed(0)}`);
+    }
+
+    // =====================================================================
+    // TEST CONNECT_FLOAT_ADJACENCY: connect scoring and hard satisfaction
+    // use the same epsilon-aware shared-wall check after proportional splits.
+    // =====================================================================
+    console.log("\n=== Test CONNECT_FLOAT_ADJACENCY: epsilon-aware connect scoring ===");
+    {
+        const A = { id: "A", x: 0, y: 0, w: 100, h: 100, centerX: 50, centerY: 50 };
+        const horizontalB = { id: "B", x: 100 + 1e-10, y: 0, w: 100, h: 100, centerX: 150 + 1e-10, centerY: 50 };
+        const verticalB = { id: "B", x: 0, y: 100 + 1e-10, w: 100, h: 100, centerX: 50, centerY: 150 + 1e-10 };
+        const sumRule = { type: "connect", target: ["B"], any: false, required: true };
+        const anyRule = { type: "connect", target: ["missing", "B"], any: true, required: true };
+        const bounds = { w: 200, h: 200 };
+
+        const horizontalLayout = [A, horizontalB];
+        const horizontalModules = {
+            A: { id: "A", rules: [sumRule] },
+            B: { id: "B", rules: [] },
+        };
+        const horizontalPenalty = calculateTopologicalPenalties(horizontalLayout, horizontalModules, bounds, {}, 1, 1);
+        assert(horizontalPenalty === 0, `CONNECT_FLOAT_ADJACENCY sum penalty is zero (got ${horizontalPenalty})`);
+        assert(checkRequiredSatisfied(horizontalLayout, horizontalModules).length === 0,
+            "CONNECT_FLOAT_ADJACENCY horizontal scoring agrees with satisfaction");
+
+        const verticalLayout = [A, verticalB];
+        const verticalModules = {
+            A: { id: "A", rules: [anyRule] },
+            B: { id: "B", rules: [] },
+        };
+        const verticalPenalty = calculateTopologicalPenalties(verticalLayout, verticalModules, bounds, {}, 1, 1);
+        assert(verticalPenalty === 0, `CONNECT_FLOAT_ADJACENCY any penalty is zero (got ${verticalPenalty})`);
+        assert(checkRequiredSatisfied(verticalLayout, verticalModules).length === 0,
+            "CONNECT_FLOAT_ADJACENCY vertical scoring agrees with satisfaction");
     }
 
     // =====================================================================
@@ -1281,42 +1516,178 @@ async function runFloorPlan(dsl) {
         assert(innerY?.rules?.some(r => r.crossBoundary && r.target === "outer_b"),
             "T_XBND inner_y has crossBoundary connect outer_b");
 
-        // Optimizer: inner rooms placed near their outer partners
+        // Optimizer: nested layout resolves without losing either child.
         const { config, modules } = parsed;
         const result = await optimizeRecursive(modules, {
             ...config,
+            algo: "sa",
             seed: 1,
         }, new AbortController().signal);
         const outerRooms = result.rooms;
         const containerRoom = outerRooms.find(r => r.id === "container");
         assert(containerRoom?.inside?.rooms?.length === 2, "T_XBND container has 2 inner rooms");
+    }
 
-        if (containerRoom?.inside?.rooms?.length === 2) {
-            const ix = containerRoom.inside.rooms.find(r => r.id === "inner_x");
-            const iy = containerRoom.inside.rooms.find(r => r.id === "inner_y");
-            const outerA = outerRooms.find(r => r.id === "outer_a");
-            const outerB = outerRooms.find(r => r.id === "outer_b");
+    // =====================================================================
+    // TEST T_XBND_REQUIRED: required nested connects use hard physical
+    // adjacency checks against projected outer-room geometry.
+    // =====================================================================
+    console.log("\n=== Test T_XBND_REQUIRED: nested required connects are physical ===");
+    {
+        const parsed = parseDSL(`
+            seed 7
+            canvas 400x200
+            cwl 50
+            room hub area=40000
+            room container area=40000
+            hub connect container required
+            inside container {
+                room child_a area=20000
+                room child_b area=20000
+                [child_a, child_b] connect hub required
+            }
+        `);
+        const result = await optimizeRecursive(parsed.modules, parsed.config, new AbortController().signal);
+        const container = result.rooms.find(room => room.id === "container");
+        const globalChildren = (container?.inside?.rooms ?? []).map(child => ({
+            ...child,
+            x: container.x + child.x,
+            y: container.y + child.y,
+            name: child.id,
+        }));
+        const globalRooms = [...result.rooms, ...globalChildren];
+        const childWalls = globalChildren.map(child => sharedWallLen(globalRooms, child.id, "hub"));
 
-            // Determine direction of each outer room relative to container center
-            const aCenterY = outerA.y + outerA.h / 2;
-            const bCenterY = outerB.y + outerB.h / 2;
-            const cCenterY = containerRoom.y + containerRoom.h / 2;
-            const aIsNorth = aCenterY < cCenterY;
-            const bIsSouth = bCenterY > cCenterY;
-            assert(aIsNorth, `T_XBND outer_a is north of container (aY=${aCenterY.toFixed(0)}, cY=${cCenterY.toFixed(0)})`);
-            assert(bIsSouth, `T_XBND outer_b is south of container (bY=${bCenterY.toFixed(0)}, cY=${cCenterY.toFixed(0)})`);
+        assert(parsed.errors.length === 0,
+            `T_XBND_REQUIRED DSL parses (got ${JSON.stringify(parsed.errors)})`);
+        assert(childWalls.length === 2,
+            `T_XBND_REQUIRED container has 2 children (got ${childWalls.length})`);
+        assert(childWalls.every(wall => wall >= parsed.config.cwl - 0.1),
+            `T_XBND_REQUIRED every child gets cwl=${parsed.config.cwl} to hub (got ${JSON.stringify(childWalls)})`);
 
-            // inner_x should be in the northern half of container, inner_y in the southern half
-            const ixCY = ix.y + ix.h / 2;
-            const iyCY = iy.y + iy.h / 2;
-            assert(ixCY < containerRoom.h / 2,
-                `T_XBND inner_x in north half of container (cy=${ixCY.toFixed(1)}, mid=${(containerRoom.h / 2).toFixed(1)})`);
-            assert(iyCY >= containerRoom.h / 2,
-                `T_XBND inner_y in south half of container (cy=${iyCY.toFixed(1)}, mid=${(containerRoom.h / 2).toFixed(1)})`);
+        const phantom = { id: "hub", x: -100, y: 0, w: 100, h: 200, centerX: -50, centerY: 100 };
+        const innerModules = [
+            {
+                id: "child_a",
+                area: 20000,
+                rules: [
+                    { type: "connect", target: ["hub"], required: true, crossBoundary: true, cwl: 50 },
+                    { type: "at", dir: ["west"], required: true, weight: 1 },
+                ],
+            },
+            {
+                id: "child_b",
+                area: 20000,
+                rules: [
+                    { type: "connect", target: ["hub"], required: true, crossBoundary: true, cwl: 50 },
+                    { type: "at", dir: ["west"], required: true, weight: 1 },
+                ],
+            },
+        ];
+        const workerConfig = { seed: 7, canvasW: 200, canvasH: 200, k: 2, iter: 1 };
+        const sequential = await wongLiuSimulatedAnnealing(innerModules, workerConfig, undefined, [phantom]);
+        const parallel = await wongLiuSimulatedAnnealing(innerModules, { ...workerConfig, forceWorkers: true }, undefined, [phantom]);
 
-            console.log(`  outer_a centerY=${aCenterY.toFixed(1)}, outer_b centerY=${bCenterY.toFixed(1)}, container centerY=${cCenterY.toFixed(1)}`);
-            console.log(`  inner_x centerY=${ixCY.toFixed(1)}, inner_y centerY=${iyCY.toFixed(1)}, container.h=${containerRoom.h.toFixed(1)}`);
-        }
+        assert(sequential.unsatisfied.length === 0 && parallel.unsatisfied.length === 0,
+            `T_XBND_REQUIRED sequential and worker paths satisfy phantom connects (got ${sequential.unsatisfied.length}/${parallel.unsatisfied.length})`);
+        assert(sequential.cost === parallel.cost
+            && sequential.geometryViolations === parallel.geometryViolations
+            && sequential.npe.join(" ") === parallel.npe.join(" "),
+            "T_XBND_REQUIRED worker selection matches sequential for phantom targets");
+        assert(JSON.stringify(sequential.ruleScores) === JSON.stringify(parallel.ruleScores),
+            "T_XBND_REQUIRED final per-rule scores match across sequential and worker selection");
+    }
+
+    // =====================================================================
+    // TEST T_XBND_ANY_GROUP: every child in a subject list physically
+    // connects to an outer target selected from an any-target group with
+    // enough frontage to honor its inherited side_min.
+    // =====================================================================
+    console.log("\n=== Test T_XBND_ANY_GROUP: every nested child connects to outer hub ===");
+    {
+        const dsl = `
+            seed 44
+            canvas 1400x1100
+            ratio_max 5:3
+            side_min 175
+            cwl 125
+
+            # Top-level Rooms
+            room foyer ratio_max=1:6
+            room hallway ratio_max=1:6
+            room loud area=300000
+            room dining area=140000
+            room guest_bath area=40000
+            room office area=80000
+            room kitchen area=150000
+            room living area=250000
+            room main_bath area=80000
+            room parents area=180000
+            room pantry area=50000
+            room utility area=40000
+            room dressing area=30000
+
+            # Groups
+            hub = [foyer, hallway]
+
+            # Sub-layouts
+            inside loud {
+                room child_1 area=100000
+                room child_2 area=100000
+                room child_3 area=100000
+
+                [child_1, child_2, child_3] connect any hub required
+            }
+
+            # Connectivity & Flow
+            # Route primary parent nodes to hub
+            foyer connect hallway required
+
+            [loud, living, dining, parents, guest_bath, office, utility] connect any hub required
+
+            parents connect [dressing, main_bath] required
+            [dining, pantry] connect kitchen required
+
+            # Enclosures (Dark Core)
+            [dressing, pantry, guest_bath] enclosed
+
+            # Perimeters (Light / Ventilation / Access)
+            [kitchen, dining, parents, main_bath, foyer] at edge required
+
+            # Acoustic Separation
+            [office, parents] far loud weight=10
+            main_bath far hub weight=2
+
+            # Environmental Mapping
+            [pantry, parents] not at south required
+            living at east south weight=10
+            office at north west weight=10
+        `;
+        const parsed = parseDSL(dsl);
+        const result = await optimizeRecursive(parsed.modules, parsed.config, new AbortController().signal);
+        const loud = result.rooms.find(room => room.id === "loud");
+        const globalChildren = (loud?.inside?.rooms ?? []).map(child => ({
+            ...child,
+            x: loud.x + child.x,
+            y: loud.y + child.y,
+            name: child.id,
+        }));
+        const globalRooms = [...result.rooms, ...globalChildren];
+        const childConnections = globalChildren.map(child => ({
+            id: child.id,
+            foyer: sharedWallLen(globalRooms, child.id, "foyer"),
+            hallway: sharedWallLen(globalRooms, child.id, "hallway"),
+        }));
+        const connectedChildren = childConnections.filter(connection => Math.max(connection.foyer, connection.hallway) >= parsed.config.sideMin - 0.1);
+
+        assert(parsed.errors.length === 0,
+            `T_XBND_ANY_GROUP DSL parses (got ${JSON.stringify(parsed.errors)})`);
+        assert(globalChildren.length === 3,
+            `T_XBND_ANY_GROUP loud has 3 children (got ${globalChildren.length})`);
+        assert(connectedChildren.length === 3,
+            `T_XBND_ANY_GROUP all children get side_min=${parsed.config.sideMin} frontage to foyer or hallway (got ${connectedChildren.length}/3: ${JSON.stringify(childConnections)})`);
+        assert(globalChildren.every(child => Math.min(child.w, child.h) >= parsed.config.sideMin - 0.1),
+            `T_XBND_ANY_GROUP all children honor inherited side_min=${parsed.config.sideMin} (got ${JSON.stringify(globalChildren.map(child => ({ id: child.id, w: child.w, h: child.h })))})`);
     }
 
     // =====================================================================
@@ -1414,26 +1785,146 @@ async function runFloorPlan(dsl) {
     }
 
     // =====================================================================
+    // TEST CONNECT_FAR_CONFLICT: exact reported DSL keeps required connection
+    // when `far required` targets the same pair. `far` remains a cost pressure
+    // for a short connection, but cannot win the hard-attempt selector.
+    // =====================================================================
+    console.log("\n=== Test CONNECT_FAR_CONFLICT: required connect wins same-pair far ===");
+    {
+        const dsl = `
+            seed 12
+            canvas 1400x1100
+            ratio_max 5:3
+            side_min 175
+            cwl 125
+
+            # Top-level Rooms
+            room loud area=300000
+            room dining area=140000
+            room guest_bath area=40000
+            room office area=80000
+            room kitchen area=150000
+            room living area=250000
+            room main_bath area=80000
+            room parents area=180000
+            room pantry area=50000
+            room utility area=40000
+            room dressing area=30000
+            room foyer area=40000
+            room hallway ratio_max=1:6
+
+            # Groups
+            hub = [foyer, hallway]
+            meal = [kitchen, dining]
+
+            # Sub-layouts
+            inside loud {
+                room child_1 area=100000
+                room child_2 area=100000
+                room child_3 area=100000
+
+                # Cross-boundary rules cannot use 'required'
+                [child_1, child_2, child_3] connect any hub weight=500
+            }
+
+            # Connectivity & Flow
+            # Route primary parent nodes to hub
+            foyer connect hallway required
+
+            # So the connection is small
+            foyer far hallway required
+
+            loud connect any hub required
+            [parents, guest_bath, office, utility] connect any hub required
+            living connect any hub required
+
+            parents connect dressing required
+            parents connect main_bath required
+            [dining, pantry] connect kitchen required
+            living connect any meal required
+
+            # Enclosures (Dark Core)
+            dressing enclosed
+            pantry enclosed
+            guest_bath enclosed
+
+            # Perimeters (Light / Ventilation / Access)
+            [meal, parents, main_bath, foyer] at edge required
+
+            # Acoustic Separation
+            [office, parents] far loud weight=10
+            main_bath far hub weight=2
+
+            # Environmental Mapping
+            [pantry, parents] not at south required
+            living at east south weight=10
+            office at north west weight=10
+        `;
+        const parsed = parseDSL(dsl);
+        const modulesMap = Object.fromEntries(parsed.modules.map(m => [m.id, m]));
+        const connectedLayout = [
+            { id: "foyer", x: 0, y: 0, w: 200, h: 200 },
+            { id: "hallway", x: 200, y: 0, w: 200, h: 125 },
+        ];
+        const disconnectedLayout = [
+            { id: "foyer", x: 0, y: 0, w: 200, h: 200 },
+            { id: "hallway", x: 400, y: 0, w: 200, h: 125 },
+        ];
+        const connectedUnsatisfied = checkRequiredSatisfied(connectedLayout, modulesMap);
+        const disconnectedUnsatisfied = checkRequiredSatisfied(disconnectedLayout, modulesMap);
+        const connectedWithOtherViolations = [
+            { roomId: "office", type: "at", dir: "north" },
+            { roomId: "parents", type: "not_at", dir: "south" },
+        ];
+        const selected = _selectRequiredBest([
+            { result: { layout: connectedLayout, cost: 100, tag: "connected" }, unsatisfied: connectedWithOtherViolations },
+            { result: { layout: disconnectedLayout, cost: 1, tag: "disconnected" }, unsatisfied: disconnectedUnsatisfied },
+        ]);
+
+        assert(parsed.errors.length === 0, `CONNECT_FAR_CONFLICT DSL parses (got ${JSON.stringify(parsed.errors)})`);
+        assert(connectedUnsatisfied.length === 0,
+            `CONNECT_FAR_CONFLICT connected candidate satisfies hard rules (got ${JSON.stringify(connectedUnsatisfied)})`);
+        assert(disconnectedUnsatisfied.some(rule => rule.type === "connect"),
+            `CONNECT_FAR_CONFLICT disconnected candidate violates connect (got ${JSON.stringify(disconnectedUnsatisfied)})`);
+        assert(selected.tag === "connected",
+            `CONNECT_FAR_CONFLICT selector preserves connection despite other violations (got ${selected.tag})`);
+    }
+
+    // =====================================================================
     // TEST RETRY_PREF: isPreferredRequiredAttempt — required-satisfied
     // attempts beat cheaper unsatisfied ones, regardless of arrival order.
     // =====================================================================
     console.log("\n=== Test RETRY_PREF: prefer required-satisfied over cheaper unsatisfied ===");
     {
-        const cheapUnsatisfied = { unsatisfiedCount: 2, cost: 100 };
-        const pricierSatisfied = { unsatisfiedCount: 0, cost: 500 };
+        const cheapUnsatisfied = { cost: 100, geometryViolations: 0 };
+        const pricierSatisfied = { cost: 500, geometryViolations: 2 };
+        const twoUnsatisfied = new Array(2).fill({ roomId: "X", type: "connect" });
 
         const challengerWins = isPreferredRequiredAttempt(
-            pricierSatisfied.unsatisfiedCount, pricierSatisfied.cost,
-            cheapUnsatisfied.unsatisfiedCount, cheapUnsatisfied.cost);
+            pricierSatisfied, [], cheapUnsatisfied, twoUnsatisfied);
         assert(challengerWins, "RETRY_PREF pricier satisfied attempt beats cheap unsatisfied incumbent");
 
         const incumbentHolds = isPreferredRequiredAttempt(
-            cheapUnsatisfied.unsatisfiedCount, cheapUnsatisfied.cost,
-            pricierSatisfied.unsatisfiedCount, pricierSatisfied.cost);
+            cheapUnsatisfied, twoUnsatisfied, pricierSatisfied, []);
         assert(!incumbentHolds, "RETRY_PREF cheap unsatisfied challenger does not beat satisfied incumbent");
 
-        assert(isPreferredRequiredAttempt(0, 500, 0, 600), "RETRY_PREF tie on unsatisfied count falls back to lower cost");
-        assert(!isPreferredRequiredAttempt(0, 600, 0, 500), "RETRY_PREF tie on unsatisfied count rejects higher cost");
+        assert(isPreferredRequiredAttempt(
+            { cost: 600, geometryViolations: 0 }, [],
+            { cost: 500, geometryViolations: 1 }, []),
+            "RETRY_PREF tie on required count prefers fewer geometry violations before cost");
+        assert(isPreferredRequiredAttempt(
+            { cost: 500, geometryViolations: 1 }, [],
+            { cost: 600, geometryViolations: 1 }, []),
+            "RETRY_PREF tie on required and geometry count falls back to lower cost");
+        assert(!isPreferredRequiredAttempt(
+            { cost: 600, geometryViolations: 1 }, [],
+            { cost: 500, geometryViolations: 1 }, []),
+            "RETRY_PREF tie on required and geometry count rejects higher cost");
+
+        const key = requiredAttemptSelectionKey(
+            { cost: 123, geometryViolations: 4 }, twoUnsatisfied);
+        assert(JSON.stringify(key) === JSON.stringify([0, 2, 4, 123]),
+            `RETRY_PREF shared key is conflict/required/geometry/cost (got ${JSON.stringify(key)})`);
     }
 
     // =====================================================================
@@ -1444,8 +1935,8 @@ async function runFloorPlan(dsl) {
     // =====================================================================
     console.log("\n=== Test SELECT_BEST: parallel selection == sequential lookahead ===");
     {
-        const e = (cost, unsat, repairAttempted = false, tag = cost) => ({
-            result: { cost, repairAttempted, tag },
+        const e = (cost, unsat, geometryViolations = 0, repairAttempted = false, tag = cost) => ({
+            result: { cost, geometryViolations, repairAttempted, tag },
             unsatisfied: new Array(unsat).fill({ roomId: "X", type: "connect" }),
         });
 
@@ -1469,7 +1960,7 @@ async function runFloorPlan(dsl) {
 
         // A repaired-satisfied attempt does NOT stop the search; a later cheaper
         // natural (or lexicographically better) attempt still wins.
-        const repairedThenBetter = _selectRequiredBest([e(300, 0, true), e(200, 0)]);
+        const repairedThenBetter = _selectRequiredBest([e(300, 0, 0, true), e(200, 0)]);
         assert(repairedThenBetter.cost === 200, `SELECT_BEST repaired attempt keeps searching (got ${repairedThenBetter.cost})`);
 
         // No attempt satisfied: fewest unsatisfied then lowest cost across all.
@@ -1478,8 +1969,152 @@ async function runFloorPlan(dsl) {
             `SELECT_BEST all-unsatisfied picks fewest-unsatisfied then lowest cost (got cost ${allUnsat.cost}, unsat ${allUnsat.unsatisfied.length})`);
 
         // Exact cost tie: the earlier attempt index holds (deterministic tie-break).
-        const costTie = _selectRequiredBest([e(70, 1, false, "first"), e(70, 1, false, "second")]);
+        const geometryWins = _selectRequiredBest([e(10, 0, 2), e(100, 0, 1)]);
+        assert(geometryWins.cost === 100 && geometryWins.geometryViolations === 1,
+            `SELECT_BEST worker replay prefers geometry before cost (got ${geometryWins.geometryViolations}/${geometryWins.cost})`);
+
+        const geometryTie = _selectRequiredBest([e(100, 0, 1), e(50, 0, 1)]);
+        assert(geometryTie.cost === 50,
+            `SELECT_BEST geometry tie falls through to cost (got ${geometryTie.cost})`);
+
+        const costTie = _selectRequiredBest([e(70, 1, 2, false, "first"), e(70, 1, 2, false, "second")]);
         assert(costTie.tag === "first" && costTie.cost === 70, "SELECT_BEST exact cost tie keeps earliest attempt");
+    }
+
+    // =====================================================================
+    // TEST GEOMETRY_COUNT: count delivered rooms once when aspect or side_min
+    // violates its effective limit, including auto-area room ratio flexibility.
+    // =====================================================================
+    console.log("\n=== Test GEOMETRY_COUNT: delivered geometry uses effective limits ===");
+    {
+        const modulesMap = {
+            both: { id: "both", ratioMax: 2, sideMin: 50 },
+            auto: { id: "auto", ratioMax: 6, sideMin: 10 },
+            fixedRatio: { id: "fixedRatio", ratio: 4, sideMin: 10 },
+        };
+        const layout = [
+            { id: "both", w: 120, h: 40 },
+            { id: "auto", w: 60, h: 10 },
+            { id: "fixedRatio", w: 40, h: 10 },
+        ];
+        assert(countDeliveredGeometryViolations(layout, modulesMap, { ratioMax: 1.5, sideMin: 20 }) === 1,
+            "GEOMETRY_COUNT counts aspect-or-side failure once and honors room overrides/fixed ratio");
+
+        const epsilonLayout = [{ id: "both", w: 100, h: 50 - 1e-8 }];
+        assert(countDeliveredGeometryViolations(epsilonLayout, modulesMap) === 0,
+            "GEOMETRY_COUNT ignores floating-point drift within epsilon");
+    }
+
+    // =====================================================================
+    // TEST RULE_REPORT: exact post-solve per-rule accounting
+    // =====================================================================
+    console.log("\n=== Test RULE_REPORT: exact post-solve per-rule accounting ===");
+    {
+        const scalarConnect = { type: "connect", target: "B", weight: 1, required: false };
+        const anyNorth = { type: "at", dir: "north", weight: 1, required: false, subjectAny: true, subjectGroupId: 4 };
+        const modulesMap = {
+            A: { id: "A", rules: [scalarConnect, anyNorth] },
+            B: { id: "B", rules: [] },
+            C: { id: "C", rules: [{ ...anyNorth }] },
+        };
+        const layout = [
+            { id: "A", x: 0, y: 0, w: 100, h: 100, centerX: 50, centerY: 50 },
+            { id: "B", x: 300, y: 0, w: 100, h: 100, centerX: 350, centerY: 50 },
+            { id: "C", x: 100, y: 100, w: 100, h: 100, centerX: 150, centerY: 150 },
+        ];
+        const bounds = { w: 400, h: 200 };
+        const topological = calculateTopologicalPenalties(layout, modulesMap, bounds, {}, 1, 1);
+        const total = topological + 80000;
+        const report = calculateRuleScores(layout, modulesMap, bounds, {}, total, topological);
+        const connect = report.rules.find(rule => rule.type === "connect");
+        const subjectAny = report.rules.find(rule => rule.id === "group:4");
+
+        assert(report.rules.length === 2, `RULE_REPORT subject-any expansions collapse to one rule (got ${report.rules.length})`);
+        assert(connect.text === "A connect B", `RULE_REPORT canonical rule text is stable (got '${connect.text}')`);
+        assert(connect.participants.join("|") === "A|B", "RULE_REPORT exposes named subject and target participants without parsing display text");
+        assert(connect.satisfied === false && connect.penalty > 0, "RULE_REPORT includes binary verdict and continuous penalty");
+        assert(subjectAny.text === "any [A, C] at north", `RULE_REPORT names all subject-any rooms (got '${subjectAny.text}')`);
+        assert(subjectAny.participants.join("|") === "A|C", "RULE_REPORT subject-any participants include every named subject");
+        assert(subjectAny.satisfied === true && subjectAny.penalty === 0, "RULE_REPORT subject-any uses any verdict and minimum penalty");
+        assert(Math.abs(report.reportedPenalty - topological) < 1e-6, "RULE_REPORT rule terms sum to final topological score");
+        assert(Math.abs(connect.percentOfTotal - connect.penalty / total * 100) < 1e-12, "RULE_REPORT percentage uses final scope total");
+        assert(scalarConnect.target === "B" && anyNorth.dir === "north", "RULE_REPORT does not normalize parser rules in place");
+        assert(report.weightSemantics.compressedTargetFormula === "N <= 1 ? N : min(1 + log2(N), 25)",
+            "RULE_REPORT distinguishes raw weight from compressed target formula");
+        assert(report.weightSemantics.annealingEffectiveFormula === "1 + (target - 1) * min(initial_t / T / 100, 1)",
+            "RULE_REPORT exposes temperature-dependent effective-weight formula");
+        assert(Math.abs(report.weightSemantics.example.compressedTargetWeight - (1 + Math.log2(5))) < 1e-12
+            && Math.abs(report.weightSemantics.example.initialEffectiveWeight - (1 + Math.log2(5) / 100)) < 1e-12,
+            "RULE_REPORT weight=5 example separates raw, target, and initial effective weights");
+        assert(report.weightSemantics.finalReportUses === "compressed-target"
+            && report.weightSemantics.requiredWeightFormula === "N * 50",
+            "RULE_REPORT states final-report and required-weight semantics");
+
+        const conflictModules = {
+            A: { id: "A", rules: [
+                { type: "connect", target: "B", weight: 1, required: true },
+                { type: "far", target: "B", weight: 1, required: true },
+            ] },
+            B: { id: "B", rules: [] },
+        };
+        const conflictTopological = calculateTopologicalPenalties(layout.slice(0, 2), conflictModules, bounds, {}, 1, 1);
+        const conflictReport = calculateRuleScores(layout.slice(0, 2), conflictModules, bounds, {}, conflictTopological, conflictTopological);
+        const far = conflictReport.rules.find(rule => rule.type === "far");
+        assert(far.satisfied === null && far.penalty > 0, "RULE_REPORT labels required connect/far hard-verdict conflict as exempt while retaining scored penalty");
+        const farSplit = far.farPenaltyDecomposition;
+        assert(farSplit.mode === "required-inverse-distance-floor"
+            && farSplit.distanceBasis === "room-center-to-target-center"
+            && farSplit.requiredWeight === 50 && farSplit.penaltyScale === 1000000
+            && farSplit.canvasDiagonal === Math.hypot(bounds.w, bounds.h),
+            "RULE_REPORT required far split states center-distance and scope-canvas assumptions");
+        assert(farSplit.irreduciblePenalty === 25000000
+            && Math.abs(farSplit.irreduciblePenalty + farSplit.reduciblePenalty - far.penalty) < 1e-9,
+            "RULE_REPORT required far split is exact and additive for a local target");
+        assert(farSplit.floorTerms[0].maximumDistanceBasis === "scope-canvas-diagonal"
+            && farSplit.floorTerms[0].maximumCenterDistance === farSplit.canvasDiagonal,
+            "RULE_REPORT local required far floor uses one canvas diagonal maximum distance");
+
+        const multiFarLayout = [...layout.slice(0, 2), layout[2]];
+        const summedFarModules = {
+            A: { id: "A", rules: [{ type: "far", target: ["B", "C"], weight: 1, required: true }] },
+            B: { id: "B", rules: [] },
+            C: { id: "C", rules: [] },
+        };
+        const summedPenalty = calculateTopologicalPenalties(multiFarLayout, summedFarModules, bounds, {}, 1, 1);
+        const summedFar = calculateRuleScores(multiFarLayout, summedFarModules, bounds, {}, summedPenalty, summedPenalty).rules[0];
+        const anyFarModules = {
+            ...summedFarModules,
+            A: { id: "A", rules: [{ type: "far", target: ["B", "C"], any: true, weight: 1, required: true }] },
+        };
+        const anyPenalty = calculateTopologicalPenalties(multiFarLayout, anyFarModules, bounds, {}, 1, 1);
+        const anyFar = calculateRuleScores(multiFarLayout, anyFarModules, bounds, {}, anyPenalty, anyPenalty).rules[0];
+        assert(summedFar.farPenaltyDecomposition.aggregation === "sum-over-resolved-targets"
+            && summedFar.farPenaltyDecomposition.irreduciblePenalty === 50000000,
+            "RULE_REPORT multi-target required far sums pair floors");
+        assert(anyFar.farPenaltyDecomposition.aggregation === "minimum-over-resolved-targets"
+            && anyFar.farPenaltyDecomposition.irreduciblePenalty === 25000000,
+            "RULE_REPORT any-target required far takes minimum pair floor");
+
+        const advisoryFarModules = {
+            A: { id: "A", rules: [{ type: "far", target: "B", weight: 1, required: false }] },
+            B: { id: "B", rules: [] },
+        };
+        const advisoryFarReport = calculateRuleScores(layout.slice(0, 2), advisoryFarModules, bounds, {}, 0, 0);
+        assert(advisoryFarReport.rules[0].farPenaltyDecomposition === undefined,
+            "RULE_REPORT never claims an irreducible floor for zero-cutoff advisory far");
+
+        const externalTarget = { id: "outside", centerX: 600, centerY: 100 };
+        const phantomFarModules = {
+            A: { id: "A", rules: [{ type: "far", target: "outside", weight: 1, required: true }] },
+        };
+        const phantomPenalty = calculateTopologicalPenalties(layout.slice(0, 1), phantomFarModules, bounds, {}, 1, 1, null, [externalTarget]);
+        const phantomReport = calculateRuleScores(layout.slice(0, 1), phantomFarModules, bounds, {}, phantomPenalty, phantomPenalty, [externalTarget]);
+        const phantomSplit = phantomReport.rules[0].farPenaltyDecomposition;
+        assert(phantomSplit.floorTerms[0].maximumDistanceBasis === "farthest-scope-corner-from-fixed-external-target"
+            && phantomSplit.floorTerms[0].maximumCenterDistance === Math.hypot(600, 100),
+            "RULE_REPORT external phantom far floor uses farthest scope-corner distance");
+        assert(Math.abs(phantomSplit.irreduciblePenalty + phantomSplit.reduciblePenalty - phantomReport.rules[0].penalty) < 1e-9,
+            "RULE_REPORT external phantom far split remains exact and additive");
     }
 
     // =====================================================================

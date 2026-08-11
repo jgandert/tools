@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 // Updates the default-result-cache slot in index.html with a pre-computed
-// optimization result for the default DSL, so the page doesn't run SA on load.
+// optimization result for the default DSL, so the page does not optimize on load.
 const fs = require("fs");
 const path = require("path");
 const { parseDSL } = require("./parser.js");
-const { stripComments, optimizeRecursive } = require("./orchestrator.js");
+const { stripComments, optimizeParsed } = require("./orchestrator.js");
 
 const HTML_PATH = path.join(__dirname, "index.html");
 
@@ -24,14 +24,15 @@ async function main() {
     const defaultDsl = dslMatch[1].trim();
     const stripped = stripComments(defaultDsl);
 
-    const { config, modules, errors } = parseDSL(defaultDsl);
+    const parsed = parseDSL(defaultDsl);
+    const { config, modules, errors } = parsed;
     if (errors.length > 0) {
         throw new Error(`DSL parse errors:\n${errors.join("\n")}`);
     }
 
     console.log(`Optimizing ${modules.length} rooms...`);
     const { signal } = new AbortController();
-    const result = await optimizeRecursive(modules, config, signal);
+    const result = await optimizeParsed(parsed, signal);
     console.log(`Done. Cost: ${result.cost.toFixed(2)}`);
 
     // Escape </script> to prevent premature tag closure inside the JSON blob

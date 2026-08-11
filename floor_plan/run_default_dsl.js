@@ -1,5 +1,5 @@
-const { wongLiuSimulatedAnnealing } = require("./layout_optimizer.js");
 const { parseDSL } = require("./parser.js");
+const { optimizeParsed } = require("./orchestrator.js");
 const fs = require("fs");
 
 const text = fs.readFileSync("index.html", "utf8");
@@ -8,20 +8,22 @@ if (!dslMatch) {
     console.log("No DSL found");
     process.exit(1);
 }
-const dsl = dslMatch[1];
-// Strip HTML encoding if any, though it's likely raw
-const { config, modules } = parseDSL(dsl);
-
-if (modules.length === 1) {
-    modules.push({ id: "_dummy", area: 1, w: 1, h: 1, rules: [] });
+const parsed = parseDSL(dslMatch[1]);
+if (parsed.errors.length) {
+    throw new Error(parsed.errors.join("\n"));
 }
 
 (async () => {
-    const result = await wongLiuSimulatedAnnealing(modules, {
-        k: 2,
-        iter: 1,
-        ...config,
+    const result = await optimizeParsed({
+        ...parsed,
+        config: {
+            ...parsed.config,
+            k: 2,
+            iter: 1,
+        },
     });
     console.log(result.cost);
-    console.log(result.npe.join(" "));
+    if (result.npe) {
+        console.log(result.npe.join(" "));
+    }
 })();

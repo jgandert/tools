@@ -1,8 +1,18 @@
 const VALID_DIRS = new Set(["north", "south", "east", "west", "edge"]);
 
+const SA_ADVISORY_WEIGHT_WARNING = "SA advisory weight=N uses compressed target N <= 1 ? N : min(1 + log2(N), 25), then effective weight 1 + (target - 1) * min(initial_t / T / 100, 1). At T=initial_t, only 1% of target's offset from 1 applies; target is reached at T <= initial_t / 100. weight=5 therefore targets 3.322, starts at 1.023, and final per-rule scores use 3.322. required bypasses compression and ramp.";
+
+const FEASIBILITY_WARNING_CODES = {
+    areaOverflow: "FEASIBILITY_AREA_OVERFLOW",
+    insideFrontage: "FEASIBILITY_INSIDE_FRONTAGE",
+    requiredAtConflict: "FEASIBILITY_REQUIRED_AT_CONFLICT",
+};
+
+const FEASIBILITY_EPSILON = 1e-6;
+
 const RESERVED_KEYWORDS = new Set([
     "canvas", "ratio_max", "area_min", "side_min", "side_max", "cwl", "cwc",
-    "seed", "iter", "k", "cooling_rate", "initial_t", "min_t", "algo",
+    "seed", "iter", "k", "cooling_rate", "initial_t", "min_t", "algo", "shapes",
     "room", "inside", "any",
     "connect", "close", "far", "at", "not_at", "enclosed",
 ]);
@@ -73,6 +83,259 @@ function stripComments(line) {
 
     const idx = hashIdx !== -1 ? hashIdx : slashIdx;
     return line.substring(0, idx);
+}
+
+function hasRampedAdvisoryWeight(modules) {
+    return modules.some(module => {
+        const localMatch = (module.rules ?? []).some(rule => !rule.required
+            && Number.isFinite(rule.weight)
+            && rule.weight !== 1);
+        return localMatch || hasRampedAdvisoryWeight(module.inside?.modules ?? []);
+    });
+}
+
+function finitePositive(value) {
+    return Number.isFinite(value) && value > 0;
+}
+
+function formatMeasure(value) {
+    const rounded = Math.round(value * 10) / 10;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function formatRatio(value) {
+    return String(Math.round(value * 1000) / 1000);
+}
+
+function normalizeDirections(dir) {
+    if (dir === undefined) {
+        return [];
+    }
+    return Array.isArray(dir) ? dir : String(dir).split(" ").filter(Boolean);
+}
+
+function targetGroupKey(rule) {
+    const targets = Array.isArray(rule.target) ? rule.target : [rule.target];
+    return `${rule.any ? "any:" : "all:"}${[...targets].sort().join("|")}`;
+}
+
+function requestedMinimumSide(module) {
+    if (finitePositive(module.w) && finitePositive(module.h)) {
+        return Math.min(module.w, module.h);
+    }
+    if (!finitePositive(module.area)) {
+        return 0;
+    }
+    if (finitePositive(module.ratio)) {
+        const ratio = Math.max(module.ratio, 1 / module.ratio);
+        return Math.sqrt(module.area / ratio);
+    }
+    if (finitePositive(module.ratioMax)) {
+        return Math.sqrt(module.area / module.ratioMax);
+    }
+    return 0;
+}
+
+function requestedMaximumSide(module) {
+    if (finitePositive(module.w) && finitePositive(module.h)) {
+        return Math.max(module.w, module.h);
+    }
+    if (!finitePositive(module.area)) {
+        return 0;
+    }
+    if (finitePositive(module.ratio)) {
+        const ratio = Math.max(module.ratio, 1 / module.ratio);
+        return Math.sqrt(module.area * ratio);
+    }
+    if (finitePositive(module.ratioMax)) {
+        return Math.sqrt(module.area * module.ratioMax);
+    }
+    return 0;
+}
+
+function crossBoundaryFrontageRequirement(module, rule, config) {
+    const cwl = finitePositive(rule.cwl) ? rule.cwl : (finitePositive(config.cwl) ? config.cwl : 0);
+    const sideMin = config.sideMinFlexible
+        ? 0
+        : (finitePositive(module.sideMin) ? module.sideMin : (finitePositive(config.sideMin) ? config.sideMin : 0));
+    return Math.max(cwl, sideMin, requestedMinimumSide(module));
+}
+
+function describeTargets(rule, containingPath) {
+    const targets = (Array.isArray(rule.target) ? rule.target : [rule.target])
+        .map(target => `${containingPath} / ${target}`);
+    return `${rule.any ? "any " : ""}[${targets.join(", ")}]`;
+}
+
+function collectRequiredAtWarnings(module, roomPath) {
+    const requiredDirections = new Set();
+    for (const rule of module.rules ?? []) {
+        if (rule.type !== "at" || !rule.required || rule.subjectAny) {
+            continue;
+        }
+        for (const dir of normalizeDirections(rule.dir)) {
+            requiredDirections.add(dir);
+        }
+    }
+
+    const warnings = [];
+    const opposingPairs = [
+        ["north", "south", "height"],
+        ["east", "west", "width"],
+    ];
+    for (const [first, second, dimension] of opposingPairs) {
+        if (!requiredDirections.has(first) || !requiredDirections.has(second)) {
+            continue;
+        }
+        warnings.push(
+            `[${FEASIBILITY_WARNING_CODES.requiredAtConflict}] ${roomPath}: opposing required constraints `
+            + `at ${first} required and at ${second} required force this room to span full scope ${dimension}; `
+            + "treat them as contradictory directional intent unless full-span geometry is deliberate.",
+        );
+    }
+    return warnings;
+}
+
+function collectInsideFrontageWarnings(parent, parentPath, containingPath) {
+    if (!parent.inside?.modules?.length) {
+        return [];
+    }
+    const parentMaximum = requestedMaximumSide(parent);
+    if (!finitePositive(parentMaximum)) {
+        return [];
+    }
+
+    const demandGroups = new Map();
+    const subjectAnyGroups = new Map();
+    for (const child of parent.inside.modules) {
+        for (const rule of child.rules ?? []) {
+            if (rule.type !== "connect" || !rule.crossBoundary || !rule.required) {
+                continue;
+            }
+            const demand = crossBoundaryFrontageRequirement(child, rule, parent.inside.config);
+            if (!finitePositive(demand)) {
+                continue;
+            }
+            const entry = { child, rule, demand };
+            if (rule.subjectAny && rule.subjectGroupId !== undefined) {
+                const key = `${rule.subjectGroupId}:${targetGroupKey(rule)}`;
+                if (!subjectAnyGroups.has(key)) {
+                    subjectAnyGroups.set(key, { rule, candidates: [] });
+                }
+                subjectAnyGroups.get(key).candidates.push(entry);
+                continue;
+            }
+            const key = targetGroupKey(rule);
+            if (!demandGroups.has(key)) {
+                demandGroups.set(key, []);
+            }
+            const entries = demandGroups.get(key);
+            const duplicate = entries.find(candidate => !candidate.rule.subjectAny && candidate.child.id === child.id);
+            if (!duplicate) {
+                entries.push(entry);
+            } else if (demand > duplicate.demand) {
+                duplicate.demand = demand;
+                duplicate.rule = rule;
+            }
+        }
+    }
+    for (const group of subjectAnyGroups.values()) {
+        const key = targetGroupKey(group.rule);
+        if (!demandGroups.has(key)) {
+            demandGroups.set(key, []);
+        }
+        demandGroups.get(key).push({
+            rule: group.rule,
+            subjectAnyCandidates: group.candidates,
+        });
+    }
+
+    const warnings = [];
+    for (const entries of demandGroups.values()) {
+        const mandatoryEntries = entries.filter(entry => !entry.subjectAnyCandidates);
+        const mandatoryByChild = new Map(mandatoryEntries.map(entry => [entry.child.id, entry]));
+        const mandatoryDemand = mandatoryEntries.reduce((sum, entry) => sum + entry.demand, 0);
+        let subjectAnyDemand = 0;
+        let limitingSubjectAny;
+        for (const group of entries.filter(entry => entry.subjectAnyCandidates)) {
+            const cheapest = group.subjectAnyCandidates
+                .map(candidate => ({
+                    candidate,
+                    incremental: Math.max(0, candidate.demand - (mandatoryByChild.get(candidate.child.id)?.demand ?? 0)),
+                }))
+                .sort((left, right) => left.incremental - right.incremental)[0];
+            if (cheapest && cheapest.incremental > subjectAnyDemand) {
+                subjectAnyDemand = cheapest.incremental;
+                limitingSubjectAny = group;
+            }
+        }
+        const totalDemand = mandatoryDemand + subjectAnyDemand;
+        if (totalDemand <= parentMaximum + FEASIBILITY_EPSILON) {
+            continue;
+        }
+        const children = mandatoryEntries.map(entry => `${parentPath} / ${entry.child.id}=${formatMeasure(entry.demand)} cm`);
+        if (limitingSubjectAny) {
+            const paths = limitingSubjectAny.subjectAnyCandidates.map(entry => `${parentPath} / ${entry.child.id}`);
+            children.push(`any [${paths.join(", ")}] adds at least ${formatMeasure(subjectAnyDemand)} cm`);
+        }
+        const parentConstraint = finitePositive(parent.w) && finitePositive(parent.h)
+            ? `fixed ${formatMeasure(parent.w)}x${formatMeasure(parent.h)} cm dimensions`
+            : finitePositive(parent.ratio)
+                ? `area=${formatMeasure(parent.area)} cm² and ratio=${formatRatio(parent.ratio)}`
+                : `area=${formatMeasure(parent.area)} cm² and ratio_max=${formatRatio(parent.ratioMax)}`;
+        warnings.push(
+            `[${FEASIBILITY_WARNING_CODES.insideFrontage}] ${parentPath}: required cross-boundary frontage for `
+            + `[${children.join(", ")}] targeting ${describeTargets(entries[0].rule, containingPath)} needs at least `
+            + `${formatMeasure(totalDemand)} cm on one parent wall, but ${parentConstraint} allow at most `
+            + `${formatMeasure(parentMaximum)} cm; shortfall ${formatMeasure(totalDemand - parentMaximum)} cm. `
+            + "Demand includes required cwl/non-flexible side_min and each child's requested area/ratio_max rectangular lower bound.",
+        );
+    }
+    return warnings;
+}
+
+function collectScopeFeasibilityWarnings(modules, scopePath, includeFrontage) {
+    const warnings = [];
+    for (const module of modules) {
+        const roomPath = `${scopePath} / ${module.id}`;
+        warnings.push(...collectRequiredAtWarnings(module, roomPath));
+        if (includeFrontage) {
+            warnings.push(...collectInsideFrontageWarnings(module, roomPath, scopePath));
+        }
+        if (module.inside?.modules?.length) {
+            warnings.push(...collectScopeFeasibilityWarnings(module.inside.modules, roomPath, includeFrontage));
+        }
+    }
+    return warnings;
+}
+
+function collectAreaOverflowWarning(modules, config) {
+    if (config.canvasFlexible || !finitePositive(config.canvasW) || !finitePositive(config.canvasH)) {
+        return [];
+    }
+    const requested = modules.filter(module => finitePositive(module.area));
+    const totalArea = requested.reduce((sum, module) => sum + module.area, 0);
+    const canvasArea = config.canvasW * config.canvasH;
+    if (totalArea <= canvasArea + FEASIBILITY_EPSILON) {
+        return [];
+    }
+    const roomPaths = requested.map(module => `top / ${module.id}`);
+    return [
+        `[${FEASIBILITY_WARNING_CODES.areaOverflow}] top: requested area for [${roomPaths.join(", ")}] totals `
+        + `${formatMeasure(totalArea)} cm², but strict canvas ${formatMeasure(config.canvasW)}x${formatMeasure(config.canvasH)} cm `
+        + `provides ${formatMeasure(canvasArea)} cm²; shortfall ${formatMeasure(totalArea - canvasArea)} cm².`,
+    ];
+}
+
+function collectFeasibilityWarnings(modules, config) {
+    const isSa = (config.algo ?? "sa") === "sa";
+    const warnings = [
+        ...collectScopeFeasibilityWarnings(modules, "top", isSa),
+    ];
+    if (isSa) {
+        warnings.push(...collectAreaOverflowWarning(modules, config));
+    }
+    return [...new Set(warnings)];
 }
 
 // Extract `inside <room> { ... }` blocks from DSL text.
@@ -163,7 +426,7 @@ function extractInsideBlocks(rawLines) {
 // Global geometry settings an `inside` block inherits from its enclosing scope.
 // Canvas dims are excluded on purpose — an inner plan's canvas is the parent room.
 // Search/seed settings are excluded too: the orchestrator drives those per level.
-const INHERITED_CONFIG_KEYS = ["ratioMax", "areaMin", "sideMin", "sideMinFlexible", "sideMax", "cwl", "cwc"];
+const INHERITED_CONFIG_KEYS = ["ratioMax", "areaMin", "sideMin", "sideMinFlexible", "sideMax", "cwl", "cwc", "shapes", "shapeRequired"];
 
 function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGroups = {}, outerConfig = {}) {
     const rawLines = dslString.split("\n");
@@ -219,6 +482,10 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
         }
         return n;
     };
+
+    const parseWeight = (params, lineNum) => params.weight === undefined
+        ? 1
+        : parseNum(params.weight, lineNum, "weight");
 
     const parseRatio = (str, lineNum, label) => {
         if (str.includes(":")) {
@@ -302,10 +569,42 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
             const excludeSet = new Set(excludeIds);
             subjects = [...declaredRooms].filter(id => !excludeSet.has(id));
         } else {
-            subjects = listStr.split(",").map(s => s.trim()).filter(Boolean);
+            const ids = listStr.split(",").map(s => s.trim()).filter(Boolean);
+            subjects = [...new Set(ids.flatMap(id => resolveIds(id, lineNum)))];
         }
 
         return { subjects, ruleTokens };
+    };
+
+    // Parse a group definition RHS: terms joined by '+', each either "[a, b]" or a bare
+    // group/room name. Group references resolve to their members (groups are flat, so
+    // definition-time resolution is enough); unknown names stay literal and are
+    // validated when the group is used.
+    const parseGroupExpr = (expr, lineNum) => {
+        const members = [];
+
+        for (const rawTerm of expr.split("+")) {
+            const term = rawTerm.trim();
+            if (!term) {
+                errors.push(`Line ${lineNum}: empty term in group expression`);
+                continue;
+            }
+
+            if (term.startsWith("[") && term.endsWith("]")) {
+                const ids = term.slice(1, -1).split(",").map(s => s.trim()).filter(Boolean);
+                members.push(...ids.flatMap(id => resolveIds(id, lineNum)));
+                continue;
+            }
+
+            if (term.includes("[") || term.includes("]") || term.includes(",")) {
+                errors.push(`Line ${lineNum}: cannot parse group term '${term}' — expected '[a, b]' or a group/room name`);
+                continue;
+            }
+
+            members.push(...resolveIds(term, lineNum));
+        }
+
+        return [...new Set(members)];
     };
 
     for (const { text: line, lineNum } of lines) {
@@ -344,13 +643,27 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
         } else if (["seed", "iter", "k", "cooling_rate", "initial_t", "min_t"].includes(cmd)) {
             config[cmd] = parseFloat(tokens[1]);
         } else if (cmd === "algo") {
-            config.algo = tokens[1];
+            if (_isInside) {
+                errors.push(`Line ${lineNum}: 'algo' is not allowed inside an 'inside' block — nested plans use the outer algorithm`);
+            } else if (tokens.length !== 2 || (tokens[1] !== "sa" && tokens[1] !== "grid")) {
+                errors.push(`Line ${lineNum}: 'algo' expects exactly 'sa' or 'grid', got '${tokens.slice(1).join(" ")}'`);
+            } else {
+                config.algo = tokens[1];
+            }
+        } else if (cmd === "shapes") {
+            if (tokens[1] === "rect" || tokens[1] === "free") {
+                config.shapes = tokens[1];
+            } else {
+                errors.push(`Line ${lineNum}: 'shapes' expects 'rect' or 'free', got '${tokens[1] || ""}'`);
+            }
+        } else if (cmd === "shape" && tokens.length === 3 && tokens[1] === "rect" && tokens[2] === "required") {
+            config.shapes = "rect";
+            config.shapeRequired = true;
 
-            // Groups: name = [a, b, c]
+            // Groups: name = [a, b] + other_group + ...
         } else if (tokens.length >= 3 && tokens[1] === "=") {
             const name = tokens[0];
-            const listStr = line.substring(line.indexOf("[") + 1, line.lastIndexOf("]"));
-            groups[name] = listStr.split(",").map(s => s.trim());
+            groups[name] = parseGroupExpr(line.substring(line.indexOf("=") + 1), lineNum);
 
             // Rooms
         } else if (cmd === "room") {
@@ -392,8 +705,17 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
                     m.ratioMax = parseRatioMax(val, lineNum, "ratio_max");
                 } else if (key === "cwc") {
                     m.cwc = parseNum(val, lineNum, "cwc");
+                } else if (key === "shape") {
+                    if (val === "rect:required") {
+                        m.shape = "rect";
+                        m.shapeRequired = true;
+                    } else if (val === "rect" || val === "free") {
+                        m.shape = val;
+                    } else {
+                        errors.push(`Line ${lineNum}: 'shape' expects 'rect', 'free', or 'rect:required', got '${val}'`);
+                    }
                 } else {
-                    const suggestions = suggestCorrections(key, new Set(["area", "area_min", "side_min", "ratio", "ratio_max", "cwc"]));
+                    const suggestions = suggestCorrections(key, new Set(["area", "area_min", "side_min", "ratio", "ratio_max", "cwc", "shape"]));
                     errors.push(
                         `Line ${lineNum}: unknown room parameter '${key}'` +
                         (suggestions.length ? ` — did you mean '${suggestions[0]}'?` : ""),
@@ -468,7 +790,7 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
                     checkParams(params, "enclosed", lineNum);
                     const rule = {
                         type: "enclosed",
-                        weight: params.weight ? parseFloat(params.weight) : 1,
+                        weight: parseWeight(params, lineNum),
                         required: !!params.required,
                         subjectAny,
                     };
@@ -509,7 +831,7 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
                     const rule = {
                         type: ruleType,
                         dir: dirArray,
-                        weight: params.weight ? parseFloat(params.weight) : 1,
+                        weight: parseWeight(params, lineNum),
                         required: !!params.required,
                         subjectAny,
                     };
@@ -572,7 +894,7 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
                         type: ruleType,
                         target: targets.length === 1 ? targets[0] : targets,
                         any: anyModifier,
-                        weight: params.weight ? parseFloat(params.weight) : 1,
+                        weight: parseWeight(params, lineNum),
                         // cross-boundary connect is translated to `at <dir>` so `required` is meaningful there;
                         // for close/far cross-boundary, required cannot be enforced
                         required: (hasCrossBoundaryTarget && ruleType !== "connect") ? false : !!params.required,
@@ -638,9 +960,17 @@ function parseDSL(dslString, _isInside = false, outerScope = new Set(), outerGro
         modulesMap[roomId].inside = parsedInsideBlocks[roomId];
     }
 
+    const modules = Object.values(modulesMap);
+    if (!_isInside && errors.length === 0) {
+        warnings.push(...collectFeasibilityWarnings(modules, config));
+    }
+    if (!_isInside && (config.algo ?? "sa") === "sa" && hasRampedAdvisoryWeight(modules)) {
+        warnings.push(SA_ADVISORY_WEIGHT_WARNING);
+    }
+
     return {
         config,
-        modules: Object.values(modulesMap),
+        modules,
         errors,
         warnings,
         insideBlocks: parsedInsideBlocks,
