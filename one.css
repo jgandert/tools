@@ -552,6 +552,9 @@ body > header nav,
         /* Right cover */ linear-gradient(to left, var(--scroll-shadow-bg, var(--surface-container)) 30%, transparent),
         /* Left shadow */ radial-gradient(farthest-side at 0% 50%, var(--scroll-shadow), transparent),
         /* Right shadow */ radial-gradient(farthest-side at 100% 50%, var(--scroll-shadow), transparent);
+    /* The shorthand above resets background-color to transparent, and the cover
+       layers are edge bands only — without this the middle shows the parent through. */
+    background-color: var(--scroll-shadow-bg, var(--surface-container));
     background-repeat: no-repeat;
     background-position: left center, right center, left center, right center;
     background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
@@ -567,6 +570,9 @@ dialog .dialog-content {
         /* Bottom cover */ linear-gradient(to top, var(--scroll-shadow-bg, var(--surface-container-highest)) 30%, transparent),
         /* Top shadow */ radial-gradient(farthest-side at 50% 0%, var(--scroll-shadow), transparent),
         /* Bottom shadow */ radial-gradient(farthest-side at 50% 100%, var(--scroll-shadow), transparent);
+    /* The shorthand above resets background-color to transparent, and the cover
+       layers are edge bands only — without this the middle shows the parent through. */
+    background-color: var(--scroll-shadow-bg, var(--surface-container-highest));
     background-repeat: no-repeat;
     background-position: top center, bottom center, top center, bottom center;
     background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;
@@ -628,6 +634,9 @@ nav a:hover {
 /* Circular icon button used as a label for #aside-state checkbox */
 .aside-toggle-btn {
     cursor: pointer;
+
+    /* Must not shrink, or the 50% radius turns the circle into an ellipse */
+    flex: none;
     width: 48px;
     height: 48px;
     display: grid;
@@ -1988,6 +1997,16 @@ pre {
     margin-top: var(--spacing-sm);
 }
 
+/* The scroll-shadow background shorthand outranks pre's background-color,
+   so the cover gradients must be the pre background, not the surface. */
+pre.scroll-shadow-y,
+pre.scroll-shadow-x {
+    --scroll-shadow-bg: var(--pre-bg);
+    /* --scroll-shadow tracks the page theme, but pre is dark in BOTH themes, so the
+       light-theme dark shadow would be invisible. Fixed light shadow instead. */
+    --scroll-shadow: rgba(255, 255, 255, 0.16);
+}
+
 code {
     background-color: var(--surface-container-high);
     padding: 2px 4px;
@@ -2690,6 +2709,11 @@ dialog footer {
 .toast.show {
     opacity: 1;
     transform: translateY(0);
+}
+
+.toast-error {
+    background-color: var(--error);
+    color: var(--on-error);
 }
 
 .toast a {

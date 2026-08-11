@@ -1548,10 +1548,8 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
 
     let isInitialized = false;
 
-    function updateHashIfPresent() {
-        if (!location.hash || !isInitialized) {
-            return;
-        }
+    async function updateHashIfPresent() {
+        if (!location.hash || !isInitialized) return;
         const state = {
             input: dateInput.value,
             onlyShowOverlaps: onlyShowOverlapsCheckbox.checked,
@@ -1565,26 +1563,29 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
         };
         const json = JSON.stringify(state);
         try {
-            const bytes = new TextEncoder().encode(json);
-            let bin = "";
-            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-            const b64 = btoa(bin);
-            const url = location.href.split("#")[0] + "#" + b64;
+            const hash = await one.compress.url(json, "z");
+            const url = location.href.split("#")[0] + "#" + hash;
             history.replaceState(null, "", url);
         } catch (e) {
             console.error(e);
         }
     }
 
-    function loadFromHash() {
+    async function loadFromHash() {
         if (!location.hash) {
             return false;
         }
         try {
-            const bin = atob(location.hash.slice(1));
-            const bytes = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-            const json = new TextDecoder().decode(bytes);
+            let json = await one.decompress.url(location.hash, "z");
+            if (!json) {
+                try {
+                    const bin = atob(location.hash.slice(1));
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    json = new TextDecoder().decode(bytes);
+                } catch {}
+            }
+            if (!json) return false;
             const parsed = JSON.parse(json);
             if (parsed.input !== undefined) {
                 dateInput.value = parsed.input;
@@ -1635,11 +1636,8 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
         };
         const json = JSON.stringify(state);
         try {
-            const bytes = new TextEncoder().encode(json);
-            let bin = "";
-            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-            const b64 = btoa(bin);
-            const url = location.href.split("#")[0] + "#" + b64;
+            const hash = await one.compress.url(json, "z");
+            const url = location.href.split("#")[0] + "#" + hash;
             history.replaceState(null, "", url);
             await one.copy(url);
         } catch (e) {
@@ -1760,19 +1758,21 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
         dropCurrentYearCheckbox.checked = true;
     }
 
-    const loadedFromHash = loadFromHash();
+    (async () => {
+        const loadedFromHash = await loadFromHash();
 
-    if (!loadedFromHash) {
-        const savedInput = localStorage.getItem("date_overlap_input");
-        if (savedInput !== null) {
-            dateInput.value = savedInput;
-            updateVisualization();
+        if (!loadedFromHash) {
+            const savedInput = localStorage.getItem("date_overlap_input");
+            if (savedInput !== null) {
+                dateInput.value = savedInput;
+                updateVisualization();
+            } else {
+                loadPreset(PRESETS.basic);
+            }
         } else {
-            loadPreset(PRESETS.basic);
+            updateVisualization();
         }
-    } else {
-        updateVisualization();
-    }
+    })();
 
     isInitialized = true;
 </script>

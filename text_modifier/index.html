@@ -146,6 +146,7 @@
             <button type="button" data-action="strip-html">Strip HTML tags</button>
             <button type="button" data-action="unsmart-quotes">Unsmart quotes (curly to straight)
             </button>
+            <button type="button" data-action="unwrap-markdown">Unwrap Markdown hard-wraps</button>
             <button type="button" data-action="remove-markdown-links-text">Remove Markdown links
                 (keep text)
             </button>
@@ -543,6 +544,9 @@ Dates & Times:
                     .replace(/[\u201C\u201D\u201E\u201F\u00AB\u00BB]/g, "\"")
                     .replace(/[\u2018\u2019\u201A\u201B\u2039\u203A]/g, "'");
                 break;
+            case "unwrap-markdown":
+                result = unwrapMarkdown(text);
+                break;
             case "remove-markdown-links-text":
                 result = text.replace(/(?<!!)\[([^\]]*)\]\(([^)]+)\)/g, "$1");
                 break;
@@ -856,6 +860,109 @@ Dates & Times:
             processAction(btn.getAttribute("data-action"));
         });
     });
+
+    function unwrapMarkdown(text) {
+        const FENCE_RE = /^(\s*)(`{3,}|~{3,})/;
+        const LIST_ITEM_RE = /^\s*(?:[-+*]|\d{1,9}[.)])\s+\S/;
+        const HEADING_RE = /^ {0,3}#{1,6}(\s|$)/;
+        const RULE_OR_SETEXT_RE = /^ {0,3}(?:[-_*]\s*){3,}$|^ {0,3}[=-]+\s*$/;
+        const REF_DEF_RE = /^ {0,3}\[[^\]]+\]:/;
+        const TABLE_RE = /^\s*\|/;
+        const HTML_BLOCK_RE = /^\s*<\/?\w/;
+        const BLOCKQUOTE_RE = /^ {0,3}>/;
+        const INDENTED_CODE_RE = /^(?: {4,}|\t)/;
+        const HARD_BREAK_RE = /(  +|\\)$/;
+
+        function isPassthrough(line) {
+            return (
+                HEADING_RE.test(line) ||
+                RULE_OR_SETEXT_RE.test(line) ||
+                REF_DEF_RE.test(line) ||
+                TABLE_RE.test(line) ||
+                HTML_BLOCK_RE.test(line) ||
+                BLOCKQUOTE_RE.test(line)
+            );
+        }
+
+        const out = [];
+        let buffer = null;
+        let inFence = null;
+        let frontMatter = null;
+
+        function flush() {
+            if (buffer !== null) {
+                out.push(buffer);
+                buffer = null;
+            }
+        }
+
+        const lines = text.split(/\r?\n/);
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            if (i === 0 && line.trim() === "---") {
+                frontMatter = "open";
+                out.push(line);
+                continue;
+            }
+            if (frontMatter === "open") {
+                if (line.trim() === "---" || line.trim() === "...") {
+                    frontMatter = "closed";
+                }
+                out.push(line);
+                continue;
+            }
+
+            const fenceMatch = line.match(FENCE_RE);
+            if (inFence) {
+                out.push(line);
+                if (fenceMatch && fenceMatch[2][0] === inFence[0] && fenceMatch[2].length >= inFence.length) {
+                    inFence = null;
+                }
+                continue;
+            }
+            if (fenceMatch) {
+                flush();
+                inFence = fenceMatch[2];
+                out.push(line);
+                continue;
+            }
+
+            if (!line.trim()) {
+                flush();
+                out.push(line);
+                continue;
+            }
+
+            if (isPassthrough(line)) {
+                flush();
+                out.push(line);
+                continue;
+            }
+
+            if (LIST_ITEM_RE.test(line)) {
+                flush();
+                buffer = line.trimEnd();
+            } else if (buffer !== null) {
+                buffer += " " + line.trim();
+            } else if (INDENTED_CODE_RE.test(line)) {
+                out.push(line);
+                continue;
+            } else {
+                buffer = line.trimEnd();
+            }
+
+            if (HARD_BREAK_RE.test(line)) {
+                if (!buffer.endsWith("  ") && !buffer.endsWith("\\")) {
+                    buffer += "  ";
+                }
+                flush();
+            }
+        }
+
+        flush();
+        return out.join("\n");
+    }
 
     // Helper function to force JavaScript to print extremely large or small
     // floating-point numbers without defaulting to exponential (e) notation.

@@ -113,7 +113,56 @@ const one = (() => {
         });
     };
 
-    const alert = (message, duration = 3000) => {
+    // Brysbaert's 2019 meta-analysis puts adult English readers at 238 wpm for
+    // non-fiction, most falling in a 175-300 band. Toasts sit at the slow end:
+    // they appear unannounced, carry no surrounding context, and often name
+    // files or errors. Technical characters slow scanning further because they
+    // can't be guessed from word shape; digits slow it down less.
+    const TOAST_READING_SPEED_WPM = 190;
+    const MS_PER_WORD = 60000 / TOAST_READING_SPEED_WPM;
+    const NOTICE_MS = 500;
+    const MS_PER_TECHNICAL_CHAR = 60;
+    const MS_PER_DIGIT = 25;
+
+    // Length past which a token stops reading as one word (paths, IDs, URLs).
+    const LONG_TOKEN_CHARS = 10;
+    const CHARS_PER_EXTRA_WORD = 6;
+
+    const TECHNICAL_CHARS = new Set([..."`/_{}<>=|\\\"'"]);
+
+    const countEffectiveWords = (text) => {
+        const tokens = text.split(/\s+/).filter(Boolean);
+        let words = 0;
+        for (const token of tokens) {
+            const overflow = Math.max(0, token.length - LONG_TOKEN_CHARS);
+            words += 1 + Math.floor(overflow / CHARS_PER_EXTRA_WORD);
+        }
+        return words;
+    };
+
+    const estimateReadingTime = (text) => {
+        let technical = 0;
+        let digits = 0;
+        for (const char of text) {
+            if (TECHNICAL_CHARS.has(char)) technical++;
+            else if (char >= "0" && char <= "9") digits++;
+        }
+
+        return Math.round(
+            NOTICE_MS
+            + countEffectiveWords(text) * MS_PER_WORD
+            + technical * MS_PER_TECHNICAL_CHAR
+            + digits * MS_PER_DIGIT,
+        );
+    };
+
+    // `type` is "info" (default, for confirmations/notices) or "error" --
+    // kept visually distinct via a modifier class rather than a fixed look
+    // for every message. `minDuration` floors the estimated reading time; pass
+    // 0 to let short messages disappear as fast as they can be read.
+    const alert = (message, type = "info", minDuration = 3000) => {
+        const duration = Math.max(minDuration, estimateReadingTime(String(message)));
+
         let container = document.getElementById("one-toast-container");
         if (!container) {
             container = createElement("div", { id: "one-toast-container" });
@@ -126,7 +175,7 @@ const one = (() => {
             }
         }
 
-        const toast = createElement("div", { className: "toast" }, [message]);
+        const toast = createElement("div", { className: `toast toast-${type}` }, [message]);
         container.appendChild(toast);
         void toast.offsetHeight;
         toast.classList.add("show");
@@ -170,13 +219,13 @@ const one = (() => {
                 if (success) {
                     alert("Copied to clipboard");
                 } else {
-                    alert("Copy failed");
+                    alert("Copy failed", "error");
                 }
             }
         } catch (err) {
             console.error("Fallback copy failed", err);
             if (!silent) {
-                alert("Copy failed");
+                alert("Copy failed", "error");
             }
         }
         document.body.removeChild(textArea);
@@ -275,8 +324,81 @@ const one = (() => {
         };
     })();
 
+    const compress = {
+        /**
+         * Compress text into a Base64URL string formatted as a URL parameter.
+         * @param {string} text - Input text to compress.
+         * @param {string} [param="z"] - Parameter key name (pass null for bare Base64URL).
+         * @returns {Promise<string>} e.g. "z=eJz..."
+         */
+        url: async (text, param = "z") => {
+            if (!text) return "";
+            if (typeof CompressionStream === "undefined") {
+                return param ? `${param}=${encodeURIComponent(text)}` : encodeURIComponent(text);
+            }
+            try {
+                const bytes = new TextEncoder().encode(text);
+                const cs = new ReadableStream({
+                    start(c) { c.enqueue(bytes); c.close(); }
+                }).pipeThrough(new CompressionStream("deflate-raw"));
+                const buf = await new Response(cs).arrayBuffer();
+                const u8 = new Uint8Array(buf);
+                let bin = "";
+                for (let i = 0; i < u8.length; i++) bin += String.fromCharCode(u8[i]);
+                const b64 = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+                return param ? `${param}=${b64}` : b64;
+            } catch (err) {
+                console.error("one.compress.url error:", err);
+                return param ? `${param}=${encodeURIComponent(text)}` : encodeURIComponent(text);
+            }
+        }
+    };
+
+    const decompress = {
+        /**
+         * Extract and decompress a Base64URL payload from a hash, URL, or string.
+         * @param {string} input - location.hash, full URL, or parameter string.
+         * @param {string} [param="z"] - Parameter key to extract.
+         * @returns {Promise<string|null>} Decompressed string or null on failure.
+         */
+        url: async (input, param = "z") => {
+            if (!input) return null;
+            let b64 = input;
+            if (param) {
+                const str = input.replace(/^[^?#]*[?#]/, "");
+                b64 = new URLSearchParams(str).get(param);
+                if (!b64) return null;
+            }
+            if (typeof DecompressionStream === "undefined") {
+                try {
+                    return decodeURIComponent(b64);
+                } catch {
+                    return null;
+                }
+            }
+            b64 = b64.replace(/-/g, "+").replace(/_/g, "/");
+            while (b64.length % 4) b64 += "=";
+            try {
+                const bin = atob(b64);
+                const u8 = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+                const ds = new ReadableStream({
+                    start(c) { c.enqueue(u8); c.close(); }
+                }).pipeThrough(new DecompressionStream("deflate-raw"));
+                const buf = await new Response(ds).arrayBuffer();
+                return new TextDecoder().decode(buf);
+            } catch {
+                try {
+                    return decodeURIComponent(b64);
+                } catch {
+                    return null;
+                }
+            }
+        }
+    };
+
     document.addEventListener("keydown", closeAsideDrawerOnEscape);
 
-    return { alert, prompt, confirm, copy, getTimestamp, storage };
+    return { alert, prompt, confirm, copy, getTimestamp, storage, compress, decompress };
 })();
 

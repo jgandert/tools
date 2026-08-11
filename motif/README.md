@@ -561,7 +561,7 @@ Avoid loading external assets by playing procedurally rendered static one-shots:
 
 * **Drums:** `'kick-electronic'`, `'kick-lofi'`, `'snare-electronic'`, `'tom-electronic'`, `'rimshot'`, `'hihat-closed'`, `'hihat-open'`, `'hihat-pedal'`, `'cymbal-ride'`, `'cymbal-crash'`, `'cymbal-reverse'`, `'shaker-soft'`, `'clap-vintage'`
 * **Percussion/FX:** `'water-drop'`, `'block-hollow'`, `'snare-micro'`, `'cowbell-808'`, `'perc-stutter'`, `'impact-deep'`, `'break-snare-ghost'`, `'glitch-data-burst'`, `'sub-boom'`, `'chip-kick-laser'`, `'chip-snare-burst'`, `'gravitational-ripple'`
-* **Acoustic/Physical:** `'kick-acoustic'`, `'snare-acoustic'`, `'tambourine'`, `'conga'`, `'bongo'`, `'kalimba-pluck'`, `'kalimba-warm'`, `'music-box'`, `'wineglass'`, `'timpani'`, `'ui-blip'`, `'pickup-chime'`, `'gong-tibetan'`, `'swell-oceanic'`, `'void-chime'`, `'ocean-swell'`, `'mossy-stone-strike'`
+* **Acoustic/Physical:** `'kick-acoustic'`, `'snare-acoustic'`, `'tambourine'`, `'conga'`, `'bongo'`, `'kalimba-pluck'`, `'kalimba-warm'`, `'music-box'`, `'wineglass'`, `'timpani'`, `'ui-blip'`, `'pickup-chime'`, `'gong-tibetan'`, `'void-chime'`, `'ocean-swell'`, `'mossy-stone-strike'`
 
 Every noise-based procedural sample renders deterministically: seed `0` (the default) always produces the same canonical buffer, so a given sample sounds identical across sessions and machines. Use `Motif.sampleSeed(n)` to explore variations:
 

@@ -3937,39 +3937,6 @@ const MotifSamples = (() => {
             return buffer;
         },
 
-        // 'Oceanic Swell': An evolving wave of filtered noise.
-        // Designed for reversing or structural transition points.
-        "swell-oceanic": () => {
-            const duration = 4.0;
-            const buffer = createBuffer(duration);
-            if (!buffer) return null;
-            const data = buffer.getChannelData(0);
-            const rand = mulberry32(0xB7E15162 ^ Motif._sampleSeed);
-            let bp = 0;
-            let lp = 0;
-            for (let i = 0; i < data.length; i++) {
-                const t = i / sampleRate;
-                const noise = (rand() * 2.0) - 1.0;
-
-                // Envelope: Symmetrical half-sine wave fading in smoothly and peaking at 2s
-                const env = Math.sin((t / duration) * Math.PI);
-
-                // The filter opens as the envelope rises and closes as it falls
-                const cutoff = 200 + (env * 1500);
-                const f = 2.0 * Math.sin(Math.PI * cutoff / sampleRate);
-
-                // Slight resonance for an airy tone
-                const q = 0.5;
-
-                // SVF Math
-                const hp = noise - lp - (q * bp);
-                bp += f * hp;
-                lp += f * bp;
-                data[i] = bp * env * 1.5;
-            }
-            return buffer;
-        },
-
         // A muffled, alien chime. Uses additive synthesis with inharmonic ratios tuned specifically to low registers, simulating a large resonant alien structure.
         "void-chime": () => {
             const buffer = createBuffer(5.0);
