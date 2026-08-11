@@ -200,8 +200,14 @@ async function main() {
     assert(cached.result.ruleReport.dominanceHintBasis === "shared-room-current-penalty-magnitude-correlation", "embedded default cache carries dominance-hint semantics");
     assert(cached.result.ruleReport.weightSemantics?.mode === "compressed-target-temperature-ramp",
         "embedded default cache carries advisory weight semantics");
-    const cachedHintedRule = cached.result.ruleReport.scopes.flatMap(scope => scope.rules).find(rule => rule.dominanceHints?.length);
-    assert(cachedHintedRule?.dominanceHints[0].ruleId.includes("::"), "embedded default cache carries a scoped named dominance hint");
+    const cachedAdvisoryMisses = cached.result.ruleReport.scopes
+        .flatMap(scope => scope.rules)
+        .filter(rule => !rule.required && rule.satisfied === false);
+    assert(cachedAdvisoryMisses.length > 0 && cachedAdvisoryMisses.every(rule => Array.isArray(rule.dominanceHints)),
+        "embedded default cache carries explicit dominance-hint lists for advisory misses");
+    const cachedHints = cachedAdvisoryMisses.flatMap(rule => rule.dominanceHints);
+    assert(cachedHints.every(hint => hint.ruleId.includes("::") && hint.text),
+        "embedded default cache scopes and names every available dominance hint");
     assert(html.includes('<script src="rule_report_ui.js"></script>'), "browser loads per-rule UI renderer");
 
     console.log(`RESULTS: ${passed} passed, 0 failed`);
