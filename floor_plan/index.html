@@ -406,7 +406,10 @@ office at north west required
                     </tr>
                     <tr>
                         <td><code>algo grid</code><br><code>algo sa</code></td>
-                        <td>Select optimizer. SA is default when omitted and keeps rooms rectangular. Use grid explicitly for multipart grid geometry. Algorithm cannot change inside an <code>inside</code> block.</td>
+                        <td>Select optimizer. SA is default when omitted and keeps rooms
+                            rectangular. Use grid explicitly for multipart grid geometry. Algorithm
+                            cannot change inside an <code>inside</code> block.
+                        </td>
                     </tr>
                     <tr>
                         <td>
@@ -417,7 +420,8 @@ office at north west required
                             <code>canvas 500 500 flexible</code>
                         </td>
                         <td>
-                            SA constrains layout to fixed bounds. Grid ignores canvas with a warning. Without <code>flexible</code>
+                            SA constrains layout to fixed bounds. Grid ignores canvas with a
+                            warning. Without <code>flexible</code>
                             , the floor plan is always compressed to fit the canvas. With
                             <code>flexible</code>, the canvas is a soft constraint — overflow is
                             penalized
@@ -453,7 +457,10 @@ office at north west required
                             <code>side_max 50</code>
                         </td>
                         <td>
-                            SA supports these area and side constraints. Grid treats <code>side_min</code> as advisory and warns that <code>area_min</code> and <code>side_max</code> are ignored. Under SA, <code>side_min</code> is enforced as a hard constraint by default — room shape curves are
+                            SA supports these area and side constraints. Grid treats
+                            <code>side_min</code> as advisory and warns that <code>area_min</code>
+                            and <code>side_max</code> are ignored. Under SA, <code>side_min</code>
+                            is enforced as a hard constraint by default — room shape curves are
                             clamped
                             so
                             no dimension falls below the limit. Append <code>flexible</code> to
@@ -463,8 +470,12 @@ office at north west required
                         </td>
                     </tr>
                     <tr>
-                        <td><code>shapes rect</code><br><code>shapes free</code><br><code>shape rect required</code></td>
-                        <td>Grid room-shape default. Ordinary rooms are rectangular by default; hallway hubs may remain free-form. Required form makes rectangularity a hard constraint for every room unless that room explicitly uses <code>shape=free</code>.</td>
+                        <td><code>shapes rect</code><br><code>shapes free</code><br><code>shape rect
+                            required</code></td>
+                        <td>Grid room-shape default. Ordinary rooms are rectangular by default;
+                            hallway hubs may remain free-form. Required form makes rectangularity a
+                            hard constraint for every room unless that room explicitly uses <code>shape=free</code>.
+                        </td>
                     </tr>
                     <tr>
                         <td>
@@ -473,7 +484,9 @@ office at north west required
                             <code>cwc 2</code>
                         </td>
                         <td>
-                            Default connected wall length (<code>cwl</code>) and min connected wall count (<code>cwc</code>). Grid supports <code>cwl</code> and warns that <code>cwc</code> is ignored.
+                            Default connected wall length (<code>cwl</code>) and min connected wall
+                            count (<code>cwc</code>). Grid supports <code>cwl</code> and warns that
+                            <code>cwc</code> is ignored.
                         </td>
                     </tr>
                 </table>
@@ -523,14 +536,19 @@ office at north west required
                         <td>Override global maximum aspect ratio for this room.</td>
                     </tr>
                     <tr>
-                        <td><code>room A shape=rect</code><br><code>room A shape=free</code><br><code>room A shape=rect:required</code></td>
-                        <td>Grid per-room shape override. Required form reports and retries any non-rectangular result.</td>
+                        <td><code>room A shape=rect</code><br><code>room A
+                            shape=free</code><br><code>room A shape=rect:required</code></td>
+                        <td>Grid per-room shape override. Required form reports and retries any
+                            non-rectangular result.
+                        </td>
                     </tr>
                     <tr>
                         <td>
                             <code>group = [A, B]</code>
                         </td>
-                        <td>Define a variable containing multiple rooms. Lists may reference other groups.</td>
+                        <td>Define a variable containing multiple rooms. Lists may reference other
+                            groups.
+                        </td>
                     </tr>
                     <tr>
                         <td>
@@ -601,7 +619,8 @@ office at north west required
                             across subjects — rule satisfied if it holds for at least one room in
                             the
                             subject list. Combine freely with target-side <code>any</code>
-                            : <code>any [A, B] connect any [C, D]</code>. SA supports this form. Grid ignores it with a warning.
+                            : <code>any [A, B] connect any [C, D]</code>. SA supports this form.
+                            Grid ignores it with a warning.
                         </td>
                     </tr>
                     <tr>
@@ -664,7 +683,8 @@ office at north west required
                         </td>
                         <td>
                             Defines a sub-floor-plan <em>inside</em> room <code>A</code>.
-                            SA optimizes inner rectangles after parent dimensions are known. Grid constructs child regions inside delivered parent cells.
+                            SA optimizes inner rectangles after parent dimensions are known. Grid
+                            constructs child regions inside delivered parent cells.
                             The inner scope is isolated — inner room IDs do not conflict with outer
                             ones.
                         </td>
@@ -717,7 +737,9 @@ office at north west required
                             nearest
                             wall facing that outer room.<br>
                             <br>
-                            Grid supports cross-boundary <code>connect</code> directly. Grid ignores cross-boundary <code>close</code>/<code>far</code> and inner wall rules with a warning.
+                            Grid supports cross-boundary <code>connect</code> directly. Grid ignores
+                            cross-boundary <code>close</code>/<code>far</code> and inner wall rules
+                            with a warning.
                             Outer rooms cannot be rule <em>subjects</em>
                             inside an <code>inside</code> block.
                         </td>
@@ -731,7 +753,958 @@ office at north west required
     </article>
 </dialog>
 
-<script id="default-result-cache" type="application/json">{"dsl":"seed 911\ncanvas 1400x1100\nratio_max 5:3\nside_min 175\ncwl 125\nroom foyer ratio_max=1:6\nroom hallway ratio_max=1:6\nroom loud area=300000 ratio_max=3:1\nroom dining area=140000\nroom guest_bath area=40000\nroom office area=80000\nroom kitchen area=150000\nroom living area=250000\nroom main_bath area=80000\nroom parents area=180000\nroom pantry area=50000\nroom utility area=40000\nroom dressing area=30000\nhub = [foyer, hallway]\ninside loud {\nroom child_1 area=100000\nroom child_2 area=100000\nroom child_3 area=100000\n[child_1, child_2, child_3] connect any hub required\n}\nfoyer connect hallway required\n[loud, living, dining, parents, guest_bath, office, utility] connect any hub required\nparents connect [dressing, main_bath] required\n[dining, pantry] connect kitchen required\n[dressing, pantry, guest_bath] enclosed\n[kitchen, dining, parents, main_bath, foyer] at edge required\nguest_bath at edge\n[office, parents] far loud weight=10\nmain_bath far hub weight=2\n[pantry, parents] not at south required\nliving at east south weight=10\noffice at north west required","config":{"seed":911,"canvasW":1400,"canvasH":1100,"canvasFlexible":false,"ratioMax":1.6666666666666667,"sideMin":175,"sideMinFlexible":false,"cwl":125},"result":{"schemaVersion":1,"algo":"sa","cost":10584817.899081029,"breakdown":{"total":10584817.899081029,"area":1540000,"aspectPenalty":0,"canvasPenalty":0,"topologicalPenalty":8067715.128388996,"roomPenalty":977102.7706920323},"unsatisfied":[],"rooms":[{"id":"office","x":0,"y":0,"w":263.7551687894794,"h":220.27268369899176,"centerX":131.8775843947397,"centerY":110.13634184949588,"name":"office"},{"id":"utility","x":0,"y":220.27268369899176,"w":263.7551687894794,"h":175.94546326020165,"centerX":131.8775843947397,"centerY":308.24541532909257,"name":"utility"},{"id":"foyer","x":263.7551687894794,"y":0,"w":190.03981481316828,"h":396.2181469591934,"centerX":358.77507619606354,"centerY":198.1090734795967,"name":"foyer"},{"id":"parents","x":453.7949836026477,"y":0,"w":356.06947786579724,"h":396.2181469591934,"centerX":631.8297225355464,"centerY":198.1090734795967,"name":"parents"},{"id":"main_bath","x":809.864461468445,"y":0,"w":263.75516878947946,"h":221.28052876960297,"centerX":941.7420458631848,"centerY":110.64026438480148,"name":"main_bath"},{"id":"dressing","x":809.864461468445,"y":221.28052876960297,"w":263.75516878947946,"h":174.93761818959044,"centerX":941.7420458631848,"centerY":308.74933786439817,"name":"dressing"},{"id":"hallway","x":0,"y":396.2181469591934,"w":1073.6196302579244,"h":175.94546326020165,"centerX":536.8098151289622,"centerY":484.19087858929424,"name":"hallway"},{"id":"living","x":1073.6196302579244,"y":0,"w":326.38036974207574,"h":572.1636102193951,"centerX":1236.8098151289623,"centerY":286.08180510969754,"name":"living"},{"id":"loud","x":0,"y":572.1636102193951,"w":587.69249685402,"h":527.836389780605,"centerX":293.84624842701,"centerY":836.0818051096976,"name":"loud","inside":{"schemaVersion":1,"algo":"sa","cost":15946266.301203635,"breakdown":{"total":15946266.301203635,"area":310205.4858405755,"aspectPenalty":0,"canvasPenalty":0,"topologicalPenalty":0,"roomPenalty":15636060.815363059},"unsatisfied":[],"rooms":[{"id":"child_2","x":0,"y":0,"w":195.89749895134,"h":527.836389780605,"centerX":97.94874947567,"centerY":263.9181948903025,"name":"child_2"},{"id":"child_1","x":195.89749895134,"y":0,"w":195.89749895134,"h":527.836389780605,"centerX":293.84624842701,"centerY":263.9181948903025,"name":"child_1"},{"id":"child_3","x":391.79499790268,"y":0,"w":195.89749895134,"h":527.836389780605,"centerX":489.74374737835,"centerY":263.9181948903025,"name":"child_3"}],"warnings":[],"ruleReport":{"availability":"available","metric":"sa-normalized-delivered-cost","percentBasis":"scope-total-cost","weightSemantics":{"mode":"compressed-target-temperature-ramp","compressedTargetFormula":"N <= 1 ? N : min(1 + log2(N), 25)","annealingEffectiveFormula":"1 + (target - 1) * min(initial_t / T / 100, 1)","initialOffsetFraction":0.01,"fullTargetTemperatureFraction":0.01,"finalReportUses":"compressed-target","requiredWeightFormula":"N * 50","requiredBypasses":["compression","temperature-ramp"],"example":{"rawWeight":5,"compressedTargetWeight":3.321928094887362,"initialEffectiveWeight":1.0232192809488736}},"dominanceHintBasis":"shared-room-current-penalty-magnitude-correlation","dominanceHintLimit":3,"scopes":[{"path":"top / loud","totalCost":15946266.301203635,"topologicalPenalty":0,"reportedPenalty":0,"unreportedTopologicalPenalty":0,"rules":[{"id":"top / loud::rule:0:0","text":"child_1 connect any [foyer, hallway] cwl=175 required","subjects":["child_1"],"participants":["child_1","foyer","hallway"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-cross-boundary-connect"},{"id":"top / loud::rule:0:1","text":"child_1 at north required","subjects":["child_1"],"participants":["child_1"],"type":"at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-cross-boundary-guide"},{"id":"top / loud::rule:1:0","text":"child_2 connect any [foyer, hallway] cwl=175 required","subjects":["child_2"],"participants":["child_2","foyer","hallway"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-cross-boundary-connect"},{"id":"top / loud::rule:1:1","text":"child_2 at north required","subjects":["child_2"],"participants":["child_2"],"type":"at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-cross-boundary-guide"},{"id":"top / loud::rule:2:0","text":"child_3 connect any [foyer, hallway] cwl=175 required","subjects":["child_3"],"participants":["child_3","foyer","hallway"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-cross-boundary-connect"},{"id":"top / loud::rule:2:1","text":"child_3 at north required","subjects":["child_3"],"participants":["child_3"],"type":"at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-cross-boundary-guide"}]}]}}},{"id":"dining","x":587.69249685402,"y":572.1636102193951,"w":298.0765683987124,"h":527.836389780605,"centerX":736.7307810533762,"centerY":836.0818051096976,"name":"dining"},{"id":"guest_bath","x":885.7690652527324,"y":572.1636102193951,"w":233.82953825300277,"h":207.13971848432993,"centerX":1002.6838343792338,"centerY":675.73346946156,"name":"guest_bath"},{"id":"pantry","x":1119.5986035057351,"y":572.1636102193951,"w":280.4013964942647,"h":207.13971848432993,"centerX":1259.7993017528674,"centerY":675.73346946156,"name":"pantry"},{"id":"kitchen","x":885.7690652527324,"y":779.303328703725,"w":514.2309347472675,"h":320.6966712962751,"centerX":1142.884532626366,"centerY":939.6516643518626,"name":"kitchen"}],"warnings":["SA advisory weight=N uses compressed target N <= 1 ? N : min(1 + log2(N), 25), then effective weight 1 + (target - 1) * min(initial_t / T / 100, 1). At T=initial_t, only 1% of target's offset from 1 applies; target is reached at T <= initial_t / 100. weight=5 therefore targets 3.322, starts at 1.023, and final per-rule scores use 3.322. required bypasses compression and ramp."],"ruleReport":{"availability":"available","metric":"sa-normalized-delivered-cost","percentBasis":"scope-total-cost","weightSemantics":{"mode":"compressed-target-temperature-ramp","compressedTargetFormula":"N <= 1 ? N : min(1 + log2(N), 25)","annealingEffectiveFormula":"1 + (target - 1) * min(initial_t / T / 100, 1)","initialOffsetFraction":0.01,"fullTargetTemperatureFraction":0.01,"finalReportUses":"compressed-target","requiredWeightFormula":"N * 50","requiredBypasses":["compression","temperature-ramp"],"example":{"rawWeight":5,"compressedTargetWeight":3.321928094887362,"initialEffectiveWeight":1.0232192809488736}},"dominanceHintBasis":"shared-room-current-penalty-magnitude-correlation","dominanceHintLimit":3,"scopes":[{"path":"top","totalCost":10584817.899081029,"topologicalPenalty":8067715.128388996,"reportedPenalty":8067715.128388993,"unreportedTopologicalPenalty":0,"rules":[{"id":"top::rule:0:0","text":"foyer connect hallway required","subjects":["foyer"],"participants":["foyer","hallway"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:0:1","text":"foyer at edge required","subjects":["foyer"],"participants":["foyer"],"type":"at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:2:0","text":"loud connect any [foyer, hallway] cwl=525 required","subjects":["loud"],"participants":["foyer","hallway","loud"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-inside-frontage"},{"id":"top::rule:3:0","text":"dining connect any [foyer, hallway] required","subjects":["dining"],"participants":["dining","foyer","hallway"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:3:1","text":"dining connect kitchen required","subjects":["dining"],"participants":["dining","kitchen"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:3:2","text":"dining at edge required","subjects":["dining"],"participants":["dining"],"type":"at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:4:0","text":"guest_bath connect any [foyer, hallway] required","subjects":["guest_bath"],"participants":["foyer","guest_bath","hallway"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:4:1","text":"guest_bath enclosed","subjects":["guest_bath"],"participants":["guest_bath"],"type":"enclosed","required":false,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:4:2","text":"guest_bath at edge","subjects":["guest_bath"],"participants":["guest_bath"],"type":"at","required":false,"satisfied":false,"penalty":157489.11449632712,"percentOfTotal":1.4878774108149777,"origin":"dsl","dominanceHints":[]},{"id":"top::rule:5:0","text":"office connect any [foyer, hallway] required","subjects":["office"],"participants":["foyer","hallway","office"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:5:1","text":"office far loud weight=10","subjects":["office"],"participants":["loud","office"],"type":"far","required":false,"satisfied":true,"penalty":1774926.039354728,"percentOfTotal":16.768602504808577,"origin":"dsl"},{"id":"top::rule:5:2","text":"office at north west required","subjects":["office"],"participants":["office"],"type":"at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:6:0","text":"kitchen at edge required","subjects":["kitchen"],"participants":["kitchen"],"type":"at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:7:0","text":"living connect any [foyer, hallway] required","subjects":["living"],"participants":["foyer","hallway","living"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:7:1","text":"living at east south weight=10","subjects":["living"],"participants":["living"],"type":"at","required":false,"satisfied":false,"penalty":1281289.4015582218,"percentOfTotal":12.104973498594273,"origin":"dsl","dominanceHints":[]},{"id":"top::rule:8:0","text":"main_bath at edge required","subjects":["main_bath"],"participants":["main_bath"],"type":"at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:8:1","text":"main_bath far [foyer, hallway] weight=2","subjects":["main_bath"],"participants":["foyer","hallway","main_bath"],"type":"far","required":false,"satisfied":true,"penalty":2059824.9871724353,"percentOfTotal":19.46018350822331,"origin":"dsl"},{"id":"top::rule:9:0","text":"parents connect any [foyer, hallway] required","subjects":["parents"],"participants":["foyer","hallway","parents"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:9:1","text":"parents connect [dressing, main_bath] required","subjects":["parents"],"participants":["dressing","main_bath","parents"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:9:2","text":"parents at edge required","subjects":["parents"],"participants":["parents"],"type":"at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:9:3","text":"parents far loud weight=10","subjects":["parents"],"participants":["loud","parents"],"type":"far","required":false,"satisfied":true,"penalty":1828097.2577315774,"percentOfTotal":17.27093725334937,"origin":"dsl"},{"id":"top::rule:9:4","text":"parents not at south required","subjects":["parents"],"participants":["parents"],"type":"not_at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:10:0","text":"pantry connect kitchen required","subjects":["pantry"],"participants":["kitchen","pantry"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:10:1","text":"pantry enclosed","subjects":["pantry"],"participants":["pantry"],"type":"enclosed","required":false,"satisfied":false,"penalty":966088.3280757045,"percentOfTotal":9.127113355059043,"origin":"dsl","dominanceHints":[]},{"id":"top::rule:10:2","text":"pantry not at south required","subjects":["pantry"],"participants":["pantry"],"type":"not_at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:11:0","text":"utility connect any [foyer, hallway] required","subjects":["utility"],"participants":["foyer","hallway","utility"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"},{"id":"top::rule:12:0","text":"dressing enclosed","subjects":["dressing"],"participants":["dressing"],"type":"enclosed","required":false,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"dsl"}]},{"path":"top / loud","totalCost":15946266.301203635,"topologicalPenalty":0,"reportedPenalty":0,"unreportedTopologicalPenalty":0,"rules":[{"id":"top / loud::rule:0:0","text":"child_1 connect any [foyer, hallway] cwl=175 required","subjects":["child_1"],"participants":["child_1","foyer","hallway"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-cross-boundary-connect"},{"id":"top / loud::rule:0:1","text":"child_1 at north required","subjects":["child_1"],"participants":["child_1"],"type":"at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-cross-boundary-guide"},{"id":"top / loud::rule:1:0","text":"child_2 connect any [foyer, hallway] cwl=175 required","subjects":["child_2"],"participants":["child_2","foyer","hallway"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-cross-boundary-connect"},{"id":"top / loud::rule:1:1","text":"child_2 at north required","subjects":["child_2"],"participants":["child_2"],"type":"at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-cross-boundary-guide"},{"id":"top / loud::rule:2:0","text":"child_3 connect any [foyer, hallway] cwl=175 required","subjects":["child_3"],"participants":["child_3","foyer","hallway"],"type":"connect","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-cross-boundary-connect"},{"id":"top / loud::rule:2:1","text":"child_3 at north required","subjects":["child_3"],"participants":["child_3"],"type":"at","required":true,"satisfied":true,"penalty":0,"percentOfTotal":0,"origin":"derived-cross-boundary-guide"}]}]}}}</script>
+<script id="default-result-cache" type="application/json">{
+    "dsl": "seed 911\ncanvas 1400x1100\nratio_max 5:3\nside_min 175\ncwl 125\nroom foyer ratio_max=1:6\nroom hallway ratio_max=1:6\nroom loud area=300000 ratio_max=3:1\nroom dining area=140000\nroom guest_bath area=40000\nroom office area=80000\nroom kitchen area=150000\nroom living area=250000\nroom main_bath area=80000\nroom parents area=180000\nroom pantry area=50000\nroom utility area=40000\nroom dressing area=30000\nhub = [foyer, hallway]\ninside loud {\nroom child_1 area=100000\nroom child_2 area=100000\nroom child_3 area=100000\n[child_1, child_2, child_3] connect any hub required\n}\nfoyer connect hallway required\n[loud, living, dining, parents, guest_bath, office, utility] connect any hub required\nparents connect [dressing, main_bath] required\n[dining, pantry] connect kitchen required\n[dressing, pantry, guest_bath] enclosed\n[kitchen, dining, parents, main_bath, foyer] at edge required\nguest_bath at edge\n[office, parents] far loud weight=10\nmain_bath far hub weight=2\n[pantry, parents] not at south required\nliving at east south weight=10\noffice at north west required",
+    "config": {
+        "seed": 911,
+        "canvasW": 1400,
+        "canvasH": 1100,
+        "canvasFlexible": false,
+        "ratioMax": 1.6666666666666667,
+        "sideMin": 175,
+        "sideMinFlexible": false,
+        "cwl": 125
+    },
+    "result": {
+        "schemaVersion": 1,
+        "algo": "sa",
+        "cost": 10584817.899081029,
+        "breakdown": {
+            "total": 10584817.899081029,
+            "area": 1540000,
+            "aspectPenalty": 0,
+            "canvasPenalty": 0,
+            "topologicalPenalty": 8067715.128388996,
+            "roomPenalty": 977102.7706920323
+        },
+        "unsatisfied": [],
+        "rooms": [
+            {
+                "id": "office",
+                "x": 0,
+                "y": 0,
+                "w": 263.7551687894794,
+                "h": 220.27268369899176,
+                "centerX": 131.8775843947397,
+                "centerY": 110.13634184949588,
+                "name": "office"
+            },
+            {
+                "id": "utility",
+                "x": 0,
+                "y": 220.27268369899176,
+                "w": 263.7551687894794,
+                "h": 175.94546326020165,
+                "centerX": 131.8775843947397,
+                "centerY": 308.24541532909257,
+                "name": "utility"
+            },
+            {
+                "id": "foyer",
+                "x": 263.7551687894794,
+                "y": 0,
+                "w": 190.03981481316828,
+                "h": 396.2181469591934,
+                "centerX": 358.77507619606354,
+                "centerY": 198.1090734795967,
+                "name": "foyer"
+            },
+            {
+                "id": "parents",
+                "x": 453.7949836026477,
+                "y": 0,
+                "w": 356.06947786579724,
+                "h": 396.2181469591934,
+                "centerX": 631.8297225355464,
+                "centerY": 198.1090734795967,
+                "name": "parents"
+            },
+            {
+                "id": "main_bath",
+                "x": 809.864461468445,
+                "y": 0,
+                "w": 263.75516878947946,
+                "h": 221.28052876960297,
+                "centerX": 941.7420458631848,
+                "centerY": 110.64026438480148,
+                "name": "main_bath"
+            },
+            {
+                "id": "dressing",
+                "x": 809.864461468445,
+                "y": 221.28052876960297,
+                "w": 263.75516878947946,
+                "h": 174.93761818959044,
+                "centerX": 941.7420458631848,
+                "centerY": 308.74933786439817,
+                "name": "dressing"
+            },
+            {
+                "id": "hallway",
+                "x": 0,
+                "y": 396.2181469591934,
+                "w": 1073.6196302579244,
+                "h": 175.94546326020165,
+                "centerX": 536.8098151289622,
+                "centerY": 484.19087858929424,
+                "name": "hallway"
+            },
+            {
+                "id": "living",
+                "x": 1073.6196302579244,
+                "y": 0,
+                "w": 326.38036974207574,
+                "h": 572.1636102193951,
+                "centerX": 1236.8098151289623,
+                "centerY": 286.08180510969754,
+                "name": "living"
+            },
+            {
+                "id": "loud",
+                "x": 0,
+                "y": 572.1636102193951,
+                "w": 587.69249685402,
+                "h": 527.836389780605,
+                "centerX": 293.84624842701,
+                "centerY": 836.0818051096976,
+                "name": "loud",
+                "inside": {
+                    "schemaVersion": 1,
+                    "algo": "sa",
+                    "cost": 15946266.301203635,
+                    "breakdown": {
+                        "total": 15946266.301203635,
+                        "area": 310205.4858405755,
+                        "aspectPenalty": 0,
+                        "canvasPenalty": 0,
+                        "topologicalPenalty": 0,
+                        "roomPenalty": 15636060.815363059
+                    },
+                    "unsatisfied": [],
+                    "rooms": [
+                        {
+                            "id": "child_2",
+                            "x": 0,
+                            "y": 0,
+                            "w": 195.89749895134,
+                            "h": 527.836389780605,
+                            "centerX": 97.94874947567,
+                            "centerY": 263.9181948903025,
+                            "name": "child_2"
+                        },
+                        {
+                            "id": "child_1",
+                            "x": 195.89749895134,
+                            "y": 0,
+                            "w": 195.89749895134,
+                            "h": 527.836389780605,
+                            "centerX": 293.84624842701,
+                            "centerY": 263.9181948903025,
+                            "name": "child_1"
+                        },
+                        {
+                            "id": "child_3",
+                            "x": 391.79499790268,
+                            "y": 0,
+                            "w": 195.89749895134,
+                            "h": 527.836389780605,
+                            "centerX": 489.74374737835,
+                            "centerY": 263.9181948903025,
+                            "name": "child_3"
+                        }
+                    ],
+                    "warnings": [],
+                    "ruleReport": {
+                        "availability": "available",
+                        "metric": "sa-normalized-delivered-cost",
+                        "percentBasis": "scope-total-cost",
+                        "weightSemantics": {
+                            "mode": "compressed-target-temperature-ramp",
+                            "compressedTargetFormula": "N <= 1 ? N : min(1 + log2(N), 25)",
+                            "annealingEffectiveFormula": "1 + (target - 1) * min(initial_t / T / 100, 1)",
+                            "initialOffsetFraction": 0.01,
+                            "fullTargetTemperatureFraction": 0.01,
+                            "finalReportUses": "compressed-target",
+                            "requiredWeightFormula": "N * 50",
+                            "requiredBypasses": [
+                                "compression",
+                                "temperature-ramp"
+                            ],
+                            "example": {
+                                "rawWeight": 5,
+                                "compressedTargetWeight": 3.321928094887362,
+                                "initialEffectiveWeight": 1.0232192809488736
+                            }
+                        },
+                        "dominanceHintBasis": "shared-room-current-penalty-magnitude-correlation",
+                        "dominanceHintLimit": 3,
+                        "scopes": [
+                            {
+                                "path": "top / loud",
+                                "totalCost": 15946266.301203635,
+                                "topologicalPenalty": 0,
+                                "reportedPenalty": 0,
+                                "unreportedTopologicalPenalty": 0,
+                                "rules": [
+                                    {
+                                        "id": "top / loud::rule:0:0",
+                                        "text": "child_1 connect any [foyer, hallway] cwl=175 required",
+                                        "subjects": [
+                                            "child_1"
+                                        ],
+                                        "participants": [
+                                            "child_1",
+                                            "foyer",
+                                            "hallway"
+                                        ],
+                                        "type": "connect",
+                                        "required": true,
+                                        "satisfied": true,
+                                        "penalty": 0,
+                                        "percentOfTotal": 0,
+                                        "origin": "derived-cross-boundary-connect"
+                                    },
+                                    {
+                                        "id": "top / loud::rule:0:1",
+                                        "text": "child_1 at north required",
+                                        "subjects": [
+                                            "child_1"
+                                        ],
+                                        "participants": [
+                                            "child_1"
+                                        ],
+                                        "type": "at",
+                                        "required": true,
+                                        "satisfied": true,
+                                        "penalty": 0,
+                                        "percentOfTotal": 0,
+                                        "origin": "derived-cross-boundary-guide"
+                                    },
+                                    {
+                                        "id": "top / loud::rule:1:0",
+                                        "text": "child_2 connect any [foyer, hallway] cwl=175 required",
+                                        "subjects": [
+                                            "child_2"
+                                        ],
+                                        "participants": [
+                                            "child_2",
+                                            "foyer",
+                                            "hallway"
+                                        ],
+                                        "type": "connect",
+                                        "required": true,
+                                        "satisfied": true,
+                                        "penalty": 0,
+                                        "percentOfTotal": 0,
+                                        "origin": "derived-cross-boundary-connect"
+                                    },
+                                    {
+                                        "id": "top / loud::rule:1:1",
+                                        "text": "child_2 at north required",
+                                        "subjects": [
+                                            "child_2"
+                                        ],
+                                        "participants": [
+                                            "child_2"
+                                        ],
+                                        "type": "at",
+                                        "required": true,
+                                        "satisfied": true,
+                                        "penalty": 0,
+                                        "percentOfTotal": 0,
+                                        "origin": "derived-cross-boundary-guide"
+                                    },
+                                    {
+                                        "id": "top / loud::rule:2:0",
+                                        "text": "child_3 connect any [foyer, hallway] cwl=175 required",
+                                        "subjects": [
+                                            "child_3"
+                                        ],
+                                        "participants": [
+                                            "child_3",
+                                            "foyer",
+                                            "hallway"
+                                        ],
+                                        "type": "connect",
+                                        "required": true,
+                                        "satisfied": true,
+                                        "penalty": 0,
+                                        "percentOfTotal": 0,
+                                        "origin": "derived-cross-boundary-connect"
+                                    },
+                                    {
+                                        "id": "top / loud::rule:2:1",
+                                        "text": "child_3 at north required",
+                                        "subjects": [
+                                            "child_3"
+                                        ],
+                                        "participants": [
+                                            "child_3"
+                                        ],
+                                        "type": "at",
+                                        "required": true,
+                                        "satisfied": true,
+                                        "penalty": 0,
+                                        "percentOfTotal": 0,
+                                        "origin": "derived-cross-boundary-guide"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "dining",
+                "x": 587.69249685402,
+                "y": 572.1636102193951,
+                "w": 298.0765683987124,
+                "h": 527.836389780605,
+                "centerX": 736.7307810533762,
+                "centerY": 836.0818051096976,
+                "name": "dining"
+            },
+            {
+                "id": "guest_bath",
+                "x": 885.7690652527324,
+                "y": 572.1636102193951,
+                "w": 233.82953825300277,
+                "h": 207.13971848432993,
+                "centerX": 1002.6838343792338,
+                "centerY": 675.73346946156,
+                "name": "guest_bath"
+            },
+            {
+                "id": "pantry",
+                "x": 1119.5986035057351,
+                "y": 572.1636102193951,
+                "w": 280.4013964942647,
+                "h": 207.13971848432993,
+                "centerX": 1259.7993017528674,
+                "centerY": 675.73346946156,
+                "name": "pantry"
+            },
+            {
+                "id": "kitchen",
+                "x": 885.7690652527324,
+                "y": 779.303328703725,
+                "w": 514.2309347472675,
+                "h": 320.6966712962751,
+                "centerX": 1142.884532626366,
+                "centerY": 939.6516643518626,
+                "name": "kitchen"
+            }
+        ],
+        "warnings": [
+            "SA advisory weight=N uses compressed target N <= 1 ? N : min(1 + log2(N), 25), then effective weight 1 + (target - 1) * min(initial_t / T / 100, 1). At T=initial_t, only 1% of target's offset from 1 applies; target is reached at T <= initial_t / 100. weight=5 therefore targets 3.322, starts at 1.023, and final per-rule scores use 3.322. required bypasses compression and ramp."
+        ],
+        "ruleReport": {
+            "availability": "available",
+            "metric": "sa-normalized-delivered-cost",
+            "percentBasis": "scope-total-cost",
+            "weightSemantics": {
+                "mode": "compressed-target-temperature-ramp",
+                "compressedTargetFormula": "N <= 1 ? N : min(1 + log2(N), 25)",
+                "annealingEffectiveFormula": "1 + (target - 1) * min(initial_t / T / 100, 1)",
+                "initialOffsetFraction": 0.01,
+                "fullTargetTemperatureFraction": 0.01,
+                "finalReportUses": "compressed-target",
+                "requiredWeightFormula": "N * 50",
+                "requiredBypasses": [
+                    "compression",
+                    "temperature-ramp"
+                ],
+                "example": {
+                    "rawWeight": 5,
+                    "compressedTargetWeight": 3.321928094887362,
+                    "initialEffectiveWeight": 1.0232192809488736
+                }
+            },
+            "dominanceHintBasis": "shared-room-current-penalty-magnitude-correlation",
+            "dominanceHintLimit": 3,
+            "scopes": [
+                {
+                    "path": "top",
+                    "totalCost": 10584817.899081029,
+                    "topologicalPenalty": 8067715.128388996,
+                    "reportedPenalty": 8067715.128388993,
+                    "unreportedTopologicalPenalty": 0,
+                    "rules": [
+                        {
+                            "id": "top::rule:0:0",
+                            "text": "foyer connect hallway required",
+                            "subjects": [
+                                "foyer"
+                            ],
+                            "participants": [
+                                "foyer",
+                                "hallway"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:0:1",
+                            "text": "foyer at edge required",
+                            "subjects": [
+                                "foyer"
+                            ],
+                            "participants": [
+                                "foyer"
+                            ],
+                            "type": "at",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:2:0",
+                            "text": "loud connect any [foyer, hallway] cwl=525 required",
+                            "subjects": [
+                                "loud"
+                            ],
+                            "participants": [
+                                "foyer",
+                                "hallway",
+                                "loud"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "derived-inside-frontage"
+                        },
+                        {
+                            "id": "top::rule:3:0",
+                            "text": "dining connect any [foyer, hallway] required",
+                            "subjects": [
+                                "dining"
+                            ],
+                            "participants": [
+                                "dining",
+                                "foyer",
+                                "hallway"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:3:1",
+                            "text": "dining connect kitchen required",
+                            "subjects": [
+                                "dining"
+                            ],
+                            "participants": [
+                                "dining",
+                                "kitchen"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:3:2",
+                            "text": "dining at edge required",
+                            "subjects": [
+                                "dining"
+                            ],
+                            "participants": [
+                                "dining"
+                            ],
+                            "type": "at",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:4:0",
+                            "text": "guest_bath connect any [foyer, hallway] required",
+                            "subjects": [
+                                "guest_bath"
+                            ],
+                            "participants": [
+                                "foyer",
+                                "guest_bath",
+                                "hallway"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:4:1",
+                            "text": "guest_bath enclosed",
+                            "subjects": [
+                                "guest_bath"
+                            ],
+                            "participants": [
+                                "guest_bath"
+                            ],
+                            "type": "enclosed",
+                            "required": false,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:4:2",
+                            "text": "guest_bath at edge",
+                            "subjects": [
+                                "guest_bath"
+                            ],
+                            "participants": [
+                                "guest_bath"
+                            ],
+                            "type": "at",
+                            "required": false,
+                            "satisfied": false,
+                            "penalty": 157489.11449632712,
+                            "percentOfTotal": 1.4878774108149777,
+                            "origin": "dsl",
+                            "dominanceHints": []
+                        },
+                        {
+                            "id": "top::rule:5:0",
+                            "text": "office connect any [foyer, hallway] required",
+                            "subjects": [
+                                "office"
+                            ],
+                            "participants": [
+                                "foyer",
+                                "hallway",
+                                "office"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:5:1",
+                            "text": "office far loud weight=10",
+                            "subjects": [
+                                "office"
+                            ],
+                            "participants": [
+                                "loud",
+                                "office"
+                            ],
+                            "type": "far",
+                            "required": false,
+                            "satisfied": true,
+                            "penalty": 1774926.039354728,
+                            "percentOfTotal": 16.768602504808577,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:5:2",
+                            "text": "office at north west required",
+                            "subjects": [
+                                "office"
+                            ],
+                            "participants": [
+                                "office"
+                            ],
+                            "type": "at",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:6:0",
+                            "text": "kitchen at edge required",
+                            "subjects": [
+                                "kitchen"
+                            ],
+                            "participants": [
+                                "kitchen"
+                            ],
+                            "type": "at",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:7:0",
+                            "text": "living connect any [foyer, hallway] required",
+                            "subjects": [
+                                "living"
+                            ],
+                            "participants": [
+                                "foyer",
+                                "hallway",
+                                "living"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:7:1",
+                            "text": "living at east south weight=10",
+                            "subjects": [
+                                "living"
+                            ],
+                            "participants": [
+                                "living"
+                            ],
+                            "type": "at",
+                            "required": false,
+                            "satisfied": false,
+                            "penalty": 1281289.4015582218,
+                            "percentOfTotal": 12.104973498594273,
+                            "origin": "dsl",
+                            "dominanceHints": []
+                        },
+                        {
+                            "id": "top::rule:8:0",
+                            "text": "main_bath at edge required",
+                            "subjects": [
+                                "main_bath"
+                            ],
+                            "participants": [
+                                "main_bath"
+                            ],
+                            "type": "at",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:8:1",
+                            "text": "main_bath far [foyer, hallway] weight=2",
+                            "subjects": [
+                                "main_bath"
+                            ],
+                            "participants": [
+                                "foyer",
+                                "hallway",
+                                "main_bath"
+                            ],
+                            "type": "far",
+                            "required": false,
+                            "satisfied": true,
+                            "penalty": 2059824.9871724353,
+                            "percentOfTotal": 19.46018350822331,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:9:0",
+                            "text": "parents connect any [foyer, hallway] required",
+                            "subjects": [
+                                "parents"
+                            ],
+                            "participants": [
+                                "foyer",
+                                "hallway",
+                                "parents"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:9:1",
+                            "text": "parents connect [dressing, main_bath] required",
+                            "subjects": [
+                                "parents"
+                            ],
+                            "participants": [
+                                "dressing",
+                                "main_bath",
+                                "parents"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:9:2",
+                            "text": "parents at edge required",
+                            "subjects": [
+                                "parents"
+                            ],
+                            "participants": [
+                                "parents"
+                            ],
+                            "type": "at",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:9:3",
+                            "text": "parents far loud weight=10",
+                            "subjects": [
+                                "parents"
+                            ],
+                            "participants": [
+                                "loud",
+                                "parents"
+                            ],
+                            "type": "far",
+                            "required": false,
+                            "satisfied": true,
+                            "penalty": 1828097.2577315774,
+                            "percentOfTotal": 17.27093725334937,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:9:4",
+                            "text": "parents not at south required",
+                            "subjects": [
+                                "parents"
+                            ],
+                            "participants": [
+                                "parents"
+                            ],
+                            "type": "not_at",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:10:0",
+                            "text": "pantry connect kitchen required",
+                            "subjects": [
+                                "pantry"
+                            ],
+                            "participants": [
+                                "kitchen",
+                                "pantry"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:10:1",
+                            "text": "pantry enclosed",
+                            "subjects": [
+                                "pantry"
+                            ],
+                            "participants": [
+                                "pantry"
+                            ],
+                            "type": "enclosed",
+                            "required": false,
+                            "satisfied": false,
+                            "penalty": 966088.3280757045,
+                            "percentOfTotal": 9.127113355059043,
+                            "origin": "dsl",
+                            "dominanceHints": []
+                        },
+                        {
+                            "id": "top::rule:10:2",
+                            "text": "pantry not at south required",
+                            "subjects": [
+                                "pantry"
+                            ],
+                            "participants": [
+                                "pantry"
+                            ],
+                            "type": "not_at",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:11:0",
+                            "text": "utility connect any [foyer, hallway] required",
+                            "subjects": [
+                                "utility"
+                            ],
+                            "participants": [
+                                "foyer",
+                                "hallway",
+                                "utility"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        },
+                        {
+                            "id": "top::rule:12:0",
+                            "text": "dressing enclosed",
+                            "subjects": [
+                                "dressing"
+                            ],
+                            "participants": [
+                                "dressing"
+                            ],
+                            "type": "enclosed",
+                            "required": false,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "dsl"
+                        }
+                    ]
+                },
+                {
+                    "path": "top / loud",
+                    "totalCost": 15946266.301203635,
+                    "topologicalPenalty": 0,
+                    "reportedPenalty": 0,
+                    "unreportedTopologicalPenalty": 0,
+                    "rules": [
+                        {
+                            "id": "top / loud::rule:0:0",
+                            "text": "child_1 connect any [foyer, hallway] cwl=175 required",
+                            "subjects": [
+                                "child_1"
+                            ],
+                            "participants": [
+                                "child_1",
+                                "foyer",
+                                "hallway"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "derived-cross-boundary-connect"
+                        },
+                        {
+                            "id": "top / loud::rule:0:1",
+                            "text": "child_1 at north required",
+                            "subjects": [
+                                "child_1"
+                            ],
+                            "participants": [
+                                "child_1"
+                            ],
+                            "type": "at",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "derived-cross-boundary-guide"
+                        },
+                        {
+                            "id": "top / loud::rule:1:0",
+                            "text": "child_2 connect any [foyer, hallway] cwl=175 required",
+                            "subjects": [
+                                "child_2"
+                            ],
+                            "participants": [
+                                "child_2",
+                                "foyer",
+                                "hallway"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "derived-cross-boundary-connect"
+                        },
+                        {
+                            "id": "top / loud::rule:1:1",
+                            "text": "child_2 at north required",
+                            "subjects": [
+                                "child_2"
+                            ],
+                            "participants": [
+                                "child_2"
+                            ],
+                            "type": "at",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "derived-cross-boundary-guide"
+                        },
+                        {
+                            "id": "top / loud::rule:2:0",
+                            "text": "child_3 connect any [foyer, hallway] cwl=175 required",
+                            "subjects": [
+                                "child_3"
+                            ],
+                            "participants": [
+                                "child_3",
+                                "foyer",
+                                "hallway"
+                            ],
+                            "type": "connect",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "derived-cross-boundary-connect"
+                        },
+                        {
+                            "id": "top / loud::rule:2:1",
+                            "text": "child_3 at north required",
+                            "subjects": [
+                                "child_3"
+                            ],
+                            "participants": [
+                                "child_3"
+                            ],
+                            "type": "at",
+                            "required": true,
+                            "satisfied": true,
+                            "penalty": 0,
+                            "percentOfTotal": 0,
+                            "origin": "derived-cross-boundary-guide"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}</script>
 <script src="parser.js"></script>
 <script src="sa_optimized.js"></script>
 <script src="grid_optimizer.js"></script>
@@ -1421,7 +2394,7 @@ office at north west required
             .replaceAll("&", "&amp;")
             .replaceAll("<", "&lt;")
             .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
+            .replaceAll("\"", "&quot;")
             .replaceAll("'", "&#39;");
     }
 
@@ -1550,7 +2523,12 @@ office at north west required
             showParseMessages(errors, warnings);
             if (errors.length > 0) return;
 
-            const result = await optimizeParsed({ config, modules, errors, warnings }, controller.signal);
+            const result = await optimizeParsed({
+                config,
+                modules,
+                errors,
+                warnings,
+            }, controller.signal);
             showParseMessages([], result.warnings || warnings);
             showResult(result, config);
             lastCompletedDsl = stripped;

@@ -372,7 +372,16 @@ console.log("\n=== straight-run door width ===");
     // edges (an L-shaped boundary) — sum = 300cm >= cwl 250, but no single
     // straight run is more than 1 cell (100cm) wide: no door fits
     const rooms = mkRooms(2);
-    rooms[0].rules = [{ kind: "connect", required: true, subject: 0, targets: [1], externalTargets: [], any: false, cwl: 250, weight: 1 }];
+    rooms[0].rules = [{
+        kind: "connect",
+        required: true,
+        subject: 0,
+        targets: [1],
+        externalTargets: [],
+        any: false,
+        cwl: 250,
+        weight: 1,
+    }];
     const state = paint([
         [0, 0, 1],
         [0, 1, 1],
@@ -386,7 +395,16 @@ console.log("\n=== straight-run door width ===");
     // straight contact: room0/room1 share a full 3-cell-tall wall — run =
     // 300cm >= cwl 250, satisfied
     const rooms = mkRooms(2);
-    rooms[0].rules = [{ kind: "connect", required: true, subject: 0, targets: [1], externalTargets: [], any: false, cwl: 250, weight: 1 }];
+    rooms[0].rules = [{
+        kind: "connect",
+        required: true,
+        subject: 0,
+        targets: [1],
+        externalTargets: [],
+        any: false,
+        cwl: 250,
+        weight: 1,
+    }];
     const state = paint([
         [0, 1],
         [0, 1],
@@ -496,7 +514,17 @@ console.log("\n=== parent rule vs. children's cell union ===");
     // cwl 250 (300cm) even though neither child touches room 3 alone across
     // the whole run
     const rooms = mkRooms(4);
-    const rule = { kind: "connect", required: true, subject: 0, targets: [3], externalTargets: [], any: false, cwl: 250, origCwl: 250, weight: 1 };
+    const rule = {
+        kind: "connect",
+        required: true,
+        subject: 0,
+        targets: [3],
+        externalTargets: [],
+        any: false,
+        cwl: 250,
+        origCwl: 250,
+        weight: 1,
+    };
     const state = paint([
         [1, 1, 3],
         [1, 1, 3],
@@ -526,7 +554,17 @@ console.log("\n=== parent rule vs. children's cell union ===");
     const union = I.unionCells(state, [1, 2]);
     assert(I.straightSharedRun(state, union, 3) === 2, "setup: union/target longest run is 2 cells (perpendicular contacts don't combine)");
 
-    const ruleShort = { kind: "connect", required: true, subject: 0, targets: [3], externalTargets: [], any: false, cwl: 250, origCwl: 250, weight: 1 };
+    const ruleShort = {
+        kind: "connect",
+        required: true,
+        subject: 0,
+        targets: [3],
+        externalTargets: [],
+        any: false,
+        cwl: 250,
+        origCwl: 250,
+        weight: 1,
+    };
     assert(!I.connectSatisfiedFromRegion(state, ruleShort, union, undefined),
         "parent rule unsatisfied: children's union does not maintain a straight cwl-wide run to the target");
 
@@ -552,6 +590,7 @@ function frontageFixture(hubCols) {
     const top = Array.from({ length: 6 }, (_, x) => x < hubCols ? 1 : 2);
     return paint([top, [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]], rooms);
 }
+
 {
     const state = frontageFixture(4);
     assert(I.straightHubRun(state, 0) === 400, "partial frontage: straight hub run is 400cm");
@@ -665,7 +704,10 @@ console.log("\n=== over-quota cost shape ===");
     // convexity: one room at 4x quota must cost more than two rooms at 2x
     const cost = (rows, quotas) => {
         const rooms = mkRooms(quotas.length);
-        rooms.forEach((r, i) => { r.area = 100; r.quota = quotas[i]; });
+        rooms.forEach((r, i) => {
+            r.area = 100;
+            r.quota = quotas[i];
+        });
         const breakdown = {};
         I.softCost(paint(rows, rooms), rooms.map((_, i) => i), undefined, breakdown);
         return breakdown.area;
@@ -691,7 +733,13 @@ console.log("\n=== compatibility filtering ===");
         {
             id: "a",
             rules: [
-                { type: "connect", target: "b", required: true, subjectAny: true, subjectGroupId: 7 },
+                {
+                    type: "connect",
+                    target: "b",
+                    required: true,
+                    subjectAny: true,
+                    subjectGroupId: 7,
+                },
                 { type: "close", target: "outside", crossBoundary: true },
                 { type: "connect", target: "b", required: true },
                 { type: "mystery", target: "b" },

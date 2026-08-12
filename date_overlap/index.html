@@ -1583,7 +1583,8 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
                     const bytes = new Uint8Array(bin.length);
                     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
                     json = new TextDecoder().decode(bytes);
-                } catch {}
+                } catch {
+                }
             }
             if (!json) return false;
             const parsed = JSON.parse(json);

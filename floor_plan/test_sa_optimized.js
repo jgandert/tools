@@ -1307,8 +1307,24 @@ async function runFloorPlan(dsl) {
     console.log("\n=== Test CONNECT_FLOAT_ADJACENCY: epsilon-aware connect scoring ===");
     {
         const A = { id: "A", x: 0, y: 0, w: 100, h: 100, centerX: 50, centerY: 50 };
-        const horizontalB = { id: "B", x: 100 + 1e-10, y: 0, w: 100, h: 100, centerX: 150 + 1e-10, centerY: 50 };
-        const verticalB = { id: "B", x: 0, y: 100 + 1e-10, w: 100, h: 100, centerX: 50, centerY: 150 + 1e-10 };
+        const horizontalB = {
+            id: "B",
+            x: 100 + 1e-10,
+            y: 0,
+            w: 100,
+            h: 100,
+            centerX: 150 + 1e-10,
+            centerY: 50,
+        };
+        const verticalB = {
+            id: "B",
+            x: 0,
+            y: 100 + 1e-10,
+            w: 100,
+            h: 100,
+            centerX: 50,
+            centerY: 150 + 1e-10,
+        };
         const sumRule = { type: "connect", target: ["B"], any: false, required: true };
         const anyRule = { type: "connect", target: ["missing", "B"], any: true, required: true };
         const bounds = { w: 200, h: 200 };
@@ -1571,7 +1587,13 @@ async function runFloorPlan(dsl) {
                 id: "child_a",
                 area: 20000,
                 rules: [
-                    { type: "connect", target: ["hub"], required: true, crossBoundary: true, cwl: 50 },
+                    {
+                        type: "connect",
+                        target: ["hub"],
+                        required: true,
+                        crossBoundary: true,
+                        cwl: 50,
+                    },
                     { type: "at", dir: ["west"], required: true, weight: 1 },
                 ],
             },
@@ -1579,14 +1601,23 @@ async function runFloorPlan(dsl) {
                 id: "child_b",
                 area: 20000,
                 rules: [
-                    { type: "connect", target: ["hub"], required: true, crossBoundary: true, cwl: 50 },
+                    {
+                        type: "connect",
+                        target: ["hub"],
+                        required: true,
+                        crossBoundary: true,
+                        cwl: 50,
+                    },
                     { type: "at", dir: ["west"], required: true, weight: 1 },
                 ],
             },
         ];
         const workerConfig = { seed: 7, canvasW: 200, canvasH: 200, k: 2, iter: 1 };
         const sequential = await wongLiuSimulatedAnnealing(innerModules, workerConfig, undefined, [phantom]);
-        const parallel = await wongLiuSimulatedAnnealing(innerModules, { ...workerConfig, forceWorkers: true }, undefined, [phantom]);
+        const parallel = await wongLiuSimulatedAnnealing(innerModules, {
+            ...workerConfig,
+            forceWorkers: true,
+        }, undefined, [phantom]);
 
         assert(sequential.unsatisfied.length === 0 && parallel.unsatisfied.length === 0,
             `T_XBND_REQUIRED sequential and worker paths satisfy phantom connects (got ${sequential.unsatisfied.length}/${parallel.unsatisfied.length})`);
@@ -1687,7 +1718,11 @@ async function runFloorPlan(dsl) {
         assert(connectedChildren.length === 3,
             `T_XBND_ANY_GROUP all children get side_min=${parsed.config.sideMin} frontage to foyer or hallway (got ${connectedChildren.length}/3: ${JSON.stringify(childConnections)})`);
         assert(globalChildren.every(child => Math.min(child.w, child.h) >= parsed.config.sideMin - 0.1),
-            `T_XBND_ANY_GROUP all children honor inherited side_min=${parsed.config.sideMin} (got ${JSON.stringify(globalChildren.map(child => ({ id: child.id, w: child.w, h: child.h })))})`);
+            `T_XBND_ANY_GROUP all children honor inherited side_min=${parsed.config.sideMin} (got ${JSON.stringify(globalChildren.map(child => ({
+                id: child.id,
+                w: child.w,
+                h: child.h,
+            })))})`);
     }
 
     // =====================================================================
@@ -1877,8 +1912,14 @@ async function runFloorPlan(dsl) {
             { roomId: "parents", type: "not_at", dir: "south" },
         ];
         const selected = _selectRequiredBest([
-            { result: { layout: connectedLayout, cost: 100, tag: "connected" }, unsatisfied: connectedWithOtherViolations },
-            { result: { layout: disconnectedLayout, cost: 1, tag: "disconnected" }, unsatisfied: disconnectedUnsatisfied },
+            {
+                result: { layout: connectedLayout, cost: 100, tag: "connected" },
+                unsatisfied: connectedWithOtherViolations,
+            },
+            {
+                result: { layout: disconnectedLayout, cost: 1, tag: "disconnected" },
+                unsatisfied: disconnectedUnsatisfied,
+            },
         ]);
 
         assert(parsed.errors.length === 0, `CONNECT_FAR_CONFLICT DSL parses (got ${JSON.stringify(parsed.errors)})`);
@@ -1909,16 +1950,16 @@ async function runFloorPlan(dsl) {
         assert(!incumbentHolds, "RETRY_PREF cheap unsatisfied challenger does not beat satisfied incumbent");
 
         assert(isPreferredRequiredAttempt(
-            { cost: 600, geometryViolations: 0 }, [],
-            { cost: 500, geometryViolations: 1 }, []),
+                { cost: 600, geometryViolations: 0 }, [],
+                { cost: 500, geometryViolations: 1 }, []),
             "RETRY_PREF tie on required count prefers fewer geometry violations before cost");
         assert(isPreferredRequiredAttempt(
-            { cost: 500, geometryViolations: 1 }, [],
-            { cost: 600, geometryViolations: 1 }, []),
+                { cost: 500, geometryViolations: 1 }, [],
+                { cost: 600, geometryViolations: 1 }, []),
             "RETRY_PREF tie on required and geometry count falls back to lower cost");
         assert(!isPreferredRequiredAttempt(
-            { cost: 600, geometryViolations: 1 }, [],
-            { cost: 500, geometryViolations: 1 }, []),
+                { cost: 600, geometryViolations: 1 }, [],
+                { cost: 500, geometryViolations: 1 }, []),
             "RETRY_PREF tie on required and geometry count rejects higher cost");
 
         const key = requiredAttemptSelectionKey(
@@ -1997,7 +2038,10 @@ async function runFloorPlan(dsl) {
             { id: "auto", w: 60, h: 10 },
             { id: "fixedRatio", w: 40, h: 10 },
         ];
-        assert(countDeliveredGeometryViolations(layout, modulesMap, { ratioMax: 1.5, sideMin: 20 }) === 1,
+        assert(countDeliveredGeometryViolations(layout, modulesMap, {
+            ratioMax: 1.5,
+            sideMin: 20,
+        }) === 1,
             "GEOMETRY_COUNT counts aspect-or-side failure once and honors room overrides/fixed ratio");
 
         const epsilonLayout = [{ id: "both", w: 100, h: 50 - 1e-8 }];
@@ -2011,7 +2055,14 @@ async function runFloorPlan(dsl) {
     console.log("\n=== Test RULE_REPORT: exact post-solve per-rule accounting ===");
     {
         const scalarConnect = { type: "connect", target: "B", weight: 1, required: false };
-        const anyNorth = { type: "at", dir: "north", weight: 1, required: false, subjectAny: true, subjectGroupId: 4 };
+        const anyNorth = {
+            type: "at",
+            dir: "north",
+            weight: 1,
+            required: false,
+            subjectAny: true,
+            subjectGroupId: 4,
+        };
         const modulesMap = {
             A: { id: "A", rules: [scalarConnect, anyNorth] },
             B: { id: "B", rules: [] },
@@ -2051,10 +2102,12 @@ async function runFloorPlan(dsl) {
             "RULE_REPORT states final-report and required-weight semantics");
 
         const conflictModules = {
-            A: { id: "A", rules: [
-                { type: "connect", target: "B", weight: 1, required: true },
-                { type: "far", target: "B", weight: 1, required: true },
-            ] },
+            A: {
+                id: "A", rules: [
+                    { type: "connect", target: "B", weight: 1, required: true },
+                    { type: "far", target: "B", weight: 1, required: true },
+                ],
+            },
             B: { id: "B", rules: [] },
         };
         const conflictTopological = calculateTopologicalPenalties(layout.slice(0, 2), conflictModules, bounds, {}, 1, 1);
@@ -2084,7 +2137,10 @@ async function runFloorPlan(dsl) {
         const summedFar = calculateRuleScores(multiFarLayout, summedFarModules, bounds, {}, summedPenalty, summedPenalty).rules[0];
         const anyFarModules = {
             ...summedFarModules,
-            A: { id: "A", rules: [{ type: "far", target: ["B", "C"], any: true, weight: 1, required: true }] },
+            A: {
+                id: "A",
+                rules: [{ type: "far", target: ["B", "C"], any: true, weight: 1, required: true }],
+            },
         };
         const anyPenalty = calculateTopologicalPenalties(multiFarLayout, anyFarModules, bounds, {}, 1, 1);
         const anyFar = calculateRuleScores(multiFarLayout, anyFarModules, bounds, {}, anyPenalty, anyPenalty).rules[0];

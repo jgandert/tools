@@ -147,7 +147,8 @@ function formatMetrics(metrics) {
 
 async function withoutOptimizerLogs(run) {
     const originalLog = console.log;
-    console.log = () => {};
+    console.log = () => {
+    };
     try {
         return await run();
     } finally {

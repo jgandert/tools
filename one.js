@@ -372,7 +372,10 @@ const one = (() => {
             try {
                 const bytes = new TextEncoder().encode(text);
                 const cs = new ReadableStream({
-                    start(c) { c.enqueue(bytes); c.close(); }
+                    start(c) {
+                        c.enqueue(bytes);
+                        c.close();
+                    },
                 }).pipeThrough(new CompressionStream("deflate-raw"));
                 const buf = await new Response(cs).arrayBuffer();
                 const u8 = new Uint8Array(buf);
@@ -384,7 +387,7 @@ const one = (() => {
                 console.error("one.compress.url error:", err);
                 return param ? `${param}=${encodeURIComponent(text)}` : encodeURIComponent(text);
             }
-        }
+        },
     };
 
     const decompress = {
@@ -416,7 +419,10 @@ const one = (() => {
                 const u8 = new Uint8Array(bin.length);
                 for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
                 const ds = new ReadableStream({
-                    start(c) { c.enqueue(u8); c.close(); }
+                    start(c) {
+                        c.enqueue(u8);
+                        c.close();
+                    },
                 }).pipeThrough(new DecompressionStream("deflate-raw"));
                 const buf = await new Response(ds).arrayBuffer();
                 return new TextDecoder().decode(buf);
@@ -427,7 +433,7 @@ const one = (() => {
                     return null;
                 }
             }
-        }
+        },
     };
 
     document.addEventListener("keydown", closeAsideDrawerOnEscape);

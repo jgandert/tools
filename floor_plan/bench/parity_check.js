@@ -18,10 +18,20 @@ const { config, modules } = parseDSL(dsl);
 const origLog = console.log;
 
 async function run(seed, forceWorkers) {
-    console.log = () => {};
-    const r = await wongLiuSimulatedAnnealing(modules, { k, iter: 1, ...config, seed, forceWorkers });
+    console.log = () => {
+    };
+    const r = await wongLiuSimulatedAnnealing(modules, {
+        k,
+        iter: 1, ...config,
+        seed,
+        forceWorkers,
+    });
     console.log = origLog;
-    return { cost: r.cost, npe: r.npe.join(" "), unsat: (r.unsatisfied ?? []).map(u => `${u.roomId}.${u.type}`).join(",") };
+    return {
+        cost: r.cost,
+        npe: r.npe.join(" "),
+        unsat: (r.unsatisfied ?? []).map(u => `${u.roomId}.${u.type}`).join(","),
+    };
 }
 
 (async () => {

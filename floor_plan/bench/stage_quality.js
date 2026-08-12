@@ -20,7 +20,11 @@ const dslText = readFileSync(dslPath, "utf8");
 const stageResults = new Map();
 
 function stageMetrics(state, activeIdxs) {
-    const metrics = computeMetrics(new GridGeom(state, activeIdxs), { total: 0, satisfied: 0, unsatisfiedList: [] });
+    const metrics = computeMetrics(new GridGeom(state, activeIdxs), {
+        total: 0,
+        satisfied: 0,
+        unsatisfiedList: [],
+    });
     return {
         area: metrics.area.rooms.map(room => room.dev),
         bloat: metrics.area.hallways.map(room => room.bloat),
@@ -90,7 +94,10 @@ for (const stage of order) {
         + `${sum("far", "Sat")}/${sum("far", "Total")}`);
 }
 
-const finalRows = [...stageResults.entries()].map(([seed, stages]) => ({ seed, metrics: stages.get("final") })).filter(row => row.metrics);
+const finalRows = [...stageResults.entries()].map(([seed, stages]) => ({
+    seed,
+    metrics: stages.get("final"),
+})).filter(row => row.metrics);
 console.log("\nAdvisory geometry infeasibility and final delivery limitations:");
 const intrinsic = finalRows[0]?.metrics.advisoryGeometry.intrinsic || [];
 if (!intrinsic.length) console.log("  Intrinsic DSL exact-area conflicts: none detected.");
@@ -98,7 +105,10 @@ for (const item of intrinsic) {
     console.log(`  Intrinsic DSL exact-area conflict: ${item.path}; area ${item.area.toFixed(0)}cm², side_min ${item.sideMin.toFixed(1)}cm, ratio_max ${item.ratioMax ? item.ratioMax.toFixed(2) : "none"}; `
         + `minimum area ${item.minimumArea.toFixed(0)}cm², short by ${item.areaShortfall.toFixed(0)}cm² (${item.squareSideShortfall.toFixed(1)}cm per square side). Blocker: ${item.reason}.`);
 }
-const delivered = finalRows.flatMap(row => row.metrics.advisoryGeometry.delivered.map(item => ({ ...item, seed: row.seed })));
+const delivered = finalRows.flatMap(row => row.metrics.advisoryGeometry.delivered.map(item => ({
+    ...item,
+    seed: row.seed,
+})));
 if (!delivered.length) console.log("  Final delivered-layout side_min limitations: none.");
 const deliveredByPath = new Map();
 for (const item of delivered) {

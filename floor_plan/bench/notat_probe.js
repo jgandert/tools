@@ -62,7 +62,8 @@ function notAtDetail(layout) {
         const rows = [];
         for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
             const attemptSeed = attempt === 0 ? seed : seed + attempt * 0x17A4B3C1;
-            console.log = () => {};
+            console.log = () => {
+            };
             const result = await LO._runSingleSA(modules, { ...config, k, seed: attemptSeed });
             console.log = origLog;
             const unsat = LO.checkRequiredSatisfied(result.layout, modulesMap);

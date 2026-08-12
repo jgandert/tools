@@ -1970,7 +1970,7 @@ function _shouldUseWorkers(config) {
 
 function _resolveOptimizerScriptUrl() {
     if (typeof document !== "undefined") {
-        const el = document.querySelector('script[src*="sa_optimized"]');
+        const el = document.querySelector("script[src*=\"sa_optimized\"]");
         if (el?.src) {
             return el.src;
         }
@@ -2076,7 +2076,12 @@ async function _runWithRestarts(modules, config, signal, phantoms = []) {
     if (_shouldUseWorkers(config)) {
         const tasks = [];
         for (let r = 0; r < restarts; r++) {
-            const innerCfg = { ...config, seed: baseSeed + r * 0x9E3779B1, iter: innerIter, restarts: 1 };
+            const innerCfg = {
+                ...config,
+                seed: baseSeed + r * 0x9E3779B1,
+                iter: innerIter,
+                restarts: 1,
+            };
             tasks.push({ modules, config: innerCfg, phantoms });
         }
         const results = await _runTasksInWorkers(tasks, signal);
@@ -2308,7 +2313,12 @@ function repairRequiredLayout(best, finalizeNpe, modulesMap, maxMoves = REPAIR_M
         }
     }
 
-    return { ...cur, attempted: true, unsatisfiedBefore: before.length, unsatisfiedAfter: curUnsat.length };
+    return {
+        ...cur,
+        attempted: true,
+        unsatisfiedBefore: before.length,
+        unsatisfiedAfter: curUnsat.length,
+    };
 }
 
 async function wongLiuSimulatedAnnealing(modules, config = {}, signal = null, phantoms = []) {

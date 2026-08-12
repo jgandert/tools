@@ -20,7 +20,12 @@ import {
     SimplexNoise,
 } from "./motif.js";
 import { applyParamModulation, sampleBufferCache } from "./src/helpers.js";
-import { MockAudioParam, MockGainNode, MockOscillatorNode, MockAudioContext } from "./test/mock_webaudio.js";
+import {
+    MockAudioParam,
+    MockGainNode,
+    MockOscillatorNode,
+    MockAudioContext,
+} from "./test/mock_webaudio.js";
 
 
 let passed = 0, failed = 0;
@@ -7534,14 +7539,24 @@ console.log("\n=== MotifEngine.tick: isolates per-track scheduling errors ===");
     Motif.isPlaying = true;
 
     let secondCalled = false;
-    const throwingTrack = { id: "throws", _schedule: () => { throw new Error("boom"); } };
-    const okTrack = { id: "ok", _schedule: () => { secondCalled = true; } };
+    const throwingTrack = {
+        id: "throws", _schedule: () => {
+            throw new Error("boom");
+        },
+    };
+    const okTrack = {
+        id: "ok", _schedule: () => {
+            secondCalled = true;
+        },
+    };
     trackRegistry.set("throws", throwingTrack);
     trackRegistry.set("ok", okTrack);
 
     const origConsoleError = console.error;
     let errorLogged = false;
-    console.error = (...args) => { errorLogged = true; };
+    console.error = (...args) => {
+        errorLogged = true;
+    };
 
     let threw = false;
     try {
@@ -7573,11 +7588,16 @@ console.log("\n=== MotifEngine.tick: isolates errors in Motif.schedule() callbac
     Motif.isPlaying = true;
 
     let secondFired = false;
-    Motif.schedule(0, () => { throw new Error("x"); });
-    Motif.schedule(0, () => { secondFired = true; });
+    Motif.schedule(0, () => {
+        throw new Error("x");
+    });
+    Motif.schedule(0, () => {
+        secondFired = true;
+    });
 
     const origConsoleError = console.error;
-    console.error = () => {};
+    console.error = () => {
+    };
 
     let threw = false;
     try {
@@ -7622,11 +7642,11 @@ console.log("\n=== TrackScheduler._schedule: isolates modifier and _playEvent er
     const trackB = Track("sched-isolation-b").note(["E3"]);
 
     let bPlayCount = 0;
-    trackB._playEvent = function (event, startTime, duration) {
+    trackB._playEvent = function(event, startTime, duration) {
         bPlayCount++;
     };
     let aPlayCount = 0;
-    trackA._playEvent = function (event, startTime, duration) {
+    trackA._playEvent = function(event, startTime, duration) {
         aPlayCount++;
     };
 
@@ -7637,7 +7657,9 @@ console.log("\n=== TrackScheduler._schedule: isolates modifier and _playEvent er
 
     const origConsoleError = console.error;
     let errorLogged = false;
-    console.error = (...args) => { errorLogged = true; };
+    console.error = (...args) => {
+        errorLogged = true;
+    };
 
     let threw = false;
     try {
@@ -7659,7 +7681,8 @@ console.log("\n=== TrackScheduler._schedule: isolates modifier and _playEvent er
     mockCtx.currentTime += 0.05;
 
     let threwSecond = false;
-    console.error = () => {};
+    console.error = () => {
+    };
     try {
         Motif.tick();
     } catch (e) {
@@ -7757,7 +7780,10 @@ console.log("\n=== Worklet Stop: GranularStretcherProcessor termination ===");
 
     globalThis.AudioWorkletProcessor = class {
         constructor() {
-            this.port = { onmessage: null, postMessage() {} };
+            this.port = {
+                onmessage: null, postMessage() {
+                },
+            };
         }
     };
     globalThis.registerProcessor = (name, cls) => {
@@ -7780,7 +7806,12 @@ console.log("\n=== Worklet Stop: GranularStretcherProcessor termination ===");
     };
 
     const feedBuffer = (inst) => {
-        inst.port.onmessage({ data: { leftBuffer: new Float32Array(44100), rightBuffer: new Float32Array(44100) } });
+        inst.port.onmessage({
+            data: {
+                leftBuffer: new Float32Array(44100),
+                rightBuffer: new Float32Array(44100),
+            },
+        });
         inst.port.onmessage({ data: { type: "START", startTime: 0 } });
     };
 
@@ -7821,17 +7852,34 @@ console.log("\n=== Track: _crossfadeOut deregisters stale splitStereo right trac
         constructor(inputs) {
             this.numberOfInputs = inputs;
         }
-        connect() {}
-        disconnect() {}
+
+        connect() {
+        }
+
+        disconnect() {
+        }
     }
 
     const makeParam = (v = 1.0) => ({
         value: v,
-        setValueAtTime(val) { this.value = val; return this; },
-        linearRampToValueAtTime(val) { this.value = val; return this; },
-        exponentialRampToValueAtTime(val) { this.value = val; return this; },
-        cancelAndHoldAtTime() { return this; },
-        cancelScheduledValues() { return this; },
+        setValueAtTime(val) {
+            this.value = val;
+            return this;
+        },
+        linearRampToValueAtTime(val) {
+            this.value = val;
+            return this;
+        },
+        exponentialRampToValueAtTime(val) {
+            this.value = val;
+            return this;
+        },
+        cancelAndHoldAtTime() {
+            return this;
+        },
+        cancelScheduledValues() {
+            return this;
+        },
     });
 
     const makeNode = (extra = {}) => ({
@@ -7847,8 +7895,10 @@ console.log("\n=== Track: _crossfadeOut deregisters stale splitStereo right trac
         type: "lowpass",
         curve: null,
         oversample: "none",
-        connect() {},
-        disconnect() {},
+        connect() {
+        },
+        disconnect() {
+        },
         ...extra,
     });
 
@@ -7858,12 +7908,30 @@ console.log("\n=== Track: _crossfadeOut deregisters stale splitStereo right trac
             this.currentTime = 0;
             this.destination = {};
         }
-        createGain() { return makeNode(); }
-        createBiquadFilter() { return makeNode(); }
-        createDynamicsCompressor() { return makeNode(); }
-        createWaveShaper() { return makeNode(); }
-        createStereoPanner() { return makeNode(); }
-        createChannelMerger(inputs) { return new CrossfadeMockMerger(inputs); }
+
+        createGain() {
+            return makeNode();
+        }
+
+        createBiquadFilter() {
+            return makeNode();
+        }
+
+        createDynamicsCompressor() {
+            return makeNode();
+        }
+
+        createWaveShaper() {
+            return makeNode();
+        }
+
+        createStereoPanner() {
+            return makeNode();
+        }
+
+        createChannelMerger(inputs) {
+            return new CrossfadeMockMerger(inputs);
+        }
     }
 
     Motif.ctx = new CrossfadeMockCtx();
@@ -7919,7 +7987,10 @@ console.log("\n=== Sample/Sampler load races: generation guards ===");
 
     const deferred = () => {
         let resolve, reject;
-        const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+        const promise = new Promise((res, rej) => {
+            resolve = res;
+            reject = rej;
+        });
         return { promise, resolve, reject };
     };
 
@@ -8021,6 +8092,7 @@ console.log("\n=== _getMonoBuffer: cache keyed by buffer identity, not just chan
             this.currentTime = 0;
             this.destination = {};
         }
+
         createBuffer(ch, len, sr) {
             return {
                 numberOfChannels: ch,
@@ -8095,7 +8167,12 @@ console.log("\n=== Bug Fix: Inline dB Automation Guarding (Non-Finite AudioParam
     // dB->linear mapValueFn should record ~0.501187 (not the raw -6).
     {
         const setCalls = [];
-        const param = { setValueAtTime(v, t) { setCalls.push(v); return this; } };
+        const param = {
+            setValueAtTime(v, t) {
+                setCalls.push(v);
+                return this;
+            },
+        };
         applyParamModulation({}, param, "-6dB", "_testModulator", dbMap);
 
         assert(setCalls.length === 1, `expected setValueAtTime called once, got ${setCalls.length}`);
@@ -8107,7 +8184,12 @@ console.log("\n=== Bug Fix: Inline dB Automation Guarding (Non-Finite AudioParam
     // must NOT record a non-finite value on the AudioParam.
     {
         const setCalls = [];
-        const param = { setValueAtTime(v, t) { setCalls.push(v); return this; } };
+        const param = {
+            setValueAtTime(v, t) {
+                setCalls.push(v);
+                return this;
+            },
+        };
 
         let threw = false;
         try {
@@ -8127,13 +8209,24 @@ console.log("\n=== Bug Fix: Inline dB Automation Guarding (Non-Finite AudioParam
         const setCalls = [];
         const rampCalls = [];
         const param = {
-            setValueAtTime(v, t) { setCalls.push(v); return this; },
-            linearRampToValueAtTime(v, t) { rampCalls.push(v); return this; },
+            setValueAtTime(v, t) {
+                setCalls.push(v);
+                return this;
+            },
+            linearRampToValueAtTime(v, t) {
+                rampCalls.push(v);
+                return this;
+            },
         };
 
         let threw = false;
         try {
-            applyParamModulation({}, param, { isRamp: true, from: -Infinity, to: -6, duration: 0.1 }, "_testModulator", null);
+            applyParamModulation({}, param, {
+                isRamp: true,
+                from: -Infinity,
+                to: -6,
+                duration: 0.1,
+            }, "_testModulator", null);
         } catch (e) {
             threw = true;
         }
@@ -8149,20 +8242,35 @@ console.log("\n=== Bug Fix: Inline dB Automation Guarding (Non-Finite AudioParam
         constructor() {
             this.gain = {
                 value: 1.0,
-                setValueAtTime(v) { this.value = v; return this; },
-                linearRampToValueAtTime(v) { this.value = v; return this; },
+                setValueAtTime(v) {
+                    this.value = v;
+                    return this;
+                },
+                linearRampToValueAtTime(v) {
+                    this.value = v;
+                    return this;
+                },
             };
         }
-        connect(dest) { return dest; }
-        disconnect() {}
+
+        connect(dest) {
+            return dest;
+        }
+
+        disconnect() {
+        }
     }
+
     class InlineDbAutomationMockCtx {
         constructor() {
             this.state = "running";
             this.currentTime = 0;
             this.destination = {};
         }
-        createGain() { return new InlineDbAutomationMockGainNode(); }
+
+        createGain() {
+            return new InlineDbAutomationMockGainNode();
+        }
     }
 
     // TEST 4: _playEvent inline volume automation ({type: "volume", value: "-6dB"}) must
@@ -8217,10 +8325,19 @@ console.log("\n=== Bug Fix: Inline dB Automation Guarding (Non-Finite AudioParam
             };
             this.type = "sine";
         }
-        connect() { return this; }
-        disconnect() {}
-        start() {}
-        stop() {}
+
+        connect() {
+            return this;
+        }
+
+        disconnect() {
+        }
+
+        start() {
+        }
+
+        stop() {
+        }
     }
 
     class LfoGuardMockGainNode {
@@ -8233,8 +8350,13 @@ console.log("\n=== Bug Fix: Inline dB Automation Guarding (Non-Finite AudioParam
                 },
             };
         }
-        connect() { return this; }
-        disconnect() {}
+
+        connect() {
+            return this;
+        }
+
+        disconnect() {
+        }
     }
 
     class LfoGuardMockCtx {
@@ -8243,8 +8365,14 @@ console.log("\n=== Bug Fix: Inline dB Automation Guarding (Non-Finite AudioParam
             this.currentTime = 0;
             this.destination = {};
         }
-        createOscillator() { return new LfoGuardMockOscillatorNode(); }
-        createGain() { return new LfoGuardMockGainNode(); }
+
+        createOscillator() {
+            return new LfoGuardMockOscillatorNode();
+        }
+
+        createGain() {
+            return new LfoGuardMockGainNode();
+        }
     }
 
     const prevCtx = Motif.ctx;
@@ -8317,6 +8445,7 @@ console.log("\n=== MotifEngine: auto-loop restart race with pending suspend ==="
     // until we resolve it manually — reproduces the window where the loop
     // restart can fire before the engine-initiated suspend has landed.
     let resolveSuspend = null;
+
     class RaceCtx {
         constructor() {
             this.state = "running";
@@ -8346,7 +8475,8 @@ console.log("\n=== MotifEngine: auto-loop restart race with pending suspend ==="
     Motif._arrangementOptions = { loop: true, loopDelay: 0 };
 
     // Avoid spinning a real setInterval scheduler during the async assertions.
-    Motif._startScheduler = () => {};
+    Motif._startScheduler = () => {
+    };
 
     // Minimal finished-arrangement track: finite segment stop reached at t=2.
     const loopTrack = {
@@ -8354,8 +8484,10 @@ console.log("\n=== MotifEngine: auto-loop restart race with pending suspend ==="
         _notePattern: ["C3"],
         _activeSegments: [{ start: 0, stop: 1 }],
         _playbackStartTime: 0,
-        _schedule() {},
-        _resetScheduling() {},
+        _schedule() {
+        },
+        _resetScheduling() {
+        },
     };
     trackRegistry.set(loopTrack.id, loopTrack);
 
@@ -8384,7 +8516,8 @@ console.log("\n=== MotifEngine: auto-loop restart race with pending suspend ==="
         "_suspendedByEngine should be cleared once the transport resumes");
 
     // pause() -> Motif.start() must resume instead of throwing.
-    Motif._startScheduler = () => {};
+    Motif._startScheduler = () => {
+    };
     Motif.pause();
     assert(Motif._suspendedByEngine === true,
         "pause() should mark the suspend as engine-initiated");
@@ -8433,6 +8566,7 @@ console.log("\n=== _loadAndCacheBuffer: evicts rejected promises from sampleBuff
             resolve({ duration: 1, sampleRate: 44100, numberOfChannels: 1 });
         }
     }
+
     Motif.ctx = new RejectEvictionMockCtx();
 
     const path = "/audio/flaky-eviction-test.wav";
@@ -8576,7 +8710,7 @@ console.log("\n=== Track.feedback: no-op stub warns once instead of silently doi
     assert(warnCalls.length === 1, `Track.feedback() must warn exactly once across calls, got ${warnCalls.length} warnings`);
     assert(
         warnCalls.length > 0 && /only supported on Bus/i.test(warnCalls[0]),
-        `Track.feedback() warning must mention Bus-only support, got: ${warnCalls[0] ?? "(none)"}`
+        `Track.feedback() warning must mention Bus-only support, got: ${warnCalls[0] ?? "(none)"}`,
     );
 
     trackRegistry.delete("__feedback_stub_probe__");
@@ -8591,11 +8725,11 @@ console.log("\n=== prompt.md: Audio Routing lists .feedback({ amount }) as Bus-o
     assert(!!routingLine, "prompt.md must contain the 'Audio Routing (chained on Track)' line");
     assert(
         !!routingLine && !/`\.send\(bus, amount\)`, `\.feedback/.test(routingLine),
-        "prompt.md Audio Routing (Track) line must not list `.feedback({ amount })` as a plain Track-chained method"
+        "prompt.md Audio Routing (Track) line must not list `.feedback({ amount })` as a plain Track-chained method",
     );
     assert(
         promptText.includes("chained on `Bus`, NOT on Track"),
-        "prompt.md must explicitly state .feedback({ amount }) is Bus-only, not Track"
+        "prompt.md must explicitly state .feedback({ amount }) is Bus-only, not Track",
     );
 }
 
@@ -8609,9 +8743,16 @@ console.log("\n=== Track.sound(): synth/sample routing convenience method ===");
 
     class SoundRouterMockCtx extends MockAudioContext {
         decodeAudioData(ab, resolve) {
-            resolve({ getChannelData: () => new Float32Array(100), duration: 1, sampleRate: 44100, numberOfChannels: 1, length: 100 });
+            resolve({
+                getChannelData: () => new Float32Array(100),
+                duration: 1,
+                sampleRate: 44100,
+                numberOfChannels: 1,
+                length: 100,
+            });
         }
     }
+
     Motif.ctx = new SoundRouterMockCtx();
 
     // Case 1: native oscillator name routes through .synth()
@@ -8635,7 +8776,10 @@ console.log("\n=== Track.sound(): synth/sample routing convenience method ===");
     let fetchCalled = false;
     globalThis.fetch = () => {
         fetchCalled = true;
-        return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(4)) });
+        return Promise.resolve({
+            ok: true,
+            arrayBuffer: () => Promise.resolve(new ArrayBuffer(4)),
+        });
     };
     Motif.sampleRegistry.set(customSampleName, () => ({
         getChannelData: () => new Float32Array(10),
@@ -8655,7 +8799,10 @@ console.log("\n=== Track.sound(): synth/sample routing convenience method ===");
     globalThis.fetch = (url) => {
         fetchCalled = true;
         fetchedUrl = url;
-        return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(4)) });
+        return Promise.resolve({
+            ok: true,
+            arrayBuffer: () => Promise.resolve(new ArrayBuffer(4)),
+        });
     };
     const unknownPath = "/audio/__unregistered_sound_router_probe__.wav";
     const tFallthrough = Track("sound-router-fallthrough").sound(unknownPath);
@@ -8817,10 +8964,15 @@ console.log("\n=== Granular perf: process() output equivalence (frozen reference
     let captured = null;
     globalThis.AudioWorkletProcessor = class {
         constructor() {
-            this.port = { onmessage: null, postMessage() {} };
+            this.port = {
+                onmessage: null, postMessage() {
+                },
+            };
         }
     };
-    globalThis.registerProcessor = (name, cls) => { captured = cls; };
+    globalThis.registerProcessor = (name, cls) => {
+        captured = cls;
+    };
     globalThis.sampleRate = 44100;
     globalThis.currentTime = 0;
 
@@ -8924,7 +9076,9 @@ console.log("\n=== Granular perf: _postGranularChannels transfer list (throwaway
     const posts = [];
     const mockSource = {
         port: {
-            postMessage(msg, transfer) { posts.push({ msg, transfer }); },
+            postMessage(msg, transfer) {
+                posts.push({ msg, transfer });
+            },
         },
     };
 
@@ -8964,7 +9118,9 @@ console.log("\n=== Granular perf: _postGranularChannels transfer list (throwaway
         numberOfChannels: 1,
         length: 3,
         sampleRate: 44100,
-        getChannelData() { return monoChan; },
+        getChannelData() {
+            return monoChan;
+        },
     };
     t._postGranularChannels(mockSource, monoBuffer);
     const monoPost = posts[posts.length - 1];
@@ -9062,12 +9218,27 @@ console.log("\n=== Track.delay(): survives live-coder hot-reload prune ===");
 
     const makeParam = (value = 0) => ({
         value,
-        setValueAtTime(v) { this.value = v; return this; },
-        linearRampToValueAtTime(v) { this.value = v; return this; },
-        exponentialRampToValueAtTime(v) { this.value = v; return this; },
-        setTargetAtTime() { return this; },
-        cancelScheduledValues() { return this; },
-        cancelAndHoldAtTime() { return this; },
+        setValueAtTime(v) {
+            this.value = v;
+            return this;
+        },
+        linearRampToValueAtTime(v) {
+            this.value = v;
+            return this;
+        },
+        exponentialRampToValueAtTime(v) {
+            this.value = v;
+            return this;
+        },
+        setTargetAtTime() {
+            return this;
+        },
+        cancelScheduledValues() {
+            return this;
+        },
+        cancelAndHoldAtTime() {
+            return this;
+        },
     });
 
     const makeNode = (label) => {
@@ -9078,10 +9249,16 @@ console.log("\n=== Track.delay(): survives live-coder hot-reload prune ===");
             frequency: makeParam(350),
             Q: makeParam(1),
             offset: makeParam(0),
-            connect(dest) { connections.push({ from: node, to: dest }); return dest; },
-            disconnect() {},
-            start() {},
-            stop() {},
+            connect(dest) {
+                connections.push({ from: node, to: dest });
+                return dest;
+            },
+            disconnect() {
+            },
+            start() {
+            },
+            stop() {
+            },
         };
         return node;
     };
@@ -9091,16 +9268,43 @@ console.log("\n=== Track.delay(): survives live-coder hot-reload prune ===");
             this.currentTime = 0;
             this.sampleRate = 44100;
             this.destination = makeNode("destination");
-            this.audioWorklet = { addModule: async () => {} };
+            this.audioWorklet = {
+                addModule: async () => {
+                },
+            };
         }
-        createGain() { return makeNode("gain"); }
-        createBiquadFilter() { return makeNode("biquad"); }
-        createDynamicsCompressor() { return makeNode("compressor"); }
-        createWaveShaper() { return makeNode("waveShaper"); }
-        createStereoPanner() { return makeNode("panner"); }
-        createDelay() { return makeNode("delay"); }
-        createChannelMerger() { return makeNode("merger"); }
-        createConstantSource() { return makeNode("constantSource"); }
+
+        createGain() {
+            return makeNode("gain");
+        }
+
+        createBiquadFilter() {
+            return makeNode("biquad");
+        }
+
+        createDynamicsCompressor() {
+            return makeNode("compressor");
+        }
+
+        createWaveShaper() {
+            return makeNode("waveShaper");
+        }
+
+        createStereoPanner() {
+            return makeNode("panner");
+        }
+
+        createDelay() {
+            return makeNode("delay");
+        }
+
+        createChannelMerger() {
+            return makeNode("merger");
+        }
+
+        createConstantSource() {
+            return makeNode("constantSource");
+        }
     }
 
     Motif.ctx = new RecCtx();
@@ -9192,7 +9396,9 @@ class SeedSampleMockCtx extends MockAudioContext {
             numberOfChannels, length, sampleRate,
             duration: length / sampleRate,
             getChannelData: () => data,
-            copyToChannel(src) { data.set(src); },
+            copyToChannel(src) {
+                data.set(src);
+            },
         };
     }
 }

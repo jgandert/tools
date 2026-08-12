@@ -347,5 +347,11 @@ async function optimizeRecursive(modules, config, signal, phantoms = []) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-    module.exports = { stripComments, optimizeRecursive, optimizeParsed, optimizeSaRecursive, attachDominanceHints };
+    module.exports = {
+        stripComments,
+        optimizeRecursive,
+        optimizeParsed,
+        optimizeSaRecursive,
+        attachDominanceHints,
+    };
 }

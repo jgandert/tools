@@ -46,7 +46,8 @@ const origLog = console.log;
 (async () => {
     const agg = [];
     for (const seed of seeds) {
-        console.log = () => {};
+        console.log = () => {
+        };
         const result = await wongLiuSimulatedAnnealing(modules, { k, iter: 1, ...config, seed });
         console.log = origLog;
 

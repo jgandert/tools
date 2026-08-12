@@ -196,7 +196,12 @@ function probeRun(result) {
         const area = deliveredAreaDeviation(candidate, activeIdxs);
         const full = I.finalPolishQuality(candidate, activeIdxs);
         eligible.push({ moves: certificate.moves, quality, area, full });
-        if (!best || compareChildQuality(quality, best.quality) < 0) best = { ...certificate, quality, area, full };
+        if (!best || compareChildQuality(quality, best.quality) < 0) best = {
+            ...certificate,
+            quality,
+            area,
+            full,
+        };
     }
     return { baseline, baselineArea, baselineFull, search, valid, best, eligible };
 }

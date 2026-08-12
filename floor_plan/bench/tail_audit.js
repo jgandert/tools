@@ -21,13 +21,21 @@ const split = Math.ceil(seeds.length / 2);
 
 function cloneStage(state, activeIdxs) {
     return {
-        state: { ...state, cells: state.cells.slice(), rooms: state.rooms.map(room => ({ ...room })) },
+        state: {
+            ...state,
+            cells: state.cells.slice(),
+            rooms: state.rooms.map(room => ({ ...room })),
+        },
         activeIdxs: activeIdxs.slice(),
     };
 }
 
 function metrics(stage) {
-    return computeMetrics(new GridGeom(stage.state, stage.activeIdxs), { total: 0, satisfied: 0, unsatisfiedList: [] });
+    return computeMetrics(new GridGeom(stage.state, stage.activeIdxs), {
+        total: 0,
+        satisfied: 0,
+        unsatisfiedList: [],
+    });
 }
 
 function roomMisses(stage) {
@@ -101,7 +109,11 @@ function singleAndCompoundReachability(stage) {
         }
     }
     state.cells.set(saved);
-    return { single, compound: compound && qualityShapeImproves(compound.quality, current) ? 1 : 0, participants };
+    return {
+        single,
+        compound: compound && qualityShapeImproves(compound.quality, current) ? 1 : 0,
+        participants,
+    };
 }
 
 function adjacent(state, a, b) {
@@ -181,7 +193,10 @@ function* guillotineAssignments(extent, order, quotas) {
             const totalQuota = order.reduce((sum, room) => sum + quotas.get(room), 0);
             for (const cut of cutCandidates(low, high, leftQuota / totalQuota)) {
                 const first = axis === "x" ? { ...extent, x1: cut } : { ...extent, y1: cut };
-                const second = axis === "x" ? { ...extent, x0: cut + 1 } : { ...extent, y0: cut + 1 };
+                const second = axis === "x" ? { ...extent, x0: cut + 1 } : {
+                    ...extent,
+                    y0: cut + 1,
+                };
                 for (const left of guillotineAssignments(first, order.slice(0, count), quotas)) {
                     for (const right of guillotineAssignments(second, order.slice(count), quotas)) {
                         yield { regions: left.regions.concat(right.regions) };
@@ -225,7 +240,10 @@ function macroReachability(stage) {
                         if (!qualityShapeImproves(candidate, current)) continue;
                         candidate.requiredViolations = I.deliveredRequiredViolationCount(state, activeIdxs);
                         if (I.compareFinalPolishQuality(candidate, current) < 0) {
-                            viable = { rooms: members.map(index => state.rooms[index].id), quality: candidate };
+                            viable = {
+                                rooms: members.map(index => state.rooms[index].id),
+                                quality: candidate,
+                            };
                             state.cells.set(saved);
                             return { clusters, viable, examined };
                         }

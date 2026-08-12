@@ -717,14 +717,14 @@ console.log("\n=== parse-time feasibility lints ===");
     assert(frontageWarnings.length === 1,
         `feasibility-frontage: one deduplicated warning (got ${JSON.stringify(frontage.warnings)})`);
     assert(["top / loud", "top / loud / child_1", "top / loud / child_2", "top / loud / child_3", "top / foyer", "top / hallway"]
-        .every(path => frontageWarnings[0].includes(path)),
-    "feasibility-frontage: warning names parent, children, and target room paths");
+            .every(path => frontageWarnings[0].includes(path)),
+        "feasibility-frontage: warning names parent, children, and target room paths");
     assert(frontageWarnings[0].includes("734.8 cm")
         && frontageWarnings[0].includes("707.1 cm")
         && frontageWarnings[0].includes("shortfall 27.7 cm")
         && frontageWarnings[0].includes("area=300000 cm²")
         && frontageWarnings[0].includes("ratio_max=1.667"),
-    `feasibility-frontage: warning quantifies inherited geometry conflict (got ${frontageWarnings[0]})`);
+        `feasibility-frontage: warning quantifies inherited geometry conflict (got ${frontageWarnings[0]})`);
     assert(frontage.errors.length === 0, `feasibility-frontage: fixture parses (got ${JSON.stringify(frontage.errors)})`);
     assert(frontage.modules.find(module => module.id === "loud")?.inside?.modules.every(child => child.ratioMax === 5 / 3 && child.sideMin === 175),
         "feasibility-frontage: lint reads inherited geometry without changing parsed children");
@@ -777,7 +777,7 @@ console.log("\n=== parse-time feasibility lints ===");
     assert(nestedFrontageWarnings.length === 1 && nestedFrontageWarnings[0].includes("top / outer / middle")
         && nestedFrontageWarnings[0].includes("top / outer / middle / child_a")
         && nestedFrontageWarnings[0].includes("top / outer / outside"),
-    `feasibility-frontage: lint recurses with fully scoped paths (got ${JSON.stringify(nestedFrontageWarnings)})`);
+        `feasibility-frontage: lint recurses with fully scoped paths (got ${JSON.stringify(nestedFrontageWarnings)})`);
 
     const subjectAnyFrontage = parseDSL(`
         ratio_max 1:1
@@ -807,7 +807,7 @@ console.log("\n=== parse-time feasibility lints ===");
     const subjectAnyWarnings = infeasibleSubjectAny.warnings.filter(warning => warning.includes("[FEASIBILITY_INSIDE_FRONTAGE]"));
     assert(subjectAnyWarnings.length === 1 && subjectAnyWarnings[0].includes("any [top / parent / child_a, top / parent / child_b] adds at least 60 cm")
         && subjectAnyWarnings[0].includes("shortfall 10 cm"),
-    `feasibility-frontage: infeasible subject-any group contributes one conservative requirement (got ${JSON.stringify(subjectAnyWarnings)})`);
+        `feasibility-frontage: infeasible subject-any group contributes one conservative requirement (got ${JSON.stringify(subjectAnyWarnings)})`);
 
     const overlappingSubjectAny = parseDSL(`
         ratio_max 1:1
@@ -896,7 +896,7 @@ console.log("\n=== parse-time feasibility lints ===");
     assert(atWarnings.length === 1 && atWarnings[0].includes("top / outer / middle / leaf")
         && atWarnings[0].includes("at north required") && atWarnings[0].includes("at south required")
         && atWarnings[0].includes("full scope height"),
-    `feasibility-at: recursive warning names room path and opposing constraints (got ${JSON.stringify(atWarnings)})`);
+        `feasibility-at: recursive warning names room path and opposing constraints (got ${JSON.stringify(atWarnings)})`);
 
     const compatibleAt = parseDSL(`
         room A area=1000
@@ -920,7 +920,7 @@ console.log("\n=== parse-time feasibility lints ===");
     assert(areaWarnings.length === 1 && areaWarnings[0].includes("top / A") && areaWarnings[0].includes("top / B")
         && areaWarnings[0].includes("11000 cm²") && areaWarnings[0].includes("10000 cm²")
         && areaWarnings[0].includes("shortfall 1000 cm²"),
-    `feasibility-area: strict-canvas warning names known rooms and quantifies shortfall (got ${JSON.stringify(areaWarnings)})`);
+        `feasibility-area: strict-canvas warning names known rooms and quantifies shortfall (got ${JSON.stringify(areaWarnings)})`);
 
     for (const dsl of [
         "canvas 100x100\nroom A area=6000\nroom B area=4000",

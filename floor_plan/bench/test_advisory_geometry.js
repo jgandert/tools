@@ -5,9 +5,33 @@ const assert = (condition, message) => {
 };
 
 const rooms = [
-    { id: "dressing", path: "dressing", parent: null, area: 30000, sideMin: 175, ratioMax: 5 / 3, hasChildren: false },
-    { id: "child", path: "suite/child", parent: "suite", area: 40000, sideMin: 190, ratioMax: 2, hasChildren: false },
-    { id: "feasible", path: "feasible", parent: null, area: 40000, sideMin: 175, ratioMax: 2, hasChildren: false },
+    {
+        id: "dressing",
+        path: "dressing",
+        parent: null,
+        area: 30000,
+        sideMin: 175,
+        ratioMax: 5 / 3,
+        hasChildren: false,
+    },
+    {
+        id: "child",
+        path: "suite/child",
+        parent: "suite",
+        area: 40000,
+        sideMin: 190,
+        ratioMax: 2,
+        hasChildren: false,
+    },
+    {
+        id: "feasible",
+        path: "feasible",
+        parent: null,
+        area: 40000,
+        sideMin: 175,
+        ratioMax: 2,
+        hasChildren: false,
+    },
 ];
 const sideMin = [
     { room: "dressing", minSide: 160, shortfall: 15, violated: true },

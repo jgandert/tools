@@ -242,7 +242,8 @@ SOFTWARE.
                 appendToggle.addEventListener("change", function() {
                     try {
                         localStorage.setItem("p2m-append", appendToggle.checked ? "1" : "0");
-                    } catch (e) {}
+                    } catch (e) {
+                    }
                 });
 
                 // Modern paste: read HTML directly from clipboardData

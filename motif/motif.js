@@ -1003,7 +1003,8 @@ export class MotifEngine {
                         // "running" while the suspend is pending, so a resume would be
                         // skipped and the late suspend would silence playback forever.
                         Promise.resolve(this._suspendPromise)
-                            .catch(() => {})
+                            .catch(() => {
+                            })
                             .then(() => {
                                 if (this._loopTimeout) return this.start();
                             })
@@ -2617,9 +2618,9 @@ const MotifSynths = {
 
         // Drawbars 16' / 8' / 5-1/3' / 4' pulled full out
         let mix = 0.9 * Math.sin(w)
-                + 1.0 * Math.sin(w * 2.0)
-                + 0.8 * Math.sin(w * 3.0)
-                + 0.7 * Math.sin(w * 4.0);
+            + 1.0 * Math.sin(w * 2.0)
+            + 0.8 * Math.sin(w * 3.0)
+            + 0.7 * Math.sin(w * 4.0);
 
         // Percussion: 3rd harmonic of the fundamental, effectively gone after ~0.2s
         mix += 0.9 * Math.sin(w * 6.0) * Math.exp(-ctx.t * 18.0);
@@ -2637,13 +2638,22 @@ const MotifSynths = {
             s.init = 1;
 
             // Stagger saw phases so layers never start click-aligned
-            s.p1 = 0.0; s.p2 = 0.17; s.p3 = 0.43; s.p4 = 0.71;
+            s.p1 = 0.0;
+            s.p2 = 0.17;
+            s.p3 = 0.43;
+            s.p4 = 0.71;
 
             // Chorus LFO phases, spread so vibratos never line up
-            s.l1 = 0.0; s.l2 = 0.31; s.l3 = 0.57; s.l4 = 0.83;
+            s.l1 = 0.0;
+            s.l2 = 0.31;
+            s.l3 = 0.57;
+            s.l4 = 0.83;
 
             // Filter states
-            s.f1 = 0.0; s.f2 = 0.0; s.nz1 = 0.0; s.nz2 = 0.0;
+            s.f1 = 0.0;
+            s.f2 = 0.0;
+            s.nz1 = 0.0;
+            s.nz2 = 0.0;
 
             // One-pole tilt coefficient, cutoff clamped to sr/6 to guarantee stability
             const cutoff = Math.min(ctx.freq * 7.0 + 1500.0, ctx.sampleRate / 6.0);

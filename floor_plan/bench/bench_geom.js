@@ -23,8 +23,14 @@ const origLog = console.log;
 (async () => {
     const worst = [];
     for (const seed of seeds) {
-        console.log = () => {};
-        const result = await optimizeRecursive(modules, { k, iter: 1, ...config, algo: "sa", seed }, undefined, []);
+        console.log = () => {
+        };
+        const result = await optimizeRecursive(modules, {
+            k,
+            iter: 1, ...config,
+            algo: "sa",
+            seed,
+        }, undefined, []);
         console.log = origLog;
 
         const loud = result.rooms.find(r => r.id === "loud");

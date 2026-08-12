@@ -21,9 +21,15 @@ const origLog = console.log;
 (async () => {
     const rows = [];
     for (const seed of seeds) {
-        console.log = () => {};
+        console.log = () => {
+        };
         const t0 = performance.now();
-        const result = await wongLiuSimulatedAnnealing(modules, { k, iter: 1, ...config, seed, forceWorkers });
+        const result = await wongLiuSimulatedAnnealing(modules, {
+            k,
+            iter: 1, ...config,
+            seed,
+            forceWorkers,
+        });
         const ms = Math.round(performance.now() - t0);
         console.log = origLog;
         const unsat = (result.unsatisfied ?? []).map(u => `${u.roomId}.${u.type}`);

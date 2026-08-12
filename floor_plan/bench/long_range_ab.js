@@ -47,8 +47,10 @@ function median(values) {
 async function withoutLogs(run) {
     const originalLog = console.log;
     const originalWarn = console.warn;
-    console.log = () => {};
-    console.warn = () => {};
+    console.log = () => {
+    };
+    console.warn = () => {
+    };
     try {
         return await run();
     } finally {

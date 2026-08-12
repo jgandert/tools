@@ -52,12 +52,21 @@ if (template.errors.length) {
 function collectRooms(modules, parent, out) {
     for (const m of modules) {
         const path = parent ? `${parent.path}/${m.id}` : m.id;
-        const room = { id: m.id, path, parent: parent?.id || null, area: m.area || 0, ratioMax: m.ratioMax || 0, sideMin: m.sideMin || 0, hasChildren: !!m.inside };
+        const room = {
+            id: m.id,
+            path,
+            parent: parent?.id || null,
+            area: m.area || 0,
+            ratioMax: m.ratioMax || 0,
+            sideMin: m.sideMin || 0,
+            hasChildren: !!m.inside,
+        };
         out.push(room);
         if (m.inside) collectRooms(m.inside.modules, room, out);
     }
     return out;
 }
+
 function collectRules(modules, parent, out) {
     for (const m of modules) {
         for (const rule of m.rules || []) out.push({ subject: m.id, parent, rule });
@@ -65,6 +74,7 @@ function collectRules(modules, parent, out) {
     }
     return out;
 }
+
 const toArray = v => v === undefined ? [] : Array.isArray(v) ? v : [v];
 
 const roomModel = collectRooms(template.modules, null, []);
@@ -147,23 +157,33 @@ export class GridGeom {
             this.childrenByParent.get(p).push(i);
         }
     }
-    idx(name) { return this.byId.get(name); }
+
+    idx(name) {
+        return this.byId.get(name);
+    }
+
     has(name) {
         if (!this.byId.has(name)) return false;
         const index = this.idx(name);
         return this.stats.sizes[index] > 0 || this.childrenByParent.has(index);
     }
+
     childrenOf(name) {
         const kids = this.childrenByParent.get(this.idx(name));
         return kids ? kids.map(i => this.state.rooms[i].id) : [];
     }
+
     leavesOf(name) {
         const kids = this.childrenOf(name);
         return kids.length ? kids.flatMap(k => this.leavesOf(k)) : [name];
     }
+
     bboxCm(name) {
         const e = _internals.roomExtent(this.state, this.idx(name));
-        if (e.size) return { w: (e.x1 - e.x0 + 1) * this.state.cellW, h: (e.y1 - e.y0 + 1) * this.state.cellH };
+        if (e.size) return {
+            w: (e.x1 - e.x0 + 1) * this.state.cellW,
+            h: (e.y1 - e.y0 + 1) * this.state.cellH,
+        };
         const leaves = this.leavesOf(name).map(leaf => _internals.roomExtent(this.state, this.idx(leaf))).filter(extent => extent.size);
         if (!leaves.length) return null;
         const x0 = Math.min(...leaves.map(extent => extent.x0));
@@ -172,23 +192,36 @@ export class GridGeom {
         const y1 = Math.max(...leaves.map(extent => extent.y1));
         return { w: (x1 - x0 + 1) * this.state.cellW, h: (y1 - y0 + 1) * this.state.cellH };
     }
-    areaCm(name) { return this.stats.sizes[this.idx(name)] * this.state.cellW * this.state.cellH; }
+
+    areaCm(name) {
+        return this.stats.sizes[this.idx(name)] * this.state.cellW * this.state.cellH;
+    }
+
     bloatRatio(name) {
         const room = this.state.rooms[this.idx(name)];
         return this.stats.sizes[this.idx(name)] / room.quota;
     }
-    isRectDelivered(name) { return _internals.isRectangle(this.state, this.idx(name)); }
-    rectFlag(name) { return !!this.state.rooms[this.idx(name)].rect; }
+
+    isRectDelivered(name) {
+        return _internals.isRectangle(this.state, this.idx(name));
+    }
+
+    rectFlag(name) {
+        return !!this.state.rooms[this.idx(name)].rect;
+    }
+
     wallTouch(name, dir) {
         const kids = this.childrenOf(name);
         if (kids.length) return kids.some(k => this.wallTouch(k, dir));
         const w = this.stats.walls[this.idx(name)];
         return dir === "edge" ? (w.north || w.south || w.east || w.west) : !!w[dir];
     }
+
     adjacent(a, b) {
         const as = this.leavesOf(a), bs = this.leavesOf(b);
         return as.some(x => bs.some(y => this.stats.sharedLen(this.idx(x), this.idx(y)) > 0));
     }
+
     // subject/target may be a parent whose cells were fully carved into
     // children (e.g. 'loud'); such a connect is satisfied through whichever
     // single child reaches the target, so take the best leaf-pair run
@@ -201,6 +234,7 @@ export class GridGeom {
         }
         return best;
     }
+
     centroidCm(name) {
         const leaves = this.leavesOf(name);
         if (leaves.length === 1) {
@@ -210,11 +244,16 @@ export class GridGeom {
         let sw = 0, sx = 0, sy = 0;
         for (const l of leaves) {
             const i = this.idx(l), s = this.stats.sizes[i], c = this.stats.centroids[i];
-            sw += s; sx += c.x * s; sy += c.y * s;
+            sw += s;
+            sx += c.x * s;
+            sy += c.y * s;
         }
         return { x: (sx / sw) * this.state.cellW, y: (sy / sw) * this.state.cellH };
     }
-    planDiagCm() { return Math.hypot(this.state.W * this.state.cellW, this.state.H * this.state.cellH); }
+
+    planDiagCm() {
+        return Math.hypot(this.state.W * this.state.cellW, this.state.H * this.state.cellH);
+    }
 }
 
 // SA geometry: rooms are cm rects (already resolved by optimizeRecursive);
@@ -230,28 +269,62 @@ class SaGeom {
             x1: Math.max(...top.map(r => r.x + r.w)), y1: Math.max(...top.map(r => r.y + r.h)),
         };
     }
-    bboxCm(name) { const r = this.rooms.get(name); return r ? { w: r.w, h: r.h } : null; }
-    areaCm(name) { const r = this.rooms.get(name); return r ? r.w * r.h : 0; }
-    bloatRatio(name) { return this.areaCm(name) / CIRCULATION_TARGET_AREA; }
-    isRectDelivered() { return true; }
-    rectFlag() { return true; }
+
+    bboxCm(name) {
+        const r = this.rooms.get(name);
+        return r ? { w: r.w, h: r.h } : null;
+    }
+
+    areaCm(name) {
+        const r = this.rooms.get(name);
+        return r ? r.w * r.h : 0;
+    }
+
+    bloatRatio(name) {
+        return this.areaCm(name) / CIRCULATION_TARGET_AREA;
+    }
+
+    isRectDelivered() {
+        return true;
+    }
+
+    rectFlag() {
+        return true;
+    }
+
     wallTouch(name, dir) {
         const r = this.rooms.get(name);
         switch (dir) {
-            case "north": return r.y - this.bounds.y0 < WALL_EPS;
-            case "south": return this.bounds.y1 - (r.y + r.h) < WALL_EPS;
-            case "west": return r.x - this.bounds.x0 < WALL_EPS;
-            case "east": return this.bounds.x1 - (r.x + r.w) < WALL_EPS;
-            default: return ["north", "south", "east", "west"].some(d => this.wallTouch(name, d));
+            case "north":
+                return r.y - this.bounds.y0 < WALL_EPS;
+            case "south":
+                return this.bounds.y1 - (r.y + r.h) < WALL_EPS;
+            case "west":
+                return r.x - this.bounds.x0 < WALL_EPS;
+            case "east":
+                return this.bounds.x1 - (r.x + r.w) < WALL_EPS;
+            default:
+                return ["north", "south", "east", "west"].some(d => this.wallTouch(name, d));
         }
     }
-    adjacent(a, b) { return this.straightRun(a, b) > 0; }
+
+    adjacent(a, b) {
+        return this.straightRun(a, b) > 0;
+    }
+
     straightRun(a, b) {
         const A = this.rooms.get(a), B = this.rooms.get(b);
         return A && B ? sharedWallRects(A, B) : 0;
     }
-    centroidCm(name) { const r = this.rooms.get(name); return { x: r.x + r.w / 2, y: r.y + r.h / 2 }; }
-    planDiagCm() { return Math.hypot(this.bounds.x1 - this.bounds.x0, this.bounds.y1 - this.bounds.y0); }
+
+    centroidCm(name) {
+        const r = this.rooms.get(name);
+        return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+    }
+
+    planDiagCm() {
+        return Math.hypot(this.bounds.x1 - this.bounds.x0, this.bounds.y1 - this.bounds.y0);
+    }
 }
 
 function distNorm(geom, a, b) {
@@ -271,26 +344,57 @@ function metricAreaFidelity(geom) {
         const ratio = delShare / reqShare;
         return { room: r.id, ratio, dev: Math.abs(ratio - 1) };
     });
-    const hallways = hallwayRooms.filter(r => geom.has?.(r.id) ?? true).map(r => ({ room: r.id, bloat: geom.bloatRatio(r.id) }));
+    const hallways = hallwayRooms.filter(r => geom.has?.(r.id) ?? true).map(r => ({
+        room: r.id,
+        bloat: geom.bloatRatio(r.id),
+    }));
     return { rooms, hallways };
 }
 
 function metricAspect(geom) {
     return leafRooms.filter(r => r.ratioMax > 0 && (geom.has?.(r.id) ?? true)).map(r => {
         const box = geom.bboxCm(r.id);
-        if (!box) return { room: r.id, aspect: 0, ratioMax: r.ratioMax, excess: 0, violated: false, empty: true };
+        if (!box) return {
+            room: r.id,
+            aspect: 0,
+            ratioMax: r.ratioMax,
+            excess: 0,
+            violated: false,
+            empty: true,
+        };
         const aspect = Math.max(box.w, box.h) / Math.min(box.w, box.h);
-        return { room: r.id, aspect, ratioMax: r.ratioMax, excess: aspect / r.ratioMax, violated: aspect > r.ratioMax + 1e-6 };
+        return {
+            room: r.id,
+            aspect,
+            ratioMax: r.ratioMax,
+            excess: aspect / r.ratioMax,
+            violated: aspect > r.ratioMax + 1e-6,
+        };
     });
 }
 
 function metricSideMin(geom) {
     return leafRooms.filter(r => r.sideMin > 0 && (geom.has?.(r.id) ?? true)).map(r => {
         const box = geom.bboxCm(r.id);
-        if (!box) return { room: r.id, minSide: 0, sideMin: r.sideMin, shortfall: r.sideMin, violated: true, ragged: false, empty: true };
+        if (!box) return {
+            room: r.id,
+            minSide: 0,
+            sideMin: r.sideMin,
+            shortfall: r.sideMin,
+            violated: true,
+            ragged: false,
+            empty: true,
+        };
         const minSide = Math.min(box.w, box.h);
         const ragged = !geom.isRectDelivered(r.id);
-        return { room: r.id, minSide, sideMin: r.sideMin, shortfall: r.sideMin - minSide, violated: minSide < r.sideMin - 1e-6, ragged };
+        return {
+            room: r.id,
+            minSide,
+            sideMin: r.sideMin,
+            shortfall: r.sideMin - minSide,
+            violated: minSide < r.sideMin - 1e-6,
+            ragged,
+        };
     });
 }
 
@@ -345,7 +449,10 @@ function metricRectangularity(geom) {
 }
 
 function metricDoorWidth(geom) {
-    const connects = ruleModel.filter(({ subject, rule }) => rule.type === "connect" && rule.required
+    const connects = ruleModel.filter(({
+                                           subject,
+                                           rule,
+                                       }) => rule.type === "connect" && rule.required
         && (!geom.has || (geom.has(subject) && toArray(rule.target).every(target => geom.has(target)))));
     return connects.map(({ subject, rule }) => {
         const targets = toArray(rule.target);
@@ -372,7 +479,12 @@ function metricSoft(geom) {
             const cwl = rule.cwl ?? template.config.cwl ?? 0;
             const per = targets.map(t => {
                 const adjacent = geom.adjacent(subject, t);
-                return { target: t, adjacent, run: adjacent ? geom.straightRun(subject, t) : 0, dist: distNorm(geom, subject, t) };
+                return {
+                    target: t,
+                    adjacent,
+                    run: adjacent ? geom.straightRun(subject, t) : 0,
+                    dist: distNorm(geom, subject, t),
+                };
             });
             const okFar = p => !p.adjacent;
             const okClose = p => p.adjacent;
@@ -419,7 +531,11 @@ function runGridSeed(seed) {
     const counted = r => result.activeIdxs.includes(r) || !!result.state.rooms[r].childIdxs;
     const total = result.state.rooms.reduce((s, room, r) =>
         counted(r) ? s + room.rules.filter(c => c.required).length : s, 0);
-    const required = { total, satisfied: total - result.unsatisfied.length, unsatisfiedList: result.unsatisfied };
+    const required = {
+        total,
+        satisfied: total - result.unsatisfied.length,
+        unsatisfiedList: result.unsatisfied,
+    };
     return { seed, ms, ...computeMetrics(geom, required) };
 }
 
@@ -438,7 +554,10 @@ function saRequiredStats(LO, flatAll) {
     const topLayout = flatAll.filter(r => r.parent === null);
     const topModMap = Object.fromEntries(template.modules.map(m => [m.id, m]));
     let total = template.modules.reduce((s, m) => s + (m.rules || []).filter(r => r.required).length, 0);
-    const unsatisfiedList = LO.checkRequiredSatisfied(topLayout, topModMap).map(u => ({ ...u, scope: "top" }));
+    const unsatisfiedList = LO.checkRequiredSatisfied(topLayout, topModMap).map(u => ({
+        ...u,
+        scope: "top",
+    }));
 
     for (const m of template.modules) {
         if (!m.inside) continue;
@@ -447,16 +566,25 @@ function saRequiredStats(LO, flatAll) {
         const childMap = Object.fromEntries(childMods.map(c => [c.id, c]));
         // include outer rooms too so cross-boundary targets (e.g. 'hallway_1') resolve
         const innerLayout = flatAll.filter(r => r.parent === m.id).concat(topLayout);
-        unsatisfiedList.push(...LO.checkRequiredSatisfied(innerLayout, childMap).map(u => ({ ...u, scope: m.id })));
+        unsatisfiedList.push(...LO.checkRequiredSatisfied(innerLayout, childMap).map(u => ({
+            ...u,
+            scope: m.id,
+        })));
     }
     return { total, satisfied: total - unsatisfiedList.length, unsatisfiedList };
 }
 
 async function runSASeed(LO, optimizeRecursive, seed) {
     const origLog = console.log;
-    console.log = () => {};
+    console.log = () => {
+    };
     const t0 = performance.now();
-    const result = await optimizeRecursive(template.modules, { k: 20, iter: 1, ...template.config, algo: "sa", seed }, undefined, []);
+    const result = await optimizeRecursive(template.modules, {
+        k: 20,
+        iter: 1, ...template.config,
+        algo: "sa",
+        seed,
+    }, undefined, []);
     console.log = origLog;
     const ms = performance.now() - t0;
 
@@ -468,7 +596,9 @@ async function runSASeed(LO, optimizeRecursive, seed) {
 
 // ============================================================== reporting
 
-function fmt(n, d = 2) { return Number.isFinite(n) ? n.toFixed(d) : "n/a"; }
+function fmt(n, d = 2) {
+    return Number.isFinite(n) ? n.toFixed(d) : "n/a";
+}
 
 function seedLine(r) {
     if (r.error) return `  seed ${r.seed}: ERROR ${r.error}`;
@@ -500,7 +630,10 @@ function aggregate(results, pick, val) {
 function printAggregate(label, results) {
     console.log(`\n=== ${label} aggregate (${results.filter(r => !r.error).length}/${results.length} seeds solved) ===`);
     const ok = results.filter(r => !r.error);
-    if (!ok.length) { console.log("  no successful runs"); return; }
+    if (!ok.length) {
+        console.log("  no successful runs");
+        return;
+    }
 
     const reqTotal = ok.reduce((s, r) => s + r.required.total, 0);
     const reqSat = ok.reduce((s, r) => s + r.required.satisfied, 0);
@@ -561,7 +694,11 @@ function printAggregate(label, results) {
         let distNote = "";
         if (kind === "far") {
             // normalized center-to-center distance (per target pair), higher = better honored
-            const dists = all.flatMap(x => x.per.map(p => ({ ...p, subject: x.subject, seed: x.seed })));
+            const dists = all.flatMap(x => x.per.map(p => ({
+                ...p,
+                subject: x.subject,
+                seed: x.seed,
+            })));
             const meanDist = dists.reduce((s, p) => s + p.dist, 0) / dists.length;
             const closest = dists.reduce((a, b) => b.dist < a.dist ? b : a);
             distNote = `  norm-dist mean ${fmt(meanDist)}  closest ${fmt(closest.dist)} (${closest.subject} vs ${closest.target}, seed ${closest.seed})`;
@@ -576,7 +713,10 @@ function printAggregate(label, results) {
         console.log(`   Intrinsic DSL exact-area conflict: ${item.path} requests area ${fmt(item.area, 0)}cm², side_min ${fmt(item.sideMin, 1)}cm, ratio_max ${item.ratioMax ? fmt(item.ratioMax) : "none"}; `
             + `minimum area ${fmt(item.minimumArea, 0)}cm², short by ${fmt(item.areaShortfall, 0)}cm² (${fmt(item.squareSideShortfall, 1)}cm per square side). Blocker: ${item.reason}.`);
     }
-    const delivered = ok.flatMap(result => result.advisoryGeometry.delivered.map(item => ({ ...item, seed: result.seed })));
+    const delivered = ok.flatMap(result => result.advisoryGeometry.delivered.map(item => ({
+        ...item,
+        seed: result.seed,
+    })));
     if (!delivered.length) console.log("   Delivered-layout side_min limitations: none.");
     const deliveredByPath = new Map();
     for (const item of delivered) {

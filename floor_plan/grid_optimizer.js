@@ -99,7 +99,7 @@ const DIRS = ["north", "south", "east", "west"];
 
 function mulberry32(seed) {
     let a = seed >>> 0;
-    return function () {
+    return function() {
         a |= 0;
         a = (a + 0x6D2B79F5) | 0;
         let t = Math.imul(a ^ (a >>> 15), 1 | a);
@@ -204,7 +204,12 @@ function compileRooms(modules, config, warnings, options = {}) {
                 warn(`cross-boundary:${scope}:${modules[i].id}:${rule.type}`, `grid: cross-boundary ${rule.type} rule on '${modules[i].id}' is unsupported and was ignored`);
                 continue;
             }
-            const c = { kind: rule.type, required: !!rule.required, weight: rule.weight || 1, subject: i };
+            const c = {
+                kind: rule.type,
+                required: !!rule.required,
+                weight: rule.weight || 1,
+                subject: i,
+            };
 
             if (rule.type === "at" || rule.type === "not_at") {
                 c.dirs = normalizeDirs(rule.dir);
@@ -314,11 +319,16 @@ function distToWall(idx, dir, W, H) {
     const x = idx % W;
     const y = (idx / W) | 0;
     switch (dir) {
-        case "north": return y;
-        case "south": return H - 1 - y;
-        case "west": return x;
-        case "east": return W - 1 - x;
-        default: return Math.min(y, H - 1 - y, x, W - 1 - x);
+        case "north":
+            return y;
+        case "south":
+            return H - 1 - y;
+        case "west":
+            return x;
+        case "east":
+            return W - 1 - x;
+        default:
+            return Math.min(y, H - 1 - y, x, W - 1 - x);
     }
 }
 
@@ -464,7 +474,10 @@ function collectStats(state) {
     const runCache = new Map();
     const straightRun = (a, b) => {
         let m = runCache.get(a);
-        if (!m) { m = new Map(); runCache.set(a, m); }
+        if (!m) {
+            m = new Map();
+            runCache.set(a, m);
+        }
         if (m.has(b)) return m.get(b);
         const v = straightSharedRun(state, a, b);
         m.set(b, v);
@@ -1737,10 +1750,16 @@ function repair(state, extAdj, mask) {
                 };
                 const extOk = n => extAdjTouches(state, stats, r, n, extAdj, c.cwl);
 
-                let missing = c.targets.filter(t => !lenOk(t)).map(t => ({ isTarget: i => cells[i] === t, touching: stats.sharedLen(r, t) > 0 }));
+                let missing = c.targets.filter(t => !lenOk(t)).map(t => ({
+                    isTarget: i => cells[i] === t,
+                    touching: stats.sharedLen(r, t) > 0,
+                }));
                 let missingExt = (c.externalTargets || []).filter(n => !extOk(n)).map(n => {
                     const set = extAdj?.[n];
-                    return set && { isTarget: i => set.has(i), touching: extAdjTouches(state, stats, r, n, extAdj, 0) };
+                    return set && {
+                        isTarget: i => set.has(i),
+                        touching: extAdjTouches(state, stats, r, n, extAdj, 0),
+                    };
                 }).filter(Boolean);
 
                 if (c.any) {
@@ -2065,8 +2084,11 @@ function softCost(state, roomIdxs, extAdj, breakdown) {
     const diag = Math.hypot(W, H);
     let cost = 0;
     const note = breakdown
-        ? (key, v) => { breakdown[key] = (breakdown[key] || 0) + v; }
-        : () => {};
+        ? (key, v) => {
+            breakdown[key] = (breakdown[key] || 0) + v;
+        }
+        : () => {
+        };
 
     // ratio-based, relative to each room's own quota: |size-quota|/quota is
     // bounded by 1 for starving rooms but unbounded for bloated ones, which
@@ -3204,9 +3226,12 @@ function assignLetters(rooms, activeIdxs) {
 function describeRule(c, rooms) {
     const name = i => rooms[i]?.id ?? "?";
     switch (c.kind) {
-        case "at": return `${name(c.subject)} at ${c.dirs.join(" ")}`;
-        case "not_at": return `${name(c.subject)} not at ${c.dirs.join(" ")}`;
-        case "enclosed": return `${name(c.subject)} enclosed`;
+        case "at":
+            return `${name(c.subject)} at ${c.dirs.join(" ")}`;
+        case "not_at":
+            return `${name(c.subject)} not at ${c.dirs.join(" ")}`;
+        case "enclosed":
+            return `${name(c.subject)} enclosed`;
         default: {
             const t = [...(c.targets || []).map(name), ...(c.externalTargets || [])].join(", ");
             return `${name(c.subject)} ${c.kind}${c.any ? " any" : ""} [${t}]`;
@@ -3292,15 +3317,43 @@ function addCandidate(list, cand) {
 
 // Test hook: internal helpers for unit tests and probes.
 const _internals = {
-    compareCandidates, addCandidate, COARSE_SHORTLIST, requiredShapeViolations,
-    compileRooms, makeWarningSink, warnIgnoredConfig, makeState, collectStats, softCost, tryTransfer,
-    roomExtent, isRectangle, claimCell, peelStrip, rectifyRoom, rectify,
-    trySlide, optimizeBoundary, unsatisfiedRequired, straightSharedRun,
-    straightHubRun, frontageShortfall, unionCells, connectSatisfiedFromRegion,
-    longestAxisRun, bandLineCounts, regionConnected, stripeCandidates,
-    finalPolishQuality, compareFinalPolishQuality, polishWinningLayout,
-    finalPolishGroups, finalPolishSlideCandidates, bestFinalPolishCandidate,
-    bestCompoundFinalPolishCandidate, deliveredRequiredViolationCount,
+    compareCandidates,
+    addCandidate,
+    COARSE_SHORTLIST,
+    requiredShapeViolations,
+    compileRooms,
+    makeWarningSink,
+    warnIgnoredConfig,
+    makeState,
+    collectStats,
+    softCost,
+    tryTransfer,
+    roomExtent,
+    isRectangle,
+    claimCell,
+    peelStrip,
+    rectifyRoom,
+    rectify,
+    trySlide,
+    optimizeBoundary,
+    unsatisfiedRequired,
+    straightSharedRun,
+    straightHubRun,
+    frontageShortfall,
+    unionCells,
+    connectSatisfiedFromRegion,
+    longestAxisRun,
+    bandLineCounts,
+    regionConnected,
+    stripeCandidates,
+    finalPolishQuality,
+    compareFinalPolishQuality,
+    polishWinningLayout,
+    finalPolishGroups,
+    finalPolishSlideCandidates,
+    bestFinalPolishCandidate,
+    bestCompoundFinalPolishCandidate,
+    deliveredRequiredViolationCount,
 };
 
 // =============================================================================
@@ -3532,7 +3585,10 @@ function optimizeGridOnce(parsed, opts = {}) {
     }
 
     if (!pool.length) {
-        return { error: "grid: no coarse solution found (seed placement failed on every attempt)", warnings };
+        return {
+            error: "grid: no coarse solution found (seed placement failed on every attempt)",
+            warnings,
+        };
     }
 
     // Coarse rebalance is the expensive part of scoring an attempt, so it runs

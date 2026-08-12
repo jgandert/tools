@@ -345,7 +345,8 @@
         <span class="punctuation">}</span>
 
         <span class="keyword">return</span> <span class="interface-name">ResultState</span><span
-        class="punctuation">.</span><span class="constructor-call">Success</span>(<span class="string">"Process complete"</span>)
+        class="punctuation">.</span><span class="constructor-call">Success</span>(<span
+        class="string">"Process complete"</span>)
     <span class="punctuation">}</span>
 
     <span class="modifier">override</span> <span class="keyword">fun</span> <span
@@ -572,7 +573,8 @@
         class="operator">:</span>
             <span class="builtin-function">print</span>(<span
         class="string">f"Caught exception: </span><span class="string-template">{</span><span
-        class="variable">index_error</span><span class="string-template">}</span><span class="string">"</span>
+        class="variable">index_error</span><span class="string-template">}</span><span
+        class="string">"</span>
         )
         <span class="keyword">finally</span><span class="operator">:</span>
             <span class="function-call">inner_function</span>()
@@ -875,7 +877,8 @@
         class="number">10</span><span class="operator">:</span>
         <span class="builtin-function">print</span><span class="punctuation">(</span><span
         class="string">f"large: </span><span class="string-template">{</span><span class="variable">n</span><span
-        class="string-template">}</span><span class="string"> items"</span><span class="punctuation">)</span>
+        class="string-template">}</span><span class="string"> items"</span><span
+        class="punctuation">)</span>
 
 <span class="keyword">async</span> <span class="keyword">def</span> <span
         class="function-declaration">pipeline</span><span class="punctuation">(</span><span
@@ -909,7 +912,8 @@
         class="keyword">not</span> <span class="keyword">None</span><span class="operator">:</span>
                     <span class="builtin-function">print</span><span
         class="punctuation">(</span><span class="string">f"got </span><span class="string-template">{</span><span
-        class="variable">val</span><span class="string-template">}</span><span class="string">"</span><span class="punctuation">)</span>
+        class="variable">val</span><span class="string-template">}</span><span
+        class="string">"</span><span class="punctuation">)</span>
                 <span class="keyword-soft">case</span> <span class="punctuation">{</span>
                     <span class="string">"key"</span><span class="operator">:</span> <span
         class="builtin-type">str</span><span class="punctuation">(</span><span
@@ -958,23 +962,40 @@
     <!-- beautify ignore:start -->
     <pre><code class="language-html">
 <span class="comment">&lt;!DOCTYPE html&gt;</span>
-<span class="punctuation">&lt;</span><span class="function">html</span> <span class="variable">lang</span><span class="operator">=</span><span class="string">"en"</span><span class="punctuation">&gt;</span>
+<span class="punctuation">&lt;</span><span class="function">html</span> <span
+        class="variable">lang</span><span class="operator">=</span><span
+        class="string">"en"</span><span class="punctuation">&gt;</span>
 <span class="punctuation">&lt;</span><span class="function">head</span><span class="punctuation">&gt;</span>
-    <span class="punctuation">&lt;</span><span class="function">meta</span> <span class="variable">charset</span><span class="operator">=</span><span class="string">"utf-8"</span><span class="punctuation">&gt;</span>
-    <span class="punctuation">&lt;</span><span class="function">title</span><span class="punctuation">&gt;</span>Theme Preview<span class="punctuation">&lt;/</span><span class="function">title</span><span class="punctuation">&gt;</span>
-    <span class="punctuation">&lt;</span><span class="function">style</span><span class="punctuation">&gt;</span>
+    <span class="punctuation">&lt;</span><span class="function">meta</span> <span class="variable">charset</span><span
+        class="operator">=</span><span class="string">"utf-8"</span><span
+        class="punctuation">&gt;</span>
+    <span class="punctuation">&lt;</span><span class="function">title</span><span
+        class="punctuation">&gt;</span>Theme Preview<span class="punctuation">&lt;/</span><span
+        class="function">title</span><span class="punctuation">&gt;</span>
+    <span class="punctuation">&lt;</span><span class="function">style</span><span
+        class="punctuation">&gt;</span>
         <span class="variable">.preview-box</span> <span class="punctuation">{</span>
-            <span class="function">display</span><span class="operator">:</span> <span class="keyword">flex</span><span class="punctuation">;</span>
-            <span class="function">background-color</span><span class="operator">:</span> <span class="type">var</span><span class="punctuation">(</span><span class="variable">--bg-color</span><span class="punctuation">)</span><span class="punctuation">;</span>
-            <span class="function">margin</span><span class="operator">:</span> <span class="number">10</span>px<span class="punctuation">;</span>
+            <span class="function">display</span><span class="operator">:</span> <span
+        class="keyword">flex</span><span class="punctuation">;</span>
+            <span class="function">background-color</span><span class="operator">:</span> <span
+        class="type">var</span><span class="punctuation">(</span><span
+        class="variable">--bg-color</span><span class="punctuation">)</span><span
+        class="punctuation">;</span>
+            <span class="function">margin</span><span class="operator">:</span> <span
+        class="number">10</span>px<span class="punctuation">;</span>
         <span class="punctuation">}</span>
-    <span class="punctuation">&lt;/</span><span class="function">style</span><span class="punctuation">&gt;</span>
+    <span class="punctuation">&lt;/</span><span class="function">style</span><span
+        class="punctuation">&gt;</span>
 <span class="punctuation">&lt;/</span><span class="function">head</span><span class="punctuation">&gt;</span>
 <span class="punctuation">&lt;</span><span class="function">body</span><span class="punctuation">&gt;</span>
-    <span class="punctuation">&lt;</span><span class="function">main</span> <span class="variable">class</span><span class="operator">=</span><span class="string">"preview-box"</span><span class="punctuation">&gt;</span>
+    <span class="punctuation">&lt;</span><span class="function">main</span> <span class="variable">class</span><span
+        class="operator">=</span><span class="string">"preview-box"</span><span class="punctuation">&gt;</span>
         <span class="comment">&lt;!-- Main Layout --&gt;</span>
-        <span class="punctuation">&lt;</span><span class="function">h1</span><span class="punctuation">&gt;</span>Hello World<span class="punctuation">&lt;/</span><span class="function">h1</span><span class="punctuation">&gt;</span>
-    <span class="punctuation">&lt;/</span><span class="function">main</span><span class="punctuation">&gt;</span>
+        <span class="punctuation">&lt;</span><span class="function">h1</span><span
+        class="punctuation">&gt;</span>Hello World<span class="punctuation">&lt;/</span><span
+        class="function">h1</span><span class="punctuation">&gt;</span>
+    <span class="punctuation">&lt;/</span><span class="function">main</span><span
+        class="punctuation">&gt;</span>
 <span class="punctuation">&lt;/</span><span class="function">body</span><span class="punctuation">&gt;</span>
 <span class="punctuation">&lt;/</span><span class="function">html</span><span class="punctuation">&gt;</span>
 </code></pre>

@@ -234,7 +234,8 @@
             <li>
                 <div>
                     Place the <a href="../Inter-VariableFont_opsz,wght.ttf">Inter</a> and <a
-                    href="../material-symbols.woff2">Material Symbols</a> fonts in the same folder as <code>one.css</code>.
+                    href="../material-symbols.woff2">Material Symbols</a> fonts in the same folder
+                    as <code>one.css</code>.
                 </div>
             </li>
             <li>
@@ -381,7 +382,9 @@
             Track changes using semantic markup:
             <del>Old deleted text</del>
             <ins>New inserted text</ins>
-            . Draw attention to <mark>relevant passages</mark> with <code>&lt;mark&gt;</code>.
+            . Draw attention to
+            <mark>relevant passages</mark>
+            with <code>&lt;mark&gt;</code>.
         </p>
         <blockquote>
             <p>Everything should be made as simple as possible, but not simpler.</p>
@@ -772,9 +775,13 @@ Done!
 
         <h3>System Status</h3>
         <progress id="progress-1" value="25" max="100">25%</progress>
-        <meter aria-label="Battery good" value="80" max="100" low="20" high="60" optimum="90">80%</meter>
-        <meter aria-label="Battery low" value="45" max="100" low="20" high="60" optimum="90">45%</meter>
-        <meter aria-label="Battery critical" value="10" max="100" low="20" high="60" optimum="90">10%</meter>
+        <meter aria-label="Battery good" value="80" max="100" low="20" high="60" optimum="90">80%
+        </meter>
+        <meter aria-label="Battery low" value="45" max="100" low="20" high="60" optimum="90">45%
+        </meter>
+        <meter aria-label="Battery critical" value="10" max="100" low="20" high="60" optimum="90">
+            10%
+        </meter>
 
         <article aria-busy="true" aria-live="polite">
             Processing local data...
@@ -830,9 +837,12 @@ Done!
 
         <h3 id="js-storage">JS Storage API</h3>
         <p>
-            <code>one.storage</code> provides a lightweight Promise-based IndexedDB key-value wrapper
-            (<code>get</code>, <code>set</code>, <code>del</code>, <code>clear</code>, <code>keys</code>).
-            It serves as an asynchronous replacement for <code>localStorage</code> to bypass its 5&nbsp;MB limit
+            <code>one.storage</code> provides a lightweight Promise-based IndexedDB key-value
+            wrapper
+            (<code>get</code>, <code>set</code>, <code>del</code>, <code>clear</code>,
+            <code>keys</code>).
+            It serves as an asynchronous replacement for <code>localStorage</code> to bypass its 5&nbsp;MB
+            limit
             and avoid blocking the main UI thread when persisting larger text buffers or app data.
         </p>
         <div class="group mb-2">

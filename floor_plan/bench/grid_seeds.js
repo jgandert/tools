@@ -48,8 +48,10 @@ for (const seed of seeds) {
                 if (state.cells[i] !== r) continue;
                 const x = i % state.W, y = (i / state.W) | 0;
                 n++;
-                x0 = Math.min(x0, x); x1 = Math.max(x1, x);
-                y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+                x0 = Math.min(x0, x);
+                x1 = Math.max(x1, x);
+                y0 = Math.min(y0, y);
+                y1 = Math.max(y1, y);
             }
             if (n !== (x1 - x0 + 1) * (y1 - y0 + 1)) {
                 nonRect++;

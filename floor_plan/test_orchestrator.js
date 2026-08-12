@@ -27,7 +27,8 @@ async function main() {
         }
     `);
     const originalLog = console.log;
-    console.log = () => {};
+    console.log = () => {
+    };
     const defaultResult = await optimizeParsed(defaultParsed);
     console.log = originalLog;
     assert(defaultResult.algo === "sa", "missing algo selects simulated annealing");
@@ -56,11 +57,51 @@ async function main() {
         "SA report publishes raw and compressed weight=5 semantics separately");
 
     const hintedRules = attachDominanceHints([
-        { id: "rule:0:0", text: "bed connect bath", participants: ["bed", "bath"], required: false, satisfied: false, penalty: 5, percentOfTotal: 5 },
-        { id: "rule:0:1", text: "bed at north", participants: ["bed"], required: false, satisfied: false, penalty: 12, percentOfTotal: 12 },
-        { id: "rule:1:0", text: "bath close hall required", participants: ["bath", "hall"], required: true, satisfied: false, penalty: 20, percentOfTotal: 20 },
-        { id: "rule:2:0", text: "office enclosed", participants: ["office"], required: false, satisfied: false, penalty: 100, percentOfTotal: 100 },
-        { id: "rule:0:2", text: "bath at west", participants: ["bath"], required: false, satisfied: true, penalty: 4, percentOfTotal: 4 },
+        {
+            id: "rule:0:0",
+            text: "bed connect bath",
+            participants: ["bed", "bath"],
+            required: false,
+            satisfied: false,
+            penalty: 5,
+            percentOfTotal: 5,
+        },
+        {
+            id: "rule:0:1",
+            text: "bed at north",
+            participants: ["bed"],
+            required: false,
+            satisfied: false,
+            penalty: 12,
+            percentOfTotal: 12,
+        },
+        {
+            id: "rule:1:0",
+            text: "bath close hall required",
+            participants: ["bath", "hall"],
+            required: true,
+            satisfied: false,
+            penalty: 20,
+            percentOfTotal: 20,
+        },
+        {
+            id: "rule:2:0",
+            text: "office enclosed",
+            participants: ["office"],
+            required: false,
+            satisfied: false,
+            penalty: 100,
+            percentOfTotal: 100,
+        },
+        {
+            id: "rule:0:2",
+            text: "bath at west",
+            participants: ["bath"],
+            required: false,
+            satisfied: true,
+            penalty: 4,
+            percentOfTotal: 4,
+        },
     ], "top / suite");
     const unsatisfiedConnect = hintedRules[0];
     const noDominator = hintedRules[3];
@@ -98,7 +139,8 @@ async function main() {
         room a area=10000
         room b area=10000
     `);
-    console.log = () => {};
+    console.log = () => {
+    };
     const sa = await optimizeParsed(saParsed);
     console.log = originalLog;
     assert(sa.algo === "sa", "algo sa selects simulated annealing");
@@ -114,7 +156,8 @@ async function main() {
         room A area=6000
         room B area=5000
     `);
-    console.log = () => {};
+    console.log = () => {
+    };
     const warningResult = await optimizeParsed(warningParsed);
     console.log = originalLog;
     const feasibilityWarnings = warningResult.warnings.filter(warning => warning.includes("[FEASIBILITY_AREA_OVERFLOW]"));
@@ -124,7 +167,7 @@ async function main() {
     const browserHtml = fs.readFileSync("index.html", "utf8");
     assert(browserHtml.includes("showParseMessages(errors, warnings)")
         && browserHtml.includes("showParseMessages([], result.warnings || warnings)"),
-    "browser displays parser warnings before optimization and propagated result warnings after optimization");
+        "browser displays parser warnings before optimization and propagated result warnings after optimization");
     assert(browserHtml.includes("showParseMessages([], _DEFAULT_CACHE.result.warnings || [])"),
         "browser displays cached default-result warnings on initial load");
 
@@ -160,7 +203,12 @@ async function main() {
         "UI renderer discloses recursive required far floor and its distance bound");
     const hintedReport = {
         availability: "available",
-        scopes: [{ path: "top / suite", totalCost: 100, unreportedTopologicalPenalty: 0, rules: hintedRules }],
+        scopes: [{
+            path: "top / suite",
+            totalCost: 100,
+            unreportedTopologicalPenalty: 0,
+            rules: hintedRules,
+        }],
     };
     const hintedHtml = renderRuleReportHtml(hintedReport, escapeHtml, value => value.toFixed(2));
     assert(hintedHtml.includes("Why not?") && hintedHtml.includes("bath close hall required") && hintedHtml.includes("20.00 vs 5.00 (+15.00)"), "UI renders named magnitude hints with numbers");
@@ -174,7 +222,8 @@ async function main() {
         groupCollapsed: line => consoleCalls.lines.push(line),
         log: line => consoleCalls.lines.push(line),
         table: rows => consoleCalls.tables.push(rows),
-        groupEnd: () => {},
+        groupEnd: () => {
+        },
     });
     assert(consoleCalls.tables.length === 2, "console renderer prints one table per recursive SA scope");
     assert(consoleCalls.tables[0][0].rule === "a far b", "console table exposes named rule values");
@@ -186,10 +235,13 @@ async function main() {
         "console report visibly explains advisory weight semantics");
     const hintedConsoleCalls = { tables: [] };
     printRuleReport(hintedReport, {
-        groupCollapsed: () => {},
-        log: () => {},
+        groupCollapsed: () => {
+        },
+        log: () => {
+        },
         table: rows => hintedConsoleCalls.tables.push(rows),
-        groupEnd: () => {},
+        groupEnd: () => {
+        },
     });
     assert(hintedConsoleCalls.tables[0][0].whyNot.includes("bath close hall required") && hintedConsoleCalls.tables[0][0].whyNot.includes("20 vs 5 (+15)"), "console prints named magnitude hints with numbers");
 
@@ -208,7 +260,7 @@ async function main() {
     const cachedHints = cachedAdvisoryMisses.flatMap(rule => rule.dominanceHints);
     assert(cachedHints.every(hint => hint.ruleId.includes("::") && hint.text),
         "embedded default cache scopes and names every available dominance hint");
-    assert(html.includes('<script src="rule_report_ui.js"></script>'), "browser loads per-rule UI renderer");
+    assert(html.includes("<script src=\"rule_report_ui.js\"></script>"), "browser loads per-rule UI renderer");
 
     console.log(`RESULTS: ${passed} passed, 0 failed`);
 }

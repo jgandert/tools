@@ -103,7 +103,14 @@
         logger.groupEnd?.();
     }
 
-    const api = { dominanceHintText, farPenaltyDecompositionText, printRuleReport, renderRuleReportHtml, verdictLabel, weightSemanticsText };
+    const api = {
+        dominanceHintText,
+        farPenaltyDecompositionText,
+        printRuleReport,
+        renderRuleReportHtml,
+        verdictLabel,
+        weightSemanticsText,
+    };
     Object.assign(root, api);
     if (typeof module !== "undefined" && module.exports) {
         module.exports = api;

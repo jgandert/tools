@@ -534,7 +534,8 @@ Arrange([
                     Import
                 </button>
             </div>
-            <input type="file" id="import-file" accept=".json" hidden aria-hidden="true" aria-label="Import file">
+            <input type="file" id="import-file" accept=".json" hidden aria-hidden="true"
+                   aria-label="Import file">
         </fieldset>
 
         <fieldset>
@@ -599,7 +600,7 @@ Arrange([
             const probeFn = new AsyncFunction(
                 "Motif", "Track", "Bus", "Parallel", "Ramp", "LFO", "Arrange", "Tie",
                 "noteToMidi", "midiToNote", "degreeToMidi", "midiToHz", "SCALES", "SimplexNoise",
-                '"use strict";\nthrow new Error("__wrapper_line_probe__");',
+                "\"use strict\";\nthrow new Error(\"__wrapper_line_probe__\");",
             );
             await probeFn();
         } catch (err) {
@@ -610,6 +611,7 @@ Arrange([
             WRAPPER_LINE_OFFSET = parseInt(match[1], 10) - 1;
         }
     }
+
     calibrateWrapperLineOffset();
 
     const COMPOSITION_TEMPLATE = `// Motif Composition
@@ -696,6 +698,7 @@ Track("bell")
         }
         return missing.length === 0;
     }
+
     checkVendorDependencies();
 
     // Catches rejections from fire-and-forget async calls (e.g. loadPersistedState())
@@ -1750,7 +1753,9 @@ return runShowcase().then(() => "STOP_MOTIF");
                 if (!recordingCapWarned) {
                     recordingCapWarned = true;
                     logToConsole(`Recording reached the ${MAX_RECORDING_SECONDS}s safety cap; stopping and downloading automatically.`, "warn");
-                    setTimeout(() => { if (recording) stopRecordingAndDownload(); }, 0);
+                    setTimeout(() => {
+                        if (recording) stopRecordingAndDownload();
+                    }, 0);
                 }
                 return;
             }
