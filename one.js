@@ -15,21 +15,36 @@ const one = (() => {
         return el;
     };
 
+    // Dialogs come and go over the page lifetime and two can overlap (a confirm
+    // raised from a prompt), so every one gets its own id suffix: fixed ids
+    // would make `aria-labelledby`/`aria-describedby` resolve to the wrong,
+    // possibly removed, element.
+    let dialogSeq = 0;
+
+    // A Node body owns its own markup, so it marks the element that describes
+    // the dialog with `data-dialog-desc`; that element gets the generated id.
     const createDialog = (titleText, bodyContent, buttons) => {
-        const title = createElement("h3", { id: "one-dialog-title" }, [titleText]);
+        const uid = `one-dialog-${++dialogSeq}`;
+        const titleId = `${uid}-title`;
+        const descId = `${uid}-desc`;
+
+        const title = createElement("h3", { id: titleId }, [titleText]);
         const header = createElement("header", {}, [title]);
-        const body = typeof bodyContent === "string"
-            ? createElement("p", { id: "one-dialog-desc" }, [bodyContent])
+        const isText = typeof bodyContent === "string";
+        const body = isText
+            ? createElement("p", { id: descId }, [bodyContent])
             : bodyContent;
         const footer = createElement("footer", {}, buttons);
         const article = createElement("article", {}, [header, body, footer]);
         const dialog = createElement("dialog", {
-            "aria-labelledby": "one-dialog-title",
+            "aria-labelledby": titleId,
             "aria-modal": "true",
         }, [article]);
 
-        if (typeof bodyContent === "string") {
-            dialog.setAttribute("aria-describedby", "one-dialog-desc");
+        const desc = isText ? body : bodyContent.querySelector("[data-dialog-desc]");
+        if (desc) {
+            desc.id = descId;
+            dialog.setAttribute("aria-describedby", descId);
         }
 
         document.body.appendChild(dialog);
@@ -69,7 +84,7 @@ const one = (() => {
     const prompt = (message, defaultValue = "", title = "Input Required") => {
         return new Promise((resolve) => {
             const input = createElement("input", { type: "text", value: defaultValue });
-            const p = createElement("p", { id: "one-dialog-desc" }, [message]);
+            const p = createElement("p", { "data-dialog-desc": "" }, [message]);
             const container = createElement("div", {}, [p, input]);
 
             const btnCancel = createElement("button", {
@@ -81,6 +96,9 @@ const one = (() => {
                 "data-action": "confirm",
             }, ["Confirm"]);
             const dialog = createDialog(title, container, [btnCancel, btnConfirm]);
+            // createDialog has just given the message paragraph its id; the box
+            // has no visible label of its own, so the message is its name.
+            input.setAttribute("aria-labelledby", p.id);
 
             const cleanup = (result) => {
                 dialog.close();
@@ -161,11 +179,16 @@ const one = (() => {
     // for every message. `minDuration` floors the estimated reading time; pass
     // 0 to let short messages disappear as fast as they can be read.
     const alert = (message, type = "info", minDuration = 3000) => {
-        const duration = Math.max(minDuration, estimateReadingTime(String(message)));
+        const messageText = message instanceof Node ? message.textContent || "" : String(message);
+        const duration = Math.max(minDuration, estimateReadingTime(messageText));
 
         let container = document.getElementById("one-toast-container");
         if (!container) {
+            // The container is the live region and outlives every toast, so it
+            // is already in the accessibility tree when a toast appears.
             container = createElement("div", { id: "one-toast-container" });
+            container.setAttribute("aria-live", "polite");
+            container.setAttribute("aria-atomic", "false");
             if (typeof container.showPopover === "function") {
                 container.setAttribute("popover", "manual");
             }
@@ -175,7 +198,17 @@ const one = (() => {
             }
         }
 
+        // An insertion is announced by the nearest live region that contains
+        // it, self included: errors interrupt as assertive alerts, everything
+        // else rides the container's polite region. Exactly one announcement
+        // either way, because the toast's own role wins over the container's.
         const toast = createElement("div", { className: `toast toast-${type}` }, [message]);
+        if (type === "error") {
+            toast.setAttribute("role", "alert");
+            toast.setAttribute("aria-live", "assertive");
+        } else {
+            toast.setAttribute("role", "status");
+        }
         container.appendChild(toast);
         void toast.offsetHeight;
         toast.classList.add("show");
@@ -401,4 +434,3 @@ const one = (() => {
 
     return { alert, prompt, confirm, copy, getTimestamp, storage, compress, decompress };
 })();
-
