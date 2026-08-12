@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" fill="#1f1f1f" version="1.1" viewBox="0 -960 960 960" xml:space="preserve" xmlns="http://www.w3.org/2000/svg">
+  <style id="dark-mode-inversion-style">
+    @media (prefers-color-scheme: dark) {
+      path, rect, circle, polygon, ellipse, line, polyline {
+        filter: invert(100%) hue-rotate(180deg) !important;
+      }
+    }
+  </style><g stroke-width="1.2"><path d="m816-432v-96q0-20.4 13.8-34.2t34.2-13.8 34.2 13.8 13.8 34.2v96q0 20.4-13.8 34.2t-34.2 13.8-34.2-13.8-13.8-34.2z" fill="#e183a6"/><path d="m624-240v-480q0-20.4 13.8-34.2t34.2-13.8 34.2 13.8 13.8 34.2v480q0 20.4-13.8 34.2t-34.2 13.8-34.2-13.8-13.8-34.2z" fill="#939cf0"/><path d="m48-432v-96q0-20.4 13.8-34.2t34.2-13.8 34.2 13.8 13.8 34.2v96q0 20.4-13.8 34.2t-34.2 13.8-34.2-13.8-13.8-34.2z" fill="#bfa23e"/><path d="m432-48v-864q0-20.4 13.8-34.2t34.2-13.8 34.2 13.8 13.8 34.2v864q0 20.4-13.8 34.2t-34.2 13.8-34.2-13.8-13.8-34.2z" fill="#07bac8"/><path d="m240-240v-480q0-20.4 13.8-34.2t34.2-13.8 34.2 13.8 13.8 34.2v480q0 20.4-13.8 34.2t-34.2 13.8-34.2-13.8-13.8-34.2z" fill="#64ba7e"/></g></svg>

@@ -1,0 +1,1434 @@
+<!doctype html>
+<html lang="en" class="theme-blue">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Generate evenly spaced OKLCH colors with precise lightness, chroma, and hue controls.">
+    <title>OKLCH Orbit</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" href="../one.css">
+    <style>
+        :root {
+            --orbit-size: min(54vw, 29rem);
+        }
+
+        body {
+            min-height: 100vh;
+        }
+
+        header hgroup p {
+            max-width: none;
+        }
+
+        main {
+            display: grid;
+            align-content: start;
+            gap: var(--spacing-lg);
+            max-width: 92rem;
+        }
+
+        section {
+            margin: 0;
+        }
+
+        aside form {
+            display: contents;
+        }
+
+        .control-heading {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .control-heading label {
+            margin: 0;
+        }
+
+        .control-heading output {
+            color: var(--on-surface);
+            font-family: var(--font-code);
+            font-size: 0.875rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .control-group + .control-group {
+            margin-top: var(--spacing-sm);
+        }
+
+        .control-group:has(input:disabled) .control-heading {
+            opacity: 0.55;
+        }
+
+        .reset-button {
+            width: 100%;
+        }
+
+        .toggle-option {
+            gap: var(--spacing-md);
+            padding: var(--spacing-sm) var(--spacing-md) !important;
+            border: var(--border-width) solid var(--outline-variant);
+            border-radius: var(--radius-sm);
+            background: var(--surface-container-low);
+        }
+
+        .toggle-option strong,
+        .toggle-option small {
+            display: block;
+        }
+
+        .toggle-option strong {
+            color: var(--on-surface);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .toggle-option small {
+            margin-top: 2px;
+        }
+
+        .format-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            white-space: nowrap;
+        }
+
+        .format-actions button:not(.btn-sym) {
+            min-width: 3rem;
+            padding-inline: var(--spacing-sm);
+        }
+
+        .preview-layout {
+            display: grid;
+            grid-template-columns: minmax(16rem, 0.8fr) minmax(20rem, 1.2fr);
+            gap: clamp(var(--spacing-lg), 4vw, 4rem);
+            align-items: start;
+        }
+
+        .orbit-panel {
+            display: grid;
+            place-items: center;
+            min-height: 31rem;
+        }
+
+        .orbit {
+            position: relative;
+            width: min(100%, var(--orbit-size));
+            max-width: 29rem;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: var(--orbit-gradient);
+            box-shadow: inset 0 0 0 var(--border-width) color-mix(in srgb, var(--outline) 65%, transparent),
+            0 8px 24px color-mix(in srgb, var(--on-surface) 12%, transparent);
+        }
+
+        .orbit::after {
+            content: "";
+            position: absolute;
+            inset: 24%;
+            border-radius: 50%;
+            background: var(--surface-container);
+            border: var(--border-width) solid var(--outline-variant);
+        }
+
+        .orbit-center {
+            position: absolute;
+            inset: 32%;
+            z-index: 1;
+            display: grid;
+            place-content: center;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .orbit-center strong,
+        .orbit-center span {
+            display: block;
+        }
+
+        .orbit-center strong {
+            color: var(--on-surface);
+            font-size: clamp(1.5rem, 3vw, 2.35rem);
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.04em;
+        }
+
+        .orbit-center span {
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .results-header h2,
+        .results-header p {
+            margin: 0;
+        }
+
+        .results-header p {
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .swatch-list {
+            display: grid;
+            gap: var(--spacing-xs);
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .swatch {
+            display: grid;
+            grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+            align-items: center;
+            gap: var(--spacing-md);
+            min-height: 4rem;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border: var(--border-width) solid var(--outline-variant);
+            border-radius: var(--radius-sm);
+            background: var(--surface-container-low);
+        }
+
+        .swatch-color {
+            width: 3.5rem;
+            height: 2.75rem;
+            border-radius: var(--radius-xs);
+            background: var(--swatch-color);
+            box-shadow: inset 0 0 0 var(--border-width) color-mix(in srgb, var(--outline) 45%, transparent);
+        }
+
+        .swatch-value {
+            min-width: 0;
+        }
+
+        .swatch-value strong,
+        .swatch-value code {
+            display: block;
+        }
+
+        .swatch-value strong {
+            margin-bottom: 2px;
+            font-size: 0.875rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .swatch-value code {
+            overflow: hidden;
+            padding: 0;
+            background: transparent;
+            color: var(--on-surface-variant);
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .swatch button {
+            color: var(--on-surface-variant);
+        }
+
+        .css-output {
+            margin: 0;
+            max-height: 20rem;
+        }
+
+        .status {
+            min-height: 1.4em;
+            margin: var(--spacing-xs) 0 0;
+            color: var(--on-surface-variant);
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        @media (max-width: 1100px) {
+            :root {
+                --orbit-size: min(50vw, 24rem);
+            }
+
+            .preview-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .orbit-panel {
+                min-height: 25rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            :root {
+                --orbit-size: min(78vw, 22rem);
+            }
+
+            main {
+                padding: var(--spacing-md);
+            }
+
+            section {
+                padding: var(--spacing-md);
+            }
+
+            .orbit-panel {
+                min-height: auto;
+                padding: var(--spacing-md) 0 var(--spacing-lg);
+            }
+
+            .results-header {
+                align-items: start;
+                flex-direction: column;
+            }
+
+            .swatch {
+                grid-template-columns: 3rem minmax(0, 1fr) auto;
+                gap: var(--spacing-sm);
+            }
+
+            .swatch-color {
+                width: 3rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<a href="#palette" class="skip-link">Skip to palette</a>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle controls">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn"></label>
+    <hgroup>
+        <h1>OKLCH Orbit</h1>
+        <p>Evenly spaced color palettes</p>
+    </hgroup>
+</header>
+
+<aside id="controls">
+    <h2>Controls</h2>
+    <form id="palette-form">
+        <fieldset>
+            <legend>Palette</legend>
+
+            <div class="control-group">
+                <div class="control-heading">
+                    <label for="color-count">Colors</label>
+                    <output for="color-count" id="color-count-value">8</output>
+                </div>
+                <input type="range" id="color-count" min="2" max="24" step="1" value="8">
+            </div>
+
+            <div class="control-group">
+                <div class="control-heading">
+                    <label for="lightness">Lightness</label>
+                    <output for="lightness" id="lightness-value">0.72</output>
+                </div>
+                <input type="range" id="lightness" min="0" max="1" step="0.01" value="0.72">
+            </div>
+
+            <div class="control-group">
+                <div class="control-heading">
+                    <label for="chroma">Chroma</label>
+                    <output for="chroma" id="chroma-value">0.160</output>
+                </div>
+                <input type="range" id="chroma" min="0.001" max="0.4" step="0.001" value="0.16">
+            </div>
+
+            <div class="control-group">
+                <div class="control-heading">
+                    <label for="start-hue">Start hue</label>
+                    <output for="start-hue" id="start-hue-value">25°</output>
+                </div>
+                <input type="range" id="start-hue" min="0" max="359" step="1" value="25">
+            </div>
+        </fieldset>
+
+        <label for="limit-chroma" class="toggle-option">
+            <span>
+                <strong>Uniform in-gamut chroma</strong>
+                <small>Cap chroma at weakest hue</small>
+            </span>
+            <input type="checkbox" role="switch" id="limit-chroma" checked>
+        </label>
+
+        <label for="color-blind-spacing" class="toggle-option">
+            <span>
+                <strong>Color-blind spacing</strong>
+                <small>Weight hue separation by prevalence</small>
+            </span>
+            <input type="checkbox" role="switch" id="color-blind-spacing">
+        </label>
+
+        <label for="maximize-distance" class="toggle-option">
+            <span>
+                <strong>Maximize minimum ΔE OK</strong>
+                <small>Choose best palette orientation automatically</small>
+            </span>
+            <input type="checkbox" role="switch" id="maximize-distance">
+        </label>
+
+        <button type="button" class="btn-danger reset-button" id="reset-settings">
+            <span class="sym" aria-hidden="true">refresh</span>
+            Reset to Defaults
+        </button>
+    </form>
+    <p id="copy-status" class="status" role="status" aria-live="polite"></p>
+</aside>
+
+<main id="palette">
+    <section class="preview-layout" aria-labelledby="palette-heading">
+        <div class="orbit-panel">
+            <div class="orbit" id="orbit" role="img"
+                 aria-label="Palette arranged around a hue circle">
+                <div class="orbit-center">
+                    <strong id="hue-step">45°</strong>
+                    <span id="orbit-metric-label">Hue interval</span>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="results-header">
+                <div>
+                    <h2 id="palette-heading">Generated colors</h2>
+                    <p id="results-description">Equal hue intervals across 360°</p>
+                </div>
+            </div>
+            <ol class="swatch-list" id="swatch-list"></ol>
+        </div>
+    </section>
+
+    <section aria-labelledby="css-heading">
+        <div class="results-header">
+            <div>
+                <h2 id="css-heading">CSS variables</h2>
+                <p>Ready to paste into a stylesheet</p>
+            </div>
+            <button type="button" id="copy-css-button">
+                <span class="sym" aria-hidden="true">content_copy</span>
+                Copy CSS
+            </button>
+        </div>
+        <pre class="css-output scroll-shadow-y"><code id="css-output"></code></pre>
+    </section>
+</main>
+
+<script src="../one.js"></script>
+<script>
+    const STORAGE_KEY = "oklchOrbitSettings";
+    const HUE_SAMPLE_COUNT = 360;
+    const OPTIMIZATION_SWEEPS = 8;
+    const SCORE_EPSILON = 0.00001;
+    const MIN_CHROMA = 0.001;
+    const DEFAULT_SETTINGS = Object.freeze({
+        count: 8,
+        lightness: 0.72,
+        chroma: 0.16,
+        startHue: 25,
+        limitChroma: true,
+        colorBlindSpacing: false,
+        maximizeDistance: false,
+    });
+
+    // Weights average male and female prevalence from NCBI Webvision, then normalize among CVD types.
+    const CVD_MODELS = [
+        {
+            name: "deutan",
+            prevalence: 3.455,
+            matrix: [
+                [0.367322, 0.860646, -0.227968],
+                [0.280085, 0.672501, 0.047413],
+                [-0.011820, 0.042940, 0.968881],
+            ],
+        },
+        {
+            name: "protan",
+            prevalence: 1.01,
+            matrix: [
+                [0.152286, 1.052583, -0.204868],
+                [0.114503, 0.786281, 0.099216],
+                [-0.003882, -0.048116, 1.051998],
+            ],
+        },
+        {
+            name: "tritan",
+            prevalence: 0.008,
+            matrix: [
+                [1.255528, -0.076749, -0.178779],
+                [-0.078411, 0.930809, 0.147602],
+                [0.004733, 0.691367, 0.303900],
+            ],
+        },
+    ];
+    const CVD_PREVALENCE_TOTAL = CVD_MODELS.reduce((total, model) => total + model.prevalence, 0);
+
+    const form = document.getElementById("palette-form");
+    const orbit = document.getElementById("orbit");
+    const swatchList = document.getElementById("swatch-list");
+    const cssOutput = document.getElementById("css-output");
+    const hueStepOutput = document.getElementById("hue-step");
+    const orbitMetricLabel = document.getElementById("orbit-metric-label");
+    const resultsDescription = document.getElementById("results-description");
+    const copyStatus = document.getElementById("copy-status");
+    const inputs = {
+        count: document.getElementById("color-count"),
+        lightness: document.getElementById("lightness"),
+        chroma: document.getElementById("chroma"),
+        startHue: document.getElementById("start-hue"),
+        limitChroma: document.getElementById("limit-chroma"),
+        colorBlindSpacing: document.getElementById("color-blind-spacing"),
+        maximizeDistance: document.getElementById("maximize-distance"),
+    };
+    const outputs = {
+        count: document.getElementById("color-count-value"),
+        lightness: document.getElementById("lightness-value"),
+        chroma: document.getElementById("chroma-value"),
+        startHue: document.getElementById("start-hue-value"),
+    };
+
+    function readSettings() {
+        return {
+            count: Number(inputs.count.value),
+            lightness: Number(inputs.lightness.value),
+            chroma: Number(inputs.chroma.value),
+            startHue: Number(inputs.startHue.value),
+            limitChroma: inputs.limitChroma.checked,
+            colorBlindSpacing: inputs.colorBlindSpacing.checked,
+            maximizeDistance: inputs.maximizeDistance.checked,
+        };
+    }
+
+    function readSavedNumber(value, fallback, minimum, maximum) {
+        const number = Number(value);
+
+        if (!Number.isFinite(number)) {
+            return fallback;
+        }
+
+        return Math.min(maximum, Math.max(minimum, number));
+    }
+
+    function normalizeSavedSettings(savedSettings) {
+        return {
+            count: Math.round(readSavedNumber(savedSettings.count, DEFAULT_SETTINGS.count, 2, 24)),
+            lightness: readSavedNumber(savedSettings.lightness, DEFAULT_SETTINGS.lightness, 0, 1),
+            chroma: readSavedNumber(savedSettings.chroma, DEFAULT_SETTINGS.chroma, MIN_CHROMA, 0.4),
+            startHue: Math.round(readSavedNumber(savedSettings.startHue, DEFAULT_SETTINGS.startHue, 0, 359)),
+            limitChroma: typeof savedSettings.limitChroma === "boolean"
+                ? savedSettings.limitChroma
+                : DEFAULT_SETTINGS.limitChroma,
+            colorBlindSpacing: typeof savedSettings.colorBlindSpacing === "boolean"
+                ? savedSettings.colorBlindSpacing
+                : DEFAULT_SETTINGS.colorBlindSpacing,
+            maximizeDistance: typeof savedSettings.maximizeDistance === "boolean"
+                ? savedSettings.maximizeDistance
+                : DEFAULT_SETTINGS.maximizeDistance,
+        };
+    }
+
+    function applySettingsToInputs(settings) {
+        inputs.count.value = settings.count;
+        inputs.lightness.value = settings.lightness;
+        inputs.chroma.value = settings.chroma;
+        inputs.startHue.value = settings.startHue;
+        inputs.limitChroma.checked = settings.limitChroma;
+        inputs.colorBlindSpacing.checked = settings.colorBlindSpacing;
+        inputs.maximizeDistance.checked = settings.maximizeDistance;
+    }
+
+    function loadSettings() {
+        try {
+            const savedSettings = JSON.parse(localStorage.getItem(STORAGE_KEY));
+
+            if (!savedSettings || typeof savedSettings !== "object") {
+                return;
+            }
+
+            applySettingsToInputs(normalizeSavedSettings(savedSettings));
+        } catch (error) {
+            console.error("Failed to load OKLCH Orbit settings", error);
+        }
+    }
+
+    function saveSettings(settings) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+        } catch (error) {
+            console.error("Failed to save OKLCH Orbit settings", error);
+        }
+    }
+
+    function formatNumber(value, precision = 2) {
+        return Number(value.toFixed(precision)).toString();
+    }
+
+    function clamp(value, minimum = 0, maximum = 1) {
+        return Math.min(maximum, Math.max(minimum, value));
+    }
+
+    function normalizeHue(hue) {
+        return ((hue % HUE_SAMPLE_COUNT) + HUE_SAMPLE_COUNT) % HUE_SAMPLE_COUNT;
+    }
+
+    function oklchToLinearRgb(lightness, chroma, hue) {
+        const hueRadians = hue * Math.PI / 180;
+        const a = chroma * Math.cos(hueRadians);
+        const b = chroma * Math.sin(hueRadians);
+        const lRoot = lightness + 0.3963377774 * a + 0.2158037573 * b;
+        const mRoot = lightness - 0.1055613458 * a - 0.0638541728 * b;
+        const sRoot = lightness - 0.0894841775 * a - 1.291485548 * b;
+        const l = lRoot ** 3;
+        const m = mRoot ** 3;
+        const s = sRoot ** 3;
+
+        return [
+            4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+            -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+            -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+        ];
+    }
+
+    function isInSrgbGamut(lightness, chroma, hue) {
+        return oklchToLinearRgb(lightness, chroma, hue).every((channel) => (
+            channel >= 0 && channel <= 1
+        ));
+    }
+
+    function findMaxChroma(lightness, hue, precision = 0.0001) {
+        let lowerChroma = 0;
+        let upperChroma = 0.4;
+
+        while (upperChroma - lowerChroma > precision) {
+            const candidateChroma = (lowerChroma + upperChroma) / 2;
+
+            if (isInSrgbGamut(lightness, candidateChroma, hue)) {
+                lowerChroma = candidateChroma;
+                continue;
+            }
+
+            upperChroma = candidateChroma;
+        }
+
+        return lowerChroma;
+    }
+
+    function linearToSrgb(channel) {
+        if (channel <= 0.0031308) {
+            return channel * 12.92;
+        }
+
+        return 1.055 * channel ** (1 / 2.4) - 0.055;
+    }
+
+    function colorToSrgbChannels({ lightness, chroma, hue }) {
+        return oklchToLinearRgb(lightness, chroma, hue).map((channel) => (
+            Math.round(clamp(linearToSrgb(clamp(channel))) * 255)
+        ));
+    }
+
+    function colorToHex(color) {
+        const channels = colorToSrgbChannels(color);
+        const hex = channels.map((channel) => channel.toString(16).padStart(2, "0")).join("");
+
+        return `#${hex}`;
+    }
+
+    function colorToRgb(color) {
+        const [red, green, blue] = colorToSrgbChannels(color);
+
+        return `rgb(${red} ${green} ${blue})`;
+    }
+
+    function linearRgbToOklab([red, green, blue]) {
+        const l = 0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue;
+        const m = 0.2119034982 * red + 0.6806995451 * green + 0.1073969566 * blue;
+        const s = 0.0883024619 * red + 0.2817188376 * green + 0.6299787005 * blue;
+        const lRoot = Math.cbrt(l);
+        const mRoot = Math.cbrt(m);
+        const sRoot = Math.cbrt(s);
+
+        return [
+            0.2104542553 * lRoot + 0.793617785 * mRoot - 0.0040720468 * sRoot,
+            1.9779984951 * lRoot - 2.428592205 * mRoot + 0.4505937099 * sRoot,
+            0.0259040371 * lRoot + 0.7827717662 * mRoot - 0.808675766 * sRoot,
+        ];
+    }
+
+    function applyColorVisionMatrix(linearRgb, matrix) {
+        return matrix.map((row) => clamp(
+            row[0] * linearRgb[0] + row[1] * linearRgb[1] + row[2] * linearRgb[2],
+        ));
+    }
+
+    function simulateColorVision(lightness, chroma, hue, matrix) {
+        const linearRgb = oklchToLinearRgb(lightness, chroma, hue).map((channel) => clamp(channel));
+        const simulatedLinearRgb = applyColorVisionMatrix(linearRgb, matrix);
+
+        return linearRgbToOklab(simulatedLinearRgb);
+    }
+
+    let hueSampleCache = {
+        lightness: null,
+        samplesByChroma: new Map(),
+    };
+
+    function createHueSamples(lightness, chroma) {
+        return Array.from({ length: HUE_SAMPLE_COUNT }, (_, hue) => (
+            CVD_MODELS.map((model) => simulateColorVision(lightness, chroma, hue, model.matrix))
+        ));
+    }
+
+    function getHueSamples(lightness, chroma) {
+        if (hueSampleCache.lightness !== lightness) {
+            hueSampleCache = {
+                lightness,
+                samplesByChroma: new Map(),
+            };
+        }
+
+        const key = chroma.toFixed(6);
+
+        if (!hueSampleCache.samplesByChroma.has(key)) {
+            hueSampleCache.samplesByChroma.set(key, createHueSamples(lightness, chroma));
+        }
+
+        return hueSampleCache.samplesByChroma.get(key);
+    }
+
+    function calculateHueDistance(firstHue, secondHue, samples) {
+        let weightedDistanceSquared = 0;
+
+        for (let modelIndex = 0; modelIndex < CVD_MODELS.length; modelIndex += 1) {
+            const firstColor = samples[firstHue][modelIndex];
+            const secondColor = samples[secondHue][modelIndex];
+            const deltaLightness = firstColor[0] - secondColor[0];
+            const deltaA = firstColor[1] - secondColor[1];
+            const deltaB = firstColor[2] - secondColor[2];
+            const modelWeight = CVD_MODELS[modelIndex].prevalence / CVD_PREVALENCE_TOTAL;
+
+            weightedDistanceSquared += modelWeight * (
+                deltaLightness ** 2 + deltaA ** 2 + deltaB ** 2
+            );
+        }
+
+        return Math.sqrt(weightedDistanceSquared);
+    }
+
+    function createHueDistanceTable(lightness, chroma) {
+        const samples = getHueSamples(lightness, chroma);
+        const distances = Array.from(
+            { length: HUE_SAMPLE_COUNT },
+            () => new Float64Array(HUE_SAMPLE_COUNT),
+        );
+
+        for (let firstHue = 0; firstHue < HUE_SAMPLE_COUNT; firstHue += 1) {
+            for (let secondHue = firstHue + 1; secondHue < HUE_SAMPLE_COUNT; secondHue += 1) {
+                const distance = calculateHueDistance(firstHue, secondHue, samples);
+                distances[firstHue][secondHue] = distance;
+                distances[secondHue][firstHue] = distance;
+            }
+        }
+
+        return distances;
+    }
+
+    let hueDistanceCache = {
+        key: "",
+        distances: null,
+    };
+
+    function getHueDistanceTable(lightness, chroma) {
+        const key = `${lightness}:${chroma}`;
+
+        if (hueDistanceCache.key === key) {
+            return hueDistanceCache.distances;
+        }
+
+        hueDistanceCache = {
+            key,
+            distances: createHueDistanceTable(lightness, chroma),
+        };
+
+        return hueDistanceCache.distances;
+    }
+
+    function createPaletteContext(hues, distances) {
+        let minimumDistance = Infinity;
+        let totalDistance = 0;
+        const nearestDistances = new Array(hues.length).fill(Infinity);
+
+        for (let firstIndex = 0; firstIndex < hues.length; firstIndex += 1) {
+            const firstHue = normalizeHue(Math.round(hues[firstIndex]));
+
+            for (let secondIndex = firstIndex + 1; secondIndex < hues.length; secondIndex += 1) {
+                const secondHue = normalizeHue(Math.round(hues[secondIndex]));
+                const distance = distances[firstHue][secondHue];
+
+                minimumDistance = Math.min(minimumDistance, distance);
+                totalDistance += distance;
+                nearestDistances[firstIndex] = Math.min(nearestDistances[firstIndex], distance);
+                nearestDistances[secondIndex] = Math.min(nearestDistances[secondIndex], distance);
+            }
+        }
+
+        return { hues, minimumDistance, nearestDistances, totalDistance };
+    }
+
+    function createScore(minimumDistance, nearestDistances, totalDistance) {
+        const nearestMean = nearestDistances.reduce((total, distance) => total + distance, 0)
+            / nearestDistances.length;
+        const nearestVariance = nearestDistances.reduce(
+            (total, distance) => total + (distance - nearestMean) ** 2,
+            0,
+        ) / nearestDistances.length;
+
+        return { minimumDistance, nearestVariance, totalDistance };
+    }
+
+    function calculatePaletteScore(hues, distances) {
+        const context = createPaletteContext(hues, distances);
+
+        return createScore(
+            context.minimumDistance,
+            context.nearestDistances,
+            context.totalDistance,
+        );
+    }
+
+    function calculatePaletteScoreAtChroma(hues, lightness, chroma) {
+        const samples = getHueSamples(lightness, chroma);
+        let minimumDistance = Infinity;
+        let totalDistance = 0;
+        const nearestDistances = new Array(hues.length).fill(Infinity);
+
+        for (let firstIndex = 0; firstIndex < hues.length; firstIndex += 1) {
+            const firstHue = normalizeHue(Math.round(hues[firstIndex]));
+
+            for (let secondIndex = firstIndex + 1; secondIndex < hues.length; secondIndex += 1) {
+                const secondHue = normalizeHue(Math.round(hues[secondIndex]));
+                const distance = calculateHueDistance(firstHue, secondHue, samples);
+
+                minimumDistance = Math.min(minimumDistance, distance);
+                totalDistance += distance;
+                nearestDistances[firstIndex] = Math.min(nearestDistances[firstIndex], distance);
+                nearestDistances[secondIndex] = Math.min(nearestDistances[secondIndex], distance);
+            }
+        }
+
+        return createScore(minimumDistance, nearestDistances, totalDistance);
+    }
+
+    function calculateCandidateScore(context, candidateHue, distances) {
+        const normalizedCandidate = normalizeHue(Math.round(candidateHue));
+        const nearestDistances = [];
+        let minimumDistance = context.minimumDistance;
+        let candidateNearestDistance = Infinity;
+        let totalDistance = context.totalDistance;
+
+        for (let index = 0; index < context.hues.length; index += 1) {
+            const normalizedHue = normalizeHue(Math.round(context.hues[index]));
+            const distance = distances[normalizedCandidate][normalizedHue];
+
+            minimumDistance = Math.min(minimumDistance, distance);
+            candidateNearestDistance = Math.min(candidateNearestDistance, distance);
+            totalDistance += distance;
+            nearestDistances.push(Math.min(context.nearestDistances[index], distance));
+        }
+
+        nearestDistances.push(candidateNearestDistance);
+
+        return createScore(minimumDistance, nearestDistances, totalDistance);
+    }
+
+    function isBetterScore(candidate, current) {
+        if (candidate.minimumDistance > current.minimumDistance + SCORE_EPSILON) {
+            return true;
+        }
+
+        if (Math.abs(candidate.minimumDistance - current.minimumDistance) > SCORE_EPSILON) {
+            return false;
+        }
+
+        if (candidate.nearestVariance + SCORE_EPSILON ** 2 < current.nearestVariance) {
+            return true;
+        }
+
+        if (Math.abs(candidate.nearestVariance - current.nearestVariance) > SCORE_EPSILON ** 2) {
+            return false;
+        }
+
+        return candidate.totalDistance > current.totalDistance + SCORE_EPSILON;
+    }
+
+    function createEvenHues(count, startHue) {
+        const hueStep = 360 / count;
+
+        return Array.from({ length: count }, (_, index) => startHue + index * hueStep);
+    }
+
+    function findSharedChromaLimitForHues(lightness, hues) {
+        return hues.reduce((limit, hue) => (
+            Math.min(limit, findMaxChroma(lightness, normalizeHue(hue)))
+        ), 0.4);
+    }
+
+    function calculateFinalPaletteScore(hues, settings) {
+        if (!settings.limitChroma) {
+            const distances = getHueDistanceTable(settings.lightness, settings.chroma);
+
+            return calculatePaletteScore(hues, distances);
+        }
+
+        const chromaLimit = findSharedChromaLimitForHues(settings.lightness, hues);
+        const finalChroma = Math.max(MIN_CHROMA, Math.min(settings.chroma, chromaLimit));
+
+        return calculatePaletteScoreAtChroma(hues, settings.lightness, finalChroma);
+    }
+
+    function optimizeEvenHueRotation(settings) {
+        const { count } = settings;
+        let bestHues = createEvenHues(count, 0);
+        let bestScore = calculateFinalPaletteScore(bestHues, settings);
+
+        for (let startHue = 1; startHue < HUE_SAMPLE_COUNT; startHue += 1) {
+            const candidateHues = createEvenHues(count, startHue);
+            const candidateScore = calculateFinalPaletteScore(candidateHues, settings);
+
+            if (!isBetterScore(candidateScore, bestScore)) {
+                continue;
+            }
+
+            bestHues = candidateHues;
+            bestScore = candidateScore;
+        }
+
+        return bestHues;
+    }
+
+    function findMostDistantHuePair(distances) {
+        let bestPair = [0, 1];
+        let bestDistance = distances[0][1];
+
+        for (let firstHue = 0; firstHue < HUE_SAMPLE_COUNT; firstHue += 1) {
+            for (let secondHue = firstHue + 1; secondHue < HUE_SAMPLE_COUNT; secondHue += 1) {
+                const distance = distances[firstHue][secondHue];
+
+                if (distance <= bestDistance) {
+                    continue;
+                }
+
+                bestPair = [firstHue, secondHue];
+                bestDistance = distance;
+            }
+        }
+
+        return bestPair;
+    }
+
+    function optimizeHues(count, lightness, chroma, startHue, maximizeDistance) {
+        const distances = getHueDistanceTable(lightness, chroma);
+        const hues = maximizeDistance
+            ? findMostDistantHuePair(distances)
+            : [startHue];
+
+        while (hues.length < count) {
+            const context = createPaletteContext(hues, distances);
+            let bestHue = -1;
+            let bestScore = null;
+
+            for (let candidateHue = 0; candidateHue < HUE_SAMPLE_COUNT; candidateHue += 1) {
+                if (hues.includes(candidateHue)) {
+                    continue;
+                }
+
+                const candidateScore = calculateCandidateScore(context, candidateHue, distances);
+
+                if (bestScore && !isBetterScore(candidateScore, bestScore)) {
+                    continue;
+                }
+
+                bestHue = candidateHue;
+                bestScore = candidateScore;
+            }
+
+            hues.push(bestHue);
+        }
+
+        for (let sweep = 0; sweep < OPTIMIZATION_SWEEPS; sweep += 1) {
+            let changed = false;
+
+            const firstOptimizedIndex = maximizeDistance ? 0 : 1;
+
+            for (let index = firstOptimizedIndex; index < count; index += 1) {
+                const otherHues = hues.filter((_, hueIndex) => hueIndex !== index);
+                const context = createPaletteContext(otherHues, distances);
+                let bestHue = hues[index];
+                let bestScore = calculateCandidateScore(context, bestHue, distances);
+
+                for (let candidateHue = 0; candidateHue < HUE_SAMPLE_COUNT; candidateHue += 1) {
+                    if (candidateHue !== hues[index] && hues.includes(candidateHue)) {
+                        continue;
+                    }
+
+                    const candidateScore = calculateCandidateScore(context, candidateHue, distances);
+
+                    if (!isBetterScore(candidateScore, bestScore)) {
+                        continue;
+                    }
+
+                    bestHue = candidateHue;
+                    bestScore = candidateScore;
+                }
+
+                if (bestHue === hues[index]) {
+                    continue;
+                }
+
+                hues[index] = bestHue;
+                changed = true;
+            }
+
+            if (!changed) {
+                break;
+            }
+        }
+
+        if (maximizeDistance) {
+            return hues.sort((firstHue, secondHue) => firstHue - secondHue);
+        }
+
+        const sortedHues = hues.slice(1).sort((firstHue, secondHue) => (
+            normalizeHue(firstHue - startHue) - normalizeHue(secondHue - startHue)
+        ));
+
+        return [
+            startHue,
+            ...sortedHues.map((hue) => startHue + normalizeHue(hue - startHue)),
+        ];
+    }
+
+    function optimizeGamutAwareHues(settings) {
+        const requestedChromaAnchoredHues = optimizeHues(
+            settings.count,
+            settings.lightness,
+            settings.chroma,
+            settings.startHue,
+            false,
+        );
+        const unanchoredHues = optimizeHues(
+            settings.count,
+            settings.lightness,
+            settings.chroma,
+            settings.startHue,
+            true,
+        );
+        const resolvedChromaAnchoredHues = optimizeResolvedChromaAnchoredHues(settings);
+        const seeds = [
+            requestedChromaAnchoredHues,
+            resolvedChromaAnchoredHues,
+            unanchoredHues,
+        ];
+        let hues = seeds[0];
+        let seedScore = calculateFinalPaletteScore(hues, settings);
+
+        for (let index = 1; index < seeds.length; index += 1) {
+            const candidateScore = calculateFinalPaletteScore(seeds[index], settings);
+
+            if (!isBetterScore(candidateScore, seedScore)) {
+                continue;
+            }
+
+            hues = seeds[index];
+            seedScore = candidateScore;
+        }
+
+        for (let sweep = 0; sweep < OPTIMIZATION_SWEEPS; sweep += 1) {
+            let changed = false;
+
+            for (let index = 0; index < settings.count; index += 1) {
+                let bestHue = hues[index];
+                let bestScore = calculateFinalPaletteScore(hues, settings);
+
+                for (let candidateHue = 0; candidateHue < HUE_SAMPLE_COUNT; candidateHue += 1) {
+                    if (candidateHue !== hues[index] && hues.includes(candidateHue)) {
+                        continue;
+                    }
+
+                    const candidateHues = hues.slice();
+
+                    candidateHues[index] = candidateHue;
+
+                    const candidateScore = calculateFinalPaletteScore(candidateHues, settings);
+
+                    if (!isBetterScore(candidateScore, bestScore)) {
+                        continue;
+                    }
+
+                    bestHue = candidateHue;
+                    bestScore = candidateScore;
+                }
+
+                if (bestHue === hues[index]) {
+                    continue;
+                }
+
+                hues[index] = bestHue;
+                changed = true;
+            }
+
+            if (!changed) {
+                break;
+            }
+        }
+
+        return hues.sort((firstHue, secondHue) => firstHue - secondHue);
+    }
+
+    function optimizeResolvedChromaAnchoredHues(settings) {
+        let chroma = settings.chroma;
+        let hues;
+
+        for (let iteration = 0; iteration < 5; iteration += 1) {
+            hues = optimizeHues(
+                settings.count,
+                settings.lightness,
+                chroma,
+                settings.startHue,
+                false,
+            );
+
+            const chromaLimit = findSharedChromaLimitForHues(settings.lightness, hues);
+            const limitedChroma = Math.max(MIN_CHROMA, Math.min(chroma, chromaLimit));
+
+            if (Math.abs(limitedChroma - chroma) < 0.0001) {
+                return hues;
+            }
+
+            chroma = limitedChroma;
+        }
+
+        hues = optimizeHues(
+            settings.count,
+            settings.lightness,
+            chroma,
+            settings.startHue,
+            false,
+        );
+
+        const chromaLimit = findSharedChromaLimitForHues(settings.lightness, hues);
+
+        if (chroma <= chromaLimit) {
+            return hues;
+        }
+
+        return optimizeHues(
+            settings.count,
+            settings.lightness,
+            Math.max(MIN_CHROMA, chromaLimit),
+            settings.startHue,
+            false,
+        );
+    }
+
+    function createPalette(settings) {
+        const {
+            count,
+            lightness,
+            chroma,
+            startHue,
+            colorBlindSpacing,
+            maximizeDistance,
+            limitChroma,
+        } = settings;
+        let hues = createEvenHues(count, startHue);
+
+        if (maximizeDistance && !colorBlindSpacing) {
+            hues = optimizeEvenHueRotation(settings);
+        }
+
+        if (colorBlindSpacing) {
+            hues = optimizeHues(count, lightness, chroma, startHue, maximizeDistance);
+        }
+
+        if (colorBlindSpacing && maximizeDistance && limitChroma) {
+            hues = optimizeGamutAwareHues(settings);
+        }
+
+        return hues.map((unwrappedHue, index) => {
+            const hue = normalizeHue(unwrappedHue);
+            const css = `oklch(${formatNumber(lightness)} ${formatNumber(chroma)} ${formatNumber(hue, 4)})`;
+
+            return { css, hue, index, lightness, chroma };
+        });
+    }
+
+    function findSharedChromaLimit(lightness, palette) {
+        return findSharedChromaLimitForHues(
+            lightness,
+            palette.map((color) => color.hue),
+        );
+    }
+
+    function applyPaletteChroma(palette, lightness, chroma) {
+        return palette.map((color) => {
+            const css = `oklch(${formatNumber(lightness)} ${formatNumber(chroma)} ${formatNumber(color.hue, 4)})`;
+
+            return { ...color, css, lightness, chroma };
+        });
+    }
+
+    function resolvePalette(settings) {
+        if (!settings.limitChroma) {
+            inputs.chroma.max = "0.4";
+
+            return {
+                settings,
+                palette: createPalette(settings),
+            };
+        }
+
+        if (settings.maximizeDistance) {
+            const requestedPalette = createPalette(settings);
+            const chromaLimit = findSharedChromaLimit(settings.lightness, requestedPalette);
+            const chroma = Math.max(MIN_CHROMA, Math.min(settings.chroma, chromaLimit));
+            const resolvedSettings = { ...settings, chroma };
+
+            inputs.chroma.max = formatNumber(Math.max(MIN_CHROMA, chromaLimit), 4);
+            inputs.chroma.value = formatNumber(chroma, 4);
+
+            return {
+                settings: resolvedSettings,
+                palette: applyPaletteChroma(requestedPalette, settings.lightness, chroma),
+            };
+        }
+
+        let resolvedSettings = { ...settings };
+        let palette;
+        let chromaLimit = 0.4;
+
+        for (let iteration = 0; iteration < 5; iteration += 1) {
+            palette = createPalette(resolvedSettings);
+            chromaLimit = findSharedChromaLimit(resolvedSettings.lightness, palette);
+            const limitedChroma = Math.max(
+                MIN_CHROMA,
+                Math.min(resolvedSettings.chroma, chromaLimit),
+            );
+
+            if (Math.abs(limitedChroma - resolvedSettings.chroma) < 0.0001) {
+                break;
+            }
+
+            resolvedSettings = {
+                ...resolvedSettings,
+                chroma: limitedChroma,
+            };
+        }
+
+        palette = createPalette(resolvedSettings);
+        chromaLimit = findSharedChromaLimit(resolvedSettings.lightness, palette);
+
+        if (resolvedSettings.chroma > chromaLimit) {
+            resolvedSettings = {
+                ...resolvedSettings,
+                chroma: Math.max(MIN_CHROMA, chromaLimit),
+            };
+            palette = createPalette(resolvedSettings);
+        }
+
+        inputs.chroma.max = formatNumber(Math.max(MIN_CHROMA, chromaLimit), 4);
+        inputs.chroma.value = formatNumber(resolvedSettings.chroma, 4);
+
+        return { settings: resolvedSettings, palette };
+    }
+
+    function createOrbitGradient(palette) {
+        const sliceSize = 360 / palette.length;
+        const startAngle = palette[0].hue - sliceSize / 2;
+
+        return `conic-gradient(from ${formatNumber(startAngle, 4)}deg, ${palette.map((color, index) => {
+            const start = index * sliceSize;
+            const end = (index + 1) * sliceSize;
+
+            return `${color.css} ${start}deg ${end}deg`;
+        }).join(", ")})`;
+    }
+
+    function createCssVariables(palette) {
+        const declarations = palette.map((color) => `  --color-${color.index + 1}: ${color.css};`);
+
+        return `:root {\n${declarations.join("\n")}\n}`;
+    }
+
+    function createCopyButton(label, copyValue, copyMessage, ariaLabel) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.copyValue = copyValue;
+        button.dataset.copyMessage = copyMessage;
+        button.setAttribute("aria-label", ariaLabel);
+        button.setAttribute("data-tooltip", ariaLabel);
+
+        if (label) {
+            button.textContent = label;
+            return button;
+        }
+
+        button.className = "btn-sym";
+        button.innerHTML = "<span class=\"sym\" aria-hidden=\"true\">content_copy</span>";
+
+        return button;
+    }
+
+    function createSwatch(color) {
+        const item = document.createElement("li");
+        item.className = "swatch";
+        item.style.setProperty("--swatch-color", color.css);
+
+        const colorPreview = document.createElement("span");
+        colorPreview.className = "swatch-color";
+        colorPreview.setAttribute("aria-hidden", "true");
+
+        const value = document.createElement("span");
+        value.className = "swatch-value";
+
+        const name = document.createElement("strong");
+        name.textContent = `Color ${color.index + 1} · ${formatNumber(color.hue)}°`;
+
+        const code = document.createElement("code");
+        code.textContent = color.css;
+
+        const actions = document.createElement("span");
+        actions.className = "format-actions";
+        const hex = colorToHex(color);
+        const rgb = colorToRgb(color);
+        const oklchButton = createCopyButton(
+            "",
+            color.css,
+            `${color.css} copied.`,
+            `Copy color ${color.index + 1} as OKLCH`,
+        );
+        const hexButton = createCopyButton(
+            "hex",
+            hex,
+            `${hex} copied.`,
+            `Copy color ${color.index + 1} as hex`,
+        );
+        const rgbButton = createCopyButton(
+            "rgb",
+            rgb,
+            `${rgb} copied.`,
+            `Copy color ${color.index + 1} as RGB`,
+        );
+
+        value.append(name, code);
+        actions.append(oklchButton, hexButton, rgbButton);
+        item.append(colorPreview, value, actions);
+
+        return item;
+    }
+
+    function updateControlOutputs(settings) {
+        outputs.count.value = settings.count;
+        outputs.lightness.value = settings.lightness.toFixed(2);
+        outputs.chroma.value = settings.chroma.toFixed(3);
+        outputs.startHue.value = settings.maximizeDistance ? "Auto" : `${settings.startHue}°`;
+    }
+
+    function updatePaletteSummary(settings, palette) {
+        if (!settings.colorBlindSpacing && !settings.maximizeDistance) {
+            const hueStep = 360 / settings.count;
+
+            orbit.setAttribute("aria-label", `${settings.count} colors separated by ${formatNumber(hueStep)} degrees`);
+            hueStepOutput.textContent = `${formatNumber(hueStep)}°`;
+            orbitMetricLabel.textContent = "Hue interval";
+            resultsDescription.textContent = "Equal hue intervals across 360°";
+            return;
+        }
+
+        const distances = getHueDistanceTable(settings.lightness, settings.chroma);
+        const hues = palette.map((color) => color.hue);
+        const score = calculatePaletteScore(hues, distances);
+
+        const optimizationDescription = settings.colorBlindSpacing
+            ? "color-vision deficiencies"
+            : "minimum perceptual distance";
+
+        orbit.setAttribute("aria-label", `${settings.count} colors optimized for ${optimizationDescription}`);
+        hueStepOutput.textContent = formatNumber(score.minimumDistance, 3);
+        orbitMetricLabel.textContent = "Minimum ΔE OK";
+
+        resultsDescription.textContent = settings.colorBlindSpacing
+            ? "Prevalence-weighted deutan, protan, and tritan spacing"
+            : "Equal hue intervals at the best-scoring orientation";
+    }
+
+    function renderPalette() {
+        const inputSettings = readSettings();
+
+        inputs.startHue.disabled = inputSettings.maximizeDistance;
+
+        const resolvedPalette = resolvePalette(inputSettings);
+        const { settings, palette } = resolvedPalette;
+
+        copyStatus.textContent = "";
+        updateControlOutputs(settings);
+        updatePaletteSummary(settings, palette);
+        orbit.style.setProperty("--orbit-gradient", createOrbitGradient(palette));
+        swatchList.replaceChildren(...palette.map(createSwatch));
+        cssOutput.textContent = createCssVariables(palette);
+        saveSettings(settings);
+    }
+
+    async function copyText(text, successMessage) {
+        try {
+            await navigator.clipboard.writeText(text);
+            copyStatus.textContent = successMessage;
+        } catch {
+            copyStatus.textContent = "Clipboard unavailable. Select text from CSS variables instead.";
+        }
+    }
+
+    async function resetSettings() {
+        if (!await one.confirm("Reset all settings to default?")) {
+            return;
+        }
+
+        applySettingsToInputs(DEFAULT_SETTINGS);
+        renderPalette();
+        one.alert("Settings reset to defaults.");
+    }
+
+    form.addEventListener("input", renderPalette);
+    document.getElementById("reset-settings").addEventListener("click", resetSettings);
+
+    swatchList.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-copy-value]");
+
+        if (!button) {
+            return;
+        }
+
+        copyText(button.dataset.copyValue, button.dataset.copyMessage);
+    });
+
+    document.getElementById("copy-css-button").addEventListener("click", () => {
+        copyText(cssOutput.textContent, "CSS variables copied.");
+    });
+
+    loadSettings();
+    renderPalette();
+</script>
+</body>
+
+</html>

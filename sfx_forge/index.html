@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="en" class="theme-olive">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="sfxr-style retro sound effect generator: pick a preset, randomize, tweak sliders, export WAV or a Motif sample generator.">
+    <title>SFX Forge — Retro Sound Effect Generator</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        .param-grid {
+            display: grid;
+            grid-template-columns: 8.5rem 1fr 3rem;
+            gap: var(--spacing-xs) var(--spacing-sm);
+            align-items: center;
+        }
+
+        .param-grid > label {
+            margin: 0;
+        }
+
+        .param-grid > input[type="range"] {
+            margin: 0;
+        }
+
+        .param-grid > output {
+            font-size: 0.875rem;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+            color: var(--on-surface-variant);
+        }
+
+        #waveform-canvas {
+            display: block;
+            width: 100%;
+            height: 150px;
+            border: var(--border-width) solid var(--outline-variant);
+            border-radius: var(--radius-sm);
+            background-color: var(--surface-container);
+            color: var(--primary);
+            touch-action: none;
+        }
+
+        @media (max-width: 560px) {
+            .param-grid {
+                grid-template-columns: 6rem 1fr 2.75rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<a href="#content" class="skip-link">Skip to content</a>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn"></label>
+    <hgroup>
+        <h1>SFX Forge</h1>
+        <p>Retro sound effects, forged from a seed.</p>
+    </hgroup>
+</header>
+
+<main id="content">
+
+    <section id="generator">
+        <h2>Generate</h2>
+        <p>
+            Pick a preset, then randomize or mutate until it sounds right. Every sound is a pure
+            function of its parameters and seed, so it can be reproduced exactly.
+        </p>
+
+        <div class="group" role="group" aria-label="Presets">
+            <button type="button" data-preset="coin">Coin</button>
+            <button type="button" data-preset="laser">Laser</button>
+            <button type="button" data-preset="explosion">Explosion</button>
+            <button type="button" data-preset="powerup">Powerup</button>
+            <button type="button" data-preset="hurt">Hurt</button>
+            <button type="button" data-preset="jump">Jump</button>
+            <button type="button" data-preset="blip">Blip</button>
+            <button type="button" data-preset="random">
+                <span class="sym" aria-hidden="true">casino</span> Random
+            </button>
+            <button type="button" id="mutate-btn">
+                <span class="sym" aria-hidden="true">shuffle</span> Mutate
+            </button>
+        </div>
+
+        <canvas id="waveform-canvas" role="img"
+                aria-label="Waveform of the current sound"></canvas>
+        <p id="waveform-readout" class="text-muted">No sound generated yet.</p>
+
+        <div class="group">
+            <button type="button" id="play-btn" class="btn-primary">
+                <span class="sym" aria-hidden="true">play_arrow</span> Play <kbd>Space</kbd>
+            </button>
+            <button type="button" id="download-btn">
+                <span class="sym" aria-hidden="true">download</span> Download WAV
+            </button>
+            <button type="button" id="copy-motif-btn">
+                <span class="sym" aria-hidden="true">content_copy</span> Copy as Motif sample
+            </button>
+            <button type="button" id="share-btn">
+                <span class="sym" aria-hidden="true">link</span> Copy link
+            </button>
+            <button type="button" id="reset-btn">
+                <span class="sym" aria-hidden="true">refresh</span> Reset
+            </button>
+        </div>
+
+        <div class="input-row">
+            <label for="seed-input">Seed</label>
+            <input type="number" id="seed-input" min="0" max="4294967295" step="1" value="0">
+            <button type="button" id="reseed-btn" class="btn-sym" aria-label="New random seed"
+                    data-tooltip="New random seed">casino
+            </button>
+        </div>
+
+        <!-- Announcements only: every message is already visible in the
+             readout above, the footer, or a toast -->
+        <p id="status" role="status" aria-live="polite" class="sr-only"></p>
+    </section>
+
+    <section id="parameters">
+        <h2>Parameters</h2>
+        <form id="params-form">
+            <fieldset>
+                <legend>Waveform</legend>
+                <div class="segmented-control" role="group" aria-label="Waveform">
+                    <input type="radio" name="waveform" id="wave-square" value="square" checked>
+                    <label for="wave-square">Square</label>
+
+                    <input type="radio" name="waveform" id="wave-saw" value="saw">
+                    <label for="wave-saw">Saw</label>
+
+                    <input type="radio" name="waveform" id="wave-sine" value="sine">
+                    <label for="wave-sine">Sine</label>
+
+                    <input type="radio" name="waveform" id="wave-noise" value="noise">
+                    <label for="wave-noise">Noise</label>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Envelope</legend>
+                <div class="param-grid">
+                    <label for="p-attack">Attack</label>
+                    <input type="range" id="p-attack" data-param="attack" min="0" max="1"
+                           step="0.001" value="0">
+                    <output for="p-attack" id="out-attack">0.00</output>
+
+                    <label for="p-sustain">Sustain</label>
+                    <input type="range" id="p-sustain" data-param="sustain" min="0" max="1"
+                           step="0.001" value="0.3">
+                    <output for="p-sustain" id="out-sustain">0.30</output>
+
+                    <label for="p-punch">Punch</label>
+                    <input type="range" id="p-punch" data-param="punch" min="0" max="1"
+                           step="0.001" value="0">
+                    <output for="p-punch" id="out-punch">0.00</output>
+
+                    <label for="p-decay">Decay</label>
+                    <input type="range" id="p-decay" data-param="decay" min="0" max="1"
+                           step="0.001" value="0.4">
+                    <output for="p-decay" id="out-decay">0.40</output>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Pitch</legend>
+                <div class="param-grid">
+                    <label for="p-start-freq">Start frequency</label>
+                    <input type="range" id="p-start-freq" data-param="startFreq" min="0" max="1"
+                           step="0.001" value="0.3">
+                    <output for="p-start-freq" id="out-start-freq">0.30</output>
+
+                    <label for="p-min-freq">Min frequency</label>
+                    <input type="range" id="p-min-freq" data-param="minFreq" min="0" max="1"
+                           step="0.001" value="0">
+                    <output for="p-min-freq" id="out-min-freq">0.00</output>
+
+                    <label for="p-slide">Slide</label>
+                    <input type="range" id="p-slide" data-param="slide" min="-1" max="1"
+                           step="0.001" value="0">
+                    <output for="p-slide" id="out-slide">0.00</output>
+
+                    <label for="p-delta-slide">Delta slide</label>
+                    <input type="range" id="p-delta-slide" data-param="deltaSlide" min="-1" max="1"
+                           step="0.001" value="0">
+                    <output for="p-delta-slide" id="out-delta-slide">0.00</output>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Vibrato</legend>
+                <div class="param-grid">
+                    <label for="p-vibrato-depth">Depth</label>
+                    <input type="range" id="p-vibrato-depth" data-param="vibratoDepth" min="0"
+                           max="1" step="0.001" value="0">
+                    <output for="p-vibrato-depth" id="out-vibrato-depth">0.00</output>
+
+                    <label for="p-vibrato-speed">Speed</label>
+                    <input type="range" id="p-vibrato-speed" data-param="vibratoSpeed" min="0"
+                           max="1" step="0.001" value="0">
+                    <output for="p-vibrato-speed" id="out-vibrato-speed">0.00</output>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Arpeggio</legend>
+                <div class="param-grid">
+                    <label for="p-arp-mod">Pitch jump</label>
+                    <input type="range" id="p-arp-mod" data-param="arpMod" min="-1" max="1"
+                           step="0.001" value="0">
+                    <output for="p-arp-mod" id="out-arp-mod">0.00</output>
+
+                    <label for="p-arp-speed">Speed</label>
+                    <input type="range" id="p-arp-speed" data-param="arpSpeed" min="0" max="1"
+                           step="0.001" value="0">
+                    <output for="p-arp-speed" id="out-arp-speed">0.00</output>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Square duty</legend>
+                <div class="param-grid">
+                    <label for="p-duty">Duty</label>
+                    <input type="range" id="p-duty" data-param="duty" min="0" max="1" step="0.001"
+                           value="0">
+                    <output for="p-duty" id="out-duty">0.00</output>
+
+                    <label for="p-duty-sweep">Sweep</label>
+                    <input type="range" id="p-duty-sweep" data-param="dutySweep" min="-1" max="1"
+                           step="0.001" value="0">
+                    <output for="p-duty-sweep" id="out-duty-sweep">0.00</output>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Repeat</legend>
+                <div class="param-grid">
+                    <label for="p-repeat-speed">Repeat speed</label>
+                    <input type="range" id="p-repeat-speed" data-param="repeatSpeed" min="0" max="1"
+                           step="0.001" value="0">
+                    <output for="p-repeat-speed" id="out-repeat-speed">0.00</output>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Flanger</legend>
+                <div class="param-grid">
+                    <label for="p-phaser-offset">Offset</label>
+                    <input type="range" id="p-phaser-offset" data-param="phaserOffset" min="-1"
+                           max="1" step="0.001" value="0">
+                    <output for="p-phaser-offset" id="out-phaser-offset">0.00</output>
+
+                    <label for="p-phaser-sweep">Sweep</label>
+                    <input type="range" id="p-phaser-sweep" data-param="phaserSweep" min="-1"
+                           max="1" step="0.001" value="0">
+                    <output for="p-phaser-sweep" id="out-phaser-sweep">0.00</output>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Low-pass filter</legend>
+                <div class="param-grid">
+                    <label for="p-lpf-cutoff">Cutoff</label>
+                    <input type="range" id="p-lpf-cutoff" data-param="lpfCutoff" min="0" max="1"
+                           step="0.001" value="1">
+                    <output for="p-lpf-cutoff" id="out-lpf-cutoff">1.00</output>
+
+                    <label for="p-lpf-sweep">Cutoff sweep</label>
+                    <input type="range" id="p-lpf-sweep" data-param="lpfSweep" min="-1" max="1"
+                           step="0.001" value="0">
+                    <output for="p-lpf-sweep" id="out-lpf-sweep">0.00</output>
+
+                    <label for="p-lpf-resonance">Resonance</label>
+                    <input type="range" id="p-lpf-resonance" data-param="lpfResonance" min="0"
+                           max="1" step="0.001" value="0">
+                    <output for="p-lpf-resonance" id="out-lpf-resonance">0.00</output>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>High-pass filter</legend>
+                <div class="param-grid">
+                    <label for="p-hpf-cutoff">Cutoff</label>
+                    <input type="range" id="p-hpf-cutoff" data-param="hpfCutoff" min="0" max="1"
+                           step="0.001" value="0">
+                    <output for="p-hpf-cutoff" id="out-hpf-cutoff">0.00</output>
+
+                    <label for="p-hpf-sweep">Cutoff sweep</label>
+                    <input type="range" id="p-hpf-sweep" data-param="hpfSweep" min="-1" max="1"
+                           step="0.001" value="0">
+                    <output for="p-hpf-sweep" id="out-hpf-sweep">0.00</output>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Output</legend>
+                <div class="param-grid">
+                    <label for="p-volume">Sound volume</label>
+                    <input type="range" id="p-volume" data-param="volume" min="0" max="1"
+                           step="0.001" value="0.5">
+                    <output for="p-volume" id="out-volume">0.50</output>
+                </div>
+            </fieldset>
+        </form>
+    </section>
+
+</main>
+
+<aside>
+    <h2>Library</h2>
+
+    <form id="save-form">
+        <fieldset>
+            <legend>Master volume</legend>
+            <div class="param-grid">
+                <label for="master-volume">Level</label>
+                <input type="range" id="master-volume" min="0" max="1" step="0.01" value="0.3">
+                <output for="master-volume" id="out-master-volume">0.30</output>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Save current sound</legend>
+            <label for="sound-name">Name</label>
+            <input type="text" id="sound-name" autocomplete="off" placeholder="coin" required>
+            <div class="form-actions">
+                <button type="submit">
+                    <span class="sym" aria-hidden="true">save</span> Save
+                </button>
+            </div>
+        </fieldset>
+    </form>
+
+    <h3>Saved sounds</h3>
+    <ul id="library-list">
+        <li id="library-empty" class="text-muted">Nothing saved yet.</li>
+    </ul>
+</aside>
+
+<script src="../one.js"></script>
+<script type="module">
+    import {
+        clampParams,
+        defaultParams,
+        encodeWav,
+        kebabCase,
+        mutate,
+        randomPreset,
+        rng,
+        synthesize,
+        toMotifSample,
+    } from "./sfx.js";
+
+    const SAMPLE_RATE = 44100;
+    const PREVIEW_DEBOUNCE_MS = 100;
+    const LIBRARY_KEY = "sfx-forge-library";
+    const MASTER_VOLUME_KEY = "sfx-forge-master-volume";
+    const DEFAULT_MASTER_VOLUME = 0.3;
+    const HASH_PREFIX = "#v1.";
+    const MUTATED_SUFFIX = " mutated";
+    const MAX_SEED = 4294967295;
+
+    const form = document.getElementById("params-form");
+    const sliders = [...form.querySelectorAll("input[type=range][data-param]")];
+    const waveformRadios = [...form.querySelectorAll("input[name=waveform]")];
+    const seedInput = document.getElementById("seed-input");
+    const statusEl = document.getElementById("status");
+    const readoutEl = document.getElementById("waveform-readout");
+    const canvas = document.getElementById("waveform-canvas");
+    const nameInput = document.getElementById("sound-name");
+    const libraryList = document.getElementById("library-list");
+    const masterVolumeInput = document.getElementById("master-volume");
+    const masterVolumeOut = document.getElementById("out-master-volume");
+    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+    let params = defaultParams();
+    let presetLabel = "default";
+    let samples = new Float32Array(1);
+    let masterVolume = DEFAULT_MASTER_VOLUME;
+    let audioContext = null;
+    let masterGain = null;
+    let previewTimer = 0;
+    let playbackStart = 0;
+    let playbackDuration = 0;
+    let animationHandle = 0;
+    let hoverRatio = -1;
+    let booted = false;
+    let columns = new Float32Array(0);
+    let columnsWidth = -1;
+
+    function outputFor(slider) {
+        return document.getElementById(slider.id.replace(/^p-/, "out-"));
+    }
+
+    function randomSeed() {
+        return Math.floor(Math.random() * (MAX_SEED + 1));
+    }
+
+    function readStored(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw === null ? fallback : JSON.parse(raw);
+        } catch (e) {
+            return fallback;
+        }
+    }
+
+    function writeStored(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+            one.alert("Could not save to local storage.");
+        }
+    }
+
+    // --- audio ---------------------------------------------------------------
+
+    function ensureAudio() {
+        if (audioContext) return audioContext;
+
+        audioContext = new (window.AudioContext ?? window.webkitAudioContext)();
+        masterGain = audioContext.createGain();
+        masterGain.gain.value = masterVolume;
+        masterGain.connect(audioContext.destination);
+        return audioContext;
+    }
+
+    function play() {
+        const ctx = ensureAudio();
+        if (ctx.state === "suspended") ctx.resume();
+
+        // Rendered at a fixed 44.1 kHz; the source node resamples if the device differs
+        const buffer = ctx.createBuffer(1, samples.length, SAMPLE_RATE);
+        buffer.getChannelData(0).set(samples);
+
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(masterGain);
+        source.start();
+
+        playbackStart = performance.now();
+        playbackDuration = buffer.duration * 1000;
+        startPlayhead();
+    }
+
+    function startPlayhead() {
+        if (reducedMotion.matches) return;
+        if (animationHandle) return;
+
+        const step = () => {
+            animationHandle = 0;
+            drawWaveform();
+            if (performance.now() - playbackStart < playbackDuration) {
+                animationHandle = requestAnimationFrame(step);
+            }
+        };
+        animationHandle = requestAnimationFrame(step);
+    }
+
+    // --- waveform canvas -----------------------------------------------------
+
+    // One column per device pixel, each holding the min/max span of its samples.
+    // Cached so the playhead animation never rescans the whole buffer.
+    function computeColumns(width) {
+        columns = new Float32Array(width * 2);
+
+        for (let x = 0; x < width; x++) {
+            const from = Math.floor((x / width) * samples.length);
+            const to = Math.min(samples.length, Math.max(from + 1, Math.floor(((x + 1) / width) * samples.length)));
+            let min = 0;
+            let max = 0;
+            for (let i = from; i < to; i++) {
+                if (samples[i] < min) min = samples[i];
+                if (samples[i] > max) max = samples[i];
+            }
+            columns[x * 2] = min;
+            columns[x * 2 + 1] = max;
+        }
+
+        columnsWidth = width;
+    }
+
+    function drawWaveform() {
+        const styles = getComputedStyle(canvas);
+        const ratio = window.devicePixelRatio || 1;
+        const width = Math.max(1, Math.round(canvas.clientWidth * ratio));
+        const height = Math.max(1, Math.round(canvas.clientHeight * ratio));
+
+        if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, width, height);
+
+        const middle = height / 2;
+        ctx.strokeStyle = styles.borderColor;
+        ctx.lineWidth = ratio;
+        ctx.beginPath();
+        ctx.moveTo(0, middle);
+        ctx.lineTo(width, middle);
+        ctx.stroke();
+
+        if (columnsWidth !== width) computeColumns(width);
+
+        ctx.strokeStyle = styles.color;
+        ctx.lineWidth = ratio;
+        ctx.beginPath();
+        for (let x = 0; x < width; x++) {
+            const top = middle - columns[x * 2 + 1] * middle * 0.94;
+            const bottom = middle - columns[x * 2] * middle * 0.94;
+            ctx.moveTo(x + 0.5, top);
+            ctx.lineTo(x + 0.5, Math.max(bottom, top + ratio));
+        }
+        ctx.stroke();
+
+        drawMarker(ctx, width, height, ratio, hoverRatio, styles.color);
+
+        const elapsed = performance.now() - playbackStart;
+        if (elapsed < playbackDuration && !reducedMotion.matches) {
+            drawMarker(ctx, width, height, ratio, elapsed / playbackDuration, styles.color);
+        }
+    }
+
+    function drawMarker(ctx, width, height, ratio, position, color) {
+        if (position < 0 || position > 1) return;
+
+        const x = Math.round(position * width) + 0.5;
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = ratio;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function describeAt(position) {
+        const index = Math.min(samples.length - 1, Math.floor(position * samples.length));
+        const millis = ((index / SAMPLE_RATE) * 1000).toFixed(1);
+        return `${millis} ms · amplitude ${samples[index].toFixed(3)}`;
+    }
+
+    function updateReadout() {
+        const seconds = (samples.length / SAMPLE_RATE).toFixed(3);
+        const suffix = hoverRatio >= 0 ? ` · ${describeAt(hoverRatio)}` : "";
+        readoutEl.textContent = `${presetLabel} · seed ${params.seed} · ${seconds} s (${samples.length} samples)${suffix}`;
+    }
+
+    // --- state ---------------------------------------------------------------
+
+    function syncControls() {
+        for (const slider of sliders) {
+            slider.value = params[slider.dataset.param];
+            outputFor(slider).value = Number(slider.value).toFixed(2);
+        }
+        for (const radio of waveformRadios) radio.checked = radio.value === params.waveform;
+        seedInput.value = params.seed;
+    }
+
+    function updateHash() {
+        const encoded = btoa(JSON.stringify(params)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        history.replaceState(null, "", HASH_PREFIX + encoded);
+    }
+
+    function render() {
+        samples = synthesize(params, SAMPLE_RATE);
+        hoverRatio = -1;
+        columnsWidth = -1;
+        drawWaveform();
+        updateReadout();
+
+        // The URL only starts carrying state once the user actually changes something
+        if (booted) updateHash();
+    }
+
+    function announce(message) {
+        statusEl.textContent = message;
+    }
+
+    // Always called straight from a user gesture, so the context may be created here
+    function schedulePreview() {
+        ensureAudio();
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(play, PREVIEW_DEBOUNCE_MS);
+    }
+
+    function applyParams(next, label, { announceIt = true, autoplay = true } = {}) {
+        params = clampParams(next);
+        presetLabel = label;
+        syncControls();
+        render();
+        if (announceIt) announce(`${label}, seed ${params.seed}`);
+        if (autoplay) schedulePreview();
+    }
+
+    function generatePreset(name) {
+        const seed = randomSeed();
+        applyParams(randomPreset(name, rng(seed), seed), name);
+        if (!nameInput.value.trim()) nameInput.value = name;
+    }
+
+    // --- library -------------------------------------------------------------
+
+    function loadLibrary() {
+        const stored = readStored(LIBRARY_KEY, {});
+        return stored && typeof stored === "object" ? stored : {};
+    }
+
+    function renderLibrary() {
+        const library = loadLibrary();
+        const names = Object.keys(library).sort();
+        libraryList.textContent = "";
+
+        if (names.length === 0) {
+            const empty = document.createElement("li");
+            empty.className = "text-muted";
+            empty.textContent = "Nothing saved yet.";
+            libraryList.append(empty);
+            return;
+        }
+
+        for (const name of names) {
+            const item = document.createElement("li");
+
+            const load = document.createElement("button");
+            load.type = "button";
+            load.textContent = name;
+            load.addEventListener("click", () => {
+                nameInput.value = name;
+                applyParams(library[name], name);
+            });
+
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.className = "btn-sym btn-danger";
+            remove.textContent = "delete";
+            remove.setAttribute("aria-label", `Delete ${name}`);
+            remove.addEventListener("click", async () => {
+                if (!(await one.confirm(`Delete "${name}"?`))) return;
+                const current = loadLibrary();
+                delete current[name];
+                writeStored(LIBRARY_KEY, current);
+                renderLibrary();
+                announce(`${name} deleted`);
+            });
+
+            item.append(load, remove);
+            libraryList.append(item);
+        }
+    }
+
+    // --- exports -------------------------------------------------------------
+
+    function currentName() {
+        return nameInput.value.trim() || presetLabel;
+    }
+
+    function downloadWav() {
+        const wav = encodeWav(samples, SAMPLE_RATE, 16);
+        const slug = kebabCase(currentName()).replace(/-/g, "_");
+        const suffix = params.seed.toString(16).padStart(4, "0").slice(-4);
+        const url = URL.createObjectURL(new Blob([wav], { type: "audio/wav" }));
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${slug}_${suffix}.wav`;
+        link.click();
+        URL.revokeObjectURL(url);
+        announce(`Downloaded ${link.download}`);
+    }
+
+    // --- hash restore --------------------------------------------------------
+
+    function restoreFromHash() {
+        const hash = location.hash;
+        if (!hash.startsWith(HASH_PREFIX)) return false;
+
+        try {
+            const encoded = hash.slice(HASH_PREFIX.length).replace(/-/g, "+").replace(/_/g, "/");
+            const decoded = JSON.parse(atob(encoded));
+            if (!decoded || typeof decoded !== "object") throw new Error("not an object");
+            applyParams(decoded, "shared sound", { autoplay: false });
+            return true;
+        } catch (e) {
+            one.alert("The link's sound data is corrupt — starting from the default sound.");
+            return false;
+        }
+    }
+
+    // --- events --------------------------------------------------------------
+
+    for (const button of document.querySelectorAll("[data-preset]")) {
+        button.addEventListener("click", () => generatePreset(button.dataset.preset));
+    }
+
+    document.getElementById("mutate-btn").addEventListener("click", () => {
+        const label = presetLabel.endsWith(MUTATED_SUFFIX) ? presetLabel : presetLabel + MUTATED_SUFFIX;
+        applyParams(mutate(params, rng(randomSeed())), label);
+    });
+
+    for (const slider of sliders) {
+        slider.addEventListener("input", () => {
+            params = clampParams({ ...params, [slider.dataset.param]: Number(slider.value) });
+            outputFor(slider).value = Number(slider.value).toFixed(2);
+            render();
+            schedulePreview();
+        });
+    }
+
+    for (const radio of waveformRadios) {
+        radio.addEventListener("change", () => {
+            params = clampParams({ ...params, waveform: radio.value });
+            render();
+            schedulePreview();
+        });
+    }
+
+    seedInput.addEventListener("change", () => {
+        params = clampParams({ ...params, seed: Number(seedInput.value) });
+        seedInput.value = params.seed;
+        render();
+        schedulePreview();
+    });
+
+    document.getElementById("reseed-btn").addEventListener("click", () => {
+        applyParams({ ...params, seed: randomSeed() }, presetLabel);
+    });
+
+    document.getElementById("play-btn").addEventListener("click", play);
+    document.getElementById("download-btn").addEventListener("click", downloadWav);
+    document.getElementById("reset-btn").addEventListener("click", () => {
+        applyParams(defaultParams(), "default", { autoplay: false });
+    });
+
+    document.getElementById("copy-motif-btn").addEventListener("click", () => {
+        one.copy(toMotifSample(params, params.seed, currentName()));
+    });
+
+    document.getElementById("share-btn").addEventListener("click", () => {
+        updateHash();
+        one.copy(location.href);
+    });
+
+    document.getElementById("save-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const name = nameInput.value.trim();
+        if (!name) return;
+
+        const library = loadLibrary();
+        library[name] = { ...params };
+        writeStored(LIBRARY_KEY, library);
+        renderLibrary();
+        announce(`Saved ${name}`);
+        one.alert(`Saved "${name}" to the library.`);
+    });
+
+    masterVolumeInput.addEventListener("input", () => {
+        masterVolume = Number(masterVolumeInput.value);
+        masterVolumeOut.value = masterVolume.toFixed(2);
+        if (masterGain) masterGain.gain.value = masterVolume;
+        writeStored(MASTER_VOLUME_KEY, masterVolume);
+    });
+
+    canvas.addEventListener("pointermove", (event) => {
+        const rect = canvas.getBoundingClientRect();
+        hoverRatio = (event.clientX - rect.left) / rect.width;
+        drawWaveform();
+        updateReadout();
+    });
+
+    canvas.addEventListener("pointerleave", () => {
+        hoverRatio = -1;
+        drawWaveform();
+        updateReadout();
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.code !== "Space" || event.metaKey || event.ctrlKey || event.altKey) return;
+        if (event.target?.closest?.("input, textarea, select, button, a, [contenteditable]")) return;
+
+        event.preventDefault();
+        play();
+    });
+
+    new ResizeObserver(() => drawWaveform()).observe(canvas);
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => drawWaveform());
+
+    // --- boot ----------------------------------------------------------------
+
+    masterVolume = Number(readStored(MASTER_VOLUME_KEY, DEFAULT_MASTER_VOLUME));
+    if (!Number.isFinite(masterVolume) || masterVolume < 0 || masterVolume > 1) {
+        masterVolume = DEFAULT_MASTER_VOLUME;
+    }
+    masterVolumeInput.value = masterVolume;
+    masterVolumeOut.value = masterVolume.toFixed(2);
+
+    renderLibrary();
+
+    if (!restoreFromHash()) {
+        applyParams(defaultParams(), "default", { announceIt: false, autoplay: false });
+    }
+    booted = true;
+</script>
+
+</body>
+
+</html>
