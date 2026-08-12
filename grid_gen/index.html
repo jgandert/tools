@@ -218,13 +218,13 @@
             <input type="checkbox" role="switch" id="fit-toggle" checked>
         </label>
 
-        <label id="bg-toggle-container">
-                    <span>
-                        Show Real Colors <span class="input-label-hint">Turn off to invert
-                            black lines for visibility in Dark Mode</span>
-                    </span>
-            <input type="checkbox" role="switch" id="show-output-bg">
+        <label for="show-output-bg" id="bg-toggle-container">
+            Show Real Colors
+            <input type="checkbox" role="switch" id="show-output-bg"
+                   aria-describedby="show-output-bg-hint">
         </label>
+        <small id="show-output-bg-hint">Turn off to invert black lines for visibility in Dark
+            Mode.</small>
     </fieldset>
 
     <!-- CANVAS SETTINGS -->

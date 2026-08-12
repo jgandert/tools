@@ -1122,7 +1122,7 @@ small {
 }
 
 /* Tighten spacing when following elements with standard bottom margin to maintain a 4px gap */
-:is(input, textarea, select, p, ul, ol, dl, pre, blockquote, figure, hr, table) + small {
+:is(input, textarea, select, label:has(input[role="switch"]), p, ul, ol, dl, pre, blockquote, figure, hr, table) + small {
     margin-top: calc(var(--spacing-md) * -1 + 4px);
 }
 
@@ -1441,13 +1441,6 @@ label:has(input[role="switch"]) {
 label:has(input[role="switch"]):last-child,
 .group > label:has(input[role="switch"]) {
     margin-bottom: 0;
-}
-
-.input-label-hint {
-    display: block;
-    font-size: 0.8em;
-    color: var(--on-surface-variant);
-    margin-top: 4px;
 }
 
 input[role="switch"] {

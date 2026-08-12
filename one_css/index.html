@@ -652,14 +652,11 @@
             </label>
         </div>
 
-        <h3>Label Hints</h3>
-        <label for="demo-slug">
-            Project Slug
-            <span class="input-label-hint">Lowercase letters and dashes only — a
-                <code>.input-label-hint</code> span inside the label renders as a muted
-                second line.</span>
-        </label>
-        <input type="text" id="demo-slug" placeholder="my-project">
+        <h3>Helper Text</h3>
+        <label for="demo-slug">Project Slug</label>
+        <input type="text" id="demo-slug" placeholder="my-project"
+               aria-describedby="demo-slug-hint">
+        <small id="demo-slug-hint">Lowercase letters and dashes only.</small>
 
         <h3>File Drop Area</h3>
         <p>

@@ -351,8 +351,10 @@
 
         <div class="mt-4">
             <label for="duration-input">Test Duration</label>
-            <input type="text" id="duration-input" value="1m" placeholder="e.g. 1m, 30s, 2m">
-            <span class="input-label-hint">Format: e.g., 1m, 30s, 2m. Defaults to minutes if no unit is specified.</span>
+            <input type="text" id="duration-input" value="1m" placeholder="e.g. 1m, 30s, 2m"
+                   aria-describedby="duration-input-hint">
+            <small id="duration-input-hint">Format: e.g., 1m, 30s, 2m. Defaults to minutes if no
+                unit is specified.</small>
         </div>
 
         <div class="mt-4">
