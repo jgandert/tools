@@ -1,6 +1,6 @@
 /**
  * Zero-dependency client-side Markdown to HTML renderer.
- * Converts markdown (e.g., QUERY.md) into styled HTML structures.
+ * Converts markdown (e.g., QUERY.md, md-showcase.md) into styled HTML structures.
  *
  * @example Browser Usage:
  * <script src="md-renderer.js"></script>
@@ -33,65 +33,6 @@ function escapeHtml(str) {
 }
 
 /**
- * Parses inline formatting: `code`, ![img](url), ***bold-italic***, **bold**, *italic*, and [links](url).
- * @param {string} text
- * @returns {string} HTML string
- */
-function parseInline(text) {
-    if (!text) return "";
-
-    const uniquePrefix = `\uFFFC_${Math.random().toString(36).substring(2, 9)}_`;
-    const tokens = [];
-
-    function addToken(html) {
-        const placeholder = `${uniquePrefix}${tokens.length}\uFFFC`;
-        tokens.push(html);
-        return placeholder;
-    }
-
-    // Process inline code blocks first using safe random placeholder
-    text = text.replace(/`([^`]+)`/g, (_, code) => {
-        return addToken(`<code>${escapeHtml(code)}</code>`);
-    });
-
-    // Escape raw HTML characters
-    text = escapeHtml(text);
-
-    // Markdown Images: ![alt text](url)
-    text = text.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()\s]*\))+)\)/g, (_, altText, url) => {
-        const safeUrl = escapeHtml(url.trim());
-        const safeAlt = escapeHtml(altText.trim());
-        return addToken(`<img src="${safeUrl}" alt="${safeAlt}">`);
-    });
-
-    // Markdown Links: [link text](url) - supports balanced parentheses in URLs
-    text = text.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)\)/g, (_, linkText, url) => {
-        const safeUrl = escapeHtml(url.trim());
-        const formattedText = parseInline(linkText);
-        return addToken(`<a href="${safeUrl}" target="_blank" rel="noopener">${formattedText}</a>`);
-    });
-
-    // Triple Emphasis: ***text*** or ___text___
-    text = text.replace(/\*\*\*(.*?)\*\*\*/g, "<strong><em>$1</em></strong>");
-    text = text.replace(/___(.*?)___/g, "<strong><em>$1</em></strong>");
-
-    // Bold / Strong: **text** or __text__
-    text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-    text = text.replace(/\b__(.*?)__\b/g, "<strong>$1</strong>");
-
-    // Italic / Emphasis: *text* or _text_
-    text = text.replace(/(^|\s)\*([^\s*]|[^\s*].*?[^\s*])\*(?=\s|$|[.,!?:;()])/g, "$1<em>$2</em>");
-    text = text.replace(/(^|\s)_([^\s_]|[^\s_].*?[^\s_])_(?=\s|$|[.,!?:;()])/g, "$1<em>$2</em>");
-
-    // Restore tokens
-    tokens.forEach((token, index) => {
-        text = text.replace(`${uniquePrefix}${index}\uFFFC`, token);
-    });
-
-    return text;
-}
-
-/**
  * Splits a table row by unescaped '|' delimiters, respecting escaped pipes (\|) and pipes inside inline code.
  * @param {string} rowStr
  * @returns {string[]} Cell strings
@@ -115,6 +56,7 @@ function splitTableRow(rowStr) {
 function slugify(text) {
     return text
         .toLowerCase()
+        .replace(/\{#[^}]+\}/g, "")
         .replace(/`([^`]+)`/g, "$1")
         .replace(/<[^>]+>/g, "")
         .replace(/[^\w\s-]/g, "")
@@ -130,7 +72,8 @@ function slugify(text) {
  * @returns {string} Unique slug
  */
 function getUniqueSlug(rawHeader, slugCounts, prefix = "") {
-    let slug = slugify(rawHeader) || "heading";
+    const explicitMatch = rawHeader.match(/\{#([a-zA-Z0-9_-]+)[^}]*\}/);
+    let slug = explicitMatch ? explicitMatch[1] : (slugify(rawHeader) || "heading");
     if (prefix) slug = `${prefix}${slug}`;
     if (slugCounts[slug] !== undefined) {
         slugCounts[slug]++;
@@ -149,6 +92,7 @@ function getUniqueSlug(rawHeader, slugCounts, prefix = "") {
  * @returns {Array<{ level: number, title: string, slug: string, rawText: string }>} Headings list
  */
 function extractHeadings(markdown, options = {}) {
+    markdown = markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
     const lines = markdown.split(/\r?\n/);
     const headings = [];
     const slugCounts = {};
@@ -179,10 +123,34 @@ function extractHeadings(markdown, options = {}) {
         const headerMatch = line.match(/^\s{0,3}(#{1,6})\s+(.*)$/);
         if (headerMatch) {
             const level = headerMatch[1].length;
-            const rawHeader = headerMatch[2].replace(/\s*#+\s*$/, "").trim();
-            const title = parseInline(rawHeader);
+            let rawHeader = headerMatch[2].replace(/\s*#+\s*$/, "").trim();
+            const explicitMatch = rawHeader.match(/\s*\{#([a-zA-Z0-9_-]+)[^}]*\}\s*$/);
             const slug = getUniqueSlug(rawHeader, slugCounts, slugPrefix);
+            if (explicitMatch) {
+                rawHeader = rawHeader.replace(/\s*\{#([a-zA-Z0-9_-]+)[^}]*\}\s*$/, "").trim();
+            }
+            const title = parseInline(rawHeader);
             headings.push({ level, title, slug, rawText: rawHeader });
+            continue;
+        }
+
+        if (i + 1 < lines.length && line.trim() && !line.match(/^\s{0,3}(?:[-*+]|\d+[.)]|>|\|)/)) {
+            const nextLine = lines[i + 1].trim();
+            if (/^={2,}\s*$/.test(nextLine)) {
+                const rawHeader = line.trim();
+                const slug = getUniqueSlug(rawHeader, slugCounts, slugPrefix);
+                const title = parseInline(rawHeader);
+                headings.push({ level: 1, title, slug, rawText: rawHeader });
+                i++;
+                continue;
+            } else if (/^-{2,}\s*$/.test(nextLine)) {
+                const rawHeader = line.trim();
+                const slug = getUniqueSlug(rawHeader, slugCounts, slugPrefix);
+                const title = parseInline(rawHeader);
+                headings.push({ level: 2, title, slug, rawText: rawHeader });
+                i++;
+                continue;
+            }
         }
     }
 
@@ -193,15 +161,6 @@ function extractHeadings(markdown, options = {}) {
  * Generates an HTML Table of Contents from Markdown text with full CSS & structure customization.
  * @param {string} markdown
  * @param {object} [options] - Options object
- * @param {number} [options.minLevel=1] - Minimum heading level (1-6)
- * @param {number} [options.maxLevel=6] - Maximum heading level (1-6)
- * @param {string} [options.containerClass="toc"] - CSS class for wrapper container
- * @param {string} [options.containerTag="nav"] - HTML tag for container ('nav', 'aside', 'div', or '' for no wrapper)
- * @param {string} [options.title=""] - Optional title text/HTML to display inside container
- * @param {string} [options.ulClass=""] - Optional CSS class for <ul> elements
- * @param {string} [options.liClass=""] - Optional CSS class for <li> elements
- * @param {string} [options.aClass=""] - Optional CSS class for <a> elements
- * @param {string} [options.slugPrefix=""] - Optional prefix for anchor IDs
  * @returns {string} HTML TOC string
  */
 function generateTOC(markdown, options = {}) {
@@ -265,6 +224,182 @@ function generateTOC(markdown, options = {}) {
 }
 
 /**
+ * Checks if a line matches a list item marker (and is not a horizontal rule).
+ * @param {string} line
+ * @returns {{ indent: number, type: "ul"|"ol", text: string } | null}
+ */
+function getListItemMatch(line) {
+    if (!line) return null;
+    if (/^\s{0,3}(?:\*(?:\s*\*){2,}|-(?:\s*-){2,}|_(?:\s*_){2,})\s*$/.test(line)) {
+        return null;
+    }
+    const match = line.match(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/);
+    if (!match) return null;
+    const indentStr = match[1].replace(/\t/g, "    ");
+    const marker = match[2];
+    const isOrdered = /^\d+[.)]/.test(marker);
+    let itemText = match[3];
+
+    // Task lists: - [ ] or - [x] or - [X]
+    const taskMatch = itemText.match(/^\[([ xX])\]\s*(.*)$/);
+    if (taskMatch) {
+        const checked = taskMatch[1].toLowerCase() === "x" ? " checked" : "";
+        itemText = `<input type="checkbox"${checked} disabled> ${taskMatch[2]}`;
+    }
+
+    return {
+        indent: indentStr.length,
+        type: isOrdered ? "ol" : "ul",
+        text: itemText,
+    };
+}
+
+/**
+ * Parses inline formatting: `code`, ![img](url), ***bold-italic***, **bold**, *italic*, strikethrough, highlight, sub/sup, links, etc.
+ * @param {string} text
+ * @param {object} [context={}]
+ * @returns {string} HTML string
+ */
+function parseInline(text, context = {}) {
+    if (!text) return "";
+
+    const uniquePrefix = `\uFFFC_${Math.random().toString(36).substring(2, 9)}_`;
+    const tokens = [];
+
+    function addToken(html) {
+        const placeholder = `${uniquePrefix}${tokens.length}\uFFFC`;
+        tokens.push(html);
+        return placeholder;
+    }
+
+    // 1. Process inline code spans (handles single and multi-backticks, padding spaces)
+    text = text.replace(/(`+)([\s\S]*?)\1/g, (_, fence, code) => {
+        if (code.length > 2 && code.startsWith(" ") && code.endsWith(" ") && !/^\s+$/.test(code)) {
+            code = code.slice(1, -1);
+        }
+        return addToken(`<code>${escapeHtml(code)}</code>`);
+    });
+
+    // 2. Escaped markdown punctuation
+    text = text.replace(/\\([\\`*_{}\[\]()#+\-.!~|^=<>:])/g, (_, char) => {
+        return addToken(escapeHtml(char));
+    });
+
+    // 3. Safe inline HTML tags
+    const safeTagRegex = /<\/?(?:em|strong|b|i|del|ins|mark|sub|sup|small|u|s|kbd|var|ruby|rp|rt|abbr|wbr|br|span|a|picture|source|audio|video|img|input)(?:\s+[^<>]*)?>/gi;
+    text = text.replace(safeTagRegex, (match) => {
+        return addToken(match);
+    });
+
+    // 4. Autolinks: <https://...> or <user@example.com>
+    text = text.replace(/<([a-zA-Z][a-zA-Z0-9+.-]*:[^>\s]+)>/g, (_, url) => {
+        const safeUrl = escapeHtml(url);
+        return addToken(`<a href="${safeUrl}" target="_blank" rel="noopener">${safeUrl}</a>`);
+    });
+    text = text.replace(/<([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>/g, (_, email) => {
+        const safeEmail = escapeHtml(email);
+        return addToken(`<a href="mailto:${safeEmail}">${safeEmail}</a>`);
+    });
+
+    // 5. Wiki-links: [[Target]] or [[Target|Label]]
+    text = text.replace(/\[\[([^|\]]+)(?:\|([^\]]+))?\]\]/g, (_, target, label) => {
+        const displayText = escapeHtml((label || target).trim());
+        const slug = slugify(target.trim());
+        return addToken(`<a href="#${slug}">${displayText}</a>`);
+    });
+
+    // 6. Markdown Images
+    text = text.replace(/!\[([^\]]*)\](?:\(((?:[^()\s]|\([^()\s]*\))*)(?:\s+(?:"([^"]*)"|'([^']*)'))?\)|\[([^\]]*)\])(?:\{([^}]+)\})?/g, (match, altText, url, title1, title2, refKey, attrs) => {
+        let finalUrl = url !== undefined ? url : "";
+        let finalTitle = title1 || title2 || "";
+        if (refKey !== undefined) {
+            const key = (refKey || altText).toLowerCase().trim();
+            const ref = context.references && context.references[key];
+            if (ref) {
+                finalUrl = ref.url;
+                if (!finalTitle && ref.title) finalTitle = ref.title;
+            }
+        }
+        const safeUrl = escapeHtml(finalUrl.trim());
+        const safeAlt = escapeHtml(altText.trim());
+        const titleAttr = finalTitle ? ` title="${escapeHtml(finalTitle.trim())}"` : "";
+        let attrStr = "";
+        if (attrs) {
+            const widthMatch = attrs.match(/width=(\d+)/);
+            const heightMatch = attrs.match(/height=(\d+)/);
+            if (widthMatch) attrStr += ` width="${widthMatch[1]}"`;
+            if (heightMatch) attrStr += ` height="${heightMatch[1]}"`;
+        }
+        return addToken(`<img src="${safeUrl}" alt="${safeAlt}"${titleAttr}${attrStr}>`);
+    });
+
+    // 7. Markdown Links: [text](url "title") or [text][ref] or [text][]
+    text = text.replace(/\[([^\]]*)\](?:\(((?:[^()\s]|\([^()\s]*\))*)(?:\s+(?:"([^"]*)"|'([^']*)'))?\)|\[([^\]]*)\])/g, (match, linkText, url, title1, title2, refKey) => {
+        let finalUrl = url !== undefined ? url : "";
+        let finalTitle = title1 || title2 || "";
+        if (refKey !== undefined) {
+            const key = (refKey || linkText).toLowerCase().trim();
+            const ref = context.references && context.references[key];
+            if (ref) {
+                finalUrl = ref.url;
+                if (!finalTitle && ref.title) finalTitle = ref.title;
+            }
+        }
+        if (!finalUrl && refKey === undefined && url === undefined) {
+            const key = linkText.toLowerCase().trim();
+            const ref = context.references && context.references[key];
+            if (ref) {
+                finalUrl = ref.url;
+                if (!finalTitle && ref.title) finalTitle = ref.title;
+            }
+        }
+        const safeUrl = escapeHtml(finalUrl.trim());
+        const formattedText = parseInline(linkText, context);
+        const titleAttr = finalTitle ? ` title="${escapeHtml(finalTitle.trim())}"` : "";
+        return addToken(`<a href="${safeUrl}"${titleAttr} target="_blank" rel="noopener">${formattedText}</a>`);
+    });
+
+    // 8. Footnote references: [^id]
+    text = text.replace(/\[\^([^\]]+)\]/g, (_, id) => {
+        const safeId = escapeHtml(id);
+        if (context.footnoteOrder && !context.footnoteOrder.includes(id)) {
+            context.footnoteOrder.push(id);
+        }
+        const num = context.footnoteOrder ? context.footnoteOrder.indexOf(id) + 1 : 1;
+        return addToken(`<sup><a href="#fn-${safeId}" id="fnref-${safeId}">[${num}]</a></sup>`);
+    });
+
+    // 9. Escape raw HTML characters
+    text = escapeHtml(text);
+
+    // 10. Bare URLs (GFM autolink)
+    text = text.replace(/(^|\s)(https?:\/\/[^\s<>()]+)(?=\s|$|[.,!?:;])/g, (_, before, url) => {
+        const safeUrl = escapeHtml(url);
+        return `${before}${addToken(`<a href="${safeUrl}" target="_blank" rel="noopener">${safeUrl}</a>`)}`;
+    });
+
+    // 11. Inline formatting
+    text = text.replace(/~~(.*?)~~/g, "<del>$1</del>");
+    text = text.replace(/==(.*?)==/g, "<mark>$1</mark>");
+    text = text.replace(/\+\+(.*?)\+\+/g, "<ins>$1</ins>");
+    text = text.replace(/~([^\s~]+)~/g, "<sub>$1</sub>");
+    text = text.replace(/\^([^\s^]+)\^/g, "<sup>$1</sup>");
+    text = text.replace(/\*\*\*(.*?)\*\*\*/g, "<strong><em>$1</em></strong>");
+    text = text.replace(/___(.*?)___/g, "<strong><em>$1</em></strong>");
+    text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    text = text.replace(/\b__(.*?)__\b/g, "<strong>$1</strong>");
+    text = text.replace(/(^|\s)\*([^\s*]|[^\s*].*?[^\s*])\*(?=\s|$|[.,!?:;()\[\]])/g, "$1<em>$2</em>");
+    text = text.replace(/(^|\s)_([^\s_]|[^\s_].*?[^\s_])_(?=\s|$|[.,!?:;()\[\]])/g, "$1<em>$2</em>");
+
+    // Restore tokens
+    for (let i = tokens.length - 1; i >= 0; i--) {
+        text = text.split(`${uniquePrefix}${i}\uFFFC`).join(tokens[i]);
+    }
+
+    return text;
+}
+
+/**
  * Converts a Markdown string into formatted HTML with optional class and feature customizations.
  * @param {string} markdown
  * @param {object} [options] - Configuration options
@@ -276,6 +411,11 @@ function generateTOC(markdown, options = {}) {
  * @returns {string} HTML string
  */
 function parseMarkdownToHTML(markdown, options = {}) {
+    if (!markdown || !markdown.trim()) return "";
+
+    // 1. Strip YAML frontmatter at top of document
+    markdown = markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
+
     const lines = markdown.split(/\r?\n/);
     const output = [];
     const slugCounts = {};
@@ -283,10 +423,48 @@ function parseMarkdownToHTML(markdown, options = {}) {
     const tableContainerClass = options.tableContainerClass !== undefined ? options.tableContainerClass : "table-container";
     const noteClass = options.noteClass !== undefined ? options.noteClass : "note";
     const headingClass = options.headingClass ? ` class="${escapeHtml(options.headingClass)}"` : "";
-    let i = 0;
 
-    while (i < lines.length) {
-        let line = lines[i];
+    const context = {
+        references: {},
+        footnotes: {},
+        footnoteOrder: [],
+    };
+
+    // 2. First pass: Collect reference link definitions and footnote definitions
+    const cleanedLines = [];
+    for (let r = 0; r < lines.length; r++) {
+        const l = lines[r];
+        const refMatch = l.match(/^\s{0,3}\[([^\]]+)\]:\s*<?([^\s>]+)>?(?:\s+(?:"([^"]*)"|'([^']*)'|\(([^)]*)\)))?\s*$/);
+        const fnMatch = l.match(/^\s{0,3}\[\^([^\]]+)\]:\s*(.*)$/);
+        const abbrMatch = l.match(/^\s{0,3}\*\[([^\]]+)\]:\s*(.*)$/);
+
+        if (refMatch) {
+            const key = refMatch[1].toLowerCase().trim();
+            const url = refMatch[2];
+            const title = refMatch[3] || refMatch[4] || refMatch[5] || "";
+            context.references[key] = { url, title };
+        } else if (fnMatch) {
+            const fnId = fnMatch[1];
+            let fnContent = fnMatch[2];
+            let nextR = r + 1;
+            while (nextR < lines.length && (lines[nextR].startsWith("    ") || lines[nextR].startsWith("\t") || !lines[nextR].trim())) {
+                if (lines[nextR].trim()) {
+                    fnContent += "\n" + lines[nextR].trim();
+                }
+                nextR++;
+            }
+            context.footnotes[fnId] = fnContent;
+            r = nextR - 1;
+        } else if (abbrMatch) {
+            // Ignored abbreviation definition
+        } else {
+            cleanedLines.push(l);
+        }
+    }
+
+    let i = 0;
+    while (i < cleanedLines.length) {
+        let line = cleanedLines[i];
 
         // Skip empty lines
         if (!line.trim()) {
@@ -294,8 +472,17 @@ function parseMarkdownToHTML(markdown, options = {}) {
             continue;
         }
 
-        // Table of Contents placeholder: [TOC], [toc], or [[toc]]
-        if (/^\s*\[(?:TOC|toc|\[toc\])\]\s*$/.test(line.trim())) {
+        // HTML Comments <!-- ... -->
+        if (line.trim().startsWith("<!--")) {
+            while (i < cleanedLines.length && !cleanedLines[i].includes("-->")) {
+                i++;
+            }
+            i++;
+            continue;
+        }
+
+        // Table of Contents placeholder: [TOC], [toc], [[toc]], [[_TOC_]], <!-- toc -->
+        if (/^\s*(?:\[(?:TOC|toc|\[toc\]|_TOC_|\[_TOC_\])\]|<!--\s*toc\s*-->)\s*$/i.test(line.trim())) {
             if (options.toc !== false) {
                 const tocOptions = typeof options.toc === "object" ? { ...options, ...options.toc } : options;
                 output.push(generateTOC(markdown, tocOptions));
@@ -304,26 +491,83 @@ function parseMarkdownToHTML(markdown, options = {}) {
             continue;
         }
 
-        // Fenced Code Blocks (```lang or ~~~lang, allowing up to 3 leading spaces)
+        // Fenced Code Blocks (```lang or ~~~lang)
         const fenceMatch = line.match(/^\s{0,3}(`{3,}|~{3,})\s*(.*)$/);
         if (fenceMatch) {
             const fenceChar = fenceMatch[1][0];
             const fenceLen = fenceMatch[1].length;
-            const lang = escapeHtml(fenceMatch[2].trim());
+            let info = fenceMatch[2].trim();
+            let lang = "";
+            const attrMatch = info.match(/^\{(?:\.([a-zA-Z0-9_-]+))?[^}]*\}$/);
+            if (attrMatch && attrMatch[1]) {
+                lang = attrMatch[1];
+            } else {
+                lang = info.split(/\s+/)[0] || "";
+            }
+            lang = escapeHtml(lang.replace(/^\{?\.?([a-zA-Z0-9_-]+).*$/, "$1"));
+
             const codeLines = [];
             i++;
-            while (i < lines.length) {
-                const endMatch = lines[i].match(/^\s{0,3}(`{3,}|~{3,})\s*$/);
+            while (i < cleanedLines.length) {
+                const endMatch = cleanedLines[i].match(/^\s{0,3}(`{3,}|~{3,})\s*$/);
                 if (endMatch && endMatch[1][0] === fenceChar && endMatch[1].length >= fenceLen) {
                     i++;
                     break;
                 }
-                codeLines.push(escapeHtml(lines[i]));
+                codeLines.push(escapeHtml(cleanedLines[i]));
                 i++;
             }
             const langClass = lang ? ` class="language-${lang}"` : "";
             output.push(`<pre><code${langClass}>${codeLines.join("\n")}</code></pre>`);
             continue;
+        }
+
+        // Indented Code Blocks (4 spaces or 1 tab)
+        if ((line.startsWith("    ") || line.startsWith("\t")) && !getListItemMatch(line)) {
+            const codeLines = [];
+            while (i < cleanedLines.length && (cleanedLines[i].startsWith("    ") || cleanedLines[i].startsWith("\t") || !cleanedLines[i].trim())) {
+                const cLine = cleanedLines[i].startsWith("\t")
+                    ? cleanedLines[i].slice(1)
+                    : (cleanedLines[i].startsWith("    ") ? cleanedLines[i].slice(4) : cleanedLines[i]);
+                codeLines.push(escapeHtml(cLine));
+                i++;
+            }
+            output.push(`<pre><code>${codeLines.join("\n").replace(/\n+$/, "")}</code></pre>`);
+            continue;
+        }
+
+        // Display Math: $$ ... $$ or \[ ... \]
+        if (line.trim() === "$$" || line.trim() === "\\[") {
+            const closing = line.trim() === "$$" ? "$$" : "\\]";
+            const mathLines = [];
+            i++;
+            while (i < cleanedLines.length && cleanedLines[i].trim() !== closing) {
+                mathLines.push(cleanedLines[i]);
+                i++;
+            }
+            if (i < cleanedLines.length) i++;
+            output.push(`<div class="math display">${escapeHtml(mathLines.join("\n"))}</div>`);
+            continue;
+        }
+
+        // Setext Headings (Level 1: ===, Level 2: ---)
+        if (i + 1 < cleanedLines.length && line.trim() && !line.match(/^\s{0,3}(?:[-*+]|\d+[.)]|>|\|)/)) {
+            const nextLine = cleanedLines[i + 1].trim();
+            if (/^={2,}\s*$/.test(nextLine)) {
+                const rawHeader = line.trim();
+                const content = parseInline(rawHeader, context);
+                const slug = getUniqueSlug(rawHeader, slugCounts, slugPrefix);
+                output.push(`<h1 id="${slug}"${headingClass}>${content}</h1>`);
+                i += 2;
+                continue;
+            } else if (/^-{2,}\s*$/.test(nextLine)) {
+                const rawHeader = line.trim();
+                const content = parseInline(rawHeader, context);
+                const slug = getUniqueSlug(rawHeader, slugCounts, slugPrefix);
+                output.push(`<h2 id="${slug}"${headingClass}>${content}</h2>`);
+                i += 2;
+                continue;
+            }
         }
 
         // Horizontal Rules (---, ***, ___ with optional spaces)
@@ -333,42 +577,69 @@ function parseMarkdownToHTML(markdown, options = {}) {
             continue;
         }
 
-        // Headers (# H1, ## H2, ### H3, #### H4) - allows up to 3 leading spaces, strips trailing hashes
+        // ATX Headers (# H1 to ###### H6)
         const headerMatch = line.match(/^\s{0,3}(#{1,6})\s+(.*)$/);
         if (headerMatch) {
             const level = headerMatch[1].length;
-            const rawHeader = headerMatch[2].replace(/\s*#+\s*$/, "").trim();
-            const content = parseInline(rawHeader);
+            let rawHeader = headerMatch[2].replace(/\s*#+\s*$/, "").trim();
+            const explicitMatch = rawHeader.match(/\s*\{#([a-zA-Z0-9_-]+)[^}]*\}\s*$/);
             const slug = getUniqueSlug(rawHeader, slugCounts, slugPrefix);
+            if (explicitMatch) {
+                rawHeader = rawHeader.replace(/\s*\{#([a-zA-Z0-9_-]+)[^}]*\}\s*$/, "").trim();
+            }
+            const content = parseInline(rawHeader, context);
             output.push(`<h${level} id="${slug}"${headingClass}>${content}</h${level}>`);
             i++;
             continue;
         }
 
-        // Blockquotes -> <div class="note">
+        // Blockquotes & GitHub Alerts
         if (line.trim().startsWith(">")) {
             const noteLines = [];
-            while (i < lines.length && lines[i].trim().startsWith(">")) {
-                noteLines.push(lines[i].trim().replace(/^>\s?/, ""));
+            while (i < cleanedLines.length && (cleanedLines[i].trim().startsWith(">") || (cleanedLines[i].trim() && noteLines.length > 0 && !cleanedLines[i].match(/^\s{0,3}(?:#{1,6}|`{3,}|~{3,}|[-*+]|\d+[.)]|\|)/)))) {
+                if (cleanedLines[i].trim().startsWith(">")) {
+                    noteLines.push(cleanedLines[i].trim().replace(/^>\s?/, ""));
+                } else {
+                    noteLines.push(cleanedLines[i].trim());
+                }
                 i++;
             }
-            const noteContent = parseInline(noteLines.join("\n").trim());
+
+            const rawBlock = noteLines.join("\n").trim();
+            const firstLine = rawBlock.split("\n")[0];
+            const alertMatch = firstLine.match(/^\[!([a-zA-Z0-9_-]+)\]-?\s*(.*)$/i);
             const classAttr = noteClass ? ` class="${escapeHtml(noteClass)}"` : "";
-            output.push(`<div${classAttr}>${noteContent}</div>`);
+
+            if (alertMatch) {
+                const type = alertMatch[1].toUpperCase();
+                const inlineTitle = alertMatch[2].trim();
+                const body = rawBlock.slice(firstLine.length).trim();
+                const titleHeader = inlineTitle ? `<strong>${type}: ${escapeHtml(inlineTitle)}</strong>` : `<strong>${type}</strong>`;
+                const noteContent = parseMarkdownToHTML(body, options);
+                output.push(`<div${classAttr}>${titleHeader}\n${noteContent}</div>`);
+            } else {
+                if (!rawBlock.includes("\n\n") && !rawBlock.startsWith("- ") && !rawBlock.startsWith("* ")) {
+                    const noteContent = parseInline(rawBlock, context);
+                    output.push(`<div${classAttr}>${noteContent}</div>`);
+                } else {
+                    const noteContent = parseMarkdownToHTML(rawBlock, options);
+                    output.push(`<div${classAttr}>\n${noteContent}\n</div>`);
+                }
+            }
             continue;
         }
 
-        // Tables (lines starting with '|' or containing '|')
-        if (line.trim().startsWith("|") || (line.includes("|") && i + 1 < lines.length && lines[i + 1].includes("|"))) {
+        // Tables
+        if (line.trim().startsWith("|") || (line.includes("|") && i + 1 < cleanedLines.length && cleanedLines[i + 1].includes("|"))) {
             const tableLines = [];
-            while (i < lines.length && (lines[i].trim().startsWith("|") || lines[i].includes("|"))) {
-                tableLines.push(lines[i].trim());
+            while (i < cleanedLines.length && (cleanedLines[i].trim().startsWith("|") || cleanedLines[i].includes("|"))) {
+                tableLines.push(cleanedLines[i].trim());
                 i++;
             }
 
             if (tableLines.length >= 2) {
                 const parseRow = (rowStr) =>
-                    splitTableRow(rowStr).map((c) => parseInline(c.trim()));
+                    splitTableRow(rowStr).map((c) => parseInline(c.trim(), context));
 
                 const headers = parseRow(tableLines[0]);
                 const isSeparator = /^\|?\s*:?-+:?\s*(?:\|?\s*:?-+:?\s*\|?)+$/.test(tableLines[1]);
@@ -411,61 +682,204 @@ function parseMarkdownToHTML(markdown, options = {}) {
             }
         }
 
-        // Unordered Lists (- item, * item, or + item)
-        if (/^\s*[-*+]\s+/.test(line)) {
-            const listItems = [];
-            while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) {
-                const itemText = lines[i].replace(/^\s*[-*+]\s+/, "");
-                listItems.push(parseInline(itemText));
+        // Definition Lists (Term \n : Definition)
+        if (i + 1 < cleanedLines.length && /^\s{0,3}:[ \t]+/.test(cleanedLines[i + 1]) && !getListItemMatch(line)) {
+            const term = parseInline(line.trim(), context);
+            const defs = [];
+            i++;
+            while (i < cleanedLines.length && /^\s{0,3}:[ \t]+/.test(cleanedLines[i])) {
+                defs.push(parseInline(cleanedLines[i].trim().replace(/^:\s*/, ""), context));
                 i++;
             }
-            let listHtml = "<ul>";
-            listItems.forEach((item) => {
-                listHtml += `<li>${item}</li>`;
+            let dlHtml = `<dl><dt>${term}</dt>`;
+            defs.forEach((d) => {
+                dlHtml += `<dd>${d}</dd>`;
             });
-            listHtml += "</ul>";
+            dlHtml += `</dl>`;
+            output.push(dlHtml);
+            continue;
+        }
+
+        // Lists
+        if (getListItemMatch(line)) {
+            let listHtml = "";
+            const stack = [];
+
+            while (i < cleanedLines.length) {
+                const currentLine = cleanedLines[i];
+
+                if (
+                    currentLine.match(/^\s{0,3}(`{3,}|~{3,})\s*(.*)$/) ||
+                    /^\s{0,3}(?:\*(?:\s*\*){2,}|-(?:\s*-){2,}|_(?:\s*_){2,})\s*$/.test(currentLine) ||
+                    currentLine.match(/^\s{0,3}#{1,6}\s+/) ||
+                    currentLine.trim().startsWith(">") ||
+                    currentLine.trim().startsWith("|") ||
+                    /^\s*(?:\[(?:TOC|toc|\[toc\]|_TOC_|\[_TOC_\])\]|<!--\s*toc\s*-->)\s*$/i.test(currentLine.trim())
+                ) {
+                    break;
+                }
+
+                const itemMatch = getListItemMatch(currentLine);
+
+                if (itemMatch) {
+                    const { indent, type, text } = itemMatch;
+
+                    if (stack.length === 0) {
+                        stack.push({ type, indent });
+                        listHtml += `<${type}><li>${parseInline(text, context)}`;
+                    } else {
+                        const top = stack[stack.length - 1];
+
+                        if (indent > top.indent) {
+                            stack.push({ type, indent });
+                            listHtml += `<${type}><li>${parseInline(text, context)}`;
+                        } else if (indent === top.indent) {
+                            if (type === top.type) {
+                                listHtml += `</li><li>${parseInline(text, context)}`;
+                            } else {
+                                listHtml += `</li></${top.type}>`;
+                                stack.pop();
+                                stack.push({ type, indent });
+                                listHtml += `<${type}><li>${parseInline(text, context)}`;
+                            }
+                        } else {
+                            while (stack.length > 1 && stack[stack.length - 1].indent > indent) {
+                                const popped = stack.pop();
+                                listHtml += `</li></${popped.type}>`;
+                            }
+
+                            const currentTop = stack[stack.length - 1];
+                            if (currentTop.indent === indent) {
+                                if (currentTop.type === type) {
+                                    listHtml += `</li><li>${parseInline(text, context)}`;
+                                } else {
+                                    listHtml += `</li></${currentTop.type}>`;
+                                    stack.pop();
+                                    stack.push({ type, indent });
+                                    listHtml += `<${type}><li>${parseInline(text, context)}`;
+                                }
+                            } else if (indent < currentTop.indent) {
+                                listHtml += `</li></${currentTop.type}>`;
+                                stack.pop();
+                                stack.push({ type, indent });
+                                listHtml += `<${type}><li>${parseInline(text, context)}`;
+                            } else {
+                                stack.push({ type, indent });
+                                listHtml += `<${type}><li>${parseInline(text, context)}`;
+                            }
+                        }
+                    }
+                    i++;
+                } else if (!currentLine.trim()) {
+                    let peek = i + 1;
+                    while (peek < cleanedLines.length && !cleanedLines[peek].trim()) {
+                        peek++;
+                    }
+                    if (peek < cleanedLines.length && getListItemMatch(cleanedLines[peek])) {
+                        i++;
+                        continue;
+                    } else {
+                        break;
+                    }
+                } else {
+                    const leadingSpaces = currentLine.match(/^(\s*)/)[1].replace(/\t/g, "    ").length;
+                    if (stack.length > 0 && leadingSpaces >= 2) {
+                        listHtml += ` ${parseInline(currentLine.trim(), context)}`;
+                        i++;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            while (stack.length > 0) {
+                const popped = stack.pop();
+                listHtml += `</li></${popped.type}>`;
+            }
+
             output.push(listHtml);
             continue;
         }
 
-        // Ordered Lists (1. item)
-        if (/^\s*\d+\.\s+/.test(line)) {
-            const listItems = [];
-            while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
-                const itemText = lines[i].replace(/^\s*\d+\.\s+/, "");
-                listItems.push(parseInline(itemText));
+        // Raw HTML Blocks
+        const htmlBlockMatch = line.match(/^\s{0,3}<(details|summary|section|article|figure|figcaption|table|audio|video|picture|div|p|a)\b[^>]*>/i);
+        if (htmlBlockMatch) {
+            const blockTag = htmlBlockMatch[1].toLowerCase();
+            const htmlLines = [line];
+            if (!line.includes(`</${blockTag}>`) && !line.endsWith("/>") && blockTag !== "summary") {
+                i++;
+                while (i < cleanedLines.length) {
+                    htmlLines.push(cleanedLines[i]);
+                    if (cleanedLines[i].includes(`</${blockTag}>`)) {
+                        i++;
+                        break;
+                    }
+                    i++;
+                }
+            } else {
                 i++;
             }
-            let listHtml = "<ol>";
-            listItems.forEach((item) => {
-                listHtml += `<li>${item}</li>`;
-            });
-            listHtml += "</ol>";
-            output.push(listHtml);
+            output.push(htmlLines.join("\n"));
             continue;
         }
 
-        // Paragraphs: collect consecutive non-empty lines that aren't other block elements
+        // Paragraphs
         const paragraphLines = [];
         while (
-            i < lines.length &&
-            lines[i].trim() &&
-            !lines[i].match(/^\s{0,3}(`{3,}|~{3,})\s*(.*)$/) &&
-            !/^\s{0,3}(?:\*(?:\s*\*){2,}|-(?:\s*-){2,}|_(?:\s*_){2,})\s*$/.test(lines[i]) &&
-            !lines[i].match(/^\s{0,3}#{1,6}\s+/) &&
-            !lines[i].trim().startsWith(">") &&
-            !lines[i].trim().startsWith("|") &&
-            !/^\s*[-*+]\s+/.test(lines[i]) &&
-            !/^\s*\d+\.\s+/.test(lines[i]) &&
-            !/^\s*\[(?:TOC|toc|\[toc\])\]\s*$/.test(lines[i].trim())
+            i < cleanedLines.length &&
+            cleanedLines[i].trim() &&
+            !cleanedLines[i].match(/^\s{0,3}(`{3,}|~{3,})\s*(.*)$/) &&
+            !/^\s{0,3}(?:\*(?:\s*\*){2,}|-(?:\s*-){2,}|_(?:\s*_){2,})\s*$/.test(cleanedLines[i]) &&
+            !cleanedLines[i].match(/^\s{0,3}#{1,6}\s+/) &&
+            !cleanedLines[i].trim().startsWith(">") &&
+            !cleanedLines[i].trim().startsWith("|") &&
+            !getListItemMatch(cleanedLines[i]) &&
+            !cleanedLines[i].trim().startsWith("<!--") &&
+            !/^\s*(?:\[(?:TOC|toc|\[toc\]|_TOC_|\[_TOC_\])\]|<!--\s*toc\s*-->)\s*$/i.test(cleanedLines[i].trim()) &&
+            !cleanedLines[i].match(/^\s{0,3}<(details|summary|section|article|figure|figcaption|table|audio|video|picture|div|p|a)\b[^>]*>/i) &&
+            !((cleanedLines[i].startsWith("    ") || cleanedLines[i].startsWith("\t")) && paragraphLines.length === 0)
             ) {
-            paragraphLines.push(lines[i].trim());
+            if (i + 1 < cleanedLines.length && /^(=+|-+)\s*$/.test(cleanedLines[i + 1].trim())) {
+                break;
+            }
+            if (i + 1 < cleanedLines.length && /^\s{0,3}:[ \t]+/.test(cleanedLines[i + 1])) {
+                break;
+            }
+            paragraphLines.push(cleanedLines[i]);
             i++;
         }
+
         if (paragraphLines.length > 0) {
-            const pContent = parseInline(paragraphLines.join(" "));
+            const formattedParas = [];
+            let currentP = [];
+            for (let p = 0; p < paragraphLines.length; p++) {
+                const pLine = paragraphLines[p];
+                if (pLine.endsWith("  ") || pLine.endsWith("\\")) {
+                    currentP.push(pLine.replace(/(\\|\s{2})$/, ""));
+                    formattedParas.push(currentP.join(" "));
+                    currentP = [];
+                } else {
+                    currentP.push(pLine.trim());
+                }
+            }
+            if (currentP.length > 0) {
+                formattedParas.push(currentP.join(" "));
+            }
+            const pContent = formattedParas.map(p => parseInline(p, context)).join("<br>\n");
             output.push(`<p>${pContent}</p>`);
         }
+    }
+
+    // Append Footnotes if any were used
+    if (context.footnoteOrder.length > 0) {
+        let fnHtml = `<section class="footnotes">\n<hr>\n<ol>\n`;
+        context.footnoteOrder.forEach((fnId) => {
+            const rawContent = context.footnotes[fnId] || "";
+            const parsedContent = parseInline(rawContent, context);
+            fnHtml += `<li id="fn-${escapeHtml(fnId)}">${parsedContent} <a href="#fnref-${escapeHtml(fnId)}" class="footnote-backref">&#x21a9;&#xfe0e;</a></li>\n`;
+        });
+        fnHtml += `</ol>\n</section>`;
+        output.push(fnHtml);
     }
 
     return output.join("\n");
@@ -479,7 +893,7 @@ function parseMarkdownToHTML(markdown, options = {}) {
  */
 async function renderMarkdownFileToElement(url, targetElement, options = {}) {
     const container = typeof targetElement === "string"
-        ? document.querySelector(targetElement)
+        ? (typeof document !== "undefined" && document.querySelector ? document.querySelector(targetElement) : null)
         : targetElement;
     if (!container) return;
 
