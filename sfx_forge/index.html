@@ -85,9 +85,6 @@
             <button type="button" data-preset="random">
                 <span class="sym" aria-hidden="true">casino</span> Random
             </button>
-            <button type="button" id="mutate-btn">
-                <span class="sym" aria-hidden="true">shuffle</span> Mutate
-            </button>
         </div>
 
         <canvas id="waveform-canvas" role="img"
@@ -104,19 +101,11 @@
             <button type="button" id="copy-motif-btn">
                 <span class="sym" aria-hidden="true">content_copy</span> Copy as Motif sample
             </button>
+            <button type="button" id="copy-motif-track-btn">
+                <span class="sym" aria-hidden="true">code</span> Copy as Motif track
+            </button>
             <button type="button" id="share-btn">
                 <span class="sym" aria-hidden="true">link</span> Copy link
-            </button>
-            <button type="button" id="reset-btn">
-                <span class="sym" aria-hidden="true">refresh</span> Reset
-            </button>
-        </div>
-
-        <div class="input-row">
-            <label for="seed-input">Seed</label>
-            <input type="number" id="seed-input" min="0" max="4294967295" step="1" value="0">
-            <button type="button" id="reseed-btn" class="btn-sym" aria-label="New random seed"
-                    data-tooltip="New random seed">casino
             </button>
         </div>
 
@@ -126,8 +115,31 @@
     </section>
 
     <section id="parameters">
-        <h2>Parameters</h2>
+        <div class="header-row">
+            <h2>Parameters</h2>
+            <div class="group mb-0">
+                <button type="button" id="mutate-btn">
+                    <span class="sym" aria-hidden="true">shuffle</span> Mutate
+                </button>
+                <button type="button" id="reset-btn">
+                    <span class="sym" aria-hidden="true">refresh</span> Reset
+                </button>
+            </div>
+        </div>
         <form id="params-form">
+            <fieldset>
+                <legend>Seed</legend>
+                <div class="input-row">
+                    <label for="seed-input">Seed</label>
+                    <input type="number" id="seed-input" min="0" max="4294967295" step="1"
+                           value="0">
+                    <button type="button" id="reseed-btn" class="btn-sym"
+                            aria-label="New random seed"
+                            data-tooltip="New random seed">casino
+                    </button>
+                </div>
+            </fieldset>
+
             <fieldset>
                 <legend>Waveform</legend>
                 <div class="segmented-control" role="group" aria-label="Waveform">
@@ -357,6 +369,7 @@
         rng,
         synthesize,
         toMotifSample,
+        toMotifTrack,
     } from "./sfx.js";
 
     const SAMPLE_RATE = 44100;
@@ -746,6 +759,10 @@
 
     document.getElementById("copy-motif-btn").addEventListener("click", () => {
         one.copy(toMotifSample(params, params.seed, currentName()));
+    });
+
+    document.getElementById("copy-motif-track-btn").addEventListener("click", () => {
+        one.copy(toMotifTrack(params, params.seed, currentName()));
     });
 
     document.getElementById("share-btn").addEventListener("click", () => {

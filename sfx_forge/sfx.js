@@ -649,3 +649,33 @@ ${inlineBody(applyEdgeFades, 6)}
       return buffer;
     },`;
 }
+
+export function toMotifTrack(params, seed = 0, name = "sfx-sound") {
+    const p = clampParams({ ...params, seed });
+    const samples = synthesize(p, REFERENCE_SAMPLE_RATE);
+    const duration = ((samples.length + 0.5) / REFERENCE_SAMPLE_RATE).toFixed(6);
+    const key = kebabCase(name);
+    const paramLines = JSON.stringify(p, null, 2)
+        .split("\n")
+        .map((line, index) => (index === 0 ? line : "  " + line))
+        .join("\n");
+
+    return `Motif.sampleRegistry.set('${key}', () => {
+  const ctx = Motif.ctx;
+  const sampleRate = ctx ? ctx.sampleRate : 44100;
+  const buffer = ctx ? ctx.createBuffer(1, Math.floor(${duration} * sampleRate), sampleRate) : (typeof createBuffer === "function" ? createBuffer(${duration}) : null);
+  if (!buffer) return null;
+  const data = buffer.getChannelData(0);
+
+  const p = ${paramLines};
+  const seed = ${p.seed};
+
+${inlineBody(synthCore, 2)}
+
+${inlineBody(applyEdgeFades, 2)}
+
+  return buffer;
+});
+
+Track('${key}').sample('${key}').note(['C4']);`;
+}

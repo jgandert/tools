@@ -12,6 +12,7 @@ import {
     rng,
     synthesize,
     toMotifSample,
+    toMotifTrack,
 } from "./sfx.js";
 
 let passed = 0, failed = 0;
@@ -333,6 +334,73 @@ console.log("\n=== toMotifSample ===");
         SAMPLE_RATE,
     );
     assert(nullSafe["quiet"]() === null, "motif: a missing audio context yields null instead of throwing");
+}
+
+// =============================================================================
+// Motif track snippet export
+// =============================================================================
+console.log("\n=== toMotifTrack ===");
+{
+    for (const name of PRESET_NAMES) {
+        const seed = 4321 + name.length;
+        const params = randomPreset(name, rng(seed), seed);
+        const key = kebabCase(`${name} track`);
+        const snippet = toMotifTrack(params, seed, `${name} track`);
+
+        assert(!snippet.includes("//"), `motif-track/${name}: contains no comments`);
+        assert(snippet.startsWith(`Motif.sampleRegistry.set('${key}', () => {`), `motif-track/${name}: starts with sampleRegistry.set`);
+        assert(snippet.endsWith(`Track('${key}').sample('${key}').note(['C4']);`), `motif-track/${name}: ends with Track playback call`);
+
+        const sampleRegistry = new Map();
+        const mockMotif = {
+            ctx: {
+                sampleRate: SAMPLE_RATE,
+                createBuffer: (channels, length, sampleRate) => {
+                    const data = new Float32Array(length);
+                    return { length, sampleRate, getChannelData: () => data };
+                },
+            },
+            sampleRegistry,
+        };
+        const trackCalls = [];
+        const mockTrack = (id) => ({
+            sample: (sampleName) => ({
+                note: (notes) => {
+                    trackCalls.push({ id, sampleName, notes });
+                },
+            }),
+        });
+
+        const runner = new Function("Motif", "Track", snippet);
+        runner(mockMotif, mockTrack);
+
+        assert(sampleRegistry.has(key), `motif-track/${name}: registers sample in sampleRegistry`);
+        const buffer = sampleRegistry.get(key)();
+        const data = buffer.getChannelData(0);
+        const expected = synthesize({ ...params, seed }, SAMPLE_RATE);
+
+        assert(data.length === expected.length, `motif-track/${name}: buffer length ${data.length} matches synthesize ${expected.length}`);
+        assert(trackCalls.length === 1 && trackCalls[0].id === key && trackCalls[0].sampleName === key, `motif-track/${name}: Track call chained correctly`);
+    }
+
+    const fallbackRunner = new Function(
+        "Motif",
+        "Track",
+        "createBuffer",
+        toMotifTrack(defaultParams(), 1, "quiet-track"),
+    );
+    const fallbackRegistry = new Map();
+    fallbackRunner(
+        { ctx: null, sampleRegistry: fallbackRegistry },
+        () => ({
+            sample: () => ({
+                note: () => {
+                },
+            }),
+        }),
+        () => null,
+    );
+    assert(fallbackRegistry.get("quiet-track")() === null, "motif-track: fallback to createBuffer returns null safely");
 }
 
 // =============================================================================

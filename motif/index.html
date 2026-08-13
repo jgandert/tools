@@ -207,6 +207,11 @@
                         data-tooltip="Record & Download WAV">download
                 </button>
             </li>
+            <li>
+                <button type="button" class="btn-sym" id="open-modal" aria-haspopup="dialog"
+                        aria-controls="modal-info" data-tooltip="Syntax Reference">info
+                </button>
+            </li>
         </ul>
     </nav>
 </header>
@@ -568,7 +573,21 @@ Arrange([
     </details>
 </aside>
 
+<dialog id="modal-info" class="modal-info" aria-labelledby="dialog-title" aria-modal="true">
+    <article>
+        <header>
+            <h3 id="dialog-title">Motif Language Specification</h3>
+            <button class="btn-sym modal-close" type="button" aria-label="Close dialog"
+                    data-action="close">
+                <span class="sym">close</span>
+            </button>
+        </header>
+        <div class="dialog-content" id="modal-info-content"></div>
+    </article>
+</dialog>
+
 <script src="../one.js"></script>
+<script src="../md-renderer.js"></script>
 <script type="module">
     import {
         Motif, Track, Bus, Parallel, Ramp, LFO, Arrange, Tie,
@@ -1927,6 +1946,26 @@ return runShowcase().then(() => "STOP_MOTIF");
     globalThis.stopRecordingAndDownload = stopRecordingAndDownload;
 
     downloadBtn.addEventListener("click", handleDownloadClick);
+
+    // --- Info Modal & Docs Rendering ---
+    const modalInfo = document.getElementById("modal-info");
+    const openModalBtn = document.getElementById("open-modal");
+    let isDocsLoaded = false;
+
+    async function showDocsModal() {
+        if (!isDocsLoaded && window.renderMarkdownFileToElement) {
+            await window.renderMarkdownFileToElement("README.md", "#modal-info-content");
+            isDocsLoaded = true;
+        }
+        modalInfo?.showModal?.();
+    }
+
+    openModalBtn?.addEventListener("click", showDocsModal);
+    modalInfo?.addEventListener("click", (e) => {
+        if (e.target === modalInfo || e.target.closest("[data-action='close']")) {
+            modalInfo.close();
+        }
+    });
 
     // Invoked last (all DOM control consts above are initialized by now) so
     // `getLoadTimeControls()` can safely reference every control it disables.
