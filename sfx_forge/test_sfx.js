@@ -6,10 +6,12 @@ import {
     clampParams,
     defaultParams,
     encodeWav,
+    inferSoundType,
     kebabCase,
     mutate,
     randomPreset,
     rng,
+    sampleSlug,
     synthesize,
     toMotifSample,
     toMotifTrack,
@@ -302,7 +304,7 @@ console.log("\n=== toMotifSample ===");
     for (const name of PRESET_NAMES) {
         const seed = 1234 + name.length;
         const params = randomPreset(name, rng(seed), seed);
-        const key = kebabCase(`${name} test`);
+        const key = sampleSlug(`${name} test`, seed, params);
         const snippet = toMotifSample(params, seed, `${name} test`);
 
         assert(snippet.startsWith("    // "), `motif/${name}: starts with the descriptive comment`);
@@ -333,7 +335,34 @@ console.log("\n=== toMotifSample ===");
         () => null,
         SAMPLE_RATE,
     );
-    assert(nullSafe["quiet"]() === null, "motif: a missing audio context yields null instead of throwing");
+    assert(nullSafe["quiet-0001"]() === null, "motif: a missing audio context yields null instead of throwing");
+}
+
+// =============================================================================
+// Sound name inference and slug generation
+// =============================================================================
+console.log("\n=== sampleSlug & inferSoundType ===");
+{
+    assert(inferSoundType({ waveform: "noise" }) === "noise-burst", "slug: noise infers noise-burst");
+    assert(inferSoundType({
+        waveform: "square",
+        slide: -0.3,
+    }) === "square-laser", "slug: downward slide infers laser");
+    assert(inferSoundType({
+        waveform: "square",
+        slide: 0.3,
+    }) === "square-jump", "slug: upward slide infers jump");
+    assert(inferSoundType({
+        waveform: "saw",
+        arpMod: 0.5,
+        arpSpeed: 0.5,
+    }) === "coin-arp", "slug: arpeggio infers coin-arp");
+    assert(inferSoundType(defaultParams()) === "square-tone", "slug: default params infers square-tone");
+
+    assert(sampleSlug("default", 0, defaultParams()) === "square-tone-0000", "slug: default name uses inferred sound type with seed suffix");
+    assert(sampleSlug("laser", 0x4d1a) === "laser-4d1a", "slug: preset name appends hex seed suffix");
+    assert(sampleSlug("My Super Sound", 42) === "my-super-sound-002a", "slug: custom name kebab-cases and appends hex seed");
+    assert(sampleSlug("laser-4d1a", 0x4d1a) === "laser-4d1a", "slug: does not duplicate existing seed suffix");
 }
 
 // =============================================================================
@@ -344,7 +373,7 @@ console.log("\n=== toMotifTrack ===");
     for (const name of PRESET_NAMES) {
         const seed = 4321 + name.length;
         const params = randomPreset(name, rng(seed), seed);
-        const key = kebabCase(`${name} track`);
+        const key = sampleSlug(`${name} track`, seed, params);
         const snippet = toMotifTrack(params, seed, `${name} track`);
 
         assert(!snippet.includes("//"), `motif-track/${name}: contains no comments`);
@@ -400,7 +429,7 @@ console.log("\n=== toMotifTrack ===");
         }),
         () => null,
     );
-    assert(fallbackRegistry.get("quiet-track")() === null, "motif-track: fallback to createBuffer returns null safely");
+    assert(fallbackRegistry.get("quiet-track-0001")() === null, "motif-track: fallback to createBuffer returns null safely");
 }
 
 // =============================================================================

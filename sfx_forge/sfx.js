@@ -627,7 +627,7 @@ export function toMotifSample(params, seed = 0, name = "sfx-sound") {
 
     // Half a sample of slack so createBuffer's truncation lands on the exact length
     const duration = ((samples.length + 0.5) / REFERENCE_SAMPLE_RATE).toFixed(6);
-    const key = kebabCase(name);
+    const key = sampleSlug(name, p.seed, p);
     const paramLines = JSON.stringify(p, null, 2)
         .split("\n")
         .map((line, index) => (index === 0 ? line : "      " + line))
@@ -650,11 +650,31 @@ ${inlineBody(applyEdgeFades, 6)}
     },`;
 }
 
+export function inferSoundType(params) {
+    const p = clampParams(params);
+    if (p.waveform === "noise") return "noise-burst";
+    if (p.arpMod !== 0 && p.arpSpeed > 0) return "coin-arp";
+    if (p.slide < -0.15) return `${p.waveform}-laser`;
+    if (p.slide > 0.15) return `${p.waveform}-jump`;
+    if (p.vibratoDepth > 0.2) return `${p.waveform}-wobble`;
+    if (p.decay < 0.15 && p.sustain < 0.15) return `${p.waveform}-blip`;
+    return `${p.waveform}-tone`;
+}
+
+export function sampleSlug(name, seed = 0, params = null) {
+    const raw = String(name ?? "").trim();
+    const base = raw && raw !== "default" ? raw : params ? inferSoundType(params) : "sfx-sound";
+    const slug = kebabCase(base);
+    const suffix = ((seed >>> 0) & 0xffff).toString(16).padStart(4, "0");
+    if (slug.endsWith(`-${suffix}`)) return slug;
+    return `${slug}-${suffix}`;
+}
+
 export function toMotifTrack(params, seed = 0, name = "sfx-sound") {
     const p = clampParams({ ...params, seed });
     const samples = synthesize(p, REFERENCE_SAMPLE_RATE);
     const duration = ((samples.length + 0.5) / REFERENCE_SAMPLE_RATE).toFixed(6);
-    const key = kebabCase(name);
+    const key = sampleSlug(name, p.seed, p);
     const paramLines = JSON.stringify(p, null, 2)
         .split("\n")
         .map((line, index) => (index === 0 ? line : "  " + line))
