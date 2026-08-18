@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="theme-pink">
 
 <head>
     <meta charset="utf-8">
@@ -13,23 +13,9 @@
     <link rel="stylesheet" type="text/css" href="../one.css">
     <style>
         :root {
-            --canvas-bg-inner: #f5f3ff;
-            --canvas-bg-outer: #e0e7ff;
-            --ring-bg-stroke: rgba(0, 0, 0, 0.06);
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root:not([data-theme="light"]) {
-                --canvas-bg-inner: #181528;
-                --canvas-bg-outer: #09070f;
-                --ring-bg-stroke: rgba(255, 255, 255, 0.08);
-            }
-        }
-
-        :root[data-theme="dark"] {
-            --canvas-bg-inner: #181528;
-            --canvas-bg-outer: #09070f;
-            --ring-bg-stroke: rgba(255, 255, 255, 0.08);
+            --canvas-bg-inner: light-dark(color-mix(in srgb, var(--primary) 5%, var(--surface)), color-mix(in srgb, var(--primary) 4%, var(--surface)));
+            --canvas-bg-outer: light-dark(color-mix(in srgb, var(--primary) 12%, var(--surface-container-low)), color-mix(in srgb, var(--surface) 65%, black));
+            --ring-bg-stroke: light-dark(color-mix(in srgb, var(--on-surface) 6%, transparent), color-mix(in srgb, var(--on-surface) 8%, transparent));
         }
 
         /* --- one.css Sidebar Layout Overrides (Collapsed by Default) --- */
