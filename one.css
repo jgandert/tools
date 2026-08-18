@@ -1668,10 +1668,23 @@ input[type="file"]::file-selector-button:active {
     min-width: 0;
 }
 
-.input-row > :is(button, label) {
+.input-row > button {
     margin-top: 0;
     margin-bottom: 0 !important;
     flex: 0 0 auto;
+}
+
+.input-row > label {
+    margin-top: 0;
+    margin-bottom: 0 !important;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.input-row > label > :is(input, select, textarea) {
+    min-width: 0;
+    max-width: 100%;
 }
 
 /* Input Groups */
@@ -2390,6 +2403,8 @@ dialog footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm) var(--spacing-md);
     margin-bottom: var(--spacing-xs);
 }
 

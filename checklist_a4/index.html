@@ -1,0 +1,1732 @@
+<!doctype html>
+<html lang="en" class="theme-olive">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Single DIN A4 page printable checklist tool built with one.css.">
+    <title>Checklist A4 — Single Page Printable Checklist</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../one.js"></script>
+    <style>
+        :root {
+            --base-font-size: 11.6pt;
+            --box-size: 11.3px;
+            --item-gap: 2.3px;
+            --section-gap: 9.0px;
+            --sheet-margin: 4.0mm;
+        }
+
+        :root.theme-compact {
+            --grid: 2px;
+            --radius: 8px;
+        }
+
+        main {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-x: auto;
+            padding: var(--spacing-lg) var(--spacing-md);
+        }
+
+        .a4-sheet {
+            width: 210mm;
+            height: 297mm;
+            max-height: 297mm;
+            margin: 0 auto;
+            background-color: #ffffff;
+            color: #111827;
+            padding: var(--sheet-margin);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+            border-radius: 2px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+            font-family: var(--checklist-font, inherit);
+            font-size: var(--base-font-size);
+            line-height: 1.34;
+        }
+
+        .columns-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 7.5mm;
+            flex: 1;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .columns-grid.equal-width {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .columns-grid.equal-width .column {
+            min-width: 0;
+        }
+
+        .columns-grid[hidden],
+        .continuous-flow[hidden] {
+            display: none !important;
+        }
+
+        .continuous-flow {
+            display: block;
+            flex: 1;
+            overflow: visible;
+            font-size: var(--base-font-size);
+            line-height: 1.34;
+            color: #111827;
+            text-align: left;
+        }
+
+        .continuous-flow.is-justified {
+            text-align: justify;
+            text-align-last: left;
+        }
+
+        .flow-header-wrapper {
+            display: inline;
+            white-space: nowrap;
+            margin-right: 0.35em;
+        }
+
+        .flow-sep {
+            display: inline;
+            color: #6b7280;
+            font-weight: 600;
+            user-select: none;
+            margin-right: 0.15em;
+        }
+
+        .flow-header {
+            color: #111827;
+        }
+
+        .flow-header strong {
+            font-weight: 700;
+        }
+
+        .flow-header em {
+            font-style: italic;
+        }
+
+        .continuous-flow .entry {
+            display: inline-flex;
+            align-items: center;
+            gap: 3.5px;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            color: #111827;
+            margin-right: 0.35em;
+            vertical-align: baseline;
+        }
+
+        .continuous-flow .entry > span:last-child {
+            flex: none;
+            overflow: visible;
+            text-overflow: clip;
+        }
+
+        .continuous-flow .entry.checked {
+            color: #9ca3af;
+            text-decoration: line-through;
+            text-decoration-color: #6b7280;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .stepper input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .a4-sheet .section-block,
+        .a4-sheet section {
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            margin: 0;
+            box-shadow: none;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .a4-sheet h2,
+        .a4-sheet .section-head {
+            font-size: var(--base-font-size);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #111827;
+            border: none;
+            border-bottom: 0.8px solid #111827;
+            padding: 0 0 1.5px 0;
+            margin: 0 0 3.5px 0;
+            line-height: 1.2;
+        }
+
+        .a4-sheet ul,
+        .a4-sheet .checklist {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: var(--item-gap);
+            padding: 0;
+            margin: 0;
+            border: none;
+            background: transparent;
+        }
+
+        .a4-sheet li,
+        #columns-grid .entry {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: var(--base-font-size);
+            font-weight: 400;
+            line-height: 1.34;
+            padding: 0;
+            margin: 0;
+            border: none;
+            background: transparent;
+            color: #111827;
+        }
+
+        #columns-grid .entry > span:last-child {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        .box {
+            width: var(--box-size);
+            height: var(--box-size);
+            min-width: var(--box-size);
+            border: 1px solid #374151;
+            border-radius: 1px;
+            background-color: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background-color 0.1s ease, border-color 0.1s ease;
+        }
+
+        .entry.checked .box {
+            background-color: #111827;
+            border-color: #111827;
+        }
+
+        .entry.checked .box::after {
+            content: "";
+            width: 2.7px;
+            height: 5.5px;
+            border: solid #ffffff;
+            border-width: 0 1.35px 1.35px 0;
+            transform: rotate(45deg);
+            margin-bottom: 1.2px;
+        }
+
+        .entry.checked {
+            color: #9ca3af;
+            text-decoration: line-through;
+            text-decoration-color: #6b7280;
+        }
+
+        .entry.checked strong {
+            color: #9ca3af;
+        }
+
+        #editor-dialog {
+            max-width: 900px;
+            width: 92vw;
+        }
+
+        #editor-dialog textarea {
+            width: 100%;
+            height: 50vh;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            tab-size: 2;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+
+        @media print {
+            html, body {
+                width: 210mm !important;
+                height: 297mm !important;
+                min-height: 297mm !important;
+                max-height: 297mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background-color: #ffffff !important;
+                color: #111827 !important;
+                display: block !important;
+                overflow: hidden !important;
+            }
+
+            body > header,
+            aside,
+            footer,
+            .skip-link,
+            .aside-state-toggle,
+            dialog,
+            .dropdown,
+            #one-toast-container {
+                display: none !important;
+            }
+
+            main {
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: hidden !important;
+                display: block !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                max-height: 297mm !important;
+            }
+
+            .a4-sheet {
+                width: 210mm !important;
+                height: 297mm !important;
+                min-height: 297mm !important;
+                max-height: 297mm !important;
+                margin: 0 !important;
+                padding: var(--sheet-margin) !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+                background-color: #ffffff !important;
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+            }
+
+            .columns-grid {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 7.5mm !important;
+                height: 100% !important;
+                flex: 1 !important;
+            }
+
+            .columns-grid[hidden],
+            .continuous-flow[hidden] {
+                display: none !important;
+            }
+
+            .continuous-flow {
+                display: block !important;
+                flex: 1 !important;
+                overflow: visible !important;
+                text-align: left !important;
+            }
+
+            .continuous-flow.is-justified {
+                text-align: justify !important;
+                text-align-last: left !important;
+            }
+
+            .columns-grid.equal-width {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .columns-grid.equal-width .column {
+                min-width: 0 !important;
+            }
+
+            .column {
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                height: 100% !important;
+            }
+
+            .section-block {
+                margin: 0 !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            .box {
+                border: 0.8pt solid #111827 !important;
+                background-color: #ffffff !important;
+            }
+
+            .entry.checked .box {
+                background-color: #000000 !important;
+                border-color: #000000 !important;
+            }
+
+            .entry.checked .box::after {
+                border-color: #ffffff !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<a href="#content" class="skip-link">Skip to content</a>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn"></label>
+    <hgroup>
+        <h1>Checklist A4</h1>
+        <p>Single DIN A4 page printable checklist</p>
+    </hgroup>
+
+    <button type="button" id="header-edit-btn">
+        <span class="sym" aria-hidden="true">edit</span>
+        <span class="hide-mobile">Edit Markdown</span>
+    </button>
+    <button type="button" class="btn-primary" id="header-print-btn">
+        <span class="sym" aria-hidden="true">print</span>
+        <span>Print / PDF</span>
+        <span class="hide-mobile"><kbd>Ctrl+P</kbd></span>
+    </button>
+</header>
+
+<main id="content">
+    <div class="a4-sheet" id="a4-sheet">
+        <div class="columns-grid equal-width" id="columns-grid">
+            <!-- Dynamically populated from Markdown in Columns mode -->
+        </div>
+        <div class="continuous-flow is-justified" id="continuous-flow" hidden>
+            <!-- Dynamically populated from Markdown in Continuous mode -->
+        </div>
+    </div>
+</main>
+
+<aside>
+    <form id="sidebar-form">
+        <fieldset>
+            <legend>Page &amp; Layout</legend>
+
+            <label for="mode-columns">Layout Mode</label>
+            <div class="segmented-control" role="group" aria-label="Layout Mode">
+                <input type="radio" name="layout-mode" id="mode-columns" value="columns" checked>
+                <label for="mode-columns">Columns</label>
+                <input type="radio" name="layout-mode" id="mode-continuous" value="continuous">
+                <label for="mode-continuous">Continuous</label>
+            </div>
+            <small id="mode-hint">Switch between 2-column layout and continuous overflowing line
+                flow.</small>
+
+            <div id="columns-mode-controls">
+                <label for="equal-width" class="mt-4">
+                    Equal Width Columns
+                    <input type="checkbox" role="switch" id="equal-width" checked>
+                </label>
+                <small id="equal-width-hint">Lock both columns to 50/50 equal width.</small>
+            </div>
+
+            <div id="continuous-mode-controls" hidden>
+                <label for="opt-line-optimizer" class="mt-4">
+                    Line Packing Optimizer
+                    <input type="checkbox" role="switch" id="opt-line-optimizer" checked>
+                </label>
+                <small id="opt-line-optimizer-hint">Reorder parts to use each line to the
+                    fullest.</small>
+
+                <label for="opt-justify" class="mt-4">
+                    Justified Alignment
+                    <input type="checkbox" role="switch" id="opt-justify" checked>
+                </label>
+                <small id="opt-justify-hint">Justify items across full line width instead of
+                    left-aligning.</small>
+            </div>
+
+            <label for="font-size" class="mt-4">Base Font Size (pt)</label>
+            <input type="number" id="font-size" step="0.1" min="5" max="25" value="11.6"
+                   aria-describedby="font-size-hint">
+            <small id="font-size-hint">Calibrate to fill exactly 1 page (default: 11.6pt).</small>
+
+            <label for="sheet-margin" class="mt-4">Page Margin (mm)</label>
+            <input type="number" id="sheet-margin" step="0.5" min="0" max="30" value="4.0"
+                   aria-describedby="margin-hint">
+            <small id="margin-hint">Outer printable sheet margin (default: 4.0mm).</small>
+
+            <label for="font-family" class="mt-4">Font Family or URL</label>
+            <input type="text" id="font-family" placeholder="e.g. Georgia, serif, or stylesheet URL"
+                   aria-describedby="font-family-hint">
+            <small id="font-family-hint">Optional stylesheet URL or font family name.</small>
+        </fieldset>
+
+        <button type="button" id="sidebar-clear-btn">
+            <span class="sym" aria-hidden="true">ink_eraser</span> Clear Marks
+        </button>
+
+        <button type="button" id="sidebar-reset-btn" class="btn-danger mt-2">
+            <span class="sym" aria-hidden="true">refresh</span> Reset to Defaults
+        </button>
+    </form>
+</aside>
+
+<dialog id="editor-dialog" class="modal-info" aria-labelledby="editor-dialog-title"
+        aria-describedby="editor-dialog-desc" aria-modal="true">
+    <article>
+        <header>
+            <h3 id="editor-dialog-title">Edit Checklist (Markdown)</h3>
+            <button type="button" class="modal-close" id="editor-close-x" aria-label="Close">×
+            </button>
+        </header>
+
+        <p id="editor-dialog-desc">Use <code>## Section Name</code> for headers, <code>- [ ]
+            Item</code> for tasks, <code>**Tag:**</code> for prefixes, and <code>&lt;!-- column --&gt;</code>
+            to split columns.</p>
+
+        <div class="dialog-content">
+            <label for="markdown-input" class="sr-only">Checklist Markdown Content</label>
+            <!-- prettier-ignore-start -->
+            <!-- beautify ignore:start -->
+            <textarea id="markdown-input" spellcheck="false"
+                      placeholder="Enter checklist in Markdown..."></textarea>
+            <!-- beautify ignore:end -->
+            <!-- prettier-ignore-end -->
+        </div>
+
+        <footer>
+            <button type="button" id="editor-reset-btn">Reset to Default</button>
+            <button type="button" id="editor-cancel-btn" data-action="cancel">Cancel</button>
+            <button type="button" class="btn-primary" id="editor-save-btn" data-action="confirm">
+                Save &amp; Apply <kbd>Ctrl+Enter</kbd>
+            </button>
+        </footer>
+    </article>
+</dialog>
+
+<script>
+    const DEFAULT_MARKDOWN_COLUMNS = `## Pre-Departure
+- [ ] Confirm bookings, baggage & check in online
+- [ ] Set OOO, pet/plant care & hold mail delivery
+- [ ] Set thermostat, lock windows/doors/garage
+- [ ] Shut off water, unplug elec. & schedule bills
+- [ ] Check forecast, sync media & adjust clothes
+- [ ] Clear fridge perishables & share live itinerary
+- [ ] Run & empty dishwasher, washer, dryer & bins
+
+## Documents & Finance
+- [ ] Passport (6 month+ valid) & Photo ID
+- [ ] Visas, vaccines, entry permits & travel vouchers
+- [ ] Printed/digital copies of IDs, visas & bookings
+- [ ] Debit & credit cards (no foreign fee)
+- [ ] Emergency cash (local & backup currency)
+- [ ] Bank travel alerts & card loss hotlines
+- [ ] Health & travel insurance policy cards
+- [ ] Doctor's prescriptions & medical certificates
+- [ ] Emergency info (blood group & allergies)
+- [ ] Destination info, keys & printed confirmations
+- [ ] Int. Driving Permit, name cert & transit passes
+
+## Electronics & Power
+- [ ] Smartphone, cables & multi-port charger
+- [ ] Universal plug adapter & voltage converter
+- [ ] Int. eSIM, offline maps, e-reader & translator
+- [ ] Power bank, headphones & SIM eject pin
+- [ ] Smartwatch, fitness tracker, chargers & drive
+
+## Wardrobe (1-Week Base)
+- [ ] Underwear (1/day + 2 spare) & bras
+- [ ] Socks (1 pair/day + 2 spare)
+- [ ] Tops, shirts, T-shirts (4) & 1 upscale outfit
+- [ ] Trousers, jeans, daily bottoms (3) & activewear
+- [ ] Sweater, fleece, hoodie or light windbreaker
+- [ ] Belt, walking shoes & sandals / flip-flops
+- [ ] Pajamas/sleepwear sets (2) & jewelry case
+
+## Transit & Cabin Bag
+- [ ] Boarding passes, passport, wallet & keys
+- [ ] Spare outfit & underwear
+- [ ] Clear liquids (<100ml), eye drops & face masks
+- [ ] Anti-theft bag, money belt & mini torch
+- [ ] Neck pillow, blackout eye mask & earplugs
+- [ ] Compression socks & compact blanket
+- [ ] Transit snacks, chewing gum & pen
+- [ ] Tote, food clips & zip bags
+- [ ] Car rental booking, mount & USB charger
+
+<!-- column -->
+
+## Luggage & Gear
+- [ ] Tags, smart trackers, TSA locks & luggage scale
+- [ ] Daypack, sling/tote, carabiners & bungee cords
+- [ ] Compression cubes, laundry & duffel bag
+- [ ] Refillable insulated water bottle & purify drops
+
+## Toiletries & Grooming (<100ml)
+- [ ] Toothbrush (with cap), paste & floss
+- [ ] Body wash, soap, conditioner & (dry) shampoo
+- [ ] Deodorant & perfume atomizer / scent
+- [ ] Face cleanser, micellar, moisturizer & lotion
+- [ ] Lip balm, pocket tissues & wet wipes
+- [ ] Hairbrush / comb, hair ties & bobby pins
+- [ ] Razor, shaving cream & cotton buds
+- [ ] Nail clippers, nail file & tweezers
+
+## Health & Pharmacy
+- [ ] Prescription meds (pack extra 3–5 days)
+- [ ] Restricted meds (doctor's note & bottles)
+- [ ] Destination meds (malaria, altitude)
+- [ ] Allergy medication & motion sickness
+- [ ] Pain & fever relief (Paracetamol/Ibuprofen)
+- [ ] Anti-diarrheal, antacids & laxatives
+- [ ] Electrolytes & activated charcoal
+- [ ] Plasters, bite/burn cream & blister pads
+- [ ] Hand sanitiser, thermometer & contraception
+- [ ] Cold/flu remedies, lozenges & melatonin
+- [ ] Daily vitamins & dietary supplements
+
+## Weather & Activities
+- [ ] **Sun:** sunglasses, SPF 50+, hat, bug spray, aloe
+- [ ] **Rain:** Compact umbrella, rain jacket, dry bag
+- [ ] **Cold:** Thermal layers, parka, gloves, boots
+- [ ] **Work:** Laptop, tablet, sleeves & chargers
+- [ ] **Hike:** Trail boots, socks, pack & filter
+- [ ] **Hike:** Multi-tool (checked bag) & tick tool
+- [ ] **Beach:** Swimsuits, UV guard & quick-dry towel
+
+## Child & Personal
+- [ ] Infant fever drops, pacifiers with clips & bibs
+- [ ] Stroller, car seat, diapers, wipes & changing pad
+- [ ] Warmer, snacks, bottles, pump & milk bags
+- [ ] Skincare, sun cream, sleep sack & travel crib
+- [ ] **Vision:** Glasses, contacts, solution & wipes
+- [ ] **Hygiene:** Sanitary pads / tampons
+- [ ] **Beauty:** Cosmetics, skincare & serums
+- [ ] **Hair:** Styling tools & dryer
+- [ ] **Media:** Camera, travel games, tablet & toys`;
+
+    const DEFAULT_MARKDOWN_CONTINUOUS = `**Pre-Departure:** - [ ] Confirm bookings  - [ ] Baggage  - [ ] Check in online  - [ ] Set OOO  - [ ] Pet/plant care  - [ ] Hold mail delivery  - [ ] Set thermostat  - [ ] Lock windows/doors/garage  - [ ] Shut off water  - [ ] Unplug elec.  - [ ] Schedule bills  - [ ] Check forecast  - [ ] Sync media  - [ ] Adjust clothes  - [ ] Clear fridge perishables  - [ ] Share live itinerary  - [ ] Run & empty dishwasher  - [ ] Washer  - [ ] Dryer  - [ ] Bins / **Documents & Finance:** - [ ] Passport (6 month+ valid)  - [ ] Photo ID  - [ ] Visas  - [ ] Vaccines  - [ ] Entry permits  - [ ] Travel vouchers  - [ ] Printed/digital copies of IDs  - [ ] Visas  - [ ] Bookings  - [ ] Debit & credit cards (no foreign fee)  - [ ] Emergency cash (local & backup currency)  - [ ] Bank travel alerts  - [ ] Card loss hotlines  - [ ] Health & travel insurance policy cards  - [ ] Doctor's prescriptions  - [ ] Medical certificates  - [ ] Emergency info (blood group & allergies)  - [ ] Destination info  - [ ] Keys  - [ ] Printed confirmations  - [ ] Int. Driving Permit  - [ ] Name cert  - [ ] Transit passes / **Electronics & Power:** - [ ] Smartphone  - [ ] Cables  - [ ] Multi-port charger  - [ ] Universal plug adapter  - [ ] Voltage converter  - [ ] Int. eSIM  - [ ] Offline maps  - [ ] E-reader  - [ ] Translator  - [ ] Power bank  - [ ] Headphones  - [ ] SIM eject pin  - [ ] Smartwatch  - [ ] Fitness tracker  - [ ] Chargers  - [ ] Drive / **Wardrobe (1-Week Base):** - [ ] Underwear (1/day + 2 spare)  - [ ] Bras  - [ ] Socks (1 pair/day + 2 spare)  - [ ] Tops  - [ ] Shirts  - [ ] T-shirts (4)  - [ ] 1 upscale outfit  - [ ] Trousers  - [ ] Jeans  - [ ] Daily bottoms (3)  - [ ] Activewear  - [ ] Sweater  - [ ] Fleece  - [ ] Hoodie  - [ ] Light windbreaker  - [ ] Belt  - [ ] Walking shoes  - [ ] Sandals / flip-flops  - [ ] Pajamas/sleepwear sets (2)  - [ ] Jewelry case / **Transit & Cabin Bag:** - [ ] Boarding passes  - [ ] Passport  - [ ] Wallet  - [ ] Keys  - [ ] Spare outfit  - [ ] Underwear  - [ ] Clear liquids (<100ml)  - [ ] Eye drops  - [ ] Face masks  - [ ] Anti-theft bag  - [ ] Money belt  - [ ] Mini torch  - [ ] Neck pillow  - [ ] Blackout eye mask  - [ ] Earplugs  - [ ] Compression socks  - [ ] Compact blanket  - [ ] Transit snacks  - [ ] Chewing gum  - [ ] Pen  - [ ] Tote  - [ ] Food clips  - [ ] Zip bags  - [ ] Car rental booking  - [ ] Mount  - [ ] USB charger / **Luggage & Gear:** - [ ] Tags  - [ ] Smart trackers  - [ ] TSA locks  - [ ] Luggage scale  - [ ] Daypack  - [ ] Sling/tote  - [ ] Carabiners  - [ ] Bungee cords  - [ ] Compression cubes  - [ ] Laundry bag  - [ ] Duffel bag  - [ ] Refillable insulated water bottle  - [ ] Purify drops / **Toiletries & Grooming (<100ml):** - [ ] Toothbrush (with cap)  - [ ] Paste  - [ ] Floss  - [ ] Body wash  - [ ] Soap  - [ ] Conditioner  - [ ] (Dry) shampoo  - [ ] Deodorant  - [ ] Perfume atomizer / scent  - [ ] Face cleanser  - [ ] Micellar  - [ ] Moisturizer  - [ ] Lotion  - [ ] Lip balm  - [ ] Pocket tissues  - [ ] Wet wipes  - [ ] Hairbrush / comb  - [ ] Hair ties  - [ ] Bobby pins  - [ ] Razor  - [ ] Shaving cream  - [ ] Cotton buds  - [ ] Nail clippers  - [ ] Nail file  - [ ] Tweezers / **Health & Pharmacy:** - [ ] Prescription meds (pack extra 3–5 days)  - [ ] Restricted meds (doctor's note & bottles)  - [ ] Destination meds (malaria, altitude)  - [ ] Allergy medication  - [ ] Motion sickness  - [ ] Pain & fever relief (Paracetamol/Ibuprofen)  - [ ] Anti-diarrheal  - [ ] Antacids  - [ ] Laxatives  - [ ] Electrolytes  - [ ] Activated charcoal  - [ ] Plasters  - [ ] Bite/burn cream  - [ ] Blister pads  - [ ] Hand sanitiser  - [ ] Thermometer  - [ ] Contraception  - [ ] Cold/flu remedies  - [ ] Lozenges  - [ ] Melatonin  - [ ] Daily vitamins  - [ ] Dietary supplements / **Weather & Activities:** *Sun:* - [ ] Sunglasses  - [ ] SPF 50+  - [ ] Hat  - [ ] Bug spray  - [ ] Aloe / *Rain:* - [ ] Compact umbrella  - [ ] Rain jacket  - [ ] Dry bag / *Cold:* - [ ] Thermal layers  - [ ] Parka  - [ ] Gloves  - [ ] Boots / *Work:* - [ ] Laptop  - [ ] Tablet  - [ ] Sleeves  - [ ] Chargers / *Hike:* - [ ] Trail boots  - [ ] Socks  - [ ] Pack  - [ ] Filter - [ ] Multi-tool (checked bag)  - [ ] Tick tool / *Beach:* - [ ] Swimsuits  - [ ] UV guard  - [ ] Quick-dry towel / **Child & Personal:** - [ ] Infant fever drops  - [ ] Pacifiers with clips  - [ ] Bibs  - [ ] Stroller  - [ ] Car seat  - [ ] Diapers  - [ ] Wipes  - [ ] Changing pad  - [ ] Warmer  - [ ] Snacks  - [ ] Bottles  - [ ] Pump  - [ ] Milk bags  - [ ] Skincare  - [ ] Sun cream  - [ ] Sleep sack  - [ ] Travel crib / *Vision:* - [ ] Glasses  - [ ] Contacts  - [ ] Solution  - [ ] Wipes / *Hygiene:* - [ ] Sanitary pads / tampons / *Beauty:* - [ ] Cosmetics  - [ ] Skincare  - [ ] Serums / *Hair:* - [ ] Styling tools  - [ ] Dryer / *Media:* - [ ] Camera  - [ ] Travel games  - [ ] Tablet  - [ ] Toys`;
+
+    let currentMode = "columns";
+    let optimizerEnabled = true;
+
+    // Formatting utility
+    function formatItemContent(text) {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+            .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+            .replace(/ {2}/g, "&nbsp; ");
+    }
+
+    // --- Columns Mode Parser & Renderer ---
+    function parseMarkdownToColumns(mdText) {
+        const colSeparators = /(?:^|\n)(?:<!--\s*column\s*--> |=
+    ==
+        +\s * column\s *\d *\s *=
+    ==
+        + | ---+\s * column\s * ---+
+    )/
+        i;
+        let rawCols = [];
+        if (colSeparators.test(mdText)) {
+            rawCols = mdText.split(colSeparators).filter(c => c.trim().length > 0);
+        } else {
+            const sections = splitIntoSections(mdText);
+            const mid = Math.ceil(sections.length / 2);
+            rawCols = [
+                sections.slice(0, mid).join("\n\n"),
+                sections.slice(mid).join("\n\n"),
+            ];
+        }
+
+        return rawCols.map(colText => parseColumnSections(colText));
+    }
+
+    function splitIntoSections(mdText) {
+        const lines = mdText.split("\n");
+        const sections = [];
+        let currentSection = [];
+        for (const line of lines) {
+            if (/^#{1,3}\s+/.test(line.trim()) && currentSection.length > 0) {
+                sections.push(currentSection.join("\n"));
+                currentSection = [line];
+            } else {
+                currentSection.push(line);
+            }
+        }
+        if (currentSection.length > 0) {
+            sections.push(currentSection.join("\n"));
+        }
+        return sections;
+    }
+
+    function parseColumnSections(colText) {
+        const lines = colText.split("\n");
+        const sections = [];
+        let currentSection = null;
+
+        for (const rawLine of lines) {
+            const line = rawLine.trim();
+            if (!line) continue;
+
+            const headerMatch = line.match(/^#{1,4}\s+(.+)$/);
+            if (headerMatch) {
+                if (currentSection) sections.push(currentSection);
+                currentSection = {
+                    title: headerMatch[1].trim(),
+                    items: [],
+                };
+                continue;
+            }
+
+            const itemMatch = line.match(/^[-*+]\s+(?:\[([ xX])\]\s+)?(.+)$/);
+            if (itemMatch) {
+                if (!currentSection) {
+                    currentSection = { title: "General", items: [] };
+                }
+                currentSection.items.push({
+                    rawText: itemMatch[2].trim(),
+                    checked: itemMatch[1] === "x" || itemMatch[1] === "X",
+                });
+                continue;
+            }
+
+            if (currentSection) {
+                currentSection.items.push({
+                    rawText: line,
+                    checked: false,
+                });
+            }
+        }
+        if (currentSection) sections.push(currentSection);
+        return sections;
+    }
+
+    function renderChecklist(mdText) {
+        const columnsData = parseMarkdownToColumns(mdText);
+        const grid = document.getElementById("columns-grid");
+        grid.innerHTML = "";
+
+        let globalIdx = 0;
+        let savedChecked = [];
+        try {
+            const raw = localStorage.getItem("travel_checklist_state");
+            if (raw) savedChecked = JSON.parse(raw);
+        } catch (e) {
+            console.error("Error reading saved checklist state", e);
+        }
+        const hasSavedState = Array.isArray(savedChecked) && savedChecked.length > 0;
+
+        columnsData.forEach(columnSections => {
+            const colDiv = document.createElement("div");
+            colDiv.className = "column";
+
+            columnSections.forEach(section => {
+                const secEl = document.createElement("section");
+                secEl.className = "section-block";
+
+                const h2 = document.createElement("h2");
+                h2.className = "section-head";
+                h2.textContent = section.title;
+                secEl.appendChild(h2);
+
+                const ul = document.createElement("ul");
+                ul.className = "checklist";
+
+                section.items.forEach(item => {
+                    const li = document.createElement("li");
+                    li.className = "entry";
+
+                    const idx = globalIdx++;
+                    const isChecked = hasSavedState ? savedChecked.includes(idx) : item.checked;
+                    if (isChecked) {
+                        li.classList.add("checked");
+                    }
+
+                    const box = document.createElement("span");
+                    box.className = "box";
+
+                    const textSpan = document.createElement("span");
+                    textSpan.innerHTML = formatItemContent(item.rawText);
+
+                    li.appendChild(box);
+                    li.appendChild(textSpan);
+
+                    li.addEventListener("click", () => {
+                        li.classList.toggle("checked");
+                        syncAndPersistColumns();
+                    });
+
+                    ul.appendChild(li);
+                });
+
+                secEl.appendChild(ul);
+                colDiv.appendChild(secEl);
+            });
+
+            grid.appendChild(colDiv);
+        });
+    }
+
+    function syncAndPersistColumns() {
+        const checkedIndices = [];
+        document.querySelectorAll("#columns-grid .entry").forEach((el, idx) => {
+            if (el.classList.contains("checked")) {
+                checkedIndices.push(idx);
+            }
+        });
+        localStorage.setItem("travel_checklist_state", JSON.stringify(checkedIndices));
+
+        const customMd = localStorage.getItem("travel_checklist_markdown");
+        if (customMd) {
+            let itemCounter = 0;
+            const lines = customMd.split("\n");
+            const updatedLines = lines.map(line => {
+                const match = line.match(/^([-*+]\s+)\[([ xX])\](\s+.*)$/);
+                if (match) {
+                    const idx = itemCounter++;
+                    const isChecked = checkedIndices.includes(idx);
+                    return `${match[1]}[${isChecked ? "x" : " "}]${match[3]}`;
+                }
+                return line;
+            });
+            localStorage.setItem("travel_checklist_markdown", updatedLines.join("\n"));
+        }
+    }
+
+    // --- Continuous Mode Parser, Optimizer & Renderer ---
+    function parseContinuousSections(mdText) {
+        const sections = [];
+        // Split by sections separated by / or newlines before headers (*, **, #)
+        const sectionChunks = mdText.split(/(?:\s+\/\s+|\n+)(?=\*{1,2}|#{1,4})/).map(s => s.trim()).filter(s => s.length > 0);
+
+        sectionChunks.forEach((chunk, secIdx) => {
+            let remaining = chunk;
+            let headerUnit = null;
+
+            // Check for leading header before the first checkbox item (e.g. **Pre-Departure:** or **Weather & Activities:** *Sun:* or *Rain:*)
+            const headerMatch = remaining.match(/^([\s\S]*?)(?=(?:[-*+]\s+\[[ xX]\])|$)/);
+            if (headerMatch && headerMatch[1].trim().length > 0) {
+                const hText = headerMatch[1].trim();
+                headerUnit = {
+                    type: "header",
+                    rawText: hText,
+                    headerHtml: formatItemContent(hText),
+                    secIdx,
+                };
+                remaining = remaining.substring(headerMatch[0].length).trim();
+            }
+
+            // Extract individual checkbox items belonging to this section
+            const items = [];
+            const itemRegex = /[-*+]\s+\[([ xX])\]\s*([\s\S]*?)(?=(?:[-*+]\s+\[[ xX]\])|$)/g;
+            let match;
+            let count = 0;
+            while ((match = itemRegex.exec(remaining)) !== null) {
+                count++;
+                const text = match[2].trim();
+                if (text) {
+                    items.push({
+                        type: "item",
+                        checked: match[1].toLowerCase() === "x",
+                        text: text,
+                        rawText: `- [${match[1]}] ${text}`,
+                        secIdx,
+                    });
+                }
+            }
+
+            if (count === 0 && remaining.length > 0) {
+                items.push({
+                    type: "plain",
+                    text: remaining,
+                    rawText: remaining,
+                    secIdx,
+                });
+            }
+
+            sections.push({
+                header: headerUnit,
+                items,
+            });
+        });
+
+        return sections;
+    }
+
+    function createContinuousUnitDOM(unit, globalItemCounterRef, savedCheckedState, isMeasuring, isFirstOnSheet) {
+        if (unit.type === "header") {
+            const wrapper = document.createElement("span");
+            wrapper.className = "flow-header-wrapper";
+            if (!isFirstOnSheet) {
+                const sep = document.createElement("span");
+                sep.className = "flow-sep";
+                sep.setAttribute("aria-hidden", "true");
+                sep.textContent = "/ ";
+                wrapper.appendChild(sep);
+            }
+            const hSpan = document.createElement("span");
+            hSpan.className = "flow-header";
+            hSpan.innerHTML = unit.headerHtml || formatItemContent(unit.rawText);
+            wrapper.appendChild(hSpan);
+            return wrapper;
+        }
+
+        if (unit.type === "plain") {
+            const span = document.createElement("span");
+            span.className = "flow-plain";
+            span.innerHTML = formatItemContent(unit.text);
+            return span;
+        }
+
+        // unit.type === "item"
+        const entry = document.createElement("span");
+        entry.className = "entry";
+        const itemIdx = globalItemCounterRef.count++;
+
+        const isChecked = savedCheckedState.length > 0
+            ? savedCheckedState.includes(itemIdx)
+            : unit.checked;
+
+        if (isChecked) {
+            entry.classList.add("checked");
+        }
+
+        const box = document.createElement("span");
+        box.className = "box";
+
+        const textSpan = document.createElement("span");
+        textSpan.innerHTML = formatItemContent(unit.text);
+
+        entry.appendChild(box);
+        entry.appendChild(textSpan);
+
+        if (!isMeasuring) {
+            entry.addEventListener("click", (e) => {
+                e.stopPropagation();
+                entry.classList.toggle("checked");
+                syncAndPersistContinuous();
+            });
+        }
+
+        return entry;
+    }
+
+    // Deterministic Seeded PRNG
+    function createPrng(seed) {
+        let s = seed >>> 0;
+        return function() {
+            let t = (s += 0x6D2B79F5);
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    function hashStringSeed(str) {
+        let hash = 1779033703 ^ str.length;
+        for (let i = 0; i < str.length; i++) {
+            hash = Math.imul(hash ^ str.charCodeAt(i), 3432918353);
+            hash = (hash << 13) | (hash >>> 19);
+        }
+        return (hash >>> 0);
+    }
+
+    function flattenSectionsToUnits(secList) {
+        const units = [];
+        secList.forEach(sec => {
+            if (sec.header) units.push(sec.header);
+            sec.items.forEach(it => units.push(it));
+        });
+        return units;
+    }
+
+    // Line Packing Optimizer (Permutes items strictly within their respective categories)
+    function optimizeContinuousSections(sections, containerWidth) {
+        function evaluateArrangement(secList) {
+            const list = flattenSectionsToUnits(secList);
+            let linesCount = 1;
+            let currentLineWidth = 0;
+            let lineHasItems = false;
+            let totalSlackSq = 0;
+
+            for (let i = 0; i < list.length; i++) {
+                const w = list[i].measuredWidth;
+                if (lineHasItems && (currentLineWidth + w > containerWidth)) {
+                    const slack = Math.max(0, containerWidth - currentLineWidth);
+                    totalSlackSq += slack * slack;
+                    linesCount++;
+                    currentLineWidth = w;
+                    lineHasItems = true;
+                } else {
+                    currentLineWidth += w;
+                    lineHasItems = true;
+                }
+            }
+            const lastSlack = Math.max(0, containerWidth - currentLineWidth);
+            totalSlackSq += 0.25 * (lastSlack * lastSlack);
+
+            return linesCount * 10000000 + totalSlackSq;
+        }
+
+        let currentSecs = sections.map(s => ({ header: s.header, items: [...s.items] }));
+        let bestSecs = sections.map(s => ({ header: s.header, items: [...s.items] }));
+        let bestCost = evaluateArrangement(currentSecs);
+        let currentCost = bestCost;
+
+        const permutableSecIndices = [];
+        currentSecs.forEach((sec, idx) => {
+            if (sec.items.length > 1) permutableSecIndices.push(idx);
+        });
+
+        if (permutableSecIndices.length === 0) {
+            return flattenSectionsToUnits(bestSecs);
+        }
+
+        // Seeded PRNG for reproducible, deterministic optimization across reloads
+        const contentKey = JSON.stringify(currentSecs.map(s => s.items.map(it => it.rawText)));
+        const seed = hashStringSeed(contentKey) ^ Math.round(containerWidth * 10);
+        const rand = createPrng(seed);
+
+        let temp = 10000;
+        const coolingRate = 0.9997;
+        const deterministicIterations = 40000;
+
+        for (let iter = 0; iter < deterministicIterations; iter++) {
+            const secIdx = permutableSecIndices[Math.floor(rand() * permutableSecIndices.length)];
+            const items = currentSecs[secIdx].items;
+            const i = Math.floor(rand() * items.length);
+            const j = Math.floor(rand() * items.length);
+            if (i === j) continue;
+
+            const tempItem = items[i];
+            items[i] = items[j];
+            items[j] = tempItem;
+
+            const newCost = evaluateArrangement(currentSecs);
+            const delta = newCost - currentCost;
+
+            if (delta < 0 || rand() < Math.exp(-delta / temp)) {
+                currentCost = newCost;
+                if (newCost < bestCost) {
+                    bestCost = newCost;
+                    bestSecs = currentSecs.map(s => ({ header: s.header, items: [...s.items] }));
+                }
+            } else {
+                items[j] = items[i];
+                items[i] = tempItem;
+            }
+
+            temp *= coolingRate;
+            if (temp < 0.1) temp = 500;
+        }
+
+        return flattenSectionsToUnits(bestSecs);
+    }
+
+    function renderContinuous(mdText) {
+        const flowContainer = document.getElementById("continuous-flow");
+        flowContainer.innerHTML = "";
+
+        const sections = parseContinuousSections(mdText);
+
+        let savedChecked = [];
+        try {
+            const raw = localStorage.getItem("travel_checklist_state_continuous");
+            if (raw) savedChecked = JSON.parse(raw);
+        } catch (e) {
+            console.error("Error reading saved continuous checklist state", e);
+        }
+
+        // Measure widths accurately in DOM
+        const measureContainer = document.createElement("div");
+        measureContainer.style.cssText = "position: absolute; visibility: hidden; pointer-events: none; white-space: nowrap; width: max-content;";
+        flowContainer.appendChild(measureContainer);
+
+        const dummyCounter = { count: 0 };
+        let isFirstUnit = true;
+        const allUnits = flattenSectionsToUnits(sections);
+        allUnits.forEach(unit => {
+            const el = createContinuousUnitDOM(unit, dummyCounter, savedChecked, true, isFirstUnit);
+            isFirstUnit = false;
+            measureContainer.appendChild(el);
+            unit.measuredElement = el;
+        });
+
+        allUnits.forEach(unit => {
+            const rect = unit.measuredElement.getBoundingClientRect();
+            const computed = window.getComputedStyle(unit.measuredElement);
+            const mr = parseFloat(computed.marginRight) || 0;
+            unit.measuredWidth = rect.width + mr;
+        });
+
+        measureContainer.remove();
+
+        const a4Sheet = document.getElementById("a4-sheet");
+        const computedStyle = window.getComputedStyle(a4Sheet);
+        const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+        const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+        const availableWidth = flowContainer.clientWidth || (a4Sheet.clientWidth - paddingLeft - paddingRight);
+
+        let unitsToRender;
+        if (optimizerEnabled && availableWidth > 50) {
+            unitsToRender = optimizeContinuousSections(sections, availableWidth);
+        } else {
+            unitsToRender = flattenSectionsToUnits(sections);
+        }
+
+        const renderCounter = { count: 0 };
+        unitsToRender.forEach((unit, idx) => {
+            const el = createContinuousUnitDOM(unit, renderCounter, savedChecked, false, idx === 0);
+            flowContainer.appendChild(el);
+            if (idx < unitsToRender.length - 1) {
+                flowContainer.appendChild(document.createTextNode(" "));
+            }
+        });
+    }
+
+    function syncAndPersistContinuous() {
+        const checkedIndices = [];
+        const flowContainer = document.getElementById("continuous-flow");
+        flowContainer.querySelectorAll(".entry").forEach((el, idx) => {
+            if (el.classList.contains("checked")) {
+                checkedIndices.push(idx);
+            }
+        });
+        localStorage.setItem("travel_checklist_state_continuous", JSON.stringify(checkedIndices));
+
+        const customMd = localStorage.getItem("travel_checklist_markdown_continuous");
+        if (customMd) {
+            let itemCounter = 0;
+            const updatedMd = customMd.replace(/([-*+]\s+)\[([ xX])\]/g, (match, prefix) => {
+                const isChecked = checkedIndices.includes(itemCounter++);
+                return `${prefix}[${isChecked ? "x" : " "}]`;
+            });
+            localStorage.setItem("travel_checklist_markdown_continuous", updatedMd);
+        }
+    }
+
+    // Constants for mode defaults
+    const DEFAULT_FONT_SIZE_COLUMNS = 11.6;
+    const DEFAULT_FONT_SIZE_CONTINUOUS = 13.4;
+    const DEFAULT_MARGIN_COLUMNS = 4.0;
+    const DEFAULT_MARGIN_CONTINUOUS = 4.0;
+
+    function getDefaultFontSize(mode = currentMode) {
+        return mode === "continuous" ? DEFAULT_FONT_SIZE_CONTINUOUS : DEFAULT_FONT_SIZE_COLUMNS;
+    }
+
+    function getDefaultMargin(mode = currentMode) {
+        return mode === "continuous" ? DEFAULT_MARGIN_CONTINUOUS : DEFAULT_MARGIN_COLUMNS;
+    }
+
+    function getStoredFontSize(mode = currentMode) {
+        const key = `travel_checklist_fontsize_${mode}`;
+        const val = localStorage.getItem(key);
+        if (val !== null) {
+            const parsed = parseFloat(val);
+            if (!isNaN(parsed)) return parsed;
+        }
+        return getDefaultFontSize(mode);
+    }
+
+    function getStoredMargin(mode = currentMode) {
+        const key = `travel_checklist_margin_${mode}`;
+        const val = localStorage.getItem(key);
+        if (val !== null) {
+            const parsed = parseFloat(val);
+            if (!isNaN(parsed)) return parsed;
+        }
+        return getDefaultMargin(mode);
+    }
+
+    // --- Mode Switching ---
+    function applyMode(mode) {
+        currentMode = mode;
+        localStorage.setItem("travel_checklist_mode", mode);
+
+        const modeColumnsRadio = document.getElementById("mode-columns");
+        const modeContinuousRadio = document.getElementById("mode-continuous");
+
+        const fontHint = document.getElementById("font-size-hint");
+        if (fontHint) fontHint.textContent = `Calibrate to fill exactly 1 page (default: ${getDefaultFontSize(mode)}pt).`;
+        const marginHint = document.getElementById("margin-hint");
+        if (marginHint) marginHint.textContent = `Outer printable sheet margin (default: ${getDefaultMargin(mode).toFixed(1)}mm).`;
+
+        applyFontSize(getStoredFontSize(mode), false, false);
+        applyMargin(getStoredMargin(mode), false, false);
+
+        if (mode === "continuous") {
+            if (modeContinuousRadio) modeContinuousRadio.checked = true;
+            document.getElementById("columns-grid").hidden = true;
+            document.getElementById("continuous-flow").hidden = false;
+            document.getElementById("columns-mode-controls").hidden = true;
+            document.getElementById("continuous-mode-controls").hidden = false;
+
+            const activeMd = localStorage.getItem("travel_checklist_markdown_continuous") || DEFAULT_MARKDOWN_CONTINUOUS;
+            renderContinuous(activeMd);
+        } else {
+            if (modeColumnsRadio) modeColumnsRadio.checked = true;
+            document.getElementById("columns-grid").hidden = false;
+            document.getElementById("continuous-flow").hidden = true;
+            document.getElementById("columns-mode-controls").hidden = false;
+            document.getElementById("continuous-mode-controls").hidden = true;
+
+            const activeMd = localStorage.getItem("travel_checklist_markdown") || DEFAULT_MARKDOWN_COLUMNS;
+            renderChecklist(activeMd);
+        }
+    }
+
+    async function clearAllMarks() {
+        const confirmed = await one.confirm("Uncheck all items on the checklist?", "Clear Marks");
+        if (!confirmed) return;
+
+        if (currentMode === "columns") {
+            document.querySelectorAll("#columns-grid .entry").forEach(el => el.classList.remove("checked"));
+            localStorage.removeItem("travel_checklist_state");
+            const customMd = localStorage.getItem("travel_checklist_markdown");
+            if (customMd) {
+                const updated = customMd.replace(/^([-*+]\s+)\[[xX]\]/gm, "$1[ ]");
+                localStorage.setItem("travel_checklist_markdown", updated);
+            }
+        } else {
+            document.querySelectorAll("#continuous-flow .entry").forEach(el => el.classList.remove("checked"));
+            localStorage.removeItem("travel_checklist_state_continuous");
+            const customMd = localStorage.getItem("travel_checklist_markdown_continuous");
+            if (customMd) {
+                const updated = customMd.replace(/([-*+]\s+)\[[xX]\]/g, "$1[ ]");
+                localStorage.setItem("travel_checklist_markdown_continuous", updated);
+            }
+        }
+        one.alert("All checkmarks cleared");
+    }
+
+    async function resetToDefaultChecklist() {
+        const confirmed = await one.confirm("Reset checklist content, font size, margins, and settings to default?", "Reset to Defaults");
+        if (!confirmed) return;
+
+        localStorage.removeItem("travel_checklist_mode");
+        localStorage.removeItem("travel_checklist_markdown");
+        localStorage.removeItem("travel_checklist_state");
+        localStorage.removeItem("travel_checklist_markdown_continuous");
+        localStorage.removeItem("travel_checklist_state_continuous");
+        localStorage.removeItem("travel_checklist_fontsize");
+        localStorage.removeItem("travel_checklist_fontsize_columns");
+        localStorage.removeItem("travel_checklist_fontsize_continuous");
+        localStorage.removeItem("travel_checklist_margin");
+        localStorage.removeItem("travel_checklist_margin_columns");
+        localStorage.removeItem("travel_checklist_margin_continuous");
+        localStorage.removeItem("travel_checklist_equal_width");
+        localStorage.removeItem("travel_checklist_optimizer");
+        localStorage.removeItem("travel_checklist_justify");
+
+        applyDefaultFont();
+        applyEqualWidth(true);
+        applyJustified(true, false);
+
+        optimizerEnabled = true;
+        if (optLineOptimizer) optLineOptimizer.checked = true;
+
+        applyMode("columns");
+        one.alert("Checklist and settings reset to defaults");
+    }
+
+    // Markdown Editor Controls
+    const editorDialog = document.getElementById("editor-dialog");
+    const markdownInput = document.getElementById("markdown-input");
+    const editorDialogDesc = document.getElementById("editor-dialog-desc");
+    const editorDialogTitle = document.getElementById("editor-dialog-title");
+
+    function openEditor() {
+        if (currentMode === "columns") {
+            editorDialogTitle.textContent = "Edit Checklist (Markdown - Columns)";
+            editorDialogDesc.innerHTML = "Use <code>## Section Name</code> for headers, <code>- [ ] Item</code> for tasks, <code>**Tag:**</code> for prefixes, and <code>&lt;!-- column --&gt;</code> to split columns.";
+
+            let currentMd = localStorage.getItem("travel_checklist_markdown") || DEFAULT_MARKDOWN_COLUMNS;
+            let savedChecked = [];
+            try {
+                const raw = localStorage.getItem("travel_checklist_state");
+                if (raw) savedChecked = JSON.parse(raw);
+            } catch (e) {
+            }
+
+            if (Array.isArray(savedChecked)) {
+                let itemCounter = 0;
+                const lines = currentMd.split("\n");
+                const updatedLines = lines.map(line => {
+                    const match = line.match(/^([-*+]\s+)\[([ xX])\](\s+.*)$/);
+                    if (match) {
+                        const idx = itemCounter++;
+                        const isChecked = savedChecked.includes(idx);
+                        return `${match[1]}[${isChecked ? "x" : " "}]${match[3]}`;
+                    }
+                    return line;
+                });
+                currentMd = updatedLines.join("\n");
+            }
+            markdownInput.value = currentMd;
+        } else {
+            editorDialogTitle.textContent = "Edit Checklist (Markdown - Continuous)";
+            editorDialogDesc.innerHTML = "Use <code>/</code> to separate parts, <code>**Header:**</code> for bold labels, and <code>- [ ] Item</code> for checkboxes.";
+
+            let currentMd = localStorage.getItem("travel_checklist_markdown_continuous") || DEFAULT_MARKDOWN_CONTINUOUS;
+            let savedChecked = [];
+            try {
+                const raw = localStorage.getItem("travel_checklist_state_continuous");
+                if (raw) savedChecked = JSON.parse(raw);
+            } catch (e) {
+            }
+
+            if (Array.isArray(savedChecked)) {
+                let itemCounter = 0;
+                currentMd = currentMd.replace(/([-*+]\s+)\[([ xX])\]/g, (match, prefix) => {
+                    const isChecked = savedChecked.includes(itemCounter++);
+                    return `${prefix}[${isChecked ? "x" : " "}]`;
+                });
+            }
+            markdownInput.value = currentMd;
+        }
+
+        editorDialog.showModal();
+        markdownInput.focus();
+    }
+
+    function closeEditor() {
+        editorDialog.close();
+    }
+
+    function saveAndApplyMarkdown() {
+        const newMd = markdownInput.value;
+        if (currentMode === "columns") {
+            if (newMd.trim() === DEFAULT_MARKDOWN_COLUMNS.trim()) {
+                localStorage.removeItem("travel_checklist_markdown");
+            } else {
+                localStorage.setItem("travel_checklist_markdown", newMd);
+            }
+
+            const checkedIndices = [];
+            let itemCounter = 0;
+            newMd.split("\n").forEach(line => {
+                const match = line.match(/^[-*+]\s+\[([ xX])\]\s+/);
+                if (match) {
+                    if (match[1] === "x" || match[1] === "X") {
+                        checkedIndices.push(itemCounter);
+                    }
+                    itemCounter++;
+                }
+            });
+
+            if (checkedIndices.length > 0) {
+                localStorage.setItem("travel_checklist_state", JSON.stringify(checkedIndices));
+            } else {
+                localStorage.removeItem("travel_checklist_state");
+            }
+
+            renderChecklist(newMd);
+        } else {
+            if (newMd.trim() === DEFAULT_MARKDOWN_CONTINUOUS.trim()) {
+                localStorage.removeItem("travel_checklist_markdown_continuous");
+            } else {
+                localStorage.setItem("travel_checklist_markdown_continuous", newMd);
+            }
+
+            const checkedIndices = [];
+            let itemCounter = 0;
+            const itemRegex = /[-*+]\s+\[([ xX])\]/g;
+            let match;
+            while ((match = itemRegex.exec(newMd)) !== null) {
+                if (match[1] === "x" || match[1] === "X") {
+                    checkedIndices.push(itemCounter);
+                }
+                itemCounter++;
+            }
+
+            if (checkedIndices.length > 0) {
+                localStorage.setItem("travel_checklist_state_continuous", JSON.stringify(checkedIndices));
+            } else {
+                localStorage.removeItem("travel_checklist_state_continuous");
+            }
+
+            renderContinuous(newMd);
+        }
+
+        closeEditor();
+        one.alert("Checklist updated");
+    }
+
+    async function resetToDefaultMarkdown() {
+        const confirmed = await one.confirm("Reset editor content to default template?", "Reset Editor");
+        if (!confirmed) return;
+
+        if (currentMode === "columns") {
+            localStorage.removeItem("travel_checklist_markdown");
+            localStorage.removeItem("travel_checklist_state");
+            markdownInput.value = DEFAULT_MARKDOWN_COLUMNS;
+            renderChecklist(DEFAULT_MARKDOWN_COLUMNS);
+        } else {
+            localStorage.removeItem("travel_checklist_markdown_continuous");
+            localStorage.removeItem("travel_checklist_state_continuous");
+            markdownInput.value = DEFAULT_MARKDOWN_CONTINUOUS;
+            renderContinuous(DEFAULT_MARKDOWN_CONTINUOUS);
+        }
+        closeEditor();
+        one.alert("Reset to default template");
+    }
+
+    // Font Size Management
+    let currentFontSize = 11.6;
+
+    function applyFontSize(size, persist = true, rerender = true) {
+        currentFontSize = Math.round(Math.max(5, Math.min(25, size)) * 10) / 10;
+        document.documentElement.style.setProperty("--base-font-size", currentFontSize + "pt");
+
+        const boxPx = Math.round((currentFontSize * 0.97) * 10) / 10;
+        document.documentElement.style.setProperty("--box-size", boxPx + "px");
+
+        const gapPx = Math.round(Math.max(1.0, currentFontSize * 0.2) * 10) / 10;
+        document.documentElement.style.setProperty("--item-gap", gapPx + "px");
+
+        const secGap = Math.round(Math.max(4, currentFontSize * 0.78) * 10) / 10;
+        document.documentElement.style.setProperty("--section-gap", secGap + "px");
+
+        const input = document.getElementById("font-size");
+        if (input && document.activeElement !== input) {
+            input.value = currentFontSize.toFixed(1);
+        }
+
+        if (persist) {
+            localStorage.setItem(`travel_checklist_fontsize_${currentMode}`, currentFontSize.toString());
+        }
+
+        if (rerender && currentMode === "continuous") {
+            const activeMd = localStorage.getItem("travel_checklist_markdown_continuous") || DEFAULT_MARKDOWN_CONTINUOUS;
+            renderContinuous(activeMd);
+        }
+    }
+
+    function adjustFontSize(delta) {
+        applyFontSize(currentFontSize + delta);
+    }
+
+    // Margin Management
+    let currentMargin = 4.0;
+
+    function applyMargin(marginMm, persist = true, rerender = true) {
+        currentMargin = Math.round(Math.max(0, Math.min(30, marginMm)) * 10) / 10;
+        document.documentElement.style.setProperty("--sheet-margin", currentMargin.toFixed(1) + "mm");
+
+        const input = document.getElementById("sheet-margin");
+        if (input && document.activeElement !== input) {
+            input.value = currentMargin.toFixed(1);
+        }
+
+        if (persist) {
+            localStorage.setItem(`travel_checklist_margin_${currentMode}`, currentMargin.toString());
+        }
+
+        if (rerender && currentMode === "continuous") {
+            const activeMd = localStorage.getItem("travel_checklist_markdown_continuous") || DEFAULT_MARKDOWN_CONTINUOUS;
+            renderContinuous(activeMd);
+        }
+    }
+
+    function adjustMargin(delta) {
+        applyMargin(currentMargin + delta);
+    }
+
+    // Font Family & Optional Stylesheet Management
+    function loadFontStylesheet(url) {
+        let link = document.getElementById("custom-font-link");
+        if (!link) {
+            link = document.createElement("link");
+            link.id = "custom-font-link";
+            link.rel = "stylesheet";
+            document.head.appendChild(link);
+        }
+        link.href = url;
+    }
+
+    function extractFontFamiliesFromUrl(url) {
+        const families = [];
+        try {
+            const parsed = new URL(url, window.location.href);
+            parsed.searchParams.forEach((val, key) => {
+                if (key === "family") {
+                    const cleanName = val.split(":")[0].replace(/\+/g, " ").trim();
+                    if (cleanName && !families.includes(cleanName)) families.push(cleanName);
+                }
+            });
+        } catch (e) {
+            const matches = [...url.matchAll(/[?&]family=([^:&?#]+)/g)];
+            matches.forEach(m => {
+                const clean = decodeURIComponent(m[1]).replace(/\+/g, " ").trim();
+                if (clean && !families.includes(clean)) families.push(clean);
+            });
+        }
+        return families;
+    }
+
+    function applyDefaultFont() {
+        document.documentElement.style.removeProperty("--checklist-font");
+        localStorage.removeItem("travel_checklist_font_url");
+        localStorage.removeItem("travel_checklist_fontfamily");
+        const link = document.getElementById("custom-font-link");
+        if (link) link.remove();
+        const fontInput = document.getElementById("font-family");
+        if (fontInput) fontInput.value = "";
+    }
+
+    function applyFontFamily(fontValue) {
+        let stack = fontValue;
+        if (!fontValue.includes(",") && !fontValue.includes("'") && !fontValue.includes("\"")) {
+            stack = `"${fontValue}", inherit`;
+        }
+        document.documentElement.style.setProperty("--checklist-font", stack);
+        localStorage.setItem("travel_checklist_fontfamily", fontValue);
+        const fontInput = document.getElementById("font-family");
+        if (fontInput && document.activeElement !== fontInput) {
+            fontInput.value = fontValue;
+        }
+    }
+
+    function handleFontInput(input) {
+        let trimmed = (input || "").trim();
+        if (!trimmed || trimmed.toLowerCase() === "default") {
+            applyDefaultFont();
+            return;
+        }
+
+        const linkMatch = trimmed.match(/href=["']([^"']+)["']/i);
+        if (linkMatch) {
+            trimmed = linkMatch[1];
+        }
+
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("//")) {
+            loadFontStylesheet(trimmed);
+            localStorage.setItem("travel_checklist_font_url", trimmed);
+
+            const families = extractFontFamiliesFromUrl(trimmed);
+            if (families.length > 0) {
+                const stack = families.map(f => `"${f}"`).join(", ") + ", inherit";
+                applyFontFamily(stack);
+            }
+        } else {
+            localStorage.removeItem("travel_checklist_font_url");
+            applyFontFamily(trimmed);
+        }
+
+        if (currentMode === "continuous") {
+            const activeMd = localStorage.getItem("travel_checklist_markdown_continuous") || DEFAULT_MARKDOWN_CONTINUOUS;
+            renderContinuous(activeMd);
+        }
+    }
+
+    // Equal Width Columns
+    function applyEqualWidth(enabled) {
+        const grid = document.getElementById("columns-grid");
+        if (grid) {
+            grid.classList.toggle("equal-width", enabled);
+        }
+        const cb = document.getElementById("equal-width");
+        if (cb && cb.checked !== enabled) {
+            cb.checked = enabled;
+        }
+    }
+
+    function toggleEqualWidth(enabled) {
+        applyEqualWidth(enabled);
+        localStorage.setItem("travel_checklist_equal_width", enabled ? "true" : "false");
+    }
+
+    // Justified Alignment (Continuous Mode)
+    let justifyEnabled = true;
+
+    function applyJustified(enabled, persist = true) {
+        justifyEnabled = enabled;
+        const flow = document.getElementById("continuous-flow");
+        if (flow) {
+            flow.classList.toggle("is-justified", enabled);
+        }
+        const cb = document.getElementById("opt-justify");
+        if (cb && cb.checked !== enabled) {
+            cb.checked = enabled;
+        }
+        if (persist) {
+            localStorage.setItem("travel_checklist_justify", enabled ? "true" : "false");
+        }
+    }
+
+    // Wire Mode Switching Segmented Control
+    document.querySelectorAll("input[name='layout-mode']").forEach(radio => {
+        radio.addEventListener("change", (e) => {
+            if (e.target.checked) {
+                applyMode(e.target.value);
+            }
+        });
+    });
+
+    // Wire Optimizer Switch
+    const optLineOptimizer = document.getElementById("opt-line-optimizer");
+    optLineOptimizer.addEventListener("change", (e) => {
+        optimizerEnabled = e.target.checked;
+        localStorage.setItem("travel_checklist_optimizer", optimizerEnabled ? "true" : "false");
+        if (currentMode === "continuous") {
+            const activeMd = localStorage.getItem("travel_checklist_markdown_continuous") || DEFAULT_MARKDOWN_CONTINUOUS;
+            renderContinuous(activeMd);
+        }
+    });
+
+    // Wire Justified Alignment Switch
+    const optJustify = document.getElementById("opt-justify");
+    optJustify.addEventListener("change", (e) => {
+        applyJustified(e.target.checked);
+    });
+
+    // Wire Buttons & Keyboard Shortcuts
+    document.getElementById("header-edit-btn").addEventListener("click", openEditor);
+    document.getElementById("sidebar-clear-btn").addEventListener("click", clearAllMarks);
+    document.getElementById("sidebar-reset-btn").addEventListener("click", resetToDefaultChecklist);
+
+    const triggerPrint = () => window.print();
+    document.getElementById("header-print-btn").addEventListener("click", triggerPrint);
+
+    const fontSizeInput = document.getElementById("font-size");
+    fontSizeInput.addEventListener("change", (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val)) applyFontSize(val);
+    });
+    fontSizeInput.addEventListener("input", (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val)) applyFontSize(val);
+    });
+
+    const marginInput = document.getElementById("sheet-margin");
+    marginInput.addEventListener("change", (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val)) applyMargin(val);
+    });
+    marginInput.addEventListener("input", (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val)) applyMargin(val);
+    });
+
+    const equalWidthCb = document.getElementById("equal-width");
+    equalWidthCb.addEventListener("change", (e) => toggleEqualWidth(e.target.checked));
+
+    const fontInput = document.getElementById("font-family");
+    fontInput.addEventListener("change", (e) => handleFontInput(e.target.value));
+    fontInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            handleFontInput(fontInput.value);
+            fontInput.blur();
+        }
+    });
+
+    // Window Resize handler to re-pack if in continuous mode
+    let resizeTimeout = null;
+    window.addEventListener("resize", () => {
+        if (currentMode === "continuous") {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                const activeMd = localStorage.getItem("travel_checklist_markdown_continuous") || DEFAULT_MARKDOWN_CONTINUOUS;
+                renderContinuous(activeMd);
+            }, 100);
+        }
+    });
+
+    // Dialog Event Listeners
+    document.getElementById("editor-close-x").addEventListener("click", closeEditor);
+    document.getElementById("editor-cancel-btn").addEventListener("click", closeEditor);
+    document.getElementById("editor-save-btn").addEventListener("click", saveAndApplyMarkdown);
+    document.getElementById("editor-reset-btn").addEventListener("click", resetToDefaultMarkdown);
+
+    editorDialog.addEventListener("click", (e) => {
+        if (e.target === editorDialog) closeEditor();
+    });
+
+    markdownInput.addEventListener("keydown", function(e) {
+        if (e.key === "Tab") {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.substring(0, start) + "  " + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 2;
+        } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+            e.preventDefault();
+            saveAndApplyMarkdown();
+        } else if (e.key === "Escape") {
+            closeEditor();
+        }
+    });
+
+    // Form submit prevention
+    document.getElementById("sidebar-form").addEventListener("submit", (e) => e.preventDefault());
+
+    // Initialization
+    function init() {
+        // Equal Width
+        const savedEqualWidth = localStorage.getItem("travel_checklist_equal_width");
+        const isEqualWidth = savedEqualWidth !== null ? savedEqualWidth === "true" : true;
+        applyEqualWidth(isEqualWidth);
+
+        // Optimizer Setting
+        const savedOptimizer = localStorage.getItem("travel_checklist_optimizer");
+        optimizerEnabled = savedOptimizer !== null ? savedOptimizer === "true" : true;
+        optLineOptimizer.checked = optimizerEnabled;
+
+        // Justified Alignment Setting (Continuous Mode)
+        const savedJustify = localStorage.getItem("travel_checklist_justify");
+        const isJustified = savedJustify !== null ? savedJustify === "true" : true;
+        applyJustified(isJustified, false);
+
+        // Optional Custom Font / Stylesheet
+        const savedUrl = localStorage.getItem("travel_checklist_font_url");
+        if (savedUrl) {
+            loadFontStylesheet(savedUrl);
+            fontInput.value = savedUrl;
+        }
+        const savedFont = localStorage.getItem("travel_checklist_fontfamily");
+        if (savedFont) {
+            applyFontFamily(savedFont);
+            fontInput.value = savedFont;
+        }
+
+        // Mode & Layout (loads mode-specific font size & margin, and renders)
+        const savedMode = localStorage.getItem("travel_checklist_mode") || "columns";
+        applyMode(savedMode);
+    }
+
+    init();
+</script>
+</body>
+</html>

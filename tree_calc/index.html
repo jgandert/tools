@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="Evaluate expressions and inspect their calculation tree.">
+    <title>Tree Calculator</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../one.js"></script>
+    <style>
+        #expression {
+            font-family: var(--font-code);
+        }
+
+        #result {
+            overflow-x: auto;
+            padding: var(--spacing-lg);
+        }
+
+        .calculation {
+            width: 100%;
+            min-width: max-content;
+            margin: 0;
+            border: var(--border-width) solid var(--outline-variant);
+            border-collapse: collapse;
+            background: var(--surface-container-low);
+        }
+
+        .calculation td {
+            padding: calc(var(--spacing-xs) * 2) calc(var(--spacing-sm) * 2);
+            border: var(--border-width) solid var(--outline-variant);
+        }
+
+        .calculation-label {
+            min-width: 4rem;
+            max-width: 10rem;
+            color: var(--primary);
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+
+        .calculation-parameter-role {
+            color: var(--on-surface-variant);
+            font-size: 0.8em;
+            font-weight: 400;
+        }
+
+        .calculation-operator,
+        .calculation-equals {
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .calculation-number {
+            min-width: 4rem;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .calculation-value > td {
+            background: var(--surface-container-low);
+        }
+
+        .calculation-operation > td {
+            background: var(--surface-container);
+        }
+
+        .calculation-result > td {
+            background: var(--surface-container-high);
+            font-weight: 700;
+        }
+
+        .calculation-nesting > td {
+            background: var(--surface-container-highest);
+        }
+
+        .calculation-group-text {
+            color: var(--calculation-group-color);
+        }
+
+        #result > .calculation,
+        .calculation-nested {
+            border-left-width: calc(var(--border-width) * 4) !important;
+            border-bottom-width: calc(var(--border-width) * 4) !important;
+            box-shadow: var(--outline-variant) -4px 4px 5px 0;
+        }
+
+        .calculation-nested {
+            padding: 0 !important;
+        }
+
+        #error:not(:empty) {
+            margin-top: var(--spacing-md);
+            color: var(--error);
+        }
+
+    </style>
+</head>
+
+<body>
+<a href="#content" class="skip-link">Skip to calculator</a>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle settings"
+       autocomplete="off">
+<script>
+    document.getElementById("aside-state").checked = !matchMedia("(min-width: 900px)").matches;
+</script>
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn"></label>
+    <hgroup>
+        <h1>Tree Calculator</h1>
+        <p>See every step of a calculation.</p>
+    </hgroup>
+    <button type="button" class="btn-sym btn-danger" id="restore-default"
+            data-tooltip="Restore default example">
+        restore
+    </button>
+    <button type="button" id="copy-calculation" data-tooltip="Copy calculation without labels">
+        <span class="sym">content_copy</span> Copy
+    </button>
+</header>
+
+<main id="content">
+    <section>
+        <label for="expression">Expression</label>
+        <input id="expression" name="expression" type="text"
+               value="home_price = 450000; down_payment = 90000; ar#`annual rate (%)` = 0.065; years = 30; property_tax = 5400; insurance = 1800; ((((home_price - down_payment)#`loan amount`) * ((ar / 12)#`monthly interest rate`) * (1 + ar / 12) ** ((years * 12)#`number of monthly payments`) / ((1 + ar / 12) ** (years * 12) - 1))#`principal and interest` + ((property_tax / 12)#`monthly property tax`) + ((insurance / 12)#`monthly insurance`))#`estimated monthly cost`"
+               autocomplete="off" spellcheck="false" aria-describedby="error">
+        <p id="error" role="alert"></p>
+        <div id="result" aria-live="polite" aria-label="Calculation tree"></div>
+    </section>
+</main>
+
+<aside aria-label="Settings">
+    <fieldset>
+        <legend>Syntax</legend>
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">Format</th>
+                <th scope="col">Meaning</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td><code>name = value;</code></td>
+                <td>Variable</td>
+            </tr>
+            <tr>
+                <td><code>id#label = value;</code> or <code>id#`label text` = value;</code></td>
+                <td>Labeled variable: use <code>id</code> in formulas; display <code>label</code>
+                </td>
+            </tr>
+            <tr>
+                <td><code>#name</code> or <code>#`label text`</code></td>
+                <td>Label</td>
+            </tr>
+            <tr>
+                <td><code>@name</code> or <code>@`label text`</code></td>
+                <td>Label alias</td>
+            </tr>
+            <tr>
+                <td><code>+ - * / // % ** !</code></td>
+                <td>Arithmetic</td>
+            </tr>
+            <tr>
+                <td><code>~ &lt;&lt; &gt;&gt; &gt;&gt;&gt; &amp; ^ |</code></td>
+                <td>Bitwise</td>
+            </tr>
+            <tr>
+                <td><code>sqrt() sin() log() min() max()</code></td>
+                <td>Functions</td>
+            </tr>
+            <tr>
+                <td><code>pi e tau phi</code></td>
+                <td>Constants</td>
+            </tr>
+            </tbody>
+        </table>
+        <small>Use parentheses to control calculation order.</small>
+    </fieldset>
+    <fieldset>
+        <legend>Settings</legend>
+        <label for="decimals">Decimals</label>
+        <input id="decimals" name="decimals" type="number" min="0" max="20" step="1" value="2">
+        <label for="thousands-separators">
+            Show Thousands Separators
+            <input id="thousands-separators" name="thousands-separators" type="checkbox"
+                   role="switch" checked>
+        </label>
+        <label for="number-format">Number Format</label>
+        <select id="number-format" name="number-format">
+            <option value="auto">Automatic (browser settings)</option>
+            <option value="coder">Coder (1_234.56)</option>
+            <option value="en-US">1,234.56</option>
+            <option value="de-DE">1.234,56</option>
+            <option value="fr-FR">1 234,56</option>
+            <option value="de-CH">1’234.56</option>
+            <option value="en-IN">12,34,567.89</option>
+        </select>
+        <label for="scientific-notation">
+            Show Scientific Notation
+            <input id="scientific-notation" name="scientific-notation" type="checkbox"
+                   role="switch">
+        </label>
+        <label for="tag-underscores">
+            Show Tag Underscores
+            <input id="tag-underscores" name="tag-underscores" type="checkbox" role="switch">
+        </label>
+        <label for="common-argument-names">
+            Show Argument Names for Common Operators
+            <input id="common-argument-names" name="common-argument-names" type="checkbox"
+                   role="switch">
+        </label>
+        <label for="color-operation-text">
+            Color Nested Operation Text
+            <input id="color-operation-text" name="color-operation-text" type="checkbox"
+                   role="switch" checked>
+        </label>
+    </fieldset>
+    <button type="button" class="btn-danger" id="reset-settings">
+        <span class="sym" aria-hidden="true">refresh</span>
+        Reset to Defaults
+    </button>
+</aside>
+
+<script type="module">
+    import { evaluate, parseExpression, removeAnnotations } from "./parser.js";
+
+    const COMMON_OPERATOR_ARGUMENTS = new Set(["-", "/"]);
+    const DEBOUNCE_DELAY = 200;
+    const DEFAULT_DECIMALS = 2;
+    const DEFAULT_NUMBER_FORMAT = "auto";
+    const GOLDEN_ANGLE = 137.508;
+    const PARAMETER_ROLES = Object.freeze({
+        "-": ["minuend", "subtrahend"],
+        "/": ["dividend", "divisor"],
+        "//": ["dividend", "divisor"],
+        "%": ["dividend", "divisor"],
+        "<<": ["value", "shift"],
+        ">>": ["value", "shift"],
+        ">>>": ["value", "shift"],
+        atan2: ["y", "x"],
+        log: ["argument", "base"],
+        pow: ["base", "exponent"],
+    });
+    const expressionInput = document.getElementById("expression");
+    const decimalsInput = document.getElementById("decimals");
+    const thousandsSeparatorsInput = document.getElementById("thousands-separators");
+    const numberFormatInput = document.getElementById("number-format");
+    const scientificNotationInput = document.getElementById("scientific-notation");
+    const tagUnderscoresInput = document.getElementById("tag-underscores");
+    const commonArgumentNamesInput = document.getElementById("common-argument-names");
+    const colorOperationTextInput = document.getElementById("color-operation-text");
+    const result = document.getElementById("result");
+    const error = document.getElementById("error");
+    let debounceTimer;
+    let urlUpdateId = 0;
+
+    function formatValue(value) {
+        if (typeof value !== "number") {
+            return String(value);
+        }
+        const decimals = Number(decimalsInput.value);
+        const absoluteValue = Object.is(value, -0) ? 0 : value;
+        const coderFormat = numberFormatInput.value === "coder";
+        let locale = numberFormatInput.value;
+        if (locale === DEFAULT_NUMBER_FORMAT) {
+            locale = navigator.language;
+        }
+        if (coderFormat) {
+            locale = "en-US";
+        }
+        let formattedValue = new Intl.NumberFormat(locale, {
+            maximumFractionDigits: decimals,
+            minimumFractionDigits: decimals,
+            notation: scientificNotationInput.checked ? "scientific" : "standard",
+            useGrouping: thousandsSeparatorsInput.checked,
+        }).format(absoluteValue);
+        if (coderFormat) {
+            formattedValue = formattedValue.replaceAll(",", "_");
+        }
+        if (Object.is(value, -0)) {
+            return `-${formattedValue}`;
+        }
+        return formattedValue;
+    }
+
+    function formatTag(tag) {
+        if (tagUnderscoresInput.checked) {
+            return tag ?? "";
+        }
+        return tag?.replaceAll("_", " ") ?? "";
+    }
+
+    function appendLabel(label, tag, parameterRole = "") {
+        label.textContent = tag;
+        if (!parameterRole) {
+            return;
+        }
+        if (tag) {
+            label.append(document.createElement("br"));
+        }
+
+        const role = document.createElement("span");
+        role.className = "calculation-parameter-role";
+        role.textContent = `(${parameterRole})`;
+        label.append(role);
+    }
+
+    function createOperationColors(node) {
+        const colors = new Map();
+        let operationIndex = 0;
+
+        function visit(currentNode) {
+            if (!("op" in currentNode)) {
+                return;
+            }
+
+            if (currentNode.p.some((parameter) => "op" in parameter)) {
+                const hue = (operationIndex * GOLDEN_ANGLE) % 360;
+                colors.set(currentNode, `light-dark(oklch(0.48 0.2 ${hue}), oklch(0.78 0.16 ${hue}))`);
+                operationIndex++;
+            }
+
+            for (const parameter of currentNode.p) {
+                visit(parameter);
+            }
+        }
+
+        visit(node);
+        return colors;
+    }
+
+    function colorCalculationText(cell, color) {
+        if (!color) {
+            return;
+        }
+        cell.classList.add("calculation-group-text");
+        cell.style.setProperty("--calculation-group-color", color);
+    }
+
+    function createValueRow(node, className = "", showTag = true, parameterRole = "") {
+        const row = document.createElement("tr");
+        row.className = `calculation-value ${className}`.trim();
+
+        const label = document.createElement("td");
+        label.className = "calculation-label";
+        appendLabel(label, showTag ? formatTag(node.tag) : "", parameterRole);
+
+        const number = document.createElement("td");
+        number.className = "calculation-number";
+        number.textContent = formatValue(node.v);
+
+        row.append(label, number);
+        return row;
+    }
+
+    function createCalculation(node, operationColors, hideResultTag = false, resultColor = "") {
+        if (!("op" in node)) {
+            const table = document.createElement("table");
+            table.className = "calculation";
+            table.append(createValueRow(node));
+            return table;
+        }
+
+        const calculation = document.createElement("table");
+        calculation.className = "calculation";
+        const operationColor = operationColors.get(node);
+        const hideCommonArgumentNames = COMMON_OPERATOR_ARGUMENTS.has(node.op)
+            && !commonArgumentNamesInput.checked;
+        const parameterRoles = node.p.length === 2 && !hideCommonArgumentNames
+            ? PARAMETER_ROLES[node.op]
+            : null;
+
+        for (const [index, parameter] of node.p.entries()) {
+            const parameterRole = parameterRoles?.[index] ?? "";
+            if (index > 0) {
+                const operatorRow = document.createElement("tr");
+                const emptyCell = document.createElement("td");
+                const operator = document.createElement("td");
+                operatorRow.className = "calculation-operation";
+                operator.className = "calculation-operator";
+                operator.textContent = node.op;
+                operatorRow.append(emptyCell, operator);
+                colorCalculationText(operator, operationColor);
+                calculation.append(operatorRow);
+            }
+
+            if (!("op" in parameter)) {
+                const valueRow = createValueRow(parameter, "", true, parameterRole);
+                colorCalculationText(valueRow.querySelector(".calculation-number"), operationColor);
+                calculation.append(valueRow);
+                continue;
+            }
+
+            const operandRow = document.createElement("tr");
+            const operandLabel = document.createElement("td");
+            const operand = document.createElement("td");
+            operandRow.className = "calculation-nesting";
+            operandLabel.className = "calculation-label";
+            appendLabel(operandLabel, formatTag(parameter.tag), parameterRole);
+            operand.className = "calculation-nested";
+            operand.append(createCalculation(parameter, operationColors, true, operationColor));
+            operandRow.append(operandLabel, operand);
+            calculation.append(operandRow);
+        }
+
+        const equalsRow = document.createElement("tr");
+        const emptyCell = document.createElement("td");
+        const equals = document.createElement("td");
+        equalsRow.className = "calculation-operation";
+        equals.className = "calculation-equals";
+        equals.textContent = "=";
+        equalsRow.append(emptyCell, equals);
+
+        const resultRow = createValueRow(node, "calculation-result", !hideResultTag);
+        colorCalculationText(resultRow.querySelector(".calculation-number"), resultColor);
+        calculation.append(equalsRow, resultRow);
+        return calculation;
+    }
+
+    function updateCalculation() {
+        result.replaceChildren();
+        error.textContent = "";
+
+        try {
+            const tree = parseExpression(expressionInput.value);
+            evaluate(tree);
+            const operationColors = colorOperationTextInput.checked
+                ? createOperationColors(tree)
+                : new Map();
+            result.append(createCalculation(tree, operationColors));
+        } catch (caughtError) {
+            error.textContent = caughtError.message;
+        }
+    }
+
+    async function updateUrl(addHistoryEntry = false) {
+        const updateId = ++urlUpdateId;
+        const state = {
+            expression: expressionInput.value,
+            decimals: Number(decimalsInput.value),
+            thousandsSeparators: thousandsSeparatorsInput.checked,
+            numberFormat: numberFormatInput.value,
+            scientificNotation: scientificNotationInput.checked,
+            showTagUnderscores: tagUnderscoresInput.checked,
+            showCommonArgumentNames: commonArgumentNamesInput.checked,
+            colorOperationText: colorOperationTextInput.checked,
+        };
+        const hash = await one.compress.url(JSON.stringify(state), "z");
+        if (updateId !== urlUpdateId) {
+            return;
+        }
+        const url = new URL(window.location.href);
+        url.hash = hash;
+        if (addHistoryEntry) {
+            history.pushState(null, "", url.href);
+            return;
+        }
+        history.replaceState(null, "", url.href);
+    }
+
+    expressionInput.addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(updateCalculation, DEBOUNCE_DELAY);
+        updateUrl();
+    });
+
+    document.getElementById("restore-default").addEventListener("click", async () => {
+        if (!await one.confirm("Restore default example? Current expression will be lost.")) {
+            return;
+        }
+        await updateUrl();
+        expressionInput.value = expressionInput.defaultValue;
+        updateCalculation();
+        updateUrl(true);
+        one.alert("Default example restored.");
+    });
+
+    document.getElementById("copy-calculation").addEventListener("click", () => {
+        one.copy(removeAnnotations(expressionInput.value));
+    });
+
+    decimalsInput.addEventListener("input", () => {
+        if (!decimalsInput.checkValidity()) {
+            return;
+        }
+        updateCalculation();
+        updateUrl();
+    });
+
+    thousandsSeparatorsInput.addEventListener("change", () => {
+        updateCalculation();
+        updateUrl();
+    });
+
+    numberFormatInput.addEventListener("change", () => {
+        updateCalculation();
+        updateUrl();
+    });
+
+    scientificNotationInput.addEventListener("change", () => {
+        updateCalculation();
+        updateUrl();
+    });
+
+    tagUnderscoresInput.addEventListener("change", () => {
+        updateCalculation();
+        updateUrl();
+    });
+
+    commonArgumentNamesInput.addEventListener("change", () => {
+        updateCalculation();
+        updateUrl();
+    });
+
+    colorOperationTextInput.addEventListener("change", () => {
+        updateCalculation();
+        updateUrl();
+    });
+
+    document.getElementById("reset-settings").addEventListener("click", () => {
+        decimalsInput.value = DEFAULT_DECIMALS;
+        thousandsSeparatorsInput.checked = true;
+        numberFormatInput.value = DEFAULT_NUMBER_FORMAT;
+        scientificNotationInput.checked = false;
+        tagUnderscoresInput.checked = false;
+        commonArgumentNamesInput.checked = false;
+        colorOperationTextInput.checked = true;
+        updateCalculation();
+        updateUrl();
+        one.alert("Settings reset to defaults.");
+    });
+
+    async function loadFromUrl() {
+        const serializedState = await one.decompress.url(window.location.hash, "z");
+        if (serializedState === null) {
+            return false;
+        }
+
+        const state = JSON.parse(serializedState);
+        expressionInput.value = state.expression;
+        decimalsInput.value = state.decimals;
+        thousandsSeparatorsInput.checked = state.thousandsSeparators ?? true;
+        const hasNumberFormat = Array.from(numberFormatInput.options)
+            .some((option) => option.value === state.numberFormat);
+        numberFormatInput.value = hasNumberFormat ? state.numberFormat : DEFAULT_NUMBER_FORMAT;
+        scientificNotationInput.checked = state.scientificNotation;
+        tagUnderscoresInput.checked = state.showTagUnderscores;
+        commonArgumentNamesInput.checked = state.showCommonArgumentNames ?? false;
+        colorOperationTextInput.checked = state.colorOperationText ?? true;
+        updateCalculation();
+        return true;
+    }
+
+    async function init() {
+        if (!await loadFromUrl()) {
+            updateCalculation();
+            updateUrl();
+        }
+    }
+
+    window.addEventListener("popstate", async () => {
+        urlUpdateId++;
+        await loadFromUrl();
+    });
+
+    init();
+</script>
+</body>
+</html>
