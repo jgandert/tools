@@ -217,14 +217,6 @@
             fill: var(--bg-name);
         }
 
-        .syntax-ref {
-            display: block;
-            margin-top: 4px;
-            margin-bottom: var(--spacing-md);
-            font-size: 0.75rem;
-            color: var(--on-surface-variant);
-            line-height: 1.4;
-        }
     </style>
 </head>
 
@@ -237,13 +229,36 @@
         <h1>Date Overlap Visualizer</h1>
         <p>Parse date ranges and display overlaps as sequential tubes.</p>
     </hgroup>
+    <nav aria-label="Default examples">
+        <ul>
+            <li>
+                <button type="button" id="preset-basic" data-tooltip="Load Basic default example">
+                    Basic
+                </button>
+            </li>
+            <li>
+                <button type="button" id="preset-permutations"
+                        data-tooltip="Load Permutations default example">Permutations
+                </button>
+            </li>
+            <li>
+                <button type="button" id="preset-ft"
+                        data-tooltip="Load FT &amp; Half default example">FT &amp; Half
+                </button>
+            </li>
+            <li>
+                <button type="button" id="preset-multi"
+                        data-tooltip="Load Multi-Name default example">Multi-Name
+                </button>
+            </li>
+        </ul>
+    </nav>
 </header>
 
 <main id="content">
     <div class="header-row">
         <h2>Visualization</h2>
         <div class="group">
-            <button type="button" id="btn-copy-share" class="btn-sym">share</button>
             <button type="button" id="btn-clear" class="btn-sym btn-danger">delete</button>
         </div>
     </div>
@@ -269,25 +284,41 @@
                 <!-- prettier-ignore-end -->
             </label>
             Format:
-            <div class="syntax-ref">
-                • <code>Name: Start - End</code> (range; end inclusive)<br>
-                • <code>Name: Date</code> (single day)<br>
-                • <code>Name1, Name2: ...</code> (multi-name)<br>
-                • <code>... + ...</code> (multi-range)<br>
-                • <code>... OR ...</code> (alternatives)<br>
-                • <code>Name {h}</code> (half-time modifier)
-            </div>
+            <table>
+                <thead>
+                <tr>
+                    <th scope="col">Format</th>
+                    <th scope="col">Meaning</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><code>Name: Start - End</code></td>
+                    <td>Range; end inclusive</td>
+                </tr>
+                <tr>
+                    <td><code>Name: Date</code></td>
+                    <td>Single day</td>
+                </tr>
+                <tr>
+                    <td><code>Name1, Name2: ...</code></td>
+                    <td>Multiple names</td>
+                </tr>
+                <tr>
+                    <td><code>... + ...</code></td>
+                    <td>Multiple ranges</td>
+                </tr>
+                <tr>
+                    <td><code>... OR ...</code></td>
+                    <td>Alternatives</td>
+                </tr>
+                <tr>
+                    <td><code>Name {h}</code></td>
+                    <td>Half-time modifier</td>
+                </tr>
+                </tbody>
+            </table>
             <small>Supports various date formats (auto-detect).</small>
-        </fieldset>
-
-        <fieldset>
-            <legend>Presets</legend>
-            <div class="group">
-                <button type="button" id="preset-basic">Basic</button>
-                <button type="button" id="preset-permutations">Permutations</button>
-                <button type="button" id="preset-ft">FT &amp; Half</button>
-                <button type="button" id="preset-multi">Multi-Name</button>
-            </div>
         </fieldset>
 
         <fieldset>
@@ -337,7 +368,6 @@
     const dateInput = document.getElementById("date-input");
     const errorAlert = document.getElementById("error-alert");
     const btnClear = document.getElementById("btn-clear");
-    const btnCopyShare = document.getElementById("btn-copy-share");
     const onlyShowOverlapsCheckbox = document.getElementById("only-show-overlaps");
     const hideGapsCheckbox = document.getElementById("hide-gaps");
     const showNonWorkdaysCheckbox = document.getElementById("show-non-workdays");
@@ -1512,7 +1542,7 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
         }
     }
 
-    async function loadPreset(presetText) {
+    async function loadPreset(presetText, addHistoryEntry = false) {
         const currentValue = dateInput.value.trim();
         const matchesPreset = currentValue === "" ||
             currentValue === PRESETS.basic.trim() ||
@@ -1521,35 +1551,42 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
             currentValue === PRESETS.multi.trim();
 
         if (!matchesPreset) {
-            const confirmLoad = await one.confirm("Are you sure you want to load this preset? Your current input will be overwritten.");
+            const confirmLoad = await one.confirm("Are you sure you want to load this default example? Your current input will be overwritten.");
             if (!confirmLoad) {
                 return;
             }
         }
 
+        if (addHistoryEntry) {
+            await updateUrlHash();
+        }
         dateInput.value = presetText;
         localStorage.setItem("date_overlap_input", presetText);
-        updateHashIfPresent();
+        updateUrlHash(addHistoryEntry);
         updateVisualization();
     }
 
     dateInput.addEventListener("input", () => {
         localStorage.setItem("date_overlap_input", dateInput.value);
-        updateHashIfPresent();
+        updateUrlHash();
         updateVisualization();
     });
 
     btnClear.addEventListener("click", () => {
         dateInput.value = "";
         localStorage.removeItem("date_overlap_input");
-        history.replaceState(null, "", location.href.split("#")[0]);
+        updateUrlHash();
         updateVisualization();
     });
 
     let isInitialized = false;
+    let urlUpdateId = 0;
 
-    async function updateHashIfPresent() {
-        if (!location.hash || !isInitialized) return;
+    async function updateUrlHash(addHistoryEntry = false) {
+        if (!isInitialized) {
+            return;
+        }
+        const updateId = ++urlUpdateId;
         const state = {
             input: dateInput.value,
             onlyShowOverlaps: onlyShowOverlapsCheckbox.checked,
@@ -1564,7 +1601,14 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
         const json = JSON.stringify(state);
         try {
             const hash = await one.compress.url(json, "z");
+            if (updateId !== urlUpdateId) {
+                return;
+            }
             const url = location.href.split("#")[0] + "#" + hash;
+            if (addHistoryEntry) {
+                history.pushState(null, "", url);
+                return;
+            }
             history.replaceState(null, "", url);
         } catch (e) {
             console.error(e);
@@ -1623,39 +1667,23 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
         return false;
     }
 
-    btnCopyShare.addEventListener("click", async () => {
-        const state = {
-            input: dateInput.value,
-            onlyShowOverlaps: onlyShowOverlapsCheckbox.checked,
-            hideGaps: hideGapsCheckbox.checked,
-            showNonWorkdays: showNonWorkdaysCheckbox.checked,
-            mergeNonWorkdays: mergeNonWorkdaysCheckbox.checked,
-            workdays: workdaysInput.value,
-            holidays: holidaysInput.value,
-            dateFormat: dateFormatSelect.value,
-            dropCurrentYear: dropCurrentYearCheckbox.checked,
-        };
-        const json = JSON.stringify(state);
-        try {
-            const hash = await one.compress.url(json, "z");
-            const url = location.href.split("#")[0] + "#" + hash;
-            history.replaceState(null, "", url);
-            await one.copy(url);
-        } catch (e) {
-            console.error(e);
+    window.addEventListener("popstate", async () => {
+        urlUpdateId++;
+        if (await loadFromHash()) {
+            updateVisualization();
         }
     });
 
     onlyShowOverlapsCheckbox.addEventListener("change", () => {
         localStorage.setItem("date_overlap_only_show_overlaps", onlyShowOverlapsCheckbox.checked);
         updateToggleStates();
-        updateHashIfPresent();
+        updateUrlHash();
         updateVisualization();
     });
 
     hideGapsCheckbox.addEventListener("change", () => {
         localStorage.setItem("date_overlap_hide_gaps", hideGapsCheckbox.checked);
-        updateHashIfPresent();
+        updateUrlHash();
         updateVisualization();
     });
 
@@ -1667,44 +1695,44 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
     showNonWorkdaysCheckbox.addEventListener("change", () => {
         localStorage.setItem("date_overlap_show_non_workdays", showNonWorkdaysCheckbox.checked);
         updateToggleStates();
-        updateHashIfPresent();
+        updateUrlHash();
         updateVisualization();
     });
 
     mergeNonWorkdaysCheckbox.addEventListener("change", () => {
         localStorage.setItem("date_overlap_merge_non_workdays", mergeNonWorkdaysCheckbox.checked);
-        updateHashIfPresent();
+        updateUrlHash();
         updateVisualization();
     });
 
     workdaysInput.addEventListener("input", () => {
         localStorage.setItem("date_overlap_workdays", workdaysInput.value);
-        updateHashIfPresent();
+        updateUrlHash();
         updateVisualization();
     });
 
     holidaysInput.addEventListener("input", () => {
         localStorage.setItem("date_overlap_holidays", holidaysInput.value);
-        updateHashIfPresent();
+        updateUrlHash();
         updateVisualization();
     });
 
     dateFormatSelect.addEventListener("change", () => {
         localStorage.setItem("date_overlap_date_format", dateFormatSelect.value);
-        updateHashIfPresent();
+        updateUrlHash();
         updateVisualization();
     });
 
     dropCurrentYearCheckbox.addEventListener("change", () => {
         localStorage.setItem("date_overlap_drop_current_year", dropCurrentYearCheckbox.checked);
-        updateHashIfPresent();
+        updateUrlHash();
         updateVisualization();
     });
 
-    document.getElementById("preset-basic").addEventListener("click", () => loadPreset(PRESETS.basic));
-    document.getElementById("preset-permutations").addEventListener("click", () => loadPreset(PRESETS.permutations));
-    document.getElementById("preset-ft").addEventListener("click", () => loadPreset(PRESETS.ft));
-    document.getElementById("preset-multi").addEventListener("click", () => loadPreset(PRESETS.multi));
+    document.getElementById("preset-basic").addEventListener("click", () => loadPreset(PRESETS.basic, true));
+    document.getElementById("preset-permutations").addEventListener("click", () => loadPreset(PRESETS.permutations, true));
+    document.getElementById("preset-ft").addEventListener("click", () => loadPreset(PRESETS.ft, true));
+    document.getElementById("preset-multi").addEventListener("click", () => loadPreset(PRESETS.multi, true));
 
     const savedOnlyShowOverlaps = localStorage.getItem("date_overlap_only_show_overlaps");
     if (savedOnlyShowOverlaps !== null) {
