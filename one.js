@@ -174,6 +174,35 @@ const one = (() => {
         );
     };
 
+    const activeToasts = new Set();
+    let isHoveringToastStack = false;
+    let resumeDebounceId = null;
+
+    const pauseToastStack = () => {
+        if (resumeDebounceId !== null) {
+            clearTimeout(resumeDebounceId);
+            resumeDebounceId = null;
+        }
+        isHoveringToastStack = true;
+        activeToasts.forEach((t) => {
+            t.pause();
+        });
+    };
+
+    const resumeToastStack = () => {
+        if (resumeDebounceId !== null) {
+            clearTimeout(resumeDebounceId);
+        }
+        // 75ms debounce bridges the flex gap between stacked toasts without timer thrashing
+        resumeDebounceId = setTimeout(() => {
+            resumeDebounceId = null;
+            isHoveringToastStack = false;
+            activeToasts.forEach((t) => {
+                t.resume();
+            });
+        }, 75);
+    };
+
     // `type` is "info" (default, for confirmations/notices) or "error" --
     // kept visually distinct via a modifier class rather than a fixed look
     // for every message. `minDuration` floors the estimated reading time; pass
@@ -213,10 +242,80 @@ const one = (() => {
         void toast.offsetHeight;
         toast.classList.add("show");
 
-        setTimeout(() => {
-            toast.classList.remove("show");
-            toast.addEventListener("transitionend", () => toast.remove());
-        }, duration);
+        const toastEntry = {
+            toast,
+            remaining: duration,
+            startTime: 0,
+            timerId: null,
+            start(ms) {
+                this.startTime = Date.now();
+                this.timerId = setTimeout(() => {
+                    this.dismiss();
+                }, ms);
+            },
+            pause() {
+                if (this.timerId !== null) {
+                    clearTimeout(this.timerId);
+                    this.timerId = null;
+                    this.remaining = Math.max(0, this.remaining - (Date.now() - this.startTime));
+                }
+            },
+            resume() {
+                if (this.timerId === null) {
+                    // Minimum 1000ms on resume so the toast does not vanish instantaneously
+                    this.start(Math.max(1000, this.remaining));
+                }
+            },
+            dismiss() {
+                activeToasts.delete(this);
+                if (activeToasts.size === 0) {
+                    if (resumeDebounceId !== null) {
+                        clearTimeout(resumeDebounceId);
+                        resumeDebounceId = null;
+                    }
+                    isHoveringToastStack = false;
+                }
+                toast.classList.remove("show");
+
+                let removed = false;
+                const removeToast = () => {
+                    if (!removed) {
+                        removed = true;
+                        toast.remove();
+                    }
+                };
+                toast.addEventListener("transitionend", removeToast, { once: true });
+                setTimeout(removeToast, 500);
+            },
+        };
+
+        activeToasts.add(toastEntry);
+
+        const handlePointerEnter = (e) => {
+            if (e.pointerType === "touch") {
+                return;
+            }
+            pauseToastStack();
+        };
+
+        const handlePointerLeave = (e) => {
+            if (e.pointerType === "touch") {
+                return;
+            }
+            resumeToastStack();
+        };
+
+        toast.addEventListener("pointerenter", handlePointerEnter);
+        toast.addEventListener("pointerleave", handlePointerLeave);
+        toast.addEventListener("touchstart", pauseToastStack, { passive: true });
+        toast.addEventListener("touchend", resumeToastStack, { passive: true });
+        toast.addEventListener("touchcancel", resumeToastStack, { passive: true });
+        toast.addEventListener("focusin", pauseToastStack);
+        toast.addEventListener("focusout", resumeToastStack);
+
+        if (!isHoveringToastStack) {
+            toastEntry.start(duration);
+        }
     };
 
     const copy = (text, silent = false) => {
