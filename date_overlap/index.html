@@ -67,6 +67,11 @@
             margin-top: 1rem;
         }
 
+        .timeline-container.one-tube-per-line {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
         .tube {
             display: inline-flex;
             align-items: stretch;
@@ -78,6 +83,7 @@
             white-space: nowrap;
             box-sizing: border-box;
             min-width: 200px;
+            max-width: 100%;
             flex-shrink: 0;
             overflow: hidden;
             padding: 0;
@@ -132,6 +138,12 @@
             width: 12px;
             flex-shrink: 0;
             display: block;
+        }
+
+        .tube-person {
+            display: inline-flex;
+            align-items: stretch;
+            flex: none;
         }
 
         .tube.flat-left {
@@ -215,6 +227,28 @@
 
         .tube:not(.empty-gap) .arrow-2 path {
             fill: var(--bg-name);
+        }
+
+        @media (max-width: 600px) {
+            .timeline-container {
+                padding: var(--spacing-sm);
+            }
+
+            .tube {
+                flex-wrap: wrap;
+            }
+
+            .tube-start {
+                padding-left: 0.5rem;
+            }
+
+            .tube-end {
+                padding-right: 0.5rem;
+            }
+
+            .tube-name {
+                padding-inline: 0.65rem;
+            }
         }
 
     </style>
@@ -331,6 +365,10 @@
                 Hide gap tubes
                 <input type="checkbox" id="hide-gaps" role="switch" checked>
             </label>
+            <label for="each-tube-own-line">
+                Each tube on its own line
+                <input type="checkbox" id="each-tube-own-line" role="switch" checked>
+            </label>
             <label for="show-non-workdays">
                 Show non-workdays
                 <input type="checkbox" id="show-non-workdays" role="switch">
@@ -370,6 +408,7 @@
     const btnClear = document.getElementById("btn-clear");
     const onlyShowOverlapsCheckbox = document.getElementById("only-show-overlaps");
     const hideGapsCheckbox = document.getElementById("hide-gaps");
+    const eachTubeOwnLineCheckbox = document.getElementById("each-tube-own-line");
     const showNonWorkdaysCheckbox = document.getElementById("show-non-workdays");
     const mergeNonWorkdaysCheckbox = document.getElementById("merge-non-workdays");
     const dateFormatSelect = document.getElementById("date-format-select");
@@ -1254,6 +1293,7 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
 
         const containerEl = document.createElement("div");
         containerEl.className = "timeline-container";
+        containerEl.classList.toggle("one-tube-per-line", eachTubeOwnLineCheckbox.checked);
 
         const hideGaps = hideGapsCheckbox.checked;
         const onlyShowOverlaps = onlyShowOverlapsCheckbox.checked;
@@ -1330,6 +1370,9 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
                 interval.people.forEach((person, pIdx) => {
                     const personIndex = allPeople.indexOf(person);
                     const hue = (personIndex / Math.max(allPeople.length, 1)) * 360;
+                    const personEl = document.createElement("span");
+                    personEl.className = "tube-person";
+                    personEl.style.setProperty("--hue", hue);
 
                     if (pIdx === 0) {
                         const startSpan = document.createElement("span");
@@ -1348,13 +1391,13 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
                     const path1 = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     path1.setAttribute("d", "M0,0 L10,10 L0,20 Z");
                     arrow1.appendChild(path1);
-                    tubeEl.appendChild(arrow1);
+                    personEl.appendChild(arrow1);
 
                     const nameSpan = document.createElement("span");
                     nameSpan.className = "tube-name";
                     nameSpan.style.setProperty("--hue", hue);
                     nameSpan.textContent = person.endsWith(" {h}") ? person : person + (halfTimePeople.has(person) ? " {h}" : "");
-                    tubeEl.appendChild(nameSpan);
+                    personEl.appendChild(nameSpan);
 
                     const arrow2 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                     arrow2.setAttribute("class", "tube-arrow arrow-2");
@@ -1365,7 +1408,8 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
                     const path2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     path2.setAttribute("d", "M0,0 L10,10 L0,20 Z");
                     arrow2.appendChild(path2);
-                    tubeEl.appendChild(arrow2);
+                    personEl.appendChild(arrow2);
+                    tubeEl.appendChild(personEl);
 
                     if (pIdx === interval.people.length - 1) {
                         const endSpan = document.createElement("span");
@@ -1591,6 +1635,7 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
             input: dateInput.value,
             onlyShowOverlaps: onlyShowOverlapsCheckbox.checked,
             hideGaps: hideGapsCheckbox.checked,
+            eachTubeOwnLine: eachTubeOwnLineCheckbox.checked,
             showNonWorkdays: showNonWorkdaysCheckbox.checked,
             mergeNonWorkdays: mergeNonWorkdaysCheckbox.checked,
             workdays: workdaysInput.value,
@@ -1640,6 +1685,9 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
                 if (parsed.hideGaps !== undefined) {
                     hideGapsCheckbox.checked = parsed.hideGaps;
                 }
+                if (parsed.eachTubeOwnLine !== undefined) {
+                    eachTubeOwnLineCheckbox.checked = parsed.eachTubeOwnLine;
+                }
                 if (parsed.showNonWorkdays !== undefined) {
                     showNonWorkdaysCheckbox.checked = parsed.showNonWorkdays;
                 }
@@ -1683,6 +1731,12 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
 
     hideGapsCheckbox.addEventListener("change", () => {
         localStorage.setItem("date_overlap_hide_gaps", hideGapsCheckbox.checked);
+        updateUrlHash();
+        updateVisualization();
+    });
+
+    eachTubeOwnLineCheckbox.addEventListener("change", () => {
+        localStorage.setItem("date_overlap_each_tube_own_line", eachTubeOwnLineCheckbox.checked);
         updateUrlHash();
         updateVisualization();
     });
@@ -1742,6 +1796,11 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
     const savedHideGaps = localStorage.getItem("date_overlap_hide_gaps");
     if (savedHideGaps !== null) {
         hideGapsCheckbox.checked = savedHideGaps === "true";
+    }
+
+    const savedEachTubeOwnLine = localStorage.getItem("date_overlap_each_tube_own_line");
+    if (savedEachTubeOwnLine !== null) {
+        eachTubeOwnLineCheckbox.checked = savedEachTubeOwnLine === "true";
     }
 
     const savedShowNonWorkdays = localStorage.getItem("date_overlap_show_non_workdays");

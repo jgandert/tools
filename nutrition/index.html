@@ -15,7 +15,7 @@
         /* Minimal custom layout styles specific to the calculator results */
         .results-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
             gap: var(--spacing-md);
             margin-top: var(--spacing-md);
         }
@@ -68,20 +68,21 @@
         }
 
         .food-list li {
+            display: flex;
+            flex-wrap: wrap;
+            column-gap: 5px;
             padding: var(--spacing-sm) 0;
             border-bottom: 1px dashed var(--border);
         }
 
         /* Gives consistent alignment to the bold labels in the lists */
-        .food-list li strong {
-            display: inline-block;
-            width: 220px;
-            vertical-align: top;
+        .food-list li > strong {
+            flex: 0 1 220px;
         }
 
-        .food-list li span.desc {
-            display: inline-block;
-            width: calc(100% - 225px);
+        .food-list li > .desc {
+            flex: 1 1 210px;
+            min-width: min(100%, 210px);
         }
 
         .guide-text {

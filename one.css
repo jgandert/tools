@@ -1332,6 +1332,7 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 
 .segmented-control label {
     flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1371,6 +1372,17 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     width: 0;
     height: 0;
     pointer-events: none;
+}
+
+@media (max-width: 600px) {
+    .segmented-control {
+        flex-wrap: wrap;
+    }
+
+    .segmented-control label {
+        flex: 1 1 calc(50% - 2px);
+        padding-inline: var(--spacing-sm);
+    }
 }
 
 
@@ -2395,7 +2407,8 @@ dialog footer {
 }
 
 .flex-row > * {
-    flex: 1;
+    flex: 1 1 12rem;
+    min-width: 0;
 }
 
 /* Space-between header-style row (title left, action right) */
@@ -2693,6 +2706,10 @@ dialog footer {
     color: var(--on-surface);
 }
 
+.steps li > * {
+    min-width: 0;
+}
+
 .steps li::before {
     content: counter(steps-counter);
     flex-shrink: 0;
@@ -2715,6 +2732,7 @@ dialog footer {
    would stretch to the width of the step text instead of hugging its code. */
 .steps pre {
     width: fit-content;
+    max-width: 100%;
 }
 
 
@@ -3134,7 +3152,12 @@ dialog footer {
 }
 
 @media (max-width: 600px) {
+    html {
+        scrollbar-gutter: auto;
+    }
+
     .layout-centered {
+        justify-content: safe flex-end;
         padding-left: 2px;
         padding-right: 2px;
     }

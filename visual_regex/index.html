@@ -38,6 +38,7 @@
             align-items: center;
             gap: var(--spacing-sm);
             flex-wrap: wrap;
+            min-width: 0;
         }
 
         .node-type {
@@ -57,6 +58,8 @@
             align-items: center;
             gap: var(--spacing-sm);
             flex-wrap: wrap;
+            min-width: 0;
+            max-width: 100%;
         }
 
         /* Node Specific Colors */
@@ -124,8 +127,16 @@
         }
 
         .type-LITERAL .node-input.text {
-            flex-grow: 1;
-            width: auto;
+            flex: 1 1 12rem;
+            width: 0;
+        }
+
+        .node-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-left: auto;
+            max-width: 100%;
         }
 
         input[type="checkbox"].node-input,
@@ -1016,11 +1027,9 @@
                 node.value = e.target.value;
                 updateRegexInput();
             };
-            const prefix = node.escaped ? "Escaped: \\" : "Matches \"";
-            const suffix = node.escaped ? "" : "\"";
+            const prefix = node.escaped ? "Escaped: \\" : "Matches ";
             contentDiv.appendChild(document.createTextNode(prefix));
             contentDiv.appendChild(input);
-            if (suffix) contentDiv.appendChild(document.createTextNode(suffix));
         } else if (node.type === TYPES.DOT) {
             contentDiv.appendChild(document.createTextNode("Any character (except newline)"));
         } else if (node.type === TYPES.FLAGS) {
@@ -1201,10 +1210,7 @@
         }
 
         // Movement and Delete Buttons
-        const actions = createEl("div", "");
-        actions.style.marginLeft = "auto";
-        actions.style.display = "flex";
-        actions.style.gap = "4px";
+        const actions = createEl("div", "node-actions");
 
         // Move Up
         const moveUpBtn = tip(createEl("button", "btn-sym", "", "arrow_upward"), "Move up");
