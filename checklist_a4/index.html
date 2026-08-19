@@ -649,13 +649,15 @@
 
     // --- Columns Mode Parser & Renderer ---
     function parseMarkdownToColumns(mdText) {
-        const colSeparators = /(?:^|\n)(?:<!--\s*column\s*--> |=
-    ==
-        +\s * column\s *\d *\s *=
-    ==
-        + | ---+\s * column\s * ---+
-    )/
-        i;
+        /* beautify ignore:start */
+        /* prettier-ignore-start */
+        const colSeparators = new RegExp(
+            "(?:^|\\n)" +
+            "(?:\\x3C!--\\s*column\\s*--\\x3E|=+\\s*column\\s*\\d*\\s*=+|---+\\s*column\\s*---+)",
+            "i",
+        );
+        /* prettier-ignore-end */
+        /* beautify ignore:end */
         let rawCols = [];
         if (colSeparators.test(mdText)) {
             rawCols = mdText.split(colSeparators).filter(c => c.trim().length > 0);
