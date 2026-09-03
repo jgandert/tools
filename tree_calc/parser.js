@@ -24,6 +24,16 @@ const SYMBOL_CONSTANT_VALUES = Object.freeze({
     "φ": (1 + Math.sqrt(5)) / 2,
 });
 
+function cloneExpressionTree(node) {
+    const clone = "op" in node
+        ? { op: node.op, p: node.p.map(cloneExpressionTree) }
+        : { v: node.v };
+    if ("tag" in node) {
+        clone.tag = node.tag;
+    }
+    return clone;
+}
+
 class ExpressionParser {
     constructor(source) {
         this.source = source;
@@ -54,16 +64,17 @@ class ExpressionParser {
             }
 
             const valueNode = this.parseBitwiseOr();
-            const value = evaluate(valueNode);
+            const variableNode = {
+                ...valueNode,
+                tag: declaration.tag ?? valueNode.tag ?? declaration.name,
+            };
+            evaluate(cloneExpressionTree(variableNode));
             this.skipWhitespace();
             if (this.source[this.position] !== ";") {
                 throw new SyntaxError(`Expected ";" at position ${this.position}`);
             }
             this.position++;
-            this.variables.set(declaration.name, {
-                tag: declaration.tag ?? valueNode.tag ?? declaration.name,
-                value,
-            });
+            this.variables.set(declaration.name, variableNode);
             this.skipWhitespace();
         }
     }
@@ -220,8 +231,7 @@ class ExpressionParser {
         this.skipWhitespace();
         if (this.source[this.position] !== "(") {
             if (this.variables.has(name)) {
-                const variable = this.variables.get(name);
-                return { v: variable.value, tag: variable.tag };
+                return cloneExpressionTree(this.variables.get(name));
             }
             const normalizedName = name.toLowerCase();
             if (Object.hasOwn(CONSTANT_VALUES, normalizedName)) {

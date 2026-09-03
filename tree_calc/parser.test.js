@@ -70,7 +70,14 @@ assertParsesAndEvaluates(
     "a = 2; b = a + 3; b * a",
     {
         op: "*",
-        p: [{ v: 5, tag: "b" }, { v: 2, tag: "a" }],
+        p: [
+            {
+                op: "+",
+                p: [{ v: 2, tag: "a" }, { v: 3 }],
+                tag: "b",
+            },
+            { v: 2, tag: "a" },
+        ],
     },
     10,
 );
@@ -128,11 +135,27 @@ assertParsesAndEvaluates(
         op: "+",
         p: [
             { v: 3, tag: "annual_rate" },
-            { v: 6, tag: "doubled" },
+            {
+                op: "*",
+                p: [{ v: 3, tag: "annual_rate" }, { v: 2 }],
+                tag: "doubled",
+            },
         ],
     },
     9,
 );
+
+const expandedVariableExpression = "mitarbeiter = 140; kosten_pro_monat = 200; monate = 12; kosten_pro_jahr = monate * kosten_pro_monat; kosten_pro_jahr * mitarbeiter";
+const annotatedExpression = "mitarbeiter = 140; kosten_pro_monat = 200; monate = 12; (monate * kosten_pro_monat)#kosten_pro_jahr * mitarbeiter";
+assert.deepEqual(
+    parseExpression(expandedVariableExpression),
+    parseExpression(annotatedExpression),
+);
+
+const repeatedVariableTree = parseExpression("a = 2; b = a + 1; b + b");
+assert.notStrictEqual(repeatedVariableTree.p[0], repeatedVariableTree.p[1]);
+evaluate(repeatedVariableTree.p[0]);
+assert.equal(repeatedVariableTree.p[1].v, undefined);
 
 assert.equal(
     removeAnnotations("ar#annual_rate = 3; ar * 2"),

@@ -17,22 +17,27 @@
         }
 
         #result {
+            --calculation-outline: light-dark(
+                color-mix(in srgb, var(--outline-variant) 70%, transparent),
+                var(--outline-variant)
+            );
             overflow-x: auto;
-            padding: var(--spacing-lg);
         }
 
         .calculation {
             width: 100%;
             min-width: max-content;
             margin: 0;
-            border: var(--border-width) solid var(--outline-variant);
-            border-collapse: collapse;
+            border: calc(var(--border-width) * 2) solid var(--calculation-outline);
+            border-collapse: separate;
+            border-spacing: 0;
             background: var(--surface-container-low);
+            font-family: var(--font-code);
         }
 
         .calculation td {
-            padding: calc(var(--spacing-xs) * 2) calc(var(--spacing-sm) * 2);
-            border: var(--border-width) solid var(--outline-variant);
+            padding: calc(var(--spacing-xs) * 1.5) calc(var(--spacing-sm) * 1.5);
+            border: 0;
         }
 
         .calculation-label {
@@ -40,6 +45,7 @@
             max-width: 10rem;
             color: var(--primary);
             font-weight: 600;
+            vertical-align: bottom;
             overflow-wrap: anywhere;
         }
 
@@ -61,6 +67,12 @@
             font-variant-numeric: tabular-nums;
         }
 
+        #result.center-operators-and-numbers .calculation-operator,
+        #result.center-operators-and-numbers .calculation-equals,
+        #result.center-operators-and-numbers .calculation-number {
+            text-align: center;
+        }
+
         .calculation-value > td {
             background: var(--surface-container-low);
         }
@@ -75,22 +87,35 @@
         }
 
         .calculation-nesting > td {
-            background: var(--surface-container-highest);
+            background: var(--surface-container-high);
+        }
+
+        .calculation-nesting-depth-even > td {
+            background: var(--surface-container);
         }
 
         .calculation-group-text {
             color: var(--calculation-group-color);
         }
 
-        #result > .calculation,
-        .calculation-nested {
-            border-left-width: calc(var(--border-width) * 4) !important;
-            border-bottom-width: calc(var(--border-width) * 4) !important;
-            box-shadow: var(--outline-variant) -4px 4px 5px 0;
+        #result.color-table-borders .calculation-group-border {
+            border-right-color: var(--calculation-group-color);
         }
 
         .calculation-nested {
-            padding: 0 !important;
+            border-left-width: calc(var(--border-width) * 6) !important;
+            border-bottom-width: calc(var(--border-width) * 7) !important;
+        }
+
+        #result > .calculation,
+        .calculation-nested > .calculation {
+            box-shadow:
+                var(--calculation-outline) -4px 0 5px 0,
+                var(--calculation-outline) 0 4px 5px 0;
+        }
+
+        .calculation-nested {
+            padding: 0 var(--spacing-md) 0 0 !important;
         }
 
         #error:not(:empty) {
@@ -221,6 +246,16 @@
             <input id="color-operation-text" name="color-operation-text" type="checkbox"
                    role="switch" checked>
         </label>
+        <label for="color-table-borders">
+            Color Table Borders
+            <input id="color-table-borders" name="color-table-borders" type="checkbox"
+                   role="switch">
+        </label>
+        <label for="center-operators-and-numbers">
+            Center Operators and Numeric Values
+            <input id="center-operators-and-numbers" name="center-operators-and-numbers"
+                   type="checkbox" role="switch">
+        </label>
     </fieldset>
     <button type="button" class="btn-danger" id="reset-settings">
         <span class="sym" aria-hidden="true">refresh</span>
@@ -256,6 +291,8 @@
     const tagUnderscoresInput = document.getElementById("tag-underscores");
     const commonArgumentNamesInput = document.getElementById("common-argument-names");
     const colorOperationTextInput = document.getElementById("color-operation-text");
+    const colorTableBordersInput = document.getElementById("color-table-borders");
+    const centerOperatorsAndNumbersInput = document.getElementById("center-operators-and-numbers");
     const result = document.getElementById("result");
     const error = document.getElementById("error");
     let debounceTimer;
@@ -344,6 +381,26 @@
         cell.style.setProperty("--calculation-group-color", color);
     }
 
+    function colorCalculationBorder(calculation, color) {
+        if (!color) {
+            return;
+        }
+        calculation.classList.add("calculation-group-border");
+        calculation.style.setProperty("--calculation-group-color", color);
+    }
+
+    function createOperationRow(operation, color) {
+        const row = document.createElement("tr");
+        const operator = document.createElement("td");
+        row.className = "calculation-operation";
+        operator.className = "calculation-operator";
+        operator.colSpan = 2;
+        operator.textContent = operation;
+        row.append(operator);
+        colorCalculationText(operator, color);
+        return row;
+    }
+
     function createValueRow(node, className = "", showTag = true, parameterRole = "") {
         const row = document.createElement("tr");
         row.className = `calculation-value ${className}`.trim();
@@ -360,7 +417,7 @@
         return row;
     }
 
-    function createCalculation(node, operationColors, hideResultTag = false, resultColor = "") {
+    function createCalculation(node, operationColors, hideResultTag = false, resultColor = "", depth = 0) {
         if (!("op" in node)) {
             const table = document.createElement("table");
             table.className = "calculation";
@@ -370,6 +427,7 @@
 
         const calculation = document.createElement("table");
         calculation.className = "calculation";
+        colorCalculationBorder(calculation, resultColor);
         const operationColor = operationColors.get(node);
         const hideCommonArgumentNames = COMMON_OPERATOR_ARGUMENTS.has(node.op)
             && !commonArgumentNamesInput.checked;
@@ -377,18 +435,14 @@
             ? PARAMETER_ROLES[node.op]
             : null;
 
+        if (node.p.length === 1 && node.op !== "!") {
+            calculation.append(createOperationRow(node.op, operationColor));
+        }
+
         for (const [index, parameter] of node.p.entries()) {
             const parameterRole = parameterRoles?.[index] ?? "";
             if (index > 0) {
-                const operatorRow = document.createElement("tr");
-                const emptyCell = document.createElement("td");
-                const operator = document.createElement("td");
-                operatorRow.className = "calculation-operation";
-                operator.className = "calculation-operator";
-                operator.textContent = node.op;
-                operatorRow.append(emptyCell, operator);
-                colorCalculationText(operator, operationColor);
-                calculation.append(operatorRow);
+                calculation.append(createOperationRow(node.op, operationColor));
             }
 
             if (!("op" in parameter)) {
@@ -401,13 +455,19 @@
             const operandRow = document.createElement("tr");
             const operandLabel = document.createElement("td");
             const operand = document.createElement("td");
-            operandRow.className = "calculation-nesting";
+            operandRow.className = depth % 2 === 0
+                ? "calculation-nesting"
+                : "calculation-nesting calculation-nesting-depth-even";
             operandLabel.className = "calculation-label";
             appendLabel(operandLabel, formatTag(parameter.tag), parameterRole);
             operand.className = "calculation-nested";
-            operand.append(createCalculation(parameter, operationColors, true, operationColor));
+            operand.append(createCalculation(parameter, operationColors, true, operationColor, depth + 1));
             operandRow.append(operandLabel, operand);
             calculation.append(operandRow);
+        }
+
+        if (node.p.length === 1 && node.op === "!") {
+            calculation.append(createOperationRow(node.op, operationColor));
         }
 
         const equalsRow = document.createElement("tr");
@@ -426,6 +486,8 @@
 
     function updateCalculation() {
         result.replaceChildren();
+        result.classList.toggle("color-table-borders", colorTableBordersInput.checked);
+        result.classList.toggle("center-operators-and-numbers", centerOperatorsAndNumbersInput.checked);
         error.textContent = "";
 
         try {
@@ -451,6 +513,8 @@
             showTagUnderscores: tagUnderscoresInput.checked,
             showCommonArgumentNames: commonArgumentNamesInput.checked,
             colorOperationText: colorOperationTextInput.checked,
+            colorTableBorders: colorTableBordersInput.checked,
+            centerOperatorsAndNumbers: centerOperatorsAndNumbersInput.checked,
         };
         const hash = await one.compress.url(JSON.stringify(state), "z");
         if (updateId !== urlUpdateId) {
@@ -524,6 +588,16 @@
         updateUrl();
     });
 
+    colorTableBordersInput.addEventListener("change", () => {
+        updateCalculation();
+        updateUrl();
+    });
+
+    centerOperatorsAndNumbersInput.addEventListener("change", () => {
+        updateCalculation();
+        updateUrl();
+    });
+
     document.getElementById("reset-settings").addEventListener("click", () => {
         decimalsInput.value = DEFAULT_DECIMALS;
         thousandsSeparatorsInput.checked = true;
@@ -532,6 +606,8 @@
         tagUnderscoresInput.checked = false;
         commonArgumentNamesInput.checked = false;
         colorOperationTextInput.checked = true;
+        colorTableBordersInput.checked = false;
+        centerOperatorsAndNumbersInput.checked = false;
         updateCalculation();
         updateUrl();
         one.alert("Settings reset to defaults.");
@@ -554,6 +630,8 @@
         tagUnderscoresInput.checked = state.showTagUnderscores;
         commonArgumentNamesInput.checked = state.showCommonArgumentNames ?? false;
         colorOperationTextInput.checked = state.colorOperationText ?? true;
+        colorTableBordersInput.checked = state.colorTableBorders ?? state.colorNumberBorders ?? false;
+        centerOperatorsAndNumbersInput.checked = state.centerOperatorsAndNumbers ?? false;
         updateCalculation();
         return true;
     }
