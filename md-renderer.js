@@ -1,12 +1,12 @@
 /**
  * Zero-dependency client-side Markdown to HTML renderer.
- * Converts markdown (e.g., QUERY.md, md-showcase.md) into styled HTML structures.
+ * Converts markdown (e.g., md-showcase.md) into styled HTML structures.
  *
  * @example Browser Usage:
  * <script src="md-renderer.js"></script>
  * <script>
  *   // Method 1: Fetch and render directly into a DOM container
- *   renderMarkdownFileToElement('QUERY.md', '#content-container');
+ *   renderMarkdownFileToElement('md-showcase.md', '#content-container');
  *
  *   // Method 2: Parse raw Markdown string to HTML
  *   const html = parseMarkdownToHTML('# Hello World\nSome text.');
@@ -32,6 +32,64 @@ function escapeHtml(str) {
         .replace(/'/g, "&#039;");
 }
 
+function escapeHtmlAttribute(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+const SAFE_HTML_TAGS = new Set([
+    "a", "abbr", "article", "b", "blockquote", "br", "caption", "code", "col", "colgroup", "dd", "del", "details", "div", "dl", "dt", "em", "figcaption", "figure", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "input", "ins", "kbd", "li", "mark", "ol", "p", "picture", "rp", "rt", "ruby", "s", "section", "small", "source", "span", "strong", "sub", "summary", "sup", "table", "tbody", "td", "tfoot", "th", "thead", "tr", "u", "ul", "var", "wbr",
+]);
+const VOID_HTML_TAGS = new Set(["br", "col", "hr", "img", "input", "source", "wbr"]);
+const URL_ATTRIBUTES = new Set(["cite", "href", "poster", "src"]);
+const SAFE_HTML_ATTRIBUTES = new Set([
+    "alt", "aria-describedby", "aria-label", "aria-labelledby", "checked", "class", "colspan", "controls", "disabled", "height", "id", "open", "rel", "rowspan", "scope", "span", "start", "target", "title", "type", "width",
+]);
+
+function isSafeUrl(url) {
+    const normalized = String(url).trim().replace(/[\u0000-\u0020\u007f]+/g, "").toLowerCase();
+    if (!normalized) return false;
+    if (normalized.startsWith("#") || normalized.startsWith("/") || normalized.startsWith("./") || normalized.startsWith("../")) return true;
+    return /^(?:https?:|mailto:)/.test(normalized) || !/^[a-z][a-z0-9+.-]*:/i.test(normalized);
+}
+
+function sanitizeHtmlTag(tag, options = {}) {
+    const match = tag.match(/^<\s*(\/?)\s*([a-zA-Z][\w-]*)([\s\S]*?)>$/);
+    if (!match) return escapeHtml(tag);
+    const closing = Boolean(match[1]);
+    const name = match[2].toLowerCase();
+    const rawAttributes = match[3];
+    const isSelfClosing = /\/\s*$/.test(rawAttributes);
+    const mediaAllowed = options.allowAudioVideo && (name === "audio" || name === "video");
+    if ((!SAFE_HTML_TAGS.has(name) && !mediaAllowed) || (isSelfClosing && !VOID_HTML_TAGS.has(name))) return escapeHtml(tag);
+    if (closing) return `</${name}>`;
+
+    let attributes = "";
+    const attributePattern = /([^\s=/'">]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s'"=<>`]+)))?/g;
+    for (const attributeMatch of rawAttributes.replace(/\/\s*$/, "").matchAll(attributePattern)) {
+        const attributeName = attributeMatch[1].toLowerCase();
+        if (!SAFE_HTML_ATTRIBUTES.has(attributeName) && !URL_ATTRIBUTES.has(attributeName)) continue;
+        const hasValue = attributeMatch[2] !== undefined || attributeMatch[3] !== undefined || attributeMatch[4] !== undefined;
+        if (!hasValue) {
+            attributes += ` ${attributeName}`;
+            continue;
+        }
+        const value = attributeMatch[2] ?? attributeMatch[3] ?? attributeMatch[4];
+        if (URL_ATTRIBUTES.has(attributeName) && !isSafeUrl(value)) continue;
+        attributes += ` ${attributeName}="${escapeHtmlAttribute(value)}"`;
+    }
+    return `<${name}${attributes}>`;
+}
+
+function sanitizeHtmlFragment(html, options = {}) {
+    if (options.allowUnsafeHtml) return html;
+    return html.replace(/<!--[\s\S]*?-->|<[^>]*>/g, (tag) => tag.startsWith("<!--") ? "" : sanitizeHtmlTag(tag, options));
+}
+
 /**
  * Splits a table row by unescaped '|' delimiters, respecting escaped pipes (\|) and pipes inside inline code.
  * @param {string} rowStr
@@ -54,11 +112,20 @@ function splitTableRow(rowStr) {
  * @returns {string} Slug string
  */
 function slugify(text) {
-    return text
-        .toLowerCase()
-        .replace(/\{#[^}]+\}/g, "")
-        .replace(/`([^`]+)`/g, "$1")
-        .replace(/<[^>]+>/g, "")
+    let slug = text.toLowerCase();
+    if (slug.includes("{#") && slug.includes("}")) {
+        slug = slug.replace(/\{#[^}]+\}/g, "");
+    }
+    if (slug.includes("`")) {
+        const firstBacktick = slug.indexOf("`");
+        if (slug.indexOf("`", firstBacktick + 1) !== -1) {
+            slug = slug.replace(/`([^`]+)`/g, "$1");
+        }
+    }
+    if (slug.includes("<") && slug.includes(">")) {
+        slug = slug.replace(/<[^>]+>/g, "");
+    }
+    return slug
         .replace(/[^\w\s-]/g, "")
         .trim()
         .replace(/\s+/g, "-");
@@ -95,7 +162,7 @@ function extractHeadings(markdown, options = {}) {
     markdown = markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
     const lines = markdown.split(/\r?\n/);
     const headings = [];
-    const slugCounts = {};
+    const slugCounts = Object.create(null);
     const slugPrefix = options.slugPrefix || options.headingIdPrefix || "";
     let inFence = false;
     let fenceChar = null;
@@ -189,32 +256,19 @@ function generateTOC(markdown, options = {}) {
         html += titleText.startsWith("<") ? titleText : `<h2 class="toc-title">${escapeHtml(titleText)}</h2>`;
     }
 
-    html += `<ul${ulAttr}>`;
-    let currentDepth = filtered[0].level;
-
-    filtered.forEach((h, index) => {
-        if (index > 0) {
-            if (h.level > currentDepth) {
-                for (let d = currentDepth; d < h.level; d++) {
-                    html += `<ul${ulAttr}>`;
-                }
-            } else if (h.level < currentDepth) {
-                for (let d = currentDepth; d > h.level; d--) {
-                    html += `</li></ul>`;
-                }
-                html += `</li>`;
-            } else {
-                html += `</li>`;
-            }
-        }
-        html += `<li${liAttr}><a href="#${h.slug}"${aAttr}>${h.title}</a>`;
-        currentDepth = h.level;
+    const root = { children: [] };
+    const stack = [root];
+    filtered.forEach((heading) => {
+        while (stack.length > 1 && stack[stack.length - 1].level >= heading.level) stack.pop();
+        const node = { ...heading, children: [] };
+        stack[stack.length - 1].children.push(node);
+        stack.push(node);
     });
-
-    for (let d = currentDepth; d > filtered[0].level; d--) {
-        html += `</li></ul>`;
-    }
-    html += `</li></ul>`;
+    const renderNodes = (nodes) => `<ul${ulAttr}>${nodes.map((node) => {
+        const children = node.children.length ? renderNodes(node.children) : "";
+        return `<li${liAttr}><a href="#${escapeHtmlAttribute(node.slug)}"${aAttr}>${node.title}</a>${children}</li>`;
+    }).join("")}</ul>`;
+    html += renderNodes(root.children);
 
     if (containerTag) {
         html += `</${containerTag}>`;
@@ -226,7 +280,7 @@ function generateTOC(markdown, options = {}) {
 /**
  * Checks if a line matches a list item marker (and is not a horizontal rule).
  * @param {string} line
- * @returns {{ indent: number, type: "ul"|"ol", text: string } | null}
+ * @returns {{ indent: number, type: "ul"|"ol", prefix: string, text: string } | null}
  */
 function getListItemMatch(line) {
     if (!line) return null;
@@ -239,17 +293,22 @@ function getListItemMatch(line) {
     const marker = match[2];
     const isOrdered = /^\d+[.)]/.test(marker);
     let itemText = match[3];
+    let prefix = "";
 
     // Task lists: - [ ] or - [x] or - [X]
     const taskMatch = itemText.match(/^\[([ xX])\]\s*(.*)$/);
     if (taskMatch) {
         const checked = taskMatch[1].toLowerCase() === "x" ? " checked" : "";
-        itemText = `<input type="checkbox"${checked} disabled> ${taskMatch[2]}`;
+        const taskText = taskMatch[2].trim();
+        const accessibleName = taskText || "Task item";
+        prefix = `<input type="checkbox"${checked} aria-label="${escapeHtmlAttribute(accessibleName)}" disabled> `;
+        itemText = taskMatch[2];
     }
 
     return {
         indent: indentStr.length,
         type: isOrdered ? "ol" : "ul",
+        prefix,
         text: itemText,
     };
 }
@@ -262,6 +321,7 @@ function getListItemMatch(line) {
  */
 function parseInline(text, context = {}) {
     if (!text) return "";
+    text = String(text);
 
     const uniquePrefix = `\uFFFC_${Math.random().toString(36).substring(2, 9)}_`;
     const tokens = [];
@@ -273,12 +333,14 @@ function parseInline(text, context = {}) {
     }
 
     // 1. Process inline code spans (handles single and multi-backticks, padding spaces)
-    text = text.replace(/(`+)([\s\S]*?)\1/g, (_, fence, code) => {
-        if (code.length > 2 && code.startsWith(" ") && code.endsWith(" ") && !/^\s+$/.test(code)) {
-            code = code.slice(1, -1);
-        }
-        return addToken(`<code>${escapeHtml(code)}</code>`);
-    });
+    if (text.includes("`")) {
+        text = text.replace(/(`+)([\s\S]*?)\1/g, (_, fence, code) => {
+            if (code.length > 2 && code.startsWith(" ") && code.endsWith(" ") && !/^\s+$/.test(code)) {
+                code = code.slice(1, -1);
+            }
+            return addToken(`<code>${escapeHtml(code)}</code>`);
+        });
+    }
 
     // 2. Escaped markdown punctuation
     text = text.replace(/\\([\\`*_{}\[\]()#+\-.!~|^=<>:])/g, (_, char) => {
@@ -286,30 +348,42 @@ function parseInline(text, context = {}) {
     });
 
     // 3. Safe inline HTML tags
-    const safeTagRegex = /<\/?(?:em|strong|b|i|del|ins|mark|sub|sup|small|u|s|kbd|var|ruby|rp|rt|abbr|wbr|br|span|a|picture|source|audio|video|img|input)(?:\s+[^<>]*)?>/gi;
-    text = text.replace(safeTagRegex, (match) => {
-        return addToken(match);
-    });
+    const safeTagRegex = /<\/?(?:em|strong|b|i|del|ins|mark|sub|sup|small|u|s|kbd|var|ruby|rp|rt|abbr|wbr|br|span|a|picture|source|audio|video|img|input)(?:\s+[^<>]*)?\/?>/gi;
+    if (text.includes("<") && text.includes(">")) {
+        text = text.replace(safeTagRegex, (match) => {
+            return addToken(sanitizeHtmlTag(match, context.options));
+        });
+    }
 
     // 4. Autolinks: <https://...> or <user@example.com>
-    text = text.replace(/<([a-zA-Z][a-zA-Z0-9+.-]*:[^>\s]+)>/g, (_, url) => {
-        const safeUrl = escapeHtml(url);
-        return addToken(`<a href="${safeUrl}" target="_blank" rel="noopener">${safeUrl}</a>`);
-    });
-    text = text.replace(/<([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>/g, (_, email) => {
-        const safeEmail = escapeHtml(email);
-        return addToken(`<a href="mailto:${safeEmail}">${safeEmail}</a>`);
+    if (text.includes("<") && text.includes(">")) {
+        text = text.replace(/<([a-zA-Z][a-zA-Z0-9+.-]*:[^>\s]+)>/g, (_, url) => {
+            if (!isSafeUrl(url)) return escapeHtml(url);
+            const safeUrl = escapeHtmlAttribute(url);
+            return addToken(`<a href="${safeUrl}" target="_blank" rel="noopener">${safeUrl}</a>`);
+        });
+        text = text.replace(/<([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>/g, (_, email) => {
+            const safeEmail = escapeHtml(email);
+            return addToken(`<a href="mailto:${safeEmail}">${safeEmail}</a>`);
+        });
+    }
+
+    if (text.includes("[![")) text = text.replace(/\[!\[([^\]]*)\]\(([^\s)]+)\)\]\(([^\s)]+)\)/g, (_, altText, imageUrl, linkUrl) => {
+        if (!isSafeUrl(imageUrl) || !isSafeUrl(linkUrl)) return escapeHtml(altText);
+        return addToken(`<a href="${escapeHtmlAttribute(linkUrl)}" target="_blank" rel="noopener"><img src="${escapeHtmlAttribute(imageUrl)}" alt="${escapeHtmlAttribute(altText)}"></a>`);
     });
 
     // 5. Wiki-links: [[Target]] or [[Target|Label]]
-    text = text.replace(/\[\[([^|\]]+)(?:\|([^\]]+))?\]\]/g, (_, target, label) => {
-        const displayText = escapeHtml((label || target).trim());
-        const slug = slugify(target.trim());
-        return addToken(`<a href="#${slug}">${displayText}</a>`);
-    });
+    if (text.includes("[[") && text.includes("]]")) {
+        text = text.replace(/\[\[([^|\]]+)(?:\|([^\]]+))?\]\]/g, (_, target, label) => {
+            const displayText = escapeHtml((label || target).trim());
+            const slug = slugify(target.trim());
+            return addToken(`<a href="#${slug}">${displayText}</a>`);
+        });
+    }
 
     // 6. Markdown Images
-    text = text.replace(/!\[([^\]]*)\](?:\(((?:[^()\s]|\([^()\s]*\))*)(?:\s+(?:"([^"]*)"|'([^']*)'))?\)|\[([^\]]*)\])(?:\{([^}]+)\})?/g, (match, altText, url, title1, title2, refKey, attrs) => {
+    if (text.includes("![") && text.includes("]")) text = text.replace(/!\[([^\]]*)\](?:\(((?:[^()\s]|\([^()\s]*\))*)(?:\s+(?:"([^"]*)"|'([^']*)'))?\)|\[([^\]]*)\])(?:\{([^}]+)\})?/g, (match, altText, url, title1, title2, refKey, attrs) => {
         let finalUrl = url !== undefined ? url : "";
         let finalTitle = title1 || title2 || "";
         if (refKey !== undefined) {
@@ -320,9 +394,10 @@ function parseInline(text, context = {}) {
                 if (!finalTitle && ref.title) finalTitle = ref.title;
             }
         }
-        const safeUrl = escapeHtml(finalUrl.trim());
+        if (!isSafeUrl(finalUrl)) return addToken(escapeHtml(altText.trim()));
+        const safeUrl = escapeHtmlAttribute(finalUrl.trim());
         const safeAlt = escapeHtml(altText.trim());
-        const titleAttr = finalTitle ? ` title="${escapeHtml(finalTitle.trim())}"` : "";
+        const titleAttr = finalTitle ? ` title="${escapeHtmlAttribute(finalTitle.trim())}"` : "";
         let attrStr = "";
         if (attrs) {
             const widthMatch = attrs.match(/width=(\d+)/);
@@ -334,7 +409,7 @@ function parseInline(text, context = {}) {
     });
 
     // 7. Markdown Links: [text](url "title") or [text][ref] or [text][]
-    text = text.replace(/\[([^\]]*)\](?:\(((?:[^()\s]|\([^()\s]*\))*)(?:\s+(?:"([^"]*)"|'([^']*)'))?\)|\[([^\]]*)\])/g, (match, linkText, url, title1, title2, refKey) => {
+    if (text.includes("[") && text.includes("]")) text = text.replace(/\[([^\]]*)\](?:\(((?:[^()\s]|\([^()\s]*\))*)(?:\s+(?:"([^"]*)"|'([^']*)'))?\)|\[([^\]]*)\])/g, (match, linkText, url, title1, title2, refKey) => {
         let finalUrl = url !== undefined ? url : "";
         let finalTitle = title1 || title2 || "";
         if (refKey !== undefined) {
@@ -353,20 +428,31 @@ function parseInline(text, context = {}) {
                 if (!finalTitle && ref.title) finalTitle = ref.title;
             }
         }
-        const safeUrl = escapeHtml(finalUrl.trim());
         const formattedText = parseInline(linkText, context);
-        const titleAttr = finalTitle ? ` title="${escapeHtml(finalTitle.trim())}"` : "";
+        if (!isSafeUrl(finalUrl)) return addToken(formattedText);
+        const safeUrl = escapeHtmlAttribute(finalUrl.trim());
+        const titleAttr = finalTitle ? ` title="${escapeHtmlAttribute(finalTitle.trim())}"` : "";
         return addToken(`<a href="${safeUrl}"${titleAttr} target="_blank" rel="noopener">${formattedText}</a>`);
     });
 
+    if (text.includes("[") && text.includes("]")) text = text.replace(/\[([^\]^]+)\]/g, (match, linkText) => {
+        const ref = context.references && context.references[linkText.toLowerCase().trim()];
+        if (!ref || !isSafeUrl(ref.url)) return match;
+        const titleAttr = ref.title ? ` title="${escapeHtmlAttribute(ref.title.trim())}"` : "";
+        return addToken(`<a href="${escapeHtmlAttribute(ref.url.trim())}"${titleAttr} target="_blank" rel="noopener">${parseInline(linkText, context)}</a>`);
+    });
+
     // 8. Footnote references: [^id]
-    text = text.replace(/\[\^([^\]]+)\]/g, (_, id) => {
-        const safeId = escapeHtml(id);
+    if (text.includes("[^") && text.includes("]")) text = text.replace(/\[\^([^\]]+)\]/g, (_, id) => {
+        const safeId = escapeHtmlAttribute(id);
         if (context.footnoteOrder && !context.footnoteOrder.includes(id)) {
             context.footnoteOrder.push(id);
         }
         const num = context.footnoteOrder ? context.footnoteOrder.indexOf(id) + 1 : 1;
-        return addToken(`<sup><a href="#fn-${safeId}" id="fnref-${safeId}">[${num}]</a></sup>`);
+        context.footnoteReferenceCounts ||= Object.create(null);
+        context.footnoteReferenceCounts[id] = (context.footnoteReferenceCounts[id] || 0) + 1;
+        const suffix = context.footnoteReferenceCounts[id] > 1 ? `-${context.footnoteReferenceCounts[id]}` : "";
+        return addToken(`<sup><a href="#fn-${safeId}" id="fnref-${safeId}${suffix}">[${num}]</a></sup>`);
     });
 
     // 9. Escape raw HTML characters
@@ -388,12 +474,22 @@ function parseInline(text, context = {}) {
     text = text.replace(/___(.*?)___/g, "<strong><em>$1</em></strong>");
     text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
     text = text.replace(/\b__(.*?)__\b/g, "<strong>$1</strong>");
-    text = text.replace(/(^|\s)\*([^\s*]|[^\s*].*?[^\s*])\*(?=\s|$|[.,!?:;()\[\]])/g, "$1<em>$2</em>");
-    text = text.replace(/(^|\s)_([^\s_]|[^\s_].*?[^\s_])_(?=\s|$|[.,!?:;()\[\]])/g, "$1<em>$2</em>");
+    text = text.replace(/(^|\s)_([^\s_<>]|[^\s_<>][^_<>]*?[^\s_<>])_(?=\s|$|[.,!?:;()\[\]]|<)/g, "$1<em>$2</em>");
+    text = text.replace(/<strong>[\s\S]*?<\/strong>/g, (match) => addToken(match));
+    text = text.replace(/(^|\s)\*([^\s*<>]|[^\s*<>][^*<>]*?[^\s*<>])\*(?=\s|$|[.,!?:;()\[\]]|<)/g, "$1<em>$2</em>");
+    text = text.replace(/(^|\s)_([^\s_<>]|[^\s_<>][^_<>]*?[^\s_<>])_(?=\s|$|[.,!?:;()\[\]]|<)/g, "$1<em>$2</em>");
 
-    // Restore tokens
-    for (let i = tokens.length - 1; i >= 0; i--) {
-        text = text.split(`${uniquePrefix}${i}\uFFFC`).join(tokens[i]);
+    if (tokens.length > 0) {
+        const tokenPattern = new RegExp(`${uniquePrefix}(\\d+)\uFFFC`, "g");
+        const restoreToken = (placeholder, index) => tokens[Number(index)] ?? placeholder;
+
+        // Later tokens can contain placeholders for earlier tokens.
+        for (let index = 0; index < tokens.length; index++) {
+            if (tokens[index].includes(uniquePrefix)) {
+                tokens[index] = tokens[index].replace(tokenPattern, restoreToken);
+            }
+        }
+        text = text.replace(tokenPattern, restoreToken);
     }
 
     return text;
@@ -411,6 +507,9 @@ function parseInline(text, context = {}) {
  * @returns {string} HTML string
  */
 function parseMarkdownToHTML(markdown, options = {}) {
+    if (typeof markdown !== "string") {
+        throw new TypeError("markdown must be a string");
+    }
     if (!markdown || !markdown.trim()) return "";
 
     // 1. Strip YAML frontmatter at top of document
@@ -418,16 +517,18 @@ function parseMarkdownToHTML(markdown, options = {}) {
 
     const lines = markdown.split(/\r?\n/);
     const output = [];
-    const slugCounts = {};
+    const slugCounts = Object.create(null);
     const slugPrefix = options.headingIdPrefix || options.slugPrefix || "";
     const tableContainerClass = options.tableContainerClass !== undefined ? options.tableContainerClass : "table-container";
     const noteClass = options.noteClass !== undefined ? options.noteClass : "note";
-    const headingClass = options.headingClass ? ` class="${escapeHtml(options.headingClass)}"` : "";
+    const headingClass = options.headingClass ? ` class="${escapeHtmlAttribute(options.headingClass)}"` : "";
 
     const context = {
-        references: {},
-        footnotes: {},
+        references: Object.create(null),
+        footnotes: Object.create(null),
         footnoteOrder: [],
+        footnoteReferenceCounts: Object.create(null),
+        options,
     };
 
     // 2. First pass: Collect reference link definitions and footnote definitions
@@ -438,12 +539,7 @@ function parseMarkdownToHTML(markdown, options = {}) {
         const fnMatch = l.match(/^\s{0,3}\[\^([^\]]+)\]:\s*(.*)$/);
         const abbrMatch = l.match(/^\s{0,3}\*\[([^\]]+)\]:\s*(.*)$/);
 
-        if (refMatch) {
-            const key = refMatch[1].toLowerCase().trim();
-            const url = refMatch[2];
-            const title = refMatch[3] || refMatch[4] || refMatch[5] || "";
-            context.references[key] = { url, title };
-        } else if (fnMatch) {
+        if (fnMatch) {
             const fnId = fnMatch[1];
             let fnContent = fnMatch[2];
             let nextR = r + 1;
@@ -455,12 +551,22 @@ function parseMarkdownToHTML(markdown, options = {}) {
             }
             context.footnotes[fnId] = fnContent;
             r = nextR - 1;
+        } else if (refMatch) {
+            const key = refMatch[1].toLowerCase().trim();
+            const url = refMatch[2];
+            const title = refMatch[3] || refMatch[4] || refMatch[5] || "";
+            context.references[key] = { url, title };
         } else if (abbrMatch) {
             // Ignored abbreviation definition
         } else {
             cleanedLines.push(l);
         }
     }
+
+    const startsTableAt = (index) =>
+        index + 1 < cleanedLines.length &&
+        cleanedLines[index].includes("|") &&
+        cleanedLines[index + 1].includes("|");
 
     let i = 0;
     while (i < cleanedLines.length) {
@@ -473,7 +579,7 @@ function parseMarkdownToHTML(markdown, options = {}) {
         }
 
         // HTML Comments <!-- ... -->
-        if (line.trim().startsWith("<!--")) {
+        if (line.trim().startsWith("<!--") && !/^<!--\s*toc\s*-->$/i.test(line.trim())) {
             while (i < cleanedLines.length && !cleanedLines[i].includes("-->")) {
                 i++;
             }
@@ -630,7 +736,7 @@ function parseMarkdownToHTML(markdown, options = {}) {
         }
 
         // Tables
-        if (line.trim().startsWith("|") || (line.includes("|") && i + 1 < cleanedLines.length && cleanedLines[i + 1].includes("|"))) {
+        if (startsTableAt(i)) {
             const tableLines = [];
             while (i < cleanedLines.length && (cleanedLines[i].trim().startsWith("|") || cleanedLines[i].includes("|"))) {
                 tableLines.push(cleanedLines[i].trim());
@@ -722,25 +828,26 @@ function parseMarkdownToHTML(markdown, options = {}) {
                 const itemMatch = getListItemMatch(currentLine);
 
                 if (itemMatch) {
-                    const { indent, type, text } = itemMatch;
+                    const { indent, type, prefix, text } = itemMatch;
+                    const renderedText = prefix + parseInline(text, context);
 
                     if (stack.length === 0) {
                         stack.push({ type, indent });
-                        listHtml += `<${type}><li>${parseInline(text, context)}`;
+                        listHtml += `<${type}><li>${renderedText}`;
                     } else {
                         const top = stack[stack.length - 1];
 
                         if (indent > top.indent) {
                             stack.push({ type, indent });
-                            listHtml += `<${type}><li>${parseInline(text, context)}`;
+                            listHtml += `<${type}><li>${renderedText}`;
                         } else if (indent === top.indent) {
                             if (type === top.type) {
-                                listHtml += `</li><li>${parseInline(text, context)}`;
+                                listHtml += `</li><li>${renderedText}`;
                             } else {
                                 listHtml += `</li></${top.type}>`;
                                 stack.pop();
                                 stack.push({ type, indent });
-                                listHtml += `<${type}><li>${parseInline(text, context)}`;
+                                listHtml += `<${type}><li>${renderedText}`;
                             }
                         } else {
                             while (stack.length > 1 && stack[stack.length - 1].indent > indent) {
@@ -751,21 +858,21 @@ function parseMarkdownToHTML(markdown, options = {}) {
                             const currentTop = stack[stack.length - 1];
                             if (currentTop.indent === indent) {
                                 if (currentTop.type === type) {
-                                    listHtml += `</li><li>${parseInline(text, context)}`;
+                                    listHtml += `</li><li>${renderedText}`;
                                 } else {
                                     listHtml += `</li></${currentTop.type}>`;
                                     stack.pop();
                                     stack.push({ type, indent });
-                                    listHtml += `<${type}><li>${parseInline(text, context)}`;
+                                    listHtml += `<${type}><li>${renderedText}`;
                                 }
                             } else if (indent < currentTop.indent) {
                                 listHtml += `</li></${currentTop.type}>`;
                                 stack.pop();
                                 stack.push({ type, indent });
-                                listHtml += `<${type}><li>${parseInline(text, context)}`;
+                                listHtml += `<${type}><li>${renderedText}`;
                             } else {
                                 stack.push({ type, indent });
-                                listHtml += `<${type}><li>${parseInline(text, context)}`;
+                                listHtml += `<${type}><li>${renderedText}`;
                             }
                         }
                     }
@@ -802,15 +909,16 @@ function parseMarkdownToHTML(markdown, options = {}) {
         }
 
         // Raw HTML Blocks
-        const htmlBlockMatch = line.match(/^\s{0,3}<(details|summary|section|article|figure|figcaption|table|audio|video|picture|div|p|a)\b[^>]*>/i);
+        const htmlBlockMatch = line.match(/^\s{0,3}<(details|summary|section|article|figure|figcaption|blockquote|table|thead|tbody|tfoot|tr|th|td|ul|ol|li|dl|dt|dd|audio|video|picture|div|p|a)\b[^>]*>/i);
         if (htmlBlockMatch) {
             const blockTag = htmlBlockMatch[1].toLowerCase();
+            const closingTagPattern = new RegExp(`</${blockTag}>`, "i");
             const htmlLines = [line];
-            if (!line.includes(`</${blockTag}>`) && !line.endsWith("/>") && blockTag !== "summary") {
+            if (!closingTagPattern.test(line) && !line.endsWith("/>") && blockTag !== "summary") {
                 i++;
                 while (i < cleanedLines.length) {
                     htmlLines.push(cleanedLines[i]);
-                    if (cleanedLines[i].includes(`</${blockTag}>`)) {
+                    if (closingTagPattern.test(cleanedLines[i])) {
                         i++;
                         break;
                     }
@@ -819,7 +927,18 @@ function parseMarkdownToHTML(markdown, options = {}) {
             } else {
                 i++;
             }
-            output.push(htmlLines.join("\n"));
+            const rawHtml = htmlLines.join("\n");
+            if (blockTag === "details" && !options.allowUnsafeHtml) {
+                const detailsMatch = rawHtml.match(/^(<details\b[^>]*>)\s*\n?(<summary\b[^>]*>[\s\S]*?<\/summary>)\s*\n?([\s\S]*?)\s*<\/details>$/i);
+                if (detailsMatch) {
+                    const opening = sanitizeHtmlFragment(detailsMatch[1], options);
+                    const summary = sanitizeHtmlFragment(detailsMatch[2], options);
+                    const body = parseMarkdownToHTML(detailsMatch[3].trim(), options);
+                    output.push(`${opening}\n${summary}\n${body}\n</details>`);
+                    continue;
+                }
+            }
+            output.push(sanitizeHtmlFragment(rawHtml, options));
             continue;
         }
 
@@ -832,14 +951,14 @@ function parseMarkdownToHTML(markdown, options = {}) {
             !/^\s{0,3}(?:\*(?:\s*\*){2,}|-(?:\s*-){2,}|_(?:\s*_){2,})\s*$/.test(cleanedLines[i]) &&
             !cleanedLines[i].match(/^\s{0,3}#{1,6}\s+/) &&
             !cleanedLines[i].trim().startsWith(">") &&
-            !cleanedLines[i].trim().startsWith("|") &&
+            !startsTableAt(i) &&
             !getListItemMatch(cleanedLines[i]) &&
             !cleanedLines[i].trim().startsWith("<!--") &&
             !/^\s*(?:\[(?:TOC|toc|\[toc\]|_TOC_|\[_TOC_\])\]|<!--\s*toc\s*-->)\s*$/i.test(cleanedLines[i].trim()) &&
-            !cleanedLines[i].match(/^\s{0,3}<(details|summary|section|article|figure|figcaption|table|audio|video|picture|div|p|a)\b[^>]*>/i) &&
+            !cleanedLines[i].match(/^\s{0,3}<(details|summary|section|article|figure|figcaption|blockquote|table|thead|tbody|tfoot|tr|th|td|ul|ol|li|dl|dt|dd|audio|video|picture|div|p|a)\b[^>]*>/i) &&
             !((cleanedLines[i].startsWith("    ") || cleanedLines[i].startsWith("\t")) && paragraphLines.length === 0)
             ) {
-            if (i + 1 < cleanedLines.length && /^(=+|-+)\s*$/.test(cleanedLines[i + 1].trim())) {
+            if (i + 1 < cleanedLines.length && /^(={2,}|-{2,})\s*$/.test(cleanedLines[i + 1].trim())) {
                 break;
             }
             if (i + 1 < cleanedLines.length && /^\s{0,3}:[ \t]+/.test(cleanedLines[i + 1])) {
@@ -876,7 +995,14 @@ function parseMarkdownToHTML(markdown, options = {}) {
         context.footnoteOrder.forEach((fnId) => {
             const rawContent = context.footnotes[fnId] || "";
             const parsedContent = parseInline(rawContent, context);
-            fnHtml += `<li id="fn-${escapeHtml(fnId)}">${parsedContent} <a href="#fnref-${escapeHtml(fnId)}" class="footnote-backref">&#x21a9;&#xfe0e;</a></li>\n`;
+            const safeId = escapeHtmlAttribute(fnId);
+            const referenceCount = context.footnoteReferenceCounts[fnId] || 1;
+            let backrefs = "";
+            for (let referenceIndex = 1; referenceIndex <= referenceCount; referenceIndex++) {
+                const suffix = referenceIndex > 1 ? `-${referenceIndex}` : "";
+                backrefs += ` <a href="#fnref-${safeId}${suffix}" class="footnote-backref">&#x21a9;&#xfe0e;</a>`;
+            }
+            fnHtml += `<li id="fn-${safeId}">${parsedContent}${backrefs}</li>\n`;
         });
         fnHtml += `</ol>\n</section>`;
         output.push(fnHtml);
@@ -887,7 +1013,7 @@ function parseMarkdownToHTML(markdown, options = {}) {
 
 /**
  * Fetches a Markdown file from a URL/path and renders its content into a target element.
- * @param {string} url - Path to .md file (e.g., 'QUERY.md')
+ * @param {string} url - Path to .md file (e.g., 'md-showcase.md')
  * @param {HTMLElement|string} targetElement - DOM element or selector
  * @param {object} [options] - Options passed to parseMarkdownToHTML
  */
