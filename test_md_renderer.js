@@ -505,6 +505,9 @@ assertEqual("Equal-length backtick runs delimit inline code", parseMarkdownToHTM
 assertEqual("Nested italic and bold tags stay balanced", parseMarkdownToHTML("*italic **bold***"), "<p><em>italic <strong>bold</strong></em></p>");
 assertEqual("Nested underscore emphasis stays balanced", parseMarkdownToHTML("This **is _nested_**."), "<p>This <strong>is <em>nested</em></strong>.</p>");
 assertEqual("Ambiguous nested emphasis stays balanced", parseMarkdownToHTML("**bold *ambiguous***"), "<p><strong>bold *ambiguous</strong>*</p>");
+assertEqual("Jekyll variable syntax stays literal", parseMarkdownToHTML("{{ site.title }}"), "<p>{{ site.title }}</p>");
+assertEqual("Jekyll include syntax stays literal", parseMarkdownToHTML("{% include index.html %}"), "<p>{% include index.html %}</p>");
+assertEqual("Hugo shortcode syntax stays literal and escapes tag-like content", parseMarkdownToHTML("{{< figure src=\"image.png\" title=\"Example\" >}}"), "<p>{{&lt; figure src=&quot;image.png&quot; title=&quot;Example&quot; &gt;}}</p>");
 
 const escapedTokenMarkdown = "\\* ".repeat(25_000);
 const escapedTokenStartedAt = performance.now();
