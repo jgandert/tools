@@ -615,7 +615,12 @@ nav a {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: var(--spacing-sm);
     height: 32px;
+}
+
+nav a > .sym {
+    margin-inline-end: 0;
 }
 
 nav a:hover {
