@@ -150,6 +150,8 @@
             </label>
         </div>
 
+        <p id="format-support" role="status" aria-live="polite">Checking supported output formats...</p>
+
         <button type="button" id="action-btn" class="btn-primary w-full mt-4" disabled>
             <span class="sym">folder_open</span> Select SVGs & Download
         </button>
@@ -179,6 +181,10 @@
     const bgPreview = document.getElementById("bg-preview");
     const fillPreview = document.getElementById("fill-preview");
     const zipToggle = document.getElementById("zip-toggle");
+    const formatSupport = document.getElementById("format-support");
+    const supportedFormats = new Set();
+    let formatsReady = false;
+    let processing = false;
 
     // --- Defaults ---
     const DEFAULT_WIDTH = 7680;
@@ -187,7 +193,7 @@
     const DEFAULT_QUALITY = 90;
 
     // --- Init ---
-    function init() {
+    async function init() {
         // Restore from storage or use defaults
         const savedWidth = localStorage.getItem("svg_width");
         const savedHeight = localStorage.getItem("svg_height");
@@ -209,6 +215,47 @@
         validateState();
         updatePreviews();
         toggleQualityInput();
+
+        const probe = document.createElement("canvas");
+        probe.width = 1;
+        probe.height = 1;
+        for (const option of formatInput.options) {
+            const mimeType = `image/${option.value}`;
+            const supported = await new Promise(resolve => {
+                try {
+                    probe.toBlob(blob => resolve(blob?.type === mimeType), mimeType);
+                } catch {
+                    resolve(false);
+                }
+            });
+            option.disabled = !supported;
+            if (supported) {
+                supportedFormats.add(option.value);
+            } else {
+                option.textContent += " (unavailable)";
+            }
+        }
+
+        formatsReady = true;
+        if (!supportedFormats.has(formatInput.value)) {
+            formatInput.value = supportedFormats.has(DEFAULT_FMT)
+                ? DEFAULT_FMT
+                : [...supportedFormats][0] || "";
+        }
+        formatSupport.textContent = `Supported output formats: ${supportedFormatNames()}.`;
+        validateState();
+        toggleQualityInput();
+    }
+
+    function supportedFormatNames() {
+        return Array.from(formatInput.options)
+            .filter(option => supportedFormats.has(option.value))
+            .map(option => option.textContent)
+            .join(", ") || "none";
+    }
+
+    function unsupportedFormatMessage(format) {
+        return `${format.toUpperCase() || "Selected format"} encoding is unavailable in this browser. Choose a supported output format: ${supportedFormatNames()}.`;
     }
 
     // --- Validation & State ---
@@ -217,7 +264,8 @@
         const w = widthInput.value.trim();
         const h = heightInput.value.trim();
 
-        actionBtn.disabled = !((w && parseInt(w, 10) > 0) || (h && parseInt(h, 10) > 0));
+        actionBtn.disabled = processing || !formatsReady || !supportedFormats.has(formatInput.value)
+            || !((w && parseInt(w, 10) > 0) || (h && parseInt(h, 10) > 0));
 
         // Save state
         localStorage.setItem("svg_width", widthInput.value);
@@ -295,11 +343,12 @@
 
     async function handleFiles(fileList) {
         const files = Array.from(fileList);
-        if (files.length === 0) return;
+        if (files.length === 0 || processing || !formatsReady) return;
 
         const isZipMode = zipToggle.checked;
 
         // UI Feedback
+        processing = true;
         actionBtn.disabled = true;
         actionBtn.innerText = isZipMode ? "Processing..." : "Downloading...";
 
@@ -327,11 +376,12 @@
             }
         } catch (error) {
             console.error(error);
-            one.alert("An error occurred during processing.");
+            one.alert(error.message || "An error occurred during processing.", "error");
         } finally {
             // Restore UI
             actionBtn.innerHTML = "<span class=\"sym\">folder_open</span> Select SVGs & Download";
-            actionBtn.disabled = false;
+            processing = false;
+            validateState();
             fileInput.value = "";
         }
     }
@@ -378,6 +428,12 @@
      * a shared ZIP descriptor: { name, mtime, content: Blob }
      */
     function processFileToBlob(file) {
+        const format = formatInput.value;
+        const mimeType = `image/${format}`;
+        if (!supportedFormats.has(format)) {
+            return Promise.reject(new Error(unsupportedFormatMessage(format)));
+        }
+
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
 
@@ -420,61 +476,68 @@
                 const img = new Image();
 
                 img.onload = function() {
-                    // Aspect Ratio Logic
-                    const aspectRatio = img.width / img.height;
-                    let finalW = parseInt(widthInput.value);
-                    let finalH = parseInt(heightInput.value);
+                    try {
+                        // Aspect Ratio Logic
+                        const aspectRatio = img.width / img.height;
+                        let finalW = parseInt(widthInput.value);
+                        let finalH = parseInt(heightInput.value);
 
-                    if (finalW && !finalH) {
-                        finalH = Math.round(finalW / aspectRatio);
-                    } else if (!finalW && finalH) {
-                        finalW = Math.round(finalH * aspectRatio);
-                    }
+                        if (finalW && !finalH) {
+                            finalH = Math.round(finalW / aspectRatio);
+                        } else if (!finalW && finalH) {
+                            finalW = Math.round(finalH * aspectRatio);
+                        }
 
-                    // Draw to Canvas
-                    canvas.width = finalW;
-                    canvas.height = finalH;
-                    ctx.clearRect(0, 0, finalW, finalH);
+                        // Draw to Canvas
+                        canvas.width = finalW;
+                        canvas.height = finalH;
+                        ctx.clearRect(0, 0, finalW, finalH);
 
-                    // Background Color
-                    ctx.fillStyle = bgColorInput.value.trim();
-                    if (formatInput.value === "jpeg") {
-                        // Fallback for JPG transparency issue (transparent pixels would be black)
-                        ctx.fillStyle = "#FFFFFF";
-                    }
-                    if (ctx.fillStyle) {
-                        ctx.fillRect(0, 0, finalW, finalH);
-                    }
+                        // Background Color
+                        ctx.fillStyle = bgColorInput.value.trim();
+                        if (format === "jpeg") {
+                            // Fallback for JPG transparency issue (transparent pixels would be black)
+                            ctx.fillStyle = "#FFFFFF";
+                        }
+                        if (ctx.fillStyle) {
+                            ctx.fillRect(0, 0, finalW, finalH);
+                        }
 
-                    ctx.drawImage(img, 0, 0, finalW, finalH);
+                        ctx.drawImage(img, 0, 0, finalW, finalH);
 
-                    // Format & Quality
-                    const format = formatInput.value; // 'png', 'jpeg', etc.
-                    const mimeType = `image/${format}`;
-                    const quality = parseInt(qualityInput.value) / 100;
+                        // Format & Quality
+                        const quality = parseInt(qualityInput.value) / 100;
 
-                    // Generate Filename
-                    const cleanName = file.name.replace(/\.svg$/i, "");
-                    const ext = format === "jpeg" ? "jpg" : format;
-                    const finalFilename = `${cleanName}_${finalW}x${finalH}.${ext}`;
+                        // Generate Filename
+                        const cleanName = file.name.replace(/\.svg$/i, "");
+                        const ext = format === "jpeg" ? "jpg" : format;
+                        const finalFilename = `${cleanName}_${finalW}x${finalH}.${ext}`;
 
-                    // Convert to Blob
-                    canvas.toBlob(
-                        (blob) => {
-                            URL.revokeObjectURL(url);
-                            if (blob) {
+                        // Convert to Blob
+                        canvas.toBlob(
+                            (blob) => {
+                                URL.revokeObjectURL(url);
+                                if (!blob) {
+                                    reject(new Error(`Could not encode ${format.toUpperCase()}. Try smaller dimensions or choose another supported output format: ${supportedFormatNames()}.`));
+                                    return;
+                                }
+                                if (blob.type !== mimeType) {
+                                    reject(new Error(unsupportedFormatMessage(format)));
+                                    return;
+                                }
                                 resolve({
                                     name: finalFilename,
                                     mtime: new Date(),
                                     content: blob,
                                 });
-                            } else {
-                                reject(new Error("Canvas toBlob failed"));
-                            }
-                        },
-                        mimeType,
-                        quality,
-                    );
+                            },
+                            mimeType,
+                            quality,
+                        );
+                    } catch (error) {
+                        URL.revokeObjectURL(url);
+                        reject(error);
+                    }
                 };
 
                 img.onerror = () => {
