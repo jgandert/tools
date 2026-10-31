@@ -675,10 +675,17 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
         }
 
         const startDate = new Date(sY, sM - 1, sD, 12, 0, 0, 0);
+        if (startDate.getFullYear() !== sY || startDate.getMonth() + 1 !== sM || startDate.getDate() !== sD) {
+            return null;
+        }
+
         let endDate = startDate;
 
-        if (eD) {
+        if (endObj) {
             endDate = new Date(eY, eM - 1, eD, 12, 0, 0, 0);
+            if (endDate.getFullYear() !== eY || endDate.getMonth() + 1 !== eM || endDate.getDate() !== eD) {
+                return null;
+            }
         }
 
         return { start: startDate, end: endDate };
@@ -1512,8 +1519,8 @@ Susie, Alex, Tom {h}: 25.6 - 30.6`,
 
                     const range = resolveDates(startObj, endObj);
 
-                    if (isNaN(range.start.getTime()) || isNaN(range.end.getTime())) {
-                        errors.push(`Line ${lineIdx}: Invalid date value in "${part}"`);
+                    if (!range) {
+                        errors.push(`Line ${lineIdx}: Invalid calendar date in "${part}". Check the day for its month and year, including leap years.`);
                         comboError = true;
                         break;
                     }
