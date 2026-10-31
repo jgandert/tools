@@ -64,14 +64,27 @@ const one = (() => {
             }, ["Confirm"]);
             const dialog = createDialog(title, message, [btnCancel, btnConfirm]);
 
+            let settled = false;
             const cleanup = (result) => {
-                dialog.close();
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                if (dialog.open) {
+                    dialog.close();
+                }
                 dialog.remove();
                 resolve(result);
             };
 
             btnCancel.onclick = () => cleanup(false);
             btnConfirm.onclick = () => cleanup(true);
+
+            dialog.addEventListener("cancel", (event) => {
+                event.preventDefault();
+                cleanup(false);
+            });
+            dialog.addEventListener("close", () => cleanup(false));
 
             dialog.addEventListener("click", (e) => {
                 if (e.target === dialog) cleanup(false);
@@ -100,14 +113,27 @@ const one = (() => {
             // has no visible label of its own, so the message is its name.
             input.setAttribute("aria-labelledby", p.id);
 
+            let settled = false;
             const cleanup = (result) => {
-                dialog.close();
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                if (dialog.open) {
+                    dialog.close();
+                }
                 dialog.remove();
                 resolve(result);
             };
 
             btnCancel.onclick = () => cleanup(null);
             btnConfirm.onclick = () => cleanup(input.value);
+
+            dialog.addEventListener("cancel", (event) => {
+                event.preventDefault();
+                cleanup(null);
+            });
+            dialog.addEventListener("close", () => cleanup(null));
 
             input.onkeydown = (e) => {
                 if (e.key === "Enter") {
