@@ -161,7 +161,7 @@ console.log("\nTest Group 4: Inline Code Immunity & Escaping");
 assertEqual("Bold syntax inside inline code is immune", parseMarkdownToHTML("`**not bold**`"), "<p><code>**not bold**</code></p>");
 assertEqual("Italic syntax inside inline code is immune", parseMarkdownToHTML("`*not italic*`"), "<p><code>*not italic*</code></p>");
 assertEqual("Link syntax inside inline code is immune", parseMarkdownToHTML("`[not a link](url)`"), "<p><code>[not a link](url)</code></p>");
-assertEqual("HTML entities inside inline code preserved", parseMarkdownToHTML("`&amp; &lt;`"), "<p><code>&amp; &lt;</code></p>");
+assertEqual("HTML entities inside inline code preserved", parseMarkdownToHTML("`&amp; &lt; &#65;`"), "<p><code>&amp;amp; &amp;lt; &amp;#65;</code></p>");
 
 // --- Test Group 5: Header Levels & Trailing Hashes ---
 console.log("\nTest Group 5: Header Levels & Trailing Hashes");
@@ -184,9 +184,53 @@ assertEqual("Backtick code block with language", parseMarkdownToHTML("```javascr
 assertEqual("Backtick code block without language", parseMarkdownToHTML("```\nplain text\n```"), "<pre><code>plain text</code></pre>");
 assertEqual("Tilde code block with language", parseMarkdownToHTML("~~~python\ndef foo(): pass\n~~~"), "<pre><code class=\"language-python\">def foo(): pass</code></pre>");
 assertEqual("Code block escaping unescaped HTML characters", parseMarkdownToHTML("```html\n<div id=\"app\">x < y & y > z</div>\n```"), "<pre><code class=\"language-html\">&lt;div id=&quot;app&quot;&gt;x &lt; y &amp; y &gt; z&lt;/div&gt;</code></pre>");
-assertEqual("Code block preserving pre-existing HTML entity", parseMarkdownToHTML("```html\n&amp;\n```"), "<pre><code class=\"language-html\">&amp;</code></pre>");
+assertEqual("Code block preserving pre-existing HTML entity", parseMarkdownToHTML("```html\n&amp;\n```"), "<pre><code class=\"language-html\">&amp;amp;</code></pre>");
 assertEqual("Empty fenced code block", parseMarkdownToHTML("```js\n```"), "<pre><code class=\"language-js\"></code></pre>");
 assertEqual("Unclosed fenced code block reaches EOF", parseMarkdownToHTML("```js\nconsole.log(\"hi\");"), "<pre><code class=\"language-js\">console.log(&quot;hi&quot;);</code></pre>");
+
+const fencedDefinitions = "[example]: https://example.com\n[^note]: Code footnote\n*[HTML]: Code abbreviation";
+const definitionFenceCases = [
+    { name: "Backtick", opening: "```md", code: fencedDefinitions, closing: "```" },
+    { name: "Tilde", opening: "~~~md", code: fencedDefinitions, closing: "~~~" },
+    { name: "Long backtick", opening: "````md", code: "```\n" + fencedDefinitions, closing: "`````" },
+    { name: "Long tilde", opening: "~~~~md", code: "~~~\n" + fencedDefinitions, closing: "~~~~" },
+    { name: "Mismatched closing marker", opening: "```md", code: "~~~\n" + fencedDefinitions, closing: "```" },
+    { name: "Closing marker with info", opening: "~~~md", code: "~~~other\n" + fencedDefinitions, closing: "~~~" },
+    { name: "Overindented closing marker", opening: "```md", code: "    ```\n" + fencedDefinitions, closing: "```" },
+    { name: "Indented opening and closing", opening: "   ~~~md", code: fencedDefinitions, closing: "   ~~~ \t" },
+    { name: "Unclosed backtick", opening: "```md", code: fencedDefinitions },
+    { name: "Unclosed tilde", opening: "~~~md", code: fencedDefinitions },
+];
+
+for (const { name, opening, code, closing } of definitionFenceCases) {
+    const markdown = "[example]\n\n" + opening + "\n" + code + (closing ? "\n" + closing : "");
+    const html = parseMarkdownToHTML(markdown);
+    assertEqual(`${name} fence preserves definitions without resolving outside shortcut references`, html,
+        `<p>[example]</p>\n<pre><code class="language-md">${code}</code></pre>`);
+}
+
+const outsideDefinitionsHtml = parseMarkdownToHTML(
+    "[example]: https://outside.test\n[^note]: Outside footnote\n*[HTML]: Outside abbreviation\n\n" +
+    "[example] Use[^note]. HTML\n\n```md\n" + fencedDefinitions + "\n```"
+);
+assert("Real reference definitions before a fence are not overwritten by code examples", outsideDefinitionsHtml.includes('<a href="https://outside.test"') && !outsideDefinitionsHtml.includes('<a href="https://example.com"'));
+assert("Real footnote definitions before a fence are not overwritten by code examples", outsideDefinitionsHtml.includes('<li id="fn-note">Outside footnote '));
+assert("Abbreviation definitions outside code remain omitted", !outsideDefinitionsHtml.includes("Outside abbreviation") && outsideDefinitionsHtml.includes("Code abbreviation"));
+
+const definitionsAfterFenceHtml = parseMarkdownToHTML(
+    "[example] Use[^note].\n\n~~~md\n" + fencedDefinitions + "\n~~~\n\n" +
+    "[example]: https://outside.test\n[^note]: Outside footnote\n*[HTML]: Outside abbreviation"
+);
+assert("Real link and footnote definitions after a fence still resolve", definitionsAfterFenceHtml.includes('<a href="https://outside.test"') && definitionsAfterFenceHtml.includes('<li id="fn-note">Outside footnote '));
+assert("Abbreviation definitions after a fence remain omitted", !definitionsAfterFenceHtml.includes("Outside abbreviation"));
+
+const fencedFootnoteOnlyHtml = parseMarkdownToHTML("Use[^note].\n\n```md\n[^note]: Code footnote\n```");
+const footnotesOutsideCode = fencedFootnoteOnlyHtml.slice(fencedFootnoteOnlyHtml.indexOf('<section class="footnotes">'));
+assert("Outside footnote references cannot use fenced definitions", footnotesOutsideCode.includes('<li id="fn-note">') && !footnotesOutsideCode.includes("Code footnote"));
+
+const invalidFenceDefinitionHtml = parseMarkdownToHTML("[example]\n\n```md`invalid\n\n[example]: https://outside.test");
+assert("Invalid backtick info does not hide real definitions", invalidFenceDefinitionHtml.includes('<a href="https://outside.test"') && !invalidFenceDefinitionHtml.includes("<pre>"));
+
 assertEqual("Horizontal rule ---", parseMarkdownToHTML("---"), "<hr>");
 assertEqual("Horizontal rule ***", parseMarkdownToHTML("***"), "<hr>");
 assertEqual("Horizontal rule ___", parseMarkdownToHTML("___"), "<hr>");
@@ -230,7 +274,7 @@ assertEqual("Single line blockquote", parseMarkdownToHTML("> Note text"), "<div 
 assertEqual("Unordered list with asterisks", parseMarkdownToHTML("* Item A\n* Item B"), "<ul><li>Item A</li><li>Item B</li></ul>");
 assertEqual("Unordered list with leading spaces", parseMarkdownToHTML("  - Item 1\n  - Item 2"), "<ul><li>Item 1</li><li>Item 2</li></ul>");
 assertEqual("Ordered list with numbers", parseMarkdownToHTML("1. First item\n2. Second item"), "<ol><li>First item</li><li>Second item</li></ol>");
-assertEqual("Ordered list starting with non-1 index", parseMarkdownToHTML("5. Fifth item\n6. Sixth item"), "<ol><li>Fifth item</li><li>Sixth item</li></ol>");
+assertEqual("Ordered list starting with non-1 index", parseMarkdownToHTML("5. Fifth item\n6. Sixth item"), "<ol start=\"5\"><li>Fifth item</li><li>Sixth item</li></ol>");
 
 // Nested list tests
 const nestedUnordered4Spaces = [
@@ -416,6 +460,83 @@ assert("generateTOC contains nested subsection link", tocHtml.includes("<a href=
 const parsedWithToc = parseMarkdownToHTML(sampleTocMd);
 assert("parseMarkdownToHTML replaces [TOC] placeholder", parsedWithToc.includes("<nav class=\"toc\">") && parsedWithToc.includes("<h2 id=\"section-1-overview\">Section 1: Overview</h2>"));
 
+const injectTocOptions = {
+    headingIdPrefix: "docs-",
+    toc: { injectIfAbsent: true, minLevel: 2, maxLevel: 3 },
+};
+const injectedTocHtml = parseMarkdownToHTML("# Title\n\n## Section\n\n### Detail\n\n#### Deep\n\n## Section", injectTocOptions);
+assert("Injected TOC precedes and preserves document title", injectedTocHtml.startsWith('<nav class="toc">') && injectedTocHtml.indexOf('</nav>') < injectedTocHtml.indexOf('<h1 id="docs-title">'));
+const injectedTocLinks = Array.from(injectedTocHtml.matchAll(/href="#([^"]+)"/g), match => match[1]);
+assertEqual("Injected TOC respects levels, prefixes, and duplicate headings", JSON.stringify(injectedTocLinks), JSON.stringify(["docs-section", "docs-detail", "docs-section-1"]));
+assert("Injected TOC links target rendered headings", injectedTocLinks.every(id => injectedTocHtml.includes(`id="${id}"`)));
+
+for (const marker of ["[TOC]", "[toc]", "[[toc]]", "[_TOC_]", "[[_TOC_]]", "<!-- toc -->"]) {
+    const html = parseMarkdownToHTML(`# Title\n\n${marker}\n\n## Section`, injectTocOptions);
+    assert(`Existing ${marker} keeps its position without duplicate injection`, html.startsWith('<h1') && (html.match(/<nav\b/g) || []).length === 1);
+}
+
+for (const code of ["```md\n[TOC]\n```", "    [TOC]", "`[TOC]`", "<!--\n[TOC]\n-->"]) {
+    const html = parseMarkdownToHTML(`${code}\n\n## Section`, injectTocOptions);
+    assert(`Literal marker does not suppress injection: ${JSON.stringify(code)}`, html.startsWith('<nav class="toc">') && (html.match(/<nav\b/g) || []).length === 1);
+}
+
+for (const nested of ["> [!NOTE]\n> Body", "> First\n>\n> Second", "<details>\n<summary>More</summary>\n\n## Nested\n\n</details>"]) {
+    const html = parseMarkdownToHTML(`## Section\n\n${nested}`, injectTocOptions);
+    assert("Injection occurs only at document level", (html.match(/<nav\b/g) || []).length === 1);
+}
+
+assertEqual("No eligible headings produces no injected TOC", parseMarkdownToHTML("# Title", injectTocOptions), parseMarkdownToHTML("# Title", { headingIdPrefix: "docs-" }));
+assertEqual("Empty input produces no injected TOC", parseMarkdownToHTML("", injectTocOptions), "");
+assertEqual("Injection is opt-in", parseMarkdownToHTML("## Section", { toc: { injectIfAbsent: false } }), parseMarkdownToHTML("## Section"));
+assert("TOC can still be disabled", !parseMarkdownToHTML("[TOC]\n\n## Section", { toc: false }).includes('<nav'));
+
+function assertHeadingAnchors(description, markdown, expectedIds, options = {}) {
+    const html = parseMarkdownToHTML(markdown, options);
+    const renderedHeadings = Array.from(html.matchAll(/<h[1-6] id="([^"]+)"[^>]*>(.*?)<\/h[1-6]>/g), match => ({
+        id: match[1],
+        title: match[2],
+    }));
+    const renderedIds = renderedHeadings.map(heading => heading.id);
+    const extractedHeadings = extractHeadings(markdown, options).map(heading => ({
+        id: heading.slug,
+        title: heading.title,
+    }));
+    const tocLinks = Array.from(generateTOC(markdown, options).matchAll(/<a href="#([^"]+)"[^>]*>(.*?)<\/a>/g), match => ({
+        id: match[1],
+        title: match[2],
+    }));
+    const inlineTocHtml = parseMarkdownToHTML(`[TOC]\n\n${markdown}`, options);
+    const inlineTocLinks = Array.from(inlineTocHtml.matchAll(/<a href="#([^"]+)"[^>]*>(.*?)<\/a>/g), match => ({
+        id: match[1],
+        title: match[2],
+    }));
+
+    assertEqual(`${description}: rendered IDs`, JSON.stringify(renderedIds), JSON.stringify(expectedIds));
+    assertEqual(`${description}: every heading ID is unique`, new Set(renderedIds).size, renderedIds.length);
+    assertEqual(`${description}: extracted headings match rendering`, JSON.stringify(extractedHeadings), JSON.stringify(renderedHeadings));
+    assertEqual(`${description}: TOC links target corresponding headings`, JSON.stringify(tocLinks), JSON.stringify(renderedHeadings));
+    assertEqual(`${description}: inline TOC links target corresponding headings`, JSON.stringify(inlineTocLinks), JSON.stringify(renderedHeadings));
+}
+
+assertHeadingAnchors("Later suffix collision", "# A\n# A\n# A-1", ["a", "a-1", "a-1-1"]);
+assertHeadingAnchors("Earlier suffix collision", "# A-1\n# A\n# A", ["a-1", "a", "a-2"]);
+assertHeadingAnchors("Repeated suffix-like headings", "# A\n# A\n# A-1\n# A-1\n# A\n# A-2\n# A-1-1", ["a", "a-1", "a-1-1", "a-1-2", "a-2", "a-2-1", "a-1-1-1"]);
+assertHeadingAnchors("Explicit IDs collide with generated suffixes", "# One {#a}\n# Two {#a}\n# Three {#a-1}\n# A\n# Four {#a-1}", ["a", "a-1", "a-1-1", "a-2", "a-1-2"]);
+assertHeadingAnchors("Earlier explicit suffix collision", "# One {#a-1}\n# A\n# Two {#a}", ["a-1", "a", "a-2"]);
+assertHeadingAnchors("Setext and ATX headings share IDs", "A\n===\n\n# A\n\nA-1\n---", ["a", "a-1", "a-1-1"]);
+assertHeadingAnchors("Empty slugs share the fallback ID", "# !\n# ?\n# Heading-1", ["heading", "heading-1", "heading-1-1"]);
+assertHeadingAnchors("Prototype-like explicit IDs stay unique", "# One {#__proto__}\n# Two {#__proto__}\n# Three {#__proto__-1}", ["__proto__", "__proto__-1", "__proto__-1-1"]);
+
+for (const options of [{ headingIdPrefix: "sec-" }, { slugPrefix: "sec-" }, { headingIdPrefix: "sec-", slugPrefix: "other-" }]) {
+    assertHeadingAnchors(`Configured prefix ${JSON.stringify(options)}`, "# A-1\n# A\n# Other {#a}\n# More {#a-1}", ["sec-a-1", "sec-a", "sec-a-2", "sec-a-1-1"], options);
+}
+
+for (const fence of ["```", "~~~"]) {
+    assertHeadingAnchors(`${fence} fenced headings do not reserve IDs`, `# A\n${fence}md\n# A\n# A-1\n${fence}\n# A\n# A-1`, ["a", "a-1", "a-1-1"]);
+}
+assertHeadingAnchors("Longer fence ignores shorter fence and headings", "# A\n````md\n```\n# A\n# A-1\n````\n# A\n# A-1", ["a", "a-1", "a-1-1"]);
+assertHeadingAnchors("Unclosed fence excludes remaining headings", "# A\n# A\n~~~md\n# A-1\n# A", ["a", "a-1"]);
+
 // Customization options test
 const customTocHtml = generateTOC(sampleTocMd, {
     containerTag: "aside",
@@ -563,7 +684,7 @@ assertEqual("Executable markdown image URL blocked", parseMarkdownToHTML("![alt]
 assert("Executable autolink URL blocked", !parseMarkdownToHTML("<javascript:alert(1)>").includes("href="));
 
 const entityAttributeHtml = parseMarkdownToHTML('[click](https://example.test?a=&quot; "title &quot; value")');
-assert("Entities are escaped again inside attributes", entityAttributeHtml.includes("a=&amp;quot;") && entityAttributeHtml.includes("title &amp;quot; value"));
+assertEqual("Entities are decoded once and escaped for HTML attributes", entityAttributeHtml, '<p><a href="https://example.test?a=&quot;" title="title &quot; value" target="_blank" rel="noopener">click</a></p>');
 
 const sanitizedInlineHtml = parseMarkdownToHTML('<img src="x" onerror="alert(1)"> <a href="javascript:alert(1)" onclick="alert(1)">x</a>');
 assert("Inline HTML event attributes removed", sanitizedInlineHtml.includes('<img src="x">') && sanitizedInlineHtml.includes("<a>x</a>") && !sanitizedInlineHtml.includes("onerror") && !sanitizedInlineHtml.includes("onclick") && !sanitizedInlineHtml.includes("javascript:"));

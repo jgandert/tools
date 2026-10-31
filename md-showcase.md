@@ -531,6 +531,10 @@ Obsidian callout:
 > [!example]- Collapsed callout title
 > Callout body.
 
+Jekyll Liquid: {{ site.title }} and {% include example.html %}.
+
+Hugo shortcode: {{< figure src="image.png" title="Example" >}}.
+
 MDX expression: {new Date().getFullYear()}.
 
 MDX component:
