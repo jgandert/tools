@@ -46,7 +46,7 @@ Licensed under [Apache License, Version 2.0](LICENSE) except for the following:
 
 ### Third-party assets
 
-`turndown-standalone.js` (used in 'Paste To Markdown'), `client-zip.js` (used in multiple tools) and [`paper.js`](https://github.com/paperjs/paper.js) (used in `shape_builder`) are distributed under the MIT license.
+`turndown-standalone.js` (used in 'Paste To Markdown') and `client-zip.js` (used in multiple tools) are distributed under the MIT license.
 
 The `material-symbols.woff2` and most of the icons are based on
 [Material Symbols](https://github.com/google/material-design-icons) by Google, licensed under the Apache License 2.0.
