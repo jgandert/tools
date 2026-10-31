@@ -419,8 +419,8 @@
 
             row.innerHTML = `
                 <div style="flex: 1">
-                    <input type="text" id="${findId}" placeholder="Find" value="${rule.find || ""}">
-                    <input type="text" id="${replaceId}" placeholder="Replace" value="${rule.replace || ""}">
+                    <input type="text" id="${findId}" placeholder="Find">
+                    <input type="text" id="${replaceId}" placeholder="Replace">
                 </div>
                 <label for="${regexId}">
                     <input type="checkbox" id="${regexId}" ${rule.useRegex ? "checked" : ""}> RegEx
@@ -432,6 +432,9 @@
             const rInput = row.querySelector(`#${replaceId}`);
             const cInput = row.querySelector(`#${regexId}`);
             const dBtn = row.querySelector(".btn-danger");
+
+            fInput.value = rule.find || "";
+            rInput.value = rule.replace || "";
 
             fInput.addEventListener("input", (e) => {
                 rule.find = e.target.value;
