@@ -2,6 +2,9 @@ z non-publish/
 temp/
 icon.orig.svg
 
+# Generated audit output
+/motif/test/render-audit/output/
+
 # Usually included, but we don't want them here
 bun.lock
 eslint.config.mjs

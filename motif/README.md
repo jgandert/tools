@@ -10,6 +10,41 @@ Serve this directory over HTTP and open `index.html`. The server must expose the
 
 Live edits preserve the current arrangement position and pattern phase. Replacement tracks use their previous playback origin; newly added tracks join the current transport position. Changes affect upcoming onsets, without replaying notes or cycle callbacks from elapsed cycles. Pausing cancels a pending automatic apply; edits made while paused are applied when resuming. Use Restart to replay from the beginning. The progress display follows the same beat timeline as scheduling, including tempo changes.
 
+## Render a song to WAV
+
+Requires Python 3.9+ and rootless Podman on Linux. Node, Playwright, and Chromium run inside the container; no Python packages are needed. The first run downloads the pinned image and installs `playwright-core` from its lockfile; subsequent runs reuse the build cache.
+
+```bash
+python3 render_wav.py examples/chiptune_1.motif.js
+python3 render_wav.py examples/chiptune_1.motif.js output.wav --seconds 15
+```
+
+The first command writes `examples/chiptune_1.wav`. Output is stereo, 16-bit PCM at 48000 Hz. Existing files are never overwritten; failed runs remove their partial output. Use `--sample-rate 44100` or `--sample-rate 96000` to change the rate.
+
+By default, the renderer advances a disposable scheduler probe to measure the arrangement, including scheduled tempo changes and trailing empty sections, then renders one pass plus two seconds for release/reverb tails. `--tail N` adjusts that tail. Arrangement looping is ignored. Songs without a finite `Arrange()` need `--seconds N`, which sets the total file length, including tails. The limit is 1800 seconds of audio and ten minutes of container runtime; large renders can hit the container's 2 GiB memory limit first.
+
+Automatic duration evaluates the song twice in separate browser pages: once to measure it and once to render. Use `--seconds` to evaluate it only once, especially if random choices affect arrangement length. Songs run as async function bodies with Motif's exports available as globals, like the playground. Local sample URLs resolve relative to the song directory; that directory is mounted read-only, and symlinks escaping it are refused. External URLs are blocked. Download needed samples beside the song before rendering.
+
+The renderer uses Chromium's native `OfflineAudioContext` and AudioWorklets. It advances Motif's scheduler in small audio-clock steps so voice stealing and automation follow playback timing. `Motif.start()` is handled by the renderer; `Motif.stop()`, `Motif.pause()`, and wall-clock timers are unsupported and fail explicitly. Use `Arrange()` or `Motif.schedule()` for timed composition. Browser errors fail the export; clipping and silence are reported without normalizing the mix.
+
+The container runs without external networking or published ports, as a non-root user with Chromium's sandbox enabled, a read-only filesystem, dropped capabilities, private IPC, and bounded resources. Only the engine and the song directory are mounted. Use trusted song files: they execute JavaScript and can read files in the mounted song directory. Hosts must allow nested user namespaces for Chromium's sandbox; the script does not disable it when unavailable.
+
+Native render-audit checks keep generated WAVs, JSON reports, and logs in `test/render-audit/output/`; scripts, song fixtures, and input manifests stay in `test/render-audit/`.
+
+From the `motif` directory, render and inspect the custom audit fixtures with:
+
+```bash
+python3 test/render-audit/run.py custom
+bun test/render-audit/analyze.mjs
+bun test/render-audit/verify.mjs
+```
+
+The runner, analyzer, and verifier share `test/render-audit/output/` by default. For a separate run, pass an unused directory under `output/` to the runner's `--output-dir` and as the analyzer's and verifier's positional argument. Checks that take an artifact name put their logs and reports under `output/` automatically; checks that take an explicit output directory or metrics filename should also use a path there. Generated reproduction songs stay outside `output/` so they can be retained as fixtures. The public `render_wav.py` command still writes beside its song unless given an explicit output path.
+
+`tools/render-wav/` pins `playwright-core` and the matching official browser image to version 1.63.0, with npm integrity and OCI digest checks. It uses the browser-rendering approach demonstrated by [web-audio-on-server](https://github.com/satelllte/web-audio-on-server), without adopting that project's build dependencies. On upgrades, verify the current stable package and matching image, update `package.json`, `package-lock.json`, the image tag/digest in `Containerfile`, the local image tag in `render_wav.py`, and the [version-matched Playwright seccomp profile](https://raw.githubusercontent.com/microsoft/playwright/v1.63.0/utils/docker/seccomp_profile.json) together. The profile also allows `chroot` and `clone3` for namespace sandbox setup, following `playwright-browser-in-container.md`.
+
+---
+
 ## Global Transport & Master Output
 
 The `Motif` global object controls the engine lifecycle, tempo, global swing, and master output stage.
