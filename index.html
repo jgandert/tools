@@ -132,6 +132,10 @@
 
 
         /* Individual Icons (SVGs inline for portability, could be images) */
+        .card-md-preview {
+            --bg-icon: url("./md_preview/icon.svg");
+        }
+
         .card-json {
             --bg-icon: url("./recursive_json_grid_editor/icon.svg");
         }
@@ -293,6 +297,19 @@
     </div>
 
     <div class="tool-grid">
+        <!-- MD Paste & Preview -->
+        <a href="./md_preview/index.html" class="tool-card card-md-preview">
+            <div class="card-header">
+                <h2 class="card-title">MD Paste &amp; Preview</h2>
+            </div>
+            <p class="card-desc">
+                Paste rich text as Markdown, edit with a live preview, copy or download Markdown or HTML, and print your document.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow" aria-hidden="true"></span>
+            </div>
+        </a>
+
         <!-- Text Modifier -->
         <a href="./text_modifier/index.html" class="tool-card card-text-modifier">
             <div class="card-header">
