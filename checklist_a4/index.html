@@ -531,6 +531,8 @@
 </dialog>
 
 <script>
+    /* global one */
+
     const DEFAULT_MARKDOWN_COLUMNS = `## Pre-Departure
 - [ ] Confirm bookings, baggage & check in online
 - [ ] Set OOO, pet/plant care & hold mail delivery
@@ -828,6 +830,8 @@
     // --- Continuous Mode Parser, Optimizer & Renderer ---
     function parseContinuousSections(mdText) {
         const sections = [];
+        let sourceItemCounter = 0;
+
         // Split by sections separated by / or newlines before headers (*, **, #)
         const sectionChunks = mdText.split(/(?:\s+\/\s+|\n+)(?=\*{1,2}|#{1,4})/).map(s => s.trim()).filter(s => s.length > 0);
 
@@ -855,6 +859,7 @@
             let count = 0;
             while ((match = itemRegex.exec(remaining)) !== null) {
                 count++;
+                const sourceIndex = sourceItemCounter++;
                 const text = match[2].trim();
                 if (text) {
                     items.push({
@@ -863,6 +868,7 @@
                         text: text,
                         rawText: `- [${match[1]}] ${text}`,
                         secIdx,
+                        sourceIndex,
                     });
                 }
             }
@@ -885,7 +891,7 @@
         return sections;
     }
 
-    function createContinuousUnitDOM(unit, globalItemCounterRef, savedCheckedState, isMeasuring, isFirstOnSheet) {
+    function createContinuousUnitDOM(unit, savedCheckedState, isMeasuring, isFirstOnSheet) {
         if (unit.type === "header") {
             const wrapper = document.createElement("span");
             wrapper.className = "flow-header-wrapper";
@@ -913,10 +919,10 @@
         // unit.type === "item"
         const entry = document.createElement("span");
         entry.className = "entry";
-        const itemIdx = globalItemCounterRef.count++;
+        entry.dataset.sourceIndex = unit.sourceIndex;
 
-        const isChecked = savedCheckedState.length > 0
-            ? savedCheckedState.includes(itemIdx)
+        const isChecked = savedCheckedState !== null
+            ? savedCheckedState.includes(unit.sourceIndex)
             : unit.checked;
 
         if (isChecked) {
@@ -1061,24 +1067,17 @@
 
         const sections = parseContinuousSections(mdText);
 
-        let savedChecked = [];
-        try {
-            const raw = localStorage.getItem("travel_checklist_state_continuous");
-            if (raw) savedChecked = JSON.parse(raw);
-        } catch (e) {
-            console.error("Error reading saved continuous checklist state", e);
-        }
+        const savedChecked = readContinuousCheckedState(mdText);
 
         // Measure widths accurately in DOM
         const measureContainer = document.createElement("div");
         measureContainer.style.cssText = "position: absolute; visibility: hidden; pointer-events: none; white-space: nowrap; width: max-content;";
         flowContainer.appendChild(measureContainer);
 
-        const dummyCounter = { count: 0 };
         let isFirstUnit = true;
         const allUnits = flattenSectionsToUnits(sections);
         allUnits.forEach(unit => {
-            const el = createContinuousUnitDOM(unit, dummyCounter, savedChecked, true, isFirstUnit);
+            const el = createContinuousUnitDOM(unit, savedChecked, true, isFirstUnit);
             isFirstUnit = false;
             measureContainer.appendChild(el);
             unit.measuredElement = el;
@@ -1106,9 +1105,8 @@
             unitsToRender = flattenSectionsToUnits(sections);
         }
 
-        const renderCounter = { count: 0 };
         unitsToRender.forEach((unit, idx) => {
-            const el = createContinuousUnitDOM(unit, renderCounter, savedChecked, false, idx === 0);
+            const el = createContinuousUnitDOM(unit, savedChecked, false, idx === 0);
             flowContainer.appendChild(el);
             if (idx < unitsToRender.length - 1) {
                 flowContainer.appendChild(document.createTextNode(" "));
@@ -1116,23 +1114,74 @@
         });
     }
 
+    function continuousMarkdownCheckedIndices(mdText) {
+        const checkedIndices = [];
+        let sourceIndex = 0;
+        for (const match of mdText.matchAll(/[-*+]\s+\[([ xX])\]/g)) {
+            if (match[1].toLowerCase() === "x") checkedIndices.push(sourceIndex);
+            sourceIndex++;
+        }
+        return checkedIndices;
+    }
+
+    function writeContinuousCheckedState(checkedSourceIndices) {
+        try {
+            localStorage.setItem("travel_checklist_state_continuous", JSON.stringify({
+                version: 2,
+                checkedSourceIndices,
+            }));
+        } catch (e) {
+            console.error("Error saving continuous checklist state", e);
+        }
+    }
+
+    function readContinuousCheckedState(mdText) {
+        try {
+            const raw = localStorage.getItem("travel_checklist_state_continuous");
+            if (raw === null) return null;
+            const saved = JSON.parse(raw);
+
+            // Older arrays mix optimized positions with source positions. Only the
+            // Markdown markers can be recovered without guessing which item was clicked.
+
+            if (Array.isArray(saved)) {
+                const checkedIndices = continuousMarkdownCheckedIndices(mdText);
+                writeContinuousCheckedState(checkedIndices);
+                if (saved.length > 0) one.alert("Checklist marks were restored from the Markdown. Review them once after this update.");
+                return checkedIndices;
+            }
+
+            if (saved?.version === 2 && Array.isArray(saved.checkedSourceIndices)
+                && saved.checkedSourceIndices.every(index => Number.isInteger(index) && index >= 0)) {
+                return saved.checkedSourceIndices;
+            }
+        } catch (e) {
+            console.error("Error reading continuous checklist state", e);
+        }
+        return null;
+    }
+
+    function applyContinuousMarkdownMarks(mdText, checkedIndices) {
+        let sourceIndex = 0;
+        return mdText.replace(/([-*+]\s+)\[([ xX])\]/g, (match, prefix) => {
+            const isChecked = checkedIndices.includes(sourceIndex++);
+            return `${prefix}[${isChecked ? "x" : " "}]`;
+        });
+    }
+
     function syncAndPersistContinuous() {
         const checkedIndices = [];
         const flowContainer = document.getElementById("continuous-flow");
-        flowContainer.querySelectorAll(".entry").forEach((el, idx) => {
+        flowContainer.querySelectorAll(".entry").forEach(el => {
             if (el.classList.contains("checked")) {
-                checkedIndices.push(idx);
+                checkedIndices.push(Number(el.dataset.sourceIndex));
             }
         });
-        localStorage.setItem("travel_checklist_state_continuous", JSON.stringify(checkedIndices));
+        writeContinuousCheckedState(checkedIndices);
 
         const customMd = localStorage.getItem("travel_checklist_markdown_continuous");
         if (customMd) {
-            let itemCounter = 0;
-            const updatedMd = customMd.replace(/([-*+]\s+)\[([ xX])\]/g, (match, prefix) => {
-                const isChecked = checkedIndices.includes(itemCounter++);
-                return `${prefix}[${isChecked ? "x" : " "}]`;
-            });
+            const updatedMd = applyContinuousMarkdownMarks(customMd, checkedIndices);
             localStorage.setItem("travel_checklist_markdown_continuous", updatedMd);
         }
     }
@@ -1301,20 +1350,8 @@
             editorDialogDesc.innerHTML = "Use <code>/</code> to separate parts, <code>**Header:**</code> for bold labels, and <code>- [ ] Item</code> for checkboxes.";
 
             let currentMd = localStorage.getItem("travel_checklist_markdown_continuous") || DEFAULT_MARKDOWN_CONTINUOUS;
-            let savedChecked = [];
-            try {
-                const raw = localStorage.getItem("travel_checklist_state_continuous");
-                if (raw) savedChecked = JSON.parse(raw);
-            } catch (e) {
-            }
-
-            if (Array.isArray(savedChecked)) {
-                let itemCounter = 0;
-                currentMd = currentMd.replace(/([-*+]\s+)\[([ xX])\]/g, (match, prefix) => {
-                    const isChecked = savedChecked.includes(itemCounter++);
-                    return `${prefix}[${isChecked ? "x" : " "}]`;
-                });
-            }
+            const savedChecked = readContinuousCheckedState(currentMd);
+            if (savedChecked !== null) currentMd = applyContinuousMarkdownMarks(currentMd, savedChecked);
             markdownInput.value = currentMd;
         }
 
@@ -1361,22 +1398,7 @@
                 localStorage.setItem("travel_checklist_markdown_continuous", newMd);
             }
 
-            const checkedIndices = [];
-            let itemCounter = 0;
-            const itemRegex = /[-*+]\s+\[([ xX])\]/g;
-            let match;
-            while ((match = itemRegex.exec(newMd)) !== null) {
-                if (match[1] === "x" || match[1] === "X") {
-                    checkedIndices.push(itemCounter);
-                }
-                itemCounter++;
-            }
-
-            if (checkedIndices.length > 0) {
-                localStorage.setItem("travel_checklist_state_continuous", JSON.stringify(checkedIndices));
-            } else {
-                localStorage.removeItem("travel_checklist_state_continuous");
-            }
+            writeContinuousCheckedState(continuousMarkdownCheckedIndices(newMd));
 
             renderContinuous(newMd);
         }
