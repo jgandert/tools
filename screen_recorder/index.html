@@ -1,0 +1,1222 @@
+<!doctype html>
+<html lang="en" class="theme-red">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Record your screen, window or tab to a WebM file — entirely in the browser, nothing is uploaded.">
+    <title>Screen Recorder — Capture, Trim, Download</title>
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        /* Live recording indicator */
+        #rec-dot {
+            display: inline-block;
+            width: 0.7em;
+            height: 0.7em;
+            border-radius: 50%;
+            background-color: var(--error);
+            animation: rec-pulse 1.4s ease-in-out infinite;
+        }
+
+        #rec-dot[data-paused="true"] {
+            animation: none;
+            opacity: 0.4;
+        }
+
+        @keyframes rec-pulse {
+            50% {
+                opacity: 0.2;
+            }
+        }
+
+        /* Two trim handles sharing one timeline: both sliders occupy the same
+           grid cell, the track below them is drawn once by the container */
+        .trim-range {
+            display: grid;
+            margin: var(--spacing-md) 0;
+        }
+
+        .trim-range::before {
+            content: "";
+            grid-area: 1 / 1;
+            align-self: center;
+            height: 4px;
+            border-radius: var(--radius-xxs);
+            background-color: var(--outline-variant);
+        }
+
+        .trim-range input[type="range"] {
+            grid-area: 1 / 1;
+            align-self: center;
+            margin: 0;
+            background: transparent;
+            pointer-events: none;
+        }
+
+        .trim-range input[type="range"]::-webkit-slider-thumb {
+            pointer-events: auto;
+        }
+
+        .trim-range input[type="range"]::-moz-range-thumb {
+            pointer-events: auto;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            #rec-dot {
+                animation: none;
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+<a href="#content" class="skip-link">Skip to content</a>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn"></label>
+    <hgroup>
+        <h1>Screen Recorder</h1>
+        <p>Capture a screen, window or tab to a WebM file — nothing ever leaves this machine.</p>
+    </hgroup>
+</header>
+
+<main id="content">
+
+    <section>
+        <h2>Record</h2>
+        <p>
+            Pick a screen, window or browser tab in the picker your browser shows. The recording is
+            held in memory and written to disk only when you press Download.
+        </p>
+
+        <div class="group">
+            <button type="button" id="start-btn" class="btn-primary">
+                <span class="sym" aria-hidden="true">videocam</span> Start recording
+            </button>
+            <button type="button" id="pause-btn" disabled>
+                <span class="sym" aria-hidden="true" id="pause-icon">pause</span>
+                <span id="pause-label">Pause</span>
+            </button>
+            <button type="button" id="stop-btn" disabled>
+                <span class="sym" aria-hidden="true">stop</span> Stop
+            </button>
+        </div>
+
+        <p>
+            <span id="rec-dot" aria-hidden="true" hidden></span>
+            <strong id="rec-state">Idle</strong>
+            <span class="text-muted">
+                — <span id="rec-time">0:00</span> · <span id="rec-size">0 B</span>
+            </span>
+        </p>
+
+        <p id="live-status" role="status" aria-live="polite" class="text-muted">
+            Ready to record.
+        </p>
+
+        <div id="capture-message" class="note" role="alert" hidden></div>
+    </section>
+
+    <section id="review-section" hidden>
+        <h2>Review</h2>
+        <video id="playback" class="w-full" controls playsinline></video>
+        <p id="clip-meta" class="text-muted"></p>
+
+        <h3>Trim</h3>
+        <p>
+            Move the two handles to choose an in and out point, then export the selection.
+            Exporting <strong>re-encodes</strong> the selection in real time (it plays the clip
+            back and records it again), so it takes as long as the selection lasts and loses a
+            little quality. The untrimmed original stays downloadable.
+        </p>
+
+        <div class="group">
+            <label for="trim-start">Start
+                <output id="trim-start-time">0:00</output>
+            </label>
+            <label for="trim-end">End
+                <output id="trim-end-time">0:00</output>
+            </label>
+            <span class="text-muted">Selection <output id="trim-length">0:00</output></span>
+        </div>
+
+        <div class="trim-range">
+            <input type="range" id="trim-start" min="0" max="0" step="0.01" value="0" disabled>
+            <input type="range" id="trim-end" min="0" max="0" step="0.01" value="0" disabled>
+        </div>
+
+        <div class="group">
+            <button type="button" id="play-selection-btn" disabled>
+                <span class="sym" aria-hidden="true">play_arrow</span> Play selection
+            </button>
+            <button type="button" id="set-start-btn" disabled>Set start to playhead</button>
+            <button type="button" id="set-end-btn" disabled>Set end to playhead</button>
+        </div>
+
+        <div class="group">
+            <button type="button" id="export-btn" disabled>
+                <span class="sym" aria-hidden="true">content_cut</span> Export selection (re-encode)
+            </button>
+            <button type="button" id="cancel-export-btn" class="btn-danger" hidden>
+                <span class="sym" aria-hidden="true">cancel</span> Stop export
+            </button>
+        </div>
+        <progress id="export-progress" value="0" max="1" aria-label="Export progress"
+                  hidden></progress>
+
+        <h3>Download</h3>
+        <div class="group">
+            <button type="button" id="download-btn" class="btn-primary">
+                <span class="sym" aria-hidden="true">download</span> Download original
+            </button>
+            <button type="button" id="download-trimmed-btn" disabled>
+                <span class="sym" aria-hidden="true">download</span> Download trimmed
+            </button>
+        </div>
+        <p id="download-hint" class="text-muted" hidden>
+            WebM plays in browsers and VLC; convert with
+            <code>ffmpeg -i rec.webm rec.mp4</code> if you need MP4.
+        </p>
+    </section>
+
+</main>
+
+<aside>
+    <form id="settings-form">
+        <fieldset>
+            <legend>Recording settings</legend>
+
+            <label for="include-mic">
+                Include microphone
+                <input type="checkbox" role="switch" id="include-mic" aria-describedby="mic-hint">
+            </label>
+            <small id="mic-hint">Mixed into the recording alongside any audio the browser
+                shares.</small>
+
+            <label for="timeslice">Chunk interval (ms)</label>
+            <input type="number" id="timeslice" min="200" max="10000" step="100" value="1000"
+                   aria-describedby="timeslice-hint">
+            <small id="timeslice-hint">How often data is flushed while recording. Smaller values
+                lose less on a crash, 1000 is a good default.</small>
+        </fieldset>
+    </form>
+
+    <h2>Good to know</h2>
+    <ul>
+        <li>
+            Tab and system audio are only offered by some browsers and only for some sources —
+            the status line reports what actually made it into the recording.
+        </li>
+        <li>
+            Screen capture needs a secure context: <code>https://</code> or
+            <code>localhost</code>.
+        </li>
+        <li>
+            Ending the share from the browser's own bar finishes the recording properly.
+        </li>
+        <li>
+            Nothing is uploaded and nothing is stored between visits — only these two settings
+            are remembered.
+        </li>
+    </ul>
+</aside>
+
+<footer>
+    <p>Local, client-side recording. Close the tab and the recording is gone.</p>
+</footer>
+
+<script src="../one.js"></script>
+<script type="module">
+    import {
+        pickMimeType,
+        formatDuration,
+        formatBytes,
+        makeFilename,
+        clampTrimRange,
+        describeAudio,
+        describeVideoTrack,
+    } from "./helpers.js";
+
+    const PREFS_KEY = "screen-rec-prefs";
+    const SIZE_WARN_BYTES = 2 * 1024 ** 3;
+    const TIMER_TICK_MS = 250;
+    const STOP_TIMEOUT_MS = 5000;
+    const FINALIZE_GRACE_MS = 300;
+    const NO_DATA_TIMESLICES = 3;
+    const MIN_NO_DATA_WARN_MS = 3000;
+    const SOURCE_STALL_CONFIRM_MS = 1000;
+    const MIN_TRIM_SPAN_SECONDS = 0.1;
+    const DEFAULT_TIMESLICE_MS = 1000;
+    const MIN_TIMESLICE_MS = 200;
+    const MAX_TIMESLICE_MS = 10000;
+    const EXPORT_TIMESLICE_MS = 1000;
+    const EXPORT_START_TIMEOUT_MS = 10000;
+    const DURATION_PROBE_TIME = 1e9;
+    const DURATION_PROBE_TIMEOUT_MS = 4000;
+    const SEEK_EPSILON = 0.05;
+    const REVOKE_DELAY_MS = 30000;
+    const HAVE_METADATA = 1;
+
+    const startBtn = document.getElementById("start-btn");
+    const pauseBtn = document.getElementById("pause-btn");
+    const pauseIcon = document.getElementById("pause-icon");
+    const pauseLabel = document.getElementById("pause-label");
+    const stopBtn = document.getElementById("stop-btn");
+
+    const recDot = document.getElementById("rec-dot");
+    const recState = document.getElementById("rec-state");
+    const recTime = document.getElementById("rec-time");
+    const recSize = document.getElementById("rec-size");
+    const liveStatus = document.getElementById("live-status");
+    const captureMessage = document.getElementById("capture-message");
+
+    const reviewSection = document.getElementById("review-section");
+    const playback = document.getElementById("playback");
+    const clipMeta = document.getElementById("clip-meta");
+
+    const trimStart = document.getElementById("trim-start");
+    const trimEnd = document.getElementById("trim-end");
+    const trimStartTime = document.getElementById("trim-start-time");
+    const trimEndTime = document.getElementById("trim-end-time");
+    const trimLength = document.getElementById("trim-length");
+
+    const playSelectionBtn = document.getElementById("play-selection-btn");
+    const setStartBtn = document.getElementById("set-start-btn");
+    const setEndBtn = document.getElementById("set-end-btn");
+    const exportBtn = document.getElementById("export-btn");
+    const cancelExportBtn = document.getElementById("cancel-export-btn");
+    const exportProgress = document.getElementById("export-progress");
+
+    const downloadBtn = document.getElementById("download-btn");
+    const downloadTrimmedBtn = document.getElementById("download-trimmed-btn");
+    const downloadHint = document.getElementById("download-hint");
+
+    const settingsForm = document.getElementById("settings-form");
+    const includeMic = document.getElementById("include-mic");
+    const timesliceInput = document.getElementById("timeslice");
+
+    let state = "idle";
+    let recorder = null;
+    let displayStream = null;
+    let micStream = null;
+    let mixContext = null;
+    let chunks = [];
+    let totalBytes = 0;
+    let sizeWarned = false;
+
+    let elapsedBeforePauseMs = 0;
+    let segmentStartedAt = 0;
+    let timerId = 0;
+    let stopWatchdogId = 0;
+    let stoppingStartedAt = 0;
+    let stopTrackNote = "";
+
+    let finalizePending = false;
+    let finalizeTimerId = 0;
+    let recorderErrorText = "";
+    let activeTimesliceMs = DEFAULT_TIMESLICE_MS;
+    let noDataWarned = false;
+    let stallTimerId = 0;
+    let sourceStalledWarned = false;
+
+    let clipBlob = null;
+    let clipUrl = "";
+    let clipDate = new Date();
+    let recordingStartedDate = new Date();
+    let clipDuration = 0;
+    let trimmedBlob = null;
+    let savedSinceRecording = true;
+    let hasDisplayAudio = false;
+    let hasMicAudio = false;
+
+    let selectionPlaying = false;
+    let exportRecorder = null;
+    let stopExportRun = null;
+
+    // ---------------------------------------------------------------- state
+
+    function isCapturing() {
+        return state === "recording" || state === "paused";
+    }
+
+    // Capture pipeline still owns the controls, but no longer accepts pause/stop
+    function isBusyCapturing() {
+        return isCapturing() || state === "stopping";
+    }
+
+    function setState(next) {
+        state = next;
+        syncControls();
+    }
+
+    function syncControls() {
+        const capturing = isCapturing();
+        const busy = isBusyCapturing();
+        const exporting = state === "exporting";
+
+        startBtn.disabled = busy || exporting || !hasCaptureSupport();
+        pauseBtn.disabled = !capturing;
+        stopBtn.disabled = !capturing;
+
+        const resumeLabel = state === "paused";
+        pauseIcon.textContent = resumeLabel ? "play_arrow" : "pause";
+        pauseLabel.textContent = resumeLabel ? "Resume" : "Pause";
+        pauseBtn.setAttribute("aria-label", resumeLabel ? "Resume recording" : "Pause recording");
+
+        includeMic.disabled = busy;
+        timesliceInput.disabled = busy;
+
+        recDot.hidden = !capturing;
+        recDot.dataset.paused = state === "paused" ? "true" : "false";
+        recState.textContent = capturingLabel();
+
+        const trimReady = clipDuration > 0 && !exporting && !busy;
+        trimStart.disabled = !trimReady;
+        trimEnd.disabled = !trimReady;
+        playSelectionBtn.disabled = !trimReady;
+        setStartBtn.disabled = !trimReady;
+        setEndBtn.disabled = !trimReady;
+        exportBtn.disabled = !trimReady;
+        cancelExportBtn.hidden = !exporting;
+        exportProgress.hidden = !exporting;
+
+        downloadBtn.disabled = !clipBlob || exporting;
+        downloadTrimmedBtn.disabled = !trimmedBlob || exporting;
+    }
+
+    function capturingLabel() {
+        if (state === "recording") return "Recording";
+        if (state === "paused") return "Paused";
+        if (state === "stopping") return "Finishing";
+        if (state === "exporting") return "Exporting";
+        if (clipBlob) return "Stopped";
+
+        return "Idle";
+    }
+
+    function hasCaptureSupport() {
+        return typeof navigator.mediaDevices?.getDisplayMedia === "function";
+    }
+
+    function announce(text) {
+        liveStatus.textContent = text;
+    }
+
+    function showMessage(text) {
+        captureMessage.textContent = text;
+        captureMessage.hidden = false;
+    }
+
+    function clearMessage() {
+        captureMessage.textContent = "";
+        captureMessage.hidden = true;
+    }
+
+    // ---------------------------------------------------------------- timer
+
+    function elapsedMs() {
+        const running = state === "recording" ? Date.now() - segmentStartedAt : 0;
+
+        return elapsedBeforePauseMs + running;
+    }
+
+    function updateElapsed() {
+        recTime.textContent = formatDuration(elapsedMs() / 1000);
+    }
+
+    function tick() {
+        if (!ensureRecorderActive()) return;
+        updateElapsed();
+        warnIfNoDataYet();
+    }
+
+    /**
+     * A recorder that accepts a codec its encoder cannot actually produce stays silent
+     * instead of raising an error. Say so while the recording can still be restarted,
+     * rather than after the fact with nothing to save.
+     */
+    function warnIfNoDataYet() {
+        if (noDataWarned || sourceStalledWarned || totalBytes > 0 || state !== "recording") return;
+
+        const deadline = Math.max(activeTimesliceMs * NO_DATA_TIMESLICES, MIN_NO_DATA_WARN_MS);
+        if (elapsedMs() < deadline) return;
+
+        noDataWarned = true;
+        const detail = `${captureVideoTrackNote()}; ${recorder?.mimeType || "browser-chosen codec"}`;
+        const warning = `No data has been encoded after ${formatDuration(elapsedMs() / 1000)} (${detail}) — this recording would come out empty. Stop it and try again, picking a different screen or window.`;
+        showMessage(warning);
+        announce(warning);
+    }
+
+    function captureVideoTrackNote() {
+        return describeVideoTrack(displayStream?.getVideoTracks()[0]);
+    }
+
+    /**
+     * A muted capture track means the source has stopped handing frames to the
+     * browser, and MediaRecorder encodes nothing without raising an error. A track
+     * may also start muted for a moment before the first frame arrives, so the
+     * warning only fires once the mute has persisted for SOURCE_STALL_CONFIRM_MS.
+     */
+    function armSourceStallWarning() {
+        clearTimeout(stallTimerId);
+        stallTimerId = setTimeout(() => {
+            if (!isCapturing()) return;
+            sourceStalledWarned = true;
+            const text = "The captured source is delivering no frames (the video track is muted), so nothing is being recorded. On Linux/Wayland this usually means the screen-share portal failed — stop, pick the source again, or restart the browser.";
+            showMessage(text);
+            announce(text);
+        }, SOURCE_STALL_CONFIRM_MS);
+    }
+
+    function clearSourceStallWarning(recovered) {
+        clearTimeout(stallTimerId);
+        stallTimerId = 0;
+        if (!sourceStalledWarned) return;
+
+        sourceStalledWarned = false;
+        clearMessage();
+        if (recovered) announce("The capture source is delivering frames again.");
+    }
+
+    function startTimer() {
+        stopTimer();
+        timerId = setInterval(tick, TIMER_TICK_MS);
+        updateElapsed();
+    }
+
+    function stopTimer() {
+        if (!timerId) return;
+        clearInterval(timerId);
+        timerId = 0;
+    }
+
+    function updateSize() {
+        recSize.textContent = formatBytes(totalBytes);
+        if (sizeWarned || totalBytes < SIZE_WARN_BYTES) return;
+
+        sizeWarned = true;
+        const warning = `The recording passed ${formatBytes(SIZE_WARN_BYTES)} and is still held in memory. Stop and download it before the tab runs out of room.`;
+        showMessage(warning);
+        announce(warning);
+        one.alert("Recording over 2 GB — stop and save soon.");
+    }
+
+    // -------------------------------------------------------------- capture
+
+    function describeCaptureError(err) {
+        const name = err?.name ?? "";
+        if (name === "NotAllowedError") return "Screen picker cancelled — nothing was recorded.";
+        if (name === "NotFoundError") return "No capturable screen or window was offered by the browser.";
+        if (name === "NotReadableError") return "The selected source could not be read. Another app may be holding it.";
+        if (name === "AbortError") return "The browser aborted the capture request.";
+
+        return `Screen capture failed: ${err?.message || name || "unknown error"}`;
+    }
+
+    function readTimeslice() {
+        const parsed = Number.parseInt(timesliceInput.value, 10);
+        if (!Number.isFinite(parsed)) return DEFAULT_TIMESLICE_MS;
+
+        return Math.min(Math.max(parsed, MIN_TIMESLICE_MS), MAX_TIMESLICE_MS);
+    }
+
+    function buildRecordingStream() {
+        const videoTrack = displayStream.getVideoTracks()[0];
+        const displayAudio = displayStream.getAudioTracks();
+        const micAudio = micStream ? micStream.getAudioTracks() : [];
+
+        hasDisplayAudio = displayAudio.length > 0;
+        hasMicAudio = micAudio.length > 0;
+
+        const audioSources = [];
+        if (hasDisplayAudio) audioSources.push(new MediaStream(displayAudio));
+        if (hasMicAudio) audioSources.push(new MediaStream(micAudio));
+
+        if (audioSources.length < 2) {
+            return new MediaStream([videoTrack, ...displayAudio, ...micAudio]);
+        }
+
+        // Two sources: mix them down to a single track, MediaRecorder takes only one
+        mixContext = new AudioContext();
+        mixContext.resume().catch(() => {
+        });
+        const destination = mixContext.createMediaStreamDestination();
+        for (const source of audioSources) {
+            mixContext.createMediaStreamSource(source).connect(destination);
+        }
+
+        return new MediaStream([videoTrack, ...destination.stream.getAudioTracks()]);
+    }
+
+    function releaseStreams() {
+        for (const stream of [displayStream, micStream]) {
+            stream?.getTracks().forEach((track) => track.stop());
+        }
+        displayStream = null;
+        micStream = null;
+
+        mixContext?.close().catch(() => {
+        });
+        mixContext = null;
+    }
+
+    async function requestMicrophone() {
+        if (!includeMic.checked) return null;
+
+        try {
+            return await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (err) {
+            showMessage(`Microphone unavailable (${err?.name || "error"}) — recording continues without it.`);
+            return null;
+        }
+    }
+
+    async function startRecording() {
+        clearMessage();
+
+        if (!hasCaptureSupport()) {
+            showMessage("This browser exposes no getDisplayMedia. Screen capture needs a secure context (https:// or localhost) and a desktop browser.");
+            return;
+        }
+
+        if (typeof MediaRecorder !== "function") {
+            showMessage("This browser has no MediaRecorder, so a captured screen cannot be written to a file here.");
+            return;
+        }
+
+        startBtn.disabled = true;
+
+        try {
+            displayStream = await navigator.mediaDevices.getDisplayMedia({
+                video: true,
+                audio: true,
+            });
+        } catch (err) {
+            displayStream = null;
+            showMessage(describeCaptureError(err));
+            setState("idle");
+            return;
+        }
+
+        micStream = await requestMicrophone();
+
+        const stream = buildRecordingStream();
+        const mimeType = pickMimeType((type) => MediaRecorder.isTypeSupported(type));
+
+        try {
+            recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+        } catch (err) {
+            recorder = null;
+            releaseStreams();
+            showMessage(`This browser could not start a recorder for the captured stream: ${err?.message || err}`);
+            setState("idle");
+            return;
+        }
+
+        chunks = [];
+        totalBytes = 0;
+        sizeWarned = false;
+        clipDuration = 0;
+        elapsedBeforePauseMs = 0;
+        segmentStartedAt = Date.now();
+        recordingStartedDate = new Date();
+        savedSinceRecording = false;
+        finalizePending = false;
+        recorderErrorText = "";
+        noDataWarned = false;
+        sourceStalledWarned = false;
+        activeTimesliceMs = readTimeslice();
+        clearTimeout(finalizeTimerId);
+        finalizeTimerId = 0;
+        updateSize();
+
+        recorder.ondataavailable = (event) => {
+            if (event.data?.size) {
+                chunks.push(event.data);
+                totalBytes += event.data.size;
+                updateSize();
+
+                // Data started flowing after all — retract the warning
+                if (noDataWarned) {
+                    noDataWarned = false;
+                    clearMessage();
+                }
+            }
+
+            // A chunk arriving after the stop was requested is the flush — restart the
+            // grace period so the blob is only sealed once the data really stops
+            if (finalizePending) scheduleFinalize();
+        };
+        recorder.onstop = () => {
+            finalizePending = true;
+            scheduleFinalize();
+        };
+        recorder.onerror = (event) => {
+            recorderErrorText = event.error?.message || event.error?.name || "unknown error";
+            showMessage(`Recorder error: ${recorderErrorText} — stopping.`);
+            stopRecording();
+        };
+
+        // The browser's own "stop sharing" bar ends the track, not the recorder
+        const captureTrack = displayStream.getVideoTracks()[0];
+        captureTrack?.addEventListener("ended", () => {
+            if (!isCapturing()) return;
+            announce("Sharing ended in the browser — finishing the recording.");
+            stopRecording();
+        });
+        captureTrack?.addEventListener("mute", () => {
+            if (isCapturing()) armSourceStallWarning();
+        });
+        captureTrack?.addEventListener("unmute", () => clearSourceStallWarning(true));
+
+        // Some browsers refuse a stream whose tracks come from different sources only
+        // here, at start() — not in the constructor above
+        try {
+            recorder.start(activeTimesliceMs);
+        } catch (err) {
+            recorder = null;
+            releaseStreams();
+            showMessage(`The recorder refused to start on this stream: ${err?.message || err}`);
+            setState("idle");
+            return;
+        }
+
+        setState("recording");
+        startTimer();
+        announce(`Recording started with ${describeAudio(hasDisplayAudio, hasMicAudio)}.`);
+
+        // A track that is muted from the start never fires "mute"
+        if (captureTrack?.muted) armSourceStallWarning();
+    }
+
+    /**
+     * The recorder can drop to inactive on its own — the source ended, the browser
+     * hit an internal error, or a stop is still in flight. Calling pause/resume/stop
+     * on it then throws. An inactive recorder may still have its flush queued, so
+     * hand over to the stopping path and let those events land instead of sealing now.
+     */
+    function ensureRecorderActive() {
+        if (!recorder) return false;
+        if (recorder.state !== "inactive") return true;
+
+        beginStopping();
+        return false;
+    }
+
+    function togglePause() {
+        if (!ensureRecorderActive()) return;
+
+        if (recorder.state === "recording") {
+            recorder.pause();
+            elapsedBeforePauseMs = elapsedMs();
+            stopTimer();
+            setState("paused");
+            updateElapsed();
+            announce("Recording paused.");
+            return;
+        }
+
+        recorder.resume();
+        segmentStartedAt = Date.now();
+        setState("recording");
+        startTimer();
+        announce("Recording resumed.");
+    }
+
+    /**
+     * Freeze the session in "stopping" and wait for the recorder's own events.
+     * Safe to call more than once — a stop already in flight is left alone.
+     */
+    function beginStopping() {
+        if (state === "stopping") return;
+
+        elapsedBeforePauseMs = elapsedMs();
+        stopTimer();
+        finalizePending = true;
+        stoppingStartedAt = Date.now();
+        stopTrackNote = captureVideoTrackNote();
+        setState("stopping");
+
+        // A recorder that never reports back at all would strand the session here
+        clearTimeout(stopWatchdogId);
+        stopWatchdogId = setTimeout(() => {
+            if (state !== "stopping") return;
+            showMessage("The recorder did not report back — saving what was captured.");
+            finalizeRecording();
+        }, STOP_TIMEOUT_MS);
+    }
+
+    /**
+     * Seal the blob a short moment after the last thing the recorder said. Browsers
+     * disagree on whether the final "dataavailable" precedes "stop" (Firefox can
+     * deliver it after), and sealing inside the "stop" handler drops whatever comes
+     * later — an empty file when the flush carried the whole recording.
+     */
+    function scheduleFinalize() {
+        // The recorder has reported back, so the watchdog must not cut the grace short
+        clearTimeout(stopWatchdogId);
+        stopWatchdogId = 0;
+
+        clearTimeout(finalizeTimerId);
+        finalizeTimerId = setTimeout(finalizeRecording, FINALIZE_GRACE_MS);
+    }
+
+    function stopRecording() {
+        if (!ensureRecorderActive()) return;
+
+        beginStopping();
+        recorder.stop();
+    }
+
+    async function finalizeRecording() {
+        if (!recorder) return;
+
+        // Zero chunks at the grace deadline may just be Firefox still flushing after
+        // "stop" — keep the handlers attached and hold out up to the stop watchdog
+        const stoppingForMs = Date.now() - stoppingStartedAt;
+        if (!chunks.length && stoppingForMs < STOP_TIMEOUT_MS) {
+            clearTimeout(finalizeTimerId);
+            finalizeTimerId = setTimeout(finalizeRecording, STOP_TIMEOUT_MS - stoppingForMs);
+            return;
+        }
+
+        clearTimeout(stopWatchdogId);
+        stopWatchdogId = 0;
+        clearTimeout(finalizeTimerId);
+        finalizeTimerId = 0;
+        finalizePending = false;
+        stopTimer();
+        clearSourceStallWarning(false);
+
+        // Detach before dropping the reference, so a very late chunk cannot land in
+        // the array the next recording starts from
+        recorder.ondataavailable = null;
+        recorder.onstop = null;
+        recorder.onerror = null;
+
+        const type = recorder.mimeType || "video/webm";
+        const blob = new Blob(chunks, { type });
+
+        chunks = [];
+        recorder = null;
+        releaseStreams();
+        setState("idle");
+        updateElapsed();
+
+        if (!blob.size) {
+            announce("Recording stopped, but no data arrived.");
+            showMessage(recorderErrorText
+                ? `The recording came back empty — the recorder failed with: ${recorderErrorText}`
+                : `The recording came back empty — nothing was encoded at all (${stopTrackNote}; ${type}). Try recording for a few seconds, or pick a different screen or window.`);
+            return;
+        }
+
+        clipBlob = blob;
+        clipDate = recordingStartedDate;
+        trimmedBlob = null;
+        await showClip(blob);
+    }
+
+    // ------------------------------------------------------------- playback
+
+    function resolveDuration(video) {
+        return new Promise((resolve) => {
+            let settled = false;
+
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(guardId);
+                video.removeEventListener("durationchange", onDurationChange);
+                video.removeEventListener("loadedmetadata", probe);
+                resolve(Number.isFinite(video.duration) ? video.duration : 0);
+            };
+
+            const onDurationChange = () => {
+                if (!Number.isFinite(video.duration)) return;
+                video.currentTime = 0;
+                finish();
+            };
+
+            // MediaRecorder WebM reports Infinity until something seeks past the end
+            const probe = () => {
+                if (Number.isFinite(video.duration)) {
+                    finish();
+                    return;
+                }
+                video.currentTime = DURATION_PROBE_TIME;
+            };
+
+            const guardId = setTimeout(finish, DURATION_PROBE_TIMEOUT_MS);
+            video.addEventListener("durationchange", onDurationChange);
+            video.addEventListener("loadedmetadata", probe);
+            if (video.readyState >= HAVE_METADATA) probe();
+        });
+    }
+
+    async function showClip(blob) {
+        if (clipUrl) URL.revokeObjectURL(clipUrl);
+        clipUrl = URL.createObjectURL(blob);
+
+        reviewSection.hidden = false;
+        playback.src = clipUrl;
+        playback.load();
+
+        clipDuration = await resolveDuration(playback);
+        setupTrim(clipDuration);
+
+        const audioText = describeAudio(hasDisplayAudio, hasMicAudio);
+        const durationText = clipDuration > 0 ? formatDuration(clipDuration) : "unknown length";
+        clipMeta.textContent = `${durationText} · ${formatBytes(blob.size)} · ${audioText} · ${blob.type || "video/webm"}`;
+        announce(`Recording finished: ${durationText}, ${formatBytes(blob.size)}, ${audioText}.`);
+
+        if (clipDuration > 0) return;
+
+        showMessage("The clip length could not be determined, so trimming is unavailable. The recording itself is fine — download it.");
+    }
+
+    function setupTrim(duration) {
+        const usable = duration > 0;
+        const max = usable ? duration : 0;
+
+        for (const input of [trimStart, trimEnd]) {
+            input.max = String(max);
+        }
+        trimStart.value = "0";
+        trimEnd.value = String(max);
+
+        updateTrimLabels();
+        syncControls();
+    }
+
+    function selection() {
+        return { start: Number(trimStart.value), end: Number(trimEnd.value) };
+    }
+
+    function updateTrimLabels() {
+        const { start, end } = selection();
+        trimStartTime.textContent = formatDuration(start);
+        trimEndTime.textContent = formatDuration(end);
+        trimLength.textContent = formatDuration(Math.max(0, end - start));
+    }
+
+    function applyTrim(moved) {
+        const { start, end } = clampTrimRange(
+            Number(trimStart.value),
+            Number(trimEnd.value),
+            clipDuration,
+            moved,
+            MIN_TRIM_SPAN_SECONDS,
+        );
+
+        trimStart.value = String(start);
+        trimEnd.value = String(end);
+        updateTrimLabels();
+
+        selectionPlaying = false;
+        playback.currentTime = moved === "start" ? start : end;
+    }
+
+    function playSelection() {
+        const { start } = selection();
+        playback.currentTime = start;
+        selectionPlaying = true;
+        playback.play().catch((err) => showMessage(`Playback failed: ${err?.message || err}`));
+    }
+
+    function setHandleToPlayhead(handle) {
+        const input = handle === "start" ? trimStart : trimEnd;
+        input.value = String(playback.currentTime);
+        applyTrim(handle);
+    }
+
+    // --------------------------------------------------------------- export
+
+    function captureStreamOf(video) {
+        if (typeof video.captureStream === "function") return video.captureStream();
+        if (typeof video.mozCaptureStream === "function") return video.mozCaptureStream();
+
+        throw new Error("this browser cannot capture a playing video element");
+    }
+
+    /**
+     * Real-time re-encode: play the clip from in to out into a second recorder.
+     * Audio is routed through a graph that is never connected to the speakers, so
+     * playback stays silent while the track is still captured.
+     */
+    function reencodeSelection(start, end) {
+        return new Promise((resolve, reject) => {
+            const source = document.createElement("video");
+            const hasAudio = hasDisplayAudio || hasMicAudio;
+            const parts = [];
+
+            let exportContext = null;
+            let settled = false;
+            let started = false;
+
+            const cleanup = () => {
+                clearTimeout(startGuardId);
+                source.pause();
+                source.removeAttribute("src");
+                exportContext?.close().catch(() => {
+                });
+                exportContext = null;
+                exportRecorder = null;
+                stopExportRun = null;
+            };
+
+            const fail = (err) => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                reject(err instanceof Error ? err : new Error(String(err)));
+            };
+
+            const stop = () => {
+                source.pause();
+
+                if (exportRecorder && exportRecorder.state !== "inactive") {
+                    exportRecorder.stop();
+                    return;
+                }
+
+                fail(new Error("stopped before any frames were captured"));
+            };
+
+            stopExportRun = stop;
+
+            const begin = () => {
+                if (started || settled) return;
+                started = true;
+
+                let mixed;
+                try {
+                    const captured = captureStreamOf(source);
+                    const videoTracks = captured.getVideoTracks();
+                    let audioTracks = captured.getAudioTracks();
+
+                    if (hasAudio) {
+                        exportContext = new AudioContext();
+                        exportContext.resume().catch(() => {
+                        });
+                        const destination = exportContext.createMediaStreamDestination();
+                        exportContext.createMediaElementSource(source).connect(destination);
+                        audioTracks = destination.stream.getAudioTracks();
+                    }
+
+                    mixed = new MediaStream([...videoTracks, ...audioTracks]);
+                } catch (err) {
+                    fail(err);
+                    return;
+                }
+
+                const mimeType = pickMimeType((type) => MediaRecorder.isTypeSupported(type));
+
+                try {
+                    exportRecorder = new MediaRecorder(mixed, mimeType ? { mimeType } : {});
+                } catch (err) {
+                    fail(err);
+                    return;
+                }
+
+                exportRecorder.ondataavailable = (event) => {
+                    if (event.data?.size) parts.push(event.data);
+                };
+                exportRecorder.onerror = (event) => fail(event.error ?? new Error("export recorder error"));
+                exportRecorder.onstop = () => {
+                    if (settled) return;
+                    settled = true;
+                    const type = exportRecorder?.mimeType || "video/webm";
+                    const blob = new Blob(parts, { type });
+                    cleanup();
+                    resolve(blob);
+                };
+
+                exportRecorder.start(EXPORT_TIMESLICE_MS);
+                source.play().catch(fail);
+            };
+
+            // The fresh element reports Infinity duration too, so it needs the same
+            // probe before it can be seeked to the in point
+            const prepare = async () => {
+                if (!Number.isFinite(source.duration)) await resolveDuration(source);
+                if (settled) return;
+
+                if (Math.abs(source.currentTime - start) < SEEK_EPSILON) {
+                    begin();
+                    return;
+                }
+
+                source.addEventListener("seeked", begin, { once: true });
+                source.currentTime = start;
+            };
+
+            // Nothing may react to playback positions before the recorder exists —
+            // the duration probe seeks around wildly on its way there
+            const startGuardId = setTimeout(() => {
+                if (started) return;
+                fail(new Error("the clip could not be positioned for export"));
+            }, EXPORT_START_TIMEOUT_MS);
+
+            source.addEventListener("error", () => fail(new Error("the clip could not be re-opened for export")));
+            source.addEventListener("loadedmetadata", prepare, { once: true });
+            source.addEventListener("ended", () => {
+                if (!started) return;
+                stop();
+            });
+            source.addEventListener("timeupdate", () => {
+                if (!started) return;
+                exportProgress.value = Math.min(end - start, Math.max(0, source.currentTime - start));
+                if (source.currentTime < end) return;
+                stop();
+            });
+
+            if (!hasAudio) source.muted = true;
+            source.playsInline = true;
+            source.src = clipUrl;
+            source.load();
+        });
+    }
+
+    async function exportSelection() {
+        if (!clipBlob || state === "exporting") return;
+
+        const { start, end } = selection();
+        const span = end - start;
+
+        if (span < MIN_TRIM_SPAN_SECONDS) {
+            showMessage("The selection is too short to export.");
+            return;
+        }
+
+        clearMessage();
+        setState("exporting");
+        exportProgress.value = 0;
+        exportProgress.max = span;
+        announce(`Re-encoding ${formatDuration(span)} in real time — this takes about as long as the selection.`);
+
+        try {
+            const blob = await reencodeSelection(start, end);
+            trimmedBlob = blob.size > 0 ? blob : null;
+
+            if (!trimmedBlob) {
+                showMessage("The re-encode produced no data.");
+                announce("Export produced no data.");
+                return;
+            }
+
+            announce(`Trimmed clip ready: ${formatDuration(span)}, ${formatBytes(blob.size)}.`);
+        } catch (err) {
+            showMessage(`Export failed: ${err?.message || err}`);
+            announce("Export failed.");
+        } finally {
+            setState("idle");
+        }
+    }
+
+    // ------------------------------------------------------------- download
+
+    function downloadBlob(blob, suffix) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = makeFilename(clipDate, suffix);
+        document.body.append(link);
+        link.click();
+        link.remove();
+
+        // Revoking immediately can cut the download short in some browsers
+        setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
+
+        savedSinceRecording = true;
+        downloadHint.hidden = false;
+        announce(`Saved ${link.download}.`);
+    }
+
+    // ----------------------------------------------------------------- prefs
+
+    function loadPrefs() {
+        try {
+            return JSON.parse(localStorage.getItem(PREFS_KEY)) ?? {};
+        } catch {
+            return {};
+        }
+    }
+
+    // Settings only — the recording itself is never persisted
+    function savePrefs() {
+        try {
+            const prefs = { includeMic: includeMic.checked, timesliceMs: readTimeslice() };
+            localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+        } catch (err) {
+            console.error("Could not save preferences", err);
+        }
+    }
+
+    function restorePrefs() {
+        const prefs = loadPrefs();
+        if (typeof prefs.includeMic === "boolean") includeMic.checked = prefs.includeMic;
+        if (Number.isFinite(prefs.timesliceMs)) timesliceInput.value = String(prefs.timesliceMs);
+    }
+
+    // ------------------------------------------------------------- listeners
+
+    startBtn.addEventListener("click", startRecording);
+    pauseBtn.addEventListener("click", togglePause);
+    stopBtn.addEventListener("click", stopRecording);
+
+    trimStart.addEventListener("input", () => applyTrim("start"));
+    trimEnd.addEventListener("input", () => applyTrim("end"));
+    setStartBtn.addEventListener("click", () => setHandleToPlayhead("start"));
+    setEndBtn.addEventListener("click", () => setHandleToPlayhead("end"));
+    playSelectionBtn.addEventListener("click", playSelection);
+
+    playback.addEventListener("pause", () => {
+        selectionPlaying = false;
+    });
+    playback.addEventListener("timeupdate", () => {
+        if (!selectionPlaying) return;
+        if (playback.currentTime < Number(trimEnd.value)) return;
+        playback.pause();
+    });
+
+    exportBtn.addEventListener("click", exportSelection);
+    cancelExportBtn.addEventListener("click", () => stopExportRun?.());
+
+    downloadBtn.addEventListener("click", () => {
+        if (clipBlob) downloadBlob(clipBlob, "");
+    });
+    downloadTrimmedBtn.addEventListener("click", () => {
+        if (trimmedBlob) downloadBlob(trimmedBlob, "trimmed");
+    });
+
+    settingsForm.addEventListener("submit", (event) => event.preventDefault());
+    includeMic.addEventListener("change", savePrefs);
+    timesliceInput.addEventListener("change", savePrefs);
+
+    window.addEventListener("beforeunload", (event) => {
+        const unsaved = clipBlob && !savedSinceRecording;
+        if (!isBusyCapturing() && state !== "exporting" && !unsaved) return;
+
+        event.preventDefault();
+        event.returnValue = "";
+    });
+
+    restorePrefs();
+    syncControls();
+
+    if (!hasCaptureSupport()) {
+        showMessage("This page cannot capture the screen here: getDisplayMedia is missing. Serve the tool over https:// or localhost and use a desktop browser.");
+    }
+</script>
+
+</body>
+
+</html>
