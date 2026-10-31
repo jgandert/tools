@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="120 -840 720 720">
+  <style id="dark-mode-inversion-style">
+    @media (prefers-color-scheme: dark) {
+      path, rect, circle, polygon, ellipse, line, polyline {
+        filter: invert(100%) hue-rotate(180deg) !important;
+      }
+    }
+  </style>
+  <!--
+  Material Symbols Rounded: table_chart (filled), by Google.
+  Source: https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/table_chart/materialsymbolsrounded/table_chart_fill1_24px.svg
+  Upstream license: https://github.com/google/material-design-icons/blob/master/LICENSE
+  License: Apache-2.0; local copy: ../LICENSE.
+  Modifications: teal body, amber header, row gutter, and symmetric crop to remove stock padding.
+  Modifications copyright 2026 Joschua Gandert, licensed under Apache-2.0.
+  -->
+  <defs>
+    <clipPath id="rows">
+      <path d="M120-560h720v180H120Zm0 260h720v180H120Z"/>
+    </clipPath>
+  </defs>
+  <path fill="#d0872a" d="M120-640v-120q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v120H120Z"/>
+  <path fill="#008b83" clip-path="url(#rows)" d="M200-120q-33 0-56.5-23.5T120-200v-360h180v440H200Zm460 0v-440h180v360q0 33-23.5 56.5T760-120H660Zm-280 0v-440h200v440H380Z"/>
+</svg>

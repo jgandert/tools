@@ -1,0 +1,1565 @@
+<!doctype html>
+<html lang="en" class="theme-teal">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Client-side CSV/TSV workbench: open delimited data, inspect it as a sortable, filterable table with column stats, edit it and export to CSV, TSV, JSON, Markdown or HTML.">
+    <title>CSV Workbench — Inspect, Fix and Convert Delimited Data</title>
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        /* Virtualized table: fixed row height plus a scroll viewport are the two
+           things windowing cannot derive from one.css defaults. --pad-top,
+           --pad-bottom and --col-count are set from JS. */
+        #table-scroll {
+            max-height: 60vh;
+            overflow: auto;
+        }
+
+        #data-table {
+            table-layout: fixed;
+            min-width: calc(var(--col-count, 1) * 11rem);
+        }
+
+        /* Data rows only: the id-carrying spacer rows must collapse to their
+           padding height, and a row height acts as a minimum in table layout. */
+        #data-table tbody tr:not([id]) {
+            height: 33px;
+        }
+
+        #data-table td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #data-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            box-shadow: inset 0 -1px 0 var(--outline-variant);
+        }
+
+        #spacer-top td,
+        #spacer-bottom td {
+            padding: 0;
+            border: none;
+        }
+
+        #spacer-top td {
+            height: var(--pad-top, 0);
+        }
+
+        #spacer-bottom td {
+            height: var(--pad-bottom, 0);
+        }
+
+        td.editing,
+        th.editing {
+            padding: 0;
+        }
+
+        td.editing input,
+        th.editing input {
+            width: 100%;
+            margin: 0;
+        }
+
+        /* Header cells carry two controls; the sort control has to read as the
+           column label rather than as a button. */
+        th .column-sort {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            background: none;
+            border: none;
+            box-shadow: none;
+            padding: 2px 4px;
+            color: inherit;
+            font: inherit;
+            text-transform: none;
+            letter-spacing: normal;
+            max-width: 100%;
+        }
+
+        th .column-sort:hover {
+            background-color: color-mix(in srgb, var(--on-surface) 8%, transparent);
+        }
+
+        th .column-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        th [data-filtered] {
+            color: var(--primary);
+        }
+
+        td[aria-current] {
+            outline: var(--border-width) solid var(--primary);
+            outline-offset: calc(-1 * var(--border-width));
+        }
+    </style>
+</head>
+
+<body>
+<a href="#content" class="skip-link">Skip to content</a>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
+
+<header>
+    <label for="aside-state" class="aside-toggle-btn"></label>
+    <hgroup>
+        <h1>CSV Workbench</h1>
+        <p>Open, inspect, fix and convert delimited data — everything stays in your browser.</p>
+    </hgroup>
+</header>
+
+<main id="content">
+
+    <section id="table-section">
+        <h2>Table</h2>
+
+        <div role="search">
+            <input type="search" id="global-filter" placeholder="Filter all columns…"
+                   aria-label="Filter all columns">
+            <button type="button" id="clear-filters-btn">Clear filters</button>
+        </div>
+
+        <div class="group">
+            <button type="button" id="undo-btn" disabled data-tooltip="Undo (Ctrl+Z)">
+                <span class="sym" aria-hidden="true">undo</span> Undo
+            </button>
+            <button type="button" id="redo-btn" disabled data-tooltip="Redo (Ctrl+Shift+Z)">
+                <span class="sym" aria-hidden="true">redo</span> Redo
+            </button>
+            <button type="button" id="add-row-btn"
+                    data-tooltip="Insert a row below the selected one">
+                <span class="sym" aria-hidden="true">add</span> Row
+            </button>
+            <button type="button" id="delete-row-btn" data-tooltip="Delete the selected row">
+                <span class="sym" aria-hidden="true">delete</span> Row
+            </button>
+            <button type="button" id="add-col-btn" data-tooltip="Append a new column">
+                <span class="sym" aria-hidden="true">add</span> Column
+            </button>
+        </div>
+
+        <div class="group">
+            <button type="button" id="trim-btn">Trim whitespace</button>
+            <button type="button" id="dedupe-btn">Remove duplicates</button>
+            <button type="button" id="delete-visible-btn" class="btn-danger">Delete visible rows
+            </button>
+            <button type="button" id="keep-visible-btn">Keep only visible rows</button>
+        </div>
+
+        <p id="table-empty">No data yet — paste, drop or open a delimited file in the sidebar.</p>
+
+        <div id="table-scroll" hidden>
+            <table id="data-table">
+                <caption id="table-caption">No rows</caption>
+                <thead>
+                <tr id="header-row"></tr>
+                </thead>
+                <tbody id="table-body">
+                <tr id="spacer-top">
+                    <td></td>
+                </tr>
+                <tr id="spacer-bottom">
+                    <td></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="text-muted" id="edit-hint" hidden>
+            Double-click a cell (or focus it and press <kbd>Enter</kbd>) to edit,
+            <kbd>Esc</kbd> cancels. Click a column name to sort, double-click or press
+            <kbd>F2</kbd> to rename it, and use the filter icon for per-column options.
+        </p>
+    </section>
+
+</main>
+
+<aside>
+    <h2>Settings</h2>
+
+    <form id="input-form">
+        <fieldset id="input-section">
+            <legend>Input</legend>
+
+            <div class="file-drop-area" id="drop-area">
+                <input type="file" id="file-input" accept=".csv,.tsv,.txt,text/csv,text/plain"
+                       aria-label="Open a CSV or TSV file">
+            </div>
+
+            <label for="input-text">Paste delimited text</label>
+            <!-- prettier-ignore-start -->
+            <!-- beautify ignore:start -->
+            <textarea id="input-text" rows="5" spellcheck="false"
+                      aria-describedby="input-text-hint"
+                      placeholder="name,amount,date&#10;Ann,12.50,2024-01-31"></textarea>
+            <!-- beautify ignore:end -->
+            <!-- prettier-ignore-end -->
+            <small id="input-text-hint">Drop a file anywhere on the page, pick one above, or paste
+                here — parsing starts automatically.</small>
+
+            <div class="group">
+                <button type="button" id="parse-btn">
+                    <span class="sym" aria-hidden="true">play_arrow</span> Parse
+                </button>
+                <button type="button" id="sample-btn">
+                    <span class="sym" aria-hidden="true">description</span> Load example
+                </button>
+                <button type="button" id="clear-btn" class="btn-danger">
+                    <span class="sym" aria-hidden="true">delete</span> Clear
+                </button>
+            </div>
+
+            <div class="note" id="parse-warnings" role="status" hidden>
+                <div class="group">
+                    <strong>
+                        <span class="sym" aria-hidden="true">warning</span> Parse warnings
+                    </strong>
+                    <button type="button" class="btn-sym" id="dismiss-warnings"
+                            aria-label="Dismiss parse warnings">close
+                    </button>
+                </div>
+                <ul id="warning-list"></ul>
+            </div>
+        </fieldset>
+    </form>
+
+    <form id="parse-form">
+        <fieldset>
+            <legend>Parsing</legend>
+
+            <label for="delimiter-select">Delimiter</label>
+            <select id="delimiter-select">
+                <option value="auto" selected>Auto-detect</option>
+                <option value=",">Comma ,</option>
+                <option value=";">Semicolon ;</option>
+                <option value="\t">Tab</option>
+                <option value="|">Pipe |</option>
+            </select>
+
+            <label for="header-check">
+                First row is a header
+                <input type="checkbox" role="switch" id="header-check" checked>
+            </label>
+        </fieldset>
+    </form>
+
+    <details id="stats-details">
+        <summary>Column stats</summary>
+        <div id="stats-body">
+            <p class="text-muted">Click a column name in the table to select it.</p>
+        </div>
+    </details>
+
+    <form id="export-form">
+        <fieldset>
+            <legend>Export</legend>
+
+            <label for="export-format">Format</label>
+            <select id="export-format">
+                <option value="csv" selected>CSV</option>
+                <option value="tsv">TSV</option>
+                <option value="json-objects">JSON (array of objects)</option>
+                <option value="json-arrays">JSON (array of arrays)</option>
+                <option value="markdown">Markdown table</option>
+                <option value="html">HTML table</option>
+            </select>
+
+            <label for="export-delimiter">CSV delimiter</label>
+            <select id="export-delimiter">
+                <option value="," selected>Comma ,</option>
+                <option value=";">Semicolon ;</option>
+                <option value="\t">Tab</option>
+                <option value="|">Pipe |</option>
+            </select>
+
+            <label for="export-visible">
+                Export visible rows only
+                <input type="checkbox" role="switch" id="export-visible" checked>
+            </label>
+
+            <div class="form-actions">
+                <button type="button" id="export-copy">
+                    <span class="sym" aria-hidden="true">content_copy</span> Copy
+                </button>
+                <button type="button" id="export-download">
+                    <span class="sym" aria-hidden="true">download</span> Download
+                </button>
+            </div>
+        </fieldset>
+    </form>
+</aside>
+
+<dialog id="column-dialog" aria-labelledby="column-dialog-title" aria-modal="true">
+    <article>
+        <header>
+            <h3 id="column-dialog-title">Column</h3>
+            <button class="btn-sym modal-close" type="button" aria-label="Close dialog"
+                    data-action="cancel">
+                <span class="sym" aria-hidden="true">close</span>
+            </button>
+        </header>
+
+        <div class="dialog-content">
+            <label for="column-rename">Name</label>
+            <input type="text" id="column-rename" autocomplete="off">
+
+            <label for="column-filter">Filter</label>
+            <input type="text" id="column-filter" autocomplete="off"
+                   aria-describedby="filter-hint">
+            <small id="filter-hint">Substring match, case-insensitive.</small>
+
+            <div class="group">
+                <button type="button" id="move-left-btn">
+                    <span class="sym" aria-hidden="true">arrow_back</span> Move left
+                </button>
+                <button type="button" id="move-right-btn">
+                    <span class="sym" aria-hidden="true">arrow_forward</span> Move right
+                </button>
+                <button type="button" id="delete-column-btn" class="btn-danger">
+                    <span class="sym" aria-hidden="true">delete</span> Delete column
+                </button>
+            </div>
+        </div>
+
+        <footer>
+            <button type="button" data-action="cancel">Cancel</button>
+            <button type="button" id="column-apply-btn">Apply</button>
+        </footer>
+    </article>
+</dialog>
+
+<script src="../one.js"></script>
+<script type="module">
+    import {
+        TYPE,
+        compareCells,
+        computeStats,
+        detectDelimiter,
+        detectHeader,
+        inferColumnType,
+        makeCellFilter,
+        parseCsv,
+        serializeCsv,
+        toHtmlTable,
+        toJsonObjects,
+        toJsonRows,
+        toMarkdown,
+    } from "./csv.js";
+
+    const SETTINGS_KEY = "csv-workbench-settings";
+    const ROW_HEIGHT = 33;
+    const OVERSCAN_ROWS = 8;
+    const MAX_BYTES = 20 * 1024 * 1024;
+    const MAX_CELLS = 500000;
+    const TYPE_SAMPLE_ROWS = 500;
+    const HISTORY_LIMIT = 100;
+    const FILTER_DEBOUNCE_MS = 150;
+    const DETECT_PROBE_CHARS = 64 * 1024;
+    const TEXTAREA_PREVIEW_CHARS = 200000;
+
+    const TYPE_LABELS = {
+        [TYPE.NUMBER]: "num",
+        [TYPE.DATE]: "date",
+        [TYPE.BOOLEAN]: "bool",
+        [TYPE.STRING]: "text",
+        [TYPE.EMPTY]: "empty",
+    };
+
+    const EXPORT_META = {
+        "csv": { extension: "csv", mime: "text/csv" },
+        "tsv": { extension: "tsv", mime: "text/tab-separated-values" },
+        "json-objects": { extension: "json", mime: "application/json" },
+        "json-arrays": { extension: "json", mime: "application/json" },
+        "markdown": { extension: "md", mime: "text/markdown" },
+        "html": { extension: "html", mime: "text/html" },
+    };
+
+    const SAMPLE_TEXT = [
+        "Name;Betrag;Buchungstag;Aktiv",
+        "Müller GmbH;1.234,56;2024-01-31;ja",
+        "Meier AG;-2.000,00;2024-02-01;nein",
+        "Schulz & Co;900,10;2024-02-14;ja",
+        "\"Weber, Hans\";12,00;2024-03-02;ja",
+        "Fischer KG;;2024-03-07;nein",
+    ].join("\n");
+
+    const el = (id) => document.getElementById(id);
+
+    const inputText = el("input-text");
+    const fileInput = el("file-input");
+    const dropArea = el("drop-area");
+    const warningBox = el("parse-warnings");
+    const warningList = el("warning-list");
+    const delimiterSelect = el("delimiter-select");
+    const headerCheck = el("header-check");
+    const globalFilterInput = el("global-filter");
+    const tableScroll = el("table-scroll");
+    const tableEmpty = el("table-empty");
+    const editHint = el("edit-hint");
+    const dataTable = el("data-table");
+    const tableCaption = el("table-caption");
+    const headerRow = el("header-row");
+    const tableBody = el("table-body");
+    const spacerTop = el("spacer-top");
+    const spacerBottom = el("spacer-bottom");
+    const statsDetails = el("stats-details");
+    const statsBody = el("stats-body");
+    const undoBtn = el("undo-btn");
+    const redoBtn = el("redo-btn");
+    const columnDialog = el("column-dialog");
+    const columnDialogTitle = el("column-dialog-title");
+    const columnRenameInput = el("column-rename");
+    const columnFilterInput = el("column-filter");
+    const filterHint = el("filter-hint");
+    const exportFormat = el("export-format");
+    const exportDelimiter = el("export-delimiter");
+    const exportVisible = el("export-visible");
+
+    // columns bundles name, type and filter so a single splice keeps them in sync
+    const state = {
+        columns: [],
+        rows: [],
+        hasHeader: true,
+        sortColumn: -1,
+        sortDirection: null,
+        globalFilter: "",
+        view: [],
+        selectedRow: -1,
+        selectedColumn: -1,
+        dialogColumn: -1,
+        editing: false,
+    };
+
+    const history = { undo: [], redo: [] };
+
+    // Full input kept outside the textarea so huge files survive a re-parse
+    let sourceText = "";
+
+    /* ------------------------------------------------------------- settings */
+
+    function loadSettings() {
+        try {
+            return JSON.parse(localStorage.getItem(SETTINGS_KEY)) ?? {};
+        } catch {
+            return {};
+        }
+    }
+
+    function saveSettings() {
+        const settings = {
+            delimiter: delimiterSelect.value,
+            hasHeader: headerCheck.checked,
+            exportFormat: exportFormat.value,
+            exportDelimiter: exportDelimiter.value,
+            exportVisibleOnly: exportVisible.checked,
+        };
+        try {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        } catch (error) {
+            console.error("Failed to save settings", error);
+        }
+    }
+
+    function applySettings() {
+        const settings = loadSettings();
+        if (settings.delimiter) delimiterSelect.value = settings.delimiter;
+        if (settings.hasHeader !== undefined) headerCheck.checked = settings.hasHeader;
+        if (settings.exportFormat) exportFormat.value = settings.exportFormat;
+        if (settings.exportDelimiter) exportDelimiter.value = settings.exportDelimiter;
+        if (settings.exportVisibleOnly !== undefined) exportVisible.checked = settings.exportVisibleOnly;
+    }
+
+    /* ---------------------------------------------------------------- input */
+
+    function selectedDelimiter(text) {
+        const choice = delimiterSelect.value;
+        if (choice === "auto") return detectDelimiter(text);
+        return choice === "\\t" ? "\t" : choice;
+    }
+
+    function estimateCells(text, delimiter) {
+        let lines = 1;
+        let position = 0;
+        while ((position = text.indexOf("\n", position) + 1) > 0) lines++;
+
+        const breakAt = text.indexOf("\n");
+        const firstLine = breakAt < 0 ? text : text.slice(0, breakAt);
+        return lines * firstLine.split(delimiter).length;
+    }
+
+    async function passesSizeGuard(text, delimiter) {
+        const megabytes = (text.length / (1024 * 1024)).toFixed(1);
+        if (text.length > MAX_BYTES) {
+            const proceed = await one.confirm(
+                `This input is about ${megabytes} MB. Parsing it may freeze the page for a while. Continue?`);
+            if (!proceed) return false;
+        }
+
+        const cells = estimateCells(text, delimiter);
+        if (cells > MAX_CELLS) {
+            const rounded = Math.round(cells / 1000);
+            return one.confirm(
+                `This input has approximately ${rounded}k cells. Rendering and stats may become slow. Continue?`);
+        }
+        return true;
+    }
+
+    function showWarnings(warnings) {
+        warningList.replaceChildren();
+        if (warnings.length === 0) {
+            warningBox.hidden = true;
+            return;
+        }
+        for (const warning of warnings) {
+            const item = document.createElement("li");
+            item.textContent = warning;
+            warningList.append(item);
+        }
+        warningBox.hidden = false;
+    }
+
+    function buildColumns(header, rows) {
+        return header.map((name, index) => ({
+            name,
+            type: columnType(rows, index),
+            filter: "",
+        }));
+    }
+
+    function columnType(rows, index) {
+        const sample = rows.length > TYPE_SAMPLE_ROWS ? rows.slice(0, TYPE_SAMPLE_ROWS) : rows;
+        return inferColumnType(sample.map((row) => row[index] ?? ""));
+    }
+
+    function refreshTypes() {
+        state.columns.forEach((column, index) => {
+            column.type = columnType(state.rows, index);
+        });
+    }
+
+    async function loadText(text, { detect = true } = {}) {
+        sourceText = text;
+        if (text.trim() === "") {
+            resetData();
+            return;
+        }
+
+        if (detect && delimiterSelect.value === "auto") {
+            // Detection only needs the first rows, so it never walks a huge file
+            const probeText = text.slice(0, DETECT_PROBE_CHARS);
+            const probe = parseCsv(probeText, {
+                delimiter: detectDelimiter(probeText),
+                hasHeader: false,
+            });
+            headerCheck.checked = detectHeader(probe.rows);
+            saveSettings();
+        }
+
+        const delimiter = selectedDelimiter(text);
+        if (!await passesSizeGuard(text, delimiter)) return;
+
+        const result = parseCsv(text, { delimiter, hasHeader: headerCheck.checked });
+        showWarnings(result.warnings);
+
+        const width = result.header?.length ?? result.rows[0]?.length ?? 0;
+        const header = result.header ?? Array.from({ length: width }, (_, i) => `Column ${i + 1}`);
+
+        state.rows = result.rows;
+        state.hasHeader = headerCheck.checked;
+        state.columns = buildColumns(header, result.rows);
+        state.sortColumn = -1;
+        state.sortDirection = null;
+        state.selectedRow = -1;
+        state.selectedColumn = -1;
+        history.undo.length = 0;
+        history.redo.length = 0;
+
+        tableScroll.scrollTop = 0;
+        refresh();
+    }
+
+    function resetData() {
+        state.rows = [];
+        state.columns = [];
+        state.view = [];
+        state.sortColumn = -1;
+        state.sortDirection = null;
+        state.selectedColumn = -1;
+        state.selectedRow = -1;
+        history.undo.length = 0;
+        history.redo.length = 0;
+        showWarnings([]);
+        refresh();
+    }
+
+    async function readFile(file) {
+        if (!file) return;
+        const text = await file.text();
+        inputText.value = text.length > TEXTAREA_PREVIEW_CHARS
+            ? text.slice(0, TEXTAREA_PREVIEW_CHARS)
+            : text;
+        dropArea.setAttribute("data-file-name", `${file.name} (${Math.round(file.size / 1024)} KB)`);
+        await loadText(text);
+    }
+
+    /* ------------------------------------------------------- view + sorting */
+
+    function activeFilters() {
+        const filters = [];
+        state.columns.forEach((column, index) => {
+            const predicate = makeCellFilter(column.filter, column.type);
+            if (predicate) filters.push({ index, predicate });
+        });
+        return filters;
+    }
+
+    function rowMatchesGlobal(row, needle) {
+        for (const cell of row) {
+            if (cell.toLowerCase().includes(needle)) return true;
+        }
+        return false;
+    }
+
+    function recomputeView() {
+        const needle = state.globalFilter.trim().toLowerCase();
+        const filters = activeFilters();
+        const view = [];
+
+        for (let i = 0; i < state.rows.length; i++) {
+            const row = state.rows[i];
+            if (needle && !rowMatchesGlobal(row, needle)) continue;
+
+            let keep = true;
+            for (const filter of filters) {
+                if (filter.predicate(row[filter.index] ?? "")) continue;
+                keep = false;
+                break;
+            }
+            if (keep) view.push(i);
+        }
+
+        state.view = state.sortDirection ? sortView(view) : view;
+    }
+
+    function sortView(view) {
+        const index = state.sortColumn;
+        const type = state.columns[index]?.type ?? TYPE.STRING;
+        const factor = state.sortDirection === "desc" ? -1 : 1;
+
+        // Stable: equal cells fall back to the original row order
+        return view
+            .map((rowIndex, position) => ({ rowIndex, position }))
+            .sort((a, b) => {
+                const cellA = state.rows[a.rowIndex][index] ?? "";
+                const cellB = state.rows[b.rowIndex][index] ?? "";
+
+                // Empty cells stay at the bottom in both directions
+                const emptyA = cellA.trim() === "";
+                const emptyB = cellB.trim() === "";
+                if (emptyA !== emptyB) return emptyA ? 1 : -1;
+
+                const order = compareCells(cellA, cellB, type);
+                if (order !== 0) return order * factor;
+                return a.position - b.position;
+            })
+            .map((entry) => entry.rowIndex);
+    }
+
+    function cycleSort(index) {
+        if (state.sortColumn !== index) {
+            state.sortColumn = index;
+            state.sortDirection = "asc";
+        } else if (state.sortDirection === "asc") {
+            state.sortDirection = "desc";
+        } else {
+            state.sortColumn = -1;
+            state.sortDirection = null;
+        }
+        refresh();
+    }
+
+    /* ------------------------------------------------------------ rendering */
+
+    function sortIcon(index) {
+        if (state.sortColumn !== index || !state.sortDirection) return "sort";
+        return state.sortDirection === "asc" ? "arrow_upward" : "arrow_downward";
+    }
+
+    function renderHeader() {
+        headerRow.replaceChildren();
+        dataTable.style.setProperty("--col-count", String(state.columns.length));
+
+        state.columns.forEach((column, index) => {
+            const th = document.createElement("th");
+            th.scope = "col";
+
+            const sortButton = document.createElement("button");
+            sortButton.type = "button";
+            sortButton.className = "column-sort";
+            sortButton.dataset.col = String(index);
+            sortButton.setAttribute("aria-label", `Sort by ${column.name} and show its stats`);
+
+            const name = document.createElement("span");
+            name.className = "column-name";
+            name.textContent = column.name;
+
+            const badge = document.createElement("span");
+            badge.className = state.selectedColumn === index ? "tag tag-highlight" : "tag";
+            badge.textContent = TYPE_LABELS[column.type] ?? "text";
+
+            const icon = document.createElement("span");
+            icon.className = "sym";
+            icon.setAttribute("aria-hidden", "true");
+            icon.textContent = sortIcon(index);
+
+            sortButton.append(name, badge, icon);
+
+            const optionsButton = document.createElement("button");
+            optionsButton.type = "button";
+            optionsButton.className = "btn-sym";
+            optionsButton.dataset.options = String(index);
+            if (column.filter.trim() !== "") optionsButton.dataset.filtered = "true";
+            optionsButton.setAttribute("aria-label", `Filter and edit column ${column.name}`);
+            optionsButton.setAttribute("aria-haspopup", "dialog");
+            optionsButton.textContent = "filter_alt";
+
+            th.append(sortButton, optionsButton);
+            headerRow.append(th);
+        });
+
+        const span = Math.max(1, state.columns.length);
+        spacerTop.firstElementChild.colSpan = span;
+        spacerBottom.firstElementChild.colSpan = span;
+    }
+
+    function renderCaption() {
+        const total = state.rows.length;
+        const shown = state.view.length;
+        const columns = state.columns.length;
+        if (total === 0) {
+            tableCaption.textContent = "No rows";
+            return;
+        }
+        const rowText = shown === total ? `${total} rows` : `${shown} of ${total} rows`;
+        tableCaption.textContent = `${rowText}, ${columns} columns`;
+    }
+
+    function renderBody() {
+        if (state.editing) return;
+
+        const total = state.view.length;
+        const viewportRows = Math.ceil(tableScroll.clientHeight / ROW_HEIGHT) + OVERSCAN_ROWS * 2;
+        const first = Math.max(0, Math.floor(tableScroll.scrollTop / ROW_HEIGHT) - OVERSCAN_ROWS);
+        const last = Math.min(total, first + viewportRows);
+
+        tableBody.style.setProperty("--pad-top", `${first * ROW_HEIGHT}px`);
+        tableBody.style.setProperty("--pad-bottom", `${Math.max(0, total - last) * ROW_HEIGHT}px`);
+
+        const fragment = document.createDocumentFragment();
+        for (let position = first; position < last; position++) {
+            fragment.append(buildRow(state.view[position]));
+        }
+
+        tableBody.replaceChildren(spacerTop, fragment, spacerBottom);
+    }
+
+    function buildRow(rowIndex) {
+        const tr = document.createElement("tr");
+        const row = state.rows[rowIndex];
+
+        state.columns.forEach((column, columnIndex) => {
+            const td = document.createElement("td");
+            td.tabIndex = 0;
+            td.dataset.row = String(rowIndex);
+            td.dataset.col = String(columnIndex);
+            td.textContent = row[columnIndex] ?? "";
+            if (rowIndex === state.selectedRow && columnIndex === state.selectedColumn) {
+                td.setAttribute("aria-current", "true");
+            }
+            tr.append(td);
+        });
+        return tr;
+    }
+
+    function renderStats() {
+        if (!statsDetails.open) return;
+
+        const index = state.selectedColumn;
+        const column = state.columns[index];
+        if (!column) {
+            statsBody.replaceChildren(muted("Click a column name in the table to select it."));
+            return;
+        }
+
+        const values = state.view.map((rowIndex) => state.rows[rowIndex][index] ?? "");
+        const stats = computeStats(values, column.type);
+
+        const list = document.createElement("dl");
+        addStat(list, "Column", `${column.name} (${TYPE_LABELS[column.type]})`);
+        addStat(list, "Rows", String(stats.count));
+        addStat(list, "Empty", String(stats.empty));
+        addStat(list, "Distinct", String(stats.distinct));
+
+        if (column.type === TYPE.NUMBER && stats.min !== undefined) {
+            addStat(list, "Min", formatNumber(stats.min));
+            addStat(list, "Max", formatNumber(stats.max));
+            addStat(list, "Mean", formatNumber(stats.mean));
+            addStat(list, "Median", formatNumber(stats.median));
+            addStat(list, "Sum", formatNumber(stats.sum));
+        }
+        if (column.type === TYPE.DATE && stats.minDate !== undefined) {
+            addStat(list, "Earliest", stats.minDate);
+            addStat(list, "Latest", stats.maxDate);
+        }
+        if (stats.shortest !== undefined) {
+            addStat(list, "Shortest", `${stats.shortest.length} chars: ${stats.shortest}`);
+            addStat(list, "Longest", `${stats.longest.length} chars: ${stats.longest}`);
+        }
+
+        const heading = document.createElement("p");
+        heading.textContent = "Most frequent values";
+
+        const top = document.createElement("ul");
+        for (const entry of stats.top) {
+            const item = document.createElement("li");
+            item.textContent = `${entry.value} — ${entry.count}×`;
+            top.append(item);
+        }
+        if (stats.top.length === 0) top.append(muted("No non-empty values."));
+
+        statsBody.replaceChildren(list, heading, top);
+    }
+
+    function formatNumber(value) {
+        if (Number.isInteger(value)) return String(value);
+
+        // Drops float noise like 2.4000000000000004 without losing small values
+        return String(Number(value.toPrecision(10)));
+    }
+
+    function muted(text) {
+        const paragraph = document.createElement("p");
+        paragraph.className = "text-muted";
+        paragraph.textContent = text;
+        return paragraph;
+    }
+
+    function addStat(list, term, value) {
+        const dt = document.createElement("dt");
+        dt.textContent = term;
+        const dd = document.createElement("dd");
+        dd.textContent = value;
+        list.append(dt, dd);
+    }
+
+    function refresh() {
+        const hasData = state.columns.length > 0;
+        tableScroll.hidden = !hasData;
+        tableEmpty.hidden = hasData;
+        editHint.hidden = !hasData;
+
+        recomputeView();
+        renderHeader();
+        renderBody();
+        renderCaption();
+        renderStats();
+        updateHistoryButtons();
+    }
+
+    /* ---------------------------------------------------- undo/redo commands */
+
+    function updateHistoryButtons() {
+        undoBtn.disabled = history.undo.length === 0;
+        redoBtn.disabled = history.redo.length === 0;
+    }
+
+    function run(command) {
+        command.redo();
+        history.undo.push(command);
+        if (history.undo.length > HISTORY_LIMIT) history.undo.shift();
+        history.redo.length = 0;
+        refreshTypes();
+        refresh();
+    }
+
+    function undo() {
+        const command = history.undo.pop();
+        if (!command) return;
+        command.undo();
+        history.redo.push(command);
+        refreshTypes();
+        refresh();
+    }
+
+    function redo() {
+        const command = history.redo.pop();
+        if (!command) return;
+        command.redo();
+        history.undo.push(command);
+        refreshTypes();
+        refresh();
+    }
+
+    function editCellCommand(rowIndex, columnIndex, before, after) {
+        return {
+            redo: () => {
+                state.rows[rowIndex][columnIndex] = after;
+            },
+            undo: () => {
+                state.rows[rowIndex][columnIndex] = before;
+            },
+        };
+    }
+
+    function setCellsCommand(changes) {
+        return {
+            redo: () => {
+                for (const change of changes) state.rows[change.row][change.col] = change.after;
+            },
+            undo: () => {
+                for (const change of changes) state.rows[change.row][change.col] = change.before;
+            },
+        };
+    }
+
+    function renameColumnCommand(index, before, after) {
+        return {
+            redo: () => {
+                state.columns[index].name = after;
+            },
+            undo: () => {
+                state.columns[index].name = before;
+            },
+        };
+    }
+
+    function insertRowCommand(index, cells) {
+        return {
+            redo: () => state.rows.splice(index, 0, [...cells]),
+            undo: () => state.rows.splice(index, 1),
+        };
+    }
+
+    function removeRowsCommand(entries) {
+        // Sorted descending so removal indices stay valid, ascending on re-insert
+        const ordered = [...entries].sort((a, b) => b.index - a.index);
+        return {
+            redo: () => {
+                for (const entry of ordered) state.rows.splice(entry.index, 1);
+
+                // Row indices below a removal shift, so the old selection is meaningless
+                state.selectedRow = -1;
+            },
+            undo: () => {
+                for (let i = ordered.length - 1; i >= 0; i--) {
+                    state.rows.splice(ordered[i].index, 0, ordered[i].cells);
+                }
+            },
+        };
+    }
+
+    function insertColumnCommand(index, name) {
+        return {
+            redo: () => {
+                state.columns.splice(index, 0, { name, type: TYPE.EMPTY, filter: "" });
+                for (const row of state.rows) row.splice(index, 0, "");
+                shiftSortColumn(index, 1);
+            },
+            undo: () => {
+                state.columns.splice(index, 1);
+                for (const row of state.rows) row.splice(index, 1);
+                shiftSortColumn(index, -1);
+            },
+        };
+    }
+
+    function removeColumnCommand(index) {
+        const column = state.columns[index];
+        const values = state.rows.map((row) => row[index]);
+        return {
+            redo: () => {
+                state.columns.splice(index, 1);
+                for (const row of state.rows) row.splice(index, 1);
+                shiftSortColumn(index, -1);
+            },
+            undo: () => {
+                state.columns.splice(index, 0, column);
+                state.rows.forEach((row, i) => row.splice(index, 0, values[i]));
+                shiftSortColumn(index, 1);
+            },
+        };
+    }
+
+    function moveColumnCommand(from, to) {
+        const move = (source, target) => {
+            const [column] = state.columns.splice(source, 1);
+            state.columns.splice(target, 0, column);
+            for (const row of state.rows) {
+                const [cell] = row.splice(source, 1);
+                row.splice(target, 0, cell);
+            }
+            if (state.sortColumn === source) state.sortColumn = target;
+            state.selectedColumn = target;
+        };
+        return {
+            redo: () => move(from, to),
+            undo: () => move(to, from),
+        };
+    }
+
+    function shiftSortColumn(index, delta) {
+        if (state.sortColumn < 0) return;
+        if (state.sortColumn === index && delta < 0) {
+            state.sortColumn = -1;
+            state.sortDirection = null;
+            return;
+        }
+        if (state.sortColumn >= index) state.sortColumn += delta;
+    }
+
+    /* ------------------------------------------------------------- editing */
+
+    function startEdit(td) {
+        if (state.editing) return;
+
+        const rowIndex = Number(td.dataset.row);
+        const columnIndex = Number(td.dataset.col);
+        const before = state.rows[rowIndex][columnIndex] ?? "";
+
+        state.editing = true;
+        selectCell(rowIndex, columnIndex, false);
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = before;
+        input.setAttribute("aria-label", `Edit ${state.columns[columnIndex].name}`);
+
+        td.textContent = "";
+        td.classList.add("editing");
+        td.append(input);
+        input.focus();
+        input.select();
+
+        let settled = false;
+        const finish = (commit) => {
+            if (settled) return;
+            settled = true;
+            const after = input.value;
+            state.editing = false;
+            td.classList.remove("editing");
+            td.textContent = commit ? after : before;
+
+            if (commit && after !== before) {
+                run(editCellCommand(rowIndex, columnIndex, before, after));
+                focusCell(rowIndex, columnIndex);
+                return;
+            }
+            td.focus();
+        };
+
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                finish(true);
+            }
+            if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                finish(false);
+            }
+        });
+        input.addEventListener("blur", () => finish(true));
+    }
+
+    function startHeaderEdit(th, index) {
+        if (state.editing) return;
+
+        const before = state.columns[index].name;
+        state.editing = true;
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = before;
+        input.setAttribute("aria-label", `Rename column ${before}`);
+
+        th.classList.add("editing");
+        th.replaceChildren(input);
+        input.focus();
+        input.select();
+
+        let settled = false;
+        const finish = (commit) => {
+            if (settled) return;
+            settled = true;
+            const after = input.value.trim();
+            state.editing = false;
+
+            if (commit && after !== "" && after !== before) run(renameColumnCommand(index, before, after));
+            else renderHeader();
+
+            headerRow.querySelector(`.column-sort[data-col="${index}"]`)?.focus();
+        };
+
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                finish(true);
+            }
+            if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                finish(false);
+            }
+        });
+        input.addEventListener("blur", () => finish(true));
+    }
+
+    function selectCell(rowIndex, columnIndex, rerender = true) {
+        state.selectedRow = rowIndex;
+        state.selectedColumn = columnIndex;
+        if (rerender) refresh();
+    }
+
+    function focusCell(rowIndex, columnIndex) {
+        const selector = `td[data-row="${rowIndex}"][data-col="${columnIndex}"]`;
+        tableBody.querySelector(selector)?.focus();
+    }
+
+    /* ---------------------------------------------------------- transforms */
+
+    function trimAllCells() {
+        const changes = [];
+        for (const rowIndex of state.view) {
+            const row = state.rows[rowIndex];
+            row.forEach((cell, columnIndex) => {
+                const trimmed = cell.trim();
+                if (trimmed === cell) return;
+                changes.push({ row: rowIndex, col: columnIndex, before: cell, after: trimmed });
+            });
+        }
+        if (changes.length === 0) {
+            one.alert("Nothing to trim — no cell had surrounding whitespace.");
+            return;
+        }
+        run(setCellsCommand(changes));
+        one.alert(`Trimmed whitespace in ${changes.length} cells.`);
+    }
+
+    function removeDuplicateRows() {
+        const seen = new Set();
+        const duplicates = [];
+        for (const rowIndex of state.view) {
+            const key = JSON.stringify(state.rows[rowIndex]);
+            if (seen.has(key)) {
+                duplicates.push({ index: rowIndex, cells: state.rows[rowIndex] });
+                continue;
+            }
+            seen.add(key);
+        }
+        if (duplicates.length === 0) {
+            one.alert("No duplicate rows in the current view.");
+            return;
+        }
+        run(removeRowsCommand(duplicates));
+        one.alert(`Removed ${duplicates.length} duplicate rows.`);
+    }
+
+    async function deleteVisibleRows() {
+        if (state.view.length === 0) return;
+        const confirmed = await one.confirm(`Delete all ${state.view.length} visible rows?`);
+        if (!confirmed) return;
+
+        const entries = state.view.map((index) => ({ index, cells: state.rows[index] }));
+        run(removeRowsCommand(entries));
+        one.alert(`Deleted ${entries.length} rows.`);
+    }
+
+    async function keepOnlyVisibleRows() {
+        const visible = new Set(state.view);
+        const entries = [];
+        state.rows.forEach((cells, index) => {
+            if (!visible.has(index)) entries.push({ index, cells });
+        });
+        if (entries.length === 0) {
+            one.alert("All rows are visible — nothing to remove.");
+            return;
+        }
+
+        const confirmed = await one.confirm(`Delete the ${entries.length} rows hidden by filters?`);
+        if (!confirmed) return;
+
+        run(removeRowsCommand(entries));
+        clearAllFilters();
+        one.alert(`Kept ${state.rows.length} rows, deleted ${entries.length}.`);
+    }
+
+    function clearAllFilters() {
+        state.globalFilter = "";
+        globalFilterInput.value = "";
+        for (const column of state.columns) column.filter = "";
+        refresh();
+    }
+
+    /* -------------------------------------------------------------- export */
+
+    function exportRows() {
+        if (!exportVisible.checked) return state.rows;
+        return state.view.map((index) => state.rows[index]);
+    }
+
+    function exportHeader() {
+        return state.hasHeader ? state.columns.map((column) => column.name) : null;
+    }
+
+    function buildExport(format) {
+        const header = exportHeader();
+        const rows = exportRows();
+        const delimiter = exportDelimiter.value === "\\t" ? "\t" : exportDelimiter.value;
+
+        if (format === "csv") return serializeCsv(header, rows, { delimiter });
+        if (format === "tsv") return serializeCsv(header, rows, { delimiter: "\t" });
+        if (format === "json-objects") return toJsonObjects(header ?? headerNames(), rows);
+        if (format === "json-arrays") return toJsonRows(header, rows);
+        if (format === "markdown") return toMarkdown(header ?? headerNames(), rows);
+        return toHtmlTable(header ?? headerNames(), rows);
+    }
+
+    function headerNames() {
+        return state.columns.map((column) => column.name);
+    }
+
+    async function passesExportGuard(format) {
+        if (format !== "markdown" && format !== "html") return true;
+
+        const cells = exportRows().length * state.columns.length;
+        if (cells <= MAX_CELLS) return true;
+
+        const rounded = Math.round(cells / 1000);
+        return one.confirm(`Rendering approximately ${rounded}k cells as ${format} may take a while. Continue?`);
+    }
+
+    async function copyExport() {
+        if (state.columns.length === 0) return;
+        const format = exportFormat.value;
+        if (!await passesExportGuard(format)) return;
+        try {
+            await one.copy(buildExport(format));
+        } catch (error) {
+            one.alert(error.message, "error");
+        }
+    }
+
+    async function downloadExport() {
+        if (state.columns.length === 0) return;
+        const format = exportFormat.value;
+        if (!await passesExportGuard(format)) return;
+
+        let content;
+        try {
+            content = buildExport(format);
+        } catch (error) {
+            one.alert(error.message, "error");
+            return;
+        }
+
+        const meta = EXPORT_META[format];
+        const blob = new Blob([content], { type: `${meta.mime};charset=utf-8` });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `csv-workbench_${one.getTimestamp()}.${meta.extension}`;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
+    /* ------------------------------------------------------- column dialog */
+
+    let dialogOpener = null;
+
+    function openColumnDialog(index, opener) {
+        const column = state.columns[index];
+        if (!column) return;
+
+        state.dialogColumn = index;
+        dialogOpener = opener;
+        columnDialogTitle.textContent = `Column: ${column.name}`;
+        columnRenameInput.value = column.name;
+        columnFilterInput.value = column.filter;
+        filterHint.textContent = column.type === TYPE.NUMBER || column.type === TYPE.DATE
+            ? "Substring, or >x, <x, >=x, <=x, =x, x..y for a range."
+            : "Substring match, case-insensitive.";
+        columnDialog.showModal();
+        columnRenameInput.focus();
+    }
+
+    function closeColumnDialog() {
+        // The dialog's close handler returns the focus to the opener
+        columnDialog.close();
+    }
+
+    function applyColumnDialog() {
+        const index = state.dialogColumn;
+        const column = state.columns[index];
+        if (!column) return;
+
+        const name = columnRenameInput.value.trim();
+        column.filter = columnFilterInput.value;
+
+        if (name && name !== column.name) {
+            run(renameColumnCommand(index, column.name, name));
+        } else {
+            refresh();
+        }
+        closeColumnDialog();
+    }
+
+    /* --------------------------------------------------------------- wiring */
+
+    let filterTimer = 0;
+
+    globalFilterInput.addEventListener("input", () => {
+        clearTimeout(filterTimer);
+        filterTimer = setTimeout(() => {
+            state.globalFilter = globalFilterInput.value;
+            refresh();
+        }, FILTER_DEBOUNCE_MS);
+    });
+
+    el("clear-filters-btn").addEventListener("click", clearAllFilters);
+
+    inputText.addEventListener("change", () => loadText(inputText.value));
+    el("parse-btn").addEventListener("click", () => loadText(inputText.value));
+
+    el("sample-btn").addEventListener("click", () => {
+        inputText.value = SAMPLE_TEXT;
+        delimiterSelect.value = "auto";
+        loadText(SAMPLE_TEXT);
+    });
+
+    el("clear-btn").addEventListener("click", () => {
+        inputText.value = "";
+        dropArea.removeAttribute("data-file-name");
+        fileInput.value = "";
+        resetData();
+    });
+
+    el("dismiss-warnings").addEventListener("click", () => {
+        warningBox.hidden = true;
+    });
+
+    fileInput.addEventListener("change", () => readFile(fileInput.files?.[0]));
+
+    delimiterSelect.addEventListener("change", () => {
+        saveSettings();
+        if (sourceText.trim() !== "") loadText(sourceText, { detect: false });
+    });
+
+    headerCheck.addEventListener("change", () => {
+        saveSettings();
+        if (sourceText.trim() !== "") loadText(sourceText, { detect: false });
+    });
+
+    for (const control of [exportFormat, exportDelimiter, exportVisible]) {
+        control.addEventListener("change", saveSettings);
+    }
+
+    el("export-copy").addEventListener("click", copyExport);
+    el("export-download").addEventListener("click", downloadExport);
+
+    for (const eventName of ["dragenter", "dragover", "dragleave", "drop"]) {
+        document.body.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            const entering = eventName === "dragenter" || eventName === "dragover";
+            dropArea.classList.toggle("drag-over", entering);
+        });
+    }
+
+    document.body.addEventListener("drop", (event) => {
+        const file = event.dataTransfer?.files?.[0];
+        if (file) readFile(file);
+    });
+
+    tableScroll.addEventListener("scroll", () => {
+        requestAnimationFrame(renderBody);
+    });
+
+    headerRow.addEventListener("click", (event) => {
+        // The second click of a double click opens the rename editor instead
+        if (event.detail > 1) return;
+
+        const sortButton = event.target.closest(".column-sort");
+        if (sortButton) {
+            const index = Number(sortButton.dataset.col);
+            state.selectedColumn = index;
+
+            // Clicking a header is also the "show me this column" gesture
+            statsDetails.open = true;
+            cycleSort(index);
+            return;
+        }
+
+        const optionsButton = event.target.closest("[data-options]");
+        if (optionsButton) openColumnDialog(Number(optionsButton.dataset.options), optionsButton);
+    });
+
+    headerRow.addEventListener("dblclick", (event) => {
+        const th = event.target.closest("th");
+        const sortButton = th?.querySelector(".column-sort");
+        if (!sortButton) return;
+        startHeaderEdit(th, Number(sortButton.dataset.col));
+    });
+
+    headerRow.addEventListener("keydown", (event) => {
+        if (event.key !== "F2") return;
+        const sortButton = event.target.closest(".column-sort");
+        if (!sortButton) return;
+        event.preventDefault();
+        startHeaderEdit(sortButton.closest("th"), Number(sortButton.dataset.col));
+    });
+
+    tableBody.addEventListener("dblclick", (event) => {
+        const td = event.target.closest("td[data-row]");
+        if (td) startEdit(td);
+    });
+
+    tableBody.addEventListener("focusin", (event) => {
+        const td = event.target.closest("td[data-row]");
+        if (!td || state.editing) return;
+
+        state.selectedRow = Number(td.dataset.row);
+        state.selectedColumn = Number(td.dataset.col);
+
+        // Move the marker without a re-render, which would drop the focus
+        tableBody.querySelector("td[aria-current]")?.removeAttribute("aria-current");
+        td.setAttribute("aria-current", "true");
+    });
+
+    tableBody.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== "F2") return;
+        const td = event.target.closest("td[data-row]");
+        if (!td || state.editing) return;
+        event.preventDefault();
+        startEdit(td);
+    });
+
+    el("add-row-btn").addEventListener("click", () => {
+        if (state.columns.length === 0) return;
+        const index = state.selectedRow >= 0 ? state.selectedRow + 1 : state.rows.length;
+        run(insertRowCommand(index, new Array(state.columns.length).fill("")));
+    });
+
+    el("delete-row-btn").addEventListener("click", async () => {
+        if (state.selectedRow < 0 || !state.rows[state.selectedRow]) {
+            one.alert("Select a cell first to choose the row to delete.");
+            return;
+        }
+        const index = state.selectedRow;
+        const confirmed = await one.confirm(`Delete row ${index + 1}?`);
+        if (!confirmed) return;
+
+        run(removeRowsCommand([{ index, cells: state.rows[index] }]));
+        state.selectedRow = -1;
+    });
+
+    el("add-col-btn").addEventListener("click", async () => {
+        const name = await one.prompt("Name of the new column:", `Column ${state.columns.length + 1}`);
+        if (name === null) return;
+        run(insertColumnCommand(state.columns.length, name.trim() || `Column ${state.columns.length + 1}`));
+    });
+
+    el("trim-btn").addEventListener("click", trimAllCells);
+    el("dedupe-btn").addEventListener("click", removeDuplicateRows);
+    el("delete-visible-btn").addEventListener("click", deleteVisibleRows);
+    el("keep-visible-btn").addEventListener("click", keepOnlyVisibleRows);
+
+    undoBtn.addEventListener("click", undo);
+    redoBtn.addEventListener("click", redo);
+
+    el("column-apply-btn").addEventListener("click", applyColumnDialog);
+
+    el("move-left-btn").addEventListener("click", () => {
+        const index = state.dialogColumn;
+        if (index <= 0) return;
+        run(moveColumnCommand(index, index - 1));
+        closeColumnDialog();
+    });
+
+    el("move-right-btn").addEventListener("click", () => {
+        const index = state.dialogColumn;
+        if (index < 0 || index >= state.columns.length - 1) return;
+        run(moveColumnCommand(index, index + 1));
+        closeColumnDialog();
+    });
+
+    el("delete-column-btn").addEventListener("click", async () => {
+        const index = state.dialogColumn;
+        const column = state.columns[index];
+        if (!column) return;
+
+        const confirmed = await one.confirm(`Delete column "${column.name}" and all its values?`);
+        if (!confirmed) return;
+
+        run(removeColumnCommand(index));
+        closeColumnDialog();
+    });
+
+    columnDialog.addEventListener("click", (event) => {
+        if (event.target === columnDialog || event.target.closest("[data-action='cancel']")) {
+            closeColumnDialog();
+        }
+    });
+
+    columnDialog.addEventListener("close", () => {
+        const opener = dialogOpener;
+        dialogOpener = null;
+        if (opener?.isConnected) {
+            opener.focus();
+            return;
+        }
+
+        // Re-rendering replaced the opener: focus the same header control again
+        const index = Math.min(state.dialogColumn, state.columns.length - 1);
+        headerRow.querySelector(`[data-options="${index}"]`)?.focus();
+    });
+
+    columnFilterInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            applyColumnDialog();
+        }
+    });
+
+    statsDetails.addEventListener("toggle", renderStats);
+
+    document.addEventListener("keydown", (event) => {
+        if (!event.ctrlKey && !event.metaKey) return;
+        const key = event.key.toLowerCase();
+        if (key !== "z" && key !== "y") return;
+
+        const target = event.target;
+        const inField = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+        if (inField) return;
+
+        event.preventDefault();
+        if (key === "y" || event.shiftKey) redo();
+        else undo();
+    });
+
+    window.addEventListener("resize", () => renderBody());
+
+    applySettings();
+    refresh();
+</script>
+
+</body>
+
+</html>
