@@ -1,1 +1,1 @@
-Track('bad').synth('imaginary').note([60]);
+Track("bad").synth("imaginary").note([60]);

@@ -93,14 +93,14 @@ try {
     await check("moved blocks and following insert render in target order", async () => {
         await setCase("A1\nA2\nB1\nB2", "B1\nB2\nA1\nA2\nX");
         assert.deepEqual(await targetLines(), ["B1", "B2", "A1", "A2", "X"]);
-        assert.equal(await page.locator('#output details[data-type="MOVE_TO"]').count(), 1);
-        assert.equal(await page.locator('#output details[data-type="MOVE_FROM"]').count(), 0);
+        assert.equal(await page.locator("#output details[data-type=\"MOVE_TO\"]").count(), 1);
+        assert.equal(await page.locator("#output details[data-type=\"MOVE_FROM\"]").count(), 0);
     });
 
     await check("literal internal whitespace changes remain visible", async () => {
-        await setCase('const value = "a  b";', 'const value = "a b";');
-        assert.deepEqual(await page.locator("#output del").allTextContents(), ['const value = "a  b";\n']);
-        assert.deepEqual(await page.locator("#output ins").allTextContents(), ['const value = "a b";\n']);
+        await setCase("const value = \"a  b\";", "const value = \"a b\";");
+        assert.deepEqual(await page.locator("#output del").allTextContents(), ["const value = \"a  b\";\n"]);
+        assert.deepEqual(await page.locator("#output ins").allTextContents(), ["const value = \"a b\";\n"]);
     });
 
     await check("blank suppression retains the nonblank replacement", async () => {
@@ -117,7 +117,7 @@ try {
     await check("normalized moved matches display target indentation", async () => {
         await setCase("A1\nA2\nB1\nB2", "  B1\n  B2\n A1\n A2\nX");
         assert.deepEqual(await targetLines(), ["  B1", "  B2", " A1", " A2", "X"]);
-        const destination = page.locator('#output details[data-type="MOVE_TO"]');
+        const destination = page.locator("#output details[data-type=\"MOVE_TO\"]");
         assert.equal(await destination.count(), 1);
         assert.match(await destination.locator("summary").textContent(), /target lines \d+-\d+ <- source lines \d+-\d+/);
     });

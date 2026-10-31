@@ -87,9 +87,12 @@ export async function makeOutlinedArtwork(config = {}) {
         const angle = index * Math.PI / 4 + between(-0.1, 0.1);
         const radiusX = between(52, 62);
         const radiusY = between(48, 59);
-        knots.push({x: 155 + Math.cos(angle) * radiusX, y: 104 + Math.sin(angle) * radiusY});
+        knots.push({ x: 155 + Math.cos(angle) * radiusX, y: 104 + Math.sin(angle) * radiusY });
     }
-    const midpoint = (first, second) => ({x: (first.x + second.x) / 2, y: (first.y + second.y) / 2});
+    const midpoint = (first, second) => ({
+        x: (first.x + second.x) / 2,
+        y: (first.y + second.y) / 2,
+    });
     const firstMidpoint = midpoint(knots.at(-1), knots[0]);
     organic.moveTo(firstMidpoint.x, firstMidpoint.y);
     for (let index = 0; index < knots.length; index++) {
@@ -121,9 +124,9 @@ export async function makeOutlinedArtwork(config = {}) {
     const paths = [star, organic, ribbon];
 
     const artwork = makeCanvas();
-    const artworkContext = artwork.getContext("2d", {willReadFrequently: true});
+    const artworkContext = artwork.getContext("2d", { willReadFrequently: true });
     const coverage = makeCanvas();
-    const coverageContext = coverage.getContext("2d", {willReadFrequently: true});
+    const coverageContext = coverage.getContext("2d", { willReadFrequently: true });
     if (background === "white") {
         artworkContext.fillStyle = "#ffffff";
         artworkContext.fillRect(0, 0, width, height);
@@ -156,7 +159,7 @@ export async function makeOutlinedArtwork(config = {}) {
     const paintMasks = [];
     paths.forEach((path, index) => {
         const canvas = makeCanvas();
-        const context = canvas.getContext("2d", {willReadFrequently: true});
+        const context = canvas.getContext("2d", { willReadFrequently: true });
         prepare(context);
         context.strokeStyle = "#000000";
         context.lineWidth = strokeWidths[index] / scale;
@@ -217,7 +220,7 @@ export async function makeOutlinedArtwork(config = {}) {
                     }
                 }
                 if (count >= 2) {
-                    junctions.push({x: sumX / count, y: sumY / count, shapes: [first, second]});
+                    junctions.push({ x: sumX / count, y: sumY / count, shapes: [first, second] });
                 }
             }
         }
@@ -229,7 +232,7 @@ export async function makeOutlinedArtwork(config = {}) {
     decoded.src = dataUrl;
     await decoded.decode();
     const decodedCanvas = makeCanvas();
-    const decodedContext = decodedCanvas.getContext("2d", {willReadFrequently: true});
+    const decodedContext = decodedCanvas.getContext("2d", { willReadFrequently: true });
     decodedContext.drawImage(decoded, 0, 0);
     const data = Array.from(decodedContext.getImageData(0, 0, width, height).data);
     const hexToRgb = hex => [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16));

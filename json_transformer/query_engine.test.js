@@ -2037,7 +2037,12 @@ testWith("Negated regex preserves quantifiers and multiple regex literals",
     ["bbb", "c"]);
 
 testWith("Regex filter preserves backtick fields and placeholder-like field names",
-    { items: [{ "name} =~ /": "aa", __REGEX_0__: true }, { "name} =~ /": "aa", __REGEX_0__: false }] },
+    {
+        items: [{ "name} =~ /": "aa", __REGEX_0__: true }, {
+            "name} =~ /": "aa",
+            __REGEX_0__: false,
+        }],
+    },
     "items.{`name} =~ /` =~ /^a{2}$/ and __REGEX_0__}.`name} =~ /`",
     ["aa"]);
 
@@ -2117,7 +2122,7 @@ const dictionaryCases = [
         description: "composition preserves a primitive __proto__ alias",
         data: { x: 1 },
         query: "{__proto__: x}",
-        expected: JSON.parse('{"__proto__":1}'),
+        expected: JSON.parse("{\"__proto__\":1}"),
     },
     {
         description: "composition replaces repeated aliases without changing its prototype",

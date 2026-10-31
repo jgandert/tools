@@ -32,7 +32,9 @@ function installClipboardFixture({ mode = "ready", items = [] } = {}) {
                 throw new DOMException("Clipboard permission denied", "NotAllowedError");
             }
             if (mode === "deferred") {
-                await new Promise(resolve => { state.releaseRead = resolve; });
+                await new Promise(resolve => {
+                    state.releaseRead = resolve;
+                });
             }
 
             return items.map(item => ({
@@ -55,7 +57,10 @@ function installClipboardFixture({ mode = "ready", items = [] } = {}) {
         delete clipboard.read;
     }
 
-    Object.defineProperty(navigator, "clipboard", { configurable: true, value: mode === "missing" ? undefined : clipboard });
+    Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: mode === "missing" ? undefined : clipboard,
+    });
 }
 
 async function openEditor(t, width = 1440, markdown = fixture, options = {}) {
@@ -71,7 +76,11 @@ async function openEditor(t, width = 1440, markdown = fixture, options = {}) {
     if (options.storageUnavailable) {
         await context.addInitScript(() => {
             Object.defineProperty(window, "indexedDB", {
-                value: { open() { throw new DOMException("Storage unavailable", "SecurityError"); } },
+                value: {
+                    open() {
+                        throw new DOMException("Storage unavailable", "SecurityError");
+                    },
+                },
             });
         });
     }
@@ -127,7 +136,11 @@ async function pasteEvent(page, data, selector = "#paste-input") {
             clipboardData.setData(type, value);
         }
 
-        const event = new ClipboardEvent("paste", { clipboardData, bubbles: true, cancelable: true });
+        const event = new ClipboardEvent("paste", {
+            clipboardData,
+            bubbles: true,
+            cancelable: true,
+        });
         element.dispatchEvent(event);
         return event.defaultPrevented;
     }, data);
@@ -136,7 +149,8 @@ async function pasteEvent(page, data, selector = "#paste-input") {
 async function settleAppearance(page) {
     await page.evaluate(async () => {
         await new Promise(requestAnimationFrame);
-        await Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {})));
+        await Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {
+        })));
     });
 }
 
@@ -192,7 +206,10 @@ async function assertTocLinkAppearance(page) {
     });
     await page.mouse.move(0, 0);
     await settleAppearance(page);
-    const referenceColor = await page.getByRole("link", { name: "Reference link", exact: true }).evaluate(element => getComputedStyle(element).color);
+    const referenceColor = await page.getByRole("link", {
+        name: "Reference link",
+        exact: true,
+    }).evaluate(element => getComputedStyle(element).color);
     const normal = await readAppearance();
     assert.equal(normal.color, referenceColor, "TOC links use the document's link color");
     assert(normal.decoration.includes("underline"), "Links are recognizable before hovering");
@@ -231,14 +248,20 @@ test("long nested TOC labels wrap within a narrow preview", async t => {
     const heading = `Heading ${"with a long label ".repeat(20)}`;
     const page = await openEditor(t, 320, `${fixture}\n###### ${heading}\n`);
     await assertTocLayout(page, "#content");
-    const link = page.locator(".toc").first().getByRole("link", { name: heading.trim(), exact: true });
+    const link = page.locator(".toc").first().getByRole("link", {
+        name: heading.trim(),
+        exact: true,
+    });
     const height = await link.evaluate(element => element.getBoundingClientRect().height);
     assert(height > 48, "The long label spans multiple lines");
 });
 
 test("TOC links scroll the preview without moving the header", async t => {
     const page = await openEditor(t);
-    await page.locator(".toc").first().getByRole("link", { name: "Paragraphs and line breaks", exact: true }).click();
+    await page.locator(".toc").first().getByRole("link", {
+        name: "Paragraphs and line breaks",
+        exact: true,
+    }).click();
     const position = await page.evaluate(() => ({
         headerTop: document.querySelector("body > header").getBoundingClientRect().top,
         previewScroll: document.getElementById("content").scrollTop,
@@ -298,10 +321,17 @@ test("header actions stay centered and source scrolling stays inside the textare
 });
 
 test("rich clipboard HTML is preferred across items and preserves relative links, code and punctuation", async t => {
-    const page = await openEditor(t, 1440, "", { clipboard: { items: [
-        { "text/plain": "Do not choose the first plain item" },
-        { "text/html": "<h2>Copied</h2><p><strong>Bold</strong> &amp; “quoted” <a href='../guide?q=1&amp;b=2'>link</a></p><pre><code>\t  code();  \n\n</code></pre>", "text/plain": "Plain fallback" },
-    ] } });
+    const page = await openEditor(t, 1440, "", {
+        clipboard: {
+            items: [
+                { "text/plain": "Do not choose the first plain item" },
+                {
+                    "text/html": "<h2>Copied</h2><p><strong>Bold</strong> &amp; “quoted” <a href='../guide?q=1&amp;b=2'>link</a></p><pre><code>\t  code();  \n\n</code></pre>",
+                    "text/plain": "Plain fallback",
+                },
+            ],
+        },
+    });
     assert.equal(await page.locator("#append-mode").isChecked(), true);
     assert.equal(await page.locator("#normalize-punctuation").isChecked(), false);
     assert.equal(await page.getByRole("button", { name: "Copy Markdown" }).isDisabled(), true);
@@ -322,7 +352,14 @@ test("rich clipboard HTML is preferred across items and preserves relative links
 for (const [name, start, end] of [["cursor insertion", 7, 7], ["selection replacement", 7, 15]]) {
     test(`${name} preserves surrounding text, focuses the caret and supports undo and redo`, async t => {
         const original = "before selected after\n\n```\n  code();  \n```  \n";
-        const page = await openEditor(t, 1440, original, { clipboard: { items: [{ "text/html": "<b>new</b>", "text/plain": "new" }] } });
+        const page = await openEditor(t, 1440, original, {
+            clipboard: {
+                items: [{
+                    "text/html": "<b>new</b>",
+                    "text/plain": "new",
+                }],
+            },
+        });
         await page.getByLabel("Append at document end").uncheck();
         await selectSource(page, start, end);
         await pasteAsMarkdown(page);
@@ -361,7 +398,10 @@ test("append and punctuation preferences survive reload without saving a draft",
     assert.deepEqual(await page.evaluate(async () => ({
         keys: await one.storage.keys(),
         preferences: await one.storage.get("md_preview:paste-preferences"),
-    })), { keys: ["md_preview:paste-preferences"], preferences: { version: 1, appendMode: true, normalizePunctuation: true } });
+    })), {
+        keys: ["md_preview:paste-preferences"],
+        preferences: { version: 1, appendMode: true, normalizePunctuation: true },
+    });
     await page.reload();
     await page.waitForFunction(() => document.getElementById("normalize-punctuation").checked);
     await assertSource(page, "");
@@ -384,7 +424,10 @@ test("corrupt preferences restore defaults and unavailable storage still permits
     await pasteAsMarkdown(page);
     await assertSource(page, "Text", 4);
 
-    const unavailable = await openEditor(t, 1440, "", { storageUnavailable: true, clipboard: { items: [{ "text/plain": "Text" }] } });
+    const unavailable = await openEditor(t, 1440, "", {
+        storageUnavailable: true,
+        clipboard: { items: [{ "text/plain": "Text" }] },
+    });
     await unavailable.getByLabel("Normalize punctuation (HTML only)").check();
     await unavailable.getByText("Paste options could not be saved. They still apply in this tab.", { exact: true }).waitFor();
     await pasteAsMarkdown(unavailable);
@@ -393,14 +436,22 @@ test("corrupt preferences restore defaults and unavailable storage still permits
 
 for (const mode of ["denied", "missing", "missing-read", "broken-item"]) {
     test(`${mode} clipboard access offers a focused dialog that converts a rich paste event`, async t => {
-        const page = await openEditor(t, 1440, "before selected after", { clipboard: { mode, items: [{ "text/html": "<p>Unused</p>" }] } });
+        const page = await openEditor(t, 1440, "before selected after", {
+            clipboard: {
+                mode,
+                items: [{ "text/html": "<p>Unused</p>" }],
+            },
+        });
         await page.getByLabel("Append at document end").uncheck();
         await selectSource(page, 7, 15);
         await page.getByRole("button", { name: "Paste as Markdown", exact: true }).click();
         await page.getByRole("dialog", { name: "Paste as Markdown" }).waitFor();
         assert.equal(await page.getByLabel("Paste copied content here").evaluate(element => element === document.activeElement), true);
         assert.equal(await page.locator("#paste-markdown").isDisabled(), true);
-        assert.equal(await pasteEvent(page, { "text/html": "<strong>converted</strong>", "text/plain": "plain fallback" }), true);
+        assert.equal(await pasteEvent(page, {
+            "text/html": "<strong>converted</strong>",
+            "text/plain": "plain fallback",
+        }), true);
         await waitForPaste(page);
         await assertSource(page, "before **converted** after", 20);
         assert.equal(await page.getByRole("dialog").isVisible(), false);
@@ -436,7 +487,10 @@ for (const cancel of ["Escape", "button"]) {
         await page.getByRole("dialog").waitFor();
         if (cancel === "button") {
             await page.keyboard.press("Tab");
-            assert.equal(await page.getByRole("button", { name: "Cancel", exact: true }).evaluate(element => element === document.activeElement), true);
+            assert.equal(await page.getByRole("button", {
+                name: "Cancel",
+                exact: true,
+            }).evaluate(element => element === document.activeElement), true);
             await page.keyboard.press("Enter");
         } else {
             await page.keyboard.press("Escape");
@@ -458,7 +512,10 @@ for (const [name, items] of [
     ["empty clipboard", []],
     ["unsupported image", [{ "image/png": "fixture image bytes" }]],
     ["empty plain text", [{ "text/plain": "" }]],
-    ["HTML with no convertible content", [{ "text/html": "<script>unsafe()</script>", "text/plain": "Do not insert this fallback" }]],
+    ["HTML with no convertible content", [{
+        "text/html": "<script>unsafe()</script>",
+        "text/plain": "Do not insert this fallback",
+    }]],
 ]) {
     test(`${name} leaves a selected document unchanged`, async t => {
         const page = await openEditor(t, 1440, "Keep this", { clipboard: { items } });
@@ -470,15 +527,23 @@ for (const [name, items] of [
 }
 
 test("converter resource limits and failures report errors without inserting HTML or plain fallbacks", async t => {
-    const page = await openEditor(t, 1440, "Keep this", { clipboard: { items: [{
-        "text/html": "<div>".repeat(129) + "Too deep",
-        "text/plain": "Do not insert this fallback",
-    }] } });
+    const page = await openEditor(t, 1440, "Keep this", {
+        clipboard: {
+            items: [{
+                "text/html": "<div>".repeat(129) + "Too deep",
+                "text/plain": "Do not insert this fallback",
+            }],
+        },
+    });
     await selectSource(page, 0, 9);
     await pasteAsMarkdown(page);
     await assertSource(page, "Keep this");
     await page.getByText(/Could not paste as Markdown.*128 level nesting limit.*smaller or simpler/).waitFor();
-    await page.evaluate(() => { window.htmlToMarkdown = () => { throw new Error("Converter fixture failure"); }; });
+    await page.evaluate(() => {
+        window.htmlToMarkdown = () => {
+            throw new Error("Converter fixture failure");
+        };
+    });
     await pasteAsMarkdown(page);
     await assertSource(page, "Keep this");
     await page.getByText("Could not paste as Markdown. Copy a smaller or simpler selection and try again.", { exact: true }).waitFor();
@@ -487,7 +552,10 @@ test("converter resource limits and failures report errors without inserting HTM
 test("empty dialog paste and failed dialog conversion leave the document unchanged", async t => {
     const page = await openEditor(t, 1440, "Keep this", { clipboard: { mode: "missing" } });
     await selectSource(page, 0, 9);
-    for (const data of [{}, { "text/html": "<div>".repeat(129) + "Too deep", "text/plain": "fallback" }]) {
+    for (const data of [{}, {
+        "text/html": "<div>".repeat(129) + "Too deep",
+        "text/plain": "fallback",
+    }]) {
         await page.locator("#paste-markdown").click();
         await page.getByRole("dialog").waitFor();
         await pasteEvent(page, data);
@@ -497,7 +565,12 @@ test("empty dialog paste and failed dialog conversion leave the document unchang
 });
 
 test("pending reads block duplicate execution and use the saved selection even after the cursor moves", async t => {
-    const page = await openEditor(t, 1440, "ABCD", { clipboard: { mode: "deferred", items: [{ "text/html": "<b>X</b>" }] } });
+    const page = await openEditor(t, 1440, "ABCD", {
+        clipboard: {
+            mode: "deferred",
+            items: [{ "text/html": "<b>X</b>" }],
+        },
+    });
     await page.getByLabel("Append at document end").uncheck();
     await selectSource(page, 1, 3);
     await page.locator("#paste-markdown").click();
@@ -527,7 +600,12 @@ test("pending reads block duplicate execution and use the saved selection even a
 
 for (const edit of ["typing", "edit then undo", "programmatic", "append"]) {
     test(`${edit} during an asynchronous read cancels insertion and preserves the current document`, async t => {
-        const page = await openEditor(t, 1440, "Original", { clipboard: { mode: "deferred", items: [{ "text/plain": "Stale paste" }] } });
+        const page = await openEditor(t, 1440, "Original", {
+            clipboard: {
+                mode: "deferred",
+                items: [{ "text/plain": "Stale paste" }],
+            },
+        });
         if (edit !== "append") {
             await page.getByLabel("Append at document end").uncheck();
         }
@@ -535,7 +613,9 @@ for (const edit of ["typing", "edit then undo", "programmatic", "append"]) {
         await page.locator("#paste-markdown").click();
         await page.waitForFunction(() => window.clipboardFixture.releaseRead);
         if (edit === "programmatic") {
-            await page.locator("#markdown-source").evaluate(element => { element.value = "Edited"; });
+            await page.locator("#markdown-source").evaluate(element => {
+                element.value = "Edited";
+            });
         } else {
             await page.locator("#markdown-source").fill("Edited");
         }
@@ -590,7 +670,10 @@ test("normal paste and the plain-text shortcut retain trusted native textarea be
     await page.evaluate(async () => {
         window.nativePastes = [];
         document.getElementById("markdown-source").addEventListener("paste", event => {
-            window.nativePastes.push({ trusted: event.isTrusted, prevented: event.defaultPrevented });
+            window.nativePastes.push({
+                trusted: event.isTrusted,
+                prevented: event.defaultPrevented,
+            });
         });
         await navigator.clipboard.write([new ClipboardItem({
             "text/html": new Blob(["<b>rich</b>"], { type: "text/html" }),
@@ -604,7 +687,10 @@ test("normal paste and the plain-text shortcut retain trusted native textarea be
             await page.keyboard.press(shortcut);
             await assertSource(page, "A  plain *text*  \nB");
         }
-        assert.deepEqual(await page.evaluate(() => window.nativePastes), [{ trusted: true, prevented: false }, { trusted: true, prevented: false }]);
+        assert.deepEqual(await page.evaluate(() => window.nativePastes), [{
+            trusted: true,
+            prevented: false,
+        }, { trusted: true, prevented: false }]);
         assert.equal(await page.getByRole("dialog").isVisible(), false);
     } finally {
         await page.evaluate(() => navigator.clipboard.writeText(""));
@@ -617,7 +703,9 @@ test("a trusted rich paste into the dialog works without granting clipboard-read
     await page.context().grantPermissions(["clipboard-write"]);
     await page.evaluate(async () => {
         Object.defineProperty(navigator.clipboard, "read", {
-            value: async () => { throw new DOMException("Reading is denied", "NotAllowedError"); },
+            value: async () => {
+                throw new DOMException("Reading is denied", "NotAllowedError");
+            },
         });
         document.getElementById("paste-input").addEventListener("paste", event => {
             window.dialogPasteTrusted = event.isTrusted;
@@ -693,13 +781,20 @@ test("converted Markdown remains editable, copyable, exportable and printable wi
             await exported.goto(pathToFileURL(path).href);
             assert.equal(await exported.locator("script, link[rel=stylesheet], textarea").count(), 0);
             assert.equal(await exported.locator(".toc a").count(), 2);
-            await exported.locator(".toc").getByRole("link", { name: "Section", exact: true }).click();
+            await exported.locator(".toc").getByRole("link", {
+                name: "Section",
+                exact: true,
+            }).click();
             assert.equal(new URL(exported.url()).hash, "#section");
             await exported.close();
         }
     }
 
-    await page.evaluate(() => { window.print = () => { window.printedText = document.getElementById("preview").textContent; }; });
+    await page.evaluate(() => {
+        window.print = () => {
+            window.printedText = document.getElementById("preview").textContent;
+        };
+    });
     await page.getByRole("button", { name: "Print document" }).click();
     assert.match(await page.evaluate(() => window.printedText), /Copied title/);
     await page.emulateMedia({ media: "print" });
@@ -721,7 +816,10 @@ test("converted Markdown remains editable, copyable, exportable and printable wi
 
 for (const width of [320, 768, 1440]) {
     test(`paste controls and dialog fit at ${width}px in automatic light and dark modes`, async t => {
-        const page = await openEditor(t, width, fixture, { keepEditorOpen: true, clipboard: { mode: "missing" } });
+        const page = await openEditor(t, width, fixture, {
+            keepEditorOpen: true,
+            clipboard: { mode: "missing" },
+        });
         const backgrounds = [];
         for (const colorScheme of ["light", "dark"]) {
             await page.emulateMedia({ colorScheme });
@@ -732,7 +830,12 @@ for (const width of [320, 768, 1440]) {
                 scrollWidth: document.scrollingElement.scrollWidth,
                 controls: [...document.querySelectorAll("#editor button, #editor label, #editor fieldset")].map(element => {
                     const rect = element.getBoundingClientRect();
-                    return { left: rect.left, right: rect.right, width: element.clientWidth, content: element.scrollWidth };
+                    return {
+                        left: rect.left,
+                        right: rect.right,
+                        width: element.clientWidth,
+                        content: element.scrollWidth,
+                    };
                 }),
             }));
             backgrounds.push(layout.background);

@@ -18,10 +18,10 @@ export async function makeJunctionArtwork(config = {}) {
     const kind = config.kind ?? "acute";
     // The first three positions cross both outlines; tangent leaves a narrow gap.
     const positions = {
-        acute: {x: 139, y: 95, angle: -0.48},
-        obtuse: {x: 144, y: 119, angle: 0.42},
-        shared: {x: 159, y: 104, angle: -0.18},
-        tangent: {x: 190, y: 99, angle: 0},
+        acute: { x: 139, y: 95, angle: -0.48 },
+        obtuse: { x: 144, y: 119, angle: 0.42 },
+        shared: { x: 159, y: 104, angle: -0.18 },
+        tangent: { x: 190, y: 99, angle: 0 },
     };
     if (!Object.hasOwn(positions, kind)) {
         throw new RangeError("Artwork kind must be acute, obtuse, shared, or tangent.");
@@ -92,7 +92,10 @@ export async function makeJunctionArtwork(config = {}) {
             y: centerY + x * sine + y * cosine,
         });
     }
-    const midpoint = (first, second) => ({x: (first.x + second.x) / 2, y: (first.y + second.y) / 2});
+    const midpoint = (first, second) => ({
+        x: (first.x + second.x) / 2,
+        y: (first.y + second.y) / 2,
+    });
     const first = midpoint(knots[7], knots[0]);
     overlay.moveTo(first.x, first.y);
     for (let index = 0; index < knots.length; index++) {
@@ -103,9 +106,9 @@ export async function makeJunctionArtwork(config = {}) {
     const paths = [silhouette, overlay];
 
     const artwork = makeCanvas();
-    const context = artwork.getContext("2d", {willReadFrequently: true});
+    const context = artwork.getContext("2d", { willReadFrequently: true });
     const coverage = makeCanvas();
-    const coverageContext = coverage.getContext("2d", {willReadFrequently: true});
+    const coverageContext = coverage.getContext("2d", { willReadFrequently: true });
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, width, height);
     coverageContext.fillStyle = "#ffffff";
@@ -135,7 +138,7 @@ export async function makeJunctionArtwork(config = {}) {
 
     const masks = paths.map((path, index) => {
         const maskCanvas = makeCanvas();
-        const maskContext = maskCanvas.getContext("2d", {willReadFrequently: true});
+        const maskContext = maskCanvas.getContext("2d", { willReadFrequently: true });
         prepare(maskContext);
         maskContext.strokeStyle = "#000000";
         maskContext.lineWidth = strokeWidths[index] / scale;
@@ -174,7 +177,7 @@ export async function makeJunctionArtwork(config = {}) {
             }
         }
         if (count >= 2) {
-            junctions.push({x: sumX / count, y: sumY / count, shapes: [0, 1]});
+            junctions.push({ x: sumX / count, y: sumY / count, shapes: [0, 1] });
         }
     }
 
@@ -207,12 +210,17 @@ export async function makeJunctionArtwork(config = {}) {
                     }
                 }
                 if (distances[0] <= 25 && distances[1] <= 25) {
-                    candidates.push({x, y, widest: Math.max(...distances), total: distances[0] + distances[1]});
+                    candidates.push({
+                        x,
+                        y,
+                        widest: Math.max(...distances),
+                        total: distances[0] + distances[1],
+                    });
                 }
             }
         }
         candidates.sort((first, second) => first.widest - second.widest || first.total - second.total || first.y - second.y || first.x - second.x);
-        gapPoints.push(...candidates.slice(0, 3).map(({x, y}) => ({x, y})));
+        gapPoints.push(...candidates.slice(0, 3).map(({ x, y }) => ({ x, y })));
     }
 
     const mimeType = format === "jpeg" ? "image/jpeg" : "image/png";
@@ -221,8 +229,26 @@ export async function makeJunctionArtwork(config = {}) {
     decoded.src = dataUrl;
     await decoded.decode();
     const decodedCanvas = makeCanvas();
-    const decodedContext = decodedCanvas.getContext("2d", {willReadFrequently: true});
+    const decodedContext = decodedCanvas.getContext("2d", { willReadFrequently: true });
     decodedContext.drawImage(decoded, 0, 0);
     const data = Array.from(decodedContext.getImageData(0, 0, width, height).data);
-    return {width, height, seed, kind, rotation, format, mimeType, background: "white", join: "round", strokeWidths, paints, clean, outlineCoverage, junctions, gapPoints, dataUrl, data};
+    return {
+        width,
+        height,
+        seed,
+        kind,
+        rotation,
+        format,
+        mimeType,
+        background: "white",
+        join: "round",
+        strokeWidths,
+        paints,
+        clean,
+        outlineCoverage,
+        junctions,
+        gapPoints,
+        dataUrl,
+        data,
+    };
 }

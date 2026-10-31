@@ -16,20 +16,20 @@ export function createSpiralDiagnostics() {
             const envelope = Math.max(0, Math.min(1, fraction / .1, (1 - fraction) / .1));
             const radius = 9 + rate * theta;
             const angle = theta + startAngle;
-            const center = {x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle)};
+            const center = { x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle) };
             const dx = rate * Math.cos(angle) - radius * Math.sin(angle);
             const dy = rate * Math.sin(angle) + radius * Math.cos(angle);
             const length = Math.hypot(dx, dy);
-            const tangent = {x: dx / length, y: dy / length};
-            const normal = {x: -tangent.y, y: tangent.x};
+            const tangent = { x: dx / length, y: dy / length };
+            const normal = { x: -tangent.y, y: tangent.x };
             const halfWidth = config.halfWidth * envelope;
             return {
                 center, tangent, normal, halfWidth,
-                inward: {x: center.x + halfWidth * normal.x, y: center.y + halfWidth * normal.y},
-                outward: {x: center.x - halfWidth * normal.x, y: center.y - halfWidth * normal.y},
+                inward: { x: center.x + halfWidth * normal.x, y: center.y + halfWidth * normal.y },
+                outward: { x: center.x - halfWidth * normal.x, y: center.y - halfWidth * normal.y },
             };
         };
-        const points = Array.from({length: 641}, (_, i) => pointAt(maxTheta * i / 640));
+        const points = Array.from({ length: 641 }, (_, i) => pointAt(maxTheta * i / 640));
         const polygon = points.map(p => p.inward).concat(points.map(p => p.outward).reverse());
         const lengths = [0];
         for (let i = 1; i < points.length; i++) lengths.push(lengths[i - 1] + distance(points[i - 1].center, points[i].center));
@@ -74,7 +74,11 @@ export function createSpiralDiagnostics() {
         const hits = crossings(origin, direction, polylines);
         const result = [];
         for (let i = 1; i < hits.length; i += 2) {
-            if (hits[i] - hits[i - 1] > 1e-8) result.push({entry: hits[i - 1], exit: hits[i], component});
+            if (hits[i] - hits[i - 1] > 1e-8) result.push({
+                entry: hits[i - 1],
+                exit: hits[i],
+                component,
+            });
         }
         return result;
     }
@@ -109,7 +113,7 @@ export function createSpiralDiagnostics() {
                 }
             }
         }
-        return {background: counts[0], foreground: counts[1]};
+        return { background: counts[0], foreground: counts[1] };
     }
 
     function measure(input, result, geometry, background, foreground, backgroundRGB, foregroundRGB) {
@@ -117,7 +121,7 @@ export function createSpiralDiagnostics() {
         const sourcePath = geometry.polygon.concat([geometry.polygon[0]]);
         const delta = foregroundRGB.map((v, i) => v - backgroundRGB[i]);
         const denominator = delta.reduce((sum, v) => sum + v * v, 0);
-        const coverage = Array.from({length: input.width * input.height}, (_, p) => Math.max(0, Math.min(1,
+        const coverage = Array.from({ length: input.width * input.height }, (_, p) => Math.max(0, Math.min(1,
             delta.reduce((sum, v, i) => sum + v * (input.data[4 * p + i] - backgroundRGB[i]), 0) / denominator,
         )));
         const halfCoverage = coverage.map(value => value >= .5 ? 1 : 0);
@@ -131,14 +135,23 @@ export function createSpiralDiagnostics() {
             const x = Math.floor(point.x);
             const y = Math.floor(point.y);
             const p = y * input.width + x;
-            return {x, y, coverage: coverage[p], foreground: !!labeledForeground[p], component: result.debug.componentIds[p]};
+            return {
+                x,
+                y,
+                coverage: coverage[p],
+                foreground: !!labeledForeground[p],
+                component: result.debug.componentIds[p],
+            };
         };
         const stages = (origin, direction, source, paint) => Object.fromEntries(keys.map(key => [key,
             correspondingIntervals(source, faceIntervals(origin, direction, paint, key)),
         ]));
         const tips = [false, true].map(end => {
             const terminal = geometry.pointAt(end ? maxTheta : 0);
-            const direction = {x: terminal.tangent.x * (end ? -1 : 1), y: terminal.tangent.y * (end ? -1 : 1)};
+            const direction = {
+                x: terminal.tangent.x * (end ? -1 : 1),
+                y: terminal.tangent.y * (end ? -1 : 1),
+            };
             const source = intervals(terminal.center, direction, [sourcePath]).find(interval => interval.entry <= .05 && interval.exit > .05);
             const longitudinal = source ? {
                 source,
@@ -157,19 +170,31 @@ export function createSpiralDiagnostics() {
             const pixels = [];
             for (let y = Math.floor(terminal.center.y) - 4; y <= Math.floor(terminal.center.y) + 4; y++) {
                 for (let x = Math.floor(terminal.center.x) - 4; x <= Math.floor(terminal.center.x) + 4; x++) {
-                    const pixel = pixelAt({x: x + .5, y: y + .5});
+                    const pixel = pixelAt({ x: x + .5, y: y + .5 });
                     if (pixel.coverage > .001 && pixel.coverage < .999) pixels.push(pixel);
                 }
             }
-            return {name: end ? "end" : "start", point: terminal.center, longitudinal, normals, partialPixels: pixels};
+            return {
+                name: end ? "end" : "start",
+                point: terminal.center,
+                longitudinal,
+                normals,
+                partialPixels: pixels,
+            };
         });
         const gaps = [-.2, -.1, 0, .1, .2].map(offset => {
             const station = geometry.pointAt(Math.PI + offset);
-            const direction = {x: -station.normal.x, y: -station.normal.y};
+            const direction = { x: -station.normal.x, y: -station.normal.y };
             const hits = crossings(station.outward, direction, [sourcePath]);
             const entry = hits.findIndex(value => value > -.1);
-            const source = entry >= 0 && entry + 1 < hits.length ? {entry: hits[entry], exit: hits[entry + 1]} : null;
-            return {theta: Math.PI + offset, source, ...(source ? stages(station.outward, direction, source, background) : {})};
+            const source = entry >= 0 && entry + 1 < hits.length ? {
+                entry: hits[entry],
+                exit: hits[entry + 1],
+            } : null;
+            return {
+                theta: Math.PI + offset,
+                source, ...(source ? stages(station.outward, direction, source, background) : {}),
+            };
         });
         return {
             halfCoverageLabelDisagreements: halfCoverage.reduce((sum, value, p) => sum + (value !== labeledForeground[p] ? 1 : 0), 0),
@@ -180,5 +205,5 @@ export function createSpiralDiagnostics() {
         };
     }
 
-    return {makeGeometry, crossings, intervals, correspondingIntervals, measure};
+    return { makeGeometry, crossings, intervals, correspondingIntervals, measure };
 }

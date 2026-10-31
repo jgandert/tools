@@ -1,11 +1,11 @@
 /* Copyright 2026 Joschua Gandert - SPDX-License-Identifier: Apache-2.0 */
-import {expect, test} from "bun:test";
-import {createRequire} from "node:module";
-import {correlatedColumnAccent, noisyMidpointAccent, resampledSlit} from "./campaign-paints.js";
+import { expect, test } from "bun:test";
+import { createRequire } from "node:module";
+import { correlatedColumnAccent, noisyMidpointAccent, resampledSlit } from "./campaign-paints.js";
 
-const {createTracer} = createRequire(import.meta.url)("../tracer.js");
+const { createTracer } = createRequire(import.meta.url)("../tracer.js");
 
-test.each([0, 3].map(colors => ({colors})))("a locally supported paint retains a three-paint plurality below half coverage (colors=$colors)", ({colors}) => {
+test.each([0, 3].map(colors => ({ colors })))("a locally supported paint retains a three-paint plurality below half coverage (colors=$colors)", ({ colors }) => {
     const width = 64;
     const height = 64;
     const paints = [[221, 30, 35], [43, 81, 155], [130, 91, 67]];
@@ -19,17 +19,25 @@ test.each([0, 3].map(colors => ({colors})))("a locally supported paint retains a
             data.set([...paint, 255], 4 * (y * width + x));
         }
     }
-    const result = createTracer().trace({width, height, data}, {noise: 10, colors, minArea: 0, debug: true});
+    const result = createTracer().trace({ width, height, data }, {
+        noise: 10,
+        colors,
+        minArea: 0,
+        debug: true,
+    });
     const retainedPaint = result.debug.labels[10 * width + 10];
     for (const y of [32, 33, 34]) expect(result.debug.labels[y * width + 31]).toBe(retainedPaint);
     expect(result.stats.threePaintPixels).toBeGreaterThan(0);
     expect(result.stats.fallbackChains).toBe(0);
 });
 
-test.each([false, true].flatMap(diamond => [false, true].map(offMixture => ({diamond, offMixture}))))(
+test.each([false, true].flatMap(diamond => [false, true].map(offMixture => ({
+    diamond,
+    offMixture,
+}))))(
     "correlated cleanup preserves the known paint interface (diamond=$diamond offMixture=$offMixture)", config => {
-        const {image, owners, paints} = correlatedColumnAccent(config);
-        const result = createTracer().trace(image, {noise: 10, minArea: 0, debug: true});
+        const { image, owners, paints } = correlatedColumnAccent(config);
+        const result = createTracer().trace(image, { noise: 10, minArea: 0, debug: true });
         const paletteOwners = result.stats.palette.map(hex => {
             const rgb = [1, 3, 5].map(offset => parseInt(hex.slice(offset, offset + 2), 16));
             const distances = paints.map(paint => Math.hypot(...paint.map((value, channel) => value - rgb[channel])));
@@ -60,10 +68,18 @@ test.each([false, true].flatMap(diamond => [false, true].map(offMixture => ({dia
         expect(result.stats.fallbackChains).toBe(0);
     });
 
-test.each([false, true].flatMap(transpose => [0, .2, .4].flatMap(phase => [0, 10, 20, 40].map(noise => ({transpose, phase, noise})))))(
-    "resampling and cleanup retain a two-paint slit (transpose=$transpose phase=$phase noise=$noise)", ({transpose, phase, noise}) => {
-        const image = resampledSlit({transpose, phase});
-        const result = createTracer().trace(image, {noise, debug: true});
+test.each([false, true].flatMap(transpose => [0, .2, .4].flatMap(phase => [0, 10, 20, 40].map(noise => ({
+    transpose,
+    phase,
+    noise,
+})))))(
+    "resampling and cleanup retain a two-paint slit (transpose=$transpose phase=$phase noise=$noise)", ({
+                                                                                                            transpose,
+                                                                                                            phase,
+                                                                                                            noise,
+                                                                                                        }) => {
+        const image = resampledSlit({ transpose, phase });
+        const result = createTracer().trace(image, { noise, debug: true });
         expect(result.stats.colors).toBe(2);
         expect(result.stats.visibleRegions).toBe(3);
         expect(result.stats.fallbackChains).toBe(0);
@@ -83,8 +99,8 @@ test.each([false, true].flatMap(transpose => [0, .2, .4].flatMap(phase => [0, 10
                     let a = chain.flat[index - 1];
                     let b = chain.flat[index];
                     if (transpose) {
-                        a = {x: a.y, y: a.x};
-                        b = {x: b.y, y: b.x};
+                        a = { x: a.y, y: a.x };
+                        b = { x: b.y, y: b.x };
                     }
                     if ((a.y <= along && b.y > along) || (b.y <= along && a.y > along)) {
                         const cross = a.x + (along - a.y) * (b.x - a.x) / (b.y - a.y);
@@ -100,15 +116,28 @@ test.each([false, true].flatMap(transpose => [0, .2, .4].flatMap(phase => [0, 10
     });
 
 const accentCases = [
-    {size: 4, jitter: 0, noises: [0, 10, 20]},
-    {size: 4, jitter: 8, noises: [10, 20]},
-    {size: 6, jitter: 12, noises: [10, 20, 40]},
-].flatMap(({noises, ...shape}) => [16, 32].flatMap(position => noises.flatMap(noise => [0, 3].map(colors => ({...shape, position, noise, colors})))));
+    { size: 4, jitter: 0, noises: [0, 10, 20] },
+    { size: 4, jitter: 8, noises: [10, 20] },
+    { size: 6, jitter: 12, noises: [10, 20, 40] },
+].flatMap(({
+               noises,
+               ...shape
+           }) => [16, 32].flatMap(position => noises.flatMap(noise => [0, 3].map(colors => ({
+    ...shape,
+    position,
+    noise,
+    colors,
+})))));
 
 test.each(accentCases)(
     "source verification preserves a real mixture-color accent ($size px, jitter=$jitter position=$position noise=$noise colors=$colors)", config => {
         const image = noisyMidpointAccent(config);
-        const result = createTracer().trace(image, {noise: config.noise, colors: config.colors, minArea: 0, debug: true});
+        const result = createTracer().trace(image, {
+            noise: config.noise,
+            colors: config.colors,
+            minArea: 0,
+            debug: true,
+        });
         const center = result.debug.labels[32 * image.width + config.position];
         const paint = result.stats.palette[center];
         const rgb = [1, 3, 5].map(offset => parseInt(paint.slice(offset, offset + 2), 16));

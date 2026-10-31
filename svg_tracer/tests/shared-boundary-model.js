@@ -10,6 +10,7 @@ const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 const quantile = (values, fraction) => [...values].sort((a, b) => a - b)[Math.min(values.length - 1, Math.floor(values.length * fraction))];
 const error = (a, b) => a.reduce((sum, x, i) => sum + sq(x - b[i]), 0);
+
 function solve(matrix, values) {
     const n = values.length;
     const rows = matrix.map((row, i) => [...row, values[i]]);
@@ -29,6 +30,7 @@ function solve(matrix, values) {
     }
     return rows.map((row) => row[n]);
 }
+
 function regression(points, columns, value) {
     const matrix = Array.from({ length: columns }, () => Array(columns).fill(0));
     const values = Array(columns).fill(0);
@@ -41,6 +43,7 @@ function regression(points, columns, value) {
     }
     return solve(matrix, values);
 }
+
 function components(labels, width, height) {
     const ids = new Int32Array(labels.length).fill(-1),
         list = [];
@@ -64,6 +67,7 @@ function components(labels, width, height) {
     }
     return { ids, list };
 }
+
 function profileBasis(distance) {
     const weights = Array(knots.length).fill(0);
     if (distance <= knots[0]) {
@@ -80,6 +84,7 @@ function profileBasis(distance) {
     weights[index + 1] = t;
     return weights;
 }
+
 function triangleError(point, C, A, B) {
     const X = C.map((x, i) => (x + A[i]) / 2),
         Y = C.map((x, i) => (x + B[i]) / 2);
@@ -111,13 +116,13 @@ function triangleError(point, C, A, B) {
             denominator = dot(d, d);
         const t = denominator
             ? clamp(
-                  dot(
-                      point.map((x, i) => x - a[i]),
-                      d,
-                  ) / denominator,
-                  0,
-                  1,
-              )
+                dot(
+                    point.map((x, i) => x - a[i]),
+                    d,
+                ) / denominator,
+                0,
+                1,
+            )
             : 0;
         best = Math.min(
             best,
@@ -129,6 +134,7 @@ function triangleError(point, C, A, B) {
     }
     return best;
 }
+
 function score(samples) {
     if (!samples.length) return null;
     const errors = samples.map((sample) => error(sample.rgb, sample.prediction));
@@ -143,6 +149,7 @@ function score(samples) {
         bias: dot(bias, bias),
     };
 }
+
 export function sharedBoundaryModel(scene, { degree = 2, robust = false } = {}) {
     const { width, height, data, labels, palette, noise } = scene;
     const frozen = new Int16Array(labels),
@@ -283,7 +290,11 @@ export function sharedBoundaryModel(scene, { degree = 2, robust = false } = {}) 
                     return { reason: "competing-source-crossings" };
                 const t = median(values.map((v) => v.t)),
                     n = median(values.map((v) => v.n));
-                points.push({ t, n, basis: Array.from({ length: degree + 1 }, (_, power) => (t / extent) ** power) });
+                points.push({
+                    t,
+                    n,
+                    basis: Array.from({ length: degree + 1 }, (_, power) => (t / extent) ** power),
+                });
             }
             const guarded = intervals.map(([lo, hi]) => [lo - 2, hi + 2]).sort((a, b) => a[0] - b[0]);
             const merged = [];
@@ -313,7 +324,14 @@ export function sharedBoundaryModel(scene, { degree = 2, robust = false } = {}) 
             const rms = Math.sqrt(residuals.reduce((sum, x) => sum + x * x, 0) / residuals.length),
                 maximum = Math.max(...residuals);
             if (rms > 0.45 || maximum > 0.85)
-                return { reason: "geometry-residual", rms, maximum, points: points.map(({ t, n }) => ({ t, n })), coefficients, anchors };
+                return {
+                    reason: "geometry-residual",
+                    rms,
+                    maximum,
+                    points: points.map(({ t, n }) => ({ t, n })),
+                    coefficients,
+                    anchors,
+                };
             const meanDistances = anchorSamples.map((group) => group.reduce((sum, sample) => sum + distance(sample), 0) / group.length);
             const endpoints = meanDistances[0] < meanDistances[1] ? [A, B] : [B, A],
                 endpointLabels = meanDistances[0] < meanDistances[1] ? [a, b] : [b, a];
@@ -357,15 +375,19 @@ export function sharedBoundaryModel(scene, { degree = 2, robust = false } = {}) 
                     if (channels.some((channel) => !channel)) break;
                 }
             }
-            if (channels.some((channel) => !channel)) return { reason: "profile-rank", rms, maximum };
+            if (channels.some((channel) => !channel)) return {
+                reason: "profile-rank",
+                rms,
+                maximum,
+            };
             const predict = (sample) => {
                 const d = distance(sample),
                     weights = profileBasis(d);
                 const prediction = [0, 1, 2].map((channel) =>
                     clamp(
                         weights[0] * endpoints[0][channel] +
-                            weights.at(-1) * endpoints[1][channel] +
-                            dot(weights.slice(1, -1), channels[channel]),
+                        weights.at(-1) * endpoints[1][channel] +
+                        dot(weights.slice(1, -1), channels[channel]),
                         0,
                         255,
                     ),
@@ -404,8 +426,16 @@ export function sharedBoundaryModel(scene, { degree = 2, robust = false } = {}) 
             record.fitFailure = main;
             continue;
         }
-        const target = targetCoordinates.map((sample) => ({ ...sample, rgb: rgbAt(sample.p), ...main.predict(sample) }));
-        record.predictions = target.map(({ p, prediction, label, distance }) => ({ p, rgb: prediction, label, distance }));
+        const target = targetCoordinates.map((sample) => ({
+            ...sample,
+            rgb: rgbAt(sample.p), ...main.predict(sample),
+        }));
+        record.predictions = target.map(({ p, prediction, label, distance }) => ({
+            p,
+            rgb: prediction,
+            label,
+            distance,
+        }));
         const normalRange = [Math.min(...target.map((p) => p.distance)), Math.max(...target.map((p) => p.distance))];
         if (normalRange[0] < main.minDistance || normalRange[1] > main.maxDistance) {
             record.reason = "unsupported-target-distances";
@@ -437,14 +467,22 @@ export function sharedBoundaryModel(scene, { degree = 2, robust = false } = {}) 
                 continue;
             }
             if (held.length < Math.max(8, Math.ceil(target.length / 2))) {
-                validations.push({ interval, reason: "insufficient-held-out-support", count: held.length });
+                validations.push({
+                    interval,
+                    reason: "insufficient-held-out-support",
+                    count: held.length,
+                });
                 continue;
             }
             const pointErrors = main.points
                 .filter((point) => point.t >= interval[0] && point.t <= interval[1])
                 .map((point) => Math.abs(point.n - validation.boundary(point.t)));
             if (!pointErrors.length || Math.max(...pointErrors) > 0.85) {
-                validations.push({ interval, reason: "held-out-geometry", maximum: pointErrors.length ? Math.max(...pointErrors) : null });
+                validations.push({
+                    interval,
+                    reason: "held-out-geometry",
+                    maximum: pointErrors.length ? Math.max(...pointErrors) : null,
+                });
                 continue;
             }
             const metrics = score(held);
@@ -481,7 +519,10 @@ export function sharedBoundaryModel(scene, { degree = 2, robust = false } = {}) 
             continue;
         }
         const spreads = modelFits.map((model) =>
-            score(target.map((sample) => ({ rgb: sample.prediction, prediction: model.predict(sample).prediction }))),
+            score(target.map((sample) => ({
+                rgb: sample.prediction,
+                prediction: model.predict(sample).prediction,
+            }))),
         );
         record.predictionSpreads = spreads;
         if (spreads.some((spread) => ["mean", "tail", "maximum", "bias"].some((key) => spread[key] > envelope[key] + 1e-6))) {

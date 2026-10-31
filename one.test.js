@@ -38,7 +38,8 @@ const concat = parts => new Uint8Array(Buffer.concat(parts));
 // implementation. Only the shared drawer listener needs a DOM during setup.
 
 const shared = compileFunction(`${await Bun.file(new URL("one.js", import.meta.url)).text()}\nreturn one;`, ["document"])({
-    addEventListener() {},
+    addEventListener() {
+    },
 });
 const api = {
     async createZip(files, options) {
@@ -53,6 +54,7 @@ const isZipError = error => error instanceof Error && error.name === "ZipError" 
 
 const encoder = new TextEncoder();
 const errorCode = code => error => isZipError(error) && error.code === code;
+
 function locate(bytes) {
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     let end = bytes.length - 22;
@@ -64,9 +66,11 @@ function locate(bytes) {
     const data = 30 + view.getUint16(26, true) + view.getUint16(28, true);
     return { view, end, central, data };
 }
+
 async function stored(content = "hello", name = "x.txt") {
     return api.createZip({ [name]: content }, { compression: "store" });
 }
+
 function changeName(bytes, name) {
     const { central } = locate(bytes);
     const encoded = encoder.encode(name);
@@ -88,7 +92,10 @@ test("STORE and DEFLATE; Unicode; files and directories", async () => {
     for (const compression of ["store", "deflate"]) {
         const bytes = await api.createZip([
             { name: "docs/" }, { name: "docs/日本語 😀.txt", content: "Grüße 🌍" },
-            { name: "raw.bin", content: new Uint8Array([0, 17, 255]) }, { name: "empty", content: "" },
+            { name: "raw.bin", content: new Uint8Array([0, 17, 255]) }, {
+                name: "empty",
+                content: "",
+            },
         ], { compression, comment: "archive 🌍" });
         const archive = await api.openZip(bytes);
         assert.equal(archive.comment, "archive 🌍");
@@ -152,7 +159,12 @@ test("deterministic default timestamp; supplied timestamp and comments", async (
     const b = await api.createZip({ x: "hello".repeat(20) });
     assert.deepEqual(a, b);
     const mtime = new Date("2024-06-07T08:09:11.000Z");
-    const archive = await api.openZip(await api.createZip([{ name: "x", content: "x", mtime, comment: "hello 💛" }]));
+    const archive = await api.openZip(await api.createZip([{
+        name: "x",
+        content: "x",
+        mtime,
+        comment: "hello 💛",
+    }]));
     assert.equal(archive.get("x").mtime.toISOString(), mtime.toISOString());
     archive.get("x").mtime.setFullYear(2000);
     assert.equal(archive.get("x").mtime.toISOString(), mtime.toISOString());
@@ -183,7 +195,10 @@ test("writer limits", async () => {
     for (const limits of [
         { maxArchiveSize: 1 }, { maxEntrySize: 3 }, { maxTotalSize: 7 }, { maxEntries: 1 },
     ]) {
-        await assert.rejects(api.createZip({ a: "abcd", b: "efgh" }, { limits }), errorCode("ERR_LIMIT"));
+        await assert.rejects(api.createZip({
+            a: "abcd",
+            b: "efgh",
+        }, { limits }), errorCode("ERR_LIMIT"));
     }
     await assert.rejects(api.createZip({ a: "x".repeat(1000) }, { limits: { maxArchiveSize: 110 } }), errorCode("ERR_LIMIT"));
     await assert.rejects(api.createZip({ a: "日本語" }, { limits: { maxEntrySize: 5 } }), errorCode("ERR_LIMIT"));
@@ -218,7 +233,11 @@ test("abort before work and before completion", async () => {
 });
 
 test("mixed compression and unsupported member methods", async () => {
-    const bytes = await api.createZip([{ name: "a", content: "A", compression: "store" }, { name: "b", content: "B", compression: "deflate" }]);
+    const bytes = await api.createZip([{
+        name: "a",
+        content: "A",
+        compression: "store",
+    }, { name: "b", content: "B", compression: "deflate" }]);
     let archive = await api.openZip(bytes);
     assert.equal(archive.get("a").method, 0);
     assert.equal(archive.get("b").method, 8);
@@ -280,7 +299,10 @@ test("Unsafe names are rejected on write and read", async () => {
 
 test("Duplicate names and ancestor file conflicts are rejected in either order", async () => {
     for (const names of [["x", "x"], ["x", "x/"], ["x", "x/y"], ["x/y", "x"]]) {
-        await assert.rejects(api.createZip(names.map(name => ({ name, content: name.endsWith("/") ? "" : "x" }))),
+        await assert.rejects(api.createZip(names.map(name => ({
+                name,
+                content: name.endsWith("/") ? "" : "x",
+            }))),
             error => ["ERR_DUPLICATE", "ERR_PATH"].includes(error.code));
     }
     const bytes = await api.createZip({ a: "x", b: "x" }, { compression: "store" });
@@ -302,9 +324,20 @@ test("Input and option validation is explicit", async () => {
     for (const options of [null, { compression: "gzip" }, { levle: 5 }, { level: 12 }, { signal: {} }, { limits: { maxEntrySize: NaN } }, { limits: { maxArchiveSize: -1 } }, { limits: { maxEntries: Infinity } }, { limits: { maxCompressionRatio: NaN } }]) {
         await assert.rejects(api.createZip({ x: "x" }, options), errorCode("ERR_ARGUMENT"));
     }
-    await assert.rejects(api.createZip([{ name: "x/", content: "not empty" }]), errorCode("ERR_ARGUMENT"));
-    await assert.rejects(api.createZip([{ name: "x", content: "a", mtime: new Date("bad") }]), errorCode("ERR_ARGUMENT"));
-    await assert.rejects(api.createZip([{ name: "x", content: "a", mtime: new Date("1970-01-01") }]), errorCode("ERR_ARGUMENT"));
+    await assert.rejects(api.createZip([{
+        name: "x/",
+        content: "not empty",
+    }]), errorCode("ERR_ARGUMENT"));
+    await assert.rejects(api.createZip([{
+        name: "x",
+        content: "a",
+        mtime: new Date("bad"),
+    }]), errorCode("ERR_ARGUMENT"));
+    await assert.rejects(api.createZip([{
+        name: "x",
+        content: "a",
+        mtime: new Date("1970-01-01"),
+    }]), errorCode("ERR_ARGUMENT"));
     await assert.rejects(api.createZip({ "\ud800": "a" }), errorCode("ERR_ARGUMENT"));
 
 });
@@ -350,7 +383,11 @@ test("Encryption, symlinks, split archives and malformed extra fields fail expli
     t = locate(split);
     t.view.setUint16(t.end + 4, 1, true);
     await assert.rejects(api.openZip(split), errorCode("ERR_UNSUPPORTED"));
-    const malformed = await api.createZip([{ name: "x", content: "", mtime: new Date("2024-01-01") }]);
+    const malformed = await api.createZip([{
+        name: "x",
+        content: "",
+        mtime: new Date("2024-01-01"),
+    }]);
     t = locate(malformed);
     t.view.setUint16(t.central + 46 + 1 + 2, 0xffff, true);
     await assert.rejects(api.openZip(malformed), errorCode("ERR_FORMAT"));
@@ -427,7 +464,11 @@ test("ZIP64 end records: round trip, missing locator, and unsafe 64-bit values",
 
 test("automatic compression stores tiny and incompressible files", async () => {
     const random = randomBytes(8192);
-    const archive = await api.openZip(await api.createZip({ tiny: "hi", random, repeated: "hello".repeat(1000) }));
+    const archive = await api.openZip(await api.createZip({
+        tiny: "hi",
+        random,
+        repeated: "hello".repeat(1000),
+    }));
     assert.equal(archive.get("tiny").method, 0);
     assert.equal(archive.get("random").method, 0);
     assert.equal(archive.get("repeated").method, 8);
@@ -513,9 +554,11 @@ test("stream byte limits cancel input and release its lock", async () => {
 
 test("abort cancels a stream waiting for its next chunk", async () => {
     let canceled = false;
-    const stream = new ReadableStream({ cancel() {
-        canceled = true;
-    } });
+    const stream = new ReadableStream({
+        cancel() {
+            canceled = true;
+        },
+    });
     const controller = new AbortController();
     const promise = api.createZip({ x: stream }, { signal: controller.signal });
     setTimeout(() => controller.abort(), 0);
@@ -554,13 +597,17 @@ test("abort while the compression stream consumes input rejects the operation", 
 });
 
 test("invalid chunks and failed streams produce actionable errors", async () => {
-    const invalid = new ReadableStream({ start(controller) {
-        controller.enqueue("text");
-    } });
+    const invalid = new ReadableStream({
+        start(controller) {
+            controller.enqueue("text");
+        },
+    });
     await assert.rejects(api.createZip({ x: invalid }), errorCode("ERR_ARGUMENT"));
-    const failed = new ReadableStream({ start(controller) {
-        controller.error(new Error("Input failed"));
-    } });
+    const failed = new ReadableStream({
+        start(controller) {
+            controller.error(new Error("Input failed"));
+        },
+    });
     await assert.rejects(api.openZip(failed), errorCode("ERR_ARGUMENT"));
     assert.equal(invalid.locked, false);
     assert.equal(failed.locked, false);
@@ -604,14 +651,23 @@ test("independent DEFLATE streams cover all block types, levels, and strategies"
 });
 
 test("seeded ZIP mutations never escape as raw parser exceptions", async () => {
-    const original = await api.createZip({ a: "alpha", "b/c": "beta", d: new Uint8Array([0, 1, 2]) });
+    const original = await api.createZip({
+        a: "alpha",
+        "b/c": "beta",
+        d: new Uint8Array([0, 1, 2]),
+    });
     let seed = 12345;
     for (let sample = 0; sample < 500; sample++) {
         seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
         const bytes = original.slice();
         bytes[seed % bytes.length] ^= 1 << (sample % 8);
         try {
-            await (await api.openZip(bytes, { limits: { maxEntrySize: 1024, maxTotalSize: 4096 } })).verify();
+            await (await api.openZip(bytes, {
+                limits: {
+                    maxEntrySize: 1024,
+                    maxTotalSize: 4096,
+                },
+            })).verify();
         } catch (error) {
             assert.ok(isZipError(error), `${error.name}: ${error.message}`);
         }
@@ -690,7 +746,12 @@ test("Python and system unzip independently read generated archives", async () =
     const folder = await mkdtemp(join(tmpdir(), "one-zip-test-"));
     try {
         for (const compression of ["store", "deflate", "auto"]) {
-            const bytes = await api.createZip({ "docs/": "", "docs/caf\u00e9.txt": "Hello \u{1f30d}", binary: new Uint8Array([0, 1, 255]), empty: "" }, { compression });
+            const bytes = await api.createZip({
+                "docs/": "",
+                "docs/caf\u00e9.txt": "Hello \u{1f30d}",
+                binary: new Uint8Array([0, 1, 255]),
+                empty: "",
+            }, { compression });
             const checked = spawnSync("python3", ["-c", `
 import io, sys, zipfile
 with zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read())) as archive:
@@ -750,7 +811,10 @@ describe("browser integration", () => {
         page = await browser.newPage({ acceptDownloads: true });
         pageErrors = [];
         page.on("pageerror", error => pageErrors.push(error.message));
-        page.on("request", request => requests.push({ url: request.url(), type: request.resourceType() }));
+        page.on("request", request => requests.push({
+            url: request.url(),
+            type: request.resourceType(),
+        }));
         await page.route("**/*", route => {
             const request = route.request();
             const url = new URL(request.url());
@@ -904,7 +968,9 @@ describe("browser integration", () => {
 
     test.each([false, true])("framework download includes self-contained one.js and its license, STORE fallback=%s", async fallback => {
         if (fallback) {
-            await page.addInitScript(() => { window.CompressionStream = undefined; });
+            await page.addInitScript(() => {
+                window.CompressionStream = undefined;
+            });
         }
         await page.goto(new URL("one_css/index.html", server.url).href);
         const [download] = await Promise.all([

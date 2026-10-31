@@ -2,7 +2,7 @@
 
 // The remote swatch establishes a real paint, while subpixel local marks
 // supply mixed RGB evidence. These are authored features, not codec fringes.
-export function makeSeedlessPaintArtwork({kind = "branched", present = true} = {}) {
+export function makeSeedlessPaintArtwork({ kind = "branched", present = true } = {}) {
     const width = 96;
     const height = 96;
     const scale = 16;
@@ -46,5 +46,5 @@ export function makeSeedlessPaintArtwork({kind = "branched", present = true} = {
             if (coverage >= scale ** 2 * .5) targetPixels.push(pixel);
         }
     }
-    return {image: {width, height, data}, targetPixels, swatchPixel: 10 * width + 16, paints};
+    return { image: { width, height, data }, targetPixels, swatchPixel: 10 * width + 16, paints };
 }

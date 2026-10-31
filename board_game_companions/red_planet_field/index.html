@@ -1,17 +1,17 @@
 <!doctype html>
 <html lang="en" class="theme-orange">
 
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="light dark">
-        <meta name="description"
-            content="An offline step-by-step table guide for setup, generations, project cards, placement, and scoring on the red planet.">
-        <title>Unofficial Guide - Terraforming Mars</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <link rel="stylesheet" type="text/css" href="../../one.css">
-        <style>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="An offline step-by-step table guide for setup, generations, project cards, placement, and scoring on the red planet.">
+    <title>Unofficial Guide - Terraforming Mars</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../../one.css">
+    <style>
         :root {
             --temperature-accent: light-dark(#a94b32, #f1a38e);
             --oxygen-accent: light-dark(#477153, #8fc99e);
@@ -457,857 +457,960 @@
             display: none;
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <a href="#content" class="skip-link">Skip to guide</a>
-        <input type="checkbox" id="aside-state" class="aside-state-toggle"
-            aria-label="Toggle guide options">
+<body>
+<a href="#content" class="skip-link">Skip to guide</a>
+<input type="checkbox" id="aside-state" class="aside-state-toggle"
+       aria-label="Toggle guide options">
 
-        <header>
-            <label for="aside-state" class="aside-toggle-btn"></label>
-            <hgroup>
-                <h1>Unofficial Guide - Terraforming Mars</h1>
-                <p>Guided setup and rules, one decision at a time</p>
-            </hgroup>
-            <nav aria-label="Primary">
-                <ul>
-                    <li>
-                        <a href="#setup">Setup</a>
-                    </li>
-                    <li>
-                        <a href="#learn">Learn</a>
-                    </li>
-                    <li>
-                        <a href="#reference">Reference</a>
-                    </li>
-                </ul>
-            </nav>
-        </header>
+<header>
+    <label for="aside-state" class="aside-toggle-btn"></label>
+    <hgroup>
+        <h1>Unofficial Guide - Terraforming Mars</h1>
+        <p>Guided setup and rules, one decision at a time</p>
+    </hgroup>
+    <nav aria-label="Primary">
+        <ul>
+            <li>
+                <a href="#setup">Setup</a>
+            </li>
+            <li>
+                <a href="#learn">Learn</a>
+            </li>
+            <li>
+                <a href="#reference">Reference</a>
+            </li>
+        </ul>
+    </nav>
+</header>
 
-        <main id="content">
-            <section id="setup" aria-labelledby="setup-title">
-                <h2 id="setup-title">Set up the table</h2>
-                <p>Follow one table task at a time. Guide adjusts Corporation Cards, Project Cards, production, and solo rules automatically.</p>
+<main id="content">
+    <section id="setup" aria-labelledby="setup-title">
+        <h2 id="setup-title">Set up the table</h2>
+        <p>Follow one table task at a time. Guide adjusts Corporation Cards, Project Cards,
+            production, and solo rules automatically.</p>
 
-                <div class="setup-status">
-                    <output id="setup-step-label" aria-live="polite">Step 1 of 7</output>
-                    <span>
+        <div class="setup-status">
+            <output id="setup-step-label" aria-live="polite">Step 1 of 7</output>
+            <span>
                         <strong id="setup-player-summary">3 players</strong> ·
                         <span id="setup-style-summary">Beginner Corporations</span>
                     </span>
+        </div>
+
+        <article class="setup-panel" data-setup-panel="0">
+            <div class="step-heading">
+                <h3 tabindex="-1">Prepare Game Board</h3>
+            </div>
+            <div class="step-layout">
+                <div>
+                    <p>Place Game Board where every player can read tracks and map.</p>
+                    <ul class="component-list">
+                        <li>Place 9 Ocean Tiles on Ocean Tile space.</li>
+                        <li>
+                            Set Oxygen Marker to <strong>0%</strong>.
+                        </li>
+                        <li>
+                            Set Temperature Marker to <strong>−30°C</strong>.
+                        </li>
+                        <li>
+                            Set Generation Marker to <strong>1</strong>.
+                        </li>
+                        <li data-multiplayer-only>Leave Milestones and Awards visible.</li>
+                    </ul>
                 </div>
 
-                <article class="setup-panel" data-setup-panel="0">
-                    <div class="step-heading">
-                        <h3 tabindex="-1">Prepare Game Board</h3>
-                    </div>
-                    <div class="step-layout">
-                        <div>
-                            <p>Place Game Board where every player can read tracks and map.</p>
-                            <ul class="component-list">
-                                <li>Place 9 Ocean Tiles on Ocean Tile space.</li>
-                                <li>
-                                    Set Oxygen Marker to <strong>0%</strong>.
-                                </li>
-                                <li>
-                                    Set Temperature Marker to <strong>−30°C</strong>.
-                                </li>
-                                <li>
-                                    Set Generation Marker to <strong>1</strong>.
-                                </li>
-                                <li data-multiplayer-only>Leave Milestones and Awards visible.</li>
-                            </ul>
-                        </div>
-
-                        <figure class="table-layout">
-                            <ol class="track-stack" aria-label="Starting Game Board tracks">
-                                <li>
-                                    <strong>Generation Track</strong>
-                                    <span>Generation Marker · 1</span>
-                                </li>
-                                <li>
-                                    <strong>Oxygen Level</strong>
-                                    <span>Oxygen Marker · 0%</span>
-                                </li>
-                                <li>
-                                    <strong>Temperature</strong>
-                                    <span>Temperature Marker · −30°C</span>
-                                </li>
-                                <li>
-                                    <strong>Ocean Tile space</strong>
-                                    <span>9 Ocean Tiles</span>
-                                </li>
-                            </ol>
-                            <figcaption>Do not place Ocean Tiles on map yet.</figcaption>
-                        </figure>
-                    </div>
-                </article>
-
-                <article class="setup-panel" data-setup-panel="1" hidden>
-                    <div class="step-heading">
-                        <h3 tabindex="-1">Build Resource and Tile Supply</h3>
-                    </div>
-                    <div class="step-layout">
-                        <div>
-                            <p>Group shared components beside Game Board.</p>
-                            <ul class="component-list">
-                                <li>Keep Resource Cubes sorted by value.</li>
-                                <li>Place Greenery Tiles and City Tiles within reach.</li>
-                                <li>Keep remaining Ocean Tiles together.</li>
-                                <li>Keep Special Tiles close to matching Project Cards.</li>
-                                <li>Set Player Markers aside for next steps.</li>
-                            </ul>
-                        </div>
-
-                        <figure class="table-layout">
-                            <div class="visual-grid">
-                                <div class="visual-card is-active">
-                                    <strong>Resource Cubes</strong>
-                                    <span>Bronze · silver · gold</span>
-                                </div>
-                                <div class="visual-card">
-                                    <strong>Greenery and City Tiles</strong>
-                                    <span>Shared stacks</span>
-                                </div>
-                                <div class="visual-card">
-                                    <strong>Ocean Tiles</strong>
-                                    <span>Start on Game Board</span>
-                                </div>
-                                <div class="visual-card">
-                                    <strong>Special Tiles</strong>
-                                    <span>Grouped by type</span>
-                                </div>
-                            </div>
-                            <figcaption>Shared supply has no owner.</figcaption>
-                        </figure>
-                    </div>
-                </article>
-
-                <article class="setup-panel" data-setup-panel="2" hidden>
-                    <div class="step-heading">
-                        <h3 tabindex="-1">Prepare Project Deck</h3>
-                    </div>
-                    <div class="step-layout">
-                        <div>
-                            <p id="deck-intro">Remove Corporate Era-marked Cards before shuffling.</p>
-                            <ul class="component-list" id="deck-list"></ul>
-                            <p class="note">Discarded Project Cards remain face down. Reshuffle Discard Pile only if Project Deck runs out.</p>
-                        </div>
-
-                        <figure class="table-layout">
-                            <div class="visual-grid">
-                                <div class="visual-card is-active">
-                                    <strong>Project Deck</strong>
-                                    <span>Shuffled · face down</span>
-                                </div>
-                                <div class="visual-card">
-                                    <strong>Discard Pile</strong>
-                                    <span>Face down</span>
-                                </div>
-                                <div class="visual-card">
-                                    <strong>Corporation Cards</strong>
-                                    <span id="corporation-stack-copy">Beginner Corporations ready</span>
-                                </div>
-                                <div class="visual-card">
-                                    <strong>Removed Cards</strong>
-                                    <span id="removed-cards-copy">Corporate Era Cards returned to box</span>
-                                </div>
-                            </div>
-                            <figcaption>Leave room for both deck and face-down Discard Pile.</figcaption>
-                        </figure>
-                    </div>
-                </article>
-
-                <article class="setup-panel" data-setup-panel="3" hidden>
-                    <div class="step-heading">
-                        <h3 id="station-step-title" tabindex="-1">Prepare Player Boards</h3>
-                    </div>
-                    <div class="step-layout">
-                        <div data-multiplayer-only>
-                            <p>Give each player one Player Board and one complete color of Player Markers.</p>
-                            <ul class="component-list">
-                                <li>
-                                    Place one Player Marker at <strong>20</strong> on Terraform Rating Track.
-                                </li>
-                                <li>Place one Player Marker on each of six Production Tracks.</li>
-                                <li>
-                                    Set each Production Track to <strong id="multiplayer-production-copy">1</strong>.
-                                </li>
-                                <li>Keep remaining Player Markers near Player Board.</li>
-                            </ul>
-                        </div>
-                        <div data-solo-only hidden>
-                            <p>Seed map with neutral Tiles before preparing your Player Board.</p>
-                            <ul class="component-list">
-                                <li>Reveal and discard 4 Project Cards.</li>
-                                <li>Use each card's cost in order: count City 1 from the map's upper-left across and down, then City 2 backward from the lower-right. Count each Greenery clockwise around its City, starting at upper-left; skip illegal spaces.</li>
-                                <li>Place 2 neutral City Tiles.</li>
-                                <li>Place one neutral Greenery Tile beside each neutral City Tile.</li>
-                                <li>If you choose Tharsis Republic, increase M€ production once for each neutral City, even though they were placed before revealing your Corporation.</li>
-                                <li>Do not raise Oxygen Level for neutral Greenery Tiles.</li>
-                            </ul>
-                        </div>
-
-                        <figure class="table-layout">
-                            <ol id="station-grid" class="station-grid" aria-label="Player stations" data-multiplayer-only></ol>
-                            <div class="visual-grid" data-solo-only hidden>
-                                <div class="visual-card is-active">
-                                    <strong>Neutral City 1</strong>
-                                    <span>Area derived from Project Card cost</span>
-                                </div>
-                                <div class="visual-card">
-                                    <strong>Neutral Greenery 1</strong>
-                                    <span>Adjacent to City 1</span>
-                                </div>
-                                <div class="visual-card is-active">
-                                    <strong>Neutral City 2</strong>
-                                    <span>Area derived from Project Card cost</span>
-                                </div>
-                                <div class="visual-card">
-                                    <strong>Neutral Greenery 2</strong>
-                                    <span>Adjacent to City 2</span>
-                                </div>
-                            </div>
-                            <figcaption id="station-caption">Keep each color separate; Player Markers track production, Terraform Rating, and ownership.</figcaption>
-                        </figure>
-                    </div>
-                </article>
-
-                <article class="setup-panel" data-setup-panel="4" hidden>
-                    <div class="step-heading">
-                        <h3 id="player-setup-step-title" tabindex="-1">Assign First Player Marker</h3>
-                    </div>
-                    <div class="step-layout">
-                        <div data-multiplayer-only>
-                            <p>Give First Player Marker to most recent winner.</p>
-                            <ul class="component-list">
-                                <li>If nobody has played before, agree on a neutral method.</li>
-                                <li>Keep player order clockwise.</li>
-                                <li>Pass First Player Marker clockwise during Player Order Phase.</li>
-                                <li>Do not pass it before generation one.</li>
-                            </ul>
-                        </div>
-                        <div data-solo-only hidden>
-                            <p>Take one Player Board and one complete color of Player Markers.</p>
-                            <ul class="component-list">
-                                <li>
-                                    Place one Player Marker at <strong>14</strong> on Terraform Rating Track.
-                                </li>
-                                <li>
-                                    Set all six Production Tracks to <strong>0</strong>.
-                                </li>
-                                <li>Keep remaining Player Markers near Player Board.</li>
-                                <li>Do not use First Player Marker, Milestones, or Awards.</li>
-                            </ul>
-                        </div>
-
-                        <figure class="table-layout">
-                            <ol class="turn-sequence" data-multiplayer-only aria-label="Player order">
-                                <li>
-                                    <strong>First Player</strong>
-                                    <span>Begins Action Phase</span>
-                                </li>
-                                <li>
-                                    <strong>Clockwise order</strong>
-                                    <span>One or two actions per turn</span>
-                                </li>
-                                <li>
-                                    <strong>Next generation</strong>
-                                    <span>First Player Marker passes clockwise</span>
-                                </li>
-                            </ol>
-                            <ol class="track-stack" data-solo-only hidden aria-label="Solo starting tracks">
-                                <li>
-                                    <strong>Terraform Rating</strong>
-                                    <span>14</span>
-                                </li>
-                                <li>
-                                    <strong>Six Production Tracks</strong>
-                                    <span>0 each</span>
-                                </li>
-                                <li>
-                                    <strong>Deadline</strong>
-                                    <span>End of generation 14</span>
-                                </li>
-                            </ol>
-                            <figcaption id="player-order-figure-copy">First Player Marker identifies who begins each generation.</figcaption>
-                        </figure>
-                    </div>
-                </article>
-
-                <article class="setup-panel" data-setup-panel="5" hidden>
-                    <div class="step-heading">
-                        <h3 id="opening-title" tabindex="-1">Deal Beginner Corporations</h3>
-                    </div>
-                    <div class="step-layout">
-                        <div>
-                            <p id="opening-intro">Give each player one Beginner Corporation and 10 Project Cards.</p>
-                            <ul class="component-list" id="opening-list"></ul>
-                            <p class="note" id="opening-note">Beginner Corporations replace normal Corporation choice and opening card purchase.</p>
-                        </div>
-
-                        <figure class="table-layout">
-                            <div class="visual-grid">
-                                <div class="visual-card is-active">
-                                    <strong>Corporation Card</strong>
-                                    <span id="opening-corporation-copy">1 Beginner Corporation</span>
-                                </div>
-                                <div class="visual-card">
-                                    <strong>Project Cards</strong>
-                                    <span id="opening-project-copy">10 free Cards</span>
-                                </div>
-                                <div class="visual-card">
-                                    <strong>M€</strong>
-                                    <span id="opening-money-copy">42 M€</span>
-                                </div>
-                                <div class="visual-card">
-                                    <strong>Discard Pile</strong>
-                                    <span id="opening-discard-copy">No opening discard</span>
-                                </div>
-                            </div>
-                            <figcaption>Keep Project Cards in hand. Corporation Card remains face up.</figcaption>
-                        </figure>
-                    </div>
-                </article>
-
-                <article class="setup-panel" data-setup-panel="6" hidden>
-                    <div class="step-heading">
-                        <h3 tabindex="-1">Begin Action Phase</h3>
-                    </div>
-                    <div class="step-layout">
-                        <div>
-                            <p>Generation 1 begins differently because setup already handled Player Order and Research.</p>
-                            <ul class="component-list">
-                                <li>Skip Player Order Phase.</li>
-                                <li>Skip Research Phase.</li>
-                                <li id="first-action-copy">First Player takes one or two actions.</li>
-                                <li>Continue until every player has passed.</li>
-                                <li>Then complete Production Phase.</li>
-                            </ul>
-                        </div>
-
-                        <figure class="table-layout">
-                            <ol class="turn-sequence" aria-label="Generation one phases">
-                                <li>
-                                    <strong>Player Order Phase</strong>
-                                    <span>Skip in generation 1</span>
-                                </li>
-                                <li>
-                                    <strong>Research Phase</strong>
-                                    <span>Skip in generation 1</span>
-                                </li>
-                                <li>
-                                    <strong>Action Phase</strong>
-                                    <span>Begin here</span>
-                                </li>
-                                <li>
-                                    <strong>Production Phase</strong>
-                                    <span>Resolve after all players pass</span>
-                                </li>
-                            </ol>
-                            <figcaption>Future generations use all four phases.</figcaption>
-                        </figure>
-                    </div>
-                </article>
-
-                <article class="setup-panel" data-setup-panel="7" hidden>
-                    <div class="step-heading">
-                        <h3 tabindex="-1">Table is ready</h3>
-                    </div>
-                    <div class="ready-summary" role="status">
-                        <p>
-                            <strong id="ready-session-copy">3 players using Beginner Corporations</strong>
-                            <span id="ready-begin-copy">can begin generation 1 in Action Phase.</span>
-                        </p>
-                        <p id="ready-rule-copy">First Player takes one or two actions. Play continues clockwise until everyone passes.</p>
-                        <a href="#learn" class="btn btn-primary">Learn first generation</a>
-                    </div>
-                </article>
-
-                <nav class="setup-actions" aria-label="Setup step controls">
-                    <button type="button" id="setup-back">
-                        <span class="sym" aria-hidden="true">arrow_back</span>
-                        Back
-                    </button>
-                    <button type="button" id="setup-next" class="btn-primary">
-                        <span id="setup-next-label">Continue</span>
-                        <span class="sym" aria-hidden="true">arrow_forward</span>
-                    </button>
-                </nav>
-            </section>
-
-            <section id="learn" aria-labelledby="learn-title">
-                <h2 id="learn-title">Learn a generation</h2>
-                <p>Open one part at a time. Start with generation rhythm, then learn actions, cards, map rules, and scoring.</p>
-
-                <ol class="learn-track" aria-label="Rule lessons">
-                    <li>
-                        <button type="button" data-learn-button="0" aria-current="step" aria-controls="learn-generation">
-                            <span>Lesson 1</span>
-                            Generation
-                        </button>
-                    </li>
-                    <li>
-                        <button type="button" data-learn-button="1" aria-controls="learn-actions">
-                            <span>Lesson 2</span>
-                            Actions
-                        </button>
-                    </li>
-                    <li>
-                        <button type="button" data-learn-button="2" aria-controls="learn-cards">
-                            <span>Lesson 3</span>
-                            Project Cards
-                        </button>
-                    </li>
-                    <li>
-                        <button type="button" data-learn-button="3" aria-controls="learn-board">
-                            <span>Lesson 4</span>
-                            Game Board
-                        </button>
-                    </li>
-                    <li>
-                        <button type="button" data-learn-button="4" aria-controls="learn-scoring">
-                            <span>Lesson 5</span>
-                            Game End
-                        </button>
-                    </li>
-                </ol>
-
-                <article id="learn-generation" class="learn-panel" data-learn-panel="0">
-                    <h3 tabindex="-1">A generation has four phases</h3>
-                    <p>Generation one skips first two phases. Every later generation follows all four in order.</p>
-
-                    <ol class="phase-strip">
+                <figure class="table-layout">
+                    <ol class="track-stack" aria-label="Starting Game Board tracks">
                         <li>
-                            <strong>1 · Player Order</strong>
-                            <span id="player-order-copy">Pass First Player Marker clockwise, then advance Generation Marker.</span>
+                            <strong>Generation Track</strong>
+                            <span>Generation Marker · 1</span>
                         </li>
                         <li>
-                            <strong>2 · Research</strong>
-                            <span>Draw 4 Project Cards. Buy any for 3 M€ each; discard rest face down.</span>
+                            <strong>Oxygen Level</strong>
+                            <span>Oxygen Marker · 0%</span>
                         </li>
                         <li>
-                            <strong>3 · Action</strong>
-                            <span id="action-phase-copy">Take one or two actions, then play continues clockwise.</span>
+                            <strong>Temperature</strong>
+                            <span>Temperature Marker · −30°C</span>
                         </li>
                         <li>
-                            <strong>4 · Production</strong>
-                            <span>Move Energy to Heat, gain M€, produce resources, and clear used-action markers.</span>
+                            <strong>Ocean Tile space</strong>
+                            <span>9 Ocean Tiles</span>
                         </li>
                     </ol>
+                    <figcaption>Do not place Ocean Tiles on map yet.</figcaption>
+                </figure>
+            </div>
+        </article>
 
-                    <div class="turn-rule">
-                        <strong>Passing ends your generation.</strong>
-                        <p>Taking one action keeps you active. Taking no action means you cannot return until next generation.</p>
-                    </div>
-                </article>
+        <article class="setup-panel" data-setup-panel="1" hidden>
+            <div class="step-heading">
+                <h3 tabindex="-1">Build Resource and Tile Supply</h3>
+            </div>
+            <div class="step-layout">
+                <div>
+                    <p>Group shared components beside Game Board.</p>
+                    <ul class="component-list">
+                        <li>Keep Resource Cubes sorted by value.</li>
+                        <li>Place Greenery Tiles and City Tiles within reach.</li>
+                        <li>Keep remaining Ocean Tiles together.</li>
+                        <li>Keep Special Tiles close to matching Project Cards.</li>
+                        <li>Set Player Markers aside for next steps.</li>
+                    </ul>
+                </div>
 
-                <article id="learn-actions" class="learn-panel" data-learn-panel="1" hidden>
-                    <h3 id="actions-heading" tabindex="-1">Seven available actions</h3>
-                    <p>On your turn, take one or two actions. Same action may be repeated if rules and resources allow it.</p>
-
-                    <dl class="action-list">
-                        <div>
-                            <dt>Play a Project Card</dt>
-                            <dd>Meet requirements, pay cost, resolve immediate effects, then place Card in correct area.</dd>
+                <figure class="table-layout">
+                    <div class="visual-grid">
+                        <div class="visual-card is-active">
+                            <strong>Resource Cubes</strong>
+                            <span>Bronze · silver · gold</span>
                         </div>
-                        <div>
-                            <dt>Use a Standard Project</dt>
-                            <dd>Pay printed price for one of six Standard Projects on Game Board.</dd>
+                        <div class="visual-card">
+                            <strong>Greenery and City Tiles</strong>
+                            <span>Shared stacks</span>
                         </div>
-                        <div data-multiplayer-only>
-                            <dt>Claim a Milestone</dt>
-                            <dd>Meet its threshold and pay 8 M€. Only three Milestones may be claimed.</dd>
+                        <div class="visual-card">
+                            <strong>Ocean Tiles</strong>
+                            <span>Start on Game Board</span>
                         </div>
-                        <div data-multiplayer-only>
-                            <dt>Fund an Award</dt>
-                            <dd>Reserve an unfunded category for 8, 14, or 20 M€. Only three Awards may be funded.</dd>
-                        </div>
-                        <div>
-                            <dt>Use Blue Card action</dt>
-                            <dd>Resolve one action marked by red arrow. Each Blue Card or Corporation action may be used once per generation.</dd>
-                        </div>
-                        <div>
-                            <dt>Convert 8 Plants</dt>
-                            <dd>Place Greenery Tile, raise Oxygen Level if possible, and gain corresponding Terraform Rating.</dd>
-                        </div>
-                        <div>
-                            <dt>Convert 8 Heat</dt>
-                            <dd>Raise Temperature one step if possible and gain corresponding Terraform Rating.</dd>
-                        </div>
-                    </dl>
-
-                    <details>
-                        <summary>Standard Projects and costs</summary>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th scope="col">Project</th>
-                                        <th scope="col">Cost</th>
-                                        <th scope="col">Result</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <th scope="row">Sell patents</th>
-                                        <td>—</td>
-                                        <td>Discard any Project Cards for 1 M€ each.</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">Power plant</th>
-                                        <td>11 M€</td>
-                                        <td>Increase Energy production one step.</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">Asteroid</th>
-                                        <td>14 M€</td>
-                                        <td>Raise Temperature one step.</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">Aquifer</th>
-                                        <td>18 M€</td>
-                                        <td>Place one Ocean Tile.</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">Greenery</th>
-                                        <td>23 M€</td>
-                                        <td>Place owned Greenery Tile and raise Oxygen Level if possible.</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">City</th>
-                                        <td>25 M€</td>
-                                        <td>Place owned City Tile and increase M€ production one step.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </details>
-                </article>
-
-                <article id="learn-cards" class="learn-panel" data-learn-panel="2" hidden>
-                    <h3 tabindex="-1">Read a Project Card</h3>
-                    <p>Buying a Card places it in hand. Playing it later is a separate action with its own printed cost.</p>
-
-                    <figure class="card-anatomy">
-                        <div class="sample-project" aria-hidden="true">
-                            <span class="sample-cost">18</span>
-                            <strong>Sample Project Card</strong>
-                            <span class="sample-tags">Building · Science</span>
-                            <span class="sample-requirement">Requirement: 5% Oxygen</span>
-                            <span class="sample-effect">Immediate effect or reusable Blue Card action</span>
-                            <span class="sample-footer">Tags remain visible when relevant</span>
-                            <span class="sample-points">2 VP</span>
-                        </div>
-                        <figcaption>
-                            <ol class="anatomy-key">
-                                <li>
-                                    <strong>Cost:</strong> Pay when playing Card, not when drawing it.
-                                </li>
-                                <li>
-                                    <strong>Requirement:</strong> Must be met when Card is played. A maximum is shown in red.
-                                </li>
-                                <li>
-                                    <strong>Tags:</strong> Tags may reduce costs, meet requirements, or score points.
-                                </li>
-                                <li>
-                                    <strong>Effect:</strong> Resolve immediate effects in any order; ongoing effects apply as written.
-                                </li>
-                                <li>
-                                    <strong>VP:</strong> Count at game end, including resource-dependent points.
-                                </li>
-                            </ol>
-                        </figcaption>
-                    </figure>
-
-                    <dl class="card-type-list">
-                        <div>
-                            <dt>Green · Automated Card</dt>
-                            <dd>Resolve once, then overlap it so tags remain visible.</dd>
-                        </div>
-                        <div>
-                            <dt>Blue · Active Card</dt>
-                            <dd>Keep face up. Ongoing effects remain available; each marked action may be used once per generation.</dd>
-                        </div>
-                        <div>
-                            <dt>Red · Event Card</dt>
-                            <dd>Resolve once, then keep face down in personal Event pile. Tags apply only while Event is played, but Card points still score.</dd>
-                        </div>
-                    </dl>
-
-                    <div class="note">
-                        <strong>Paying with metals:</strong> Steel pays only for Building-tag Cards at 2 M€ per Resource Cube. Titanium pays only for Space-tag Cards at 3 M€ per Resource Cube. Overpayment is allowed; no change is returned.
-                    </div>
-                </article>
-
-                <article id="learn-board" class="learn-panel" data-learn-panel="3" hidden>
-                    <h3 tabindex="-1">Complete three global parameters</h3>
-                    <p>Raising Oxygen Level, Temperature, or ocean coverage normally raises your Terraform Rating by one. Completed parameters cannot rise and grant no further rating.</p>
-
-                    <div class="parameter-list">
-                        <div class="parameter-row" data-parameter="temperature">
-                            <strong>Temperature · −30°C to +8°C</strong>
-                            <p>Advance in 2°C steps. Reaching −24°C and −20°C increases Heat production; reaching 0°C places an Ocean Tile.</p>
-                        </div>
-                        <div class="parameter-row" data-parameter="oxygen">
-                            <strong>Oxygen Level · 0% to 14%</strong>
-                            <p>Greenery normally raises Oxygen Level. Reaching 8% also raises Temperature one step.</p>
-                        </div>
-                        <div class="parameter-row" data-parameter="ocean">
-                            <strong>Ocean Tiles · 0 to 9</strong>
-                            <p>Oceans occupy reserved areas and have no owner. Placing any Tile beside an Ocean Tile gains 2 M€ per adjacent Ocean Tile.</p>
+                        <div class="visual-card">
+                            <strong>Special Tiles</strong>
+                            <span>Grouped by type</span>
                         </div>
                     </div>
+                    <figcaption>Shared supply has no owner.</figcaption>
+                </figure>
+            </div>
+        </article>
 
-                    <h4>Place a Tile</h4>
-                    <ol class="steps">
+        <article class="setup-panel" data-setup-panel="2" hidden>
+            <div class="step-heading">
+                <h3 tabindex="-1">Prepare Project Deck</h3>
+            </div>
+            <div class="step-layout">
+                <div>
+                    <p id="deck-intro">Remove Corporate Era-marked Cards before shuffling.</p>
+                    <ul class="component-list" id="deck-list"></ul>
+                    <p class="note">Discarded Project Cards remain face down. Reshuffle Discard Pile
+                        only if Project Deck runs out.</p>
+                </div>
+
+                <figure class="table-layout">
+                    <div class="visual-grid">
+                        <div class="visual-card is-active">
+                            <strong>Project Deck</strong>
+                            <span>Shuffled · face down</span>
+                        </div>
+                        <div class="visual-card">
+                            <strong>Discard Pile</strong>
+                            <span>Face down</span>
+                        </div>
+                        <div class="visual-card">
+                            <strong>Corporation Cards</strong>
+                            <span id="corporation-stack-copy">Beginner Corporations ready</span>
+                        </div>
+                        <div class="visual-card">
+                            <strong>Removed Cards</strong>
+                            <span id="removed-cards-copy">Corporate Era Cards returned to box</span>
+                        </div>
+                    </div>
+                    <figcaption>Leave room for both deck and face-down Discard Pile.</figcaption>
+                </figure>
+            </div>
+        </article>
+
+        <article class="setup-panel" data-setup-panel="3" hidden>
+            <div class="step-heading">
+                <h3 id="station-step-title" tabindex="-1">Prepare Player Boards</h3>
+            </div>
+            <div class="step-layout">
+                <div data-multiplayer-only>
+                    <p>Give each player one Player Board and one complete color of Player
+                        Markers.</p>
+                    <ul class="component-list">
                         <li>
-                            <div>Check Ocean-reserved areas, Special-reserved areas, and Card-specific restrictions.</div>
+                            Place one Player Marker at <strong>20</strong> on Terraform Rating
+                            Track.
+                        </li>
+                        <li>Place one Player Marker on each of six Production Tracks.</li>
+                        <li>
+                            Set each Production Track to <strong
+                            id="multiplayer-production-copy">1</strong>.
+                        </li>
+                        <li>Keep remaining Player Markers near Player Board.</li>
+                    </ul>
+                </div>
+                <div data-solo-only hidden>
+                    <p>Seed map with neutral Tiles before preparing your Player Board.</p>
+                    <ul class="component-list">
+                        <li>Reveal and discard 4 Project Cards.</li>
+                        <li>Use each card's cost in order: count City 1 from the map's upper-left
+                            across and down, then City 2 backward from the lower-right. Count each
+                            Greenery clockwise around its City, starting at upper-left; skip illegal
+                            spaces.
+                        </li>
+                        <li>Place 2 neutral City Tiles.</li>
+                        <li>Place one neutral Greenery Tile beside each neutral City Tile.</li>
+                        <li>If you choose Tharsis Republic, increase M€ production once for each
+                            neutral City, even though they were placed before revealing your
+                            Corporation.
+                        </li>
+                        <li>Do not raise Oxygen Level for neutral Greenery Tiles.</li>
+                    </ul>
+                </div>
+
+                <figure class="table-layout">
+                    <ol id="station-grid" class="station-grid" aria-label="Player stations"
+                        data-multiplayer-only></ol>
+                    <div class="visual-grid" data-solo-only hidden>
+                        <div class="visual-card is-active">
+                            <strong>Neutral City 1</strong>
+                            <span>Area derived from Project Card cost</span>
+                        </div>
+                        <div class="visual-card">
+                            <strong>Neutral Greenery 1</strong>
+                            <span>Adjacent to City 1</span>
+                        </div>
+                        <div class="visual-card is-active">
+                            <strong>Neutral City 2</strong>
+                            <span>Area derived from Project Card cost</span>
+                        </div>
+                        <div class="visual-card">
+                            <strong>Neutral Greenery 2</strong>
+                            <span>Adjacent to City 2</span>
+                        </div>
+                    </div>
+                    <figcaption id="station-caption">Keep each color separate; Player Markers track
+                        production, Terraform Rating, and ownership.
+                    </figcaption>
+                </figure>
+            </div>
+        </article>
+
+        <article class="setup-panel" data-setup-panel="4" hidden>
+            <div class="step-heading">
+                <h3 id="player-setup-step-title" tabindex="-1">Assign First Player Marker</h3>
+            </div>
+            <div class="step-layout">
+                <div data-multiplayer-only>
+                    <p>Give First Player Marker to most recent winner.</p>
+                    <ul class="component-list">
+                        <li>If nobody has played before, agree on a neutral method.</li>
+                        <li>Keep player order clockwise.</li>
+                        <li>Pass First Player Marker clockwise during Player Order Phase.</li>
+                        <li>Do not pass it before generation one.</li>
+                    </ul>
+                </div>
+                <div data-solo-only hidden>
+                    <p>Take one Player Board and one complete color of Player Markers.</p>
+                    <ul class="component-list">
+                        <li>
+                            Place one Player Marker at <strong>14</strong> on Terraform Rating
+                            Track.
                         </li>
                         <li>
-                            <div>Place Tile. Add Player Marker to owned Greenery, City, or Special Tiles; never mark Ocean Tiles.</div>
+                            Set all six Production Tracks to <strong>0</strong>.
+                        </li>
+                        <li>Keep remaining Player Markers near Player Board.</li>
+                        <li>Do not use First Player Marker, Milestones, or Awards.</li>
+                    </ul>
+                </div>
+
+                <figure class="table-layout">
+                    <ol class="turn-sequence" data-multiplayer-only aria-label="Player order">
+                        <li>
+                            <strong>First Player</strong>
+                            <span>Begins Action Phase</span>
                         </li>
                         <li>
-                            <div>Collect printed Placement Bonus and 2 M€ for each adjacent Ocean Tile.</div>
+                            <strong>Clockwise order</strong>
+                            <span>One or two actions per turn</span>
                         </li>
                         <li>
-                            <div>Resolve Oxygen Level or ocean increase and Terraform Rating when applicable.</div>
+                            <strong>Next generation</strong>
+                            <span>First Player Marker passes clockwise</span>
                         </li>
                     </ol>
-
-                    <div class="note">
-                        <strong>Placement:</strong> Place Greenery Tile beside one of your Tiles if a legal adjacent area exists. City Tiles cannot touch another City Tile unless a Card overrides normal rule.
-                    </div>
-                </article>
-
-                <article id="learn-scoring" class="learn-panel" data-learn-panel="4" hidden>
-                    <h3 tabindex="-1">Finish and score</h3>
-                    <p id="end-condition-copy">When Temperature, Oxygen Level, and oceans all reach targets, finish current generation through Production Phase.</p>
-
-                    <ol class="steps">
+                    <ol class="track-stack" data-solo-only hidden aria-label="Solo starting tracks">
                         <li>
-                            <div>Complete Production Phase.</div>
+                            <strong>Terraform Rating</strong>
+                            <span>14</span>
                         </li>
                         <li>
-                            <div id="final-greenery-copy">In player order, give each player one final chance to convert Plants into as many Greenery Tiles as possible. Placement Bonuses and triggered effects still resolve; no other actions occur.</div>
+                            <strong>Six Production Tracks</strong>
+                            <span>0 each</span>
                         </li>
                         <li>
-                            <div>Count points in fixed order.</div>
+                            <strong>Deadline</strong>
+                            <span>End of generation 14</span>
                         </li>
                     </ol>
+                    <figcaption id="player-order-figure-copy">First Player Marker identifies who
+                        begins each generation.
+                    </figcaption>
+                </figure>
+            </div>
+        </article>
 
-                    <dl class="scoring-list">
-                        <div>
-                            <dt>Terraform Rating</dt>
-                            <dd>Final rating is base score.</dd>
+        <article class="setup-panel" data-setup-panel="5" hidden>
+            <div class="step-heading">
+                <h3 id="opening-title" tabindex="-1">Deal Beginner Corporations</h3>
+            </div>
+            <div class="step-layout">
+                <div>
+                    <p id="opening-intro">Give each player one Beginner Corporation and 10 Project
+                        Cards.</p>
+                    <ul class="component-list" id="opening-list"></ul>
+                    <p class="note" id="opening-note">Beginner Corporations replace normal
+                        Corporation choice and opening card purchase.</p>
+                </div>
+
+                <figure class="table-layout">
+                    <div class="visual-grid">
+                        <div class="visual-card is-active">
+                            <strong>Corporation Card</strong>
+                            <span id="opening-corporation-copy">1 Beginner Corporation</span>
                         </div>
-                        <div data-multiplayer-only>
-                            <dt>Awards</dt>
-                            <dd>5 VP for first, 2 VP for second. No second-place points in two-player session. Ties share a place; tied first removes second place.</dd>
+                        <div class="visual-card">
+                            <strong>Project Cards</strong>
+                            <span id="opening-project-copy">10 free Cards</span>
                         </div>
-                        <div data-multiplayer-only>
-                            <dt>Milestones</dt>
-                            <dd>5 VP for each claimed Milestone.</dd>
+                        <div class="visual-card">
+                            <strong>M€</strong>
+                            <span id="opening-money-copy">42 M€</span>
                         </div>
-                        <div>
-                            <dt>Game Board</dt>
-                            <dd>1 VP per owned Greenery Tile, plus 1 VP to each owned City Tile for every adjacent Greenery Tile.</dd>
+                        <div class="visual-card">
+                            <strong>Discard Pile</strong>
+                            <span id="opening-discard-copy">No opening discard</span>
                         </div>
-                        <div>
-                            <dt>Project Cards</dt>
-                            <dd>Count printed and resource-dependent points across Active, Automated, and Event Cards.</dd>
-                        </div>
-                    </dl>
+                    </div>
+                    <figcaption>Keep Project Cards in hand. Corporation Card remains face up.
+                    </figcaption>
+                </figure>
+            </div>
+        </article>
 
-                    <p data-multiplayer-only>
-                        <strong>Tie-break:</strong> Most remaining M€ wins.
-                    </p>
-                </article>
-            </section>
-
-            <section id="reference" class="reference-group" aria-labelledby="reference-title">
-                <h2 id="reference-title">Rules reference</h2>
-                <p>Open only topic needed. Card-specific text overrides general rules.</p>
-
-                <h3>Economy and setup</h3>
-
-                <details class="economy">
-                    <summary>Resources and production</summary>
-                    <dl>
-                        <dt>M€</dt>
-                        <dd>General currency. Production may fall as low as −5. Production Phase income equals M€ production plus Terraform Rating.</dd>
-                        <dt>Steel</dt>
-                        <dd>Worth 2 M€ when paying for Building-tag Cards.</dd>
-                        <dt>Titanium</dt>
-                        <dd>Worth 3 M€ when paying for Space-tag Cards.</dd>
-                        <dt>Plants</dt>
-                        <dd>Spend 8 as an action to place Greenery Tile.</dd>
-                        <dt>Energy</dt>
-                        <dd>All leftover Energy moves to Heat before new resources are produced.</dd>
-                        <dt>Heat</dt>
-                        <dd>Spend 8 as an action to raise Temperature.</dd>
-                    </dl>
-                </details>
-
-                <details class="economy" data-multiplayer-only>
-                    <summary>Milestones</summary>
-                    <p>Claiming costs 8 M€, requires meeting threshold, and scores 5 VP. Each Milestone has one owner; only three total may be claimed.</p>
-                    <ul>
-                        <li>
-                            <strong>Terraformer:</strong> Terraform Rating at least 35.
-                        </li>
-                        <li>
-                            <strong>Mayor:</strong> Own at least 3 City Tiles.
-                        </li>
-                        <li>
-                            <strong>Gardener:</strong> Own at least 3 Greenery Tiles.
-                        </li>
-                        <li>
-                            <strong>Builder:</strong> Have at least 8 Building tags in play.
-                        </li>
-                        <li>
-                            <strong>Planner:</strong> Hold at least 16 Cards when claiming.
-                        </li>
+        <article class="setup-panel" data-setup-panel="6" hidden>
+            <div class="step-heading">
+                <h3 tabindex="-1">Begin Action Phase</h3>
+            </div>
+            <div class="step-layout">
+                <div>
+                    <p>Generation 1 begins differently because setup already handled Player Order
+                        and Research.</p>
+                    <ul class="component-list">
+                        <li>Skip Player Order Phase.</li>
+                        <li>Skip Research Phase.</li>
+                        <li id="first-action-copy">First Player takes one or two actions.</li>
+                        <li>Continue until every player has passed.</li>
+                        <li>Then complete Production Phase.</li>
                     </ul>
-                </details>
+                </div>
 
-                <details class="economy" data-multiplayer-only>
-                    <summary>Awards</summary>
-                    <p>No threshold is required to fund. First, second, and third funded Awards cost 8, 14, and 20 M€. Funding does not guarantee winning.</p>
-                    <ul>
+                <figure class="table-layout">
+                    <ol class="turn-sequence" aria-label="Generation one phases">
                         <li>
-                            <strong>Landlord:</strong> Most owned Tiles.
+                            <strong>Player Order Phase</strong>
+                            <span>Skip in generation 1</span>
                         </li>
                         <li>
-                            <strong>Banker:</strong> Highest M€ production.
+                            <strong>Research Phase</strong>
+                            <span>Skip in generation 1</span>
                         </li>
                         <li>
-                            <strong>Scientist:</strong> Most Science tags in play.
+                            <strong>Action Phase</strong>
+                            <span>Begin here</span>
                         </li>
                         <li>
-                            <strong>Thermalist:</strong> Most Heat Resource Cubes.
+                            <strong>Production Phase</strong>
+                            <span>Resolve after all players pass</span>
+                        </li>
+                    </ol>
+                    <figcaption>Future generations use all four phases.</figcaption>
+                </figure>
+            </div>
+        </article>
+
+        <article class="setup-panel" data-setup-panel="7" hidden>
+            <div class="step-heading">
+                <h3 tabindex="-1">Table is ready</h3>
+            </div>
+            <div class="ready-summary" role="status">
+                <p>
+                    <strong id="ready-session-copy">3 players using Beginner Corporations</strong>
+                    <span id="ready-begin-copy">can begin generation 1 in Action Phase.</span>
+                </p>
+                <p id="ready-rule-copy">First Player takes one or two actions. Play continues
+                    clockwise until everyone passes.</p>
+                <a href="#learn" class="btn btn-primary">Learn first generation</a>
+            </div>
+        </article>
+
+        <nav class="setup-actions" aria-label="Setup step controls">
+            <button type="button" id="setup-back">
+                <span class="sym" aria-hidden="true">arrow_back</span>
+                Back
+            </button>
+            <button type="button" id="setup-next" class="btn-primary">
+                <span id="setup-next-label">Continue</span>
+                <span class="sym" aria-hidden="true">arrow_forward</span>
+            </button>
+        </nav>
+    </section>
+
+    <section id="learn" aria-labelledby="learn-title">
+        <h2 id="learn-title">Learn a generation</h2>
+        <p>Open one part at a time. Start with generation rhythm, then learn actions, cards, map
+            rules, and scoring.</p>
+
+        <ol class="learn-track" aria-label="Rule lessons">
+            <li>
+                <button type="button" data-learn-button="0" aria-current="step"
+                        aria-controls="learn-generation">
+                    <span>Lesson 1</span>
+                    Generation
+                </button>
+            </li>
+            <li>
+                <button type="button" data-learn-button="1" aria-controls="learn-actions">
+                    <span>Lesson 2</span>
+                    Actions
+                </button>
+            </li>
+            <li>
+                <button type="button" data-learn-button="2" aria-controls="learn-cards">
+                    <span>Lesson 3</span>
+                    Project Cards
+                </button>
+            </li>
+            <li>
+                <button type="button" data-learn-button="3" aria-controls="learn-board">
+                    <span>Lesson 4</span>
+                    Game Board
+                </button>
+            </li>
+            <li>
+                <button type="button" data-learn-button="4" aria-controls="learn-scoring">
+                    <span>Lesson 5</span>
+                    Game End
+                </button>
+            </li>
+        </ol>
+
+        <article id="learn-generation" class="learn-panel" data-learn-panel="0">
+            <h3 tabindex="-1">A generation has four phases</h3>
+            <p>Generation one skips first two phases. Every later generation follows all four in
+                order.</p>
+
+            <ol class="phase-strip">
+                <li>
+                    <strong>1 · Player Order</strong>
+                    <span id="player-order-copy">Pass First Player Marker clockwise, then advance Generation Marker.</span>
+                </li>
+                <li>
+                    <strong>2 · Research</strong>
+                    <span>Draw 4 Project Cards. Buy any for 3 M€ each; discard rest face down.</span>
+                </li>
+                <li>
+                    <strong>3 · Action</strong>
+                    <span id="action-phase-copy">Take one or two actions, then play continues clockwise.</span>
+                </li>
+                <li>
+                    <strong>4 · Production</strong>
+                    <span>Move Energy to Heat, gain M€, produce resources, and clear used-action markers.</span>
+                </li>
+            </ol>
+
+            <div class="turn-rule">
+                <strong>Passing ends your generation.</strong>
+                <p>Taking one action keeps you active. Taking no action means you cannot return
+                    until next generation.</p>
+            </div>
+        </article>
+
+        <article id="learn-actions" class="learn-panel" data-learn-panel="1" hidden>
+            <h3 id="actions-heading" tabindex="-1">Seven available actions</h3>
+            <p>On your turn, take one or two actions. Same action may be repeated if rules and
+                resources allow it.</p>
+
+            <dl class="action-list">
+                <div>
+                    <dt>Play a Project Card</dt>
+                    <dd>Meet requirements, pay cost, resolve immediate effects, then place Card in
+                        correct area.
+                    </dd>
+                </div>
+                <div>
+                    <dt>Use a Standard Project</dt>
+                    <dd>Pay printed price for one of six Standard Projects on Game Board.</dd>
+                </div>
+                <div data-multiplayer-only>
+                    <dt>Claim a Milestone</dt>
+                    <dd>Meet its threshold and pay 8 M€. Only three Milestones may be claimed.</dd>
+                </div>
+                <div data-multiplayer-only>
+                    <dt>Fund an Award</dt>
+                    <dd>Reserve an unfunded category for 8, 14, or 20 M€. Only three Awards may be
+                        funded.
+                    </dd>
+                </div>
+                <div>
+                    <dt>Use Blue Card action</dt>
+                    <dd>Resolve one action marked by red arrow. Each Blue Card or Corporation action
+                        may be used once per generation.
+                    </dd>
+                </div>
+                <div>
+                    <dt>Convert 8 Plants</dt>
+                    <dd>Place Greenery Tile, raise Oxygen Level if possible, and gain corresponding
+                        Terraform Rating.
+                    </dd>
+                </div>
+                <div>
+                    <dt>Convert 8 Heat</dt>
+                    <dd>Raise Temperature one step if possible and gain corresponding Terraform
+                        Rating.
+                    </dd>
+                </div>
+            </dl>
+
+            <details>
+                <summary>Standard Projects and costs</summary>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th scope="col">Project</th>
+                            <th scope="col">Cost</th>
+                            <th scope="col">Result</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <th scope="row">Sell patents</th>
+                            <td>—</td>
+                            <td>Discard any Project Cards for 1 M€ each.</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Power plant</th>
+                            <td>11 M€</td>
+                            <td>Increase Energy production one step.</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Asteroid</th>
+                            <td>14 M€</td>
+                            <td>Raise Temperature one step.</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Aquifer</th>
+                            <td>18 M€</td>
+                            <td>Place one Ocean Tile.</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Greenery</th>
+                            <td>23 M€</td>
+                            <td>Place owned Greenery Tile and raise Oxygen Level if possible.</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">City</th>
+                            <td>25 M€</td>
+                            <td>Place owned City Tile and increase M€ production one step.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </article>
+
+        <article id="learn-cards" class="learn-panel" data-learn-panel="2" hidden>
+            <h3 tabindex="-1">Read a Project Card</h3>
+            <p>Buying a Card places it in hand. Playing it later is a separate action with its own
+                printed cost.</p>
+
+            <figure class="card-anatomy">
+                <div class="sample-project" aria-hidden="true">
+                    <span class="sample-cost">18</span>
+                    <strong>Sample Project Card</strong>
+                    <span class="sample-tags">Building · Science</span>
+                    <span class="sample-requirement">Requirement: 5% Oxygen</span>
+                    <span class="sample-effect">Immediate effect or reusable Blue Card action</span>
+                    <span class="sample-footer">Tags remain visible when relevant</span>
+                    <span class="sample-points">2 VP</span>
+                </div>
+                <figcaption>
+                    <ol class="anatomy-key">
+                        <li>
+                            <strong>Cost:</strong> Pay when playing Card, not when drawing it.
                         </li>
                         <li>
-                            <strong>Miner:</strong> Most Steel and Titanium Resource Cubes combined.
+                            <strong>Requirement:</strong> Must be met when Card is played. A maximum
+                            is shown in red.
                         </li>
-                    </ul>
-                </details>
+                        <li>
+                            <strong>Tags:</strong> Tags may reduce costs, meet requirements, or
+                            score points.
+                        </li>
+                        <li>
+                            <strong>Effect:</strong> Resolve immediate effects in any order; ongoing
+                            effects apply as written.
+                        </li>
+                        <li>
+                            <strong>VP:</strong> Count at game end, including resource-dependent
+                            points.
+                        </li>
+                    </ol>
+                </figcaption>
+            </figure>
 
-                <details class="economy">
-                    <summary>Solo setup and deadline</summary>
-                    <p>Solo always uses Corporate Era Cards, starts at Terraform Rating 14 with all production at zero, does not use Milestones or Awards, and must complete all parameters by end of generation 14.</p>
-                    <p>Before choosing Corporation and Project Cards, reveal and discard 4 Project Cards. Use their costs to place 2 neutral City Tiles and one adjacent Greenery Tile beside each, following the board-reading method. Neutral Greenery does not raise Oxygen Level. Neutral resources and production may be targeted as if belonging to opponent.</p>
-                </details>
+            <dl class="card-type-list">
+                <div>
+                    <dt>Green · Automated Card</dt>
+                    <dd>Resolve once, then overlap it so tags remain visible.</dd>
+                </div>
+                <div>
+                    <dt>Blue · Active Card</dt>
+                    <dd>Keep face up. Ongoing effects remain available; each marked action may be
+                        used once per generation.
+                    </dd>
+                </div>
+                <div>
+                    <dt>Red · Event Card</dt>
+                    <dd>Resolve once, then keep face down in personal Event pile. Tags apply only
+                        while Event is played, but Card points still score.
+                    </dd>
+                </div>
+            </dl>
 
-                <h3>Parameters and placement</h3>
+            <div class="note">
+                <strong>Paying with metals:</strong> Steel pays only for Building-tag Cards at 2 M€
+                per Resource Cube. Titanium pays only for Space-tag Cards at 3 M€ per Resource Cube.
+                Overpayment is allowed; no change is returned.
+            </div>
+        </article>
 
-                <details class="parameters">
-                    <summary>Global bonus steps</summary>
-                    <p>Player who moves Marker onto bonus space receives bonus: 8% Oxygen Level raises Temperature; −24°C and −20°C each increase Heat production; 0°C places an Ocean Tile. Each resulting global increase normally raises Terraform Rating for player resolving it.</p>
-                </details>
+        <article id="learn-board" class="learn-panel" data-learn-panel="3" hidden>
+            <h3 tabindex="-1">Complete three global parameters</h3>
+            <p>Raising Oxygen Level, Temperature, or ocean coverage normally raises your Terraform
+                Rating by one. Completed parameters cannot rise and grant no further rating.</p>
 
-                <details class="parameters">
-                    <summary>Tile placement and adjacency</summary>
-                    <ul>
-                        <li>Ocean Tiles go only on Ocean-reserved areas and have no owner.</li>
-                        <li>Greenery Tile must be adjacent to one of your Tiles when possible.</li>
-                        <li>City Tile cannot be adjacent to another City Tile unless a Card allows it.</li>
-                        <li>Placement Bonus goes to player placing Tile.</li>
-                        <li>Gain 2 M€ for each adjacent Ocean Tile when placing any Tile.</li>
-                    </ul>
-                </details>
+            <div class="parameter-list">
+                <div class="parameter-row" data-parameter="temperature">
+                    <strong>Temperature · −30°C to +8°C</strong>
+                    <p>Advance in 2°C steps. Reaching −24°C and −20°C increases Heat production;
+                        reaching 0°C places an Ocean Tile.</p>
+                </div>
+                <div class="parameter-row" data-parameter="oxygen">
+                    <strong>Oxygen Level · 0% to 14%</strong>
+                    <p>Greenery normally raises Oxygen Level. Reaching 8% also raises Temperature
+                        one step.</p>
+                </div>
+                <div class="parameter-row" data-parameter="ocean">
+                    <strong>Ocean Tiles · 0 to 9</strong>
+                    <p>Oceans occupy reserved areas and have no owner. Placing any Tile beside an
+                        Ocean Tile gains 2 M€ per adjacent Ocean Tile.</p>
+                </div>
+            </div>
 
-                <h3>Projects and timing</h3>
+            <h4>Place a Tile</h4>
+            <ol class="steps">
+                <li>
+                    <div>Check Ocean-reserved areas, Special-reserved areas, and Card-specific
+                        restrictions.
+                    </div>
+                </li>
+                <li>
+                    <div>Place Tile. Add Player Marker to owned Greenery, City, or Special Tiles;
+                        never mark Ocean Tiles.
+                    </div>
+                </li>
+                <li>
+                    <div>Collect printed Placement Bonus and 2 M€ for each adjacent Ocean Tile.
+                    </div>
+                </li>
+                <li>
+                    <div>Resolve Oxygen Level or ocean increase and Terraform Rating when
+                        applicable.
+                    </div>
+                </li>
+            </ol>
 
-                <details class="timing">
-                    <summary>Requirements and incomplete effects</summary>
-                    <p>Requirements matter when Project Card is played, not when its later action is used. Required production changes must be possible. A Project Card may still be played if only impossible part would raise a completed global parameter, add unusable resources, remove optional red-bordered resources, or place Tile when no legal area remains.</p>
-                </details>
+            <div class="note">
+                <strong>Placement:</strong> Place Greenery Tile beside one of your Tiles if a legal
+                adjacent area exists. City Tiles cannot touch another City Tile unless a Card
+                overrides normal rule.
+            </div>
+        </article>
 
-                <details class="timing">
-                    <summary>Red borders and effect order</summary>
-                    <p>Red-bordered resources and production may target any one player, including you; resource removal can be partial or skipped. Red-bordered production loss is mandatory: if no opponent can lose the required amount, lower your own production or you cannot play the card. Red-bordered tile effects may target any or all players' tiles; a red-bordered tag effect affects all cards with that tag. When effects trigger together, the active player chooses their order.</p>
-                </details>
+        <article id="learn-scoring" class="learn-panel" data-learn-panel="4" hidden>
+            <h3 tabindex="-1">Finish and score</h3>
+            <p id="end-condition-copy">When Temperature, Oxygen Level, and oceans all reach targets,
+                finish current generation through Production Phase.</p>
 
-                <details class="timing">
-                    <summary>Common turn questions</summary>
-                    <ul>
-                        <li>You may take one action instead of two and remain active.</li>
-                        <li>Once you pass, you are out for rest of generation.</li>
-                        <li>Same Standard Project may be used repeatedly if you can pay.</li>
-                        <li>Blue Card actions are once per generation; ongoing effects are not actions.</li>
-                        <li>Unbought Research Cards are discarded. Bought Cards remain in hand without limit.</li>
-                        <li>Placement Bonuses and Ocean Tile adjacency income apply to Tile placed by Card or Standard Project.</li>
-                    </ul>
-                </details>
-            </section>
+            <ol class="steps">
+                <li>
+                    <div>Complete Production Phase.</div>
+                </li>
+                <li>
+                    <div id="final-greenery-copy">In player order, give each player one final chance
+                        to convert Plants into as many Greenery Tiles as possible. Placement Bonuses
+                        and triggered effects still resolve; no other actions occur.
+                    </div>
+                </li>
+                <li>
+                    <div>Count points in fixed order.</div>
+                </li>
+            </ol>
 
-        </main>
+            <dl class="scoring-list">
+                <div>
+                    <dt>Terraform Rating</dt>
+                    <dd>Final rating is base score.</dd>
+                </div>
+                <div data-multiplayer-only>
+                    <dt>Awards</dt>
+                    <dd>5 VP for first, 2 VP for second. No second-place points in two-player
+                        session. Ties share a place; tied first removes second place.
+                    </dd>
+                </div>
+                <div data-multiplayer-only>
+                    <dt>Milestones</dt>
+                    <dd>5 VP for each claimed Milestone.</dd>
+                </div>
+                <div>
+                    <dt>Game Board</dt>
+                    <dd>1 VP per owned Greenery Tile, plus 1 VP to each owned City Tile for every
+                        adjacent Greenery Tile.
+                    </dd>
+                </div>
+                <div>
+                    <dt>Project Cards</dt>
+                    <dd>Count printed and resource-dependent points across Active, Automated, and
+                        Event Cards.
+                    </dd>
+                </div>
+            </dl>
 
-        <aside aria-labelledby="guide-options-title">
-            <h2 id="guide-options-title">Guide options</h2>
-
-            <form id="guide-options" autocomplete="off">
-                <fieldset>
-                    <legend>Table</legend>
-                    <label for="player-count">
-                        Players
-                        <select id="player-count" name="player-count">
-                            <option value="1">1 · Solo</option>
-                            <option value="2">2 players</option>
-                            <option value="3" selected>3 players</option>
-                            <option value="4">4 players</option>
-                            <option value="5">5 players</option>
-                        </select>
-                    </label>
-
-                    <label for="ruleset">
-                        Setup style
-                        <select id="ruleset" name="ruleset" aria-describedby="ruleset-hint">
-                            <option value="guided" selected>Beginner Corporations</option>
-                            <option value="standard">Standard game</option>
-                            <option value="corporate">Corporate Era</option>
-                        </select>
-                    </label>
-                    <small id="ruleset-hint">Beginner setup gives each player a Beginner Corporation and 10 free Project Cards.</small>
-                </fieldset>
-
-                <fieldset>
-                    <legend>Setup progress</legend>
-                    <label for="setup-progress">Completed steps</label>
-                    <progress id="setup-progress" value="0" max="7"></progress>
-                    <output id="setup-progress-text" for="setup-progress">0 of 7</output>
-                    <button type="button" id="reset-guide">
-                        <span class="sym" aria-hidden="true">refresh</span>
-                        Start over
-                    </button>
-                </fieldset>
-
-                <fieldset>
-                    <legend>User interface</legend>
-                    <label for="language">
-                        Language
-                        <select id="language" name="language">
-                            <option value="en" selected>English</option>
-                            <option value="de">Deutsch</option>
-                        </select>
-                    </label>
-                </fieldset>
-            </form>
-
-            <p>
-                <small>Progress stays in this browser.</small>
+            <p data-multiplayer-only>
+                <strong>Tie-break:</strong> Most remaining M€ wins.
             </p>
-        </aside>
+        </article>
+    </section>
 
-    <footer>
-        <p lang="en">This is an independent, unofficial rules guide. It is not affiliated with or endorsed by the game's publisher. All trademarks and copyrights in the original game remain the property of their respective owners.</p>
-        <p lang="de">Dies ist ein unabhängiger, inoffizieller Regelleitfaden. Er steht in keiner Verbindung zum Verlag des Spiels und wird von diesem nicht unterstützt. Alle Marken- und Urheberrechte am Originalspiel verbleiben bei ihren jeweiligen Rechteinhabern.</p>
-    </footer>
+    <section id="reference" class="reference-group" aria-labelledby="reference-title">
+        <h2 id="reference-title">Rules reference</h2>
+        <p>Open only topic needed. Card-specific text overrides general rules.</p>
 
-        <script src="../../one.js"></script>
-        <script>
+        <h3>Economy and setup</h3>
+
+        <details class="economy">
+            <summary>Resources and production</summary>
+            <dl>
+                <dt>M€</dt>
+                <dd>General currency. Production may fall as low as −5. Production Phase income
+                    equals M€ production plus Terraform Rating.
+                </dd>
+                <dt>Steel</dt>
+                <dd>Worth 2 M€ when paying for Building-tag Cards.</dd>
+                <dt>Titanium</dt>
+                <dd>Worth 3 M€ when paying for Space-tag Cards.</dd>
+                <dt>Plants</dt>
+                <dd>Spend 8 as an action to place Greenery Tile.</dd>
+                <dt>Energy</dt>
+                <dd>All leftover Energy moves to Heat before new resources are produced.</dd>
+                <dt>Heat</dt>
+                <dd>Spend 8 as an action to raise Temperature.</dd>
+            </dl>
+        </details>
+
+        <details class="economy" data-multiplayer-only>
+            <summary>Milestones</summary>
+            <p>Claiming costs 8 M€, requires meeting threshold, and scores 5 VP. Each Milestone has
+                one owner; only three total may be claimed.</p>
+            <ul>
+                <li>
+                    <strong>Terraformer:</strong> Terraform Rating at least 35.
+                </li>
+                <li>
+                    <strong>Mayor:</strong> Own at least 3 City Tiles.
+                </li>
+                <li>
+                    <strong>Gardener:</strong> Own at least 3 Greenery Tiles.
+                </li>
+                <li>
+                    <strong>Builder:</strong> Have at least 8 Building tags in play.
+                </li>
+                <li>
+                    <strong>Planner:</strong> Hold at least 16 Cards when claiming.
+                </li>
+            </ul>
+        </details>
+
+        <details class="economy" data-multiplayer-only>
+            <summary>Awards</summary>
+            <p>No threshold is required to fund. First, second, and third funded Awards cost 8, 14,
+                and 20 M€. Funding does not guarantee winning.</p>
+            <ul>
+                <li>
+                    <strong>Landlord:</strong> Most owned Tiles.
+                </li>
+                <li>
+                    <strong>Banker:</strong> Highest M€ production.
+                </li>
+                <li>
+                    <strong>Scientist:</strong> Most Science tags in play.
+                </li>
+                <li>
+                    <strong>Thermalist:</strong> Most Heat Resource Cubes.
+                </li>
+                <li>
+                    <strong>Miner:</strong> Most Steel and Titanium Resource Cubes combined.
+                </li>
+            </ul>
+        </details>
+
+        <details class="economy">
+            <summary>Solo setup and deadline</summary>
+            <p>Solo always uses Corporate Era Cards, starts at Terraform Rating 14 with all
+                production at zero, does not use Milestones or Awards, and must complete all
+                parameters by end of generation 14.</p>
+            <p>Before choosing Corporation and Project Cards, reveal and discard 4 Project Cards.
+                Use their costs to place 2 neutral City Tiles and one adjacent Greenery Tile beside
+                each, following the board-reading method. Neutral Greenery does not raise Oxygen
+                Level. Neutral resources and production may be targeted as if belonging to
+                opponent.</p>
+        </details>
+
+        <h3>Parameters and placement</h3>
+
+        <details class="parameters">
+            <summary>Global bonus steps</summary>
+            <p>Player who moves Marker onto bonus space receives bonus: 8% Oxygen Level raises
+                Temperature; −24°C and −20°C each increase Heat production; 0°C places an Ocean
+                Tile. Each resulting global increase normally raises Terraform Rating for player
+                resolving it.</p>
+        </details>
+
+        <details class="parameters">
+            <summary>Tile placement and adjacency</summary>
+            <ul>
+                <li>Ocean Tiles go only on Ocean-reserved areas and have no owner.</li>
+                <li>Greenery Tile must be adjacent to one of your Tiles when possible.</li>
+                <li>City Tile cannot be adjacent to another City Tile unless a Card allows it.</li>
+                <li>Placement Bonus goes to player placing Tile.</li>
+                <li>Gain 2 M€ for each adjacent Ocean Tile when placing any Tile.</li>
+            </ul>
+        </details>
+
+        <h3>Projects and timing</h3>
+
+        <details class="timing">
+            <summary>Requirements and incomplete effects</summary>
+            <p>Requirements matter when Project Card is played, not when its later action is used.
+                Required production changes must be possible. A Project Card may still be played if
+                only impossible part would raise a completed global parameter, add unusable
+                resources, remove optional red-bordered resources, or place Tile when no legal area
+                remains.</p>
+        </details>
+
+        <details class="timing">
+            <summary>Red borders and effect order</summary>
+            <p>Red-bordered resources and production may target any one player, including you;
+                resource removal can be partial or skipped. Red-bordered production loss is
+                mandatory: if no opponent can lose the required amount, lower your own production or
+                you cannot play the card. Red-bordered tile effects may target any or all players'
+                tiles; a red-bordered tag effect affects all cards with that tag. When effects
+                trigger together, the active player chooses their order.</p>
+        </details>
+
+        <details class="timing">
+            <summary>Common turn questions</summary>
+            <ul>
+                <li>You may take one action instead of two and remain active.</li>
+                <li>Once you pass, you are out for rest of generation.</li>
+                <li>Same Standard Project may be used repeatedly if you can pay.</li>
+                <li>Blue Card actions are once per generation; ongoing effects are not actions.</li>
+                <li>Unbought Research Cards are discarded. Bought Cards remain in hand without
+                    limit.
+                </li>
+                <li>Placement Bonuses and Ocean Tile adjacency income apply to Tile placed by Card
+                    or Standard Project.
+                </li>
+            </ul>
+        </details>
+    </section>
+
+</main>
+
+<aside aria-labelledby="guide-options-title">
+    <h2 id="guide-options-title">Guide options</h2>
+
+    <form id="guide-options" autocomplete="off">
+        <fieldset>
+            <legend>Table</legend>
+            <label for="player-count">
+                Players
+                <select id="player-count" name="player-count">
+                    <option value="1">1 · Solo</option>
+                    <option value="2">2 players</option>
+                    <option value="3" selected>3 players</option>
+                    <option value="4">4 players</option>
+                    <option value="5">5 players</option>
+                </select>
+            </label>
+
+            <label for="ruleset">
+                Setup style
+                <select id="ruleset" name="ruleset" aria-describedby="ruleset-hint">
+                    <option value="guided" selected>Beginner Corporations</option>
+                    <option value="standard">Standard game</option>
+                    <option value="corporate">Corporate Era</option>
+                </select>
+            </label>
+            <small id="ruleset-hint">Beginner setup gives each player a Beginner Corporation and 10
+                free Project Cards.</small>
+        </fieldset>
+
+        <fieldset>
+            <legend>Setup progress</legend>
+            <label for="setup-progress">Completed steps</label>
+            <progress id="setup-progress" value="0" max="7"></progress>
+            <output id="setup-progress-text" for="setup-progress">0 of 7</output>
+            <button type="button" id="reset-guide">
+                <span class="sym" aria-hidden="true">refresh</span>
+                Start over
+            </button>
+        </fieldset>
+
+        <fieldset>
+            <legend>User interface</legend>
+            <label for="language">
+                Language
+                <select id="language" name="language">
+                    <option value="en" selected>English</option>
+                    <option value="de">Deutsch</option>
+                </select>
+            </label>
+        </fieldset>
+    </form>
+
+    <p>
+        <small>Progress stays in this browser.</small>
+    </p>
+</aside>
+
+<footer>
+    <p lang="en">This is an independent, unofficial rules guide. It is not affiliated with or
+        endorsed by the game's publisher. All trademarks and copyrights in the original game remain
+        the property of their respective owners.</p>
+    <p lang="de">Dies ist ein unabhängiger, inoffizieller Regelleitfaden. Er steht in keiner
+        Verbindung zum Verlag des Spiels und wird von diesem nicht unterstützt. Alle Marken- und
+        Urheberrechte am Originalspiel verbleiben bei ihren jeweiligen Rechteinhabern.</p>
+</footer>
+
+<script src="../../one.js"></script>
+<script>
     /* global one */
 
     const STORAGE_KEY = "red-planet-field-guide:state";
@@ -1694,7 +1797,7 @@
             element,
             english: element.getAttribute("aria-label"),
         }));
-    const descriptionMeta = document.querySelector('meta[name="description"]');
+    const descriptionMeta = document.querySelector("meta[name=\"description\"]");
     const englishDescription = descriptionMeta.content;
 
     function translateEnglishText(value) {
@@ -2176,6 +2279,6 @@
     renderGuide();
     void restoreState();
 </script>
-    </body>
+</body>
 
 </html>

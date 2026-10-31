@@ -1,8 +1,8 @@
 // Copyright 2026 Joschua Gandert - SPDX-License-Identifier: Apache-2.0
-import {expect, test} from "bun:test";
-import {createRequire} from "node:module";
+import { expect, test } from "bun:test";
+import { createRequire } from "node:module";
 
-const {createTracer} = createRequire(import.meta.url)("../tracer.js");
+const { createTracer } = createRequire(import.meta.url)("../tracer.js");
 
 // Distinct broad paints may share a coarse RGB histogram bucket. A known
 // count and disabled cleanup must preserve the surviving source evidence.
@@ -26,16 +26,31 @@ function makeArtwork(antialiased) {
             data.set([...paint, 255], 4 * (y * width + x));
         }
     }
-    return {width, height, data};
+    return { width, height, data };
 }
 
 test.each([
-    {name: "two flat halves", antialiased: false, colors: 2},
-    {name: "an antialiased boundary and another paint", antialiased: true, colors: 3},
-].flatMap(config => [0, 10].flatMap(noise => [false, true].map(preserveDetails => ({...config, noise, preserveDetails})))))(
-    "an explicit paint count preserves similar paints in $name (noise=$noise, protect=$preserveDetails)", ({antialiased, colors, noise, preserveDetails}) => {
+    { name: "two flat halves", antialiased: false, colors: 2 },
+    { name: "an antialiased boundary and another paint", antialiased: true, colors: 3 },
+].flatMap(config => [0, 10].flatMap(noise => [false, true].map(preserveDetails => ({
+    ...config,
+    noise,
+    preserveDetails,
+})))))(
+    "an explicit paint count preserves similar paints in $name (noise=$noise, protect=$preserveDetails)", ({
+                                                                                                               antialiased,
+                                                                                                               colors,
+                                                                                                               noise,
+                                                                                                               preserveDetails,
+                                                                                                           }) => {
         const image = makeArtwork(antialiased);
-        const result = createTracer().trace(image, {colors, noise, preserveDetails, minArea: 0, debug: true});
+        const result = createTracer().trace(image, {
+            colors,
+            noise,
+            preserveDetails,
+            minArea: 0,
+            debug: true,
+        });
         expect([...result.stats.palette].sort()).toEqual(paints.slice(0, colors).map(paintHex).sort());
         const left = result.debug.labels[20 * image.width + 10];
         const right = result.debug.labels[20 * image.width + 50];
@@ -50,7 +65,7 @@ test("an excessive explicit count does not invent a paint in a uniform image", (
     for (let pixel = 0; pixel < width * height; pixel++) {
         data.set([...paints[0], 255], pixel * 4);
     }
-    const result = createTracer().trace({width, height, data}, {colors: 64});
+    const result = createTracer().trace({ width, height, data }, { colors: 64 });
     expect(result.stats.palette).toEqual([paintHex(paints[0])]);
     expect(result.stats.visibleRegions).toBe(1);
 });
@@ -65,7 +80,7 @@ test("Auto does not promote small RGB variation in one coarse bucket to extra pa
             data.set([...paints[0].map(value => value + offset), 255], (y * width + x) * 4);
         }
     }
-    const result = createTracer().trace({width, height, data});
+    const result = createTracer().trace({ width, height, data });
     expect(result.stats.colors).toBe(1);
     expect(result.stats.visibleRegions).toBe(1);
 });
@@ -86,13 +101,23 @@ test("the explicit upper limit can retain 64 paints within one coarse bucket", (
             }
         }
     }
-    const result = createTracer().trace({width, height, data}, {colors: 64, noise: 0, minArea: 0});
+    const result = createTracer().trace({ width, height, data }, {
+        colors: 64,
+        noise: 0,
+        minArea: 0,
+    });
     expect([...result.stats.palette].sort()).toEqual(expected.sort());
     expect(result.stats.visibleRegions).toBe(64);
 });
 
-test.each([0, 10].flatMap(noise => [false, true].map(preserveDetails => ({noise, preserveDetails}))))(
-    "an antialias fringe in another bucket cannot repaint finely separated paints (noise=$noise, protect=$preserveDetails)", ({noise, preserveDetails}) => {
+test.each([0, 10].flatMap(noise => [false, true].map(preserveDetails => ({
+    noise,
+    preserveDetails,
+}))))(
+    "an antialias fringe in another bucket cannot repaint finely separated paints (noise=$noise, protect=$preserveDetails)", ({
+                                                                                                                                  noise,
+                                                                                                                                  preserveDetails,
+                                                                                                                              }) => {
         const image = makeArtwork(true);
 
         // The bottom boundary at y=47.95 leaves 95% of the left paint and
@@ -102,7 +127,13 @@ test.each([0, 10].flatMap(noise => [false, true].map(preserveDetails => ({noise,
         for (let x = 0; x < 32; x++) {
             image.data.set([...fringe, 255], (47 * image.width + x) * 4);
         }
-        const result = createTracer().trace(image, {colors: 3, noise, preserveDetails, minArea: 0, debug: true});
+        const result = createTracer().trace(image, {
+            colors: 3,
+            noise,
+            preserveDetails,
+            minArea: 0,
+            debug: true,
+        });
         expect([...result.stats.palette].sort()).toEqual(paints.map(paintHex).sort());
         const left = result.debug.labels[20 * image.width + 10];
         const right = result.debug.labels[20 * image.width + 50];

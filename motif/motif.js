@@ -134,8 +134,12 @@ export function Arrange(sections, options = {}) {
                     track._activeSegments.push({
                         startBeat: sectionStart,
                         stopBeat: sectionEnd,
-                        get start() { return track._arrangedTime(sectionStart); },
-                        get stop() { return track._arrangedTime(sectionEnd); },
+                        get start() {
+                            return track._arrangedTime(sectionStart);
+                        },
+                        get stop() {
+                            return track._arrangedTime(sectionEnd);
+                        },
                     });
 
                     if (track._gainRampsQueue && track._gainRampsQueue.length > 0) {
@@ -148,7 +152,9 @@ export function Arrange(sections, options = {}) {
                             startBeat: sectionStart,
                             durationBeats: duration === undefined ? sectionDuration : musicalDurationBeats(duration, beatsPerBar),
                             durationSeconds: duration === undefined ? null : parseDurationToSeconds(duration, Motif.tempo, beatsPerBar),
-                            get start() { return track._arrangedTime(sectionStart); },
+                            get start() {
+                                return track._arrangedTime(sectionStart);
+                            },
                             get duration() {
                                 return this.durationBeats === null ? this.durationSeconds : track._arrangedTime(sectionStart + this.durationBeats) - this.start;
                             },
@@ -835,7 +841,9 @@ export class MotifEngine {
     start() {
         this._cancelPendingStart();
         const request = { generation: this._startGeneration };
-        request.cancelled = new Promise(resolve => { request.cancel = resolve; });
+        request.cancelled = new Promise(resolve => {
+            request.cancel = resolve;
+        });
         this._pendingStart = request;
 
         const launch = async () => {
@@ -914,7 +922,9 @@ export class MotifEngine {
     async _awaitTrackSources(request) {
         while (this._isCurrentStart(request) && this._hasPendingTrackSources()) {
             let changed;
-            const sourceChanged = new Promise(resolve => { changed = resolve; });
+            const sourceChanged = new Promise(resolve => {
+                changed = resolve;
+            });
             sourceReadinessListeners.add(changed);
             try {
                 // Replacements and removals must wake startup even when an old
@@ -1264,8 +1274,18 @@ export class MotifEngine {
         }
         const startBpm = previous.bpm + previous.slope * (time - previous.time);
         this._tempoMap = this._tempoMap.filter(entry => entry.time < time);
-        this._tempoMap.push({ time, beat, bpm: seconds > 0 ? startBpm : bpm, slope: seconds > 0 ? (bpm - startBpm) / seconds : 0 });
-        if (seconds > 0) this._tempoMap.push({ time: time + seconds, beat: beat + (startBpm + bpm) * seconds / 120, bpm, slope: 0 });
+        this._tempoMap.push({
+            time,
+            beat,
+            bpm: seconds > 0 ? startBpm : bpm,
+            slope: seconds > 0 ? (bpm - startBpm) / seconds : 0,
+        });
+        if (seconds > 0) this._tempoMap.push({
+            time: time + seconds,
+            beat: beat + (startBpm + bpm) * seconds / 120,
+            bpm,
+            slope: 0,
+        });
         for (const track of trackRegistry.values()) {
             for (const ramp of track._scheduledRamps || []) {
                 if (ramp.startBeat !== undefined) ramp.scheduled = false;
@@ -1315,7 +1335,12 @@ export class MotifEngine {
         const startTime = this._tempoChangeTime();
         const endTime = startTime + seconds;
         const startBpm = this._mapTempoChange(bpm, startTime, options.smooth === true ? seconds : 0);
-        this._tempoRamp = options.smooth === true && seconds > 0 ? { startBpm, targetBpm: bpm, startTime, endTime } : null;
+        this._tempoRamp = options.smooth === true && seconds > 0 ? {
+            startBpm,
+            targetBpm: bpm,
+            startTime,
+            endTime,
+        } : null;
 
         if (this.bpmParam) {
             // Anchor the ramp at the current value and current time
@@ -1413,7 +1438,13 @@ export class MotifEngine {
             throw new TypeError("compressor must be a boolean or a compression settings object.");
         }
         if (compressor && typeof compressor === "object") {
-            const ranges = { threshold: [-100, 0], knee: [0, 40], ratio: [1, 20], attack: [0, 1], release: [0, 1] };
+            const ranges = {
+                threshold: [-100, 0],
+                knee: [0, 40],
+                ratio: [1, 20],
+                attack: [0, 1],
+                release: [0, 1],
+            };
             for (const [key, value] of Object.entries(compressor)) {
                 if (!Object.hasOwn(ranges, key)) throw new TypeError(`Unknown compressor option '${key}'.`);
                 const [min, max] = ranges[key];
@@ -3459,7 +3490,7 @@ const MotifSynths = {
 
     // Solo violin: sixteen body-weighted harmonics, bow noise, and delayed pitch/timbre vibrato.
 
-    'orch-violin': (ctx) => {
+    "orch-violin": (ctx) => {
         const s = ctx.state, sr = ctx.sampleRate, inputFreq = ctx.freq;
         if (!(sr > 0) || !Number.isFinite(sr) || !(inputFreq > 0) || !Number.isFinite(inputFreq)) return 0;
         const f = Math.min(inputFreq, sr * 0.49);
@@ -3729,7 +3760,7 @@ const MotifSynths = {
         // Body color updates at control rate; harmonic guards follow pitch immediately.
 
         if (s.maskProfile !== s.lastProfileFreq ||
-                (s.maskFreq !== f && (f > s.fullBandLimit || s.maskFreq > s.fullBandLimit))) {
+            (s.maskFreq !== f && (f > s.fullBandLimit || s.maskFreq > s.fullBandLimit))) {
             s.maskProfile = s.lastProfileFreq;
             s.maskFreq = f;
             const guardedStep = f * 1.0131 / sr;
@@ -3908,7 +3939,7 @@ const MotifSynths = {
 
     // Solo cello: thirty-two bowed harmonics retain low-register body and bridge color.
 
-    'orch-cello': (ctx) => {
+    "orch-cello": (ctx) => {
         const s = ctx.state;
         const sr = ctx.sampleRate;
         const inputFreq = ctx.freq;
@@ -3978,70 +4009,102 @@ const MotifSynths = {
                     const a = body * ripple / (n * (1.0 + loss * loss));
                     sum += a;
                     switch (n) {
-                        case 1: s.h1 = a;
-                        break;
-                        case 2: s.h2 = a;
-                        break;
-                        case 3: s.h3 = a;
-                        break;
-                        case 4: s.h4 = a;
-                        break;
-                        case 5: s.h5 = a;
-                        break;
-                        case 6: s.h6 = a;
-                        break;
-                        case 7: s.h7 = a;
-                        break;
-                        case 8: s.h8 = a;
-                        break;
-                        case 9: s.h9 = a;
-                        break;
-                        case 10: s.h10 = a;
-                        break;
-                        case 11: s.h11 = a;
-                        break;
-                        case 12: s.h12 = a;
-                        break;
-                        case 13: s.h13 = a;
-                        break;
-                        case 14: s.h14 = a;
-                        break;
-                        case 15: s.h15 = a;
-                        break;
-                        case 16: s.h16 = a;
-                        break;
-                        case 17: s.h17 = a;
-                        break;
-                        case 18: s.h18 = a;
-                        break;
-                        case 19: s.h19 = a;
-                        break;
-                        case 20: s.h20 = a;
-                        break;
-                        case 21: s.h21 = a;
-                        break;
-                        case 22: s.h22 = a;
-                        break;
-                        case 23: s.h23 = a;
-                        break;
-                        case 24: s.h24 = a;
-                        break;
-                        case 25: s.h25 = a;
-                        break;
-                        case 26: s.h26 = a;
-                        break;
-                        case 27: s.h27 = a;
-                        break;
-                        case 28: s.h28 = a;
-                        break;
-                        case 29: s.h29 = a;
-                        break;
-                        case 30: s.h30 = a;
-                        break;
-                        case 31: s.h31 = a;
-                        break;
-                        case 32: s.h32 = a;
-                        break;
+                        case 1:
+                            s.h1 = a;
+                            break;
+                        case 2:
+                            s.h2 = a;
+                            break;
+                        case 3:
+                            s.h3 = a;
+                            break;
+                        case 4:
+                            s.h4 = a;
+                            break;
+                        case 5:
+                            s.h5 = a;
+                            break;
+                        case 6:
+                            s.h6 = a;
+                            break;
+                        case 7:
+                            s.h7 = a;
+                            break;
+                        case 8:
+                            s.h8 = a;
+                            break;
+                        case 9:
+                            s.h9 = a;
+                            break;
+                        case 10:
+                            s.h10 = a;
+                            break;
+                        case 11:
+                            s.h11 = a;
+                            break;
+                        case 12:
+                            s.h12 = a;
+                            break;
+                        case 13:
+                            s.h13 = a;
+                            break;
+                        case 14:
+                            s.h14 = a;
+                            break;
+                        case 15:
+                            s.h15 = a;
+                            break;
+                        case 16:
+                            s.h16 = a;
+                            break;
+                        case 17:
+                            s.h17 = a;
+                            break;
+                        case 18:
+                            s.h18 = a;
+                            break;
+                        case 19:
+                            s.h19 = a;
+                            break;
+                        case 20:
+                            s.h20 = a;
+                            break;
+                        case 21:
+                            s.h21 = a;
+                            break;
+                        case 22:
+                            s.h22 = a;
+                            break;
+                        case 23:
+                            s.h23 = a;
+                            break;
+                        case 24:
+                            s.h24 = a;
+                            break;
+                        case 25:
+                            s.h25 = a;
+                            break;
+                        case 26:
+                            s.h26 = a;
+                            break;
+                        case 27:
+                            s.h27 = a;
+                            break;
+                        case 28:
+                            s.h28 = a;
+                            break;
+                        case 29:
+                            s.h29 = a;
+                            break;
+                        case 30:
+                            s.h30 = a;
+                            break;
+                        case 31:
+                            s.h31 = a;
+                            break;
+                        case 32:
+                            s.h32 = a;
+                            break;
                     }
                 }
                 s.toneGain = 0.84 / Math.max(sum, 0.000000001);
@@ -4068,7 +4131,7 @@ const MotifSynths = {
         // Body color updates at control rate; harmonic guards follow pitch immediately.
 
         if (s.maskProfile !== s.lastProfileFreq ||
-                (s.maskFreq !== baseFreq && (baseFreq > s.fullBandLimit || s.maskFreq > s.fullBandLimit))) {
+            (s.maskFreq !== baseFreq && (baseFreq > s.fullBandLimit || s.maskFreq > s.fullBandLimit))) {
             s.maskProfile = s.lastProfileFreq;
             s.maskFreq = baseFreq;
             const guardedStep = baseFreq * 1.012 / sr;
@@ -4342,7 +4405,7 @@ const MotifSynths = {
 
     // French horn: twenty-four lip harmonics, a rounded bell contour, and a gradual brass bloom.
 
-    'orch-french-horn': (ctx) => {
+    "orch-french-horn": (ctx) => {
         const s = ctx.state;
         const sr = ctx.sampleRate;
         const inputFreq = ctx.freq;
@@ -4403,54 +4466,78 @@ const MotifSynths = {
                     rolloff *= 0.8780954309205613;
                     sum += a;
                     switch (n) {
-                        case 1: s.h1 = a;
-                        break;
-                        case 2: s.h2 = a;
-                        break;
-                        case 3: s.h3 = a;
-                        break;
-                        case 4: s.h4 = a;
-                        break;
-                        case 5: s.h5 = a;
-                        break;
-                        case 6: s.h6 = a;
-                        break;
-                        case 7: s.h7 = a;
-                        break;
-                        case 8: s.h8 = a;
-                        break;
-                        case 9: s.h9 = a;
-                        break;
-                        case 10: s.h10 = a;
-                        break;
-                        case 11: s.h11 = a;
-                        break;
-                        case 12: s.h12 = a;
-                        break;
-                        case 13: s.h13 = a;
-                        break;
-                        case 14: s.h14 = a;
-                        break;
-                        case 15: s.h15 = a;
-                        break;
-                        case 16: s.h16 = a;
-                        break;
-                        case 17: s.h17 = a;
-                        break;
-                        case 18: s.h18 = a;
-                        break;
-                        case 19: s.h19 = a;
-                        break;
-                        case 20: s.h20 = a;
-                        break;
-                        case 21: s.h21 = a;
-                        break;
-                        case 22: s.h22 = a;
-                        break;
-                        case 23: s.h23 = a;
-                        break;
-                        case 24: s.h24 = a;
-                        break;
+                        case 1:
+                            s.h1 = a;
+                            break;
+                        case 2:
+                            s.h2 = a;
+                            break;
+                        case 3:
+                            s.h3 = a;
+                            break;
+                        case 4:
+                            s.h4 = a;
+                            break;
+                        case 5:
+                            s.h5 = a;
+                            break;
+                        case 6:
+                            s.h6 = a;
+                            break;
+                        case 7:
+                            s.h7 = a;
+                            break;
+                        case 8:
+                            s.h8 = a;
+                            break;
+                        case 9:
+                            s.h9 = a;
+                            break;
+                        case 10:
+                            s.h10 = a;
+                            break;
+                        case 11:
+                            s.h11 = a;
+                            break;
+                        case 12:
+                            s.h12 = a;
+                            break;
+                        case 13:
+                            s.h13 = a;
+                            break;
+                        case 14:
+                            s.h14 = a;
+                            break;
+                        case 15:
+                            s.h15 = a;
+                            break;
+                        case 16:
+                            s.h16 = a;
+                            break;
+                        case 17:
+                            s.h17 = a;
+                            break;
+                        case 18:
+                            s.h18 = a;
+                            break;
+                        case 19:
+                            s.h19 = a;
+                            break;
+                        case 20:
+                            s.h20 = a;
+                            break;
+                        case 21:
+                            s.h21 = a;
+                            break;
+                        case 22:
+                            s.h22 = a;
+                            break;
+                        case 23:
+                            s.h23 = a;
+                            break;
+                        case 24:
+                            s.h24 = a;
+                            break;
                     }
                 }
                 s.toneGain = 0.84 / Math.max(sum, 0.000000001);
@@ -4479,7 +4566,7 @@ const MotifSynths = {
         // Body color updates at control rate; harmonic guards follow pitch immediately.
 
         if (s.maskProfile !== s.lastProfileFreq ||
-                (s.maskFreq !== baseFreq && (baseFreq > s.fullBandLimit || s.maskFreq > s.fullBandLimit))) {
+            (s.maskFreq !== baseFreq && (baseFreq > s.fullBandLimit || s.maskFreq > s.fullBandLimit))) {
             s.maskProfile = s.lastProfileFreq;
             s.maskFreq = baseFreq;
             const guardedStep = baseFreq * 1.006 / sr;
@@ -4689,7 +4776,7 @@ const MotifSynths = {
 
     // Eight tapered flute partials with breath onset, pressure bloom, and delayed vibrato.
 
-    'orch-flute': (ctx) => {
+    "orch-flute": (ctx) => {
         const s = ctx.state;
         const sr = ctx.sampleRate;
         const f = ctx.freq;
@@ -4837,7 +4924,7 @@ const MotifSynths = {
 
     // Sixteen formant-weighted oboe partials with a focused reed attack and delayed vibrato.
 
-    'orch-oboe': (ctx) => {
+    "orch-oboe": (ctx) => {
         const s = ctx.state;
         const sr = ctx.sampleRate;
         const f = ctx.freq;
@@ -4903,38 +4990,54 @@ const MotifSynths = {
                         * (hz / (hz + 450)) / (n * (1 + rolloff * rolloff));
                     total += weight;
                     switch (n) {
-                        case 1: s.a1 = weight;
-                        break;
-                        case 2: s.a2 = weight;
-                        break;
-                        case 3: s.a3 = weight;
-                        break;
-                        case 4: s.a4 = weight;
-                        break;
-                        case 5: s.a5 = weight;
-                        break;
-                        case 6: s.a6 = weight;
-                        break;
-                        case 7: s.a7 = weight;
-                        break;
-                        case 8: s.a8 = weight;
-                        break;
-                        case 9: s.a9 = weight;
-                        break;
-                        case 10: s.a10 = weight;
-                        break;
-                        case 11: s.a11 = weight;
-                        break;
-                        case 12: s.a12 = weight;
-                        break;
-                        case 13: s.a13 = weight;
-                        break;
-                        case 14: s.a14 = weight;
-                        break;
-                        case 15: s.a15 = weight;
-                        break;
-                        case 16: s.a16 = weight;
-                        break;
+                        case 1:
+                            s.a1 = weight;
+                            break;
+                        case 2:
+                            s.a2 = weight;
+                            break;
+                        case 3:
+                            s.a3 = weight;
+                            break;
+                        case 4:
+                            s.a4 = weight;
+                            break;
+                        case 5:
+                            s.a5 = weight;
+                            break;
+                        case 6:
+                            s.a6 = weight;
+                            break;
+                        case 7:
+                            s.a7 = weight;
+                            break;
+                        case 8:
+                            s.a8 = weight;
+                            break;
+                        case 9:
+                            s.a9 = weight;
+                            break;
+                        case 10:
+                            s.a10 = weight;
+                            break;
+                        case 11:
+                            s.a11 = weight;
+                            break;
+                        case 12:
+                            s.a12 = weight;
+                            break;
+                        case 13:
+                            s.a13 = weight;
+                            break;
+                        case 14:
+                            s.a14 = weight;
+                            break;
+                        case 15:
+                            s.a15 = weight;
+                            break;
+                        case 16:
+                            s.a16 = weight;
+                            break;
                     }
                 }
                 s.norm = 1 / total;
@@ -6316,7 +6419,7 @@ const MotifSamples = (() => {
                 [0.810, 0.170, 18.0, 0.025], [1.650, 0.105, 12.5, 0.021],
                 [2.070, 0.090, 15.0, 0.018], [2.730, 0.057, 20.0, 0.015],
                 [3.760, 0.040, 24.0, 0.012], [5.230, 0.028, 33.0, 0.010],
-                [7.370, 0.018, 46.0, 0.008], [10.410, 0.012, 65.0, 0.006]
+                [7.370, 0.018, 46.0, 0.008], [10.410, 0.012, 65.0, 0.006],
             ];
             const modes = [];
             const glideStep = Math.exp(-1 / (sampleRate * 0.060));
@@ -6332,7 +6435,7 @@ const MotifSamples = (() => {
                     step: TWO_PI * frequency / sampleRate,
                     amplitude: specification[1] * edge * edge * (3 - 2 * edge),
                     decay: Math.exp(-specification[2] / sampleRate),
-                    glideArea: specification[3] * glideIntegral
+                    glideArea: specification[3] * glideIntegral,
                 });
             }
             const noiseDecay = Math.exp(-1 / (sampleRate * 0.016));
@@ -6587,7 +6690,7 @@ const MotifSamples = (() => {
 
         // Finger-plucked concert harp: almost harmonic strings, two decay polarizations, and a quiet soundboard bloom; C4 root.
 
-        'orch-harp-c4': () => {
+        "orch-harp-c4": () => {
             const buffer = createBuffer(5.5);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
@@ -6614,7 +6717,7 @@ const MotifSamples = (() => {
                     s: radius * Math.sin(angle),
                     framesLeft: Math.ceil(t60 * sampleRate * 3),
                     rise: riseSeconds > 0 ? 1 : 0,
-                    riseDecay: riseSeconds > 0 ? Math.exp(-1 / (sampleRate * riseSeconds)) : 0
+                    riseDecay: riseSeconds > 0 ? Math.exp(-1 / (sampleRate * riseSeconds)) : 0,
                 });
             };
 
@@ -6681,7 +6784,7 @@ const MotifSamples = (() => {
 
         // Soft felt celesta strike: an inharmonic steel-plate attack settling into its tuned wooden resonator; sounding C5 root.
 
-        'orch-celesta-c5': () => {
+        "orch-celesta-c5": () => {
             const buffer = createBuffer(5.8);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
@@ -6708,7 +6811,7 @@ const MotifSamples = (() => {
                     s: radius * Math.sin(angle),
                     framesLeft: Math.ceil(t60 * sampleRate * 3),
                     rise: riseSeconds > 0 ? 1 : 0,
-                    riseDecay: riseSeconds > 0 ? Math.exp(-1 / (sampleRate * riseSeconds)) : 0
+                    riseDecay: riseSeconds > 0 ? Math.exp(-1 / (sampleRate * riseSeconds)) : 0,
                 });
             };
 
@@ -6769,7 +6872,7 @@ const MotifSamples = (() => {
 
         // C5 tubular bell: capped-tube flexural modes with a C5 residue pitch and a hard mallet strike.
 
-        'orch-tubular-bells-c5': () => {
+        "orch-tubular-bells-c5": () => {
             const buffer = createBuffer(5.8);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
@@ -6781,7 +6884,7 @@ const MotifSamples = (() => {
                 [2.000, 0.720, 1.34], [2.988, 0.440, 1.56], [4.018, 0.250, 1.88],
                 [5.280, 0.150, 2.35], [6.680, 0.105, 3.00], [8.220, 0.078, 3.90],
                 [9.910, 0.055, 4.95], [11.780, 0.040, 6.20], [13.820, 0.027, 7.70],
-                [16.030, 0.018, 9.40], [18.400, 0.012, 11.2]
+                [16.030, 0.018, 9.40], [18.400, 0.012, 11.2],
             ];
             const modes = [];
             for (let k = 0; k < specifications.length; k++) {
@@ -6800,7 +6903,7 @@ const MotifSamples = (() => {
                     amplitude: amplitude * 0.80,
                     amplitude2: amplitude * 0.20,
                     decay: Math.exp(-specification[2] / sampleRate),
-                    decay2: Math.exp(-(specification[2] * 0.79 + 0.08) / sampleRate)
+                    decay2: Math.exp(-(specification[2] * 0.79 + 0.08) / sampleRate),
                 });
             }
             const noiseDecay = Math.exp(-1 / (sampleRate * 0.0031));

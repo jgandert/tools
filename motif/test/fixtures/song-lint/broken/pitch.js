@@ -1,1 +1,1 @@
-Track('bad').synth('sine').note([NaN, Infinity, 'H3']);
+Track("bad").synth("sine").note([NaN, Infinity, "H3"]);

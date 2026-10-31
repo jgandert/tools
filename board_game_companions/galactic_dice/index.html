@@ -1,17 +1,17 @@
 <!doctype html>
 <html lang="en" class="theme-blue">
 
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="light dark">
-        <meta name="description"
-            content="A private table companion for setting up and learning a space-faring dice game.">
-        <title>Unofficial Guide - Roll for the Galaxy</title>
-        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
-        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
-        <link rel="stylesheet" type="text/css" href="../../one.css">
-        <style>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="A private table companion for setting up and learning a space-faring dice game.">
+    <title>Unofficial Guide - Roll for the Galaxy</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../../one.css">
+    <style>
         :root {
             --phase-one: light-dark(#3f6f9f, #9ac7f5);
             --phase-two: light-dark(#76558f, #d3afe8);
@@ -425,680 +425,719 @@
             display: none;
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <a href="#content" class="skip-link">Skip to guide</a>
-        <input type="checkbox" id="aside-state" class="aside-state-toggle"
-            aria-label="Toggle guide options">
+<body>
+<a href="#content" class="skip-link">Skip to guide</a>
+<input type="checkbox" id="aside-state" class="aside-state-toggle"
+       aria-label="Toggle guide options">
 
-        <header>
-            <label for="aside-state" class="aside-toggle-btn"></label>
-            <hgroup>
-                <h1>Unofficial Guide - Roll for the Galaxy</h1>
-                <p>Setup and round companion</p>
-            </hgroup>
+<header>
+    <label for="aside-state" class="aside-toggle-btn"></label>
+    <hgroup>
+        <h1>Unofficial Guide - Roll for the Galaxy</h1>
+        <p>Setup and round companion</p>
+    </hgroup>
 
-            <nav aria-label="Primary">
-                <ul>
-                    <li>
-                        <a href="#setup">Setup</a>
-                    </li>
-                    <li>
-                        <a href="#round">Round</a>
-                    </li>
-                    <li>
-                        <a href="#reference">Reference</a>
-                    </li>
-                </ul>
-            </nav>
-        </header>
+    <nav aria-label="Primary">
+        <ul>
+            <li>
+                <a href="#setup">Setup</a>
+            </li>
+            <li>
+                <a href="#round">Round</a>
+            </li>
+            <li>
+                <a href="#reference">Reference</a>
+            </li>
+        </ul>
+    </nav>
+</header>
 
-        <main id="content">
-            <section id="setup" aria-labelledby="setup-title">
-                <h2 id="setup-title">Set up the table</h2>
-                <p>Build the shared supply first, then prepare each player area. Guide adjusts quantities
-                    and two-player rules automatically.</p>
+<main id="content">
+    <section id="setup" aria-labelledby="setup-title">
+        <h2 id="setup-title">Set up the table</h2>
+        <p>Build the shared supply first, then prepare each player area. Guide adjusts quantities
+            and two-player rules automatically.</p>
 
-                <div class="setup-status">
-                    <output id="setup-step-label" aria-live="polite">Step 1 of 5</output>
-                    <span>
+        <div class="setup-status">
+            <output id="setup-step-label" aria-live="polite">Step 1 of 5</output>
+            <span>
                         <strong id="setup-player-summary">4</strong> players
                     </span>
+        </div>
+
+        <article class="setup-panel" data-setup-panel="0">
+            <div class="step-heading">
+                <h3 tabindex="-1">Build shared supply</h3>
+            </div>
+            <div class="step-layout">
+                <div>
+                    <p>Place four shared groups within everyone's reach.</p>
+                    <ul class="component-list">
+                        <li>
+                            Put all <strong>55 double-sided game tiles</strong> in the bag.
+                        </li>
+                        <li>Place all unclaimed dice nearby as dice supply.</li>
+                        <li>Lay out five phase tiles in numeric order, inactive side up.</li>
+                        <li>
+                            Prepare <strong>
+                            <output data-vp-total>48</output>
+                            VP
+                        </strong> in 1- and
+                            5-point chips: 12 per player.
+                        </li>
+                        <li>Set every 10-point chip aside. Return unused 1- and 5-point chips
+                            to the box.
+                        </li>
+                    </ul>
+                    <p class="note">
+                        Set-aside 10-point chips only record points after the initial VP chip pool
+                        runs out. Emptying that initial pool still triggers game end.
+                    </p>
                 </div>
 
-                <article class="setup-panel" data-setup-panel="0">
-                    <div class="step-heading">
-                        <h3 tabindex="-1">Build shared supply</h3>
-                    </div>
-                    <div class="step-layout">
-                        <div>
-                            <p>Place four shared groups within everyone's reach.</p>
-                            <ul class="component-list">
-                                <li>
-                                    Put all <strong>55 double-sided game tiles</strong> in the bag.
-                                </li>
-                                <li>Place all unclaimed dice nearby as dice supply.</li>
-                                <li>Lay out five phase tiles in numeric order, inactive side up.</li>
-                                <li>
-                                    Prepare <strong>
-                                        <output data-vp-total>48</output> VP
-                                    </strong> in 1- and
-                                    5-point chips: 12 per player.</li>
-                                <li>Set every 10-point chip aside. Return unused 1- and 5-point chips
-                                    to the box.</li>
-                            </ul>
-                            <p class="note">
-                                Set-aside 10-point chips only record points after the initial VP chip pool
-                                runs out. Emptying that initial pool still triggers game end.
-                            </p>
+                <figure class="table-layout">
+                    <div class="supply-grid">
+                        <div class="supply-zone">
+                            <strong>Game tile bag</strong>
+                            <span>55 tiles</span>
                         </div>
-
-                        <figure class="table-layout">
-                            <div class="supply-grid">
-                                <div class="supply-zone">
-                                    <strong>Game tile bag</strong>
-                                    <span>55 tiles</span>
-                                </div>
-                                <div class="supply-zone">
-                                    <strong>Dice supply</strong>
-                                    <span>Grouped by color</span>
-                                </div>
-                                <div class="supply-zone">
-                                    <strong>Phase tiles</strong>
-                                    <span>I · II · III · IV · V</span>
-                                </div>
-                                <div class="supply-zone">
-                                    <strong>VP chip pool</strong>
-                                    <span>
+                        <div class="supply-zone">
+                            <strong>Dice supply</strong>
+                            <span>Grouped by color</span>
+                        </div>
+                        <div class="supply-zone">
+                            <strong>Phase tiles</strong>
+                            <span>I · II · III · IV · V</span>
+                        </div>
+                        <div class="supply-zone">
+                            <strong>VP chip pool</strong>
+                            <span>
                                         <output data-vp-total>48</output> points
                                     </span>
-                                </div>
-                            </div>
-                            <figcaption>Keep the active VP chip pool separate from the 10-point
-                                reserve.</figcaption>
-                        </figure>
-                    </div>
-                </article>
-
-                <article class="setup-panel" data-setup-panel="1" hidden>
-                    <div class="step-heading">
-                        <h3 tabindex="-1">Prepare player stations</h3>
-                    </div>
-                    <div class="step-layout">
-                        <div>
-                            <p>Give every player the same five-part kit.</p>
-                            <ul class="component-list">
-                                <li>One dice cup</li>
-                                <li>One player mat</li>
-                                <li>
-                                    One Galactic Credit marker, placed at <strong>$1</strong>
-                                </li>
-                                <li>One player screen</li>
-                                <li>One phase strip, kept behind the player screen</li>
-                            </ul>
-                            <p>Return unused player components to the box.</p>
                         </div>
-
-                        <figure class="table-layout">
-                            <ol id="station-grid" class="station-grid" aria-label="Player stations"></ol>
-                            <figcaption>The screen hides rolled dice and assignments. The tableau and top
-                                tile of each construction stack are visible; tiles beneath the top and
-                                tiles abandoned during Explore are secret. Players must name a stack's
-                                size when asked.</figcaption>
-                        </figure>
                     </div>
-                </article>
+                    <figcaption>Keep the active VP chip pool separate from the 10-point
+                        reserve.
+                    </figcaption>
+                </figure>
+            </div>
+        </article>
 
-                <article class="setup-panel" data-setup-panel="2" hidden>
-                    <div class="step-heading">
-                        <h3 tabindex="-1">Create starting empires</h3>
-                    </div>
-                    <div class="step-layout">
-                        <div>
-                            <p>Give each player one random faction tile and one random home world. Return
-                                unused starting tiles to the box.</p>
-                            <ul class="component-list">
-                                <li>Place both face up beside the player mat; together they form the starting
-                                    tableau.</li>
-                                <li>The wide faction tile counts as 2 tile squares.</li>
-                                <li>The home world tile counts as 1 tile square.</li>
-                            </ul>
-                            <p class="note">
-                                Every player begins at <strong>3 of 12 tableau squares</strong> needed to
-                                trigger game end.
-                            </p>
-                        </div>
-
-                        <figure class="table-layout">
-                            <div class="tile-pair">
-                                <div class="tile-shape">
-                                    <div>
-                                        <strong>Faction tile</strong>
-                                        <span>2 squares</span>
-                                    </div>
-                                </div>
-                                <div class="tile-shape">
-                                    <div>
-                                        <strong>Home world tile</strong>
-                                        <span>1 square</span>
-                                    </div>
-                                </div>
-                                <div class="tile-shape">
-                                    <div>
-                                        <strong>Starting tableau</strong>
-                                        <span>Keep face up and visible</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <figcaption>Tableau is built empire; construction zone is separate.</figcaption>
-                        </figure>
-                    </div>
-                </article>
-
-                <article class="setup-panel" data-setup-panel="3" hidden>
-                    <div class="step-heading">
-                        <h3 tabindex="-1">Seed construction zones</h3>
-                    </div>
-                    <div class="step-layout">
-                        <div>
-                            <p>Each player draws two tiles from the bag. Every tile has a development on
-                                one side and a world on the other.</p>
-                            <ul class="component-list">
-                                <li>Place one tile development-side up on left stack.</li>
-                                <li>Place other tile world-side up on right stack.</li>
-                                <li data-first-game-only>For the first game, place the lowest-cost
-                                    development on the left and the lowest-cost world on the right.</li>
-                                <li data-experienced-game-only hidden>Choose either side of each tile, then
-                                    place one in each stack.</li>
-                            </ul>
-                            <p>Do not put both tiles in the same stack.</p>
-                        </div>
-
-                        <figure class="table-layout">
-                            <div class="construction-zone">
-                                <div class="project-stack">
-                                    <strong>Development stack</strong>
-                                    <span>Left side · top tile receives workers</span>
-                                </div>
-                                <div class="project-stack">
-                                    <strong>World stack</strong>
-                                    <span>Right side · top tile receives workers</span>
-                                </div>
-                            </div>
-                            <figcaption>Future tiles go under a stack. Only top project can be built.</figcaption>
-                        </figure>
-                    </div>
-                </article>
-
-                <article class="setup-panel" data-setup-panel="4" hidden>
-                    <div class="step-heading">
-                        <h3 tabindex="-1">Place starting dice</h3>
-                    </div>
-                    <div class="step-layout">
-                        <div>
-                            <p>The fixed baseline uses five Home (white) dice per player. Starting tiles
-                                can grant more dice in different locations.</p>
-                            <ul class="component-list">
-                                <li>
-                                    Put <strong>3 Home dice</strong> in the dice cup.
-                                </li>
-                                <li>
-                                    Put <strong>2 Home dice</strong> in the Citizenry.
-                                </li>
-                                <li>Take every die granted by worlds in the starting tableau. Follow each
-                                    icon: dice cup, Citizenry, or good on a world.</li>
-                                <li>Take nothing from the unbuilt world in the construction zone.</li>
-                            </ul>
-                            <details>
-                                <summary>Starting tile exceptions</summary>
-                                <p>The Doomed World home world grants no starting die; set its owner's
-                                    marker to $8. The Destroyed Colony faction tile shows two worlds; take
-                                    the listed starting dice from both.</p>
-                            </details>
-                        </div>
-
-                        <figure class="table-layout">
-                            <div class="zone-flow">
-                                <div class="zone-line">
-                                    <strong>Dice cup</strong>
-                                    <span>3 Home dice + dice granted directly to the dice cup</span>
-                                </div>
-                                <div class="zone-line">
-                                    <strong>Citizenry</strong>
-                                    <span>2 Home dice + dice granted directly to Citizenry</span>
-                                </div>
-                                <div class="zone-line">
-                                    <strong>Starting worlds</strong>
-                                    <span>Place any granted starting goods on the indicated world</span>
-                                </div>
-                            </div>
-                            <figcaption>Icons on starting tableau override generic placement.</figcaption>
-                        </figure>
-                    </div>
-                </article>
-
-                <article class="setup-panel" data-setup-panel="5" hidden>
-                    <div class="step-heading">
-                        <h3 tabindex="-1">Table is ready</h3>
-                    </div>
-                    <div class="ready-summary" role="status">
-                        <p>
-                            <strong>
-                                <output data-player-count>4</output> players
-                            </strong> can begin with
-                            <strong>
-                                <output data-vp-total>48</output> VP
-                            </strong> in the initial pool.
-                        </p>
-                        <p>Keep screens up during Roll and Assign. Play simultaneously; if a phase needs
-                            strict timing, resolve it clockwise, starting with the player whose faction
-                            tile has the lowest number.</p>
-                        <a href="#round" class="btn btn-primary">Learn first round</a>
-                    </div>
-                </article>
-
-                <nav class="setup-actions" aria-label="Setup step controls">
-                    <button type="button" id="setup-back">
-                        <span class="sym" aria-hidden="true">arrow_back</span>
-                        Back
-                    </button>
-                    <button type="button" id="setup-next" class="btn-primary">
-                        <span id="setup-next-label">Continue</span>
-                        <span class="sym" aria-hidden="true">arrow_forward</span>
-                    </button>
-                </nav>
-            </section>
-
-            <section id="round" aria-labelledby="round-title">
-                <h2 id="round-title">Learn a round</h2>
-                <p>All players perform each step together. Only phases selected this round occur.</p>
-
-                <ol class="round-track" aria-label="Round steps">
-                    <li>
-                        <button type="button" data-round-button="0" aria-current="step"
-                            aria-controls="round-roll">
-                            <span>Step 1</span>
-                            Roll
-                        </button>
-                    </li>
-                    <li>
-                        <button type="button" data-round-button="1" aria-controls="round-assign">
-                            <span>Step 2</span>
-                            Assign
-                        </button>
-                    </li>
-                    <li>
-                        <button type="button" data-round-button="2" aria-controls="round-reveal">
-                            <span>Step 3</span>
-                            Reveal
-                        </button>
-                    </li>
-                    <li>
-                        <button type="button" data-round-button="3" aria-controls="round-phases">
-                            <span>Step 4</span>
-                            Do phases
-                        </button>
-                    </li>
-                    <li>
-                        <button type="button" data-round-button="4" aria-controls="round-manage">
-                            <span>Step 5</span>
-                            Manage
-                        </button>
-                    </li>
-                </ol>
-
-                <article id="round-roll" class="round-panel" data-round-panel="0">
-                    <h3 tabindex="-1">Roll behind screens</h3>
-                    <p>Every die in the dice cup is a worker for this round. Roll all of them behind the
-                        player screen and keep results hidden.</p>
-                    <ol class="worker-cycle" aria-label="Worker cycle">
-                        <li>
-                            <strong>Dice cup</strong>
-                            <br>Available dice
-                        </li>
-                        <li>
-                            <strong>Roll</strong>
-                            <br>Hidden workers
-                        </li>
-                        <li>
-                            <strong>Task</strong>
-                            <br>Selected phases
-                        </li>
-                        <li>
-                            <strong>Citizenry</strong>
-                            <br>Await recruitment
-                        </li>
-                    </ol>
-                    <p class="note">Dice outside the dice cup are not rolled: Citizenry, goods, and workers
-                        in the construction zone stay where they are.</p>
-                </article>
-
-                <article id="round-assign" class="round-panel" data-round-panel="1" hidden>
-                    <h3 tabindex="-1">Assign and choose one phase</h3>
-                    <ol class="component-list">
-                        <li>Place each worker below the column matching its rolled face. Wild faces may
-                            enter any column.</li>
-                        <li>Move exactly one worker onto the phase strip to select a phase. Ignore its
-                            face; this die still works in the selected phase.</li>
-                        <li>After selecting a phase, apply Reassign powers. Each can be used at most once
-                            per round; a power is optional only when its text says "may."</li>
-                    </ol>
-                    <ol class="assignment-strip" aria-label="Phase assignment columns">
-                        <li>
-                            I<br>Explore
-                        </li>
-                        <li>
-                            II<br>Develop
-                        </li>
-                        <li>
-                            III<br>Settle
-                        </li>
-                        <li>
-                            IV<br>Produce
-                        </li>
-                        <li>
-                            V<br>Ship
-                        </li>
-                    </ol>
-                    <p class="note">
-                        <strong>Dictate:</strong> park any worker in the Dictate area to move a
-                        different worker to another column. The parked die returns to the dice cup after
-                        reveal.</p>
-                </article>
-
-                <article id="round-reveal" class="round-panel" data-round-panel="2" hidden>
-                    <h3 tabindex="-1">Reveal selected phases</h3>
-                    <p>Lift player screens together and announce selected phases. Flip matching phase
-                        tiles to the active side.</p>
+        <article class="setup-panel" data-setup-panel="1" hidden>
+            <div class="step-heading">
+                <h3 tabindex="-1">Prepare player stations</h3>
+            </div>
+            <div class="step-layout">
+                <div>
+                    <p>Give every player the same five-part kit.</p>
                     <ul class="component-list">
-                        <li>Return every Dictate die to its owner's dice cup.</li>
-                        <li>Return workers assigned beneath inactive phases to the dice cup.</li>
-                        <li>Leave workers under active phases for task resolution.</li>
-                    </ul>
-                    <p class="note" id="two-player-reveal" hidden>
-                        <strong>Two players:</strong> roll one spare Home (white) die. If its face names a
-                        phase neither player selected, activate that phase too. A wild face changes nothing;
-                        return the die to the shared supply.
-                    </p>
-                </article>
-
-                <article id="round-phases" class="round-panel" data-round-panel="3" hidden>
-                    <h3 tabindex="-1">Resolve active phases in order</h3>
-                    <p>Everyone acts simultaneously in phase I through V. Skip inactive phases. Use every
-                        assigned worker if a task is possible, one at a time.</p>
-                    <ol class="phase-strip" aria-label="Phases in resolution order">
-                        <li class="phase-one">
-                            <strong>I · Explore</strong>
-                            <span>Scout or gain Galactic Credits</span>
-                        </li>
-                        <li class="phase-two">
-                            <strong>II · Develop</strong>
-                            <span>Build technology</span>
-                        </li>
-                        <li class="phase-three">
-                            <strong>III · Settle</strong>
-                            <span>Complete worlds</span>
-                        </li>
-                        <li class="phase-four">
-                            <strong>IV · Produce</strong>
-                            <span>Place goods</span>
-                        </li>
-                        <li class="phase-five">
-                            <strong>V · Ship</strong>
-                            <span>Trade or consume</span>
-                        </li>
-                    </ol>
-                    <p>Dice completing tasks go to Citizenry. Dice left without a possible task return to
-                        the dice cup. Choosing a phase grants no separate bonus.</p>
-                </article>
-
-                <article id="round-manage" class="round-panel" data-round-panel="4" hidden>
-                    <h3 tabindex="-1">Manage empire</h3>
-                    <ol class="steps">
+                        <li>One dice cup</li>
+                        <li>One player mat</li>
                         <li>
+                            One Galactic Credit marker, placed at <strong>$1</strong>
+                        </li>
+                        <li>One player screen</li>
+                        <li>One phase strip, kept behind the player screen</li>
+                    </ul>
+                    <p>Return unused player components to the box.</p>
+                </div>
+
+                <figure class="table-layout">
+                    <ol id="station-grid" class="station-grid" aria-label="Player stations"></ol>
+                    <figcaption>The screen hides rolled dice and assignments. The tableau and top
+                        tile of each construction stack are visible; tiles beneath the top and
+                        tiles abandoned during Explore are secret. Players must name a stack's
+                        size when asked.
+                    </figcaption>
+                </figure>
+            </div>
+        </article>
+
+        <article class="setup-panel" data-setup-panel="2" hidden>
+            <div class="step-heading">
+                <h3 tabindex="-1">Create starting empires</h3>
+            </div>
+            <div class="step-layout">
+                <div>
+                    <p>Give each player one random faction tile and one random home world. Return
+                        unused starting tiles to the box.</p>
+                    <ul class="component-list">
+                        <li>Place both face up beside the player mat; together they form the
+                            starting
+                            tableau.
+                        </li>
+                        <li>The wide faction tile counts as 2 tile squares.</li>
+                        <li>The home world tile counts as 1 tile square.</li>
+                    </ul>
+                    <p class="note">
+                        Every player begins at <strong>3 of 12 tableau squares</strong> needed to
+                        trigger game end.
+                    </p>
+                </div>
+
+                <figure class="table-layout">
+                    <div class="tile-pair">
+                        <div class="tile-shape">
+                            <div>
+                                <strong>Faction tile</strong>
+                                <span>2 squares</span>
+                            </div>
+                        </div>
+                        <div class="tile-shape">
+                            <div>
+                                <strong>Home world tile</strong>
+                                <span>1 square</span>
+                            </div>
+                        </div>
+                        <div class="tile-shape">
+                            <div>
+                                <strong>Starting tableau</strong>
+                                <span>Keep face up and visible</span>
+                            </div>
+                        </div>
+                    </div>
+                    <figcaption>Tableau is built empire; construction zone is separate.</figcaption>
+                </figure>
+            </div>
+        </article>
+
+        <article class="setup-panel" data-setup-panel="3" hidden>
+            <div class="step-heading">
+                <h3 tabindex="-1">Seed construction zones</h3>
+            </div>
+            <div class="step-layout">
+                <div>
+                    <p>Each player draws two tiles from the bag. Every tile has a development on
+                        one side and a world on the other.</p>
+                    <ul class="component-list">
+                        <li>Place one tile development-side up on left stack.</li>
+                        <li>Place other tile world-side up on right stack.</li>
+                        <li data-first-game-only>For the first game, place the lowest-cost
+                            development on the left and the lowest-cost world on the right.
+                        </li>
+                        <li data-experienced-game-only hidden>Choose either side of each tile, then
+                            place one in each stack.
+                        </li>
+                    </ul>
+                    <p>Do not put both tiles in the same stack.</p>
+                </div>
+
+                <figure class="table-layout">
+                    <div class="construction-zone">
+                        <div class="project-stack">
+                            <strong>Development stack</strong>
+                            <span>Left side · top tile receives workers</span>
+                        </div>
+                        <div class="project-stack">
+                            <strong>World stack</strong>
+                            <span>Right side · top tile receives workers</span>
+                        </div>
+                    </div>
+                    <figcaption>Future tiles go under a stack. Only top project can be built.
+                    </figcaption>
+                </figure>
+            </div>
+        </article>
+
+        <article class="setup-panel" data-setup-panel="4" hidden>
+            <div class="step-heading">
+                <h3 tabindex="-1">Place starting dice</h3>
+            </div>
+            <div class="step-layout">
+                <div>
+                    <p>The fixed baseline uses five Home (white) dice per player. Starting tiles
+                        can grant more dice in different locations.</p>
+                    <ul class="component-list">
+                        <li>
+                            Put <strong>3 Home dice</strong> in the dice cup.
+                        </li>
+                        <li>
+                            Put <strong>2 Home dice</strong> in the Citizenry.
+                        </li>
+                        <li>Take every die granted by worlds in the starting tableau. Follow each
+                            icon: dice cup, Citizenry, or good on a world.
+                        </li>
+                        <li>Take nothing from the unbuilt world in the construction zone.</li>
+                    </ul>
+                    <details>
+                        <summary>Starting tile exceptions</summary>
+                        <p>The Doomed World home world grants no starting die; set its owner's
+                            marker to $8. The Destroyed Colony faction tile shows two worlds; take
+                            the listed starting dice from both.</p>
+                    </details>
+                </div>
+
+                <figure class="table-layout">
+                    <div class="zone-flow">
+                        <div class="zone-line">
+                            <strong>Dice cup</strong>
+                            <span>3 Home dice + dice granted directly to the dice cup</span>
+                        </div>
+                        <div class="zone-line">
+                            <strong>Citizenry</strong>
+                            <span>2 Home dice + dice granted directly to Citizenry</span>
+                        </div>
+                        <div class="zone-line">
+                            <strong>Starting worlds</strong>
+                            <span>Place any granted starting goods on the indicated world</span>
+                        </div>
+                    </div>
+                    <figcaption>Icons on starting tableau override generic placement.</figcaption>
+                </figure>
+            </div>
+        </article>
+
+        <article class="setup-panel" data-setup-panel="5" hidden>
+            <div class="step-heading">
+                <h3 tabindex="-1">Table is ready</h3>
+            </div>
+            <div class="ready-summary" role="status">
+                <p>
+                    <strong>
+                        <output data-player-count>4</output>
+                        players
+                    </strong> can begin with
+                    <strong>
+                        <output data-vp-total>48</output>
+                        VP
+                    </strong> in the initial pool.
+                </p>
+                <p>Keep screens up during Roll and Assign. Play simultaneously; if a phase needs
+                    strict timing, resolve it clockwise, starting with the player whose faction
+                    tile has the lowest number.</p>
+                <a href="#round" class="btn btn-primary">Learn first round</a>
+            </div>
+        </article>
+
+        <nav class="setup-actions" aria-label="Setup step controls">
+            <button type="button" id="setup-back">
+                <span class="sym" aria-hidden="true">arrow_back</span>
+                Back
+            </button>
+            <button type="button" id="setup-next" class="btn-primary">
+                <span id="setup-next-label">Continue</span>
+                <span class="sym" aria-hidden="true">arrow_forward</span>
+            </button>
+        </nav>
+    </section>
+
+    <section id="round" aria-labelledby="round-title">
+        <h2 id="round-title">Learn a round</h2>
+        <p>All players perform each step together. Only phases selected this round occur.</p>
+
+        <ol class="round-track" aria-label="Round steps">
+            <li>
+                <button type="button" data-round-button="0" aria-current="step"
+                        aria-controls="round-roll">
+                    <span>Step 1</span>
+                    Roll
+                </button>
+            </li>
+            <li>
+                <button type="button" data-round-button="1" aria-controls="round-assign">
+                    <span>Step 2</span>
+                    Assign
+                </button>
+            </li>
+            <li>
+                <button type="button" data-round-button="2" aria-controls="round-reveal">
+                    <span>Step 3</span>
+                    Reveal
+                </button>
+            </li>
+            <li>
+                <button type="button" data-round-button="3" aria-controls="round-phases">
+                    <span>Step 4</span>
+                    Do phases
+                </button>
+            </li>
+            <li>
+                <button type="button" data-round-button="4" aria-controls="round-manage">
+                    <span>Step 5</span>
+                    Manage
+                </button>
+            </li>
+        </ol>
+
+        <article id="round-roll" class="round-panel" data-round-panel="0">
+            <h3 tabindex="-1">Roll behind screens</h3>
+            <p>Every die in the dice cup is a worker for this round. Roll all of them behind the
+                player screen and keep results hidden.</p>
+            <ol class="worker-cycle" aria-label="Worker cycle">
+                <li>
+                    <strong>Dice cup</strong>
+                    <br>Available dice
+                </li>
+                <li>
+                    <strong>Roll</strong>
+                    <br>Hidden workers
+                </li>
+                <li>
+                    <strong>Task</strong>
+                    <br>Selected phases
+                </li>
+                <li>
+                    <strong>Citizenry</strong>
+                    <br>Await recruitment
+                </li>
+            </ol>
+            <p class="note">Dice outside the dice cup are not rolled: Citizenry, goods, and workers
+                in the construction zone stay where they are.</p>
+        </article>
+
+        <article id="round-assign" class="round-panel" data-round-panel="1" hidden>
+            <h3 tabindex="-1">Assign and choose one phase</h3>
+            <ol class="component-list">
+                <li>Place each worker below the column matching its rolled face. Wild faces may
+                    enter any column.
+                </li>
+                <li>Move exactly one worker onto the phase strip to select a phase. Ignore its
+                    face; this die still works in the selected phase.
+                </li>
+                <li>After selecting a phase, apply Reassign powers. Each can be used at most once
+                    per round; a power is optional only when its text says "may."
+                </li>
+            </ol>
+            <ol class="assignment-strip" aria-label="Phase assignment columns">
+                <li>
+                    I<br>Explore
+                </li>
+                <li>
+                    II<br>Develop
+                </li>
+                <li>
+                    III<br>Settle
+                </li>
+                <li>
+                    IV<br>Produce
+                </li>
+                <li>
+                    V<br>Ship
+                </li>
+            </ol>
+            <p class="note">
+                <strong>Dictate:</strong> park any worker in the Dictate area to move a
+                different worker to another column. The parked die returns to the dice cup after
+                reveal.</p>
+        </article>
+
+        <article id="round-reveal" class="round-panel" data-round-panel="2" hidden>
+            <h3 tabindex="-1">Reveal selected phases</h3>
+            <p>Lift player screens together and announce selected phases. Flip matching phase
+                tiles to the active side.</p>
+            <ul class="component-list">
+                <li>Return every Dictate die to its owner's dice cup.</li>
+                <li>Return workers assigned beneath inactive phases to the dice cup.</li>
+                <li>Leave workers under active phases for task resolution.</li>
+            </ul>
+            <p class="note" id="two-player-reveal" hidden>
+                <strong>Two players:</strong> roll one spare Home (white) die. If its face names a
+                phase neither player selected, activate that phase too. A wild face changes nothing;
+                return the die to the shared supply.
+            </p>
+        </article>
+
+        <article id="round-phases" class="round-panel" data-round-panel="3" hidden>
+            <h3 tabindex="-1">Resolve active phases in order</h3>
+            <p>Everyone acts simultaneously in phase I through V. Skip inactive phases. Use every
+                assigned worker if a task is possible, one at a time.</p>
+            <ol class="phase-strip" aria-label="Phases in resolution order">
+                <li class="phase-one">
+                    <strong>I · Explore</strong>
+                    <span>Scout or gain Galactic Credits</span>
+                </li>
+                <li class="phase-two">
+                    <strong>II · Develop</strong>
+                    <span>Build technology</span>
+                </li>
+                <li class="phase-three">
+                    <strong>III · Settle</strong>
+                    <span>Complete worlds</span>
+                </li>
+                <li class="phase-four">
+                    <strong>IV · Produce</strong>
+                    <span>Place goods</span>
+                </li>
+                <li class="phase-five">
+                    <strong>V · Ship</strong>
+                    <span>Trade or consume</span>
+                </li>
+            </ol>
+            <p>Dice completing tasks go to Citizenry. Dice left without a possible task return to
+                the dice cup. Choosing a phase grants no separate bonus.</p>
+        </article>
+
+        <article id="round-manage" class="round-panel" data-round-panel="4" hidden>
+            <h3 tabindex="-1">Manage empire</h3>
+            <ol class="steps">
+                <li>
                             <span>
                                 <strong>Recruit.</strong> Spend 1 Galactic Credit per die to move as many
                                 dice as affordable from Citizenry to the dice cup. If Galactic Credits reach
                                 0, move the marker back to $1 after recruiting.</span></li>
-                        <li>
+                <li>
                             <span>
                                 <strong>Recall.</strong> Optionally return developers, settlers, and goods
                                 directly to the dice cup for free. If the dice cup is empty after recruiting,
                                 recall at least one die.</span></li>
-                        <li>
+                <li>
                             <span>
                                 <strong>Reset.</strong> Turn all phase tiles inactive.
                             </span>
-                        </li>
-                        <li>
+                </li>
+                <li>
                             <span>
                                 <strong>Check end.</strong> Finish the game if the initial VP chip pool
                                 emptied or any tableau reached 12 tile squares.</span></li>
-                    </ol>
-                    <p class="note">Galactic Credits never exceed $10. If you cannot afford every die in
-                        Citizenry, choose which dice to recruit.</p>
-                </article>
-            </section>
+            </ol>
+            <p class="note">Galactic Credits never exceed $10. If you cannot afford every die in
+                Citizenry, choose which dice to recruit.</p>
+        </article>
+    </section>
 
-            <section id="reference" class="reference-group" aria-labelledby="reference-title">
-                <h2 id="reference-title">Rules reference</h2>
-                <p>Open the rule you need. Development powers can change these defaults. Powers for an
-                    active phase can take effect even if you assigned no workers to it, and are mandatory
-                    unless their text says "may."</p>
+    <section id="reference" class="reference-group" aria-labelledby="reference-title">
+        <h2 id="reference-title">Rules reference</h2>
+        <p>Open the rule you need. Development powers can change these defaults. Powers for an
+            active phase can take effect even if you assigned no workers to it, and are mandatory
+            unless their text says "may."</p>
 
-                <h3>Assign and resolve</h3>
-                <details>
-                    <summary>Workers, phase selection, and Reassign</summary>
-                    <ul>
-                        <li>Worker's column determines task; printed face only guides initial assignment.</li>
-                        <li>Each player selects exactly one phase before using any Reassign power.</li>
-                        <li>Selected die remains worker in chosen phase.</li>
-                        <li>Each Reassign power can be used at most once per round. A power is optional
-                            only when its text says "may." Moved die need not show target phase.</li>
-                        <li>Dictate spends one worker to reassign a different worker. The spent die returns to the dice cup at Reveal. Reassign powers cannot move dice already spent on Dictate.</li>
-                    </ul>
-                </details>
+        <h3>Assign and resolve</h3>
+        <details>
+            <summary>Workers, phase selection, and Reassign</summary>
+            <ul>
+                <li>Worker's column determines task; printed face only guides initial assignment.
+                </li>
+                <li>Each player selects exactly one phase before using any Reassign power.</li>
+                <li>Selected die remains worker in chosen phase.</li>
+                <li>Each Reassign power can be used at most once per round. A power is optional
+                    only when its text says "may." Moved die need not show target phase.
+                </li>
+                <li>Dictate spends one worker to reassign a different worker. The spent die returns
+                    to the dice cup at Reveal. Reassign powers cannot move dice already spent on
+                    Dictate.
+                </li>
+            </ul>
+        </details>
 
-                <details class="phase-one">
-                    <summary>I · Explore</summary>
-                    <p>For each explorer, choose one task when used:</p>
-                    <dl>
-                        <dt>Stock</dt>
-                        <dd>Gain 2 Galactic Credits.</dd>
-                        <dt>Scout</dt>
-                        <dd>Optionally abandon any tiles from either construction zone stack, then draw one
-                            more tile than number abandoned. Choose a side for each drawn tile and place it
-                            under the matching stack. Return abandoned tiles to the bag after the phase.</dd>
-                    </dl>
-                    <p>Abandoning no tiles means drawing one. Workers already in the construction zone
-                        remain even if a stack becomes empty. If the bag runs out while drawing, return
-                        abandoned tiles to it and continue. If there still are not enough, choose sides for
-                        the tiles drawn so far and place them in your construction zone. Any player whose
-                        zone then holds at least 3 tiles, Scout included, must put 1 tile back in the bag.
-                        The Scout then finishes the draw.</p>
-                </details>
+        <details class="phase-one">
+            <summary>I · Explore</summary>
+            <p>For each explorer, choose one task when used:</p>
+            <dl>
+                <dt>Stock</dt>
+                <dd>Gain 2 Galactic Credits.</dd>
+                <dt>Scout</dt>
+                <dd>Optionally abandon any tiles from either construction zone stack, then draw one
+                    more tile than number abandoned. Choose a side for each drawn tile and place it
+                    under the matching stack. Return abandoned tiles to the bag after the phase.
+                </dd>
+            </dl>
+            <p>Abandoning no tiles means drawing one. Workers already in the construction zone
+                remain even if a stack becomes empty. If the bag runs out while drawing, return
+                abandoned tiles to it and continue. If there still are not enough, choose sides for
+                the tiles drawn so far and place them in your construction zone. Any player whose
+                zone then holds at least 3 tiles, Scout included, must put 1 tile back in the bag.
+                The Scout then finishes the draw.</p>
+        </details>
 
-                <details class="phase-two">
-                    <summary>II · Develop</summary>
-                    <p>Place developers one at a time on the top development. Apply every applicable cost
-                        reduction; these are mandatory. Even after reductions, at least 1 developer is
-                        needed to complete a tile. Once enough developers are on the tile to meet its
-                        cost, move it into the tableau and return the completing developers to Citizenry.
-                        Use any remaining developers on the next tile; several developments may finish in
-                        one phase.</p>
-                    <p>Incomplete developers stay on their tile between rounds. If the stack is empty,
-                        excess developers return to the dice cup. If scouting or an Explore power completes
-                        a tile early, leave it on the stack until the next Develop phase is played. Then
-                        move it into the tableau, return the required developers to Citizenry, choosing which ones if there are
-                        extras, and put any extras on the next tile. Resolve a development's immediate
-                        effect when it enters the tableau. Follow the timing stated for each development power;
-                        Reassign powers are used during Assign.</p>
-                </details>
+        <details class="phase-two">
+            <summary>II · Develop</summary>
+            <p>Place developers one at a time on the top development. Apply every applicable cost
+                reduction; these are mandatory. Even after reductions, at least 1 developer is
+                needed to complete a tile. Once enough developers are on the tile to meet its
+                cost, move it into the tableau and return the completing developers to Citizenry.
+                Use any remaining developers on the next tile; several developments may finish in
+                one phase.</p>
+            <p>Incomplete developers stay on their tile between rounds. If the stack is empty,
+                excess developers return to the dice cup. If scouting or an Explore power completes
+                a tile early, leave it on the stack until the next Develop phase is played. Then
+                move it into the tableau, return the required developers to Citizenry, choosing
+                which ones if there are
+                extras, and put any extras on the next tile. Resolve a development's immediate
+                effect when it enters the tableau. Follow the timing stated for each development
+                power;
+                Reassign powers are used during Assign.</p>
+        </details>
 
-                <details class="phase-three">
-                    <summary>III · Settle</summary>
-                    <p>Place settlers one at a time on the top world. Apply every applicable cost reduction;
-                        these are mandatory. Even after reductions, at least 1 settler is needed to finish
-                        a world. Once enough settlers are on the world to meet its cost, move it
-                        into the tableau, return the completing settlers to Citizenry, and apply its immediate
-                        effect once. Use any remaining settlers on the next world; several worlds may finish
-                        in one phase.</p>
-                    <p>If scouting or an Explore power completes a world early, leave it on the stack until
-                        the next Settle phase is played. Then move it into the tableau, return the required
-                        settlers to Citizenry, choosing which ones if there are extras, and put any extras
-                        on the next world. If no world remains, excess settlers return to the dice cup. The
-                        tile's icons show its dice and any extra credits or starting good. If an effect
-                        removes a die, return any of your dice from any location to the shared supply; if
-                        it removes the die that selected a phase, that phase still occurs.</p>
-                </details>
+        <details class="phase-three">
+            <summary>III · Settle</summary>
+            <p>Place settlers one at a time on the top world. Apply every applicable cost reduction;
+                these are mandatory. Even after reductions, at least 1 settler is needed to finish
+                a world. Once enough settlers are on the world to meet its cost, move it
+                into the tableau, return the completing settlers to Citizenry, and apply its
+                immediate
+                effect once. Use any remaining settlers on the next world; several worlds may finish
+                in one phase.</p>
+            <p>If scouting or an Explore power completes a world early, leave it on the stack until
+                the next Settle phase is played. Then move it into the tableau, return the required
+                settlers to Citizenry, choosing which ones if there are extras, and put any extras
+                on the next world. If no world remains, excess settlers return to the dice cup. The
+                tile's icons show its dice and any extra credits or starting good. If an effect
+                removes a die, return any of your dice from any location to the shared supply; if
+                it removes the die that selected a phase, that phase still occurs.</p>
+        </details>
 
-                <details class="phase-four">
-                    <summary>IV · Produce</summary>
-                    <p>Each producer becomes a good on one non-gray tableau world. Any die color can
-                        produce on any such world. Normally a world holds one good; Galactic Reserves
-                        raises this to two. Unused producers return to the dice cup.</p>
-                </details>
+        <details class="phase-four">
+            <summary>IV · Produce</summary>
+            <p>Each producer becomes a good on one non-gray tableau world. Any die color can
+                produce on any such world. Normally a world holds one good; Galactic Reserves
+                raises this to two. Unused producers return to the dice cup.</p>
+        </details>
 
-                <details class="phase-five">
-                    <summary>V · Ship</summary>
-                    <p>Pair each shipper with one good, then choose Trade or Consume. Both dice go to their
-                        owner's Citizenry.</p>
-                    <div class="table-container">
-                        <table class="trade-table">
-                            <caption>Trade value follows world color, not dice color</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">World</th>
-                                    <th scope="col">Galactic Credits</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Novelty</td>
-                                    <td>3</td>
-                                </tr>
-                                <tr>
-                                    <td>Rare Elements</td>
-                                    <td>4</td>
-                                </tr>
-                                <tr>
-                                    <td>Genes</td>
-                                    <td>5</td>
-                                </tr>
-                                <tr>
-                                    <td>Alien Technology</td>
-                                    <td>6</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <p>
-                        <strong>Consume:</strong> gain 1 VP, +1 if good die color matches world, and +1 if
-                        shipper die color matches world. Purple Consumption dice match every color for
-                        these bonuses only.</p>
-                </details>
-
-                <h3>Economy and ending</h3>
-                <details>
-                    <summary>Recruit, Recall, and Galactic Credit limits</summary>
-                    <ul>
-                        <li>Recruit as many Citizenry dice as affordable, at 1 Galactic Credit each.</li>
-                        <li>If recruitment leaves 0 Galactic Credits, reset the marker to $1 afterward.</li>
-                        <li>Recall construction zone workers or goods to the dice cup for free only during Manage Empire. Starting goods cannot be recalled before the first Roll.</li>
-                        <li>If the dice cup is empty after recruiting, recall at least one die.</li>
-                        <li>Galactic Credits cap at $10; excess is lost.</li>
-                    </ul>
-                </details>
-
-                <details>
-                    <summary>Game end and scoring</summary>
-                    <p>Finish the current round when the initial VP chip pool has emptied or any player
-                        reaches at least 12 tableau squares. Players may finish above 12.</p>
-                    <p>Score VP chips, the printed cost of every tableau tile (both values on the faction tile), and bonuses from 6-cost developments. For group-based bonuses, round the number of groups up before multiplying by the bonus: 7 qualifying dice at 2 VP per 3 dice score 6 VP. Construction-zone tiles do not score.</p>
-                    <p>Tied players add dice in the dice cup and current Galactic Credits. The highest
-                        combined total wins; a remaining tie is shared.</p>
-                </details>
-
-                <details>
-                    <summary>Frequently missed rules</summary>
-                    <ul>
-                        <li>Play is simultaneous; everyone participates in every active phase.</li>
-                        <li>Tasks resolve one worker at a time. No advance declaration for Scout, Stock,
-                            Trade, or Consume.</li>
-                        <li>Completed-task dice go to Citizenry. Inactive-phase and unusable dice go to
-                            dice cup.</li>
-                        <li>Develop and Settle can each complete multiple tiles in one phase.</li>
-                        <li>Produce comes before Ship.</li>
-                        <li>Trade uses world color. Consume bonuses use dice colors; wild face adds nothing.</li>
-                        <li>The starting faction tile plus home world tile already count as 3 tableau
-                            squares.</li>
-                        <li>Construction-zone tiles do not score.</li>
-                    </ul>
-                </details>
-            </section>
-        </main>
-
-        <aside aria-labelledby="guide-options-title">
-            <h2 id="guide-options-title">Guide options</h2>
-
-            <form id="guide-options" autocomplete="off">
-                <fieldset>
-                    <legend>Table</legend>
-                    <label for="player-count">
-                        Players
-                        <select id="player-count" name="player-count">
-                            <option value="2">2 players</option>
-                            <option value="3">3 players</option>
-                            <option value="4" selected>4 players</option>
-                            <option value="5">5 players</option>
-                        </select>
-                    </label>
-
-                    <label for="first-game">
-                        <input type="checkbox" id="first-game" name="first-game" role="switch" checked
-                            aria-describedby="first-game-help">
-                        First play
-                    </label>
-                    <small id="first-game-help">Uses the lowest-cost development and world among the two
-                        starting game tiles.</small>
-                </fieldset>
-
-                <fieldset>
-                    <legend>Setup progress</legend>
-                    <label for="setup-progress">Completed steps</label>
-                    <progress id="setup-progress" value="0" max="5"></progress>
-                    <output id="setup-progress-text">0 of 5</output>
-                    <button type="button" id="reset-guide">
-                        <span class="sym" aria-hidden="true">refresh</span>
-                        Start over
-                    </button>
-                </fieldset>
-
-                <fieldset>
-                    <legend>User interface</legend>
-                    <label for="interface-language">
-                        Language
-                        <select id="interface-language" name="interface-language">
-                            <option value="en" selected>English</option>
-                            <option value="de">Deutsch</option>
-                        </select>
-                    </label>
-                </fieldset>
-            </form>
-
+        <details class="phase-five">
+            <summary>V · Ship</summary>
+            <p>Pair each shipper with one good, then choose Trade or Consume. Both dice go to their
+                owner's Citizenry.</p>
+            <div class="table-container">
+                <table class="trade-table">
+                    <caption>Trade value follows world color, not dice color</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">World</th>
+                        <th scope="col">Galactic Credits</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>Novelty</td>
+                        <td>3</td>
+                    </tr>
+                    <tr>
+                        <td>Rare Elements</td>
+                        <td>4</td>
+                    </tr>
+                    <tr>
+                        <td>Genes</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td>Alien Technology</td>
+                        <td>6</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
             <p>
-                <small>Progress stays in this browser.</small>
-            </p>
-        </aside>
+                <strong>Consume:</strong> gain 1 VP, +1 if good die color matches world, and +1 if
+                shipper die color matches world. Purple Consumption dice match every color for
+                these bonuses only.</p>
+        </details>
 
-    <footer>
-        <p lang="en">This is an independent, unofficial rules guide. It is not affiliated with or endorsed by the game's publisher. All trademarks and copyrights in the original game remain the property of their respective owners.</p>
-        <p lang="de">Dies ist ein unabhängiger, inoffizieller Regelleitfaden. Er steht in keiner Verbindung zum Verlag des Spiels und wird von diesem nicht unterstützt. Alle Marken- und Urheberrechte am Originalspiel verbleiben bei ihren jeweiligen Rechteinhabern.</p>
-    </footer>
+        <h3>Economy and ending</h3>
+        <details>
+            <summary>Recruit, Recall, and Galactic Credit limits</summary>
+            <ul>
+                <li>Recruit as many Citizenry dice as affordable, at 1 Galactic Credit each.</li>
+                <li>If recruitment leaves 0 Galactic Credits, reset the marker to $1 afterward.</li>
+                <li>Recall construction zone workers or goods to the dice cup for free only during
+                    Manage Empire. Starting goods cannot be recalled before the first Roll.
+                </li>
+                <li>If the dice cup is empty after recruiting, recall at least one die.</li>
+                <li>Galactic Credits cap at $10; excess is lost.</li>
+            </ul>
+        </details>
 
-        <script src="../../one.js"></script>
-        <script>
+        <details>
+            <summary>Game end and scoring</summary>
+            <p>Finish the current round when the initial VP chip pool has emptied or any player
+                reaches at least 12 tableau squares. Players may finish above 12.</p>
+            <p>Score VP chips, the printed cost of every tableau tile (both values on the faction
+                tile), and bonuses from 6-cost developments. For group-based bonuses, round the
+                number of groups up before multiplying by the bonus: 7 qualifying dice at 2 VP per 3
+                dice score 6 VP. Construction-zone tiles do not score.</p>
+            <p>Tied players add dice in the dice cup and current Galactic Credits. The highest
+                combined total wins; a remaining tie is shared.</p>
+        </details>
+
+        <details>
+            <summary>Frequently missed rules</summary>
+            <ul>
+                <li>Play is simultaneous; everyone participates in every active phase.</li>
+                <li>Tasks resolve one worker at a time. No advance declaration for Scout, Stock,
+                    Trade, or Consume.
+                </li>
+                <li>Completed-task dice go to Citizenry. Inactive-phase and unusable dice go to
+                    dice cup.
+                </li>
+                <li>Develop and Settle can each complete multiple tiles in one phase.</li>
+                <li>Produce comes before Ship.</li>
+                <li>Trade uses world color. Consume bonuses use dice colors; wild face adds
+                    nothing.
+                </li>
+                <li>The starting faction tile plus home world tile already count as 3 tableau
+                    squares.
+                </li>
+                <li>Construction-zone tiles do not score.</li>
+            </ul>
+        </details>
+    </section>
+</main>
+
+<aside aria-labelledby="guide-options-title">
+    <h2 id="guide-options-title">Guide options</h2>
+
+    <form id="guide-options" autocomplete="off">
+        <fieldset>
+            <legend>Table</legend>
+            <label for="player-count">
+                Players
+                <select id="player-count" name="player-count">
+                    <option value="2">2 players</option>
+                    <option value="3">3 players</option>
+                    <option value="4" selected>4 players</option>
+                    <option value="5">5 players</option>
+                </select>
+            </label>
+
+            <label for="first-game">
+                <input type="checkbox" id="first-game" name="first-game" role="switch" checked
+                       aria-describedby="first-game-help">
+                First play
+            </label>
+            <small id="first-game-help">Uses the lowest-cost development and world among the two
+                starting game tiles.</small>
+        </fieldset>
+
+        <fieldset>
+            <legend>Setup progress</legend>
+            <label for="setup-progress">Completed steps</label>
+            <progress id="setup-progress" value="0" max="5"></progress>
+            <output id="setup-progress-text">0 of 5</output>
+            <button type="button" id="reset-guide">
+                <span class="sym" aria-hidden="true">refresh</span>
+                Start over
+            </button>
+        </fieldset>
+
+        <fieldset>
+            <legend>User interface</legend>
+            <label for="interface-language">
+                Language
+                <select id="interface-language" name="interface-language">
+                    <option value="en" selected>English</option>
+                    <option value="de">Deutsch</option>
+                </select>
+            </label>
+        </fieldset>
+    </form>
+
+    <p>
+        <small>Progress stays in this browser.</small>
+    </p>
+</aside>
+
+<footer>
+    <p lang="en">This is an independent, unofficial rules guide. It is not affiliated with or
+        endorsed by the game's publisher. All trademarks and copyrights in the original game remain
+        the property of their respective owners.</p>
+    <p lang="de">Dies ist ein unabhängiger, inoffizieller Regelleitfaden. Er steht in keiner
+        Verbindung zum Verlag des Spiels und wird von diesem nicht unterstützt. Alle Marken- und
+        Urheberrechte am Originalspiel verbleiben bei ihren jeweiligen Rechteinhabern.</p>
+</footer>
+
+<script src="../../one.js"></script>
+<script>
     /* global one */
 
     const STORAGE_KEY = "galactic-dice-guide:state";
@@ -1412,12 +1451,18 @@
     function renderLanguage() {
         document.documentElement.lang = state.language;
         document.title = translateText("Unofficial Guide - Roll for the Galaxy");
-        document.querySelector('meta[name="description"]').content = translateText(
+        document.querySelector("meta[name=\"description\"]").content = translateText(
             "A private table companion for setting up and learning a space-faring dice game.",
         );
         interfaceLanguageSelect.value = state.language;
 
-        translatedTextNodes.forEach(({ node, source, text, leadingWhitespace, trailingWhitespace }) => {
+        translatedTextNodes.forEach(({
+                                         node,
+                                         source,
+                                         text,
+                                         leadingWhitespace,
+                                         trailingWhitespace,
+                                     }) => {
             const translation = state.language === "de" ? german[text] : undefined;
             node.nodeValue = translation === undefined
                 ? source
@@ -1656,8 +1701,8 @@
         const dialog = document.querySelector("dialog:last-of-type");
 
         if (state.language === "de" && dialog) {
-            dialog.querySelector('[data-action="cancel"]').textContent = "Abbrechen";
-            dialog.querySelector('[data-action="confirm"]').textContent = "Bestätigen";
+            dialog.querySelector("[data-action=\"cancel\"]").textContent = "Abbrechen";
+            dialog.querySelector("[data-action=\"confirm\"]").textContent = "Bestätigen";
         }
 
         const confirmed = await confirmation;
@@ -1684,6 +1729,6 @@
     renderGuide();
     void restoreState();
 </script>
-    </body>
+</body>
 
 </html>

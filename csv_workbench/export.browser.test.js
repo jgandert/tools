@@ -110,7 +110,7 @@ test.each([[1280, "light"], [390, "dark"]])("literal keys survive native Copy an
     await page.emulateMedia({ colorScheme });
     if (width < 600) await page.locator("label[for=aside-state]").click();
     await loadCsv("__proto__,constructor,toString,,ordinary\nkeep,own constructor,own string,empty name,value\nnull,next constructor,next string,next empty,next value");
-    const expected = JSON.parse('[{"__proto__":"keep","constructor":"own constructor","toString":"own string","Column 4":"empty name","ordinary":"value"},{"__proto__":"null","constructor":"next constructor","toString":"next string","Column 4":"next empty","ordinary":"next value"}]');
+    const expected = JSON.parse("[{\"__proto__\":\"keep\",\"constructor\":\"own constructor\",\"toString\":\"own string\",\"Column 4\":\"empty name\",\"ordinary\":\"value\"},{\"__proto__\":\"null\",\"constructor\":\"next constructor\",\"toString\":\"next string\",\"Column 4\":\"next empty\",\"ordinary\":\"next value\"}]");
     for (const output of [await copiedJson(), await downloadedJson()]) {
         expect(output).toEqual(expected);
         expect(output.every(row => Object.hasOwn(row, "__proto__") && Object.keys(row).length === 5)).toBe(true);
@@ -133,7 +133,10 @@ test("renaming to a duplicate blocks export until column names are unique", asyn
     await page.getByRole("dialog").getByLabel("Name", { exact: true }).fill("x");
     await page.getByRole("button", { name: "Apply", exact: true }).click();
     await expectBlockedObjectExports();
-    await page.getByRole("button", { name: "Filter and edit column x", exact: true }).nth(1).click();
+    await page.getByRole("button", {
+        name: "Filter and edit column x",
+        exact: true,
+    }).nth(1).click();
     await page.getByRole("dialog").getByLabel("Name", { exact: true }).fill("restored");
     await page.getByRole("button", { name: "Apply", exact: true }).click();
     const expected = [{ x: "first", restored: "second" }];

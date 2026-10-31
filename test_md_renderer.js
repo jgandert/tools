@@ -72,13 +72,13 @@ const documentationFixture = [
 ].join("\n");
 const documentationFixtureHtml = parseMarkdownToHTML(documentationFixture);
 
-assert("Documentation fixture contains H1 heading with id", documentationFixtureHtml.includes('<h1 id="query-type">query type</h1>'));
-assert("Documentation fixture contains code-bearing H2 heading", documentationFixtureHtml.includes('<h2 id="p-playlist-queries"><code>p:</code> playlist queries</h2>'));
-assert("Documentation fixture wraps dense table", documentationFixtureHtml.includes('<div class="table-container"><table>'));
-assert("Documentation fixture renders fragment link", documentationFixtureHtml.includes('<a href="#ordering" target="_blank" rel="noopener">ordering</a>'));
-assert("Documentation fixture renders inline strong and code in table cells", documentationFixtureHtml.includes('implicit <strong>and</strong> — adjacent predicates both apply') && documentationFixtureHtml.includes('<code>0..1</code> fraction'));
+assert("Documentation fixture contains H1 heading with id", documentationFixtureHtml.includes("<h1 id=\"query-type\">query type</h1>"));
+assert("Documentation fixture contains code-bearing H2 heading", documentationFixtureHtml.includes("<h2 id=\"p-playlist-queries\"><code>p:</code> playlist queries</h2>"));
+assert("Documentation fixture wraps dense table", documentationFixtureHtml.includes("<div class=\"table-container\"><table>"));
+assert("Documentation fixture renders fragment link", documentationFixtureHtml.includes("<a href=\"#ordering\" target=\"_blank\" rel=\"noopener\">ordering</a>"));
+assert("Documentation fixture renders inline strong and code in table cells", documentationFixtureHtml.includes("implicit <strong>and</strong> — adjacent predicates both apply") && documentationFixtureHtml.includes("<code>0..1</code> fraction"));
 assert("Documentation fixture preserves Unicode symbols", documentationFixtureHtml.includes("5★"));
-assert("Documentation fixture renders code-heavy bullet list", documentationFixtureHtml.includes('<ul><li><code>:avg</code> is the normal (unweighted) average</li>'));
+assert("Documentation fixture renders code-heavy bullet list", documentationFixtureHtml.includes("<ul><li><code>:avg</code> is the normal (unweighted) average</li>"));
 assert("Documentation fixture leaves no internal token placeholders", !documentationFixtureHtml.includes("CODE_TOKEN") && !documentationFixtureHtml.includes("\uFFFC"));
 
 // --- Test Group 2: Inline Formatting & Escaping ---
@@ -192,12 +192,37 @@ const fencedDefinitions = "[example]: https://example.com\n[^note]: Code footnot
 const definitionFenceCases = [
     { name: "Backtick", opening: "```md", code: fencedDefinitions, closing: "```" },
     { name: "Tilde", opening: "~~~md", code: fencedDefinitions, closing: "~~~" },
-    { name: "Long backtick", opening: "````md", code: "```\n" + fencedDefinitions, closing: "`````" },
+    {
+        name: "Long backtick",
+        opening: "````md",
+        code: "```\n" + fencedDefinitions,
+        closing: "`````",
+    },
     { name: "Long tilde", opening: "~~~~md", code: "~~~\n" + fencedDefinitions, closing: "~~~~" },
-    { name: "Mismatched closing marker", opening: "```md", code: "~~~\n" + fencedDefinitions, closing: "```" },
-    { name: "Closing marker with info", opening: "~~~md", code: "~~~other\n" + fencedDefinitions, closing: "~~~" },
-    { name: "Overindented closing marker", opening: "```md", code: "    ```\n" + fencedDefinitions, closing: "```" },
-    { name: "Indented opening and closing", opening: "   ~~~md", code: fencedDefinitions, closing: "   ~~~ \t" },
+    {
+        name: "Mismatched closing marker",
+        opening: "```md",
+        code: "~~~\n" + fencedDefinitions,
+        closing: "```",
+    },
+    {
+        name: "Closing marker with info",
+        opening: "~~~md",
+        code: "~~~other\n" + fencedDefinitions,
+        closing: "~~~",
+    },
+    {
+        name: "Overindented closing marker",
+        opening: "```md",
+        code: "    ```\n" + fencedDefinitions,
+        closing: "```",
+    },
+    {
+        name: "Indented opening and closing",
+        opening: "   ~~~md",
+        code: fencedDefinitions,
+        closing: "   ~~~ \t",
+    },
     { name: "Unclosed backtick", opening: "```md", code: fencedDefinitions },
     { name: "Unclosed tilde", opening: "~~~md", code: fencedDefinitions },
 ];
@@ -211,25 +236,25 @@ for (const { name, opening, code, closing } of definitionFenceCases) {
 
 const outsideDefinitionsHtml = parseMarkdownToHTML(
     "[example]: https://outside.test\n[^note]: Outside footnote\n*[HTML]: Outside abbreviation\n\n" +
-    "[example] Use[^note]. HTML\n\n```md\n" + fencedDefinitions + "\n```"
+    "[example] Use[^note]. HTML\n\n```md\n" + fencedDefinitions + "\n```",
 );
-assert("Real reference definitions before a fence are not overwritten by code examples", outsideDefinitionsHtml.includes('<a href="https://outside.test"') && !outsideDefinitionsHtml.includes('<a href="https://example.com"'));
-assert("Real footnote definitions before a fence are not overwritten by code examples", outsideDefinitionsHtml.includes('<li id="fn-note">Outside footnote '));
+assert("Real reference definitions before a fence are not overwritten by code examples", outsideDefinitionsHtml.includes("<a href=\"https://outside.test\"") && !outsideDefinitionsHtml.includes("<a href=\"https://example.com\""));
+assert("Real footnote definitions before a fence are not overwritten by code examples", outsideDefinitionsHtml.includes("<li id=\"fn-note\">Outside footnote "));
 assert("Abbreviation definitions outside code remain omitted", !outsideDefinitionsHtml.includes("Outside abbreviation") && outsideDefinitionsHtml.includes("Code abbreviation"));
 
 const definitionsAfterFenceHtml = parseMarkdownToHTML(
     "[example] Use[^note].\n\n~~~md\n" + fencedDefinitions + "\n~~~\n\n" +
-    "[example]: https://outside.test\n[^note]: Outside footnote\n*[HTML]: Outside abbreviation"
+    "[example]: https://outside.test\n[^note]: Outside footnote\n*[HTML]: Outside abbreviation",
 );
-assert("Real link and footnote definitions after a fence still resolve", definitionsAfterFenceHtml.includes('<a href="https://outside.test"') && definitionsAfterFenceHtml.includes('<li id="fn-note">Outside footnote '));
+assert("Real link and footnote definitions after a fence still resolve", definitionsAfterFenceHtml.includes("<a href=\"https://outside.test\"") && definitionsAfterFenceHtml.includes("<li id=\"fn-note\">Outside footnote "));
 assert("Abbreviation definitions after a fence remain omitted", !definitionsAfterFenceHtml.includes("Outside abbreviation"));
 
 const fencedFootnoteOnlyHtml = parseMarkdownToHTML("Use[^note].\n\n```md\n[^note]: Code footnote\n```");
-const footnotesOutsideCode = fencedFootnoteOnlyHtml.slice(fencedFootnoteOnlyHtml.indexOf('<section class="footnotes">'));
-assert("Outside footnote references cannot use fenced definitions", footnotesOutsideCode.includes('<li id="fn-note">') && !footnotesOutsideCode.includes("Code footnote"));
+const footnotesOutsideCode = fencedFootnoteOnlyHtml.slice(fencedFootnoteOnlyHtml.indexOf("<section class=\"footnotes\">"));
+assert("Outside footnote references cannot use fenced definitions", footnotesOutsideCode.includes("<li id=\"fn-note\">") && !footnotesOutsideCode.includes("Code footnote"));
 
 const invalidFenceDefinitionHtml = parseMarkdownToHTML("[example]\n\n```md`invalid\n\n[example]: https://outside.test");
-assert("Invalid backtick info does not hide real definitions", invalidFenceDefinitionHtml.includes('<a href="https://outside.test"') && !invalidFenceDefinitionHtml.includes("<pre>"));
+assert("Invalid backtick info does not hide real definitions", invalidFenceDefinitionHtml.includes("<a href=\"https://outside.test\"") && !invalidFenceDefinitionHtml.includes("<pre>"));
 
 assertEqual("Horizontal rule ---", parseMarkdownToHTML("---"), "<hr>");
 assertEqual("Horizontal rule ***", parseMarkdownToHTML("***"), "<hr>");
@@ -287,7 +312,7 @@ const nestedUnordered4Spaces = [
 assertEqual(
     "Nested unordered list (4 spaces)",
     parseMarkdownToHTML(nestedUnordered4Spaces),
-    "<ul><li>Category A<ul><li>Sub A1</li><li>Sub A2</li></ul></li><li>Category B<ul><li>Sub B1</li></ul></li></ul>"
+    "<ul><li>Category A<ul><li>Sub A1</li><li>Sub A2</li></ul></li><li>Category B<ul><li>Sub B1</li></ul></li></ul>",
 );
 
 const nestedUnordered2Spaces = [
@@ -300,7 +325,7 @@ const nestedUnordered2Spaces = [
 assertEqual(
     "Deeply nested unordered list (2 spaces)",
     parseMarkdownToHTML(nestedUnordered2Spaces),
-    "<ul><li>Root 1<ul><li>Child 1.1<ul><li>Grandchild 1.1.1</li></ul></li><li>Child 1.2</li></ul></li><li>Root 2</li></ul>"
+    "<ul><li>Root 1<ul><li>Child 1.1<ul><li>Grandchild 1.1.1</li></ul></li><li>Child 1.2</li></ul></li><li>Root 2</li></ul>",
 );
 
 const mixedNestedLists = [
@@ -313,7 +338,7 @@ const mixedNestedLists = [
 assertEqual(
     "Mixed nested lists (ordered with unordered, ordered with ordered)",
     parseMarkdownToHTML(mixedNestedLists),
-    "<ol><li>Numbered 1<ul><li>Bullet A</li><li>Bullet B</li></ul></li><li>Numbered 2<ol><li>Sub-numbered 1</li></ol></li></ol>"
+    "<ol><li>Numbered 1<ul><li>Bullet A</li><li>Bullet B</li></ul></li><li>Numbered 2<ol><li>Sub-numbered 1</li></ol></li></ol>",
 );
 
 const multilineListItems = [
@@ -324,7 +349,7 @@ const multilineListItems = [
 assertEqual(
     "List item with indented continuation line",
     parseMarkdownToHTML(multilineListItems),
-    "<ul><li>First item continuation line</li><li>Second item</li></ul>"
+    "<ul><li>First item continuation line</li><li>Second item</li></ul>",
 );
 
 assertEqual("Task lists render labeled disabled checkboxes", parseMarkdownToHTML("- [ ] Write docs\n- [X] Ship"), "<ul><li><input type=\"checkbox\" aria-label=\"Write docs\" disabled> Write docs</li><li><input type=\"checkbox\" checked aria-label=\"Ship\" disabled> Ship</li></ul>");
@@ -465,19 +490,19 @@ const injectTocOptions = {
     toc: { injectIfAbsent: true, minLevel: 2, maxLevel: 3 },
 };
 const injectedTocHtml = parseMarkdownToHTML("# Title\n\n## Section\n\n### Detail\n\n#### Deep\n\n## Section", injectTocOptions);
-assert("Injected TOC precedes and preserves document title", injectedTocHtml.startsWith('<nav class="toc">') && injectedTocHtml.indexOf('</nav>') < injectedTocHtml.indexOf('<h1 id="docs-title">'));
+assert("Injected TOC precedes and preserves document title", injectedTocHtml.startsWith("<nav class=\"toc\">") && injectedTocHtml.indexOf("</nav>") < injectedTocHtml.indexOf("<h1 id=\"docs-title\">"));
 const injectedTocLinks = Array.from(injectedTocHtml.matchAll(/href="#([^"]+)"/g), match => match[1]);
 assertEqual("Injected TOC respects levels, prefixes, and duplicate headings", JSON.stringify(injectedTocLinks), JSON.stringify(["docs-section", "docs-detail", "docs-section-1"]));
 assert("Injected TOC links target rendered headings", injectedTocLinks.every(id => injectedTocHtml.includes(`id="${id}"`)));
 
 for (const marker of ["[TOC]", "[toc]", "[[toc]]", "[_TOC_]", "[[_TOC_]]", "<!-- toc -->"]) {
     const html = parseMarkdownToHTML(`# Title\n\n${marker}\n\n## Section`, injectTocOptions);
-    assert(`Existing ${marker} keeps its position without duplicate injection`, html.startsWith('<h1') && (html.match(/<nav\b/g) || []).length === 1);
+    assert(`Existing ${marker} keeps its position without duplicate injection`, html.startsWith("<h1") && (html.match(/<nav\b/g) || []).length === 1);
 }
 
 for (const code of ["```md\n[TOC]\n```", "    [TOC]", "`[TOC]`", "<!--\n[TOC]\n-->"]) {
     const html = parseMarkdownToHTML(`${code}\n\n## Section`, injectTocOptions);
-    assert(`Literal marker does not suppress injection: ${JSON.stringify(code)}`, html.startsWith('<nav class="toc">') && (html.match(/<nav\b/g) || []).length === 1);
+    assert(`Literal marker does not suppress injection: ${JSON.stringify(code)}`, html.startsWith("<nav class=\"toc\">") && (html.match(/<nav\b/g) || []).length === 1);
 }
 
 for (const nested of ["> [!NOTE]\n> Body", "> First\n>\n> Second", "<details>\n<summary>More</summary>\n\n## Nested\n\n</details>"]) {
@@ -488,7 +513,7 @@ for (const nested of ["> [!NOTE]\n> Body", "> First\n>\n> Second", "<details>\n<
 assertEqual("No eligible headings produces no injected TOC", parseMarkdownToHTML("# Title", injectTocOptions), parseMarkdownToHTML("# Title", { headingIdPrefix: "docs-" }));
 assertEqual("Empty input produces no injected TOC", parseMarkdownToHTML("", injectTocOptions), "");
 assertEqual("Injection is opt-in", parseMarkdownToHTML("## Section", { toc: { injectIfAbsent: false } }), parseMarkdownToHTML("## Section"));
-assert("TOC can still be disabled", !parseMarkdownToHTML("[TOC]\n\n## Section", { toc: false }).includes('<nav'));
+assert("TOC can still be disabled", !parseMarkdownToHTML("[TOC]\n\n## Section", { toc: false }).includes("<nav"));
 
 function assertHeadingAnchors(description, markdown, expectedIds, options = {}) {
     const html = parseMarkdownToHTML(markdown, options);
@@ -527,7 +552,10 @@ assertHeadingAnchors("Setext and ATX headings share IDs", "A\n===\n\n# A\n\nA-1\
 assertHeadingAnchors("Empty slugs share the fallback ID", "# !\n# ?\n# Heading-1", ["heading", "heading-1", "heading-1-1"]);
 assertHeadingAnchors("Prototype-like explicit IDs stay unique", "# One {#__proto__}\n# Two {#__proto__}\n# Three {#__proto__-1}", ["__proto__", "__proto__-1", "__proto__-1-1"]);
 
-for (const options of [{ headingIdPrefix: "sec-" }, { slugPrefix: "sec-" }, { headingIdPrefix: "sec-", slugPrefix: "other-" }]) {
+for (const options of [{ headingIdPrefix: "sec-" }, { slugPrefix: "sec-" }, {
+    headingIdPrefix: "sec-",
+    slugPrefix: "other-",
+}]) {
     assertHeadingAnchors(`Configured prefix ${JSON.stringify(options)}`, "# A-1\n# A\n# Other {#a}\n# More {#a-1}", ["sec-a-1", "sec-a", "sec-a-2", "sec-a-1-1"], options);
 }
 
@@ -683,11 +711,11 @@ assertEqual("Executable markdown link URL blocked", parseMarkdownToHTML("[click]
 assertEqual("Executable markdown image URL blocked", parseMarkdownToHTML("![alt](data:text/html,payload)"), "<p>alt</p>");
 assert("Executable autolink URL blocked", !parseMarkdownToHTML("<javascript:alert(1)>").includes("href="));
 
-const entityAttributeHtml = parseMarkdownToHTML('[click](https://example.test?a=&quot; "title &quot; value")');
-assertEqual("Entities are decoded once and escaped for HTML attributes", entityAttributeHtml, '<p><a href="https://example.test?a=&quot;" title="title &quot; value" target="_blank" rel="noopener">click</a></p>');
+const entityAttributeHtml = parseMarkdownToHTML("[click](https://example.test?a=&quot; \"title &quot; value\")");
+assertEqual("Entities are decoded once and escaped for HTML attributes", entityAttributeHtml, "<p><a href=\"https://example.test?a=&quot;\" title=\"title &quot; value\" target=\"_blank\" rel=\"noopener\">click</a></p>");
 
-const sanitizedInlineHtml = parseMarkdownToHTML('<img src="x" onerror="alert(1)"> <a href="javascript:alert(1)" onclick="alert(1)">x</a>');
-assert("Inline HTML event attributes removed", sanitizedInlineHtml.includes('<img src="x">') && sanitizedInlineHtml.includes("<a>x</a>") && !sanitizedInlineHtml.includes("onerror") && !sanitizedInlineHtml.includes("onclick") && !sanitizedInlineHtml.includes("javascript:"));
+const sanitizedInlineHtml = parseMarkdownToHTML("<img src=\"x\" onerror=\"alert(1)\"> <a href=\"javascript:alert(1)\" onclick=\"alert(1)\">x</a>");
+assert("Inline HTML event attributes removed", sanitizedInlineHtml.includes("<img src=\"x\">") && sanitizedInlineHtml.includes("<a>x</a>") && !sanitizedInlineHtml.includes("onerror") && !sanitizedInlineHtml.includes("onclick") && !sanitizedInlineHtml.includes("javascript:"));
 assert("Self-closing non-void HTML escaped", parseMarkdownToHTML("before <span/> after").includes("&lt;span/&gt;"));
 assert("Self-closing void HTML normalized", parseMarkdownToHTML("before <br/> after").includes("<br>"));
 
@@ -700,48 +728,48 @@ const detailsHtml = parseMarkdownToHTML(detailsMarkdown);
 assertEqual("Details element keeps safe attributes and Markdown content", detailsHtml, "<details open>\n<summary>More</summary>\n<p><strong>Safe content</strong></p>\n</details>");
 assert("Details element removes event attributes", !detailsHtml.includes("onclick"));
 
-const commonRawHtml = '<figure><img src="https://example.test/a.png"><figcaption><kbd>Alt</kbd></figcaption></figure>\n\n<blockquote cite="javascript:alert(1)">Quote</blockquote>\n\n<table><tbody><tr><td colspan="2">Cell</td></tr></tbody></table>';
+const commonRawHtml = "<figure><img src=\"https://example.test/a.png\"><figcaption><kbd>Alt</kbd></figcaption></figure>\n\n<blockquote cite=\"javascript:alert(1)\">Quote</blockquote>\n\n<table><tbody><tr><td colspan=\"2\">Cell</td></tr></tbody></table>";
 const commonRawHtmlOutput = parseMarkdownToHTML(commonRawHtml);
-assert("Common safe GitHub HTML retained", commonRawHtmlOutput.includes('<figure><img src="https://example.test/a.png"><figcaption><kbd>Alt</kbd></figcaption></figure>') && commonRawHtmlOutput.includes("<blockquote>Quote</blockquote>") && commonRawHtmlOutput.includes('<td colspan="2">Cell</td>'));
+assert("Common safe GitHub HTML retained", commonRawHtmlOutput.includes("<figure><img src=\"https://example.test/a.png\"><figcaption><kbd>Alt</kbd></figcaption></figure>") && commonRawHtmlOutput.includes("<blockquote>Quote</blockquote>") && commonRawHtmlOutput.includes("<td colspan=\"2\">Cell</td>"));
 assert("Unsafe URL removed from common raw HTML", !commonRawHtmlOutput.includes("javascript:"));
 
-const mediaMarkdown = '<audio controls src="https://example.test/a.mp3">Audio</audio> <video controls src="https://example.test/a.mp4">Video</video>';
+const mediaMarkdown = "<audio controls src=\"https://example.test/a.mp3\">Audio</audio> <video controls src=\"https://example.test/a.mp4\">Video</video>";
 const defaultMediaHtml = parseMarkdownToHTML(mediaMarkdown);
 const enabledMediaHtml = parseMarkdownToHTML(mediaMarkdown, { allowAudioVideo: true });
 assert("Audio and video require explicit option", defaultMediaHtml.includes("&lt;audio controls src=&quot;https://example.test/a.mp3&quot;&gt;Audio&lt;/audio&gt;") && defaultMediaHtml.includes("&lt;video controls src=&quot;https://example.test/a.mp4&quot;&gt;Video&lt;/video&gt;"));
-assert("Audio and video render when explicitly enabled", enabledMediaHtml.includes('<audio controls src="https://example.test/a.mp3">Audio</audio>') && enabledMediaHtml.includes('<video controls src="https://example.test/a.mp4">Video</video>'));
+assert("Audio and video render when explicitly enabled", enabledMediaHtml.includes("<audio controls src=\"https://example.test/a.mp3\">Audio</audio>") && enabledMediaHtml.includes("<video controls src=\"https://example.test/a.mp4\">Video</video>"));
 
 if (fs.existsSync(showcaseMdPath)) {
     const showcaseMd = fs.readFileSync(showcaseMdPath, "utf8");
     const safeShowcaseHtml = parseMarkdownToHTML(showcaseMd, { allowAudioVideo: true });
 
-    assert("Showcase safe structural HTML retained", safeShowcaseHtml.includes("<details>") && safeShowcaseHtml.includes('<section aria-labelledby="html-section-title">') && safeShowcaseHtml.includes("<caption>Raw HTML table</caption>") && safeShowcaseHtml.includes("<figcaption>Raw HTML figure caption.</figcaption>"));
-    assert("Showcase enabled media retained", safeShowcaseHtml.includes('<audio controls src="https://example.com/example.mp3">') && safeShowcaseHtml.includes('<video controls width="320" poster="https://placehold.co/320x180/png">'));
-    assert("Showcase raw anchor retained and HTML comment removed", safeShowcaseHtml.includes('<a id="raw-html-anchor"></a>') && !safeShowcaseHtml.includes("This HTML comment should not appear"));
+    assert("Showcase safe structural HTML retained", safeShowcaseHtml.includes("<details>") && safeShowcaseHtml.includes("<section aria-labelledby=\"html-section-title\">") && safeShowcaseHtml.includes("<caption>Raw HTML table</caption>") && safeShowcaseHtml.includes("<figcaption>Raw HTML figure caption.</figcaption>"));
+    assert("Showcase enabled media retained", safeShowcaseHtml.includes("<audio controls src=\"https://example.com/example.mp3\">") && safeShowcaseHtml.includes("<video controls width=\"320\" poster=\"https://placehold.co/320x180/png\">"));
+    assert("Showcase raw anchor retained and HTML comment removed", safeShowcaseHtml.includes("<a id=\"raw-html-anchor\"></a>") && !safeShowcaseHtml.includes("This HTML comment should not appear"));
 }
 
 const escapedOptionHtml = parseMarkdownToHTML("# Heading", {
-    headingClass: 'x&quot; onclick=&quot;alert(1)',
-    headingIdPrefix: 'x&quot; onclick=&quot;alert(1)',
+    headingClass: "x&quot; onclick=&quot;alert(1)",
+    headingIdPrefix: "x&quot; onclick=&quot;alert(1)",
 });
-assert("Option-provided attributes escaped", escapedOptionHtml.includes("&amp;quot;") && !escapedOptionHtml.includes(' onclick="alert(1)"'));
+assert("Option-provided attributes escaped", escapedOptionHtml.includes("&amp;quot;") && !escapedOptionHtml.includes(" onclick=\"alert(1)\""));
 
 const footnoteBeforeReferenceHtml = parseMarkdownToHTML("Use[^note].\n\n[^note]: Footnote text");
-assert("Footnotes parsed before reference definitions", footnoteBeforeReferenceHtml.includes('href="#fn-note"') && footnoteBeforeReferenceHtml.includes('<li id="fn-note">Footnote text'));
+assert("Footnotes parsed before reference definitions", footnoteBeforeReferenceHtml.includes("href=\"#fn-note\"") && footnoteBeforeReferenceHtml.includes("<li id=\"fn-note\">Footnote text"));
 
 const repeatedFootnoteHtml = parseMarkdownToHTML("A[^x] B[^x].\n\n[^x]: Note");
-assert("Repeated footnotes emit unique reference IDs and backrefs", repeatedFootnoteHtml.includes('id="fnref-x"') && repeatedFootnoteHtml.includes('id="fnref-x-2"') && repeatedFootnoteHtml.includes('href="#fnref-x"') && repeatedFootnoteHtml.includes('href="#fnref-x-2"'));
+assert("Repeated footnotes emit unique reference IDs and backrefs", repeatedFootnoteHtml.includes("id=\"fnref-x\"") && repeatedFootnoteHtml.includes("id=\"fnref-x-2\"") && repeatedFootnoteHtml.includes("href=\"#fnref-x\"") && repeatedFootnoteHtml.includes("href=\"#fnref-x-2\""));
 
 const prototypeIdHtml = parseMarkdownToHTML("# constructor\n\nA[^__proto__].\n\n[^__proto__]: Note");
-assert("Object-prototype names work as heading and footnote IDs", prototypeIdHtml.includes('id="constructor"') && prototypeIdHtml.includes('href="#fn-__proto__"') && prototypeIdHtml.includes('<li id="fn-__proto__">Note'));
+assert("Object-prototype names work as heading and footnote IDs", prototypeIdHtml.includes("id=\"constructor\"") && prototypeIdHtml.includes("href=\"#fn-__proto__\"") && prototypeIdHtml.includes("<li id=\"fn-__proto__\">Note"));
 
 const shortcutReferenceHtml = parseMarkdownToHTML("[known] [missing]\n\n[known]: https://example.test");
-assert("Shortcut references resolve while unresolved references stay literal", shortcutReferenceHtml.includes('<a href="https://example.test"') && shortcutReferenceHtml.includes("[missing]"));
+assert("Shortcut references resolve while unresolved references stay literal", shortcutReferenceHtml.includes("<a href=\"https://example.test\"") && shortcutReferenceHtml.includes("[missing]"));
 
 const commentTocMarkdown = "<!-- toc -->\n\n## A\n\n#### B\n\n### C\n\n## D";
 const commentToc = generateTOC(commentTocMarkdown);
 const commentTocHtml = parseMarkdownToHTML(commentTocMarkdown);
-assert("Comment TOC placeholder renders valid skipped-level nesting", commentToc.includes('<nav class="toc">') && !commentToc.includes("<ul><ul>") && commentToc.includes('<li><a href="#a">A</a><ul>') && commentTocHtml.startsWith('<nav class="toc">'));
+assert("Comment TOC placeholder renders valid skipped-level nesting", commentToc.includes("<nav class=\"toc\">") && !commentToc.includes("<ul><ul>") && commentToc.includes("<li><a href=\"#a\">A</a><ul>") && commentTocHtml.startsWith("<nav class=\"toc\">"));
 
 const headingsOutsideFences = extractHeadings("# A\n```md\n# B\n```\n## C").map((heading) => heading.rawText);
 assertEqual("Headings inside fenced code ignored", JSON.stringify(headingsOutsideFences), JSON.stringify(["A", "C"]));

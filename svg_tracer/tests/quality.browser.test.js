@@ -1,26 +1,26 @@
 /* Copyright 2026 Joschua Gandert - SPDX-License-Identifier: Apache-2.0 */
 /* global process */
-import {afterAll, beforeAll, expect, test} from "bun:test";
-import {createRequire} from "node:module";
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {makeClippedBinaryCapsule, makeEdgeArtifactArtwork} from "./artwork.js";
-import {measureSamplerOutline} from "./sampler-outline-metrics.js";
+import { afterAll, beforeAll, expect, test } from "bun:test";
+import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { makeClippedBinaryCapsule, makeEdgeArtifactArtwork } from "./artwork.js";
+import { measureSamplerOutline } from "./sampler-outline-metrics.js";
 
 const playwrightPath = createRequire(import.meta.url).resolve("playwright", {
     paths: [import.meta.dir, ...(process.env.NODE_PATH || "").split(":").filter(Boolean)],
 });
-const {chromium} = await import(playwrightPath);
+const { chromium } = await import(playwrightPath);
 const fixtures = JSON.parse(readFileSync(new URL("fixtures.json", import.meta.url)));
 const limits = JSON.parse(readFileSync(new URL("raster-comparison.json", import.meta.url)));
 let browser;
 let page;
 
 beforeAll(async () => {
-    browser = await chromium.launch({headless: true});
+    browser = await chromium.launch({ headless: true });
     page = await browser.newPage();
     await page.goto(new URL("../index.html", import.meta.url).href);
-    await page.addScriptTag({content: `window.measureSamplerOutline = ${measureSamplerOutline};`});
+    await page.addScriptTag({ content: `window.measureSamplerOutline = ${measureSamplerOutline};` });
 });
 
 afterAll(async () => {
@@ -33,9 +33,13 @@ afterAll(async () => {
 test.each(fixtures)("$name retains raster fidelity", async fixture => {
     const data = Array.from(readFileSync(new URL(`fixtures/${fixture.name}.rgba`, import.meta.url)));
     const expected = fixture.name === "edge_artifacts" ? (await page.evaluate(makeEdgeArtifactArtwork)).clean : data;
-    const error = await page.evaluate(async ({fixture, data, expected}) => {
-        const {width, height} = fixture;
-        const result = window.FlatLogoTracer.trace({width, height, data: new Uint8ClampedArray(data)}, {
+    const error = await page.evaluate(async ({ fixture, data, expected }) => {
+        const { width, height } = fixture;
+        const result = window.FlatLogoTracer.trace({
+            width,
+            height,
+            data: new Uint8ClampedArray(data),
+        }, {
             colors: fixture.colors, noise: 10, tolerance: 1.25, minArea: 6, ...fixture.options,
             // Background removal has separate semantic checks in test.cjs.
             removeBackground: false,
@@ -57,7 +61,7 @@ test.each(fixtures)("$name retains raster fidelity", async fixture => {
             sum += Math.abs(actual[p + 3] - expected[p + 3]);
         }
         return sum / actual.length;
-    }, {fixture, data, expected});
+    }, { fixture, data, expected });
     expect(error).toBeLessThanOrEqual(limits.find(item => item.name === fixture.name).maxError);
 });
 
@@ -100,9 +104,13 @@ test("the sampler preserves straight and curved thin outlines", async () => {
         };
         const samples = [];
         for (let y = 140; y < 213; y += 3) {
-            for (const x of [157.4, 331.6]) { samples.push([x, y, 1, 0]); }
+            for (const x of [157.4, 331.6]) {
+                samples.push([x, y, 1, 0]);
+            }
         }
-        for (let x = 187; x < 307; x += 3) { samples.push([x, 238.4, 0, 1]); }
+        for (let x = 187; x < 307; x += 3) {
+            samples.push([x, 238.4, 0, 1]);
+        }
         const widths = samples.map(p => thickness(actual, ...p));
         const widthError = samples.reduce((sum, p, i) => sum + Math.abs(widths[i] - thickness(input.data, ...p)), 0) / samples.length;
         const rasterError = actual.reduce((sum, value, i) => sum + Math.abs(value - input.data[i]), 0) / actual.length;
@@ -114,9 +122,21 @@ test("the sampler preserves straight and curved thin outlines", async () => {
         canvas.width = source.width * actualScale;
         canvas.height = source.height * actualScale;
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-        const outlines = window.measureSamplerOutline({width: source.width, height: source.height,
-            actual: ctx.getImageData(0, 0, canvas.width, canvas.height).data, expected: input.data, actualScale, nativeActual: actual});
-        return {widthError, rasterError, minimumWidth: Math.min(...widths), colors: result.stats.colors, outlines};
+        const outlines = window.measureSamplerOutline({
+            width: source.width,
+            height: source.height,
+            actual: ctx.getImageData(0, 0, canvas.width, canvas.height).data,
+            expected: input.data,
+            actualScale,
+            nativeActual: actual,
+        });
+        return {
+            widthError,
+            rasterError,
+            minimumWidth: Math.min(...widths),
+            colors: result.stats.colors,
+            outlines,
+        };
     });
     expect(metrics.colors).toBe(6);
     expect(metrics.widthError).toBeLessThan(.13);
@@ -127,7 +147,7 @@ test("the sampler preserves straight and curved thin outlines", async () => {
     // generator's two-pixel circle/red and 1.5-pixel ellipse stroke weights.
     for (const name of ["circle", "topLeft", "topRight", "bottomRight", "bottomLeft", "ellipse"]) {
         const outline = metrics.outlines[name];
-        const context = JSON.stringify({name, ...outline});
+        const context = JSON.stringify({ name, ...outline });
         expect(outline.samples, context).toBeGreaterThan(20);
         expect(outline.meanWidthError, context).toBeLessThan(.13);
         expect(outline.maxWidthError, context).toBeLessThan(.26);
@@ -153,8 +173,8 @@ test("the sampler preserves straight and curved thin outlines", async () => {
 // Firefox 155 on Linux x86_64 by (+0.7, +0.7), Chromium by (+0.8, 0).
 // Fixed pixels preserve both failures independently of the test rasterizer.
 test.each([
-    {name: "Firefox", file: "firefox-sampler.png", rings: 3, lineLimit: 40},
-    {name: "Chromium", file: "chromium-sampler.png", rings: 4, lineLimit: 100},
+    { name: "Firefox", file: "firefox-sampler.png", rings: 3, lineLimit: 40 },
+    { name: "Chromium", file: "chromium-sampler.png", rings: 4, lineLimit: 100 },
 ])("the $name sampler keeps a smooth outline after local topology repairs", async fixture => {
     const source = readFileSync(new URL(`fixtures/${fixture.file}`, import.meta.url)).toString("base64");
     const metrics = await page.evaluate(async source => {
@@ -178,7 +198,7 @@ test.each([
             curves: (ring.match(/[AC]/g) || []).length,
             lines: (ring.match(/L/g) || []).length,
         }));
-        return {stats: result.stats, geometry};
+        return { stats: result.stats, geometry };
     }, source);
 
     expect(metrics.stats.colors).toBe(6);
@@ -191,11 +211,14 @@ test.each([
     expect(metrics.stats.fallbackChains).toBe(0);
 });
 
-test.each([.45, .6].flatMap(slope => [0, 1, 2, 3].map(quarterTurns => ({slope, quarterTurns}))))(
+test.each([.45, .6].flatMap(slope => [0, 1, 2, 3].map(quarterTurns => ({ slope, quarterTurns }))))(
     "a clipped binary capsule stays smooth at slope $slope after $quarterTurns quarter turns", async config => {
         const input = makeClippedBinaryCapsule(config);
         const metrics = await page.evaluate(async input => {
-            const result = window.FlatLogoTracer.trace({...input, data: new Uint8ClampedArray(input.data)});
+            const result = window.FlatLogoTracer.trace({
+                ...input,
+                data: new Uint8ClampedArray(input.data),
+            });
             const svg = new DOMParser().parseFromString(result.svg, "image/svg+xml");
             const paths = [...svg.querySelectorAll("path")].map(path => path.getAttribute("d")).join("");
             const image = new Image();
@@ -224,7 +247,7 @@ test.each([.45, .6].flatMap(slope => [0, 1, 2, 3].map(quarterTurns => ({slope, q
                 error: error / actual.length,
             };
         }, input);
-        const context = JSON.stringify({config, ...metrics});
+        const context = JSON.stringify({ config, ...metrics });
         expect(metrics.colors, context).toBe(1);
         expect(metrics.rings, context).toBe(1);
         expect(metrics.curves, context).toBeGreaterThan(0);
@@ -239,11 +262,14 @@ test.each([.45, .6].flatMap(slope => [0, 1, 2, 3].map(quarterTurns => ({slope, q
 
 // Fully contained capsules exercise free loops rather than frame-anchored
 // chains. The analytic source is independent of the tracer and its fitters.
-test.each([.3, .8].flatMap(slope => [0, 1, 2, 3].map(quarterTurns => ({slope, quarterTurns}))))(
+test.each([.3, .8].flatMap(slope => [0, 1, 2, 3].map(quarterTurns => ({ slope, quarterTurns }))))(
     "a free binary capsule stays compact at slope $slope after $quarterTurns quarter turns", async config => {
-        const input = makeClippedBinaryCapsule({...config, clipped: false});
-        const metrics = await page.evaluate(async ({input, config}) => {
-            const result = window.FlatLogoTracer.trace({...input, data: new Uint8ClampedArray(input.data)}, {debug: true});
+        const input = makeClippedBinaryCapsule({ ...config, clipped: false });
+        const metrics = await page.evaluate(async ({ input, config }) => {
+            const result = window.FlatLogoTracer.trace({
+                ...input,
+                data: new Uint8ClampedArray(input.data),
+            }, { debug: true });
             const paintedChains = result.debug.chains.filter(chain => [chain.right, chain.left].some(id => result.debug.faces[id]?.color >= 0));
             const endY = config.slope * 90 + 18 * Math.hypot(1, config.slope) + .05;
             const originalWidth = config.quarterTurns % 2 ? input.height : input.width;
@@ -279,11 +305,13 @@ test.each([.3, .8].flatMap(slope => [0, 1, 2, 3].map(quarterTurns => ({slope, qu
                 for (let c = 0; c < 3; c++) error += Math.abs(actual[p + c] * actual[p + 3] / 255 - input.data[p + c] * input.data[p + 3] / 255);
                 error += Math.abs(actual[p + 3] - input.data[p + 3]);
             }
-            return {stats: result.stats, sideErrors,
+            return {
+                stats: result.stats, sideErrors,
                 touchesFrame: paintedChains.some(chain => chain.raw.some(p => p.x === 0 || p.y === 0 || p.x === input.width || p.y === input.height)),
-                error: error / actual.length};
-        }, {input, config});
-        const context = JSON.stringify({config, ...metrics});
+                error: error / actual.length,
+            };
+        }, { input, config });
+        const context = JSON.stringify({ config, ...metrics });
         expect(metrics.stats.colors, context).toBe(1);
         expect(metrics.stats.visibleRegions, context).toBe(1);
         expect(metrics.stats.fallbackChains, context).toBe(0);
@@ -295,31 +323,34 @@ test.each([.3, .8].flatMap(slope => [0, 1, 2, 3].map(quarterTurns => ({slope, qu
 
 // Compactness and pixel error do not detect a polygon guide replacing a round
 // end. Check the serialized curve requirement independently of those metrics.
-test.each([.3, .8].map(slope => ({slope})))("a free capsule at slope $slope retains curved ends after one quarter turn", async ({slope}) => {
-    const input = makeClippedBinaryCapsule({slope, quarterTurns: 1, clipped: false});
-    const stats = await page.evaluate(input => window.FlatLogoTracer.trace({...input, data: new Uint8ClampedArray(input.data)}).stats, input);
+test.each([.3, .8].map(slope => ({ slope })))("a free capsule at slope $slope retains curved ends after one quarter turn", async ({ slope }) => {
+    const input = makeClippedBinaryCapsule({ slope, quarterTurns: 1, clipped: false });
+    const stats = await page.evaluate(input => window.FlatLogoTracer.trace({
+        ...input,
+        data: new Uint8ClampedArray(input.data),
+    }).stats, input);
     const curves = stats.elements.cubics + stats.elements.arcs + stats.primitives.circle + stats.primitives.ellipse + stats.primitives.roundedRect;
     expect(curves).toBeGreaterThan(0);
 });
 
-test.each([10, 20].map(noise => ({noise})))("the parrot wing arm uses its neighboring paints at noise $noise", async ({noise}) => {
+test.each([10, 20].map(noise => ({ noise })))("the parrot wing arm uses its neighboring paints at noise $noise", async ({ noise }) => {
     await page.locator("#max-size").fill("1024");
     await page.locator("#file").setInputFiles(fileURLToPath(new URL("./parrot.jpg", import.meta.url)));
     await page.waitForFunction(() => document.querySelector("#source-name").textContent === "parrot.jpg" && !document.querySelector("#trace").disabled);
     const metrics = await page.evaluate(noise => {
         const canvas = document.querySelector("#source");
         const input = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
-        const result = window.FlatLogoTracer.trace(input, {noise, debug: true});
+        const result = window.FlatLogoTracer.trace(input, { noise, debug: true });
         const palette = result.stats.palette.map(hex => [1, 3, 5].map(offset => parseInt(hex.slice(offset, offset + 2), 16)));
         const closest = target => {
             const distances = palette.map(rgb => Math.hypot(...rgb.map((value, channel) => value - target[channel])));
             const label = distances.indexOf(Math.min(...distances));
-            return {label, distance: distances[label]};
+            return { label, distance: distances[label] };
         };
         const red = closest([221, 30, 35]);
         const blue = closest([43, 81, 155]);
         const brown = closest([130, 91, 67]);
-        const arm = Array.from({length: 17}, (_, offset) => result.debug.labels[(329 + offset) * input.width + 562]);
+        const arm = Array.from({ length: 17 }, (_, offset) => result.debug.labels[(329 + offset) * input.width + 562]);
         const holder = document.createElement("div");
         holder.innerHTML = result.svg;
         document.body.append(holder);

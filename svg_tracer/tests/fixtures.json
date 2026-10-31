@@ -1,163 +1,169 @@
 [
-  {
-    "name": "primitives",
-    "width": 300,
-    "height": 220,
-    "colors": 4,
-    "options": {}
-  },
-  {
-    "name": "overlapping",
-    "width": 320,
-    "height": 240,
-    "colors": 4,
-    "options": {}
-  },
-  {
-    "name": "outlined",
-    "width": 320,
-    "height": 240,
-    "colors": 5,
-    "options": {}
-  },
-  {
-    "name": "thin_outline_auto",
-    "width": 320,
-    "height": 240,
-    "colors": 3,
-    "options": {
-      "colors": 0
+    {
+        "name": "primitives",
+        "width": 300,
+        "height": 220,
+        "colors": 4,
+        "options": {}
+    },
+    {
+        "name": "overlapping",
+        "width": 320,
+        "height": 240,
+        "colors": 4,
+        "options": {}
+    },
+    {
+        "name": "outlined",
+        "width": 320,
+        "height": 240,
+        "colors": 5,
+        "options": {}
+    },
+    {
+        "name": "thin_outline_auto",
+        "width": 320,
+        "height": 240,
+        "colors": 3,
+        "options": {
+            "colors": 0
+        }
+    },
+    {
+        "name": "small_accents_auto",
+        "width": 320,
+        "height": 240,
+        "colors": 4,
+        "options": {
+            "colors": 0
+        }
+    },
+    {
+        "name": "transparent",
+        "width": 240,
+        "height": 210,
+        "colors": 3,
+        "options": {}
+    },
+    {
+        "name": "concave_star",
+        "width": 240,
+        "height": 240,
+        "colors": 2,
+        "options": {}
+    },
+    {
+        "name": "rounded_capsules",
+        "width": 320,
+        "height": 230,
+        "colors": 4,
+        "options": {}
+    },
+    {
+        "name": "organic",
+        "width": 300,
+        "height": 240,
+        "colors": 3,
+        "options": {}
+    },
+    {
+        "name": "holes",
+        "width": 240,
+        "height": 220,
+        "colors": 3,
+        "options": {
+            "removeBackground": true
+        }
+    },
+    {
+        "name": "narrow_bridges",
+        "width": 260,
+        "height": 180,
+        "colors": 3,
+        "options": {}
+    },
+    {
+        "name": "jpeg_overlap",
+        "width": 320,
+        "height": 220,
+        "colors": 4,
+        "options": {}
+    },
+    {
+        "name": "gray_edge_blue_decoy",
+        "width": 280,
+        "height": 180,
+        "colors": 3,
+        "options": {}
+    },
+    {
+        "name": "twenty_colors",
+        "width": 280,
+        "height": 210,
+        "colors": 21,
+        "options": {}
+    },
+    {
+        "name": "diagonal_topology",
+        "width": 100,
+        "height": 100,
+        "colors": 3,
+        "options": {
+            "minArea": 0
+        }
+    },
+    {
+        "name": "transparent_empty",
+        "width": 32,
+        "height": 24,
+        "colors": 0,
+        "options": {
+            "colors": 0
+        }
+    },
+    {
+        "name": "single_color",
+        "width": 90,
+        "height": 75,
+        "colors": 1,
+        "options": {}
+    },
+    {
+        "name": "tiny_pixels",
+        "width": 12,
+        "height": 12,
+        "colors": 3,
+        "options": {
+            "minArea": 0,
+            "noise": 0,
+            "tolerance": 0.2
+        }
+    },
+    {
+        "name": "edge_artifacts",
+        "width": 320,
+        "height": 260,
+        "colors": 2,
+        "options": {
+            "colors": 0
+        }
+    },
+    {
+        "name": "transparent_outline_auto",
+        "width": 220,
+        "height": 180,
+        "colors": 2,
+        "options": {
+            "colors": 0
+        }
+    },
+    {
+        "name": "transparent_accent_auto",
+        "width": 220,
+        "height": 180,
+        "colors": 2,
+        "options": {
+            "colors": 0
+        }
     }
-  },
-  {
-    "name": "small_accents_auto",
-    "width": 320,
-    "height": 240,
-    "colors": 4,
-    "options": {
-      "colors": 0
-    }
-  },
-  {
-    "name": "transparent",
-    "width": 240,
-    "height": 210,
-    "colors": 3,
-    "options": {}
-  },
-  {
-    "name": "concave_star",
-    "width": 240,
-    "height": 240,
-    "colors": 2,
-    "options": {}
-  },
-  {
-    "name": "rounded_capsules",
-    "width": 320,
-    "height": 230,
-    "colors": 4,
-    "options": {}
-  },
-  {
-    "name": "organic",
-    "width": 300,
-    "height": 240,
-    "colors": 3,
-    "options": {}
-  },
-  {
-    "name": "holes",
-    "width": 240,
-    "height": 220,
-    "colors": 3,
-    "options": {
-      "removeBackground": true
-    }
-  },
-  {
-    "name": "narrow_bridges",
-    "width": 260,
-    "height": 180,
-    "colors": 3,
-    "options": {}
-  },
-  {
-    "name": "jpeg_overlap",
-    "width": 320,
-    "height": 220,
-    "colors": 4,
-    "options": {}
-  },
-  {
-    "name": "gray_edge_blue_decoy",
-    "width": 280,
-    "height": 180,
-    "colors": 3,
-    "options": {}
-  },
-  {
-    "name": "twenty_colors",
-    "width": 280,
-    "height": 210,
-    "colors": 21,
-    "options": {}
-  },
-  {
-    "name": "diagonal_topology",
-    "width": 100,
-    "height": 100,
-    "colors": 3,
-    "options": {
-      "minArea": 0
-    }
-  },
-  {
-    "name": "transparent_empty",
-    "width": 32,
-    "height": 24,
-    "colors": 0,
-    "options": {
-      "colors": 0
-    }
-  },
-  {
-    "name": "single_color",
-    "width": 90,
-    "height": 75,
-    "colors": 1,
-    "options": {}
-  },
-  {
-    "name": "tiny_pixels",
-    "width": 12,
-    "height": 12,
-    "colors": 3,
-    "options": {
-      "minArea": 0,
-      "noise": 0,
-      "tolerance": 0.2
-    }
-  },
-  {
-    "name": "edge_artifacts",
-    "width": 320,
-    "height": 260,
-    "colors": 2,
-    "options": {"colors": 0}
-  },
-  {
-    "name": "transparent_outline_auto",
-    "width": 220,
-    "height": 180,
-    "colors": 2,
-    "options": {"colors": 0}
-  },
-  {
-    "name": "transparent_accent_auto",
-    "width": 220,
-    "height": 180,
-    "colors": 2,
-    "options": {"colors": 0}
-  }
 ]

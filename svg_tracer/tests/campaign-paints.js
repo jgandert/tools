@@ -3,7 +3,7 @@
 // Original vector geometry is integrated over 8x8 square samples, then passed
 // through a separable resampling kernel. The pale slit is background, never a
 // third paint. This reproduces a denoiser-created plateau without reference art.
-export function resampledSlit({phase = 0, blur = .08, transpose = false} = {}) {
+export function resampledSlit({ phase = 0, blur = .08, transpose = false } = {}) {
     const width = 96;
     const height = 96;
     const background = [253, 252, 246];
@@ -36,19 +36,19 @@ export function resampledSlit({phase = 0, blur = .08, transpose = false} = {}) {
             }
         }
     }
-    if (!transpose) return {width, height, data: filtered};
+    if (!transpose) return { width, height, data: filtered };
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             data.set(filtered.subarray(4 * (y * width + x), 4 * (y * width + x + 1)), 4 * (x * height + y));
         }
     }
-    return {width: height, height: width, data};
+    return { width: height, height: width, data };
 }
 
 // The accent is exactly a mixture of both large paints, so a generic mixture
 // rejection would erase it. Independent channel noise defeats strict 3x3-core
 // corroboration while preserving the intended paint's mean and ownership.
-export function noisyMidpointAccent({size = 4, jitter = 8, position = 16} = {}) {
+export function noisyMidpointAccent({ size = 4, jitter = 8, position = 16 } = {}) {
     const width = 64;
     const height = 64;
     const data = new Uint8ClampedArray(width * height * 4);
@@ -65,12 +65,12 @@ export function noisyMidpointAccent({size = 4, jitter = 8, position = 16} = {}) 
             data.set([...rgb, 255], 4 * (y * width + x));
         }
     }
-    return {width, height, data};
+    return { width, height, data };
 }
 
 // Two-pixel correlated columns can support several noisy palette modes.
 // Removing one mode must not move the independently known split at x=32.
-export function correlatedColumnAccent({diamond = false, offMixture = false} = {}) {
+export function correlatedColumnAccent({ diamond = false, offMixture = false } = {}) {
     const width = 64;
     const height = 64;
     const paints = [[24, 48, 84], [204, 158, 64], offMixture ? [114, 119, 110] : [114, 103, 74]];
@@ -91,5 +91,5 @@ export function correlatedColumnAccent({diamond = false, offMixture = false} = {
             data.set([...paints[owner].map(value => Math.max(0, Math.min(255, value + jitter))), 255], 4 * pixel);
         }
     }
-    return {image: {width, height, data}, owners, paints};
+    return { image: { width, height, data }, owners, paints };
 }

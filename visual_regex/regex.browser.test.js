@@ -63,7 +63,13 @@ async function loadPattern(pattern, joined = true) {
 }
 
 async function matchingResults(pattern, inputs) {
-    return page.evaluate(({ pattern, inputs }) => inputs.map(input => new RegExp(pattern).test(input)), { pattern, inputs });
+    return page.evaluate(({
+                              pattern,
+                              inputs,
+                          }) => inputs.map(input => new RegExp(pattern).test(input)), {
+        pattern,
+        inputs,
+    });
 }
 
 const patterns = [

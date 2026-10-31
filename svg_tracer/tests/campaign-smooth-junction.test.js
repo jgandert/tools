@@ -1,8 +1,8 @@
 // Copyright 2026 Joschua Gandert - SPDX-License-Identifier: Apache-2.0
-import {expect, test} from "bun:test";
-import {createRequire} from "node:module";
+import { expect, test } from "bun:test";
+import { createRequire } from "node:module";
 
-const {createTracer} = createRequire(import.meta.url)("../tracer.js");
+const { createTracer } = createRequire(import.meta.url)("../tracer.js");
 
 const colors = {
     background: [248, 247, 242],
@@ -29,12 +29,12 @@ function smoothJunctionImage() {
             data.set([...paint, 255], (y * width + x) * 4);
         }
     }
-    return {image: {width, height, data}, junction: {x: junctionX, y: 48}};
+    return { image: { width, height, data }, junction: { x: junctionX, y: 48 } };
 }
 
 function unit(x, y) {
     const length = Math.hypot(x, y) || 1;
-    return {x: x / length, y: y / length};
+    return { x: x / length, y: y / length };
 }
 
 function segmentTangent(segment, start) {
@@ -59,8 +59,14 @@ function angleBetween(a, b) {
 }
 
 test("a smooth painted boundary stays smooth close to its junction", () => {
-    const {image, junction} = smoothJunctionImage();
-    const result = createTracer().trace(image, {colors: 3, noise: 0, tolerance: 1.25, minArea: 0, debug: true});
+    const { image, junction } = smoothJunctionImage();
+    const result = createTracer().trace(image, {
+        colors: 3,
+        noise: 0,
+        tolerance: 1.25,
+        minArea: 0,
+        debug: true,
+    });
     expect(result.stats.colors).toBe(3);
     expect(result.stats.visibleRegions).toBe(3);
     expect(result.stats.fallbackChains).toBe(0);
@@ -86,16 +92,16 @@ test("a smooth painted boundary stays smooth close to its junction", () => {
         const point = chain.segments[index].a;
         if (Math.hypot(point.x - junction.x, point.y - junction.y) <= 5) {
             const degrees = angleBetween(incoming, outgoing);
-            if (degrees > 30) falseCorners.push({point, degrees});
+            if (degrees > 30) falseCorners.push({ point, degrees });
         }
     }
     expect(falseCorners).toEqual([]);
 });
 
-function roundedJunctionImage({rotation, bendOffset}) {
+function roundedJunctionImage({ rotation, bendOffset }) {
     const width = 160;
     const height = 140;
-    const junction = {x: 60.23, y: 70};
+    const junction = { x: 60.23, y: 70 };
     const cosine = Math.cos(rotation);
     const sine = Math.sin(rotation);
     const edgeY = x => .5 * Math.sqrt((x - bendOffset) ** 2 + .5 ** 2);
@@ -121,16 +127,22 @@ function roundedJunctionImage({rotation, bendOffset}) {
             data.set([...rgb, 255], (y * width + x) * 4);
         }
     }
-    return {image: {width, height, data}, junction};
+    return { image: { width, height, data }, junction };
 }
 
 test.each([
-    {rotation: 0, bendOffset: 4},
-    {rotation: .49, bendOffset: 4},
-    {rotation: 0, bendOffset: 6},
+    { rotation: 0, bendOffset: 4 },
+    { rotation: .49, bendOffset: 4 },
+    { rotation: 0, bendOffset: 6 },
 ])("a smooth concentrated bend stays smooth after its junction: rotation $rotation, offset $bendOffset", config => {
-    const {image, junction} = roundedJunctionImage(config);
-    const result = createTracer().trace(image, {colors: 3, noise: 0, tolerance: 1.25, minArea: 0, debug: true});
+    const { image, junction } = roundedJunctionImage(config);
+    const result = createTracer().trace(image, {
+        colors: 3,
+        noise: 0,
+        tolerance: 1.25,
+        minArea: 0,
+        debug: true,
+    });
     expect(result.stats.colors).toBe(3);
     expect(result.stats.visibleRegions).toBe(3);
     expect(result.stats.fallbackChains).toBe(0);
@@ -148,7 +160,7 @@ test.each([
             if (Math.hypot(point.x - junction.x, point.y - junction.y) > 11.25) continue;
             joins++;
             const degrees = angleBetween(segmentTangent(chain.segments[i - 1], false), segmentTangent(chain.segments[i], true));
-            expect(degrees, JSON.stringify({config, point, degrees})).toBeLessThan(30);
+            expect(degrees, JSON.stringify({ config, point, degrees })).toBeLessThan(30);
         }
     }
     expect(joins).toBeGreaterThan(0);

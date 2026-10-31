@@ -1011,8 +1011,10 @@ export const TrackScheduler = {
                 for (const id of event.tieTargets || []) {
                     tieReleaseTime = Math.max(tieReleaseTime, tieStarts.get(id) ?? eventEnd);
                 }
-                submissions.push({ event: { ...event, tieCycle: cycleIndex, tieReleaseTime },
-                    start: eventStart, duration: Math.max(0, eventEnd - eventStart) });
+                submissions.push({
+                    event: { ...event, tieCycle: cycleIndex, tieReleaseTime },
+                    start: eventStart, duration: Math.max(0, eventEnd - eventStart),
+                });
             }
             if (cycle.pending.size === 0 && cycleIndex !== this._currentCycle) {
                 this._pendingCycles.delete(cycleIndex);

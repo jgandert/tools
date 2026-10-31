@@ -1,6 +1,6 @@
 /* Copyright 2026 Joschua Gandert - SPDX-License-Identifier: Apache-2.0 */
-import {readFile} from "node:fs/promises";
-import {isDeepStrictEqual} from "node:util";
+import { readFile } from "node:fs/promises";
+import { isDeepStrictEqual } from "node:util";
 
 export function compareCampaignResults(baseline, diagnostic) {
     if (baseline.metadata.coreSHA256 !== diagnostic.metadata.coreSHA256 || baseline.metadata.fixtureSHA256 !== diagnostic.metadata.fixtureSHA256) {
@@ -20,7 +20,7 @@ export function compareCampaignResults(baseline, diagnostic) {
         return isDeepStrictEqual(original.get(key), normalize(row)) ? [] : [key];
     });
     if (original.size !== diagnostic.results.length) changed.push("case count");
-    return {compared: diagnostic.results.length, changed};
+    return { compared: diagnostic.results.length, changed };
 }
 
 export function summarizeValidation(report) {
@@ -29,13 +29,23 @@ export function summarizeValidation(report) {
         if (row.status !== "ok" || !row.diagnostics) throw Error("Expected a successful --diagnose campaign report.");
         for (const probe of row.diagnostics.failedProbes) {
             const key = `${row.fixtureId}/${probe.name}`;
-            const group = groups.get(key) || {fixture: row.fixtureId, probe: probe.name, cases: []};
+            const group = groups.get(key) || {
+                fixture: row.fixtureId,
+                probe: probe.name,
+                cases: [],
+            };
             const evidence = row.diagnostics.paintEvidence[probe.paintEvidenceIndex];
-            group.cases.push({noise: row.noise, mode: row.colorMode, rgba: probe.decodedRGBA, coverage: probe.sourcePixelCoverage,
+            group.cases.push({
+                noise: row.noise,
+                mode: row.colorMode,
+                rgba: probe.decodedRGBA,
+                coverage: probe.sourcePixelCoverage,
                 allocatedOperationalLabels: evidence.operationalResultLabels,
                 labels: [probe.nearestLabel, probe.correctedLabel, probe.finalLabel, probe.emittedResultLabel],
-                native: probe.emittedNativeOwnership, localSourceCorePixels: probe.sourceComponent.corePixels,
-                boundary: probe.localBoundary ? Object.fromEntries(["raw", "samples", "flat"].map(key => [key, probe.localBoundary.correspondence[key].matches.map(match => match.offset)])) : null});
+                native: probe.emittedNativeOwnership,
+                localSourceCorePixels: probe.sourceComponent.corePixels,
+                boundary: probe.localBoundary ? Object.fromEntries(["raw", "samples", "flat"].map(key => [key, probe.localBoundary.correspondence[key].matches.map(match => match.offset)])) : null,
+            });
             groups.set(key, group);
         }
     }
@@ -43,16 +53,32 @@ export function summarizeValidation(report) {
     const stages = Object.fromEntries(["raw", "samples", "flat"].map(key => {
         const valid = normals.filter(normal => normal.available);
         const comparisons = valid.flatMap(normal => normal.correspondence[key].matches);
-        return [key, {matches: comparisons.length, missing: valid.reduce((sum, normal) => sum + normal.correspondence[key].missing.length, 0),
-            maxLocalOffset: comparisons.length ? Math.max(...comparisons.map(match => Math.abs(match.offset))) : null}];
+        return [key, {
+            matches: comparisons.length,
+            missing: valid.reduce((sum, normal) => sum + normal.correspondence[key].missing.length, 0),
+            maxLocalOffset: comparisons.length ? Math.max(...comparisons.map(match => Math.abs(match.offset))) : null,
+        }];
     }));
-    return {round: report.metadata.round, coreSHA256: report.metadata.coreSHA256,
+    return {
+        round: report.metadata.round, coreSHA256: report.metadata.coreSHA256,
         failedProbes: [...groups.values()].reduce((sum, group) => sum + group.cases.length, 0),
         nativeLabelVsEmissionDifferences: report.results.flatMap(row => row.diagnostics.failedProbes).filter(probe => probe.finalLabel !== probe.emittedResultLabel).length,
-        sourceNormals: {stations: normals.length, available: normals.filter(normal => normal.available).length, stages},
+        sourceNormals: {
+            stations: normals.length,
+            available: normals.filter(normal => normal.available).length,
+            stages,
+        },
         groups: [...groups.values()],
-        fallbackChains: report.results.flatMap(row => row.diagnostics.fallbackChains.map(chain => ({fixture: row.fixtureId, noise: row.noise, mode: row.colorMode, id: chain.id,
-            rawBox: chain.rawBox, reasons: [...new Set(chain.events.map(event => event.reason))], witnesses: [...new Set(chain.events.filter(event => event.point?.x !== undefined).map(event => `${event.point.x},${event.point.y}`))]})))};
+        fallbackChains: report.results.flatMap(row => row.diagnostics.fallbackChains.map(chain => ({
+            fixture: row.fixtureId,
+            noise: row.noise,
+            mode: row.colorMode,
+            id: chain.id,
+            rawBox: chain.rawBox,
+            reasons: [...new Set(chain.events.map(event => event.reason))],
+            witnesses: [...new Set(chain.events.filter(event => event.point?.x !== undefined).map(event => `${event.point.x},${event.point.y}`))],
+        }))),
+    };
 }
 
 if (import.meta.main) {

@@ -65,7 +65,9 @@ test.each(exportCases)("IntelliJ JAR exports complete theme metadata over %s in 
             return url.protocol === "file:" || url.origin === server.url.origin ? route.continue() : route.abort();
         });
         if (fallback) {
-            await page.addInitScript(() => { window.CompressionStream = undefined; });
+            await page.addInitScript(() => {
+                window.CompressionStream = undefined;
+            });
         }
         const url = protocol === "file" ? new URL("index.html", import.meta.url) : new URL("code_theme_builder/index.html", server.url);
         await page.goto(url.href);

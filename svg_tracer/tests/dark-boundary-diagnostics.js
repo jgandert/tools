@@ -6,17 +6,21 @@ export function createDarkBoundaryDiagnostics(intersections) {
     const bounds = points => points.reduce((box, p) => ({
         minX: Math.min(box.minX, p.x), minY: Math.min(box.minY, p.y),
         maxX: Math.max(box.maxX, p.x), maxY: Math.max(box.maxY, p.y),
-    }), {minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity});
+    }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
 
     function matchPalette(intended, palette, threshold = 52) {
         const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
         const targets = intended.map(rgb);
         const colors = palette.map(rgb);
         const used = new Set();
-        let best = {count: -1, distance: Infinity, mapping: Array(colors.length).fill(-2)};
+        let best = { count: -1, distance: Infinity, mapping: Array(colors.length).fill(-2) };
         const search = (target, mapping, count, distance) => {
             if (target === targets.length) {
-                if (count > best.count || count === best.count && distance < best.distance) best = {count, distance, mapping: [...mapping]};
+                if (count > best.count || count === best.count && distance < best.distance) best = {
+                    count,
+                    distance,
+                    mapping: [...mapping],
+                };
                 return;
             }
             search(target + 1, mapping, count, distance);
@@ -49,7 +53,7 @@ export function createDarkBoundaryDiagnostics(intersections) {
                 if (at(mid) === from) low = mid;
                 else high = mid;
             }
-            hits.push({at: (low + high) / 2, from, to});
+            hits.push({ at: (low + high) / 2, from, to });
             from = to;
         }
         return hits;
@@ -60,7 +64,7 @@ export function createDarkBoundaryDiagnostics(intersections) {
             const paints = [chain.right, chain.left].map(face => face < 0 ? -1 : debug.faces[face].color);
             return intersections.crossings(origin, normal, [chain[key]])
                 .filter(at => Math.abs(at) <= radius)
-                .map(at => ({at, chain: chain.id, paints}));
+                .map(at => ({ at, chain: chain.id, paints }));
         }).sort((a, b) => a.at - b.at);
     }
 
@@ -71,10 +75,16 @@ export function createDarkBoundaryDiagnostics(intersections) {
         const overlaps = interval => Math.min(end.at, interval.exit) > Math.max(start.at, interval.entry);
         const ownerIntervals = ownerAt => {
             const initial = ownerAt(origin.x - 3 * normal.x, origin.y - 3 * normal.y);
-            const stops = [{at: -3, to: initial}, ...transitions(ownerAt, origin, normal), {at: 3, to: null}];
-            return stops.slice(0, -1).flatMap((hit, i) => hit.to === 0 ? [{entry: hit.at, exit: stops[i + 1].at}] : []).filter(overlaps);
+            const stops = [{
+                at: -3,
+                to: initial,
+            }, ...transitions(ownerAt, origin, normal), { at: 3, to: null }];
+            return stops.slice(0, -1).flatMap((hit, i) => hit.to === 0 ? [{
+                entry: hit.at,
+                exit: stops[i + 1].at,
+            }] : []).filter(overlaps);
         };
-        const result = {labels: ownerIntervals(labelAt)};
+        const result = { labels: ownerIntervals(labelAt) };
         if (outputAt) result.emitted = ownerIntervals(outputAt);
         for (const key of ["raw", "samples", "flat"]) {
             result[key] = debug.faces.filter(face => face.color === 0).flatMap(face => {
@@ -90,8 +100,13 @@ export function createDarkBoundaryDiagnostics(intersections) {
         for (const chain of debug.chains) {
             for (const [end, p] of [[0, chain.raw[0]], [1, chain.raw.at(-1)]]) {
                 const key = `${p.x},${p.y}`;
-                const group = groups.get(key) || {raw: p, ends: []};
-                group.ends.push({chain: chain.id, end, sample: end ? chain.samples.at(-1) : chain.samples[0], flat: end ? chain.flat.at(-1) : chain.flat[0]});
+                const group = groups.get(key) || { raw: p, ends: [] };
+                group.ends.push({
+                    chain: chain.id,
+                    end,
+                    sample: end ? chain.samples.at(-1) : chain.samples[0],
+                    flat: end ? chain.flat.at(-1) : chain.flat[0],
+                });
                 groups.set(key, group);
             }
         }
@@ -107,7 +122,16 @@ export function createDarkBoundaryDiagnostics(intersections) {
             const id = debug.componentIds[p];
             let component = byId.get(id);
             if (!component) {
-                component = {id, paint: debug.labels[p], count: 0, sum: [0, 0, 0, 0], min: [255, 255, 255, 255], max: [0, 0, 0, 0], pixels: [], box: {minX: input.width, minY: input.height, maxX: 0, maxY: 0}};
+                component = {
+                    id,
+                    paint: debug.labels[p],
+                    count: 0,
+                    sum: [0, 0, 0, 0],
+                    min: [255, 255, 255, 255],
+                    max: [0, 0, 0, 0],
+                    pixels: [],
+                    box: { minX: input.width, minY: input.height, maxX: 0, maxY: 0 },
+                };
                 byId.set(id, component);
             }
             component.count++;
@@ -123,10 +147,25 @@ export function createDarkBoundaryDiagnostics(intersections) {
                 component.min[c] = Math.min(component.min[c], value);
                 component.max[c] = Math.max(component.max[c], value);
             }
-            if (component.pixels.length < 48) component.pixels.push({x, y, rgba: Array.from(input.data.slice(4 * p, 4 * p + 4))});
+            if (component.pixels.length < 48) component.pixels.push({
+                x,
+                y,
+                rgba: Array.from(input.data.slice(4 * p, 4 * p + 4)),
+            });
         }
-        return [...byId.values()].map(({sum, ...component}) => ({...component, mean: sum.map(value => value / component.count)}));
+        return [...byId.values()].map(({ sum, ...component }) => ({
+            ...component,
+            mean: sum.map(value => value / component.count),
+        }));
     }
 
-    return {bounds, matchPalette, transitions, chainHits, separatorCoverage, endpointGroups, components};
+    return {
+        bounds,
+        matchPalette,
+        transitions,
+        chainHits,
+        separatorCoverage,
+        endpointGroups,
+        components,
+    };
 }

@@ -1,8 +1,8 @@
 {
-  "name": "motif-render-wav",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "playwright-core": "1.63.0"
-  }
+    "name": "motif-render-wav",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "playwright-core": "1.63.0"
+    }
 }

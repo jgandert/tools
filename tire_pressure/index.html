@@ -1,110 +1,277 @@
 <!DOCTYPE html>
 <html class="theme-turquoise" lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<meta name="description" content="Bicycle tire-pressure estimates for front and rear wheels, with transparent load, tire width and surface calculations. Works offline.">
-<title>Bicycle Tire Pressure</title>
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<!-- © 2026 Joschua Gandert — Apache 2.0 -->
-<link rel="stylesheet" href="../one.css">
-<link rel="stylesheet" href="app.css">
-<script defer src="model.js"></script>
-<script defer src="app.js"></script>
-<script defer src="../one.js"></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+          content="Bicycle tire-pressure estimates for front and rear wheels, with transparent load, tire width and surface calculations. Works offline.">
+    <title>Bicycle Tire Pressure</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert — Apache 2.0 -->
+    <link rel="stylesheet" href="../one.css">
+    <link rel="stylesheet" href="app.css">
+    <script defer src="model.js"></script>
+    <script defer src="app.js"></script>
+    <script defer src="../one.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#workspace">Skip to pressure results</a>
-<input class="aside-state-toggle" id="aside-state" type="checkbox" tabindex="-1" aria-label="Toggle settings">
+<input class="aside-state-toggle" id="aside-state" type="checkbox" tabindex="-1"
+       aria-label="Toggle settings">
 <header>
-<label class="aside-toggle-btn" for="aside-state" role="button" tabindex="0" aria-controls="controls" aria-label="Toggle settings" aria-expanded="true" title="Toggle settings"></label>
-<hgroup class="brand"><h1>Bicycle Tire Pressure</h1><p>Enter data about yourself and your bike, and receive recommended pressure values.</p></hgroup>
-<button id="copy-result" class="btn-primary" type="button" aria-label="Copy pressures and setup" title="Copy pressures and setup"><span class="sym" aria-hidden="true">content_copy</span><span class="hide-mobile">Copy result</span></button>
-<button id="reset" class="btn-sym" type="button" aria-label="Reset all settings" title="Reset all settings"><span class="sym" aria-hidden="true">refresh</span></button>
+    <label class="aside-toggle-btn" for="aside-state" role="button" tabindex="0"
+           aria-controls="controls" aria-label="Toggle settings" aria-expanded="true"
+           title="Toggle settings"></label>
+    <hgroup class="brand"><h1>Bicycle Tire Pressure</h1>
+        <p>Enter data about yourself and your bike, and receive recommended pressure values.</p>
+    </hgroup>
+    <button id="copy-result" class="btn-primary" type="button" aria-label="Copy pressures and setup"
+            title="Copy pressures and setup"><span class="sym"
+                                                   aria-hidden="true">content_copy</span><span
+        class="hide-mobile">Copy result</span></button>
+    <button id="reset" class="btn-sym" type="button" aria-label="Reset all settings"
+            title="Reset all settings"><span class="sym" aria-hidden="true">refresh</span></button>
 </header>
 <aside id="controls" aria-label="Bicycle and rider settings">
-<form id="settings" novalidate>
-<h2>Your setup</h2>
-<label for="preset">Bike preset</label>
-<select id="preset" name="preset">
-<option value="city">City / upright</option><option value="road">Road / endurance</option><option value="gravel">Gravel / all-road</option><option value="touring">Trekking / touring</option><option value="mtb">MTB / moderate trail</option><option value="folding">Folding / compact</option>
-</select>
-<fieldset>
-<legend>1 · Load</legend>
-<div class="input-row"><label for="mass-unit">Mass unit<select id="mass-unit"><option value="kg">kg</option><option value="lb">lb</option></select></label><label for="load-mode">Load input<select id="load-mode"><option value="estimated">Estimate</option><option value="measured">Scales</option></select></label></div>
-<div id="estimated-load">
-<div class="input-row"><label for="rider">Rider <span data-mass-unit>(kg)</span><input id="rider" type="number" inputmode="decimal" min="25" max="150" step="any" value="79" data-key="riderKg" data-quantity="mass" required></label><label for="bike">Bicycle <span data-mass-unit>(kg)</span><input id="bike" type="number" inputmode="decimal" min="4" max="50" step="any" value="17" data-key="bikeKg" data-quantity="mass" required></label></div>
-<p class="text-xs text-muted">Rider in riding clothes. Bike ready to ride, including bottles, tools, motor and battery. Count each item once.</p>
-<details id="cargo-details"><summary>Cargo &amp; weight distribution</summary>
-<div>
-<label for="gear">Backpack / central luggage <span data-mass-unit>(kg)</span></label><input id="gear" type="number" inputmode="decimal" min="0" max="40" step="any" value="0" data-key="gearKg" data-quantity="mass">
-<div class="input-row"><label for="front-cargo">At front axle <span data-mass-unit>(kg)</span><input id="front-cargo" type="number" inputmode="decimal" min="0" max="30" step="any" value="0" data-key="frontCargoKg" data-quantity="mass"></label><label for="rear-cargo">At rear axle <span data-mass-unit>(kg)</span><input id="rear-cargo" type="number" inputmode="decimal" min="0" max="40" step="any" value="0" data-key="rearCargoKg" data-quantity="mass"></label></div>
-<label for="front-share">Front share before axle cargo (%)</label><input id="front-share" type="number" inputmode="decimal" min="20" max="80" step="any" value="40" data-key="frontShare" data-quantity="percent">
-<p class="text-xs text-muted">A preset is only an estimate. Front/rear cargo is modeled directly above that axle. Overhanging baskets, child seats and unusual geometries need measured wheel loads and equipment-specific advice.</p>
-</div></details>
-</div>
-<div id="measured-load" hidden>
-<div class="input-row"><label for="measured-front">Front load <span data-mass-unit>(kg)</span><input id="measured-front" type="number" inputmode="decimal" min="5" max="120" step="any" value="" placeholder="Scale reading" data-key="measuredFrontKg" data-quantity="mass"></label><label for="measured-rear">Rear load <span data-mass-unit>(kg)</span><input id="measured-rear" type="number" inputmode="decimal" min="5" max="120" step="any" value="" placeholder="Scale reading" data-key="measuredRearKg" data-quantity="mass"></label></div>
-<p class="text-xs text-muted">Measure with rider and all luggage aboard, in a normal riding position, with both wheels at the same height. Use two scales, or one scale and an equal-height block. Have a helper steady the bike without taking weight. These readings replace all rider, bike and cargo entries.</p>
-</div>
-</fieldset>
-<fieldset>
-<legend>2 · Tires &amp; wheels</legend>
-<div class="input-row"><label for="width-unit">Width unit<select id="width-unit"><option value="mm">mm</option><option value="in">in</option></select></label><label for="width-basis">Width source<select id="width-basis"><option value="sidewall">Sidewall</option><option value="measured">Measured</option></select></label></div>
-<div class="input-row"><label for="front-width">Front width <span data-width-unit>(mm)</span><input id="front-width" type="number" inputmode="decimal" min="23" max="75" step="any" value="47" data-key="frontWidthMm" data-quantity="width" required></label><label for="rear-width">Rear width <span data-width-unit>(mm)</span><input id="rear-width" type="number" inputmode="decimal" min="23" max="75" step="any" value="47" data-key="rearWidthMm" data-quantity="width" required disabled></label></div>
-<label><input id="same-width" type="checkbox" checked> Same tire width front and rear</label>
-<p class="text-xs text-muted">Use actual inflated casing width when possible, not the tread knobs. Rim width already affects that measurement; it is not counted again.</p>
-<label for="front-bsd">Wheel size / bead-seat diameter</label>
-<select id="front-bsd"><option value="305">16-inch compact · 305 mm</option><option value="349">16-inch folding · 349 mm</option><option value="355">18-inch · 355 mm</option><option value="406">20-inch compact · 406 mm</option><option value="451">20-inch narrow · 451 mm</option><option value="507">24-inch · 507 mm</option><option value="540">24-inch traditional · 540 mm</option><option value="559">26-inch MTB / city · 559 mm</option><option value="584">27.5-inch / 650B · 584 mm</option><option value="590">26-inch traditional · 590 mm</option><option value="622" selected>700C / 28 / 29-inch · 622 mm</option><option value="635">28-inch traditional · 635 mm</option></select>
-<label><input id="same-wheel" type="checkbox" checked> Same wheel diameter front and rear</label>
-<div id="rear-wheel-control" hidden><label for="rear-bsd">Rear bead-seat diameter</label><select id="rear-bsd"></select></div>
-<p class="text-xs text-muted">In "47–622", 47 is nominal width and 622 is bead-seat diameter. Inch wheel names can be ambiguous.</p>
-<label for="system">Air system</label><select id="system"><option value="tube" selected>Ordinary inner tube</option><option value="tubeless">Tubeless</option></select>
-</fieldset>
-<fieldset>
-<legend>3 · Ride</legend>
-<label for="surface">Main riding surface</label><select id="surface"><option value="smooth">Very smooth pavement</option><option value="road" selected>Ordinary paved roads</option><option value="rough">Rough pavement / chipseal</option><option value="gravel">Firm gravel / dirt roads</option><option value="coarse">Coarse, loose gravel</option><option value="trail">Moderate MTB trails</option></select>
-<label><input id="impact" type="checkbox" checked> Add 10% impact allowance</label>
-<p class="text-xs text-muted">For a more conservative start around rough edges or luggage. Not a substitute for slowing down, suitable tires, or manufacturer limits. Not for downhill, jumps, fat bikes or racing cyclocross.</p>
-</fieldset>
-<p class="text-xs text-muted" id="storage-status" role="status" aria-live="polite">Settings are saved automatically in this browser. No accounts, analytics or network requests. Check stored settings when changing equipment.</p>
-<button class="btn-primary w-full hide-desktop" id="show-results" type="button">View pressures</button>
-</form>
+    <form id="settings" novalidate>
+        <h2>Your setup</h2>
+        <label for="preset">Bike preset</label>
+        <select id="preset" name="preset">
+            <option value="city">City / upright</option>
+            <option value="road">Road / endurance</option>
+            <option value="gravel">Gravel / all-road</option>
+            <option value="touring">Trekking / touring</option>
+            <option value="mtb">MTB / moderate trail</option>
+            <option value="folding">Folding / compact</option>
+        </select>
+        <fieldset>
+            <legend>1 · Load</legend>
+            <div class="input-row"><label for="mass-unit">Mass unit<select id="mass-unit">
+                <option value="kg">kg</option>
+                <option value="lb">lb</option>
+            </select></label><label for="load-mode">Load input<select id="load-mode">
+                <option value="estimated">Estimate</option>
+                <option value="measured">Scales</option>
+            </select></label></div>
+            <div id="estimated-load">
+                <div class="input-row"><label for="rider">Rider <span
+                    data-mass-unit>(kg)</span><input id="rider" type="number" inputmode="decimal"
+                                                     min="25" max="150" step="any" value="79"
+                                                     data-key="riderKg" data-quantity="mass"
+                                                     required></label><label for="bike">Bicycle
+                    <span data-mass-unit>(kg)</span><input id="bike" type="number"
+                                                           inputmode="decimal" min="4" max="50"
+                                                           step="any" value="17" data-key="bikeKg"
+                                                           data-quantity="mass" required></label>
+                </div>
+                <p class="text-xs text-muted">Rider in riding clothes. Bike ready to ride, including
+                    bottles, tools, motor and battery. Count each item once.</p>
+                <details id="cargo-details">
+                    <summary>Cargo &amp; weight distribution</summary>
+                    <div>
+                        <label for="gear">Backpack / central luggage <span
+                            data-mass-unit>(kg)</span></label><input id="gear" type="number"
+                                                                     inputmode="decimal" min="0"
+                                                                     max="40" step="any" value="0"
+                                                                     data-key="gearKg"
+                                                                     data-quantity="mass">
+                        <div class="input-row"><label for="front-cargo">At front axle <span
+                            data-mass-unit>(kg)</span><input id="front-cargo" type="number"
+                                                             inputmode="decimal" min="0" max="30"
+                                                             step="any" value="0"
+                                                             data-key="frontCargoKg"
+                                                             data-quantity="mass"></label><label
+                            for="rear-cargo">At rear axle <span data-mass-unit>(kg)</span><input
+                            id="rear-cargo" type="number" inputmode="decimal" min="0" max="40"
+                            step="any" value="0" data-key="rearCargoKg"
+                            data-quantity="mass"></label></div>
+                        <label for="front-share">Front share before axle cargo (%)</label><input
+                        id="front-share" type="number" inputmode="decimal" min="20" max="80"
+                        step="any" value="40" data-key="frontShare" data-quantity="percent">
+                        <p class="text-xs text-muted">A preset is only an estimate. Front/rear cargo
+                            is modeled directly above that axle. Overhanging baskets, child seats
+                            and unusual geometries need measured wheel loads and equipment-specific
+                            advice.</p>
+                    </div>
+                </details>
+            </div>
+            <div id="measured-load" hidden>
+                <div class="input-row"><label for="measured-front">Front load <span data-mass-unit>(kg)</span><input
+                    id="measured-front" type="number" inputmode="decimal" min="5" max="120"
+                    step="any" value="" placeholder="Scale reading" data-key="measuredFrontKg"
+                    data-quantity="mass"></label><label for="measured-rear">Rear load <span
+                    data-mass-unit>(kg)</span><input id="measured-rear" type="number"
+                                                     inputmode="decimal" min="5" max="120"
+                                                     step="any" value="" placeholder="Scale reading"
+                                                     data-key="measuredRearKg" data-quantity="mass"></label>
+                </div>
+                <p class="text-xs text-muted">Measure with rider and all luggage aboard, in a normal
+                    riding position, with both wheels at the same height. Use two scales, or one
+                    scale and an equal-height block. Have a helper steady the bike without taking
+                    weight. These readings replace all rider, bike and cargo entries.</p>
+            </div>
+        </fieldset>
+        <fieldset>
+            <legend>2 · Tires &amp; wheels</legend>
+            <div class="input-row"><label for="width-unit">Width unit<select id="width-unit">
+                <option value="mm">mm</option>
+                <option value="in">in</option>
+            </select></label><label for="width-basis">Width source<select id="width-basis">
+                <option value="sidewall">Sidewall</option>
+                <option value="measured">Measured</option>
+            </select></label></div>
+            <div class="input-row"><label for="front-width">Front width <span
+                data-width-unit>(mm)</span><input id="front-width" type="number" inputmode="decimal"
+                                                  min="23" max="75" step="any" value="47"
+                                                  data-key="frontWidthMm" data-quantity="width"
+                                                  required></label><label for="rear-width">Rear
+                width <span data-width-unit>(mm)</span><input id="rear-width" type="number"
+                                                              inputmode="decimal" min="23" max="75"
+                                                              step="any" value="47"
+                                                              data-key="rearWidthMm"
+                                                              data-quantity="width" required
+                                                              disabled></label></div>
+            <label><input id="same-width" type="checkbox" checked> Same tire width front and
+                rear</label>
+            <p class="text-xs text-muted">Use actual inflated casing width when possible, not the
+                tread knobs. Rim width already affects that measurement; it is not counted
+                again.</p>
+            <label for="front-bsd">Wheel size / bead-seat diameter</label>
+            <select id="front-bsd">
+                <option value="305">16-inch compact · 305 mm</option>
+                <option value="349">16-inch folding · 349 mm</option>
+                <option value="355">18-inch · 355 mm</option>
+                <option value="406">20-inch compact · 406 mm</option>
+                <option value="451">20-inch narrow · 451 mm</option>
+                <option value="507">24-inch · 507 mm</option>
+                <option value="540">24-inch traditional · 540 mm</option>
+                <option value="559">26-inch MTB / city · 559 mm</option>
+                <option value="584">27.5-inch / 650B · 584 mm</option>
+                <option value="590">26-inch traditional · 590 mm</option>
+                <option value="622" selected>700C / 28 / 29-inch · 622 mm</option>
+                <option value="635">28-inch traditional · 635 mm</option>
+            </select>
+            <label><input id="same-wheel" type="checkbox" checked> Same wheel diameter front and
+                rear</label>
+            <div id="rear-wheel-control" hidden><label for="rear-bsd">Rear bead-seat
+                diameter</label><select id="rear-bsd"></select></div>
+            <p class="text-xs text-muted">In "47–622", 47 is nominal width and 622 is bead-seat
+                diameter. Inch wheel names can be ambiguous.</p>
+            <label for="system">Air system</label><select id="system">
+            <option value="tube" selected>Ordinary inner tube</option>
+            <option value="tubeless">Tubeless</option>
+        </select>
+        </fieldset>
+        <fieldset>
+            <legend>3 · Ride</legend>
+            <label for="surface">Main riding surface</label><select id="surface">
+            <option value="smooth">Very smooth pavement</option>
+            <option value="road" selected>Ordinary paved roads</option>
+            <option value="rough">Rough pavement / chipseal</option>
+            <option value="gravel">Firm gravel / dirt roads</option>
+            <option value="coarse">Coarse, loose gravel</option>
+            <option value="trail">Moderate MTB trails</option>
+        </select>
+            <label><input id="impact" type="checkbox" checked> Add 10% impact allowance</label>
+            <p class="text-xs text-muted">For a more conservative start around rough edges or
+                luggage. Not a substitute for slowing down, suitable tires, or manufacturer limits.
+                Not for downhill, jumps, fat bikes or racing cyclocross.</p>
+        </fieldset>
+        <p class="text-xs text-muted" id="storage-status" role="status" aria-live="polite">Settings
+            are saved automatically in this browser. No accounts, analytics or network requests.
+            Check stored settings when changing equipment.</p>
+        <button class="btn-primary w-full hide-desktop" id="show-results" type="button">View
+            pressures
+        </button>
+    </form>
 </aside>
 <main id="workspace" tabindex="-1">
-<noscript><section><h2>JavaScript is needed for the calculator</h2><p>Enable JavaScript in your browser. The tool runs locally and does not need an internet connection. The research and source code remain available in the downloaded folder.</p></section></noscript>
-<div class="header-row"><span class="tag tag-highlight" id="status-tag">Enter your setup</span></div>
-<section id="error-panel" hidden aria-labelledby="error-heading"><h3 id="error-heading">Check your inputs</h3><div id="error-list"></div></section>
-<div class="pressure-grid" id="pressure-results" aria-label="Estimated starting pressures">
-<section class="pressure-card" aria-labelledby="front-heading">
-<div class="header-row"><h3 id="front-heading" class="mb-0">Front wheel</h3><span class="tag" id="front-share-out">40% load</span></div>
-<p class="text-sm text-muted" id="front-caption">Estimated starting point</p>
-<div class="pressure-value"><output id="front-pressure" for="settings">—</output><span class="pressure-unit" id="front-unit">bar</span></div>
-<p class="pressure-secondary" id="front-secondary">— psi</p>
-<p class="text-sm mb-0" id="front-load">—</p>
-</section>
-<section class="pressure-card" aria-labelledby="rear-heading">
-<div class="header-row"><h3 id="rear-heading" class="mb-0">Rear wheel</h3><span class="tag" id="rear-share-out">60% load</span></div>
-<p class="text-sm text-muted" id="rear-caption">Estimated starting point</p>
-<div class="pressure-value"><output id="rear-pressure" for="settings">—</output><span class="pressure-unit" id="rear-unit">bar</span></div>
-<p class="pressure-secondary" id="rear-secondary">— psi</p>
-<p class="text-sm mb-0" id="rear-load">—</p>
-</section>
-</div>
-<div class="header-row result-meta"><p class="text-sm text-muted mb-0" id="setup-summary">Set up your bicycle in the sidebar.</p><div class="segmented-control" aria-label="Result pressure unit"><input id="result-bar" name="result-unit" type="radio" value="bar" checked><label for="result-bar">bar</label><input id="result-psi" name="result-unit" type="radio" value="psi"><label for="result-psi">psi</label></div></div>
-<section id="action-panel" class="mt-4" aria-labelledby="action-title" hidden>
-<h3 id="action-title">Setup notes</h3>
-<div id="critical-notices"></div>
-</section>
-<details id="assumptions-details"><summary><span id="assumptions-title">Assumptions &amp; adjustments</span></summary><div id="assumption-notices"></div></details>
-<section aria-labelledby="tuning-heading"><h3 id="tuning-heading">Dial it in on your own bike</h3>
-<ol class="steps"><li><div><strong>Check the real limits.</strong><p class="text-sm">Use the lower tire/rim maximum and any specified minimum. Check tire compatibility, wheel and bicycle load ratings, and tire condition. A pressure calculator cannot approve a wheel-and-tire combination.</p></div></li><li><div><strong>Use a gauge, then test gently.</strong><p class="text-sm">Check cold pressure before the ride with a consistent gauge. Make small changes of about 5% within the permitted range. Never deliberately ride into a rim strike to find a lower limit.</p></div></li><li><div><strong>Adjust for feel and control.</strong><p class="text-sm">Harsh vibration may justify less pressure. Squirm, bottoming or air loss require stopping, checking for damage and reassessing pressure or equipment. Recheck whenever the load or tires change.</p></div></li></ol>
-<p class="text-xs text-muted mb-0">Pressure loss varies with the tube, tire, sealant, temperature and time. There is no reliable universal weekly loss rate. <a href="https://www.schwalbe.com/en/technology-faq/tire-pressure/" target="_blank" rel="noopener noreferrer">Schwalbe guidance</a> · <a href="https://enve.com/pages/tire-pressure" target="_blank" rel="noopener noreferrer">ENVE guidance</a></p>
-</section>
-<details id="method-details"><summary>The formula, and what it cannot tell you</summary>
-<div><h3>A load-and-width model, calibrated to published charts</h3>
-<pre><code>base_bar = 4.53 × (wheel_load_kg / 42.5)
+    <noscript>
+        <section><h2>JavaScript is needed for the calculator</h2>
+            <p>Enable JavaScript in your browser. The tool runs locally and does not need an
+                internet connection. The research and source code remain available in the downloaded
+                folder.</p></section>
+    </noscript>
+    <div class="header-row"><span class="tag tag-highlight" id="status-tag">Enter your setup</span>
+    </div>
+    <section id="error-panel" hidden aria-labelledby="error-heading"><h3 id="error-heading">Check
+        your inputs</h3>
+        <div id="error-list"></div>
+    </section>
+    <div class="pressure-grid" id="pressure-results" aria-label="Estimated starting pressures">
+        <section class="pressure-card" aria-labelledby="front-heading">
+            <div class="header-row"><h3 id="front-heading" class="mb-0">Front wheel</h3><span
+                class="tag" id="front-share-out">40% load</span></div>
+            <p class="text-sm text-muted" id="front-caption">Estimated starting point</p>
+            <div class="pressure-value">
+                <output id="front-pressure" for="settings">—</output>
+                <span class="pressure-unit" id="front-unit">bar</span></div>
+            <p class="pressure-secondary" id="front-secondary">— psi</p>
+            <p class="text-sm mb-0" id="front-load">—</p>
+        </section>
+        <section class="pressure-card" aria-labelledby="rear-heading">
+            <div class="header-row"><h3 id="rear-heading" class="mb-0">Rear wheel</h3><span
+                class="tag" id="rear-share-out">60% load</span></div>
+            <p class="text-sm text-muted" id="rear-caption">Estimated starting point</p>
+            <div class="pressure-value">
+                <output id="rear-pressure" for="settings">—</output>
+                <span class="pressure-unit" id="rear-unit">bar</span></div>
+            <p class="pressure-secondary" id="rear-secondary">— psi</p>
+            <p class="text-sm mb-0" id="rear-load">—</p>
+        </section>
+    </div>
+    <div class="header-row result-meta"><p class="text-sm text-muted mb-0" id="setup-summary">Set up
+        your bicycle in the sidebar.</p>
+        <div class="segmented-control" aria-label="Result pressure unit"><input id="result-bar"
+                                                                                name="result-unit"
+                                                                                type="radio"
+                                                                                value="bar" checked><label
+            for="result-bar">bar</label><input id="result-psi" name="result-unit" type="radio"
+                                               value="psi"><label for="result-psi">psi</label></div>
+    </div>
+    <section id="action-panel" class="mt-4" aria-labelledby="action-title" hidden>
+        <h3 id="action-title">Setup notes</h3>
+        <div id="critical-notices"></div>
+    </section>
+    <details id="assumptions-details">
+        <summary><span id="assumptions-title">Assumptions &amp; adjustments</span></summary>
+        <div id="assumption-notices"></div>
+    </details>
+    <section aria-labelledby="tuning-heading"><h3 id="tuning-heading">Dial it in on your own
+        bike</h3>
+        <ol class="steps">
+            <li>
+                <div><strong>Check the real limits.</strong>
+                    <p class="text-sm">Use the lower tire/rim maximum and any specified minimum.
+                        Check tire compatibility, wheel and bicycle load ratings, and tire
+                        condition. A pressure calculator cannot approve a wheel-and-tire
+                        combination.</p></div>
+            </li>
+            <li>
+                <div><strong>Use a gauge, then test gently.</strong>
+                    <p class="text-sm">Check cold pressure before the ride with a consistent gauge.
+                        Make small changes of about 5% within the permitted range. Never
+                        deliberately ride into a rim strike to find a lower limit.</p></div>
+            </li>
+            <li>
+                <div><strong>Adjust for feel and control.</strong>
+                    <p class="text-sm">Harsh vibration may justify less pressure. Squirm, bottoming
+                        or air loss require stopping, checking for damage and reassessing pressure
+                        or equipment. Recheck whenever the load or tires change.</p></div>
+            </li>
+        </ol>
+        <p class="text-xs text-muted mb-0">Pressure loss varies with the tube, tire, sealant,
+            temperature and time. There is no reliable universal weekly loss rate. <a
+                href="https://www.schwalbe.com/en/technology-faq/tire-pressure/" target="_blank"
+                rel="noopener noreferrer">Schwalbe guidance</a> · <a
+                href="https://enve.com/pages/tire-pressure" target="_blank"
+                rel="noopener noreferrer">ENVE guidance</a></p>
+    </section>
+    <details id="method-details">
+        <summary>The formula, and what it cannot tell you</summary>
+        <div><h3>A load-and-width model, calibrated to published charts</h3>
+            <pre><code>base_bar = 4.53 × (wheel_load_kg / 42.5)
                  × (28 / actual_width_mm)^1.5
                  × √((622 + 2 × width) / (BSD + 2 × width))
 
@@ -113,36 +280,80 @@ with tube: factor = max(surface_factor, 1.00)
 
 estimate_bar = base_bar × factor × impact_allowance
 impact_allowance = 1.00, or 1.10 when selected</code></pre>
-<p>The model is linear in each wheel's static load and continuous in tire width. The width exponent and wheel correction are inspired by fixed-relative-deflection contact geometry, not a proof of optimal pressure or a claim of exactly 15% tire drop. The 4.53 bar coefficient was fitted to manufacturer charts. The tube floor and impact allowance are explicitly practical heuristics.</p>
-<div class="table-container"><table><caption>Surface factors in model 1.0</caption><thead><tr><th scope="col">Surface</th><th scope="col">Factor</th><th scope="col">Basis</th></tr></thead><tbody id="surface-table"></tbody></table></div>
-<p><strong>No automatic e-bike surcharge.</strong> Enter the actual bicycle mass, including motor and battery. Bike presets only fill visible settings. There is no mandatory rear-pressure offset: front cargo or different tire widths can reverse the usual relationship.</p>
-<p><strong>Unknown construction is a real limitation.</strong> Casing stiffness, tire inserts, rim support, speed, cornering, temperature, suspension, riding technique and tread can matter. They are not assigned invented precise coefficients here. A measured inflated width captures much of a rim-width change, but not tire/rim compatibility or all sidewall support effects.</p>
-<p><strong>Working range, not certified coverage:</strong> 23–75 mm tires, listed 305–635 mm bead-seat diameters, 45–160 kg total mass, and 10–110 kg per wheel. The principal calibration is much narrower: 25–61 mm, mostly about 65–125 kg total, on 622 mm wheels. Small-wheel results, heavy loads, ordinary inner tubes, and city/touring use have weaker direct support. Excluded: tubulars, fat bikes, tandems, heavy cargo bikes, downhill/jumps, velodromes and grip-limited racing cyclocross.</p>
-</div></details>
-<details id="research-details"><summary>Research behind the estimates</summary>
-<div>
-<p>Development included a review of 16 reference pages and charts covering tire pressure, rolling resistance, wheel loading and tire/rim compatibility.</p>
-<p>The model was calibrated using 42 chart entries. Another 28 entries were held back to check the estimates, and 10 additional comparisons covered different contexts. Missing bicycle weights and load splits were recorded as assumptions.</p>
-<p>These comparisons check agreement with published guidance. No riding or tire-deflection tests were performed for this tool, so they do not establish an ideal pressure for every bicycle. Equipment limits still apply.</p>
-</div></details>
+            <p>The model is linear in each wheel's static load and continuous in tire width. The
+                width exponent and wheel correction are inspired by fixed-relative-deflection
+                contact geometry, not a proof of optimal pressure or a claim of exactly 15% tire
+                drop. The 4.53 bar coefficient was fitted to manufacturer charts. The tube floor and
+                impact allowance are explicitly practical heuristics.</p>
+            <div class="table-container">
+                <table>
+                    <caption>Surface factors in model 1.0</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">Surface</th>
+                        <th scope="col">Factor</th>
+                        <th scope="col">Basis</th>
+                    </tr>
+                    </thead>
+                    <tbody id="surface-table"></tbody>
+                </table>
+            </div>
+            <p><strong>No automatic e-bike surcharge.</strong> Enter the actual bicycle mass,
+                including motor and battery. Bike presets only fill visible settings. There is no
+                mandatory rear-pressure offset: front cargo or different tire widths can reverse the
+                usual relationship.</p>
+            <p><strong>Unknown construction is a real limitation.</strong> Casing stiffness, tire
+                inserts, rim support, speed, cornering, temperature, suspension, riding technique
+                and tread can matter. They are not assigned invented precise coefficients here. A
+                measured inflated width captures much of a rim-width change, but not tire/rim
+                compatibility or all sidewall support effects.</p>
+            <p><strong>Working range, not certified coverage:</strong> 23–75 mm tires, listed
+                305–635 mm bead-seat diameters, 45–160 kg total mass, and 10–110 kg per wheel. The
+                principal calibration is much narrower: 25–61 mm, mostly about 65–125 kg total, on
+                622 mm wheels. Small-wheel results, heavy loads, ordinary inner tubes, and
+                city/touring use have weaker direct support. Excluded: tubulars, fat bikes, tandems,
+                heavy cargo bikes, downhill/jumps, velodromes and grip-limited racing cyclocross.
+            </p>
+        </div>
+    </details>
+    <details id="research-details">
+        <summary>Research behind the estimates</summary>
+        <div>
+            <p>Development included a review of 16 reference pages and charts covering tire
+                pressure, rolling resistance, wheel loading and tire/rim compatibility.</p>
+            <p>The model was calibrated using 42 chart entries. Another 28 entries were held back to
+                check the estimates, and 10 additional comparisons covered different contexts.
+                Missing bicycle weights and load splits were recorded as assumptions.</p>
+            <p>These comparisons check agreement with published guidance. No riding or
+                tire-deflection tests were performed for this tool, so they do not establish an
+                ideal pressure for every bicycle. Equipment limits still apply.</p>
+        </div>
+    </details>
 </main>
 <div class="sr-only" id="live-status" role="status" aria-live="polite" aria-atomic="true"></div>
 <dialog id="copy-dialog" aria-labelledby="copy-heading" aria-describedby="copy-description">
-<article>
-<header><h3 id="copy-heading">Your setup summary</h3></header>
-<div class="dialog-content">
-<p id="copy-description">Clipboard access is unavailable. Select and copy this text.</p>
-<label for="copy-text" class="mb-0"><span class="sr-only">Setup summary</span><textarea id="copy-text" rows="12" readonly></textarea></label>
-</div>
-<footer><button type="button" id="close-copy">Close</button></footer>
-</article>
+    <article>
+        <header><h3 id="copy-heading">Your setup summary</h3></header>
+        <div class="dialog-content">
+            <p id="copy-description">Clipboard access is unavailable. Select and copy this text.</p>
+            <label for="copy-text" class="mb-0"><span class="sr-only">Setup summary</span><textarea
+                id="copy-text" rows="12" readonly></textarea></label>
+        </div>
+        <footer>
+            <button type="button" id="close-copy">Close</button>
+        </footer>
+    </article>
 </dialog>
 <dialog id="reset-dialog" aria-labelledby="reset-heading" aria-describedby="reset-description">
-<article>
-<header><h3 id="reset-heading">Reset this setup?</h3></header>
-<p id="reset-description">This returns to the city preset and resets the saved setup in this browser.</p>
-<footer class="group mb-0"><button type="button" id="cancel-reset" autofocus>Keep settings</button><button type="button" id="confirm-reset" class="btn-primary">Reset settings</button></footer>
-</article>
+    <article>
+        <header><h3 id="reset-heading">Reset this setup?</h3></header>
+        <p id="reset-description">This returns to the city preset and resets the saved setup in this
+            browser.</p>
+        <footer class="group mb-0">
+            <button type="button" id="cancel-reset" autofocus>Keep settings</button>
+            <button type="button" id="confirm-reset" class="btn-primary">Reset settings</button>
+        </footer>
+    </article>
 </dialog>
 </body>
 </html>

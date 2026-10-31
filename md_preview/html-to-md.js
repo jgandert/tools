@@ -505,7 +505,22 @@
         if (!options.normalizePunctuation) {
             return text;
         }
-        const replacements = { "\u2018": "'", "\u2019": "'", "\u00b4": "'", "\u201c": "\"", "\u201d": "\"", "\u2033": "\"", "\u2212": "-", "\u2022": "-", "\u00b7": "-", "\u25aa": "-", "\u2013": "--", "\u2015": "--", "\u2014": "---", "\u2026": "..." };
+        const replacements = {
+            "\u2018": "'",
+            "\u2019": "'",
+            "\u00b4": "'",
+            "\u201c": "\"",
+            "\u201d": "\"",
+            "\u2033": "\"",
+            "\u2212": "-",
+            "\u2022": "-",
+            "\u00b7": "-",
+            "\u25aa": "-",
+            "\u2013": "--",
+            "\u2015": "--",
+            "\u2014": "---",
+            "\u2026": "...",
+        };
         return text.replace(/[\u2018\u2019\u00b4\u201c\u201d\u2033\u2212\u2022\u00b7\u25aa\u2013\u2015\u2014\u2026]/g, character => replacements[character]);
     }
 
@@ -723,7 +738,12 @@
         if (node.tag === "img") {
             keep("alt", node.attrs.alt || "");
         }
-        const numericAttributes = { ol: ["start"], li: ["value"], th: ["colspan", "rowspan"], td: ["colspan", "rowspan"] };
+        const numericAttributes = {
+            ol: ["start"],
+            li: ["value"],
+            th: ["colspan", "rowspan"],
+            td: ["colspan", "rowspan"],
+        };
         for (const name of numericAttributes[node.tag] || []) {
             if (/^-?\d+$/.test(node.attrs[name] || "")) {
                 keep(name, node.attrs[name]);
@@ -826,7 +846,10 @@
                 if (!cell) {
                     return "";
                 }
-                return blocks(cell.children, options, { table: true, marks: inlineMarks(cell) }).replace(/\n+/g, "<br>");
+                return blocks(cell.children, options, {
+                    table: true,
+                    marks: inlineMarks(cell),
+                }).replace(/\n+/g, "<br>");
             });
             return `| ${columns.join(" | ")} |`;
         };
@@ -842,6 +865,7 @@
         const parts = [];
         let run = [];
         let previousList = "";
+
         function flush() {
             let content = inline(run, options, context);
             for (const [marker, tag] of (context.marks || []).slice().reverse()) {
@@ -891,7 +915,10 @@
             } else if (["details", "dl", "a"].includes(node.tag)) {
                 content = sanitizedHtml(node, options);
             } else {
-                content = blocks(node.children, options, { ...context, marks: [...(context.marks || []), ...inlineMarks(node)] });
+                content = blocks(node.children, options, {
+                    ...context,
+                    marks: [...(context.marks || []), ...inlineMarks(node)],
+                });
             }
             if (content) {
                 parts.push(content);

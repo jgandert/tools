@@ -1,9 +1,15 @@
 /* Copyright 2026 Joschua Gandert - SPDX-License-Identifier: Apache-2.0 */
-import {createSpiralDiagnostics} from "./spiral-diagnostics.js";
+import { createSpiralDiagnostics } from "./spiral-diagnostics.js";
 
 const diagnostics = createSpiralDiagnostics();
 
-export function makeGuidedOpening({rotation = 0, shiftX = 0, shiftY = 0, flare = .75, gap = 2} = {}) {
+export function makeGuidedOpening({
+                                      rotation = 0,
+                                      shiftX = 0,
+                                      shiftY = 0,
+                                      flare = .75,
+                                      gap = 2,
+                                  } = {}) {
     const width = 140;
     const height = 150;
     const paints = [[248, 247, 242], [49, 130, 85], [234, 179, 103]];
@@ -12,7 +18,7 @@ export function makeGuidedOpening({rotation = 0, shiftX = 0, shiftY = 0, flare =
     const toLocal = point => {
         const dx = point.x - 70 - shiftX;
         const dy = point.y - 75 - shiftY;
-        return {x: cosine * dx + sine * dy + 70, y: -sine * dx + cosine * dy + 75};
+        return { x: cosine * dx + sine * dy + 70, y: -sine * dx + cosine * dy + 75 };
     };
     const openingWidth = y => gap + .14 * (y - 25) + 2 * flare * Math.max(0, 1 - Math.abs(y - 37) / 5);
     const data = new Uint8ClampedArray(width * height * 4);
@@ -26,7 +32,7 @@ export function makeGuidedOpening({rotation = 0, shiftX = 0, shiftY = 0, flare =
             const rgb = [0, 0, 0];
             for (let sy = 0; sy < 4; sy++) {
                 for (let sx = 0; sx < 4; sx++) {
-                    const local = toLocal({x: x + (sx + .5) / 4, y: y + (sy + .5) / 4});
+                    const local = toLocal({ x: x + (sx + .5) / 4, y: y + (sy + .5) / 4 });
                     const half = openingWidth(local.y) / 2;
                     const slot = Math.abs(local.x - 70) < half && local.y < 95;
                     const bump = 5 * Math.max(0, 1 - Math.abs(local.y - 125) / 8);
@@ -40,13 +46,16 @@ export function makeGuidedOpening({rotation = 0, shiftX = 0, shiftY = 0, flare =
             data.set([...rgb, 255], (y * width + x) * 4);
         }
     }
-    return {image: {width, height, data}, toLocal, openingWidth};
+    return { image: { width, height, data }, toLocal, openingWidth };
 }
 
 export function openingInterval(points, fixture, y) {
-    const crossings = diagnostics.crossings({x: 70, y}, {x: 1, y: 0}, [points.map(fixture.toLocal)]);
+    const crossings = diagnostics.crossings({ x: 70, y }, {
+        x: 1,
+        y: 0,
+    }, [points.map(fixture.toLocal)]);
     const entry = crossings.filter(value => value < 0).at(-1);
     const exit = crossings.find(value => value > 0);
     if (entry === undefined || exit === undefined) return null;
-    return {entry, exit, width: exit - entry};
+    return { entry, exit, width: exit - entry };
 }

@@ -1,6 +1,6 @@
 /* Copyright 2026 Joschua Gandert - SPDX-License-Identifier: Apache-2.0 */
-import {createSpiralDiagnostics} from "./spiral-diagnostics.js";
-import {createDarkBoundaryDiagnostics} from "./dark-boundary-diagnostics.js";
+import { createSpiralDiagnostics } from "./spiral-diagnostics.js";
+import { createDarkBoundaryDiagnostics } from "./dark-boundary-diagnostics.js";
 
 // Instrument only the study's in-memory copy. The ordinary campaign run is an
 // independent output-equivalence check, and production does not expose stages.
@@ -48,7 +48,10 @@ export function createValidationDiagnostics(intersections, dark) {
                 const owner = ownerAt(x + (dx + .5) / 4, y + (dy + .5) / 4);
                 if (owner >= 0) counts.set(owner, (counts.get(owner) || 0) + 1);
             }
-            for (const [owner, count] of counts) masks[owner].push({pixel: y * fixture.width + x, coverage: count / 16});
+            for (const [owner, count] of counts) masks[owner].push({
+                pixel: y * fixture.width + x,
+                coverage: count / 16,
+            });
         }
         return masks;
     }
@@ -57,13 +60,19 @@ export function createValidationDiagnostics(intersections, dark) {
         let low = -.13;
         let high = .13;
         const query = t => ownerAt(origin.x + ray.x * t, origin.y + ray.y * t);
-        if (query(low) !== from || query(high) !== to) return {available: false, reason: "No isolated source crossing in original sample bracket"};
+        if (query(low) !== from || query(high) !== to) return {
+            available: false,
+            reason: "No isolated source crossing in original sample bracket",
+        };
         for (let i = 0; i < 24; i++) {
             const mid = (low + high) / 2;
             if (query(mid) === from) low = mid;
             else high = mid;
         }
-        const center = {x: origin.x + ray.x * (low + high) / 2, y: origin.y + ray.y * (low + high) / 2};
+        const center = {
+            x: origin.x + ray.x * (low + high) / 2,
+            y: origin.y + ray.y * (low + high) / 2,
+        };
         const radius = .1;
         const circleOwner = angle => ownerAt(center.x + radius * Math.cos(angle), center.y + radius * Math.sin(angle));
         const angles = [];
@@ -71,7 +80,11 @@ export function createValidationDiagnostics(intersections, dark) {
         for (let i = 1; i <= 128; i++) {
             const angle = i * Math.PI * 2 / 128;
             const next = circleOwner(angle);
-            if (![from, to].includes(next)) return {available: false, center, reason: "Third paint at source station"};
+            if (![from, to].includes(next)) return {
+                available: false,
+                center,
+                reason: "Third paint at source station",
+            };
             if (next !== previous) {
                 let a = angle - Math.PI * 2 / 128;
                 let b = angle;
@@ -84,12 +97,22 @@ export function createValidationDiagnostics(intersections, dark) {
             }
             previous = next;
         }
-        if (angles.length !== 2) return {available: false, center, reason: "Source tangent is not isolated"};
-        const tangent = {x: Math.cos(angles[0]) - Math.cos(angles[1]), y: Math.sin(angles[0]) - Math.sin(angles[1])};
+        if (angles.length !== 2) return {
+            available: false,
+            center,
+            reason: "Source tangent is not isolated",
+        };
+        const tangent = {
+            x: Math.cos(angles[0]) - Math.cos(angles[1]),
+            y: Math.sin(angles[0]) - Math.sin(angles[1]),
+        };
         const length = Math.hypot(tangent.x, tangent.y);
-        let normal = {x: -tangent.y / length, y: tangent.x / length};
-        if (ownerAt(center.x + .02 * normal.x, center.y + .02 * normal.y) !== to) normal = {x: -normal.x, y: -normal.y};
-        return {available: true, origin: center, normal};
+        let normal = { x: -tangent.y / length, y: tangent.x / length };
+        if (ownerAt(center.x + .02 * normal.x, center.y + .02 * normal.y) !== to) normal = {
+            x: -normal.x,
+            y: -normal.y,
+        };
+        return { available: true, origin: center, normal };
     }
 
     function localCorrespondence(source, candidates, radius = 3) {
@@ -108,15 +131,25 @@ export function createValidationDiagnostics(intersections, dark) {
             }
             const index = choices.reduce((a, b) => Math.abs(candidates[a].at - expected.at) < Math.abs(candidates[b].at - expected.at) ? a : b);
             available.delete(index);
-            matches.push({source: expected, candidate: candidates[index], offset: candidates[index].at - expected.at});
+            matches.push({
+                source: expected,
+                candidate: candidates[index],
+                offset: candidates[index].at - expected.at,
+            });
         }
-        return {matches, missing, extra: [...available].map(i => candidates[i])};
+        return { matches, missing, extra: [...available].map(i => candidates[i]) };
     }
 
     function stageCrossings(debug, mapping, origin, normal, key) {
-        const hits = dark.chainHits(debug, origin, normal, key).map(candidate => ({...candidate, resultLabels: candidate.paints, paints: candidate.paints.map(paint => paint < 0 ? -1 : mapping[paint])}));
-        const faces = debug.faces.map(face => ({paint: face.color < 0 ? -1 : mapping[face.color],
-            intervals: intersections.intervals(origin, normal, debug.loops[face.id].flat().map(he => debug.chains[he >> 1][key]), face.id)}));
+        const hits = dark.chainHits(debug, origin, normal, key).map(candidate => ({
+            ...candidate,
+            resultLabels: candidate.paints,
+            paints: candidate.paints.map(paint => paint < 0 ? -1 : mapping[paint]),
+        }));
+        const faces = debug.faces.map(face => ({
+            paint: face.color < 0 ? -1 : mapping[face.color],
+            intervals: intersections.intervals(origin, normal, debug.loops[face.id].flat().map(he => debug.chains[he >> 1][key]), face.id),
+        }));
         const stops = [...new Set([-3.0001, 3.0001, ...hits.map(hit => hit.at)])].sort((a, b) => a - b);
         const owner = at => {
             const owners = faces.filter(face => face.intervals.some(interval => at > interval.entry && at < interval.exit)).map(face => face.paint);
@@ -124,18 +157,36 @@ export function createValidationDiagnostics(intersections, dark) {
         };
         return hits.map(hit => {
             const index = stops.indexOf(hit.at);
-            return {...hit, from: owner((stops[index - 1] + hit.at) / 2), to: owner((stops[index + 1] + hit.at) / 2)};
+            return {
+                ...hit,
+                from: owner((stops[index - 1] + hit.at) / 2),
+                to: owner((stops[index + 1] + hit.at) / 2),
+            };
         });
     }
 
     function probeOwnership(label, mapping, palette, intendedRGB) {
         const nativeRGB = label < 0 ? null : rgb(palette[label]);
-        return {nativeLabel: label, nativeRGB, operationalOwner: label < 0 ? -1 : mapping[label],
-            distanceFromIntendedRGB: nativeRGB ? Math.hypot(...nativeRGB.map((value, channel) => value - intendedRGB[channel])) : null};
+        return {
+            nativeLabel: label, nativeRGB, operationalOwner: label < 0 ? -1 : mapping[label],
+            distanceFromIntendedRGB: nativeRGB ? Math.hypot(...nativeRGB.map((value, channel) => value - intendedRGB[channel])) : null,
+        };
     }
 
-    function diagnose({fixture, paths, input, traced, stages, masks, contour, probes, outputAt, nativeOutputAt, operationalMapping}) {
-        const {width, height} = fixture;
+    function diagnose({
+                          fixture,
+                          paths,
+                          input,
+                          traced,
+                          stages,
+                          masks,
+                          contour,
+                          probes,
+                          outputAt,
+                          nativeOutputAt,
+                          operationalMapping,
+                      }) {
+        const { width, height } = fixture;
         const paints = Object.keys(fixture.paints);
         const pixelLabels = labelAt(traced.debug.labels, width, height);
         const operationalLabels = labelAt(traced.debug.labels.map(label => label < 0 ? -1 : operationalMapping[label]), width, height);
@@ -144,19 +195,48 @@ export function createValidationDiagnostics(intersections, dark) {
         const paintEvidence = masks.map((mask, owner) => {
             const majority = mask.filter(p => p.coverage >= .5);
             const core = mask.filter(p => p.coverage >= .9);
-            const paletteDistances = palette => palette.map((color, index) => ({index, color, distance: Math.hypot(...rgb(color).map((c, channel) => c - rgb(fixture.paints[paints[owner]])[channel]))})).sort((a, b) => a.distance - b.distance);
-            return {paint: paints[owner], intendedRGB: rgb(fixture.paints[paints[owner]]), coveredPixels: mask.length, majorityPixels: majority.length, corePixels: core.length,
+            const paletteDistances = palette => palette.map((color, index) => ({
+                index,
+                color,
+                distance: Math.hypot(...rgb(color).map((c, channel) => c - rgb(fixture.paints[paints[owner]])[channel])),
+            })).sort((a, b) => a.distance - b.distance);
+            return {
+                paint: paints[owner],
+                intendedRGB: rgb(fixture.paints[paints[owner]]),
+                coveredPixels: mask.length,
+                majorityPixels: majority.length,
+                corePixels: core.length,
                 decodedCore: (() => {
-                    const values = core.map(({pixel}) => Array.from(input.data.slice(4 * pixel, 4 * pixel + 4)));
-                    return {count: values.length, min: [0, 1, 2, 3].map(c => values.reduce((value, rgba) => Math.min(value, rgba[c]), 255)),
+                    const values = core.map(({ pixel }) => Array.from(input.data.slice(4 * pixel, 4 * pixel + 4)));
+                    return {
+                        count: values.length,
+                        min: [0, 1, 2, 3].map(c => values.reduce((value, rgba) => Math.min(value, rgba[c]), 255)),
                         max: [0, 1, 2, 3].map(c => values.reduce((value, rgba) => Math.max(value, rgba[c]), 0)),
-                        mean: [0, 1, 2, 3].map(c => values.reduce((value, rgba) => value + rgba[c], 0) / values.length), samples: values.slice(0, 16)};
+                        mean: [0, 1, 2, 3].map(c => values.reduce((value, rgba) => value + rgba[c], 0) / values.length),
+                        samples: values.slice(0, 16),
+                    };
                 })(),
-                paletteDistances: {initial: paletteDistances(stages.initialPalette), recovered: paletteDistances(stages.recoveredPalette), final: paletteDistances(traced.stats.palette)},
-                sampleWeight: {majority: majority.reduce((sum, {pixel}) => sum + stages.sampleWeights[pixel], 0), core: core.reduce((sum, {pixel}) => sum + stages.sampleWeights[pixel], 0)},
-                recoveryBins: stages.recoveryBins.map(bin => ({...bin, distance: Math.hypot(...bin.rgb.map((c, channel) => c - rgb(fixture.paints[paints[owner]])[channel]))})).sort((a, b) => a.distance - b.distance).slice(0, 8),
-                admissions: stages.recoveryAdmissions.map(bin => ({...bin, distance: Math.hypot(...bin.rgb.map((c, channel) => c - rgb(fixture.paints[paints[owner]])[channel]))})).sort((a, b) => a.distance - b.distance).slice(0, 8),
-                stageLabels: Object.fromEntries([["initial", stages.initialLabels], ["nearest", stages.nearestLabels], ["corrected", stages.correctedLabels], ["final", traced.debug.labels]].map(([key, labels]) => [key, {majority: histogram(majority.map(({pixel}) => labels[pixel])), core: histogram(core.map(({pixel}) => labels[pixel]))}])),
+                paletteDistances: {
+                    initial: paletteDistances(stages.initialPalette),
+                    recovered: paletteDistances(stages.recoveredPalette),
+                    final: paletteDistances(traced.stats.palette),
+                },
+                sampleWeight: {
+                    majority: majority.reduce((sum, { pixel }) => sum + stages.sampleWeights[pixel], 0),
+                    core: core.reduce((sum, { pixel }) => sum + stages.sampleWeights[pixel], 0),
+                },
+                recoveryBins: stages.recoveryBins.map(bin => ({
+                    ...bin,
+                    distance: Math.hypot(...bin.rgb.map((c, channel) => c - rgb(fixture.paints[paints[owner]])[channel])),
+                })).sort((a, b) => a.distance - b.distance).slice(0, 8),
+                admissions: stages.recoveryAdmissions.map(bin => ({
+                    ...bin,
+                    distance: Math.hypot(...bin.rgb.map((c, channel) => c - rgb(fixture.paints[paints[owner]])[channel])),
+                })).sort((a, b) => a.distance - b.distance).slice(0, 8),
+                stageLabels: Object.fromEntries([["initial", stages.initialLabels], ["nearest", stages.nearestLabels], ["corrected", stages.correctedLabels], ["final", traced.debug.labels]].map(([key, labels]) => [key, {
+                    majority: histogram(majority.map(({ pixel }) => labels[pixel])),
+                    core: histogram(core.map(({ pixel }) => labels[pixel])),
+                }])),
                 operationalResultLabels: operationalMapping.flatMap((target, index) => target === owner ? [index] : []),
             };
         });
@@ -179,16 +259,24 @@ export function createValidationDiagnostics(intersections, dark) {
                 }
             }
             const sourceComponent = {
-                coveredPixels: connected.length, majorityPixels: connected.filter(item => item.coverage >= .5).length,
+                coveredPixels: connected.length,
+                majorityPixels: connected.filter(item => item.coverage >= .5).length,
                 corePixels: connected.filter(item => item.coverage >= .9).length,
-                pixels: connected.slice(0, 256).map(({pixel, coverage}) => ({x: pixel % width, y: Math.floor(pixel / width), coverage,
-                    rgba: Array.from(input.data.slice(4 * pixel, 4 * pixel + 4)), preparedRGB: stages.preparedRGB.slice(3 * pixel, 3 * pixel + 3),
-                    nearestLabel: stages.nearestLabels[pixel], correctedLabel: stages.correctedLabels[pixel], finalLabel: traced.debug.labels[pixel]})),
+                pixels: connected.slice(0, 256).map(({ pixel, coverage }) => ({
+                    x: pixel % width,
+                    y: Math.floor(pixel / width),
+                    coverage,
+                    rgba: Array.from(input.data.slice(4 * pixel, 4 * pixel + 4)),
+                    preparedRGB: stages.preparedRGB.slice(3 * pixel, 3 * pixel + 3),
+                    nearestLabel: stages.nearestLabels[pixel],
+                    correctedLabel: stages.correctedLabels[pixel],
+                    finalLabel: traced.debug.labels[pixel],
+                })),
             };
             const probeStations = [];
             for (let direction = 0; direction < 32; direction++) {
                 const angle = direction * Math.PI * 2 / 32;
-                const ray = {x: Math.cos(angle), y: Math.sin(angle)};
+                const ray = { x: Math.cos(angle), y: Math.sin(angle) };
                 for (let at = 1 / 32; at <= 4; at += 1 / 32) {
                     const to = paths.ownerAt(original.x + ray.x * at, original.y + ray.y * at);
                     if (to === owner) continue;
@@ -199,51 +287,101 @@ export function createValidationDiagnostics(intersections, dark) {
                         if (paths.ownerAt(original.x + ray.x * mid, original.y + ray.y * mid) === owner) low = mid;
                         else high = mid;
                     }
-                    const boundary = {x: original.x + ray.x * (low + high) / 2, y: original.y + ray.y * (low + high) / 2};
-                    probeStations.push({distance: (low + high) / 2, ...sourceNormal(paths.ownerAt, boundary, owner, to, ray)});
+                    const boundary = {
+                        x: original.x + ray.x * (low + high) / 2,
+                        y: original.y + ray.y * (low + high) / 2,
+                    };
+                    probeStations.push({ distance: (low + high) / 2, ...sourceNormal(paths.ownerAt, boundary, owner, to, ray) });
                     break;
                 }
             }
             const probeNormal = probeStations.sort((a, b) => a.distance - b.distance).find(station => station.available);
             let localBoundary = null;
             if (probeNormal) {
-                const {origin, normal} = probeNormal;
+                const { origin, normal } = probeNormal;
                 const source = dark.transitions(paths.ownerAt, origin, normal, 3, 1 / 256);
                 const stages = Object.fromEntries(["raw", "samples", "flat"].map(key => [key, stageCrossings(traced.debug, operationalMapping, origin, normal, key)]));
-                localBoundary = {...probeNormal, source, nativeLabelStages: nativeLabelStages(origin, normal), labels: dark.transitions(operationalLabels, origin, normal, 3, 1 / 256),
-                    ...stages, correspondence: Object.fromEntries(Object.entries(stages).map(([key, hits]) => [key, localCorrespondence(source, hits)])),
-                    emitted: dark.transitions(outputAt, origin, normal, 3, 1 / 256)};
+                localBoundary = {
+                    ...probeNormal,
+                    source,
+                    nativeLabelStages: nativeLabelStages(origin, normal),
+                    labels: dark.transitions(operationalLabels, origin, normal, 3, 1 / 256),
+                    ...stages,
+                    correspondence: Object.fromEntries(Object.entries(stages).map(([key, hits]) => [key, localCorrespondence(source, hits)])),
+                    emitted: dark.transitions(outputAt, origin, normal, 3, 1 / 256),
+                };
             }
-            return {...probe, sourceComponent, localBoundary, x: original.x, y: original.y, intendedPaint: original.paint, intendedRGB: rgb(fixture.paints[original.paint]),
-                decodedRGBA: Array.from(input.data.slice(4 * pixel, 4 * pixel + 4)), preparedRGB: stages.preparedRGB.slice(3 * pixel, 3 * pixel + 3),
+            return {
+                ...probe,
+                sourceComponent,
+                localBoundary,
+                x: original.x,
+                y: original.y,
+                intendedPaint: original.paint,
+                intendedRGB: rgb(fixture.paints[original.paint]),
+                decodedRGBA: Array.from(input.data.slice(4 * pixel, 4 * pixel + 4)),
+                preparedRGB: stages.preparedRGB.slice(3 * pixel, 3 * pixel + 3),
                 sourcePixelCoverage: masks[owner].find(p => p.pixel === pixel)?.coverage || 0,
                 emittedNativeOwnership: probeOwnership(nativeOutputAt(original.x, original.y), operationalMapping, traced.stats.palette, rgb(fixture.paints[original.paint])),
-                nearestLabel: stages.nearestLabels[pixel], correctedLabel: stages.correctedLabels[pixel], finalLabel: pixelLabels(original.x, original.y), component: traced.debug.componentIds[pixel],
-                operationalLabelOwner: operationalLabels(original.x, original.y), emittedResultLabel: nativeOutputAt(original.x, original.y), emittedOperationalOwner: outputAt(original.x, original.y),
-                paintEvidenceIndex: owner};
+                nearestLabel: stages.nearestLabels[pixel],
+                correctedLabel: stages.correctedLabels[pixel],
+                finalLabel: pixelLabels(original.x, original.y),
+                component: traced.debug.componentIds[pixel],
+                operationalLabelOwner: operationalLabels(original.x, original.y),
+                emittedResultLabel: nativeOutputAt(original.x, original.y),
+                emittedOperationalOwner: outputAt(original.x, original.y),
+                paintEvidenceIndex: owner,
+            };
         });
         const normals = contour.lines.flatMap(line => {
-            const expected = [...line.matched.map(hit => ({...hit.expected, originalMatch: hit})), ...line.unmatchedExpected];
+            const expected = [...line.matched.map(hit => ({
+                ...hit.expected,
+                originalMatch: hit,
+            })), ...line.unmatchedExpected];
             return expected.map(hit => {
-                const point = line.axis === "h" ? {x: hit.at, y: line.at} : {x: line.at, y: hit.at};
-                const station = sourceNormal(paths.ownerAt, point, hit.from, hit.to, line.axis === "h" ? {x: 1, y: 0} : {x: 0, y: 1});
-                if (!station.available) return {line: {axis: line.axis, at: line.at}, original: hit, ...station};
-                const {origin, normal} = station;
+                const point = line.axis === "h" ? { x: hit.at, y: line.at } : {
+                    x: line.at,
+                    y: hit.at,
+                };
+                const station = sourceNormal(paths.ownerAt, point, hit.from, hit.to, line.axis === "h" ? {
+                    x: 1,
+                    y: 0,
+                } : { x: 0, y: 1 });
+                if (!station.available) return {
+                    line: { axis: line.axis, at: line.at },
+                    original: hit, ...station,
+                };
+                const { origin, normal } = station;
                 const source = dark.transitions(paths.ownerAt, origin, normal, 3, 1 / 256);
                 const chainStages = Object.fromEntries(["raw", "samples", "flat"].map(key => [key, stageCrossings(traced.debug, operationalMapping, origin, normal, key)]));
                 const stops = [...new Set([-3, 3, ...chainStages.flat.map(candidate => candidate.at), ...source.map(candidate => candidate.at)])].sort((a, b) => a - b);
                 const emittedMidpoints = stops.slice(1).map((end, i) => {
                     const start = stops[i];
                     const at = (start + end) / 2;
-                    return {start, end, at, sourceOwner: paths.ownerAt(origin.x + at * normal.x, origin.y + at * normal.y), emittedResultLabel: nativeOutputAt(origin.x + at * normal.x, origin.y + at * normal.y), emittedOwner: outputAt(origin.x + at * normal.x, origin.y + at * normal.y)};
+                    return {
+                        start,
+                        end,
+                        at,
+                        sourceOwner: paths.ownerAt(origin.x + at * normal.x, origin.y + at * normal.y),
+                        emittedResultLabel: nativeOutputAt(origin.x + at * normal.x, origin.y + at * normal.y),
+                        emittedOwner: outputAt(origin.x + at * normal.x, origin.y + at * normal.y),
+                    };
                 }).filter(interval => interval.end - interval.start > 1e-8);
-                return {line: {axis: line.axis, at: line.at}, original: hit, ...station, source, nativeLabelStages: nativeLabelStages(origin, normal),
+                return {
+                    line: { axis: line.axis, at: line.at },
+                    original: hit, ...station,
+                    source,
+                    nativeLabelStages: nativeLabelStages(origin, normal),
                     labels: dark.transitions(operationalLabels, origin, normal, 3, 1 / 256),
-                    ...chainStages, correspondence: Object.fromEntries(Object.entries(chainStages).map(([key, candidates]) => [key, localCorrespondence(source, candidates)])),
-                    emitted: dark.transitions(outputAt, origin, normal, 3, 1 / 256), emittedMidpoints};
+                    ...chainStages,
+                    correspondence: Object.fromEntries(Object.entries(chainStages).map(([key, candidates]) => [key, localCorrespondence(source, candidates)])),
+                    emitted: dark.transitions(outputAt, origin, normal, 3, 1 / 256),
+                    emittedMidpoints,
+                };
             });
         });
-        const fallbackChains = traced.debug.chains.filter(chain => chain.exact).map(chain => ({...chain, rawBox: dark.bounds(chain.raw), sampleBox: dark.bounds(chain.samples),
+        const fallbackChains = traced.debug.chains.filter(chain => chain.exact).map(chain => ({
+            ...chain, rawBox: dark.bounds(chain.raw), sampleBox: dark.bounds(chain.samples),
             faces: [chain.left, chain.right].filter(id => id >= 0).map(id => traced.debug.faces[id]),
             events: stages.events.filter(event => event.chains.includes(chain.id)),
             nearbySourcePixels: (() => {
@@ -251,14 +389,41 @@ export function createValidationDiagnostics(intersections, dark) {
                 const rows = [];
                 for (let y = Math.max(0, Math.floor(box.minY) - 1); y < Math.min(height, Math.ceil(box.maxY) + 1); y++) for (let x = Math.max(0, Math.floor(box.minX) - 1); x < Math.min(width, Math.ceil(box.maxX) + 1); x++) {
                     const pixel = y * width + x;
-                    rows.push({x, y, rgba: Array.from(input.data.slice(4 * pixel, 4 * pixel + 4)), sourceOwner: paths.ownerAt(x + .5, y + .5), label: traced.debug.labels[pixel], component: traced.debug.componentIds[pixel]});
+                    rows.push({
+                        x,
+                        y,
+                        rgba: Array.from(input.data.slice(4 * pixel, 4 * pixel + 4)),
+                        sourceOwner: paths.ownerAt(x + .5, y + .5),
+                        label: traced.debug.labels[pixel],
+                        component: traced.debug.componentIds[pixel],
+                    });
                 }
                 return rows;
-            })()}));
-        return {palettes: {initial: stages.initialPalette, recovered: stages.recoveredPalette, final: traced.stats.palette}, failedProbes, paintEvidence, modeUpdates: stages.modeUpdates, normals, fallbackChains, validationEvents: stages.events};
+            })(),
+        }));
+        return {
+            palettes: {
+                initial: stages.initialPalette,
+                recovered: stages.recoveredPalette,
+                final: traced.stats.palette,
+            },
+            failedProbes,
+            paintEvidence,
+            modeUpdates: stages.modeUpdates,
+            normals,
+            fallbackChains,
+            validationEvents: stages.events,
+        };
     }
 
-    return {coverageMasks, sourceNormal, localCorrespondence, stageCrossings, probeOwnership, diagnose};
+    return {
+        coverageMasks,
+        sourceNormal,
+        localCorrespondence,
+        stageCrossings,
+        probeOwnership,
+        diagnose,
+    };
 }
 
 export const validationDiagnosticFactories = `${createSpiralDiagnostics}\n${createDarkBoundaryDiagnostics}\n${createValidationDiagnostics}\nwindow.validationDiagnostics=createValidationDiagnostics(createSpiralDiagnostics(),createDarkBoundaryDiagnostics(createSpiralDiagnostics()));`;

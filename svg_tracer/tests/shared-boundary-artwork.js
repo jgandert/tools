@@ -2,7 +2,11 @@
 
 // Original geometry and a two-dimensional chroma filter provide controls
 // independent of the boundary predictor's geometry and profile fitting code.
-export function makeSharedBoundaryArtwork({ kind = "edge", present = false, corrupted = true } = {}) {
+export function makeSharedBoundaryArtwork({
+                                              kind = "edge",
+                                              present = false,
+                                              corrupted = true,
+                                          } = {}) {
     if (!["edge", "junction"].includes(kind)) throw Error("Unknown shared-boundary control kind.");
 
     const width = 160;
@@ -132,13 +136,13 @@ export function makeSharedBoundaryArtwork({ kind = "edge", present = false, corr
             },
             corruption: corrupted
                 ? {
-                      kind: "separable-two-dimensional-Gaussian-chroma-blur",
-                      sigma,
-                      radius,
-                      luminanceWeights,
-                      boundaryMode: "clamp",
-                      reconstruction: "original Y plus blurred (RGB-Y), rounded and clipped to byte RGB",
-                  }
+                    kind: "separable-two-dimensional-Gaussian-chroma-blur",
+                    sigma,
+                    radius,
+                    luminanceWeights,
+                    boundaryMode: "clamp",
+                    reconstruction: "original Y plus blurred (RGB-Y), rounded and clipped to byte RGB",
+                }
                 : { kind: "none" },
             limitations:
                 "A deterministic chroma-bleed control, not a JPEG emulator. Clipping can change reconstructed luminance. The narrow mark uses the local tangent-normal distance approximation to the quadratic. Paired targetPixels describe the same authored mark footprint even in the blank source. Acceptance of an artificially supplied proposal does not establish end-to-end detection.",

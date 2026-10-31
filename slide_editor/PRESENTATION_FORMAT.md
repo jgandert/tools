@@ -44,13 +44,13 @@ Do not use YAML front matter: the presentation splitter treats its `---` delimit
 
 The renderer supports ordinary paragraphs, headings, bold, emphasis, strikethrough, lists, fenced code blocks, Markdown tables, links, and images. Additional useful syntax:
 
-| Syntax | Meaning |
-| --- | --- |
-| `==important text==` | Highlighted text, rendered as `<mark>` |
-| `<br>` | Explicit line break, including in a title |
-| `![Useful alternative text](images/diagram.png)` | Image from the presentation ZIP |
-| `> A brief caveat.` | On-slide note; see the distinction below |
-| `<!-- notes -->` on its own line | Start speaker notes for this slide |
+| Syntax                                           | Meaning                                   |
+|--------------------------------------------------|-------------------------------------------|
+| `==important text==`                             | Highlighted text, rendered as `<mark>`    |
+| `<br>`                                           | Explicit line break, including in a title |
+| `![Useful alternative text](images/diagram.png)` | Image from the presentation ZIP           |
+| `> A brief caveat.`                              | On-slide note; see the distinction below  |
+| `<!-- notes -->` on its own line                 | Start speaker notes for this slide        |
 
 Raw HTML is sanitized. Safe structural elements and class attributes can be used for custom layouts, but scripts, executable event attributes, and inline `style` attributes are not supported. Put styles in `slides.css`. Do not rely on external JavaScript, diagram engines, or a Markdown framework's directives being present. Fenced code is rendered as code; it is not an instruction to generate a chart or diagram.
 
@@ -72,16 +72,16 @@ When present, the metadata comment must be the first content in the slide and mu
 
 This is not YAML. Values are plain text, not Markdown. Do not put literal `|` or `-->` inside a value. Unknown keys are ignored. Use the supported keys exactly as written:
 
-| Key | Effect |
-| --- | --- |
-| `layout` | Built-in layout name or one custom CSS class name. Defaults to `generic`. |
-| `section` | Small section label at the top of the slide. |
-| `footer` | Source or footer text beside the automatic slide counter. |
-| `lang` | Language tag for this slide, for example `en` or `de`. |
-| `logo` | Relative path to a local image asset. Omit when no logo is provided. |
-| `logo-alt` | Alternative text for the logo. |
-| `unit` | Number parsing for `metric` and `metric-pie`: `number`, `decimal`, or `duration`. |
-| `stat-label` | Small label below the large value in the `result` layout. |
+| Key          | Effect                                                                            |
+|--------------|-----------------------------------------------------------------------------------|
+| `layout`     | Built-in layout name or one custom CSS class name. Defaults to `generic`.         |
+| `section`    | Small section label at the top of the slide.                                      |
+| `footer`     | Source or footer text beside the automatic slide counter.                         |
+| `lang`       | Language tag for this slide, for example `en` or `de`.                            |
+| `logo`       | Relative path to a local image asset. Omit when no logo is provided.              |
+| `logo-alt`   | Alternative text for the logo.                                                    |
+| `unit`       | Number parsing for `metric` and `metric-pie`: `number`, `decimal`, or `duration`. |
+| `stat-label` | Small label below the large value in the `result` layout.                         |
 
 Metadata does not carry over to the next slide. Repeat shared section, footer, language, and logo values where needed. Use the built-in layout names in lowercase. There is no presentation-level theme selector or global metadata block in this format.
 
@@ -253,11 +253,11 @@ With `layout: two-column`, target `.slide.two-column` and `.two-column .generic-
 
 `unit` controls how the second column of a `metric` or `metric-pie` table is parsed; it does not control how the label is printed. The displayed value remains the cell's text. Formatting inside chart labels, values, and details is reduced to plain text.
 
-| `unit` | Input conventions | Example and parsed value |
-| --- | --- | --- |
-| `number` (default) | Periods group thousands; a comma separates decimals. | `1.234,5` becomes 1234.5. |
-| `decimal` | Commas group thousands; a period separates decimals. | `1,234.5` becomes 1234.5. |
-| `duration` | Nonnegative whole minutes marked `min` and/or seconds marked `s`. | `4 min 03 s` becomes 243 seconds. |
+| `unit`             | Input conventions                                                 | Example and parsed value          |
+|--------------------|-------------------------------------------------------------------|-----------------------------------|
+| `number` (default) | Periods group thousands; a comma separates decimals.              | `1.234,5` becomes 1234.5.         |
+| `decimal`          | Commas group thousands; a period separates decimals.              | `1,234.5` becomes 1234.5.         |
+| `duration`         | Nonnegative whole minutes marked `min` and/or seconds marked `s`. | `4 min 03 s` becomes 243 seconds. |
 
 Choose the unit explicitly for chart slides. A value such as `2.75` under the default `number` mode is interpreted as 275, not 2.75. Currency or unit text may be displayed with a numeric value, but abbreviations such as `1k`, arithmetic expressions, ranges, scientific notation, colon-formatted durations, and negative values should not be used as chart input. Use ordinary digits and the documented separators. Do not mix incompatible units in one chart.
 
@@ -269,12 +269,12 @@ Styles are applied in this order: neutral defaults, `slides.css`, then the appli
 
 Common variables supplied by the neutral defaults:
 
-| Variable | Role |
-| --- | --- |
-| `--paper`, `--ink` | Slide background and foreground text |
-| `--muted`, `--rule`, `--surface` | Secondary text, separator lines, and surfaces |
+| Variable                                 | Role                                                  |
+|------------------------------------------|-------------------------------------------------------|
+| `--paper`, `--ink`                       | Slide background and foreground text                  |
+| `--muted`, `--rule`, `--surface`         | Secondary text, separator lines, and surfaces         |
 | `--accent`, `--accent-text`, `--context` | Primary accent, accent text/links, and non-focal bars |
-| `--display`, `--body` | Heading and body font-family lists |
+| `--display`, `--body`                    | Heading and body font-family lists                    |
 
 These variables are the neutral defaults' contract, not a requirement that every imported deck use them. A branded stylesheet may introduce its own variables and directly set colors or fonts; inspect that stylesheet before assuming a single variable changes every element.
 
@@ -315,17 +315,17 @@ A small presentation stylesheet can be enough:
 
 Useful selectors include:
 
-| Area | Selectors |
-| --- | --- |
-| Common structure | `.slide`, `.slide-title`, `.slide-top`, `.slide-kicker`, `.brand` |
-| Footer and notes | `.slide-footer`, `.slide-source`, `.slide-counter`, `.slide-note` |
-| Generic content | `.generic-content` |
-| Cover and caveat | `.slide-subtitle`, `.cover-columns`, `.cover-section`, `.caveat-panel` |
-| Metric statistic | `.metric-layout`, `.metric-stat` |
-| Bars | `.comparison-chart`, `.chart-row`, `.chart-row.focal`, `.chart-label`, `.chart-value`, `.chart-bar`, `.chart-detail` |
-| Pie | `.pie-svg`, `.pie-slice`, `.pie-legend`, `.pie-legend-dot`, `.series-1` through `.series-6` |
-| Quality table | `.quality-table`, `.quality table`, `.quality th`, `.quality td` |
-| Result | `.result-summary`, `.result-stat`, `.stat-label`, `.size-flow`, `.size-step`, `.size-step-label`, `.size-step-value`, `.size-arrow`, `.result-columns`, `.result-section` |
+| Area             | Selectors                                                                                                                                                                 |
+|------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Common structure | `.slide`, `.slide-title`, `.slide-top`, `.slide-kicker`, `.brand`                                                                                                         |
+| Footer and notes | `.slide-footer`, `.slide-source`, `.slide-counter`, `.slide-note`                                                                                                         |
+| Generic content  | `.generic-content`                                                                                                                                                        |
+| Cover and caveat | `.slide-subtitle`, `.cover-columns`, `.cover-section`, `.caveat-panel`                                                                                                    |
+| Metric statistic | `.metric-layout`, `.metric-stat`                                                                                                                                          |
+| Bars             | `.comparison-chart`, `.chart-row`, `.chart-row.focal`, `.chart-label`, `.chart-value`, `.chart-bar`, `.chart-detail`                                                      |
+| Pie              | `.pie-svg`, `.pie-slice`, `.pie-legend`, `.pie-legend-dot`, `.series-1` through `.series-6`                                                                               |
+| Quality table    | `.quality-table`, `.quality table`, `.quality th`, `.quality td`                                                                                                          |
+| Result           | `.result-summary`, `.result-stat`, `.stat-label`, `.size-flow`, `.size-step`, `.size-step-label`, `.size-step-value`, `.size-arrow`, `.result-columns`, `.result-section` |
 
 Bars and pie slices are SVG shapes: use `fill`, not just `background-color`, to change their color. Pie legend swatches use `background-color`, so define both on `.series-*` rules. Table alignment from Markdown is represented by `.align-left`, `.align-right`, and `.align-center`, not inline styles.
 

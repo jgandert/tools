@@ -1,1 +1,1 @@
-Track('bad').synth('kick-lofi').note([60]);
+Track("bad").synth("kick-lofi").note([60]);

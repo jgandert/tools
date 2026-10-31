@@ -86,7 +86,11 @@ async function expectSourceMarks(indices, labels = sourceLabels) {
             checked: entry.classList.contains("checked"),
         }))
         .sort((a, b) => a.index - b.index));
-    expect(entries).toEqual(labels.map((text, index) => ({ index, text, checked: indices.includes(index) })));
+    expect(entries).toEqual(labels.map((text, index) => ({
+        index,
+        text,
+        checked: indices.includes(index),
+    })));
     expect(await markdownMarks()).toEqual(labels.map((_, index) => indices.includes(index)));
 }
 
@@ -169,7 +173,9 @@ test("narrow dark layout, 200% CSS zoom, and delayed resize preserve source mark
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForTimeout(150);
     await expectSourceMarks([2]);
-    await page.evaluate(() => { document.documentElement.style.zoom = "2"; });
+    await page.evaluate(() => {
+        document.documentElement.style.zoom = "2";
+    });
     await page.setViewportSize({ width: 391, height: 844 });
     await page.waitForTimeout(150);
     await expectSourceMarks([2]);
@@ -241,7 +247,10 @@ test("a saved empty source state overrides Markdown marks until editor Apply", a
     await page.evaluate(markdown => {
         localStorage.setItem("travel_checklist_mode", "continuous");
         localStorage.setItem("travel_checklist_markdown_continuous", markdown);
-        localStorage.setItem("travel_checklist_state_continuous", JSON.stringify({ version: 2, checkedSourceIndices: [] }));
+        localStorage.setItem("travel_checklist_state_continuous", JSON.stringify({
+            version: 2,
+            checkedSourceIndices: [],
+        }));
     }, markdown);
     await page.reload();
     expect(await page.locator("#continuous-flow .entry.checked").count()).toBe(0);

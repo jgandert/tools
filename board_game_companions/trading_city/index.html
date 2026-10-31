@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
-    <meta name="description" content="A bilingual, independent table companion for learning a classic card-based city-building game.">
+    <meta name="description"
+          content="A bilingual, independent table companion for learning a classic card-based city-building game.">
     <title>Unofficial Guide - San Juan</title>
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
@@ -458,78 +459,691 @@
 </head>
 <body>
 <a data-i18n="ui.skip" href="#content" class="skip-link">Skip to guide</a>
-<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle guide options" data-i18n-aria-label="ui.toggle">
-<header><label for="aside-state" class="aside-toggle-btn"></label><hgroup><h1 data-i18n="ui.title">Unofficial Guide - San Juan</h1><p data-i18n="ui.subtitle">Guided setup and core rules</p></hgroup>
-<nav aria-label="Primary" data-i18n-aria-label="ui.primary"><ul><li><a data-i18n="ui.setup" href="#setup">Setup</a></li><li><a data-i18n="ui.learn" href="#learn">Learn</a></li><li><a data-i18n="ui.reference" href="#reference">Reference</a></li></ul></nav></header>
-<main id="content"><noscript><p class="note">Enable JavaScript for guided steps and the language switch. / Aktiviere JavaScript für die Schrittsteuerung und den Sprachwechsel.</p></noscript>
-<section id="setup" aria-labelledby="setup-title"><h2 data-i18n="setup.title" id="setup-title">Set up the table</h2><p data-i18n="setup.intro">Prepare your own game one task at a time. This guide uses the classic 110-card base game, without expansions.</p>
-<div class="setup-status"><output id="setup-step-label" aria-live="polite">Step 1 of 5</output><span><strong id="setup-player-summary">3 players</strong> · <span id="setup-opening-summary">Standard opening</span></span></div>
-<article class="setup-panel" data-setup-panel="0">
-      <div class="step-heading"><h3 data-i18n="setup1.heading" tabindex="-1">Choose the first Governor</h3></div>
-      <div class="step-layout"><div><p data-i18n="setup1.intro">Choose the first Governor before dealing any cards. This identifies the first seat for the opening-hand variant too.</p><ul class="component-list"><li data-i18n="setup1.a">Agree on a starting player and give that player the <strong>Governor placard</strong>.</li><li data-i18n="setup1.b">Lay all <strong>5 role placards</strong> face up in the middle, within reach of everyone.</li><li data-i18n="setup1.c">Seat order is clockwise. The Governor is a starting-player marker, not a sixth selectable role.</li><li data-i18n="setup1.d">Keep a scoring pad and pencil nearby for the end of the game.</li></ul></div><figure class="table-layout"><div class="visual-grid"><div class="visual-card is-active"><strong data-i18n="setup1.v1.t">Governor placard</strong><span data-i18n="setup1.v1.d">With the first player</span></div><div class="visual-card"><strong data-i18n="setup1.v2.t">5 role placards</strong><span data-i18n="setup1.v2.d">Shared · face up</span></div><div class="visual-card"><strong data-i18n="setup1.v3.t">Clockwise seats</strong><span data-i18n="setup1.v3.d">Used for choosing and resolving</span></div><div class="visual-card"><strong data-i18n="setup1.v4.t">Scoring pad</strong><span data-i18n="setup1.v4.d">Not needed until game end</span></div></div><figcaption data-i18n="setup1.caption">Keep the Governor separate from the five available roles.</figcaption></figure></div>
-      
-    </article>
-<article class="setup-panel" data-setup-panel="1" hidden>
-      <div class="step-heading"><h3 data-i18n="setup2.heading" tabindex="-1">Prepare the trading house</h3></div>
-      <div class="step-layout"><div><p data-i18n="setup2.intro">The trading house determines sale prices. Prepare its stack now; leave the prices hidden.</p><ul class="component-list"><li data-i18n="setup2.a">Shuffle all <strong>5 trading house tiles</strong> face down.</li><li data-i18n="setup2.b">Stack them face down beside the role placards.</li><li data-i18n="setup2.c">Reveal the top tile only when a selling phase begins.</li></ul><p data-i18n="setup2.note" class="note">After a selling phase, put the revealed tile face down under the stack. Do not reshuffle it or change it just because a new round starts.</p></div><figure class="table-layout"><div class="visual-grid"><div class="visual-card is-active"><strong data-i18n="setup2.v1.t">5 tiles</strong><span data-i18n="setup2.v1.d">One shuffled stack</span></div><div class="visual-card"><strong data-i18n="setup2.v2.t">Prices hidden</strong><span data-i18n="setup2.v2.d">Reveal for selling</span></div><div class="visual-card"><strong data-i18n="setup2.v3.t">One shared price list</strong><span data-i18n="setup2.v3.d">Applies to the whole phase</span></div><div class="visual-card"><strong data-i18n="setup2.v4.t">Cycle, do not reshuffle</strong><span data-i18n="setup2.v4.d">Used tile goes to the bottom</span></div></div><figcaption data-i18n="setup2.caption">The tile is a price list, not a place to store goods.</figcaption></figure></div>
-      
-    </article>
-<article class="setup-panel" data-setup-panel="2" hidden>
-      <div class="step-heading"><h3 data-i18n="setup3.heading" tabindex="-1">Place the starting buildings</h3></div>
-      <div class="step-layout"><div><p data-i18n="setup3.intro">Before shuffling the building cards, find one <strong>Indigo plant</strong> for each player.</p><ul class="component-list"><li data-i18n="setup3.a">Place that card face up in its owner's play area. It is already built, so no payment is needed.</li><li data-i18n="setup3.b">Start with no goods on it. Do not take a face-down goods card yet.</li><li data-i18n="setup3.c">Leave space for a growing city. The starting building already counts toward <strong>12 buildings</strong>.</li></ul></div><figure class="table-layout"><div class="visual-grid"><div class="visual-card is-active"><strong data-i18n="setup3.v1.t">Indigo plant</strong><span data-i18n="setup3.v1.d">1 built card per player</span></div><div class="visual-card"><strong data-i18n="setup3.v2.t">Goods</strong><span data-i18n="setup3.v2.d">0 at the start</span></div><div class="visual-card"><strong data-i18n="setup3.v3.t">City size</strong><span data-i18n="setup3.v3.d">Start at 1 of 12 buildings</span></div><div class="visual-card"><strong data-i18n="setup3.v4.t">Payment</strong><span data-i18n="setup3.v4.d">No cards spent for setup</span></div></div><figcaption data-i18n="setup3.caption">The starting Indigo plant is separate from the four cards in your hand.</figcaption></figure></div>
-      
-    </article>
-<article class="setup-panel" data-setup-panel="3" hidden>
-      <div class="step-heading"><h3 data-i18n="setup4.heading" tabindex="-1">Deal the opening hands</h3></div>
-      <div class="step-layout"><div><p data-i18n="setup4.intro">Shuffle all remaining building cards into a face-down <strong>card supply</strong>. Keep a separate space for a face-down <strong>discard stack</strong>.</p><p data-opening="standard" data-i18n="setup4.standard">Deal <strong>4 cards</strong> from the supply to each player. Everyone keeps all four, without paying for them.</p><p data-opening="variant" hidden data-i18n="setup4.variant">In clockwise order from the Governor, deal <strong>5, 6, 7, or 8 cards</strong> according to seat. Each player keeps exactly 4 and discards the rest face down.</p><p data-i18n="setup4.note" class="note">Keep card faces private, but make the number of cards in your hand known. Hand cards are both your building choices and your spending money.</p></div><figure class="table-layout"><ol class="station-grid" id="station-grid" aria-label="Opening hands by seat" data-i18n-aria-label="setup4.stations"></ol><figcaption data-i18n="setup4.caption">Seat 1 is the Governor; continue clockwise. Change the opening method in Guide options.</figcaption></figure></div>
-      
-    </article>
-<article class="setup-panel" data-setup-panel="4" hidden>
-      <div class="step-heading"><h3 data-i18n="setup5.heading" tabindex="-1">Check the first round</h3></div>
-      <div class="step-layout"><div><p data-i18n="setup5.intro">Check the table together before the Governor chooses the first role.</p><ul class="component-list"><li data-i18n="setup5.a">Each player has 1 face-up Indigo plant, 4 hand cards, and no goods.</li><li data-i18n="setup5.b">All 5 roles are available, and the trading house stack is face down.</li><li data-i18n="setup5.c">The supply and discard area are easy to tell apart. Both use face-down cards.</li><li data-i18n="setup5.d">Do not pass the Governor or deal another hand before the first action.</li></ul><p data-i18n="setup5.role-help" class="note">When a role is chosen, read its <strong>action</strong> and <strong>privilege</strong> aloud. Learn its details from the physical placard when it comes up; there is no role-by-role lesson here.</p></div><figure class="table-layout"><ol class="turn-sequence" id="setup-turn-order" aria-label="First-round role selection" data-i18n-aria-label="setup5.order"></ol><figcaption data-i18n="setup5.caption">Each role selection starts a phase. Resolve it before anyone selects the next role.</figcaption></figure></div>
-      
-    </article>
-<article class="setup-panel" data-setup-panel="5" hidden><div class="step-heading"><h3 data-i18n="setup.ready" tabindex="-1">The table is ready</h3></div><div class="ready-summary" role="status"><p><strong id="ready-session-copy">3 players · 4 cards and 1 building each</strong></p><p data-i18n="setup.ready.text">The Governor chooses first. Everyone resolves the chosen phase before the next player selects a role. Twelve buildings trigger the end; victory points decide the winner.</p><a data-i18n="setup.ready.link" href="#learn" class="btn btn-primary">Learn the core rules</a></div></article>
-<nav class="setup-actions" aria-label="Setup step controls" data-i18n-aria-label="ui.setup.controls"><button type="button" id="setup-back"><span class="sym" aria-hidden="true">arrow_back</span> <span data-i18n="ui.back">Back</span></button><button type="button" id="setup-next" class="btn-primary"><span id="setup-next-label">Continue</span><span class="sym" aria-hidden="true">arrow_forward</span></button></nav></section>
-<section id="learn" aria-labelledby="learn-title"><h2 data-i18n="learn.title" id="learn-title">Learn the core rules</h2><p data-i18n="learn.intro">Start with what a card can do, then follow a round, pay for a building, handle goods, and score. Use the actual role placards for their individual actions and privileges.</p><ol class="learn-track" aria-label="Rule lessons" data-i18n-aria-label="learn.track">
-<li><button type="button" data-learn-button="0" aria-controls="learn-cards" aria-current="step"><span data-i18n="learn.number.0">Lesson 1</span><b data-i18n="learn.tab.0">Cards & goal</b></button></li>
-<li><button type="button" data-learn-button="1" aria-controls="learn-round"><span data-i18n="learn.number.1">Lesson 2</span><b data-i18n="learn.tab.1">Round</b></button></li>
-<li><button type="button" data-learn-button="2" aria-controls="learn-building"><span data-i18n="learn.number.2">Lesson 3</span><b data-i18n="learn.tab.2">Building</b></button></li>
-<li><button type="button" data-learn-button="3" aria-controls="learn-goods"><span data-i18n="learn.number.3">Lesson 4</span><b data-i18n="learn.tab.3">Goods & cards</b></button></li>
-<li><button type="button" data-learn-button="4" aria-controls="learn-ending"><span data-i18n="learn.number.4">Lesson 5</span><b data-i18n="learn.tab.4">Game end</b></button></li>
-</ol>
-<article id="learn-cards" class="learn-panel" data-learn-panel="0"><h3 data-i18n="learn1.title" tabindex="-1">One card, three uses</h3><p data-i18n="learn1.intro">Your aim is to finish with the most <strong>victory points</strong>, not the most cards or the fastest twelfth building. A card's location determines what it does.</p><dl class="card-type-list"><div><dt data-i18n="learn1.hand.t">In your hand</dt><dd data-i18n="learn1.hand.d">A possible building, or one card of payment when discarded. Its printed cost does not make it worth more money.</dd></div><div><dt data-i18n="learn1.city.t">Face up in your city</dt><dd data-i18n="learn1.city.d">A built building. Its type, ability, and victory points matter here. Simply holding its card gives no ability.</dd></div><div><dt data-i18n="learn1.good.t">Face down on a production building</dt><dd data-i18n="learn1.good.d">One good of that building's type. Do not inspect the hidden card or use its printed text.</dd></div></dl><div class="turn-rule"><strong data-i18n="learn1.remember">A card can do only one of these jobs at a time.</strong><p data-i18n="learn1.remember.body">The card you build stays in your city. The other cards you spend go to the discard stack. A goods card is not part of your hand.</p></div><details class="rule-check"><summary data-i18n="quiz.open">Check your understanding</summary><form data-quiz="0"><fieldset><legend data-i18n="learn1.quiz.question">You pay with a hand card showing a building cost of 6. How much payment does it provide?</legend><label for="quiz-0-0"><input type="radio" id="quiz-0-0" name="quiz-0" value="0"> <span data-i18n="learn1.quiz.option.0">1 card of payment</span></label><label for="quiz-0-1"><input type="radio" id="quiz-0-1" name="quiz-0" value="1"> <span data-i18n="learn1.quiz.option.1">6 cards of payment</span></label><label for="quiz-0-2"><input type="radio" id="quiz-0-2" name="quiz-0" value="2"> <span data-i18n="learn1.quiz.option.2">Its printed victory points</span></label></fieldset><button data-i18n="quiz.check" type="submit">Check answer</button><p id="quiz-result-0" class="note" role="status" aria-live="polite" hidden></p></form></details></article>
-<article id="learn-round" class="learn-panel" data-learn-panel="1" hidden><h3 data-i18n="learn2.title" tabindex="-1">Choose a role; resolve a phase</h3><ol class="phase-strip"><li><strong data-i18n="learn2.s1.t">1 · Choose</strong><span data-i18n="learn2.s1.d">The Governor chooses first. Take an available role placard; it stays with you until the round ends.</span></li><li><strong data-i18n="learn2.s2.t">2 · Resolve</strong><span data-i18n="learn2.s2.d">The chooser acts first, with the privilege. The other players follow clockwise with the action only.</span></li><li><strong data-i18n="learn2.s3.t">3 · Next choice</strong><span data-i18n="learn2.s3.d">After the phase, the next chooser is the player to the left of the previous chooser. Use a different available role.</span></li><li><strong data-i18n="learn2.s4.t">4 · New round</strong><span data-i18n="learn2.s4.d">After the required selections, return all roles and pass the Governor clockwise. Do the start-of-round checks.</span></li></ol><p data-i18n="learn2.optional"><strong>Choosing is mandatory; acting is optional.</strong> You may skip an action or privilege without cancelling the phase for others. Skipping does not stop you taking part in later phases.</p><p data-i18n="learn2.exception" class="note"><strong>Shared-action exception:</strong> the Prospector has no general action for the other players. Relevant building effects can still apply. Read the privilege from the placard.</p><h4 data-i18n="learn2.order.title">Role selection at your table</h4><p id="round-sequence-summary"></p><ol class="turn-sequence" id="round-sequence" aria-label="Role selectors and phase order" data-i18n-aria-label="learn2.sequence"></ol><h4 data-i18n="learn2.boundary">Before the next round's first choice</h4><p data-i18n="learn2.boundary.body">Return the role placards and pass the Governor. Resolve any <strong>Chapel</strong> use first: its owner may put one hand card beneath it. Then discard down to <strong>7 hand cards</strong>, or <strong>12 with a Tower</strong>. Buildings and goods stay in place; there is no automatic draw.</p><details class="rule-check"><summary data-i18n="quiz.open">Check your understanding</summary><form data-quiz="1"><fieldset><legend data-i18n="learn2.quiz.question">The player who selected a role skips the action. What happens to the shared action?</legend><label for="quiz-1-0"><input type="radio" id="quiz-1-0" name="quiz-1" value="0"> <span data-i18n="learn2.quiz.option.0">The whole phase is cancelled.</span></label><label for="quiz-1-1"><input type="radio" id="quiz-1-1" name="quiz-1" value="1"> <span data-i18n="learn2.quiz.option.1">The other players may still take it.</span></label><label for="quiz-1-2"><input type="radio" id="quiz-1-2" name="quiz-1" value="2"> <span data-i18n="learn2.quiz.option.2">The role immediately becomes available again.</span></label></fieldset><button data-i18n="quiz.check" type="submit">Check answer</button><p id="quiz-result-1" class="note" role="status" aria-live="polite" hidden></p></form></details></article>
-<article id="learn-building" class="learn-panel" data-learn-panel="2" hidden><h3 data-i18n="learn3.title" tabindex="-1">Pay with other hand cards</h3><p data-i18n="learn3.intro">During a <strong>Builder phase</strong>, each player may normally build one building. Start with the chooser, then proceed clockwise.</p><ol class="component-list"><li data-i18n="learn3.s1">Choose a building from your hand. Check that it is legal and that you can afford it.</li><li data-i18n="learn3.s2">Calculate its cost after applicable discounts. The Builder's own privilege reduces payment by 1; discounts cannot make the cost negative.</li><li data-i18n="learn3.s3">Place the chosen building face up. Discard the required number of <strong>other</strong> hand cards face down as payment.</li><li data-i18n="learn3.s4">Resolve applicable effects from buildings you already had. A new violet building's ability starts only after this Builder phase.</li></ol><div class="turn-rule"><strong data-i18n="learn3.example.t">Example: cost 3, no discounts</strong><p data-i18n="learn3.example.d">You need the building card plus 3 other hand cards: 4 cards in all. Keep the building and discard the other 3. A payment card printed with cost 6 still counts as just one card.</p></div><dl class="card-type-list"><div><dt data-i18n="learn3.production.t">Production buildings</dt><dd data-i18n="learn3.production.d">Several of the same type are allowed in one city. Each has room for just one good.</dd></div><div><dt data-i18n="learn3.violet.t">Violet buildings</dt><dd data-i18n="learn3.violet.d">No two copies of the same violet building in your city. Different players may own the same building.</dd></div><div><dt data-i18n="learn3.discount.t">No change</dt><dd data-i18n="learn3.discount.d">A cost reduced to zero means no payment cards are discarded. Unused discounts do not give you cards.</dd></div></dl><details class="rule-check"><summary data-i18n="quiz.open">Check your understanding</summary><form data-quiz="2"><fieldset><legend data-i18n="learn3.quiz.question">You hold 4 cards in total and want to build a cost-4 building with no discount. Can you build it?</legend><label for="quiz-2-0"><input type="radio" id="quiz-2-0" name="quiz-2" value="0"> <span data-i18n="learn3.quiz.option.0">Yes; the building card is one of the four payment cards.</span></label><label for="quiz-2-1"><input type="radio" id="quiz-2-1" name="quiz-2" value="1"> <span data-i18n="learn3.quiz.option.1">No; you need the building plus 4 other cards.</span></label><label for="quiz-2-2"><input type="radio" id="quiz-2-2" name="quiz-2" value="2"> <span data-i18n="learn3.quiz.option.2">Yes; any goods can always pay the missing amount.</span></label></fieldset><button data-i18n="quiz.check" type="submit">Check answer</button><p id="quiz-result-2" class="note" role="status" aria-live="polite" hidden></p></form></details></article>
-<article id="learn-goods" class="learn-panel" data-learn-panel="3" hidden><h3 data-i18n="learn4.title" tabindex="-1">Turn goods into new hand cards</h3><p data-i18n="learn4.intro">Production and selling happen only when their roles are chosen. Their order is not fixed: a round does not automatically include either phase.</p><h4 data-i18n="learn4.produce">Producing goods</h4><p data-i18n="learn4.produce.body">The basic production action allows one good. For each good you may produce, put one card from the <strong>supply</strong>, unseen and face down, on an <strong>empty production building</strong> you own. Even with extra production, a building holds at most one good.</p><h4 data-i18n="learn4.sell">Selling goods</h4><p data-i18n="learn4.sell.body">The basic selling action allows one good; the chosen role's privilege and your buildings may allow more. Reveal one trading house tile for the entire phase. Choose the goods to sell, discard those goods cards unseen, and draw new hand cards equal to their total sale price. Leave the production buildings in place.</p><div class="visual-grid"><div class="visual-card is-active"><strong data-i18n="learn4.v1.t">Supply → building</strong><span data-i18n="learn4.v1.d">The face-down card becomes a good.</span></div><div class="visual-card"><strong data-i18n="learn4.v2.t">Building determines the type</strong><span data-i18n="learn4.v2.d">The hidden card's face never sets the price.</span></div><div class="visual-card"><strong data-i18n="learn4.v3.t">Sold good → discard</strong><span data-i18n="learn4.v3.d">The building is empty and usable again.</span></div><div class="visual-card"><strong data-i18n="learn4.v4.t">Sale income → hand</strong><span data-i18n="learn4.v4.d">Draw new cards; do not keep the sold goods card.</span></div></div><p data-i18n="learn4.tile">After everyone has had a chance to sell, put the trading house tile face down under its stack—even if nobody sold anything. Players may sell the same type of good; one player's sale does not block another's.</p><h4 data-i18n="learn4.draw">Drawing and keeping cards</h4><p data-i18n="learn4.draw.body">For a card-drawing action, use the draw and keep amounts on the chosen placard. Keep that new selection separate from your old hand until you have chosen what to keep, unless a building allows mixing them. Discard the rest face down. There is no general refill to four or seven cards.</p><p data-i18n="learn4.supply" class="note"><strong>Supply empty?</strong> Shuffle the discard stack into a new face-down supply and continue drawing. Emptying the supply does not end the game.</p><details class="rule-check"><summary data-i18n="quiz.open">Check your understanding</summary><form data-quiz="3"><fieldset><legend data-i18n="learn4.quiz.question">You sell one good worth 3 cards. Which cards go into your hand?</legend><label for="quiz-3-0"><input type="radio" id="quiz-3-0" name="quiz-3" value="0"> <span data-i18n="learn4.quiz.option.0">The production building and two supply cards</span></label><label for="quiz-3-1"><input type="radio" id="quiz-3-1" name="quiz-3" value="1"> <span data-i18n="learn4.quiz.option.1">The goods card and two supply cards</span></label><label for="quiz-3-2"><input type="radio" id="quiz-3-2" name="quiz-3" value="2"> <span data-i18n="learn4.quiz.option.2">Three new supply cards; the good is discarded</span></label></fieldset><button data-i18n="quiz.check" type="submit">Check answer</button><p id="quiz-result-3" class="note" role="status" aria-live="polite" hidden></p></form></details></article>
-<article id="learn-ending" class="learn-panel" data-learn-panel="4" hidden><h3 data-i18n="learn5.title" tabindex="-1">Finish the phase, then score</h3><div class="turn-rule"><strong data-i18n="learn5.end.t">12 buildings end the game—not necessarily with a win for their owner.</strong><p data-i18n="learn5.end.d">When at least one player has twelve buildings, finish that entire <strong>Builder phase</strong>. Players who have not acted in it still get their opportunity. Stop afterward; do not finish the round.</p></div><p data-i18n="learn5.count">The starting Indigo plant counts as a building. Hand cards and goods do not. If an effect has covered an older building, the covered card is not an extra building.</p><dl class="scoring-list"><div><dt data-i18n="learn5.printed.t">1 · Printed victory points</dt><dd data-i18n="learn5.printed.d">Add the victory-point values of your built buildings, not their construction costs.</dd></div><div><dt data-i18n="learn5.chapel.t">2 · Chapel cards</dt><dd data-i18n="learn5.chapel.d">Add 1 point per card beneath your Chapel, if you have one. Ignore the hidden faces.</dd></div><div><dt data-i18n="learn5.bonuses.t">3 · Other end-game bonuses</dt><dd data-i18n="learn5.bonuses.d">Calculate bonuses from your scoring buildings using their own text. Do not assume every cost-6 card is worth 6 points.</dd></div><div><dt data-i18n="learn5.palace.t">4 · Palace last</dt><dd data-i18n="learn5.palace.d">If you own a Palace, add one quarter of your other points, rounded down. Do not include its own bonus in that calculation.</dd></div></dl><p data-i18n="learn5.tie"><strong>Most victory points wins.</strong> Among tied players, compare <strong>hand cards + unsold goods</strong>, counting each as one regardless of sale price. These cards are a tie-break, not extra victory points.</p><details class="rule-check"><summary data-i18n="quiz.open">Check your understanding</summary><form data-quiz="4"><fieldset><legend data-i18n="learn5.quiz.question">Another player reaches twelve buildings before your action in this Builder phase. May you still build?</legend><label for="quiz-4-0"><input type="radio" id="quiz-4-0" name="quiz-4" value="0"> <span data-i18n="learn5.quiz.option.0">Yes; finish this Builder phase, then score.</span></label><label for="quiz-4-1"><input type="radio" id="quiz-4-1" name="quiz-4" value="1"> <span data-i18n="learn5.quiz.option.1">No; stop as soon as the twelfth building is placed.</span></label><label for="quiz-4-2"><input type="radio" id="quiz-4-2" name="quiz-4" value="2"> <span data-i18n="learn5.quiz.option.2">Yes; then finish every remaining role in the round.</span></label></fieldset><button data-i18n="quiz.check" type="submit">Check answer</button><p id="quiz-result-4" class="note" role="status" aria-live="polite" hidden></p></form></details><p id="quiz-progress" role="status" aria-live="polite"></p></article>
-<nav class="setup-actions" aria-label="Lesson controls" data-i18n-aria-label="learn.controls"><button type="button" id="learn-back"><span class="sym" aria-hidden="true">arrow_back</span> <span data-i18n="learn.prev">Previous lesson</span></button><button type="button" id="learn-next" class="btn-primary"><span data-i18n="learn.next">Next lesson</span><span class="sym" aria-hidden="true">arrow_forward</span></button></nav></section>
-<section id="reference" class="reference-group" aria-labelledby="reference-title"><h2 data-i18n="reference.title" id="reference-title">Rules reference</h2><p data-i18n="reference.intro">Open a topic when it comes up. Building text can change these defaults. This is a core-rules companion, not a catalogue of roles or building powers.</p>
-<h3 data-i18n="reference.timing">Rounds and timing</h3>
-<details class="timing"><summary data-i18n="ref.round">Role selection and skipping</summary><p data-i18n="ref.round.body">A role must be chosen when it is your turn to choose, even if you will not use it. The action and privilege are optional. A selected placard stays unavailable for the rest of the round. Resolve the phase before the next choice; there is no fixed order of phases. The privilege belongs only to the chooser.</p></details>
-<details class="timing"><summary data-i18n="ref.two">Two-player round</summary><p data-i18n="ref.two.body">The role selectors are <strong>Governor → opponent → Governor</strong>: three different roles in total. Each selected phase is resolved normally. Return the roles only after the third phase, then pass the Governor; the other player will choose twice next round.</p><p data-i18n="ref.two.library">A <strong>Library</strong> may be used only once per round in the two-player game, not once for each of the Governor's two choices.</p></details>
-<details class="timing"><summary data-i18n="ref.hand">When to enforce the hand limit</summary><p data-i18n="ref.hand.body">Only at the start of a new round: use the Chapel first if desired, then discard to 7 cards, or 12 with a Tower. Having more during a round is allowed. Reveal your hand count, not your card faces. There is no automatic draw when a round starts or when your hand is empty.</p><p data-i18n="ref.hand.example">Example: you draw up to 9 cards during a round. Keep them for now; a later action may spend some before the next hand-limit check.</p></details>
-<h3 data-i18n="reference.economy">Cards, costs, and goods</h3>
-<details class="economy"><summary data-i18n="ref.pay">Building, payment, and activation</summary><p data-i18n="ref.pay.body">One building per player in a Builder phase is the default. Its card is separate from its payment. Each other hand card pays one unit, whatever is printed on it. Apply valid reductions, with a minimum cost of zero. No duplicate violet buildings within one city; duplicate production buildings are allowed. A newly built violet ability cannot help with its own construction or any part of that same Builder phase.</p></details>
-<details class="economy"><summary data-i18n="ref.goods">Goods are not hand cards</summary><p data-i18n="ref.goods.body">A goods card comes unseen from the supply and sits face down on an empty production building. One building holds one good. The building determines the good's type. Goods may remain between rounds. Selling removes the goods card, not the building; the income is newly drawn hand cards. Neither production nor selling gives victory points as its normal action.</p></details>
-<details class="economy"><summary data-i18n="ref.trade">Trading house and card supply</summary><p data-i18n="ref.trade.body">Reveal one trading house tile when a selling phase starts. Everyone uses it, including players selling the same type of good. After the phase, move it face down to the bottom even if no goods were sold. Do not reveal a new tile merely at a round change. When the card supply empties, shuffle the face-down discard stack to replace it.</p></details>
-<h3 data-i18n="reference.ending">Ending and scope</h3>
-<details><summary data-i18n="ref.end">The twelfth building and tied scores</summary><p data-i18n="ref.end.body">Finish the Builder phase that leaves at least one city with twelve buildings, then score immediately. Do not complete the round or enforce a new hand limit. Count printed building points, Chapel cards, other scoring bonuses, and the Palace bonus last. Highest score wins; tied players compare the total number of hand cards plus goods. The base rules specify no further tie-break if that is equal too.</p></details>
-<details><summary data-i18n="ref.variant">Optional opening-hand variant</summary><p data-i18n="ref.variant.body">Standard setup gives four random hand cards to everyone. The optional variant deals 5 to the Governor, then 6, 7, and 8 clockwise where those seats exist. Everyone keeps four and discards the surplus face down. The starting Indigo plant is separate in both methods.</p></details>
-<details id="source-notes"><summary data-i18n="ref.sources">Guide scope and independence</summary><p data-i18n="ref.scope"><strong>Rules baseline:</strong> the original 110-card base game. Expansion buildings, events, and later rethemed editions are outside this guide. For an individual role, read your role placard; for a special building, consult its text and your edition's rulebook.</p><p data-i18n="ref.sources.credit">Rules by Andreas Seyfarth; © 2004 Ravensburger Spieleverlag.</p><p data-i18n="ref.independent">Independent, unofficial teaching aid. Explanations and practice questions are newly written; no publisher illustrations, card images, logos, or rulebook pages are included.</p></details>
-</section></main>
-<aside aria-labelledby="guide-options-title"><h2 data-i18n="options.title" id="guide-options-title">Guide options</h2><form id="guide-options" autocomplete="off"><fieldset><legend data-i18n="options.table">Table</legend>
-<label for="player-count"><span data-i18n="options.players">Players</span><select id="player-count" name="player-count">
-<option data-i18n="options.players.2" value="2">2 players</option>
-<option data-i18n="options.players.3" value="3" selected>3 players</option>
-<option data-i18n="options.players.4" value="4">4 players</option>
-</select></label><label for="opening"><span data-i18n="options.opening">Opening hand</span><select id="opening" name="opening" aria-describedby="opening-hint"><option data-i18n="options.standard" value="standard" selected>4 random cards</option><option data-i18n="options.variant" value="variant">Choose 4 · optional variant</option></select></label><small id="opening-hint">Everyone starts with four random hand cards.</small></fieldset>
-<fieldset><legend data-i18n="options.progress">Setup progress</legend><label data-i18n="options.completed" for="setup-progress">Completed steps</label><progress id="setup-progress" value="0" max="5"></progress><output id="setup-progress-text" for="setup-progress">0 of 5</output><button type="button" id="reset-guide"><span class="sym" aria-hidden="true">refresh</span> <span data-i18n="options.reset">Start over</span></button></fieldset>
-<fieldset><legend data-i18n="options.interface">User interface</legend><label for="language"><span data-i18n="options.language">Language</span><select id="language" name="language"><option value="en" lang="en" selected>English</option><option value="de" lang="de">Deutsch</option></select></label></fieldset></form><p><small id="storage-status" role="status" aria-live="polite"></small></p></aside>
-    <footer>
-        <p lang="en">This is an independent, unofficial rules guide. It is not affiliated with or endorsed by the game's publisher. All trademarks and copyrights in the original game remain the property of their respective owners.</p>
-        <p lang="de">Dies ist ein unabhängiger, inoffizieller Regelleitfaden. Er steht in keiner Verbindung zum Verlag des Spiels und wird von diesem nicht unterstützt. Alle Marken- und Urheberrechte am Originalspiel verbleiben bei ihren jeweiligen Rechteinhabern.</p>
-    </footer>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle guide options"
+       data-i18n-aria-label="ui.toggle">
+<header><label for="aside-state" class="aside-toggle-btn"></label>
+    <hgroup><h1 data-i18n="ui.title">Unofficial Guide - San Juan</h1>
+        <p data-i18n="ui.subtitle">Guided setup and core rules</p></hgroup>
+    <nav aria-label="Primary" data-i18n-aria-label="ui.primary">
+        <ul>
+            <li><a data-i18n="ui.setup" href="#setup">Setup</a></li>
+            <li><a data-i18n="ui.learn" href="#learn">Learn</a></li>
+            <li><a data-i18n="ui.reference" href="#reference">Reference</a></li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+    <noscript><p class="note">Enable JavaScript for guided steps and the language switch. /
+        Aktiviere JavaScript für die Schrittsteuerung und den Sprachwechsel.</p></noscript>
+    <section id="setup" aria-labelledby="setup-title"><h2 data-i18n="setup.title" id="setup-title">
+        Set up the table</h2>
+        <p data-i18n="setup.intro">Prepare your own game one task at a time. This guide uses the
+            classic 110-card base game, without expansions.</p>
+        <div class="setup-status">
+            <output id="setup-step-label" aria-live="polite">Step 1 of 5</output>
+            <span><strong id="setup-player-summary">3 players</strong> · <span
+                id="setup-opening-summary">Standard opening</span></span></div>
+        <article class="setup-panel" data-setup-panel="0">
+            <div class="step-heading"><h3 data-i18n="setup1.heading" tabindex="-1">Choose the first
+                Governor</h3></div>
+            <div class="step-layout">
+                <div><p data-i18n="setup1.intro">Choose the first Governor before dealing any cards.
+                    This identifies the first seat for the opening-hand variant too.</p>
+                    <ul class="component-list">
+                        <li data-i18n="setup1.a">Agree on a starting player and give that player the
+                            <strong>Governor placard</strong>.
+                        </li>
+                        <li data-i18n="setup1.b">Lay all <strong>5 role placards</strong> face up in
+                            the middle, within reach of everyone.
+                        </li>
+                        <li data-i18n="setup1.c">Seat order is clockwise. The Governor is a
+                            starting-player marker, not a sixth selectable role.
+                        </li>
+                        <li data-i18n="setup1.d">Keep a scoring pad and pencil nearby for the end of
+                            the game.
+                        </li>
+                    </ul>
+                </div>
+                <figure class="table-layout">
+                    <div class="visual-grid">
+                        <div class="visual-card is-active"><strong data-i18n="setup1.v1.t">Governor
+                            placard</strong><span
+                            data-i18n="setup1.v1.d">With the first player</span></div>
+                        <div class="visual-card"><strong data-i18n="setup1.v2.t">5 role
+                            placards</strong><span data-i18n="setup1.v2.d">Shared · face up</span>
+                        </div>
+                        <div class="visual-card"><strong data-i18n="setup1.v3.t">Clockwise
+                            seats</strong><span data-i18n="setup1.v3.d">Used for choosing and resolving</span>
+                        </div>
+                        <div class="visual-card"><strong data-i18n="setup1.v4.t">Scoring
+                            pad</strong><span
+                            data-i18n="setup1.v4.d">Not needed until game end</span></div>
+                    </div>
+                    <figcaption data-i18n="setup1.caption">Keep the Governor separate from the five
+                        available roles.
+                    </figcaption>
+                </figure>
+            </div>
+
+        </article>
+        <article class="setup-panel" data-setup-panel="1" hidden>
+            <div class="step-heading"><h3 data-i18n="setup2.heading" tabindex="-1">Prepare the
+                trading house</h3></div>
+            <div class="step-layout">
+                <div><p data-i18n="setup2.intro">The trading house determines sale prices. Prepare
+                    its stack now; leave the prices hidden.</p>
+                    <ul class="component-list">
+                        <li data-i18n="setup2.a">Shuffle all <strong>5 trading house tiles</strong>
+                            face down.
+                        </li>
+                        <li data-i18n="setup2.b">Stack them face down beside the role placards.</li>
+                        <li data-i18n="setup2.c">Reveal the top tile only when a selling phase
+                            begins.
+                        </li>
+                    </ul>
+                    <p data-i18n="setup2.note" class="note">After a selling phase, put the revealed
+                        tile face down under the stack. Do not reshuffle it or change it just
+                        because a new round starts.</p></div>
+                <figure class="table-layout">
+                    <div class="visual-grid">
+                        <div class="visual-card is-active"><strong data-i18n="setup2.v1.t">5
+                            tiles</strong><span data-i18n="setup2.v1.d">One shuffled stack</span>
+                        </div>
+                        <div class="visual-card"><strong data-i18n="setup2.v2.t">Prices
+                            hidden</strong><span data-i18n="setup2.v2.d">Reveal for selling</span>
+                        </div>
+                        <div class="visual-card"><strong data-i18n="setup2.v3.t">One shared price
+                            list</strong><span
+                            data-i18n="setup2.v3.d">Applies to the whole phase</span></div>
+                        <div class="visual-card"><strong data-i18n="setup2.v4.t">Cycle, do not
+                            reshuffle</strong><span data-i18n="setup2.v4.d">Used tile goes to the bottom</span>
+                        </div>
+                    </div>
+                    <figcaption data-i18n="setup2.caption">The tile is a price list, not a place to
+                        store goods.
+                    </figcaption>
+                </figure>
+            </div>
+
+        </article>
+        <article class="setup-panel" data-setup-panel="2" hidden>
+            <div class="step-heading"><h3 data-i18n="setup3.heading" tabindex="-1">Place the
+                starting buildings</h3></div>
+            <div class="step-layout">
+                <div><p data-i18n="setup3.intro">Before shuffling the building cards, find one
+                    <strong>Indigo plant</strong> for each player.</p>
+                    <ul class="component-list">
+                        <li data-i18n="setup3.a">Place that card face up in its owner's play area.
+                            It is already built, so no payment is needed.
+                        </li>
+                        <li data-i18n="setup3.b">Start with no goods on it. Do not take a face-down
+                            goods card yet.
+                        </li>
+                        <li data-i18n="setup3.c">Leave space for a growing city. The starting
+                            building already counts toward <strong>12 buildings</strong>.
+                        </li>
+                    </ul>
+                </div>
+                <figure class="table-layout">
+                    <div class="visual-grid">
+                        <div class="visual-card is-active"><strong data-i18n="setup3.v1.t">Indigo
+                            plant</strong><span
+                            data-i18n="setup3.v1.d">1 built card per player</span></div>
+                        <div class="visual-card"><strong data-i18n="setup3.v2.t">Goods</strong><span
+                            data-i18n="setup3.v2.d">0 at the start</span></div>
+                        <div class="visual-card"><strong data-i18n="setup3.v3.t">City
+                            size</strong><span
+                            data-i18n="setup3.v3.d">Start at 1 of 12 buildings</span></div>
+                        <div class="visual-card"><strong
+                            data-i18n="setup3.v4.t">Payment</strong><span data-i18n="setup3.v4.d">No cards spent for setup</span>
+                        </div>
+                    </div>
+                    <figcaption data-i18n="setup3.caption">The starting Indigo plant is separate
+                        from the four cards in your hand.
+                    </figcaption>
+                </figure>
+            </div>
+
+        </article>
+        <article class="setup-panel" data-setup-panel="3" hidden>
+            <div class="step-heading"><h3 data-i18n="setup4.heading" tabindex="-1">Deal the opening
+                hands</h3></div>
+            <div class="step-layout">
+                <div><p data-i18n="setup4.intro">Shuffle all remaining building cards into a
+                    face-down <strong>card supply</strong>. Keep a separate space for a face-down
+                    <strong>discard stack</strong>.</p>
+                    <p data-opening="standard" data-i18n="setup4.standard">Deal <strong>4
+                        cards</strong> from the supply to each player. Everyone keeps all four,
+                        without paying for them.</p>
+                    <p data-opening="variant" hidden data-i18n="setup4.variant">In clockwise order
+                        from the Governor, deal <strong>5, 6, 7, or 8 cards</strong> according to
+                        seat. Each player keeps exactly 4 and discards the rest face down.</p>
+                    <p data-i18n="setup4.note" class="note">Keep card faces private, but make the
+                        number of cards in your hand known. Hand cards are both your building
+                        choices and your spending money.</p></div>
+                <figure class="table-layout">
+                    <ol class="station-grid" id="station-grid" aria-label="Opening hands by seat"
+                        data-i18n-aria-label="setup4.stations"></ol>
+                    <figcaption data-i18n="setup4.caption">Seat 1 is the Governor; continue
+                        clockwise. Change the opening method in Guide options.
+                    </figcaption>
+                </figure>
+            </div>
+
+        </article>
+        <article class="setup-panel" data-setup-panel="4" hidden>
+            <div class="step-heading"><h3 data-i18n="setup5.heading" tabindex="-1">Check the first
+                round</h3></div>
+            <div class="step-layout">
+                <div><p data-i18n="setup5.intro">Check the table together before the Governor
+                    chooses the first role.</p>
+                    <ul class="component-list">
+                        <li data-i18n="setup5.a">Each player has 1 face-up Indigo plant, 4 hand
+                            cards, and no goods.
+                        </li>
+                        <li data-i18n="setup5.b">All 5 roles are available, and the trading house
+                            stack is face down.
+                        </li>
+                        <li data-i18n="setup5.c">The supply and discard area are easy to tell apart.
+                            Both use face-down cards.
+                        </li>
+                        <li data-i18n="setup5.d">Do not pass the Governor or deal another hand
+                            before the first action.
+                        </li>
+                    </ul>
+                    <p data-i18n="setup5.role-help" class="note">When a role is chosen, read its
+                        <strong>action</strong> and <strong>privilege</strong> aloud. Learn its
+                        details from the physical placard when it comes up; there is no role-by-role
+                        lesson here.</p></div>
+                <figure class="table-layout">
+                    <ol class="turn-sequence" id="setup-turn-order"
+                        aria-label="First-round role selection"
+                        data-i18n-aria-label="setup5.order"></ol>
+                    <figcaption data-i18n="setup5.caption">Each role selection starts a phase.
+                        Resolve it before anyone selects the next role.
+                    </figcaption>
+                </figure>
+            </div>
+
+        </article>
+        <article class="setup-panel" data-setup-panel="5" hidden>
+            <div class="step-heading"><h3 data-i18n="setup.ready" tabindex="-1">The table is
+                ready</h3></div>
+            <div class="ready-summary" role="status"><p><strong id="ready-session-copy">3 players ·
+                4 cards and 1 building each</strong></p>
+                <p data-i18n="setup.ready.text">The Governor chooses first. Everyone resolves the
+                    chosen phase before the next player selects a role. Twelve buildings trigger the
+                    end; victory points decide the winner.</p><a data-i18n="setup.ready.link"
+                                                                 href="#learn"
+                                                                 class="btn btn-primary">Learn the
+                    core rules</a></div>
+        </article>
+        <nav class="setup-actions" aria-label="Setup step controls"
+             data-i18n-aria-label="ui.setup.controls">
+            <button type="button" id="setup-back"><span class="sym"
+                                                        aria-hidden="true">arrow_back</span> <span
+                data-i18n="ui.back">Back</span></button>
+            <button type="button" id="setup-next" class="btn-primary"><span id="setup-next-label">Continue</span><span
+                class="sym" aria-hidden="true">arrow_forward</span></button>
+        </nav>
+    </section>
+    <section id="learn" aria-labelledby="learn-title"><h2 data-i18n="learn.title" id="learn-title">
+        Learn the core rules</h2>
+        <p data-i18n="learn.intro">Start with what a card can do, then follow a round, pay for a
+            building, handle goods, and score. Use the actual role placards for their individual
+            actions and privileges.</p>
+        <ol class="learn-track" aria-label="Rule lessons" data-i18n-aria-label="learn.track">
+            <li>
+                <button type="button" data-learn-button="0" aria-controls="learn-cards"
+                        aria-current="step"><span data-i18n="learn.number.0">Lesson 1</span><b
+                    data-i18n="learn.tab.0">Cards & goal</b></button>
+            </li>
+            <li>
+                <button type="button" data-learn-button="1" aria-controls="learn-round"><span
+                    data-i18n="learn.number.1">Lesson 2</span><b data-i18n="learn.tab.1">Round</b>
+                </button>
+            </li>
+            <li>
+                <button type="button" data-learn-button="2" aria-controls="learn-building"><span
+                    data-i18n="learn.number.2">Lesson 3</span><b
+                    data-i18n="learn.tab.2">Building</b></button>
+            </li>
+            <li>
+                <button type="button" data-learn-button="3" aria-controls="learn-goods"><span
+                    data-i18n="learn.number.3">Lesson 4</span><b data-i18n="learn.tab.3">Goods &
+                    cards</b></button>
+            </li>
+            <li>
+                <button type="button" data-learn-button="4" aria-controls="learn-ending"><span
+                    data-i18n="learn.number.4">Lesson 5</span><b data-i18n="learn.tab.4">Game
+                    end</b></button>
+            </li>
+        </ol>
+        <article id="learn-cards" class="learn-panel" data-learn-panel="0"><h3
+            data-i18n="learn1.title" tabindex="-1">One card, three uses</h3>
+            <p data-i18n="learn1.intro">Your aim is to finish with the most <strong>victory
+                points</strong>, not the most cards or the fastest twelfth building. A card's
+                location determines what it does.</p>
+            <dl class="card-type-list">
+                <div>
+                    <dt data-i18n="learn1.hand.t">In your hand</dt>
+                    <dd data-i18n="learn1.hand.d">A possible building, or one card of payment when
+                        discarded. Its printed cost does not make it worth more money.
+                    </dd>
+                </div>
+                <div>
+                    <dt data-i18n="learn1.city.t">Face up in your city</dt>
+                    <dd data-i18n="learn1.city.d">A built building. Its type, ability, and victory
+                        points matter here. Simply holding its card gives no ability.
+                    </dd>
+                </div>
+                <div>
+                    <dt data-i18n="learn1.good.t">Face down on a production building</dt>
+                    <dd data-i18n="learn1.good.d">One good of that building's type. Do not inspect
+                        the hidden card or use its printed text.
+                    </dd>
+                </div>
+            </dl>
+            <div class="turn-rule"><strong data-i18n="learn1.remember">A card can do only one of
+                these jobs at a time.</strong>
+                <p data-i18n="learn1.remember.body">The card you build stays in your city. The other
+                    cards you spend go to the discard stack. A goods card is not part of your
+                    hand.</p></div>
+            <details class="rule-check">
+                <summary data-i18n="quiz.open">Check your understanding</summary>
+                <form data-quiz="0">
+                    <fieldset>
+                        <legend data-i18n="learn1.quiz.question">You pay with a hand card showing a
+                            building cost of 6. How much payment does it provide?
+                        </legend>
+                        <label for="quiz-0-0"><input type="radio" id="quiz-0-0" name="quiz-0"
+                                                     value="0"> <span
+                            data-i18n="learn1.quiz.option.0">1 card of payment</span></label><label
+                        for="quiz-0-1"><input type="radio" id="quiz-0-1" name="quiz-0" value="1">
+                        <span
+                            data-i18n="learn1.quiz.option.1">6 cards of payment</span></label><label
+                        for="quiz-0-2"><input type="radio" id="quiz-0-2" name="quiz-0" value="2">
+                        <span
+                            data-i18n="learn1.quiz.option.2">Its printed victory points</span></label>
+                    </fieldset>
+                    <button data-i18n="quiz.check" type="submit">Check answer</button>
+                    <p id="quiz-result-0" class="note" role="status" aria-live="polite" hidden></p>
+                </form>
+            </details>
+        </article>
+        <article id="learn-round" class="learn-panel" data-learn-panel="1" hidden><h3
+            data-i18n="learn2.title" tabindex="-1">Choose a role; resolve a phase</h3>
+            <ol class="phase-strip">
+                <li><strong data-i18n="learn2.s1.t">1 · Choose</strong><span
+                    data-i18n="learn2.s1.d">The Governor chooses first. Take an available role placard; it stays with you until the round ends.</span>
+                </li>
+                <li><strong data-i18n="learn2.s2.t">2 · Resolve</strong><span
+                    data-i18n="learn2.s2.d">The chooser acts first, with the privilege. The other players follow clockwise with the action only.</span>
+                </li>
+                <li><strong data-i18n="learn2.s3.t">3 · Next choice</strong><span
+                    data-i18n="learn2.s3.d">After the phase, the next chooser is the player to the left of the previous chooser. Use a different available role.</span>
+                </li>
+                <li><strong data-i18n="learn2.s4.t">4 · New round</strong><span
+                    data-i18n="learn2.s4.d">After the required selections, return all roles and pass the Governor clockwise. Do the start-of-round checks.</span>
+                </li>
+            </ol>
+            <p data-i18n="learn2.optional"><strong>Choosing is mandatory; acting is
+                optional.</strong> You may skip an action or privilege without cancelling the phase
+                for others. Skipping does not stop you taking part in later phases.</p>
+            <p data-i18n="learn2.exception" class="note"><strong>Shared-action exception:</strong>
+                the Prospector has no general action for the other players. Relevant building
+                effects can still apply. Read the privilege from the placard.</p><h4
+                data-i18n="learn2.order.title">Role selection at your table</h4>
+            <p id="round-sequence-summary"></p>
+            <ol class="turn-sequence" id="round-sequence"
+                aria-label="Role selectors and phase order"
+                data-i18n-aria-label="learn2.sequence"></ol>
+            <h4 data-i18n="learn2.boundary">Before the next round's first choice</h4>
+            <p data-i18n="learn2.boundary.body">Return the role placards and pass the Governor.
+                Resolve any <strong>Chapel</strong> use first: its owner may put one hand card
+                beneath it. Then discard down to <strong>7 hand cards</strong>, or <strong>12 with a
+                    Tower</strong>. Buildings and goods stay in place; there is no automatic draw.
+            </p>
+            <details class="rule-check">
+                <summary data-i18n="quiz.open">Check your understanding</summary>
+                <form data-quiz="1">
+                    <fieldset>
+                        <legend data-i18n="learn2.quiz.question">The player who selected a role
+                            skips the action. What happens to the shared action?
+                        </legend>
+                        <label for="quiz-1-0"><input type="radio" id="quiz-1-0" name="quiz-1"
+                                                     value="0"> <span
+                            data-i18n="learn2.quiz.option.0">The whole phase is cancelled.</span></label><label
+                        for="quiz-1-1"><input type="radio" id="quiz-1-1" name="quiz-1" value="1">
+                        <span
+                            data-i18n="learn2.quiz.option.1">The other players may still take it.</span></label><label
+                        for="quiz-1-2"><input type="radio" id="quiz-1-2" name="quiz-1" value="2">
+                        <span data-i18n="learn2.quiz.option.2">The role immediately becomes available again.</span></label>
+                    </fieldset>
+                    <button data-i18n="quiz.check" type="submit">Check answer</button>
+                    <p id="quiz-result-1" class="note" role="status" aria-live="polite" hidden></p>
+                </form>
+            </details>
+        </article>
+        <article id="learn-building" class="learn-panel" data-learn-panel="2" hidden><h3
+            data-i18n="learn3.title" tabindex="-1">Pay with other hand cards</h3>
+            <p data-i18n="learn3.intro">During a <strong>Builder phase</strong>, each player may
+                normally build one building. Start with the chooser, then proceed clockwise.</p>
+            <ol class="component-list">
+                <li data-i18n="learn3.s1">Choose a building from your hand. Check that it is legal
+                    and that you can afford it.
+                </li>
+                <li data-i18n="learn3.s2">Calculate its cost after applicable discounts. The
+                    Builder's own privilege reduces payment by 1; discounts cannot make the cost
+                    negative.
+                </li>
+                <li data-i18n="learn3.s3">Place the chosen building face up. Discard the required
+                    number of <strong>other</strong> hand cards face down as payment.
+                </li>
+                <li data-i18n="learn3.s4">Resolve applicable effects from buildings you already had.
+                    A new violet building's ability starts only after this Builder phase.
+                </li>
+            </ol>
+            <div class="turn-rule"><strong data-i18n="learn3.example.t">Example: cost 3, no
+                discounts</strong>
+                <p data-i18n="learn3.example.d">You need the building card plus 3 other hand cards:
+                    4 cards in all. Keep the building and discard the other 3. A payment card
+                    printed with cost 6 still counts as just one card.</p></div>
+            <dl class="card-type-list">
+                <div>
+                    <dt data-i18n="learn3.production.t">Production buildings</dt>
+                    <dd data-i18n="learn3.production.d">Several of the same type are allowed in one
+                        city. Each has room for just one good.
+                    </dd>
+                </div>
+                <div>
+                    <dt data-i18n="learn3.violet.t">Violet buildings</dt>
+                    <dd data-i18n="learn3.violet.d">No two copies of the same violet building in
+                        your city. Different players may own the same building.
+                    </dd>
+                </div>
+                <div>
+                    <dt data-i18n="learn3.discount.t">No change</dt>
+                    <dd data-i18n="learn3.discount.d">A cost reduced to zero means no payment cards
+                        are discarded. Unused discounts do not give you cards.
+                    </dd>
+                </div>
+            </dl>
+            <details class="rule-check">
+                <summary data-i18n="quiz.open">Check your understanding</summary>
+                <form data-quiz="2">
+                    <fieldset>
+                        <legend data-i18n="learn3.quiz.question">You hold 4 cards in total and want
+                            to build a cost-4 building with no discount. Can you build it?
+                        </legend>
+                        <label for="quiz-2-0"><input type="radio" id="quiz-2-0" name="quiz-2"
+                                                     value="0"> <span
+                            data-i18n="learn3.quiz.option.0">Yes; the building card is one of the four payment cards.</span></label><label
+                        for="quiz-2-1"><input type="radio" id="quiz-2-1" name="quiz-2" value="1">
+                        <span data-i18n="learn3.quiz.option.1">No; you need the building plus 4 other cards.</span></label><label
+                        for="quiz-2-2"><input type="radio" id="quiz-2-2" name="quiz-2" value="2">
+                        <span data-i18n="learn3.quiz.option.2">Yes; any goods can always pay the missing amount.</span></label>
+                    </fieldset>
+                    <button data-i18n="quiz.check" type="submit">Check answer</button>
+                    <p id="quiz-result-2" class="note" role="status" aria-live="polite" hidden></p>
+                </form>
+            </details>
+        </article>
+        <article id="learn-goods" class="learn-panel" data-learn-panel="3" hidden><h3
+            data-i18n="learn4.title" tabindex="-1">Turn goods into new hand cards</h3>
+            <p data-i18n="learn4.intro">Production and selling happen only when their roles are
+                chosen. Their order is not fixed: a round does not automatically include either
+                phase.</p><h4 data-i18n="learn4.produce">Producing goods</h4>
+            <p data-i18n="learn4.produce.body">The basic production action allows one good. For each
+                good you may produce, put one card from the <strong>supply</strong>, unseen and face
+                down, on an <strong>empty production building</strong> you own. Even with extra
+                production, a building holds at most one good.</p><h4 data-i18n="learn4.sell">
+                Selling goods</h4>
+            <p data-i18n="learn4.sell.body">The basic selling action allows one good; the chosen
+                role's privilege and your buildings may allow more. Reveal one trading house tile
+                for the entire phase. Choose the goods to sell, discard those goods cards unseen,
+                and draw new hand cards equal to their total sale price. Leave the production
+                buildings in place.</p>
+            <div class="visual-grid">
+                <div class="visual-card is-active"><strong data-i18n="learn4.v1.t">Supply →
+                    building</strong><span data-i18n="learn4.v1.d">The face-down card becomes a good.</span>
+                </div>
+                <div class="visual-card"><strong data-i18n="learn4.v2.t">Building determines the
+                    type</strong><span data-i18n="learn4.v2.d">The hidden card's face never sets the price.</span>
+                </div>
+                <div class="visual-card"><strong data-i18n="learn4.v3.t">Sold good →
+                    discard</strong><span data-i18n="learn4.v3.d">The building is empty and usable again.</span>
+                </div>
+                <div class="visual-card"><strong data-i18n="learn4.v4.t">Sale income → hand</strong><span
+                    data-i18n="learn4.v4.d">Draw new cards; do not keep the sold goods card.</span>
+                </div>
+            </div>
+            <p data-i18n="learn4.tile">After everyone has had a chance to sell, put the trading
+                house tile face down under its stack—even if nobody sold anything. Players may sell
+                the same type of good; one player's sale does not block another's.</p><h4
+                data-i18n="learn4.draw">Drawing and keeping cards</h4>
+            <p data-i18n="learn4.draw.body">For a card-drawing action, use the draw and keep amounts
+                on the chosen placard. Keep that new selection separate from your old hand until you
+                have chosen what to keep, unless a building allows mixing them. Discard the rest
+                face down. There is no general refill to four or seven cards.</p>
+            <p data-i18n="learn4.supply" class="note"><strong>Supply empty?</strong> Shuffle the
+                discard stack into a new face-down supply and continue drawing. Emptying the supply
+                does not end the game.</p>
+            <details class="rule-check">
+                <summary data-i18n="quiz.open">Check your understanding</summary>
+                <form data-quiz="3">
+                    <fieldset>
+                        <legend data-i18n="learn4.quiz.question">You sell one good worth 3 cards.
+                            Which cards go into your hand?
+                        </legend>
+                        <label for="quiz-3-0"><input type="radio" id="quiz-3-0" name="quiz-3"
+                                                     value="0"> <span
+                            data-i18n="learn4.quiz.option.0">The production building and two supply cards</span></label><label
+                        for="quiz-3-1"><input type="radio" id="quiz-3-1" name="quiz-3" value="1">
+                        <span
+                            data-i18n="learn4.quiz.option.1">The goods card and two supply cards</span></label><label
+                        for="quiz-3-2"><input type="radio" id="quiz-3-2" name="quiz-3" value="2">
+                        <span data-i18n="learn4.quiz.option.2">Three new supply cards; the good is discarded</span></label>
+                    </fieldset>
+                    <button data-i18n="quiz.check" type="submit">Check answer</button>
+                    <p id="quiz-result-3" class="note" role="status" aria-live="polite" hidden></p>
+                </form>
+            </details>
+        </article>
+        <article id="learn-ending" class="learn-panel" data-learn-panel="4" hidden><h3
+            data-i18n="learn5.title" tabindex="-1">Finish the phase, then score</h3>
+            <div class="turn-rule"><strong data-i18n="learn5.end.t">12 buildings end the game—not
+                necessarily with a win for their owner.</strong>
+                <p data-i18n="learn5.end.d">When at least one player has twelve buildings, finish
+                    that entire <strong>Builder phase</strong>. Players who have not acted in it
+                    still get their opportunity. Stop afterward; do not finish the round.</p></div>
+            <p data-i18n="learn5.count">The starting Indigo plant counts as a building. Hand cards
+                and goods do not. If an effect has covered an older building, the covered card is
+                not an extra building.</p>
+            <dl class="scoring-list">
+                <div>
+                    <dt data-i18n="learn5.printed.t">1 · Printed victory points</dt>
+                    <dd data-i18n="learn5.printed.d">Add the victory-point values of your built
+                        buildings, not their construction costs.
+                    </dd>
+                </div>
+                <div>
+                    <dt data-i18n="learn5.chapel.t">2 · Chapel cards</dt>
+                    <dd data-i18n="learn5.chapel.d">Add 1 point per card beneath your Chapel, if you
+                        have one. Ignore the hidden faces.
+                    </dd>
+                </div>
+                <div>
+                    <dt data-i18n="learn5.bonuses.t">3 · Other end-game bonuses</dt>
+                    <dd data-i18n="learn5.bonuses.d">Calculate bonuses from your scoring buildings
+                        using their own text. Do not assume every cost-6 card is worth 6 points.
+                    </dd>
+                </div>
+                <div>
+                    <dt data-i18n="learn5.palace.t">4 · Palace last</dt>
+                    <dd data-i18n="learn5.palace.d">If you own a Palace, add one quarter of your
+                        other points, rounded down. Do not include its own bonus in that
+                        calculation.
+                    </dd>
+                </div>
+            </dl>
+            <p data-i18n="learn5.tie"><strong>Most victory points wins.</strong> Among tied players,
+                compare <strong>hand cards + unsold goods</strong>, counting each as one regardless
+                of sale price. These cards are a tie-break, not extra victory points.</p>
+            <details class="rule-check">
+                <summary data-i18n="quiz.open">Check your understanding</summary>
+                <form data-quiz="4">
+                    <fieldset>
+                        <legend data-i18n="learn5.quiz.question">Another player reaches twelve
+                            buildings before your action in this Builder phase. May you still build?
+                        </legend>
+                        <label for="quiz-4-0"><input type="radio" id="quiz-4-0" name="quiz-4"
+                                                     value="0"> <span
+                            data-i18n="learn5.quiz.option.0">Yes; finish this Builder phase, then score.</span></label><label
+                        for="quiz-4-1"><input type="radio" id="quiz-4-1" name="quiz-4" value="1">
+                        <span data-i18n="learn5.quiz.option.1">No; stop as soon as the twelfth building is placed.</span></label><label
+                        for="quiz-4-2"><input type="radio" id="quiz-4-2" name="quiz-4" value="2">
+                        <span data-i18n="learn5.quiz.option.2">Yes; then finish every remaining role in the round.</span></label>
+                    </fieldset>
+                    <button data-i18n="quiz.check" type="submit">Check answer</button>
+                    <p id="quiz-result-4" class="note" role="status" aria-live="polite" hidden></p>
+                </form>
+            </details>
+            <p id="quiz-progress" role="status" aria-live="polite"></p></article>
+        <nav class="setup-actions" aria-label="Lesson controls"
+             data-i18n-aria-label="learn.controls">
+            <button type="button" id="learn-back"><span class="sym"
+                                                        aria-hidden="true">arrow_back</span> <span
+                data-i18n="learn.prev">Previous lesson</span></button>
+            <button type="button" id="learn-next" class="btn-primary"><span data-i18n="learn.next">Next lesson</span><span
+                class="sym" aria-hidden="true">arrow_forward</span></button>
+        </nav>
+    </section>
+    <section id="reference" class="reference-group" aria-labelledby="reference-title"><h2
+        data-i18n="reference.title" id="reference-title">Rules reference</h2>
+        <p data-i18n="reference.intro">Open a topic when it comes up. Building text can change these
+            defaults. This is a core-rules companion, not a catalogue of roles or building
+            powers.</p>
+        <h3 data-i18n="reference.timing">Rounds and timing</h3>
+        <details class="timing">
+            <summary data-i18n="ref.round">Role selection and skipping</summary>
+            <p data-i18n="ref.round.body">A role must be chosen when it is your turn to choose, even
+                if you will not use it. The action and privilege are optional. A selected placard
+                stays unavailable for the rest of the round. Resolve the phase before the next
+                choice; there is no fixed order of phases. The privilege belongs only to the
+                chooser.</p></details>
+        <details class="timing">
+            <summary data-i18n="ref.two">Two-player round</summary>
+            <p data-i18n="ref.two.body">The role selectors are <strong>Governor → opponent →
+                Governor</strong>: three different roles in total. Each selected phase is resolved
+                normally. Return the roles only after the third phase, then pass the Governor; the
+                other player will choose twice next round.</p>
+            <p data-i18n="ref.two.library">A <strong>Library</strong> may be used only once per
+                round in the two-player game, not once for each of the Governor's two choices.</p>
+        </details>
+        <details class="timing">
+            <summary data-i18n="ref.hand">When to enforce the hand limit</summary>
+            <p data-i18n="ref.hand.body">Only at the start of a new round: use the Chapel first if
+                desired, then discard to 7 cards, or 12 with a Tower. Having more during a round is
+                allowed. Reveal your hand count, not your card faces. There is no automatic draw
+                when a round starts or when your hand is empty.</p>
+            <p data-i18n="ref.hand.example">Example: you draw up to 9 cards during a round. Keep
+                them for now; a later action may spend some before the next hand-limit check.</p>
+        </details>
+        <h3 data-i18n="reference.economy">Cards, costs, and goods</h3>
+        <details class="economy">
+            <summary data-i18n="ref.pay">Building, payment, and activation</summary>
+            <p data-i18n="ref.pay.body">One building per player in a Builder phase is the default.
+                Its card is separate from its payment. Each other hand card pays one unit, whatever
+                is printed on it. Apply valid reductions, with a minimum cost of zero. No duplicate
+                violet buildings within one city; duplicate production buildings are allowed. A
+                newly built violet ability cannot help with its own construction or any part of that
+                same Builder phase.</p></details>
+        <details class="economy">
+            <summary data-i18n="ref.goods">Goods are not hand cards</summary>
+            <p data-i18n="ref.goods.body">A goods card comes unseen from the supply and sits face
+                down on an empty production building. One building holds one good. The building
+                determines the good's type. Goods may remain between rounds. Selling removes the
+                goods card, not the building; the income is newly drawn hand cards. Neither
+                production nor selling gives victory points as its normal action.</p></details>
+        <details class="economy">
+            <summary data-i18n="ref.trade">Trading house and card supply</summary>
+            <p data-i18n="ref.trade.body">Reveal one trading house tile when a selling phase starts.
+                Everyone uses it, including players selling the same type of good. After the phase,
+                move it face down to the bottom even if no goods were sold. Do not reveal a new tile
+                merely at a round change. When the card supply empties, shuffle the face-down
+                discard stack to replace it.</p></details>
+        <h3 data-i18n="reference.ending">Ending and scope</h3>
+        <details>
+            <summary data-i18n="ref.end">The twelfth building and tied scores</summary>
+            <p data-i18n="ref.end.body">Finish the Builder phase that leaves at least one city with
+                twelve buildings, then score immediately. Do not complete the round or enforce a new
+                hand limit. Count printed building points, Chapel cards, other scoring bonuses, and
+                the Palace bonus last. Highest score wins; tied players compare the total number of
+                hand cards plus goods. The base rules specify no further tie-break if that is equal
+                too.</p></details>
+        <details>
+            <summary data-i18n="ref.variant">Optional opening-hand variant</summary>
+            <p data-i18n="ref.variant.body">Standard setup gives four random hand cards to everyone.
+                The optional variant deals 5 to the Governor, then 6, 7, and 8 clockwise where those
+                seats exist. Everyone keeps four and discards the surplus face down. The starting
+                Indigo plant is separate in both methods.</p></details>
+        <details id="source-notes">
+            <summary data-i18n="ref.sources">Guide scope and independence</summary>
+            <p data-i18n="ref.scope"><strong>Rules baseline:</strong> the original 110-card base
+                game. Expansion buildings, events, and later rethemed editions are outside this
+                guide. For an individual role, read your role placard; for a special building,
+                consult its text and your edition's rulebook.</p>
+            <p data-i18n="ref.sources.credit">Rules by Andreas Seyfarth; © 2004 Ravensburger
+                Spieleverlag.</p>
+            <p data-i18n="ref.independent">Independent, unofficial teaching aid. Explanations and
+                practice questions are newly written; no publisher illustrations, card images,
+                logos, or rulebook pages are included.</p></details>
+    </section>
+</main>
+<aside aria-labelledby="guide-options-title"><h2 data-i18n="options.title" id="guide-options-title">
+    Guide options</h2>
+    <form id="guide-options" autocomplete="off">
+        <fieldset>
+            <legend data-i18n="options.table">Table</legend>
+            <label for="player-count"><span data-i18n="options.players">Players</span><select
+                id="player-count" name="player-count">
+                <option data-i18n="options.players.2" value="2">2 players</option>
+                <option data-i18n="options.players.3" value="3" selected>3 players</option>
+                <option data-i18n="options.players.4" value="4">4 players</option>
+            </select></label><label for="opening"><span
+            data-i18n="options.opening">Opening hand</span><select id="opening" name="opening"
+                                                                   aria-describedby="opening-hint">
+            <option data-i18n="options.standard" value="standard" selected>4 random cards</option>
+            <option data-i18n="options.variant" value="variant">Choose 4 · optional variant</option>
+        </select></label><small id="opening-hint">Everyone starts with four random hand
+            cards.</small></fieldset>
+        <fieldset>
+            <legend data-i18n="options.progress">Setup progress</legend>
+            <label data-i18n="options.completed" for="setup-progress">Completed steps</label>
+            <progress id="setup-progress" value="0" max="5"></progress>
+            <output id="setup-progress-text" for="setup-progress">0 of 5</output>
+            <button type="button" id="reset-guide"><span class="sym"
+                                                         aria-hidden="true">refresh</span> <span
+                data-i18n="options.reset">Start over</span></button>
+        </fieldset>
+        <fieldset>
+            <legend data-i18n="options.interface">User interface</legend>
+            <label for="language"><span data-i18n="options.language">Language</span><select
+                id="language" name="language">
+                <option value="en" lang="en" selected>English</option>
+                <option value="de" lang="de">Deutsch</option>
+            </select></label></fieldset>
+    </form>
+    <p><small id="storage-status" role="status" aria-live="polite"></small></p></aside>
+<footer>
+    <p lang="en">This is an independent, unofficial rules guide. It is not affiliated with or
+        endorsed by the game's publisher. All trademarks and copyrights in the original game remain
+        the property of their respective owners.</p>
+    <p lang="de">Dies ist ein unabhängiger, inoffizieller Regelleitfaden. Er steht in keiner
+        Verbindung zum Verlag des Spiels und wird von diesem nicht unterstützt. Alle Marken- und
+        Urheberrechte am Originalspiel verbleiben bei ihren jeweiligen Rechteinhabern.</p>
+</footer>
 
 <script src="../../one.js"></script>
 <script>
@@ -539,7 +1153,7 @@
 
         // Game content is embedded. The shared site assets remain external and unchanged.
         const COPY = {
-        "en": {
+            "en": {
                 "ui.skip": "Skip to guide",
                 "ui.toggle": "Toggle guide options",
                 "ui.title": "Unofficial Guide - San Juan",
@@ -565,7 +1179,7 @@
                 "setup1.v4.d": "Not needed until game end",
                 "setup1.heading": "Choose the first Governor",
                 "setup1.caption": "Keep the Governor separate from the five available roles.",
-                
+
                 "setup2.intro": "The trading house determines sale prices. Prepare its stack now; leave the prices hidden.",
                 "setup2.a": "Shuffle all <strong>5 trading house tiles<\/strong> face down.",
                 "setup2.b": "Stack them face down beside the role placards.",
@@ -581,7 +1195,7 @@
                 "setup2.v4.d": "Used tile goes to the bottom",
                 "setup2.heading": "Prepare the trading house",
                 "setup2.caption": "The tile is a price list, not a place to store goods.",
-                
+
                 "setup3.intro": "Before shuffling the building cards, find one <strong>Indigo plant<\/strong> for each player.",
                 "setup3.a": "Place that card face up in its owner's play area. It is already built, so no payment is needed.",
                 "setup3.b": "Start with no goods on it. Do not take a face-down goods card yet.",
@@ -596,7 +1210,7 @@
                 "setup3.v4.d": "No cards spent for setup",
                 "setup3.heading": "Place the starting buildings",
                 "setup3.caption": "The starting Indigo plant is separate from the four cards in your hand.",
-                
+
                 "setup4.intro": "Shuffle all remaining building cards into a face-down <strong>card supply<\/strong>. Keep a separate space for a face-down <strong>discard stack<\/strong>.",
                 "setup4.standard": "Deal <strong>4 cards<\/strong> from the supply to each player. Everyone keeps all four, without paying for them.",
                 "setup4.variant": "In clockwise order from the Governor, deal <strong>5, 6, 7, or 8 cards<\/strong> according to seat. Each player keeps exactly 4 and discards the rest face down.",
@@ -604,7 +1218,7 @@
                 "setup4.stations": "Opening hands by seat",
                 "setup4.heading": "Deal the opening hands",
                 "setup4.caption": "Seat 1 is the Governor; continue clockwise. Change the opening method in Guide options.",
-                
+
                 "setup5.intro": "Check the table together before the Governor chooses the first role.",
                 "setup5.a": "Each player has 1 face-up Indigo plant, 4 hand cards, and no goods.",
                 "setup5.b": "All 5 roles are available, and the trading house stack is face down.",
@@ -649,7 +1263,7 @@
                 "learn1.quiz.option.1": "6 cards of payment",
                 "learn1.quiz.option.2": "Its printed victory points",
                 "quiz.check": "Check answer",
-                
+
                 "learn2.title": "Choose a role; resolve a phase",
                 "learn2.s1.t": "1 · Choose",
                 "learn2.s1.d": "The Governor chooses first. Take an available role placard; it stays with you until the round ends.",
@@ -670,7 +1284,7 @@
                 "learn2.quiz.option.0": "The whole phase is cancelled.",
                 "learn2.quiz.option.1": "The other players may still take it.",
                 "learn2.quiz.option.2": "The role immediately becomes available again.",
-                
+
                 "learn3.title": "Pay with other hand cards",
                 "learn3.intro": "During a <strong>Builder phase<\/strong>, each player may normally build one building. Start with the chooser, then proceed clockwise.",
                 "learn3.s1": "Choose a building from your hand. Check that it is legal and that you can afford it.",
@@ -690,7 +1304,7 @@
                 "learn3.quiz.option.0": "Yes; the building card is one of the four payment cards.",
                 "learn3.quiz.option.1": "No; you need the building plus 4 other cards.",
                 "learn3.quiz.option.2": "Yes; any goods can always pay the missing amount.",
-                
+
                 "learn4.title": "Turn goods into new hand cards",
                 "learn4.intro": "Production and selling happen only when their roles are chosen. Their order is not fixed: a round does not automatically include either phase.",
                 "learn4.produce": "Producing goods",
@@ -714,7 +1328,7 @@
                 "learn4.quiz.option.0": "The production building and two supply cards",
                 "learn4.quiz.option.1": "The goods card and two supply cards",
                 "learn4.quiz.option.2": "Three new supply cards; the good is discarded",
-                
+
                 "learn5.title": "Finish the phase, then score",
                 "learn5.end.t": "12 buildings end the game—not necessarily with a win for their owner.",
                 "learn5.end.d": "When at least one player has twelve buildings, finish that entire <strong>Builder phase<\/strong>. Players who have not acted in it still get their opportunity. Stop afterward; do not finish the round.",
@@ -733,7 +1347,7 @@
                 "learn5.quiz.option.0": "Yes; finish this Builder phase, then score.",
                 "learn5.quiz.option.1": "No; stop as soon as the twelfth building is placed.",
                 "learn5.quiz.option.2": "Yes; then finish every remaining role in the round.",
-                
+
                 "learn.controls": "Lesson controls",
                 "learn.prev": "Previous lesson",
                 "learn.next": "Next lesson",
@@ -744,34 +1358,34 @@
                 "ref.round": "Role selection and skipping",
                 "ref.two.body": "The role selectors are <strong>Governor → opponent → Governor<\/strong>: three different roles in total. Each selected phase is resolved normally. Return the roles only after the third phase, then pass the Governor; the other player will choose twice next round.",
                 "ref.two.library": "A <strong>Library<\/strong> may be used only once per round in the two-player game, not once for each of the Governor's two choices.",
-                
+
                 "ref.two": "Two-player round",
                 "ref.hand.body": "Only at the start of a new round: use the Chapel first if desired, then discard to 7 cards, or 12 with a Tower. Having more during a round is allowed. Reveal your hand count, not your card faces. There is no automatic draw when a round starts or when your hand is empty.",
                 "ref.hand.example": "Example: you draw up to 9 cards during a round. Keep them for now; a later action may spend some before the next hand-limit check.",
-                
+
                 "ref.hand": "When to enforce the hand limit",
                 "reference.economy": "Cards, costs, and goods",
                 "ref.pay.body": "One building per player in a Builder phase is the default. Its card is separate from its payment. Each other hand card pays one unit, whatever is printed on it. Apply valid reductions, with a minimum cost of zero. No duplicate violet buildings within one city; duplicate production buildings are allowed. A newly built violet ability cannot help with its own construction or any part of that same Builder phase.",
                 "ref.pay": "Building, payment, and activation",
                 "ref.goods.body": "A goods card comes unseen from the supply and sits face down on an empty production building. One building holds one good. The building determines the good's type. Goods may remain between rounds. Selling removes the goods card, not the building; the income is newly drawn hand cards. Neither production nor selling gives victory points as its normal action.",
-                
+
                 "ref.goods": "Goods are not hand cards",
                 "ref.trade.body": "Reveal one trading house tile when a selling phase starts. Everyone uses it, including players selling the same type of good. After the phase, move it face down to the bottom even if no goods were sold. Do not reveal a new tile merely at a round change. When the card supply empties, shuffle the face-down discard stack to replace it.",
                 "ref.trade": "Trading house and card supply",
                 "reference.ending": "Ending and scope",
-                "ref.end.body":"Finish the Builder phase that leaves at least one city with twelve buildings, then score immediately. Do not complete the round or enforce a new hand limit. Count printed building points, Chapel cards, other scoring bonuses, and the Palace bonus last. Highest score wins; tied players compare the total number of hand cards plus goods. The base rules specify no further tie-break if that is equal too.",
-                
+                "ref.end.body": "Finish the Builder phase that leaves at least one city with twelve buildings, then score immediately. Do not complete the round or enforce a new hand limit. Count printed building points, Chapel cards, other scoring bonuses, and the Palace bonus last. Highest score wins; tied players compare the total number of hand cards plus goods. The base rules specify no further tie-break if that is equal too.",
+
                 "ref.end": "The twelfth building and tied scores",
                 "ref.variant.body": "Standard setup gives four random hand cards to everyone. The optional variant deals 5 to the Governor, then 6, 7, and 8 clockwise where those seats exist. Everyone keeps four and discards the surplus face down. The starting Indigo plant is separate in both methods.",
-                
+
                 "ref.variant": "Optional opening-hand variant",
                 "ref.scope": "<strong>Rules baseline:<\/strong> the original 110-card base game. Expansion buildings, events, and later rethemed editions are outside this guide. For an individual role, read your role placard; for a special building, consult its text and your edition's rulebook.",
-                "ref.sources.credit":"Rules by Andreas Seyfarth; © 2004 Ravensburger Spieleverlag.",
-                
-                
-                "ref.independent":"Independent, unofficial teaching aid. Explanations and practice questions are newly written; no publisher illustrations, card images, logos, or rulebook pages are included.",
-                
-                "ref.sources":"Guide scope and independence",
+                "ref.sources.credit": "Rules by Andreas Seyfarth; © 2004 Ravensburger Spieleverlag.",
+
+
+                "ref.independent": "Independent, unofficial teaching aid. Explanations and practice questions are newly written; no publisher illustrations, card images, logos, or rulebook pages are included.",
+
+                "ref.sources": "Guide scope and independence",
                 "options.title": "Guide options",
                 "options.table": "Table",
                 "options.players": "Players",
@@ -817,9 +1431,9 @@
                 "dynamic.reset.question": "Reset setup progress, lessons, and answers? Keep the current language and table settings.",
                 "dynamic.reset.title": "Start over?",
                 "dynamic.reset.cancel": "Cancel",
-                "dynamic.reset.confirm": "Reset"
-        },
-        "de": {
+                "dynamic.reset.confirm": "Reset",
+            },
+            "de": {
                 "ui.skip": "Zum Leitfaden springen",
                 "ui.toggle": "Leitfadenoptionen ein- oder ausblenden",
                 "ui.title": "Unofficial Guide - San Juan",
@@ -845,7 +1459,7 @@
                 "setup1.v4.d": "Erst bei Spielende benötigt",
                 "setup1.heading": "Ersten Gouverneur bestimmen",
                 "setup1.caption": "Haltet die Gouverneur-Karte von den fünf verfügbaren Rollen getrennt.",
-                
+
                 "setup2.intro": "Das Handelshaus bestimmt die Verkaufspreise. Bereitet seinen Stapel vor; die Preise bleiben zunächst verdeckt.",
                 "setup2.a": "Mischt alle <strong>5 Handelshaus-Kärtchen<\/strong> verdeckt.",
                 "setup2.b": "Legt sie als verdeckten Stapel neben die Rollenkarten.",
@@ -861,7 +1475,7 @@
                 "setup2.v4.d": "Benutztes Kärtchen nach unten",
                 "setup2.heading": "Handelshaus vorbereiten",
                 "setup2.caption": "Das Kärtchen ist eine Preisliste, kein Lagerplatz für Waren.",
-                
+
                 "setup3.intro": "Sucht vor dem Mischen der Gebäudekarten für jeden Spieler eine <strong>Indigoküperei<\/strong> heraus.",
                 "setup3.a": "Legt diese Karte offen in den jeweiligen Spielerbereich. Das Gebäude ist bereits gebaut und muss nicht bezahlt werden.",
                 "setup3.b": "Zu Beginn liegt keine Ware darauf. Legt noch keine verdeckte Warenkarte auf das Gebäude.",
@@ -876,7 +1490,7 @@
                 "setup3.v4.d": "Beim Aufbau keine Karten abgeben",
                 "setup3.heading": "Startgebäude auslegen",
                 "setup3.caption": "Die Indigoküperei gehört nicht zu den vier Handkarten.",
-                
+
                 "setup4.intro": "Mischt alle übrigen Gebäudekarten zu einem verdeckten <strong>Aufnahmestapel<\/strong>. Lasst daneben Platz für einen getrennten, ebenfalls verdeckten <strong>Ablagestapel<\/strong>.",
                 "setup4.standard": "Teilt jedem Spieler <strong>4 Karten<\/strong> vom Aufnahmestapel aus. Alle behalten ihre vier Karten, ohne dafür zu bezahlen.",
                 "setup4.variant": "Teilt ab dem Gouverneur im Uhrzeigersinn je nach Sitzposition <strong>5, 6, 7 oder 8 Karten<\/strong> aus. Jeder behält genau 4 und legt den Rest verdeckt ab.",
@@ -884,7 +1498,7 @@
                 "setup4.stations": "Starthände nach Sitzposition",
                 "setup4.heading": "Starthände austeilen",
                 "setup4.caption": "Sitz 1 ist der Gouverneur; danach geht es im Uhrzeigersinn weiter. Die Starthand-Methode lässt sich in den Leitfadenoptionen ändern.",
-                
+
                 "setup5.intro": "Prüft gemeinsam den Spieltisch, bevor der Gouverneur die erste Rolle wählt.",
                 "setup5.a": "Jeder hat 1 offene Indigoküperei, 4 Handkarten und keine Waren.",
                 "setup5.b": "Alle 5 Rollen sind verfügbar; der Handelshaus-Stapel liegt verdeckt bereit.",
@@ -929,7 +1543,7 @@
                 "learn1.quiz.option.1": "6 Zahlungskarten",
                 "learn1.quiz.option.2": "Ihre aufgedruckten Siegpunkte",
                 "quiz.check": "Antwort prüfen",
-                
+
                 "learn2.title": "Rolle wählen, Phase ausführen",
                 "learn2.s1.t": "1 · Wählen",
                 "learn2.s1.d": "Der Gouverneur beginnt. Nehmt eine verfügbare Rollenkarte; sie bleibt bis zum Rundenende vor euch.",
@@ -950,7 +1564,7 @@
                 "learn2.quiz.option.0": "Die gesamte Phase entfällt.",
                 "learn2.quiz.option.1": "Die anderen Spieler dürfen sie trotzdem ausführen.",
                 "learn2.quiz.option.2": "Die Rolle wird sofort wieder verfügbar.",
-                
+
                 "learn3.title": "Mit anderen Handkarten bezahlen",
                 "learn3.intro": "In einer <strong>Baumeisterphase<\/strong> darf normalerweise jeder Spieler ein Gebäude bauen. Beginnt beim Wählenden und fahrt im Uhrzeigersinn fort.",
                 "learn3.s1": "Wählt ein Gebäude aus eurer Hand. Prüft, ob ihr es bauen dürft und bezahlen könnt.",
@@ -970,7 +1584,7 @@
                 "learn3.quiz.option.0": "Ja; die Gebäudekarte ist eine der vier Zahlungskarten.",
                 "learn3.quiz.option.1": "Nein; ihr braucht das Gebäude und 4 weitere Karten.",
                 "learn3.quiz.option.2": "Ja; beliebige Waren dürfen immer den fehlenden Betrag bezahlen.",
-                
+
                 "learn4.title": "Waren in neue Handkarten umwandeln",
                 "learn4.intro": "Produziert und verkauft wird nur, wenn die entsprechenden Rollen gewählt werden. Die Reihenfolge ist nicht festgelegt; keine dieser Phasen findet automatisch in jeder Runde statt.",
                 "learn4.produce": "Waren produzieren",
@@ -994,7 +1608,7 @@
                 "learn4.quiz.option.0": "Das Produktionsgebäude und zwei Karten vom Stapel",
                 "learn4.quiz.option.1": "Die Warenkarte und zwei Karten vom Stapel",
                 "learn4.quiz.option.2": "Drei neue Karten vom Stapel; die Ware wird abgelegt",
-                
+
                 "learn5.title": "Phase beenden, dann werten",
                 "learn5.end.t": "12 Gebäude beenden das Spiel – ihr Besitzer gewinnt aber nicht automatisch.",
                 "learn5.end.d": "Sobald mindestens ein Spieler zwölf Gebäude hat, führt ihr diese <strong>Baumeisterphase<\/strong> vollständig zu Ende. Wer darin noch nicht gehandelt hat, kommt noch zum Zug. Danach endet das Spiel; spielt die Runde nicht zu Ende.",
@@ -1013,7 +1627,7 @@
                 "learn5.quiz.option.0": "Ja; beendet diese Baumeisterphase und wertet danach.",
                 "learn5.quiz.option.1": "Nein; beim Auslegen des zwölften Gebäudes endet alles sofort.",
                 "learn5.quiz.option.2": "Ja; danach werden noch alle übrigen Rollen der Runde gespielt.",
-                
+
                 "learn.controls": "Lektionssteuerung",
                 "learn.prev": "Vorherige Lektion",
                 "learn.next": "Nächste Lektion",
@@ -1024,34 +1638,34 @@
                 "ref.round": "Rollenwahl und Verzicht",
                 "ref.two.body": "Die Rollen wählen <strong>Gouverneur → Mitspieler → Gouverneur<\/strong>: insgesamt drei verschiedene Rollen. Jede gewählte Phase wird normal ausgeführt. Gebt die Rollen erst nach der dritten Phase zurück und dann den Gouverneur weiter; in der nächsten Runde wählt der andere Spieler zweimal.",
                 "ref.two.library": "Eine <strong>Bibliothek<\/strong> darf im Spiel zu zweit nur einmal pro Runde genutzt werden, nicht einmal für jede der beiden Rollenwahlen des Gouverneurs.",
-                
+
                 "ref.two": "Runde zu zweit",
                 "ref.hand.body": "Nur zu Beginn einer neuen Runde: Nutzt zuerst auf Wunsch die Kapelle und reduziert die Hand danach auf 7 Karten, mit Turm auf 12. Während einer Runde sind mehr Karten erlaubt. Nennt die Handkartenanzahl, ohne die Vorderseiten zu zeigen. Weder beim Rundenbeginn noch bei leerer Hand werden automatisch Karten gezogen.",
                 "ref.hand.example": "Beispiel: Eure Hand wächst während einer Runde auf 9 Karten. Behaltet sie zunächst; vielleicht verbraucht eine spätere Aktion einige davon vor der nächsten Limitprüfung.",
-                
+
                 "ref.hand": "Wann gilt das Handkartenlimit?",
                 "reference.economy": "Karten, Kosten und Waren",
                 "ref.pay.body": "Grundsätzlich baut jeder Spieler in einer Baumeisterphase höchstens ein Gebäude. Seine Karte gehört nicht zur Bezahlung. Jede andere Handkarte bezahlt eine Kosteneinheit, unabhängig vom Aufdruck. Gültige Vergünstigungen senken die Kosten höchstens auf null. Violette Gebäude dürfen in einer Stadt nicht doppelt vorkommen; Produktionsgebäude schon. Eine neue violette Fähigkeit hilft weder beim eigenen Bau noch in einem anderen Teil derselben Baumeisterphase.",
                 "ref.pay": "Bauen, Bezahlen und Aktivierung",
                 "ref.goods.body": "Eine Warenkarte kommt unbesehen vom Aufnahmestapel und liegt verdeckt auf einem leeren Produktionsgebäude. Ein Gebäude trägt eine Ware. Das Gebäude bestimmt die Warenart. Waren bleiben auch über Runden hinweg liegen. Beim Verkaufen geht die Warenkarte, nicht das Gebäude; der Erlös sind neu gezogene Handkarten. Weder Produzieren noch Verkaufen bringt als normale Aktion Siegpunkte.",
-                
+
                 "ref.goods": "Waren sind keine Handkarten",
                 "ref.trade.body": "Deckt zu Beginn einer Händlerphase ein Handelshaus-Kärtchen auf. Es gilt für alle, auch beim Verkauf derselben Warenart. Legt es nach der Phase verdeckt unter den Stapel, selbst wenn nichts verkauft wurde. Deckt nicht allein beim Rundenwechsel ein neues Kärtchen auf. Ist der Aufnahmestapel leer, mischt den verdeckten Ablagestapel als Ersatz.",
                 "ref.trade": "Handelshaus und Aufnahmestapel",
                 "reference.ending": "Spielende und Umfang",
-                "ref.end.body":"Beendet die Baumeisterphase, nach der mindestens eine Stadt zwölf Gebäude hat, und wertet sofort. Spielt die Runde nicht zu Ende und prüft kein neues Handkartenlimit. Zählt Gebäudepunkte, Kapellenkarten, weitere Schlussboni und zuletzt den Palastbonus. Die höchste Punktzahl gewinnt; bei Gleichstand vergleicht ihr die Anzahl von Handkarten plus Waren. Die Grundspielregeln nennen bei erneutem Gleichstand keine weitere Entscheidung.",
-                
+                "ref.end.body": "Beendet die Baumeisterphase, nach der mindestens eine Stadt zwölf Gebäude hat, und wertet sofort. Spielt die Runde nicht zu Ende und prüft kein neues Handkartenlimit. Zählt Gebäudepunkte, Kapellenkarten, weitere Schlussboni und zuletzt den Palastbonus. Die höchste Punktzahl gewinnt; bei Gleichstand vergleicht ihr die Anzahl von Handkarten plus Waren. Die Grundspielregeln nennen bei erneutem Gleichstand keine weitere Entscheidung.",
+
                 "ref.end": "Das zwölfte Gebäude und Gleichstand",
                 "ref.variant.body": "Beim Standardaufbau erhält jeder vier zufällige Handkarten. Die optionale Variante verteilt 5 an den Gouverneur, dann im Uhrzeigersinn 6, 7 und 8, soweit die Sitzplätze vorhanden sind. Alle behalten vier und legen überzählige Karten verdeckt ab. Die anfängliche Indigoküperei ist bei beiden Methoden zusätzlich vorhanden.",
-                
+
                 "ref.variant": "Optionale Starthand-Variante",
                 "ref.scope": "<strong>Regelgrundlage:<\/strong> das ursprüngliche Grundspiel mit 110 Karten. Erweiterungsgebäude, Ereignisse und spätere thematische Neufassungen sind nicht Teil dieses Leitfadens. Einzelne Rollen erklärt eure Rollenkarte; für besondere Gebäude gelten ihr Text und die Anleitung eurer Ausgabe.",
-                "ref.sources.credit":"Spielregeln von Andreas Seyfarth; © 2004 Ravensburger Spieleverlag.",
-                
-                
-                "ref.independent":"Unabhängige, inoffizielle Lernhilfe. Erklärungen und Übungsfragen sind neu formuliert; Verlagsillustrationen, Kartenabbildungen, Logos oder Anleitungsseiten sind nicht enthalten.",
-                
-                "ref.sources":"Umfang und Unabhängigkeit",
+                "ref.sources.credit": "Spielregeln von Andreas Seyfarth; © 2004 Ravensburger Spieleverlag.",
+
+
+                "ref.independent": "Unabhängige, inoffizielle Lernhilfe. Erklärungen und Übungsfragen sind neu formuliert; Verlagsillustrationen, Kartenabbildungen, Logos oder Anleitungsseiten sind nicht enthalten.",
+
+                "ref.sources": "Umfang und Unabhängigkeit",
                 "options.title": "Leitfadenoptionen",
                 "options.table": "Spielrunde",
                 "options.players": "Spieler",
@@ -1097,10 +1711,16 @@
                 "dynamic.reset.question": "Aufbaufortschritt, Lektionen und Antworten zurücksetzen? Sprache und Tischeinstellungen bleiben erhalten.",
                 "dynamic.reset.title": "Neu beginnen?",
                 "dynamic.reset.cancel": "Abbrechen",
-                "dynamic.reset.confirm": "Zurücksetzen"
-        }
-};
-        const QUESTIONS = [{"correct": 0, "key": "quiz.0.explanation"}, {"correct": 1, "key": "quiz.1.explanation"}, {"correct": 1, "key": "quiz.2.explanation"}, {"correct": 2, "key": "quiz.3.explanation"}, {"correct": 0, "key": "quiz.4.explanation"}];
+                "dynamic.reset.confirm": "Zurücksetzen",
+            },
+        };
+        const QUESTIONS = [{ "correct": 0, "key": "quiz.0.explanation" }, {
+            "correct": 1,
+            "key": "quiz.1.explanation",
+        }, { "correct": 1, "key": "quiz.2.explanation" }, {
+            "correct": 2,
+            "key": "quiz.3.explanation",
+        }, { "correct": 0, "key": "quiz.4.explanation" }];
         const STORAGE_KEY = "trading-city-guide:state";
         const STATE_VERSION = 1;
         const SETUP_STEPS = 5;
@@ -1134,8 +1754,10 @@
         const quizForms = all("form[data-quiz]");
         const staticContent = all("[data-i18n]");
         const staticAttributes = ["aria-label", "title"].flatMap((name) =>
-            all(`[data-i18n-${name}]`).map((element) => ({ element, name,
-                key: element.getAttribute(`data-i18n-${name}`) })));
+            all(`[data-i18n-${name}]`).map((element) => ({
+                element, name,
+                key: element.getAttribute(`data-i18n-${name}`),
+            })));
 
         function text(key, replacements = {}) {
             const value = COPY[state.language][key] ?? COPY.en[key] ?? key;
@@ -1187,7 +1809,9 @@
                     } else {
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
                     }
-                } catch { storageError(); }
+                } catch {
+                    storageError();
+                }
             });
         }
 
@@ -1200,11 +1824,15 @@
         function renderLanguage() {
             document.documentElement.lang = state.language;
             document.title = text("ui.title");
-            document.querySelector('meta[name="description"]').content = text("meta.description");
+            document.querySelector("meta[name=\"description\"]").content = text("meta.description");
             byId("language").value = state.language;
             // Only trusted, locally authored copy is inserted as markup. No stored or input text enters HTML.
-            staticContent.forEach((element) => { element.innerHTML = text(element.dataset.i18n); });
-            staticAttributes.forEach(({ element, name, key }) => { element.setAttribute(name, text(key)); });
+            staticContent.forEach((element) => {
+                element.innerHTML = text(element.dataset.i18n);
+            });
+            staticAttributes.forEach(({ element, name, key }) => {
+                element.setAttribute(name, text(key));
+            });
             renderStorageStatus();
         }
 
@@ -1223,7 +1851,10 @@
                 const description = document.createElement("span");
                 const player = chooser === 0 ? text("dynamic.order.governor", { player: letter }) : letter;
                 title.textContent = text("dynamic.order.choose", { n: index + 1, player });
-                description.textContent = text("dynamic.order.actions", { player: letter, sequence: actionOrder });
+                description.textContent = text("dynamic.order.actions", {
+                    player: letter,
+                    sequence: actionOrder,
+                });
                 item.append(title, description);
                 fragment.append(item);
             });
@@ -1242,7 +1873,9 @@
             byId("setup-player-summary").textContent = text("dynamic.players", { n: state.playerCount });
             byId("setup-opening-summary").textContent = text(`dynamic.${state.opening}`);
             byId("ready-session-copy").textContent = text("dynamic.ready", { n: state.playerCount });
-            all("[data-opening]").forEach((element) => { element.hidden = element.dataset.opening !== state.opening; });
+            all("[data-opening]").forEach((element) => {
+                element.hidden = element.dataset.opening !== state.opening;
+            });
 
             const fragment = document.createDocumentFragment();
             for (let seat = 1; seat <= state.playerCount; seat += 1) {
@@ -1250,7 +1883,10 @@
                 const title = document.createElement("strong");
                 const description = document.createElement("span");
                 title.textContent = text(seat === 1 ? "dynamic.governorSeat" : "dynamic.seat", { n: seat });
-                description.textContent = text(`dynamic.kit.${state.opening}`, { draw: seat + 4, discard: seat });
+                description.textContent = text(`dynamic.kit.${state.opening}`, {
+                    draw: seat + 4,
+                    discard: seat,
+                });
                 item.append(title, description);
                 fragment.append(item);
             }
@@ -1269,12 +1905,17 @@
         }
 
         function renderSetup(focus = false) {
-            setupPanels.forEach((panel, index) => { panel.hidden = index !== state.setupStep; });
+            setupPanels.forEach((panel, index) => {
+                panel.hidden = index !== state.setupStep;
+            });
             const complete = state.setupStep === SETUP_STEPS;
             byId("setup-step-label").textContent = complete ? text("dynamic.setup.complete")
                 : text("dynamic.step", { n: state.setupStep + 1, total: SETUP_STEPS });
             byId("setup-progress").value = state.setupProgress;
-            byId("setup-progress-text").textContent = text("dynamic.completed", { n: state.setupProgress, total: SETUP_STEPS });
+            byId("setup-progress-text").textContent = text("dynamic.completed", {
+                n: state.setupProgress,
+                total: SETUP_STEPS,
+            });
             byId("setup-back").hidden = state.setupStep === 0;
             byId("setup-next").hidden = complete;
             byId("setup-next-label").textContent = text(state.setupStep === SETUP_STEPS - 1 ? "dynamic.finish" : "dynamic.continue");
@@ -1282,7 +1923,9 @@
         }
 
         function renderLearn(focus = false) {
-            learnPanels.forEach((panel, index) => { panel.hidden = index !== state.learnStep; });
+            learnPanels.forEach((panel, index) => {
+                panel.hidden = index !== state.learnStep;
+            });
             learnButtons.forEach((button, index) => {
                 if (index === state.learnStep) button.setAttribute("aria-current", "step");
                 else button.removeAttribute("aria-current");
@@ -1295,7 +1938,7 @@
         function renderQuizzes() {
             quizForms.forEach((form, index) => {
                 const answer = state.answers[index];
-                form.querySelectorAll('input[type="radio"]').forEach((radio) => {
+                form.querySelectorAll("input[type=\"radio\"]").forEach((radio) => {
                     radio.checked = Number(radio.value) === answer.choice;
                 });
                 const output = byId(`quiz-result-${index}`);
@@ -1305,8 +1948,8 @@
                 } else if (answer.submitted) {
                     output.textContent = text(answer.choice === QUESTIONS[index].correct
                         ? "dynamic.quiz.correct" : "dynamic.quiz.wrong", {
-                            explanation: text(QUESTIONS[index].key),
-                        });
+                        explanation: text(QUESTIONS[index].key),
+                    });
                     output.hidden = false;
                 } else {
                     output.textContent = "";
@@ -1316,7 +1959,11 @@
             const answered = state.answers.filter((answer) => answer.submitted).length;
             const correct = state.answers.filter((answer, index) =>
                 answer.submitted && answer.choice === QUESTIONS[index].correct).length;
-            byId("quiz-progress").textContent = text("dynamic.quiz.progress", { correct, answered, total: QUESTIONS.length });
+            byId("quiz-progress").textContent = text("dynamic.quiz.progress", {
+                correct,
+                answered,
+                total: QUESTIONS.length,
+            });
         }
 
         function renderAll() {
@@ -1336,7 +1983,8 @@
                     const url = new URL(location.href);
                     url.searchParams.set("lang", state.language);
                     history.replaceState(null, "", url);
-                } catch { /* file:// history restrictions do not affect the guide */ }
+                } catch { /* file:// history restrictions do not affect the guide */
+                }
             }
             saveSoon();
             renderAll();
@@ -1366,11 +2014,13 @@
             saveSoon();
             renderSetup(true);
         });
+
         function selectLesson(index, focus = true) {
             state.learnStep = integer(index, 0, LEARN_STEPS - 1, 0);
             saveSoon();
             renderLearn(focus);
         }
+
         learnButtons.forEach((button) => button.addEventListener("click", () => selectLesson(Number(button.dataset.learnButton))));
         byId("learn-back").addEventListener("click", () => selectLesson(state.learnStep - 1));
         byId("learn-next").addEventListener("click", () => selectLesson(state.learnStep + 1));
@@ -1393,8 +2043,11 @@
 
         quizForms.forEach((form, index) => {
             form.addEventListener("change", (event) => {
-                if (!event.target.matches('input[type="radio"]')) return;
-                state.answers[index] = { choice: integer(Number(event.target.value), 0, 2, -1), submitted: false };
+                if (!event.target.matches("input[type=\"radio\"]")) return;
+                state.answers[index] = {
+                    choice: integer(Number(event.target.value), 0, 2, -1),
+                    submitted: false,
+                };
                 quizNeedsAnswer.delete(index);
                 saveSoon();
                 renderQuizzes();
@@ -1404,7 +2057,7 @@
                 if (state.answers[index].choice < 0) {
                     quizNeedsAnswer.add(index);
                     renderQuizzes();
-                    form.querySelector('input[type="radio"]').focus();
+                    form.querySelector("input[type=\"radio\"]").focus();
                     return;
                 }
                 state.answers[index].submitted = true;
@@ -1420,8 +2073,8 @@
                 if (sharedUI && typeof sharedUI.confirm === "function") {
                     const result = sharedUI.confirm(text("dynamic.reset.question"), text("dynamic.reset.title"));
                     const dialog = document.querySelector("dialog:last-of-type");
-                    const cancel = dialog?.querySelector('[data-action="cancel"]');
-                    const confirm = dialog?.querySelector('[data-action="confirm"]');
+                    const cancel = dialog?.querySelector("[data-action=\"cancel\"]");
+                    const confirm = dialog?.querySelector("[data-action=\"confirm\"]");
                     if (cancel) cancel.textContent = text("dynamic.reset.cancel");
                     if (confirm) confirm.textContent = text("dynamic.reset.confirm");
                     confirmed = await result;
@@ -1432,9 +2085,16 @@
                 confirmed = window.confirm(text("dynamic.reset.question"));
             }
             if (!confirmed) return;
-            state = { ...defaults(), language: state.language, playerCount: state.playerCount, opening: state.opening };
+            state = {
+                ...defaults(),
+                language: state.language,
+                playerCount: state.playerCount,
+                opening: state.opening,
+            };
             quizNeedsAnswer.clear();
-            all(".rule-check").forEach((element) => { element.open = false; });
+            all(".rule-check").forEach((element) => {
+                element.open = false;
+            });
             saveSoon();
             renderAll();
             renderSetup(true);
@@ -1448,8 +2108,11 @@
                 } else {
                     const raw = localStorage.getItem(STORAGE_KEY);
                     if (raw) {
-                        try { stored = JSON.parse(raw); }
-                        catch { stored = null; } // Corrupt data resets progress without breaking the page.
+                        try {
+                            stored = JSON.parse(raw);
+                        } catch {
+                            stored = null;
+                        } // Corrupt data resets progress without breaking the page.
                     }
                 }
                 if (!edited) {
@@ -1457,15 +2120,19 @@
                     if (queryLanguage === "de" || queryLanguage === "en") state.language = queryLanguage;
                     renderAll();
                 }
-            } catch { storageError(); }
+            } catch {
+                storageError();
+            }
         }
 
         // A synchronous local-storage flush protects the native fallback on fast tab closure.
         window.addEventListener("pagehide", () => {
             if (!edited) return;
             if (!sharedUI?.storage) {
-                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-                catch { /* The next visit will use default state. */ }
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                } catch { /* The next visit will use default state. */
+                }
             } else if (saveTimer !== null) saveNow();
         });
         document.addEventListener("visibilitychange", () => {

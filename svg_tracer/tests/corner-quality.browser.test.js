@@ -1,20 +1,20 @@
 /* Copyright 2026 Joschua Gandert - SPDX-License-Identifier: Apache-2.0 */
-import {afterAll, beforeAll, expect, test} from "bun:test";
-import {createRequire} from "node:module";
-import {readFileSync} from "node:fs";
+import { afterAll, beforeAll, expect, test } from "bun:test";
+import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 
 const playwrightPath = createRequire(import.meta.url).resolve("playwright", {
     paths: [import.meta.dir, ...(process.env.NODE_PATH || "").split(":").filter(Boolean)],
 });
-const {chromium} = await import(playwrightPath);
+const { chromium } = await import(playwrightPath);
 let browser;
 let page;
 
 beforeAll(async () => {
-    browser = await chromium.launch({headless: true});
+    browser = await chromium.launch({ headless: true });
     page = await browser.newPage();
     const source = readFileSync(new URL("../tracer.js", import.meta.url), "utf8");
-    await page.addScriptTag({content: `${source}\nwindow.cornerQualityTracer = createTracer();`});
+    await page.addScriptTag({ content: `${source}\nwindow.cornerQualityTracer = createTracer();` });
 });
 
 afterAll(async () => {
@@ -26,19 +26,47 @@ afterAll(async () => {
 });
 
 const cases = [
-    {name: "acute corner, 5px highlight gap", kind: "sharp", angle: 55, gap: 5, cornerLimit: 1.3, deviationLimit: 1.3},
-    {name: "acute corner, 8px highlight gap", kind: "sharp", angle: 55, gap: 8, cornerLimit: 1.3, deviationLimit: 1.3},
-    {name: "acute corner, 12px control gap", kind: "sharp", angle: 55, gap: 12, cornerLimit: 1.3, deviationLimit: 1.3},
-    {name: "narrow corner, 3px highlight gap", kind: "sharp", angle: 75, gap: 3, cornerLimit: .95, deviationLimit: .65},
-    {name: "smooth junction before the apex", kind: "smooth", theta: -.28, ellipseLimit: .06},
-    {name: "smooth junction after the apex", kind: "smooth", theta: .48, ellipseLimit: .06},
+    {
+        name: "acute corner, 5px highlight gap",
+        kind: "sharp",
+        angle: 55,
+        gap: 5,
+        cornerLimit: 1.3,
+        deviationLimit: 1.3,
+    },
+    {
+        name: "acute corner, 8px highlight gap",
+        kind: "sharp",
+        angle: 55,
+        gap: 8,
+        cornerLimit: 1.3,
+        deviationLimit: 1.3,
+    },
+    {
+        name: "acute corner, 12px control gap",
+        kind: "sharp",
+        angle: 55,
+        gap: 12,
+        cornerLimit: 1.3,
+        deviationLimit: 1.3,
+    },
+    {
+        name: "narrow corner, 3px highlight gap",
+        kind: "sharp",
+        angle: 75,
+        gap: 3,
+        cornerLimit: .95,
+        deviationLimit: .65,
+    },
+    { name: "smooth junction before the apex", kind: "smooth", theta: -.28, ellipseLimit: .06 },
+    { name: "smooth junction after the apex", kind: "smooth", theta: .48, ellipseLimit: .06 },
 ];
 
 test("nearby paint junctions retain sharp corners and smooth boundaries", async () => {
     const metrics = await page.evaluate(async cases => {
         const width = 256;
         const height = 224;
-        const colors = {background: "#f8f7f2", wedge: "#318255", highlight: "#eab367"};
+        const colors = { background: "#f8f7f2", wedge: "#318255", highlight: "#eab367" };
         const pointOnEdge = (a, b, t, inset = 0) => {
             const dx = b.x - a.x;
             const dy = b.y - a.y;
@@ -60,11 +88,14 @@ test("nearby paint junctions retain sharp corners and smooth boundaries", async 
             context.fillStyle = colors.background;
             context.fillRect(0, 0, width, height);
             if (config.kind === "sharp") {
-                const a = {x: 24, y: 18};
-                const corner = {x: 222, y: 130};
+                const a = { x: 24, y: 18 };
+                const corner = { x: 222, y: 130 };
                 const direction = Math.atan2(a.y - corner.y, a.x - corner.x) - config.angle * Math.PI / 180;
-                const d = {x: corner.x + 115 * Math.cos(direction), y: corner.y + 115 * Math.sin(direction)};
-                const b = {x: 25, y: 203};
+                const d = {
+                    x: corner.x + 115 * Math.cos(direction),
+                    y: corner.y + 115 * Math.sin(direction),
+                };
+                const b = { x: 25, y: 203 };
                 const edgeLength = Math.hypot(corner.x - a.x, corner.y - a.y);
                 context.fillStyle = colors.wedge;
                 context.beginPath();
@@ -91,7 +122,7 @@ test("nearby paint junctions retain sharp corners and smooth boundaries", async 
                 context.bezierCurveTo(returnControl1.x, returnControl1.y, returnControl2.x, returnControl2.y, lowerEnd.x, lowerEnd.y);
                 context.closePath();
                 context.fill();
-                return {canvas, geometry: {a, corner, d}};
+                return { canvas, geometry: { a, corner, d } };
             }
 
             const cx = 128;
@@ -118,7 +149,7 @@ test("nearby paint junctions retain sharp corners and smooth boundaries", async 
             context.bezierCurveTo(innerControl1.x, innerControl1.y, innerControl2.x, innerControl2.y, start.x, start.y);
             context.closePath();
             context.fill();
-            return {canvas, geometry: {cx, cy, rx, ry, theta: config.theta}};
+            return { canvas, geometry: { cx, cy, rx, ry, theta: config.theta } };
         };
         const nearestColor = (palette, target) => palette.map((hex, index) => ({
             index,
@@ -144,7 +175,7 @@ test("nearby paint junctions retain sharp corners and smooth boundaries", async 
             distance: Math.min(...chain.raw.map(near)),
         })).sort((left, right) => left.distance - right.distance)[0]?.chain;
         return cases.map(config => {
-            const {canvas, geometry} = draw(config);
+            const { canvas, geometry } = draw(config);
             const image = canvas.getContext("2d").getImageData(0, 0, width, height);
             const result = window.cornerQualityTracer.trace(image, {
                 colors: 3, noise: 10, tolerance: 1.25, minArea: 0, debug: true,
@@ -161,7 +192,7 @@ test("nearby paint junctions retain sharp corners and smooth boundaries", async 
                 ? selectBoundary(result, wedgeId, backgroundId, point => Math.hypot(point.x - geometry.corner.x, point.y - geometry.corner.y))
                 : selectBoundary(result, wedgeId, backgroundId, point => Math.abs(Math.atan2(point.y - geometry.cy, point.x - geometry.cx) - geometry.theta));
             if (!chain) {
-                return {name: config.name, found: false, stats: result.stats, interfaces};
+                return { name: config.name, found: false, stats: result.stats, interfaces };
             }
             const local = config.kind === "sharp"
                 ? chain.flat.filter(point => Math.hypot(point.x - geometry.corner.x, point.y - geometry.corner.y) <= 18)
@@ -198,7 +229,7 @@ test("nearby paint junctions retain sharp corners and smooth boundaries", async 
 
     for (const [index, metric] of metrics.entries()) {
         const config = cases[index];
-        const context = JSON.stringify({config, ...metric});
+        const context = JSON.stringify({ config, ...metric });
         expect(metric.found, context).toBe(true);
         expect(metric.stats.colors, context).toBe(3);
         expect(metric.stats.visibleRegions, context).toBeGreaterThanOrEqual(3);

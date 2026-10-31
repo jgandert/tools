@@ -35,7 +35,11 @@
         }
 
         if (appendMode) {
-            return { start: value.length, end: value.length, text: paragraphSeparator(value, text) + text };
+            return {
+                start: value.length,
+                end: value.length,
+                text: paragraphSeparator(value, text) + text,
+            };
         }
 
         return { start: selection.start, end: selection.end, text };

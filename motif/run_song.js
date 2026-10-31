@@ -318,9 +318,11 @@ if (execError) problems.push(`SETUP ERROR: ${execError.message}`);
 if (errors.length) problems.push(`SETUP CONSOLE ERRORS: ${uniqMessages(errors)}`);
 if (scheduleErrors.length) problems.push(`SCHEDULING CONSOLE ERRORS: ${uniqMessages(scheduleErrors)}`);
 if (!stats.length) problems.push("NO TRACKS: no note-attempt coverage");
+
 function uniqMessages(messages) {
     return [...new Set(messages)].slice(0, 20).join(" | ");
 }
+
 if (silent.length) problems.push(`NO NOTE ATTEMPTS: ${silent.join(", ")}`);
 if (registryIssues.length) problems.push(`REGISTRY: ${registryIssues.join(" | ")}`);
 if (duplicateIds.length) problems.push(`DUPLICATE Track() IDS: ${duplicateIds.map(([id, n]) => `${id}×${n}`).join(", ")}`);

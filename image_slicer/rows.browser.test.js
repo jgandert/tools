@@ -84,26 +84,118 @@ function readZipImages(archive) {
 
 const cases = [
     { name: "A4 portrait fractional", preset: "a4", width: 100, height: 1000, expectedSlices: 8 },
-    { name: "A4 landscape fractional", preset: "a4", orientation: "landscape", width: 100, height: 1000, expectedSlices: 15 },
-    { name: "Letter portrait fractional", preset: "letter", width: 100, height: 1000, expectedSlices: 8 },
-    { name: "Letter landscape fractional", preset: "letter", orientation: "landscape", width: 100, height: 1000, expectedSlices: 13 },
-    { name: "Letter portrait divisible", preset: "letter", width: 17, height: 88, expectedSlices: 4 },
-    { name: "Letter landscape divisible", preset: "letter", orientation: "landscape", width: 22, height: 68, expectedSlices: 4 },
-    { name: "custom portrait fractional", preset: "custom", customW: 3, customH: 2, width: 101, height: 501, expectedSlices: 8 },
-    { name: "custom landscape fractional", preset: "custom", orientation: "landscape", customW: 3, customH: 2, width: 101, height: 501, expectedSlices: 8 },
-    { name: "custom portrait divisible", preset: "custom", customW: 2, customH: 3, width: 100, height: 600, expectedSlices: 4 },
-    { name: "custom landscape divisible", preset: "custom", orientation: "landscape", customW: 2, customH: 3, width: 100, height: 600, expectedSlices: 4 },
+    {
+        name: "A4 landscape fractional",
+        preset: "a4",
+        orientation: "landscape",
+        width: 100,
+        height: 1000,
+        expectedSlices: 15,
+    },
+    {
+        name: "Letter portrait fractional",
+        preset: "letter",
+        width: 100,
+        height: 1000,
+        expectedSlices: 8,
+    },
+    {
+        name: "Letter landscape fractional",
+        preset: "letter",
+        orientation: "landscape",
+        width: 100,
+        height: 1000,
+        expectedSlices: 13,
+    },
+    {
+        name: "Letter portrait divisible",
+        preset: "letter",
+        width: 17,
+        height: 88,
+        expectedSlices: 4,
+    },
+    {
+        name: "Letter landscape divisible",
+        preset: "letter",
+        orientation: "landscape",
+        width: 22,
+        height: 68,
+        expectedSlices: 4,
+    },
+    {
+        name: "custom portrait fractional",
+        preset: "custom",
+        customW: 3,
+        customH: 2,
+        width: 101,
+        height: 501,
+        expectedSlices: 8,
+    },
+    {
+        name: "custom landscape fractional",
+        preset: "custom",
+        orientation: "landscape",
+        customW: 3,
+        customH: 2,
+        width: 101,
+        height: 501,
+        expectedSlices: 8,
+    },
+    {
+        name: "custom portrait divisible",
+        preset: "custom",
+        customW: 2,
+        customH: 3,
+        width: 100,
+        height: 600,
+        expectedSlices: 4,
+    },
+    {
+        name: "custom landscape divisible",
+        preset: "custom",
+        orientation: "landscape",
+        customW: 2,
+        customH: 3,
+        width: 100,
+        height: 600,
+        expectedSlices: 4,
+    },
     { name: "A4 subpixel remainder", preset: "a4", width: 100, height: 990, expectedSlices: 8 },
     { name: "A4 one-row source", preset: "a4", width: 100, height: 1, expectedSlices: 1 },
-    { name: "custom one-row remainder", preset: "custom", customW: 1, customH: 2, width: 10, height: 41, expectedSlices: 3 },
-    { name: "custom subpixel slice height", preset: "custom", customW: 2, customH: 1, width: 1, height: 4, expectedSlices: 4 },
-    { name: "A4 STORE fallback", preset: "a4", width: 100, height: 1000, expectedSlices: 8, fallback: true },
+    {
+        name: "custom one-row remainder",
+        preset: "custom",
+        customW: 1,
+        customH: 2,
+        width: 10,
+        height: 41,
+        expectedSlices: 3,
+    },
+    {
+        name: "custom subpixel slice height",
+        preset: "custom",
+        customW: 2,
+        customH: 1,
+        width: 1,
+        height: 4,
+        expectedSlices: 4,
+    },
+    {
+        name: "A4 STORE fallback",
+        preset: "a4",
+        width: 100,
+        height: 1000,
+        expectedSlices: 8,
+        fallback: true,
+    },
 ];
 
 test.each(cases)("PNG ZIP preserves every source pixel: $name", async settings => {
     const { width, height, preset, orientation = "portrait", customW = 1, customH = 1 } = settings;
     if (settings.fallback) {
-        await page.evaluate(() => { window.CompressionStream = undefined; });
+        await page.evaluate(() => {
+            window.CompressionStream = undefined;
+        });
     }
     const png = await page.evaluate(({ width, height }) => {
         const canvas = document.createElement("canvas");
@@ -177,7 +269,14 @@ test.each(cases)("PNG ZIP preserves every source pixel: $name", async settings =
                     const offset = (y * width + x) * 4;
                     const expected = [sourceRow & 255, sourceRow >> 8, (x * 17 + sourceRow * 7) & 255, 255];
                     if (expected.some((value, channel) => data[offset + channel] !== value)) {
-                        return { mismatch: { row: sourceRow, column: x, actual: Array.from(data.slice(offset, offset + 4)), expected } };
+                        return {
+                            mismatch: {
+                                row: sourceRow,
+                                column: x,
+                                actual: Array.from(data.slice(offset, offset + 4)),
+                                expected,
+                            },
+                        };
                     }
                 }
             }

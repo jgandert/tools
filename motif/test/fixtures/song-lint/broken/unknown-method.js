@@ -1,1 +1,1 @@
-Track('bad').synth('sine').invented();
+Track("bad").synth("sine").invented();

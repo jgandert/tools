@@ -465,6 +465,7 @@ function joinLiteralsInArray(arr) {
     }
     return result;
 }
+
 // A classic browser script preserves direct local-file use; Bun imports the same implementation for tests.
 
 if (typeof module !== "undefined") {

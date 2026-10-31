@@ -354,3 +354,11 @@ ij_python_use_trailing_comma_in_arguments_list = false
 ij_python_use_trailing_comma_in_collections = false
 ij_python_use_trailing_comma_in_parameter_list = false
 ij_python_wrap_long_lines = false
+
+# The showcase intentionally exercises exact Markdown source syntax.
+[md-showcase.md]
+ij_formatter_enabled = false
+
+# tests/validation-diagnostics.js instruments this factory using exact source fragments.
+[svg_tracer/tracer.js]
+ij_formatter_enabled = false

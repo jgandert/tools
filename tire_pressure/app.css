@@ -1,42 +1,171 @@
 /* Application geometry and pressure presentation supplement the shared controls. */
-aside { max-width: calc(100vw - var(--spacing-md)); }
+aside {
+    max-width: calc(100vw - var(--spacing-md));
+}
+
 @media (min-width: 900px) {
-  body { height: 100dvh; overflow: hidden; grid-template-rows: var(--header-height) minmax(0, 1fr) auto; }
-  main, aside { overflow-y: auto; }
+    body {
+        height: 100dvh;
+        overflow: hidden;
+        grid-template-rows: var(--header-height) minmax(0, 1fr) auto;
+    }
+
+    main, aside {
+        overflow-y: auto;
+    }
 }
-#workspace { scroll-behavior: smooth; }
-.pressure-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--spacing-md); }
-.pressure-card { margin: 0; background: var(--surface-container-low); }
-.pressure-value { display: flex; align-items: baseline; gap: var(--spacing-sm); line-height: 1.05; }
-.pressure-value output { font-size: clamp(3rem, 5.8vw, 5.25rem); font-weight: 600; letter-spacing: -.065em; font-variant-numeric: tabular-nums; }
-.pressure-unit { font-size: clamp(1rem, 2vw, 1.5rem); color: var(--on-surface-variant); }
-.pressure-secondary { font-size: 1.1rem; color: var(--on-surface-variant); margin: var(--spacing-sm) 0 var(--spacing-lg); font-variant-numeric: tabular-nums; }
-.result-meta { margin-top: var(--spacing-md); }
-.result-meta .segmented-control { flex-shrink: 0; margin: 0; }
-#action-panel[data-level="block"], #error-panel { border-color: var(--error); }
-#action-panel[data-level="block"] h3, #error-panel h3 { color: var(--error); }
-.notice + .notice { margin-top: var(--spacing-sm); }
-.notice p { margin-bottom: var(--spacing-sm); }
-#critical-notices .notice:last-child p, #assumption-notices .notice:last-child p { margin-bottom: 0; }
-#settings input[aria-invalid="true"] { outline: 2px solid var(--error); outline-offset: 1px; }
-#copy-dialog { width: min(640px, calc(100vw - 32px)); }
-#copy-dialog article { max-height: calc(100dvh - 48px); }
-#copy-text { min-height: 220px; }
+
+#workspace {
+    scroll-behavior: smooth;
+}
+
+.pressure-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-md);
+}
+
+.pressure-card {
+    margin: 0;
+    background: var(--surface-container-low);
+}
+
+.pressure-value {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-sm);
+    line-height: 1.05;
+}
+
+.pressure-value output {
+    font-size: clamp(3rem, 5.8vw, 5.25rem);
+    font-weight: 600;
+    letter-spacing: -.065em;
+    font-variant-numeric: tabular-nums;
+}
+
+.pressure-unit {
+    font-size: clamp(1rem, 2vw, 1.5rem);
+    color: var(--on-surface-variant);
+}
+
+.pressure-secondary {
+    font-size: 1.1rem;
+    color: var(--on-surface-variant);
+    margin: var(--spacing-sm) 0 var(--spacing-lg);
+    font-variant-numeric: tabular-nums;
+}
+
+.result-meta {
+    margin-top: var(--spacing-md);
+}
+
+.result-meta .segmented-control {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+#action-panel[data-level="block"], #error-panel {
+    border-color: var(--error);
+}
+
+#action-panel[data-level="block"] h3, #error-panel h3 {
+    color: var(--error);
+}
+
+.notice + .notice {
+    margin-top: var(--spacing-sm);
+}
+
+.notice p {
+    margin-bottom: var(--spacing-sm);
+}
+
+#critical-notices .notice:last-child p, #assumption-notices .notice:last-child p {
+    margin-bottom: 0;
+}
+
+#settings input[aria-invalid="true"] {
+    outline: 2px solid var(--error);
+    outline-offset: 1px;
+}
+
+#copy-dialog {
+    width: min(640px, calc(100vw - 32px));
+}
+
+#copy-dialog article {
+    max-height: calc(100dvh - 48px);
+}
+
+#copy-text {
+    min-height: 220px;
+}
+
 @media (max-width: 600px) {
-  main { padding: var(--spacing-md); }
-  .pressure-card { padding: var(--spacing-md); }
-  .pressure-card .tag { font-size: .7rem; }
-  .pressure-card .header-row { align-items: start; }
-  .pressure-value output { font-size: clamp(2.4rem, 10vw, 3.8rem); }
-  .pressure-secondary { margin-bottom: var(--spacing-md); }
-  body > header { padding-inline: var(--spacing-sm); gap: var(--spacing-xs); }
-  body > header #copy-result { padding-inline: var(--spacing-md); }
+    main {
+        padding: var(--spacing-md);
+    }
+
+    .pressure-card {
+        padding: var(--spacing-md);
+    }
+
+    .pressure-card .tag {
+        font-size: .7rem;
+    }
+
+    .pressure-card .header-row {
+        align-items: start;
+    }
+
+    .pressure-value output {
+        font-size: clamp(2.4rem, 10vw, 3.8rem);
+    }
+
+    .pressure-secondary {
+        margin-bottom: var(--spacing-md);
+    }
+
+    body > header {
+        padding-inline: var(--spacing-sm);
+        gap: var(--spacing-xs);
+    }
+
+    body > header #copy-result {
+        padding-inline: var(--spacing-md);
+    }
 }
-@media (max-width: 350px) { .pressure-grid { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) { #workspace { scroll-behavior: auto; } }
+
+@media (max-width: 350px) {
+    .pressure-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #workspace {
+        scroll-behavior: auto;
+    }
+}
+
 @media print {
-  body { display: block; height: auto; overflow: visible; }
-  body > header, aside, #copy-dialog, #reset-dialog, .result-meta .segmented-control { display: none; }
-  main { overflow: visible; padding: 0; }
-  .pressure-card { break-inside: avoid; }
+    body {
+        display: block;
+        height: auto;
+        overflow: visible;
+    }
+
+    body > header, aside, #copy-dialog, #reset-dialog, .result-meta .segmented-control {
+        display: none;
+    }
+
+    main {
+        overflow: visible;
+        padding: 0;
+    }
+
+    .pressure-card {
+        break-inside: avoid;
+    }
 }

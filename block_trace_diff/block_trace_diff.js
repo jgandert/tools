@@ -87,7 +87,10 @@ class BlockTraceDiff {
             if (op.type === "MOVE_TO" && op.internalDiff) {
                 // Preserve the existing nested DELETE/INSERT contract rather than
                 // turning internal edits into another layer of REPLACE operations.
-                visible.push({ ...op, internalDiff: this._presentOperations(op.internalDiff, false) });
+                visible.push({
+                    ...op,
+                    internalDiff: this._presentOperations(op.internalDiff, false),
+                });
             } else {
                 visible.push(op);
             }

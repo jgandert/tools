@@ -760,20 +760,24 @@ const one = (() => {
                 this.bytes = bytes;
                 this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
             }
+
             range(offset, length, end = this.bytes.length) {
                 if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) ||
-                offset < 0 || length < 0 || offset > end || length > end - offset) {
+                    offset < 0 || length < 0 || offset > end || length > end - offset) {
                     fail("ERR_FORMAT", "Truncated binary record or out-of-bounds offset.");
                 }
             }
+
             u16(offset) {
                 this.range(offset, 2);
                 return this.view.getUint16(offset, true);
             }
+
             u32(offset) {
                 this.range(offset, 4);
                 return this.view.getUint32(offset, true);
             }
+
             u64(offset) {
                 this.range(offset, 8);
                 const value = this.view.getBigUint64(offset, true);
@@ -782,6 +786,7 @@ const one = (() => {
                 }
                 return Number(value);
             }
+
             slice(offset, length) {
                 this.range(offset, length);
                 return this.bytes.subarray(offset, offset + length);
@@ -836,7 +841,7 @@ const one = (() => {
             const parts = name.endsWith("/") ? name.slice(0, -1).split("/") : name.split("/");
             for (const part of parts) {
                 if (!part || part === "." || part === ".." || /[. ]$/u.test(part) ||
-                /[<>"|?*]/u.test(part) || /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/iu.test(part)) {
+                    /[<>"|?*]/u.test(part) || /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/iu.test(part)) {
                     fail("ERR_PATH", `Unsafe or nonportable entry path: ${JSON.stringify(name)}.`);
                 }
             }
@@ -942,7 +947,8 @@ const one = (() => {
                 return null;
             }
             const year = 1980 + (date >>> 9), month = ((date >>> 5) & 15) - 1;
-            const day = date & 31, hour = time >>> 11, minute = (time >>> 5) & 63, second = (time & 31) * 2;
+            const day = date & 31, hour = time >>> 11, minute = (time >>> 5) & 63,
+                second = (time & 31) * 2;
             if (month < 0 || month > 11 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) {
                 return null;
             }
@@ -973,6 +979,7 @@ const one = (() => {
                 this.bytes = bytes;
                 this.position = 0;
             }
+
             read(width) {
                 if (this.position + width > this.bytes.length * 8) {
                     fail("ERR_FORMAT", "Truncated DEFLATE bitstream.");
@@ -984,6 +991,7 @@ const one = (() => {
                 }
                 return result;
             }
+
             skipBytes(length) {
                 const end = this.position + length * 8;
                 if (end > this.bytes.length * 8) {
@@ -1030,7 +1038,8 @@ const one = (() => {
         const codeLengthOrder = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
 
         function dynamicAlphabets(bits) {
-            const literalCount = bits.read(5) + 257, distanceCount = bits.read(5) + 1, orderCount = bits.read(4) + 4;
+            const literalCount = bits.read(5) + 257, distanceCount = bits.read(5) + 1,
+                orderCount = bits.read(4) + 4;
             if (literalCount > 286) {
                 fail("ERR_FORMAT", "Invalid DEFLATE literal count.");
             }
@@ -1224,7 +1233,13 @@ const one = (() => {
             if (count === 0 && (offset !== 0 || size !== 0)) {
                 fail("ERR_FORMAT", "Nonempty data before an empty central directory.");
             }
-            return { count, size, offset, zip64, comment: decodeArchiveComment(r.slice(end + 22, r.u16(end + 20))) };
+            return {
+                count,
+                size,
+                offset,
+                zip64,
+                comment: decodeArchiveComment(r.slice(end + 22, r.u16(end + 20))),
+            };
         }
 
         function extendedValues(fields, size, compressedSize, offset, disk) {
@@ -1312,8 +1327,8 @@ const one = (() => {
             const checksum = r.u32(p + 14);
             if (hasDescriptor) {
                 if ((checksum !== 0 && checksum !== entry.checksum) ||
-                (local.size !== 0 && local.size !== entry.size) ||
-                (local.compressedSize !== 0 && local.compressedSize !== entry.compressedSize)) {
+                    (local.size !== 0 && local.size !== entry.size) ||
+                    (local.compressedSize !== 0 && local.compressedSize !== entry.compressedSize)) {
                     fail("ERR_FORMAT", `Local placeholder values conflict with central metadata: ${entry.name}.`);
                 }
             } else if (checksum !== entry.checksum || local.size !== entry.size || local.compressedSize !== entry.compressedSize) {
@@ -1345,7 +1360,8 @@ const one = (() => {
                 if (flags & ~0x080e) {
                     fail("ERR_UNSUPPORTED", `Unsupported ZIP general-purpose flags: ${flags}.`);
                 }
-                const nameLength = r.u16(p + 28), extraLength = r.u16(p + 30), commentLength = r.u16(p + 32);
+                const nameLength = r.u16(p + 28), extraLength = r.u16(p + 30),
+                    commentLength = r.u16(p + 32);
                 r.range(p + 46, nameLength + extraLength + commentLength, boundary);
                 const rawName = r.slice(p + 46, nameLength);
                 const fields = extraFields(r.slice(p + 46 + nameLength, extraLength));
@@ -1375,8 +1391,14 @@ const one = (() => {
                     fail("ERR_FORMAT", `Directory entry has file content: ${name}.`);
                 }
                 const entry = {
-                    name, rawName, flags, method, isDirectory, ...sizes,
-                    checksum: r.u32(p + 16), zip64: fields.has(1), wide: size32 === U32_MAX || compressed32 === U32_MAX,
+                    name,
+                    rawName,
+                    flags,
+                    method,
+                    isDirectory, ...sizes,
+                    checksum: r.u32(p + 16),
+                    zip64: fields.has(1),
+                    wide: size32 === U32_MAX || compressed32 === U32_MAX,
                     comment: decodeName(r.slice(p + 46 + nameLength + extraLength, commentLength), flags, fields, 0x6375),
                     timestamp: decodeDate(r.u16(p + 14), r.u16(p + 12), fields),
                 };
@@ -1398,43 +1420,58 @@ const one = (() => {
                 }
                 previousEnd = entry.recordEnd;
             }
-            return { entries, totalSize, comment: directory.comment, zip64: directory.zip64 || entries.some(entry => entry.zip64) };
+            return {
+                entries,
+                totalSize,
+                comment: directory.comment,
+                zip64: directory.zip64 || entries.some(entry => entry.zip64),
+            };
         }
 
         class ZipEntry {
             #record;
             #bytes;
             #limits;
+
             constructor(record, bytes, limits) {
                 this.#record = record;
                 this.#bytes = bytes;
                 this.#limits = limits;
                 Object.freeze(this);
             }
+
             get name() {
                 return this.#record.name;
             }
+
             get size() {
                 return this.#record.size;
             }
+
             get compressedSize() {
                 return this.#record.compressedSize;
             }
+
             get isDirectory() {
                 return this.#record.isDirectory;
             }
+
             get compression() {
                 return compressionName(this.#record.method);
             }
+
             get method() {
                 return this.#record.method;
             }
+
             get crc32() {
                 return this.#record.checksum;
             }
+
             get comment() {
                 return this.#record.comment;
             }
+
             get mtime() {
                 return this.#record.timestamp === null ? null : new Date(this.#record.timestamp);
             }
@@ -1504,7 +1541,10 @@ const one = (() => {
                 if (typeof Blob === "undefined") {
                     fail("ERR_UNSUPPORTED", "Blob is not available in this runtime.");
                 }
-                return new Blob([await this.bytes({ maxSize: opts.maxSize, signal: opts.signal })], { type: opts.type ?? "" });
+                return new Blob([await this.bytes({
+                    maxSize: opts.maxSize,
+                    signal: opts.signal,
+                })], { type: opts.type ?? "" });
             }
         }
 
@@ -1514,6 +1554,7 @@ const one = (() => {
             #comment;
             #totalSize;
             #zip64;
+
             constructor(parsed, bytes, limits) {
                 this.#entries = Object.freeze(parsed.entries.map(record => new ZipEntry(record, bytes, limits)));
                 this.#byName = new Map(this.#entries.map(entry => [entry.name, entry]));
@@ -1522,33 +1563,42 @@ const one = (() => {
                 this.#zip64 = parsed.zip64;
                 Object.freeze(this);
             }
+
             get entries() {
                 return this.#entries;
             }
+
             get size() {
                 return this.#entries.length;
             }
+
             get totalSize() {
                 return this.#totalSize;
             }
+
             get comment() {
                 return this.#comment;
             }
+
             get zip64() {
                 return this.#zip64;
             }
+
             names() {
                 return this.#entries.map(entry => entry.name);
             }
+
             get(name) {
                 if (typeof name !== "string") {
                     fail("ERR_ARGUMENT", "Entry name must be a string.");
                 }
                 return this.#byName.get(name);
             }
+
             has(name) {
                 return this.get(name) !== undefined;
             }
+
             #require(name) {
                 const entry = this.get(name);
                 if (!entry) {
@@ -1556,12 +1606,15 @@ const one = (() => {
                 }
                 return entry;
             }
+
             async read(name, options) {
                 return this.#require(name).bytes(options);
             }
+
             async text(name, options) {
                 return this.#require(name).text(options);
             }
+
             async verify(options) {
                 const opts = checkOptions(options, ["signal"]);
                 checkAbort(opts.signal);
@@ -1569,6 +1622,7 @@ const one = (() => {
                     await entry.bytes(opts);
                 }
             }
+
             [Symbol.iterator]() {
                 return this.#entries[Symbol.iterator]();
             }
@@ -1589,7 +1643,8 @@ const one = (() => {
             }
             const reader = input.getReader();
             const abort = () => {
-                void reader.cancel(signal.reason).catch(() => {});
+                void reader.cancel(signal.reason).catch(() => {
+                });
             };
             signal?.addEventListener("abort", abort, { once: true });
             const parts = [];
@@ -1613,7 +1668,7 @@ const one = (() => {
                 try {
                     await reader.cancel(cause);
                 } catch {
-                // Preserve the input or limit error if cancellation also fails.
+                    // Preserve the input or limit error if cancellation also fails.
 
                 }
                 checkAbort(signal);
@@ -1679,7 +1734,7 @@ const one = (() => {
                 try {
                     await reader.cancel(cause);
                 } catch {
-                // Preserve the codec or limit error if cancellation also fails.
+                    // Preserve the codec or limit error if cancellation also fails.
 
                 }
                 checkAbort(signal);

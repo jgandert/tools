@@ -6,13 +6,24 @@ import { sharedBoundaryModel } from "./shared-boundary-model.js";
 
 const { createTracer } = createRequire(import.meta.url)("../tracer.js");
 const edges = [false, true].map((present) => ({ present, ...makeSharedBoundaryArtwork({ present }) }));
-const junctions = [false, true].map((present) => ({ present, ...makeSharedBoundaryArtwork({ kind: "junction", present }) }));
+const junctions = [false, true].map((present) => ({
+    present, ...makeSharedBoundaryArtwork({
+        kind: "junction",
+        present,
+    }),
+}));
 const hexRGB = (hex) => [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
 
 function isolatedProposal(artwork, data = artwork.image.data) {
     const labels = new Int16Array(artwork.sourceLabels);
     for (const pixel of artwork.targetPixels) labels[pixel] = 2;
-    return sharedBoundaryModel({ ...artwork.image, data, labels, palette: artwork.paints, noise: 10 });
+    return sharedBoundaryModel({
+        ...artwork.image,
+        data,
+        labels,
+        palette: artwork.paints,
+        noise: 10,
+    });
 }
 
 function nominalPaint(rgb, paints) {
@@ -48,13 +59,29 @@ test.each(junctions)("a three-paint junction retains its proposed component (pre
 });
 
 test.each(edges)("baseline proposals correct only false bleed ownership (present=$present)", (artwork) => {
-    const baseline = createTracer().trace(artwork.image, { colors: 3, noise: 10, minArea: 0, debug: true });
+    const baseline = createTracer().trace(artwork.image, {
+        colors: 3,
+        noise: 10,
+        minArea: 0,
+        debug: true,
+    });
     const labels = baseline.debug.labels;
     const palette = baseline.stats.palette.map(hexRGB);
     const paint = labels[artwork.swatchPixel];
-    const model = sharedBoundaryModel({ ...artwork.image, labels, palette, noise: 10 }, { robust: true });
-    const changed = Array.from(model.labels).flatMap((color, pixel) => (color === labels[pixel] ? [] : [{ color, pixel }]));
-    const incorrect = changed.filter(({ color, pixel }) => nominalPaint(palette[color], artwork.paints) !== artwork.sourceLabels[pixel]);
+    const model = sharedBoundaryModel({
+        ...artwork.image,
+        labels,
+        palette,
+        noise: 10,
+    }, { robust: true });
+    const changed = Array.from(model.labels).flatMap((color, pixel) => (color === labels[pixel] ? [] : [{
+        color,
+        pixel,
+    }]));
+    const incorrect = changed.filter(({
+                                          color,
+                                          pixel,
+                                      }) => nominalPaint(palette[color], artwork.paints) !== artwork.sourceLabels[pixel]);
     expect(incorrect.length).toBe(0);
     expect(model.labels[artwork.swatchPixel]).toBe(paint);
     if (artwork.present) {

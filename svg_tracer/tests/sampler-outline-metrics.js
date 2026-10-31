@@ -2,7 +2,14 @@
 
 // Generator geometry and paints are independent of the fitted SVG. Samples
 // stay clear of occlusion junctions, which receive separate raster checks.
-export function measureSamplerOutline({width, height, actual, expected, actualScale = 1, nativeActual}) {
+export function measureSamplerOutline({
+                                          width,
+                                          height,
+                                          actual,
+                                          expected,
+                                          actualScale = 1,
+                                          nativeActual,
+                                      }) {
     if (actualScale > 1) {
         const reduced = new Float64Array(width * height * 4);
         for (let y = 0; y < height; y++) {
@@ -44,7 +51,7 @@ export function measureSamplerOutline({width, height, actual, expected, actualSc
     };
     const groups = {};
     const add = (name, x, y, nx, ny, fill, background) => {
-        (groups[name] ||= []).push({x, y, nx, ny, fill, background});
+        (groups[name] ||= []).push({ x, y, nx, ny, fill, background });
     };
     const arc = (name, cx, cy, radius, start, end, fill, backgroundAt) => {
         for (let angle = start; angle <= end; angle += .035) {
@@ -53,7 +60,9 @@ export function measureSamplerOutline({width, height, actual, expected, actualSc
             const x = cx + radius * nx;
             const y = cy + radius * ny;
             const background = backgroundAt(x, y);
-            if (background) { add(name, x, y, nx, ny, fill, background); }
+            if (background) {
+                add(name, x, y, nx, ny, fill, background);
+            }
         }
     };
     arc("circle", 139.2, 140.6, 92.4, 1.65, 5.15, yellow, () => white);
@@ -68,7 +77,9 @@ export function measureSamplerOutline({width, height, actual, expected, actualSc
         const v = 32.2 * Math.sin(angle);
         const x = 263.2 + u * Math.cos(-.45) - v * Math.sin(-.45);
         const y = 94.7 + u * Math.sin(-.45) + v * Math.cos(-.45);
-        if (Math.abs(rectangleDistance(x, y)) < 7 || Math.abs(circleDistance(x, y)) < 7) { continue; }
+        if (Math.abs(rectangleDistance(x, y)) < 7 || Math.abs(circleDistance(x, y)) < 7) {
+            continue;
+        }
         const a = Math.cos(angle) / 62.5;
         const b = Math.sin(angle) / 32.2;
         const length = Math.hypot(a, b);
@@ -78,7 +89,9 @@ export function measureSamplerOutline({width, height, actual, expected, actualSc
         add("ellipse", x, y, nx, ny, blue, background);
     }
     for (let x = 182; x < 307; x++) {
-        if (ellipseDistance(x, 109.6) > 7) { add("redTop", x, 109.6, 0, -1, red, yellow); }
+        if (ellipseDistance(x, 109.6) > 7) {
+            add("redTop", x, 109.6, 0, -1, red, yellow);
+        }
     }
 
     const coverage = (data, fill, background) => {
@@ -98,7 +111,9 @@ export function measureSamplerOutline({width, height, actual, expected, actualSc
     const fields = new Map();
     const profile = (data, sample) => {
         const key = `${data === actual ? "actual" : "expected"}:${sample.fill}:${sample.background}`;
-        if (!fields.has(key)) { fields.set(key, coverage(data, sample.fill, sample.background)); }
+        if (!fields.has(key)) {
+            fields.set(key, coverage(data, sample.fill, sample.background));
+        }
         const field = fields.get(key);
         let mass = 0;
         let moment = 0;
@@ -116,11 +131,14 @@ export function measureSamplerOutline({width, height, actual, expected, actualSc
             mass += value / 8;
             moment += offset * value / 8;
         }
-        return {width: mass, center: moment / mass};
+        return { width: mass, center: moment / mass };
     };
     const metrics = {};
     for (const [name, samples] of Object.entries(groups)) {
-        const profiles = samples.map(sample => ({source: profile(expected, sample), actual: profile(actual, sample)}));
+        const profiles = samples.map(sample => ({
+            source: profile(expected, sample),
+            actual: profile(actual, sample),
+        }));
         const mean = values => values.reduce((sum, v) => sum + v, 0) / values.length;
         const widthErrors = profiles.map(p => Math.abs(p.actual.width - p.source.width));
         const shifts = profiles.map(p => p.actual.center - p.source.center);
@@ -141,17 +159,19 @@ export function measureSamplerOutline({width, height, actual, expected, actualSc
     // Intersections invalidate a two-paint normal profile. Compare their
     // premultiplied RGBA patches independently so averaging cannot hide a join.
     const junctions = [
-        {name: "circle-red", x: 162.615, y: 229.984},
-        {name: "circle-ellipse", x: 216.406, y: 89.836},
-        {name: "red-ellipse-left", x: 205.658, y: 109.6},
-        {name: "red-ellipse-right", x: 299.542, y: 109.6},
+        { name: "circle-red", x: 162.615, y: 229.984 },
+        { name: "circle-ellipse", x: 216.406, y: 89.836 },
+        { name: "red-ellipse-left", x: 205.658, y: 109.6 },
+        { name: "red-ellipse-right", x: 299.542, y: 109.6 },
     ];
-    metrics.junctions = junctions.map(({name, x, y}) => {
+    metrics.junctions = junctions.map(({ name, x, y }) => {
         let error = 0;
         let count = 0;
         for (let py = Math.floor(y - 6); py <= y + 6; py++) {
             for (let px = Math.floor(x - 6); px <= x + 6; px++) {
-                if (Math.hypot(px + .5 - x, py + .5 - y) > 6) { continue; }
+                if (Math.hypot(px + .5 - x, py + .5 - y) > 6) {
+                    continue;
+                }
                 const p = (py * width + px) * 4;
                 for (let c = 0; c < 4; c++) {
                     error += Math.abs(c === 3 ? junctionRaster[p + c] - expected[p + c] :
@@ -160,7 +180,7 @@ export function measureSamplerOutline({width, height, actual, expected, actualSc
                 count++;
             }
         }
-        return {name, x, y, pixels: count, error: error / (count * 4)};
+        return { name, x, y, pixels: count, error: error / (count * 4) };
     });
     return metrics;
 }

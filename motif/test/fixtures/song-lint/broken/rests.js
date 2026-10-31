@@ -1,1 +1,1 @@
-Track('rests').synth('sine').note([null, null]);
+Track("rests").synth("sine").note([null, null]);

@@ -194,7 +194,10 @@ export function applyParamModulation(instance, param, value, modulatorPropName, 
         valNode.connect(param);
         instance[modulatorPropName] = valNode;
         instance._paramModulationBindings ??= new Map();
-        instance._paramModulationBindings.set(modulatorPropName, { source: valNode, target: param });
+        instance._paramModulationBindings.set(modulatorPropName, {
+            source: valNode,
+            target: param,
+        });
     } else if (value && value.isRamp === true) {
         const fromVal = mapValueFn ? mapValueFn(value.from) : value.from;
         const toVal = mapValueFn ? mapValueFn(value.to) : value.to;

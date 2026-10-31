@@ -60,15 +60,15 @@ async function expectRules(expected) {
     const state = await page.evaluate(() => ({
         active: replacements,
         fields: Array.from(document.querySelectorAll(".rule-row"), row => ({
-            find: row.querySelector('input[type="text"]').value,
-            replace: row.querySelectorAll('input[type="text"]')[1].value,
-            useRegex: row.querySelector('input[type="checkbox"]').checked,
+            find: row.querySelector("input[type=\"text\"]").value,
+            replace: row.querySelectorAll("input[type=\"text\"]")[1].value,
+            useRegex: row.querySelector("input[type=\"checkbox\"]").checked,
         })),
         ids: Array.from(document.querySelectorAll("[id]"), element => element.id),
         injected: document.querySelectorAll("#injected, [data-injected]").length,
         labelsValid: Array.from(document.querySelectorAll(".rule-row label"), label =>
             label.control === label.querySelector("input")),
-        inputAttributes: Array.from(document.querySelectorAll('.rule-row input[type="text"]'), input =>
+        inputAttributes: Array.from(document.querySelectorAll(".rule-row input[type=\"text\"]"), input =>
             input.getAttributeNames().filter(name => !["type", "id", "placeholder", "value"].includes(name))),
     }));
     expect(state.active).toEqual(expected);
@@ -79,10 +79,10 @@ async function expectRules(expected) {
     expect(state.inputAttributes.every(attributes => attributes.length === 0)).toBe(true);
 }
 
-const injected = '\"><span id="injected" data-injected="yes">injected</span><input value="';
+const injected = "\"><span id=\"injected\" data-injected=\"yes\">injected</span><input value=\"";
 const cases = [
-    ['a"b', "&amp;"],
-    ["&amp;", 'a"b'],
+    ["a\"b", "&amp;"],
+    ["&amp;", "a\"b"],
     ["<angle>", "\\path\\"],
     ["\\path\\", "<angle>"],
     ["", ""],
@@ -114,7 +114,12 @@ test.each(cases)("literal rule %j -> %j survives rerenders, storage, and preset 
         await Bun.sleep(100);
     }
     expect(await page.evaluate(() => one.storage.get("sc-presets")))
-        .toEqual({ Default: { ...await page.evaluate(() => presets.Default), replacements: [rule] } });
+        .toEqual({
+            Default: {
+                ...await page.evaluate(() => presets.Default),
+                replacements: [rule],
+            },
+        });
     await page.reload();
     await page.waitForFunction(() => replacements.length === 1);
     await expectRules([rule]);

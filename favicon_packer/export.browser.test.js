@@ -51,7 +51,9 @@ test.each(exportCases)("native ZIP contains a decodable 32x32 ICO with backgroun
         page.on("pageerror", error => errors.push(error.message));
         await page.route("https://**", route => route.abort());
         if (fallback) {
-            await page.addInitScript(() => { window.CompressionStream = undefined; });
+            await page.addInitScript(() => {
+                window.CompressionStream = undefined;
+            });
         }
         const url = protocol === "file" ? new URL("index.html", import.meta.url) : new URL("favicon_packer/index.html", server.url);
         await page.goto(url.href);
@@ -122,6 +124,7 @@ test.each(exportCases)("native ZIP contains a decodable 32x32 ICO with backgroun
                 bitmap.close();
                 return result;
             }
+
             return {
                 ico: await decode(entries["favicon.ico"], "image/vnd.microsoft.icon"),
                 pngs: await Promise.all([

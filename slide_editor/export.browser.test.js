@@ -84,7 +84,11 @@ async function loadTool(page, protocol) {
 }
 
 async function importDeck(page, bytes, name = "Original Deck.zip") {
-    await page.locator("#zip-input").setInputFiles({ name, mimeType: "application/zip", buffer: bytes });
+    await page.locator("#zip-input").setInputFiles({
+        name,
+        mimeType: "application/zip",
+        buffer: bytes,
+    });
     await page.waitForFunction(() => document.getElementById("zip-input").value === "" && !document.getElementById("download-zip").disabled);
     expect(await page.locator("#markdown-source").inputValue()).toBe(importedMarkdown);
     expect(await page.locator("#css-source").inputValue()).toBe(importedCss);

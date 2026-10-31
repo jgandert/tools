@@ -9,8 +9,11 @@ function render(rate, left, right = left, options = {}) {
     let Processor;
     vm.runInNewContext(source, {
         sampleRate: rate,
-        AudioWorkletProcessor: class {},
-        registerProcessor: (name, value) => { Processor = value; },
+        AudioWorkletProcessor: class {
+        },
+        registerProcessor: (name, value) => {
+            Processor = value;
+        },
     });
     const processor = new Processor();
     const length = Math.ceil((left.length + processor.latency + 128) / 128) * 128;
@@ -91,7 +94,10 @@ const recovered = render(48000, recovery);
 assert(recovered.output[0][recovered.latency + 47000] > 0.0999, "gain must recover after overload");
 const invalid = render(48000, new Float32Array([NaN, Infinity, -Infinity, 0.1]));
 assert(invalid.output[0].every(Number.isFinite), "non-finite input must not poison subsequent output");
-const lower = render(48000, new Float32Array(2048).fill(2), undefined, { ceiling: -6, release: 0.02 });
+const lower = render(48000, new Float32Array(2048).fill(2), undefined, {
+    ceiling: -6,
+    release: 0.02,
+});
 assert(truePeak(lower.output[0]) <= Math.pow(10, -6 / 20) + 1e-5, "custom ceiling must apply");
 const changing = render(48000, new Float32Array(4096).fill(4), undefined, { ceiling: frame => frame < 2048 ? -1 : -12 });
 assert(changing.output[0].subarray(2048).every(value => Math.abs(value) <= Math.pow(10, -12 / 20)), "lowering the ceiling must also update the pending gain envelope");

@@ -2,8 +2,8 @@
 
 // Runs in the browser. Compare the exported SVG, including renderer seams,
 // against the decoded input. Edge and junction scores exclude flat interiors.
-export async function measureOutlinedTrace({artwork, result}) {
-    const {width, height, data, junctions = []} = artwork;
+export async function measureOutlinedTrace({ artwork, result }) {
+    const { width, height, data, junctions = [] } = artwork;
     const image = new Image();
     image.src = `data:image/svg+xml,${encodeURIComponent(result.svg)}`;
     await image.decode();
@@ -25,7 +25,12 @@ export async function measureOutlinedTrace({artwork, result}) {
     let outlinePixels = 0;
     let outlineMass = 0;
     let expectedOutlineMass = 0;
-    const junctionMetrics = junctions.map(() => ({mass: 0, expectedMass: 0, dark: 0, missing: 0}));
+    const junctionMetrics = junctions.map(() => ({
+        mass: 0,
+        expectedMass: 0,
+        dark: 0,
+        missing: 0,
+    }));
     const [dark, ...fills] = artwork.paints;
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
@@ -62,10 +67,14 @@ export async function measureOutlinedTrace({artwork, result}) {
             let edge = false;
             for (let dy = -1; dy <= 1 && !edge; dy++) {
                 for (let dx = -1; dx <= 1; dx++) {
-                    if (x + dx < 0 || x + dx >= width || y + dy < 0 || y + dy >= height) { continue; }
+                    if (x + dx < 0 || x + dx >= width || y + dy < 0 || y + dy >= height) {
+                        continue;
+                    }
                     const q = ((y + dy) * width + x + dx) * 4;
                     for (let c = 0; c < 4; c++) {
-                        if (Math.abs(premultiplied(data, p, c) - premultiplied(data, q, c)) > 24) { edge = true; }
+                        if (Math.abs(premultiplied(data, p, c) - premultiplied(data, q, c)) > 24) {
+                            edge = true;
+                        }
                     }
                 }
             }
@@ -76,7 +85,9 @@ export async function measureOutlinedTrace({artwork, result}) {
             const nearbyJunctions = [];
             for (let i = 0; i < junctions.length; i++) {
                 const j = junctions[i];
-                if ((x + .5 - j.x) ** 2 + (y + .5 - j.y) ** 2 > 36) { continue; }
+                if ((x + .5 - j.x) ** 2 + (y + .5 - j.y) ** 2 > 36) {
+                    continue;
+                }
                 nearbyJunctions.push(i);
                 junctionMetrics[i].mass += darkWeight;
                 junctionMetrics[i].expectedMass += artwork.outlineCoverage[y * width + x] / 255;
@@ -92,21 +103,29 @@ export async function measureOutlinedTrace({artwork, result}) {
                 let found = false;
                 for (let dy = -1; dy <= 1 && !found; dy++) {
                     for (let dx = -1; dx <= 1; dx++) {
-                        if (x + dx < 0 || x + dx >= width || y + dy < 0 || y + dy >= height) { continue; }
+                        if (x + dx < 0 || x + dx >= width || y + dy < 0 || y + dy >= height) {
+                            continue;
+                        }
                         const q = ((y + dy) * width + x + dx) * 4;
-                        if (actual[q + 3] > 180 && Math.max(actual[q], actual[q + 1], actual[q + 2]) < 100) { found = true; }
+                        if (actual[q + 3] > 180 && Math.max(actual[q], actual[q + 1], actual[q + 2]) < 100) {
+                            found = true;
+                        }
                     }
                 }
-                if (!found) { missingOutline++; }
+                if (!found) {
+                    missingOutline++;
+                }
                 for (const i of nearbyJunctions) {
                     junctionMetrics[i].dark++;
-                    if (!found) { junctionMetrics[i].missing++; }
+                    if (!found) {
+                        junctionMetrics[i].missing++;
+                    }
                 }
             }
         }
     }
     const gapPoints = artwork.gapPoints || [];
-    const retainedGapPoints = gapPoints.filter(({x, y}) => {
+    const retainedGapPoints = gapPoints.filter(({ x, y }) => {
         const p = (Math.floor(y) * width + Math.floor(x)) * 4;
         // Require a bright separator even on black. Antialias alpha seams can
         // reduce opacity without closing the visible gap between dark shapes.

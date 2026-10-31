@@ -68,14 +68,29 @@ describe("append paragraph separator", () => {
 describe("conversion preferences", () => {
     const defaults = { version: 1, appendMode: true, normalizePunctuation: false };
 
-    test.each([undefined, null, false, [], "{broken", {}, { version: 2, appendMode: false }].map(stored => [stored]))("corrupt or unsupported state %j uses defaults", stored => {
+    test.each([undefined, null, false, [], "{broken", {}, {
+        version: 2,
+        appendMode: false,
+    }].map(stored => [stored]))("corrupt or unsupported state %j uses defaults", stored => {
         expect(readPreferences(stored)).toEqual(defaults);
     });
 
     test("restores only boolean preferences from the supported version", () => {
-        expect(readPreferences({ version: 1, appendMode: false })).toEqual({ ...defaults, appendMode: false });
-        expect(readPreferences({ version: 1, appendMode: "true", normalizePunctuation: true })).toEqual({ ...defaults, normalizePunctuation: true });
-        expect(readPreferences({ version: 1, appendMode: true, normalizePunctuation: true, draft: "private" }))
+        expect(readPreferences({ version: 1, appendMode: false })).toEqual({
+            ...defaults,
+            appendMode: false,
+        });
+        expect(readPreferences({
+            version: 1,
+            appendMode: "true",
+            normalizePunctuation: true,
+        })).toEqual({ ...defaults, normalizePunctuation: true });
+        expect(readPreferences({
+            version: 1,
+            appendMode: true,
+            normalizePunctuation: true,
+            draft: "private",
+        }))
             .toEqual({ version: 1, appendMode: true, normalizePunctuation: true });
     });
 

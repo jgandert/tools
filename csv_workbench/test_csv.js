@@ -495,7 +495,10 @@ console.log("\n=== export formats ===");
 
     const objects = JSON.parse(toJsonObjects(header, rows));
     assertEqual(objects[0], { a: "1", b: "x|y" }, "json objects: header keys");
-    assertEqual(objects[1], { a: "2", b: "line1\nline2" }, "json objects: all rows and cell text kept");
+    assertEqual(objects[1], {
+        a: "2",
+        b: "line1\nline2",
+    }, "json objects: all rows and cell text kept");
 
     const literalKeys = ["__proto__", "constructor", "toString", "", "ordinary"];
     const literalValues = ["keep", "own constructor", "own string", "empty name", "value"];

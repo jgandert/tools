@@ -280,7 +280,7 @@ test.each([{}, []].map(value => [value]))("an empty converted root %j still acce
     await expectRoot(expected);
 });
 
-const prototypeValues = ['{"kept":true}', '"literal"', 'null'];
+const prototypeValues = ["{\"kept\":true}", "\"literal\"", "null"];
 const prototypeObjects = prototypeValues.map(value => JSON.parse(`{"__proto__":${value},"constructor":"own constructor","toString":"own string","x":1,"nested":{"__proto__":{"kept":true},"constructor":null,"toString":false},"items":[{"__proto__":"nested string","x":2},{"__proto__":null,"x":3}]}`));
 
 async function expectOwnPropertyRoot(value) {
@@ -337,7 +337,7 @@ test.each(prototypeObjects.flatMap(value => [false, true].map(sorted => [value, 
 test.each([false, true])("renaming a key to __proto__ sorted=%j preserves its data and history", async sorted => {
     await setSettings({ sorted });
     const value = { rename: { kept: true }, constructor: 1, toString: "own string" };
-    const edited = JSON.parse('{"__proto__":{"kept":true},"constructor":1,"toString":"own string"}');
+    const edited = JSON.parse("{\"__proto__\":{\"kept\":true},\"constructor\":1,\"toString\":\"own string\"}");
     await loadRaw(value);
     const key = page.locator("#editor-container > .json-grid > .cell.key > span[contenteditable]")
         .filter({ hasText: /^rename$/ });

@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
-    <meta name="description" content="Edit Markdown and CSS in a live slides preview. Open and download self-contained presentation ZIPs locally in your browser.">
+    <meta name="description"
+          content="Edit Markdown and CSS in a live slides preview. Open and download self-contained presentation ZIPs locally in your browser.">
     <title>Slides</title>
     <!-- Layout adapted from the supplied MD Paste & Preview template.
          © 2026 Joschua Gandert - License: Apache 2.0 -->
@@ -13,344 +14,1164 @@
     <style id="app-styles">
         /* Shared controls, typography, dialogs, surfaces and the sidebar grid
            come from one.css. These rules only fit that shell to a slide editor. */
-        :root { --aside-width: clamp(20rem, 40vw, 42rem); }
-        html { height: 100%; overflow: hidden; scrollbar-gutter: auto; }
+        :root {
+            --aside-width: clamp(20rem, 40vw, 42rem);
+        }
+
+        html {
+            height: 100%;
+            overflow: hidden;
+            scrollbar-gutter: auto;
+        }
+
         body {
-            height: 100vh; height: 100dvh; min-height: 0; overflow: hidden;
+            height: 100vh;
+            height: 100dvh;
+            min-height: 0;
+            overflow: hidden;
             grid-template-rows: var(--header-height) minmax(0, 1fr) 0;
         }
+
         .header-actions[role="group"], .format-actions[role="group"], .preview-actions[role="group"] {
-            align-items: center; flex: none; margin: 0;
+            align-items: center;
+            flex: none;
+            margin: 0;
         }
-        .header-actions button, #help-button { padding-inline: var(--spacing-sm); }
+
+        .header-actions button, #help-button {
+            padding-inline: var(--spacing-sm);
+        }
+
         body > aside {
-            display: flex; flex-direction: column; gap: var(--spacing-sm);
-            min-height: 0; overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            min-height: 0;
+            overflow-y: auto;
         }
+
         .editor-label {
-            display: flex; flex-direction: column; gap: var(--spacing-xs);
-            flex: 1; min-height: 10rem; margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            flex: 1;
+            min-height: 10rem;
+            margin: 0;
         }
+
         .editor-label textarea {
-            flex: 1; min-height: 0; margin: 0; resize: none;
-            font-family: var(--font-code); font-size: 0.8125rem;
-            line-height: 1.6; tab-size: 4; overscroll-behavior: contain;
+            flex: 1;
+            min-height: 0;
+            margin: 0;
+            resize: none;
+            font-family: var(--font-code);
+            font-size: 0.8125rem;
+            line-height: 1.6;
+            tab-size: 4;
+            overscroll-behavior: contain;
         }
-        .editor-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-sm); }
-        .editor-heading small { margin: 0; }
-        .editor-heading small, #privacy-note, #save-state, #asset-summary, #preview-caption { color: var(--on-surface-variant); }
-        #file-label { flex: none; margin: 0; }
-        #presentation-name { margin-block: var(--spacing-xs) 0; }
-        #save-state, #privacy-note, #asset-summary { flex: none; margin: 0; }
-        #save-state[data-state="error"] { color: var(--error); }
-        .format-actions { flex-wrap: wrap; }
-        .format-actions button:not(.btn-sym) { padding: var(--spacing-xs) var(--spacing-sm); min-height: 2rem; height: auto; font-size: 0.8125rem; }
-        #content { display: flex; flex-direction: column; min-height: 0; gap: var(--spacing-md); overflow: hidden; padding: var(--spacing-lg); }
-        #viewport { flex: 1; min-height: 0; position: relative; overflow: hidden; background: var(--surface-container); border-radius: var(--radius-sm); }
+
+        .editor-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--spacing-sm);
+        }
+
+        .editor-heading small {
+            margin: 0;
+        }
+
+        .editor-heading small, #privacy-note, #save-state, #asset-summary, #preview-caption {
+            color: var(--on-surface-variant);
+        }
+
+        #file-label {
+            flex: none;
+            margin: 0;
+        }
+
+        #presentation-name {
+            margin-block: var(--spacing-xs) 0;
+        }
+
+        #save-state, #privacy-note, #asset-summary {
+            flex: none;
+            margin: 0;
+        }
+
+        #save-state[data-state="error"] {
+            color: var(--error);
+        }
+
+        .format-actions {
+            flex-wrap: wrap;
+        }
+
+        .format-actions button:not(.btn-sym) {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            min-height: 2rem;
+            height: auto;
+            font-size: 0.8125rem;
+        }
+
+        #content {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            gap: var(--spacing-md);
+            overflow: hidden;
+            padding: var(--spacing-lg);
+        }
+
+        #viewport {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+            overflow: hidden;
+            background: var(--surface-container);
+            border-radius: var(--radius-sm);
+        }
+
         #slide-frame {
-            position: absolute; width: 1600px; height: 900px; border: 0;
-            left: 50%; top: 50%; transform: translate(-50%, -50%) scale(var(--preview-scale, 1));
+            position: absolute;
+            width: 1600px;
+            height: 900px;
+            border: 0;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(var(--preview-scale, 1));
             transform-origin: center;
         }
-        .confetti-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
-        #viewport:fullscreen { width: 100vw; height: 100dvh; border-radius: 0; background: var(--surface); }
-        #viewport:fullscreen::backdrop { background: var(--surface); }
-        #content[data-dragging="true"] #viewport { outline: var(--border-width-lg) dashed var(--primary); outline-offset: -4px; }
-        #preview-error { flex: none; margin: 0; }
-        #preview-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-sm); }
-        #preview-caption { flex: 1; min-width: 8rem; margin: 0; font-size: 0.875rem; overflow-wrap: anywhere; }
-        .preview-actions { flex-wrap: wrap; max-width: 100%; }
-        .preview-actions button { padding-inline: var(--spacing-sm); }
-        #position { min-width: 4rem; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
-        #slide-progress { width: 100%; height: 4px; flex: none; margin: 0; }
-        #overview-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--spacing-sm); }
-        #overview-list button { display: block; width: 100%; height: auto; min-height: 5rem; text-align: left; white-space: normal; }
-        #overview-list button[aria-current="true"] { outline: var(--border-width-md) solid var(--primary); outline-offset: -2px; }
-        #overview-list small { display: block; }
-        #notes-content { overflow-wrap: anywhere; }
-        #notes-content :is(th, td).align-right { text-align: right; }
-        #notes-content :is(th, td).align-center { text-align: center; }
-        #notes-content :is(th, td).align-left { text-align: left; }
-        #notes-content img { max-width: 100%; height: auto; }
-        #print-frame { display: none; }
-        @media (max-width: 899px) { :root { --aside-width: min(100vw, 36rem); } }
+
+        .confetti-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        #viewport:fullscreen {
+            width: 100vw;
+            height: 100dvh;
+            border-radius: 0;
+            background: var(--surface);
+        }
+
+        #viewport:fullscreen::backdrop {
+            background: var(--surface);
+        }
+
+        #content[data-dragging="true"] #viewport {
+            outline: var(--border-width-lg) dashed var(--primary);
+            outline-offset: -4px;
+        }
+
+        #preview-error {
+            flex: none;
+            margin: 0;
+        }
+
+        #preview-footer {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        #preview-caption {
+            flex: 1;
+            min-width: 8rem;
+            margin: 0;
+            font-size: 0.875rem;
+            overflow-wrap: anywhere;
+        }
+
+        .preview-actions {
+            flex-wrap: wrap;
+            max-width: 100%;
+        }
+
+        .preview-actions button {
+            padding-inline: var(--spacing-sm);
+        }
+
+        #position {
+            min-width: 4rem;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        #slide-progress {
+            width: 100%;
+            height: 4px;
+            flex: none;
+            margin: 0;
+        }
+
+        #overview-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--spacing-sm);
+        }
+
+        #overview-list button {
+            display: block;
+            width: 100%;
+            height: auto;
+            min-height: 5rem;
+            text-align: left;
+            white-space: normal;
+        }
+
+        #overview-list button[aria-current="true"] {
+            outline: var(--border-width-md) solid var(--primary);
+            outline-offset: -2px;
+        }
+
+        #overview-list small {
+            display: block;
+        }
+
+        #notes-content {
+            overflow-wrap: anywhere;
+        }
+
+        #notes-content :is(th, td).align-right {
+            text-align: right;
+        }
+
+        #notes-content :is(th, td).align-center {
+            text-align: center;
+        }
+
+        #notes-content :is(th, td).align-left {
+            text-align: left;
+        }
+
+        #notes-content img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        #print-frame {
+            display: none;
+        }
+
+        @media (max-width: 899px) {
+            :root {
+                --aside-width: min(100vw, 36rem);
+            }
+        }
+
         @media (max-width: 600px) {
-            body > header { gap: var(--spacing-xs); }
-            #content { padding: var(--spacing-md); gap: var(--spacing-sm); }
-            .header-actions { gap: var(--spacing-xs); }
-            .header-actions button { font-size: 0.8125rem; padding-inline: var(--spacing-sm); }
-            #preview-caption { flex-basis: 100%; }
-            #overview-list { grid-template-columns: 1fr; }
+            body > header {
+                gap: var(--spacing-xs);
+            }
+
+            #content {
+                padding: var(--spacing-md);
+                gap: var(--spacing-sm);
+            }
+
+            .header-actions {
+                gap: var(--spacing-xs);
+            }
+
+            .header-actions button {
+                font-size: 0.8125rem;
+                padding-inline: var(--spacing-sm);
+            }
+
+            #preview-caption {
+                flex-basis: 100%;
+            }
+
+            #overview-list {
+                grid-template-columns: 1fr;
+            }
         }
+
         @media print {
-            html, body { height: auto; overflow: visible; }
-            body { display: block; }
-            body > :not(#print-frame) { display: none !important; }
-            #print-frame { display: block; border: 0; width: 1600px; }
-            @page { size: 1600px 900px; margin: 0; }
+            html, body {
+                height: auto;
+                overflow: visible;
+            }
+
+            body {
+                display: block;
+            }
+
+            body > :not(#print-frame) {
+                display: none !important;
+            }
+
+            #print-frame {
+                display: block;
+                border: 0;
+                width: 1600px;
+            }
+
+            @page {
+                size: 1600px 900px;
+                margin: 0;
+            }
         }
-        #font-diagnostics { flex: none; min-width: 0; margin: 0; }
-        #font-diagnostics > summary { font-size: 0.8125rem; overflow-wrap: anywhere; }
-        #font-diagnostics[data-state="error"] > summary { color: var(--error); }
-        #font-report { max-height: 14rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.75rem; line-height: 1.5; padding: var(--spacing-sm); }
-        #copy-font-report { min-height: 2rem; height: auto; font-size: 0.8125rem; }
+
+        #font-diagnostics {
+            flex: none;
+            min-width: 0;
+            margin: 0;
+        }
+
+        #font-diagnostics > summary {
+            font-size: 0.8125rem;
+            overflow-wrap: anywhere;
+        }
+
+        #font-diagnostics[data-state="error"] > summary {
+            color: var(--error);
+        }
+
+        #font-report {
+            max-height: 14rem;
+            overflow: auto;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            padding: var(--spacing-sm);
+        }
+
+        #copy-font-report {
+            min-height: 2rem;
+            height: auto;
+            font-size: 0.8125rem;
+        }
     </style>
     <style id="preview-runtime">
         /* Changed through the stylesheet API, never through style attributes. */
-        #slide-frame { --preview-scale: 1; }
-        #print-frame { height: 900px; }
+        #slide-frame {
+            --preview-scale: 1;
+        }
+
+        #print-frame {
+            height: 900px;
+        }
     </style>
 </head>
 <body>
-    <a href="#content" class="skip-link">Skip to slide preview</a>
-    <!-- one.css needs this checkbox beside the header and aside. -->
-    <input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle slide editors" aria-controls="editor">
-    <header>
-        <label for="aside-state" class="aside-toggle-btn" data-tooltip="Toggle slide editors"></label>
-        <hgroup>
-            <h1>Slides</h1>
-            <p id="document-subtitle">Markdown, CSS &amp; a portable ZIP.</p>
-        </hgroup>
-        <div class="header-actions" role="group" aria-label="Presentation actions">
-            <button type="button" id="new-presentation" aria-label="New presentation" data-tooltip="New presentation">
-                <span class="sym" aria-hidden="true">add</span><span class="hide-mobile">New</span>
-            </button>
-            <button type="button" id="open-zip" aria-label="Open ZIP" data-tooltip="Open a presentation ZIP">
-                <span class="sym" aria-hidden="true">folder_open</span><span class="hide-mobile">Open ZIP</span>
-            </button>
-            <button type="button" id="download-zip" aria-label="Download ZIP" data-tooltip="Download a presentation ZIP">
-                <span class="sym" aria-hidden="true">download</span><span class="hide-mobile">Download ZIP <kbd>Ctrl/&#8984;+S</kbd></span>
-            </button>
-            <button type="button" id="present-button" class="btn-primary" aria-label="Present" data-tooltip="Present full screen">
-                <span class="sym" aria-hidden="true">play_arrow</span><span class="hide-mobile">Present <kbd>F</kbd></span>
-            </button>
-        </div>
-        <button type="button" id="help-button" aria-label="Help and keyboard shortcuts" aria-haspopup="dialog" aria-controls="help-dialog" data-tooltip="Help and keyboard shortcuts">
-            <span class="sym" aria-hidden="true">info</span><span class="hide-mobile"><kbd>?</kbd></span>
+<a href="#content" class="skip-link">Skip to slide preview</a>
+<!-- one.css needs this checkbox beside the header and aside. -->
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle slide editors"
+       aria-controls="editor">
+<header>
+    <label for="aside-state" class="aside-toggle-btn" data-tooltip="Toggle slide editors"></label>
+    <hgroup>
+        <h1>Slides</h1>
+        <p id="document-subtitle">Markdown, CSS &amp; a portable ZIP.</p>
+    </hgroup>
+    <div class="header-actions" role="group" aria-label="Presentation actions">
+        <button type="button" id="new-presentation" aria-label="New presentation"
+                data-tooltip="New presentation">
+            <span class="sym" aria-hidden="true">add</span><span class="hide-mobile">New</span>
         </button>
-    </header>
-    <main id="content" tabindex="0" aria-label="Slide preview">
-        <p id="preview-error" class="note" role="alert" hidden></p>
-        <section id="viewport" aria-label="Presentation canvas">
-            <iframe id="slide-frame" title="Current slide" sandbox="allow-same-origin allow-modals" referrerpolicy="no-referrer"></iframe>
-        </section>
-        <progress id="slide-progress" value="1" max="1" aria-label="Presentation progress"></progress>
-        <div id="preview-footer">
-            <p id="preview-caption" role="status" aria-live="polite">Loading presentation…</p>
-            <div class="preview-actions" role="group" aria-label="Slide navigation">
-                <button type="button" id="prev" aria-label="Previous slide" data-tooltip="Previous slide"><kbd>←</kbd></button>
-                <output id="position" aria-label="Slide position">1 / 1</output>
-                <button type="button" id="next" aria-label="Next slide" data-tooltip="Next slide"><kbd>→</kbd></button>
-                <button type="button" id="overview-button" data-tooltip="Slide overview">Overview <kbd>O</kbd></button>
-                <button type="button" id="notes-button" data-tooltip="Speaker notes">Notes <kbd>N</kbd></button>
-                <button type="button" id="print-button" data-tooltip="Print all slides / save as PDF">Print <kbd>Ctrl/&#8984;+P</kbd></button>
-            </div>
+        <button type="button" id="open-zip" aria-label="Open ZIP"
+                data-tooltip="Open a presentation ZIP">
+            <span class="sym" aria-hidden="true">folder_open</span><span class="hide-mobile">Open ZIP</span>
+        </button>
+        <button type="button" id="download-zip" aria-label="Download ZIP"
+                data-tooltip="Download a presentation ZIP">
+            <span class="sym" aria-hidden="true">download</span><span class="hide-mobile">Download ZIP <kbd>Ctrl/&#8984;+S</kbd></span>
+        </button>
+        <button type="button" id="present-button" class="btn-primary" aria-label="Present"
+                data-tooltip="Present full screen">
+            <span class="sym" aria-hidden="true">play_arrow</span><span class="hide-mobile">Present <kbd>F</kbd></span>
+        </button>
+    </div>
+    <button type="button" id="help-button" aria-label="Help and keyboard shortcuts"
+            aria-haspopup="dialog" aria-controls="help-dialog"
+            data-tooltip="Help and keyboard shortcuts">
+        <span class="sym" aria-hidden="true">info</span><span
+        class="hide-mobile"><kbd>?</kbd></span>
+    </button>
+</header>
+<main id="content" tabindex="0" aria-label="Slide preview">
+    <p id="preview-error" class="note" role="alert" hidden></p>
+    <section id="viewport" aria-label="Presentation canvas">
+        <iframe id="slide-frame" title="Current slide" sandbox="allow-same-origin allow-modals"
+                referrerpolicy="no-referrer"></iframe>
+    </section>
+    <progress id="slide-progress" value="1" max="1" aria-label="Presentation progress"></progress>
+    <div id="preview-footer">
+        <p id="preview-caption" role="status" aria-live="polite">Loading presentation…</p>
+        <div class="preview-actions" role="group" aria-label="Slide navigation">
+            <button type="button" id="prev" aria-label="Previous slide"
+                    data-tooltip="Previous slide"><kbd>←</kbd></button>
+            <output id="position" aria-label="Slide position">1 / 1</output>
+            <button type="button" id="next" aria-label="Next slide" data-tooltip="Next slide">
+                <kbd>→</kbd></button>
+            <button type="button" id="overview-button" data-tooltip="Slide overview">Overview
+                <kbd>O</kbd></button>
+            <button type="button" id="notes-button" data-tooltip="Speaker notes">Notes <kbd>N</kbd>
+            </button>
+            <button type="button" id="print-button" data-tooltip="Print all slides / save as PDF">
+                Print <kbd>Ctrl/&#8984;+P</kbd></button>
         </div>
-        <noscript><p>Enable JavaScript to edit, preview, open and download presentations.</p></noscript>
-    </main>
-    <aside id="editor" aria-label="Presentation editors">
-        <label id="file-label" for="presentation-name">Presentation name
-            <input id="presentation-name" type="text" value="presentation" maxlength="100" autocomplete="off" spellcheck="false" aria-describedby="asset-summary">
-        </label>
-        <div class="format-actions" role="group" aria-label="Editor actions">
-            <button type="button" id="add-slide">Add slide</button>
-            <button type="button" id="format-bold" class="btn-sym" data-marker="**" data-placeholder="bold text" aria-label="Bold" data-tooltip="Bold">
-                <span class="sym" aria-hidden="true">format_bold</span>
-            </button>
-            <button type="button" id="format-italic" class="btn-sym" data-marker="*" data-placeholder="italic text" aria-label="Italic" data-tooltip="Italic">
-                <span class="sym" aria-hidden="true">format_italic</span>
-            </button>
-            <button type="button" id="format-strikethrough" class="btn-sym" data-marker="~~" data-placeholder="struck text" aria-label="Strikethrough" data-tooltip="Strikethrough">
-                <span class="sym" aria-hidden="true">format_strikethrough</span>
-            </button>
-            <button type="button" id="copy-markdown" class="btn-sym" aria-label="Copy Markdown" data-tooltip="Copy Markdown" disabled>
-                <span class="sym" aria-hidden="true">content_copy</span>
-            </button>
+    </div>
+    <noscript><p>Enable JavaScript to edit, preview, open and download presentations.</p></noscript>
+</main>
+<aside id="editor" aria-label="Presentation editors">
+    <label id="file-label" for="presentation-name">Presentation name
+        <input id="presentation-name" type="text" value="presentation" maxlength="100"
+               autocomplete="off" spellcheck="false" aria-describedby="asset-summary">
+    </label>
+    <div class="format-actions" role="group" aria-label="Editor actions">
+        <button type="button" id="add-slide">Add slide</button>
+        <button type="button" id="format-bold" class="btn-sym" data-marker="**"
+                data-placeholder="bold text" aria-label="Bold" data-tooltip="Bold">
+            <span class="sym" aria-hidden="true">format_bold</span>
+        </button>
+        <button type="button" id="format-italic" class="btn-sym" data-marker="*"
+                data-placeholder="italic text" aria-label="Italic" data-tooltip="Italic">
+            <span class="sym" aria-hidden="true">format_italic</span>
+        </button>
+        <button type="button" id="format-strikethrough" class="btn-sym" data-marker="~~"
+                data-placeholder="struck text" aria-label="Strikethrough"
+                data-tooltip="Strikethrough">
+            <span class="sym" aria-hidden="true">format_strikethrough</span>
+        </button>
+        <button type="button" id="copy-markdown" class="btn-sym" aria-label="Copy Markdown"
+                data-tooltip="Copy Markdown" disabled>
+            <span class="sym" aria-hidden="true">content_copy</span>
+        </button>
+    </div>
+    <label for="markdown-source" class="editor-label">
+        <span class="editor-heading"><span>slides.md</span><small>Markdown · separate slides with ---</small></span>
+        <textarea id="markdown-source" spellcheck="false" aria-describedby="privacy-note"
+                  placeholder="# Your title&#10;&#10;Start writing Markdown…"></textarea>
+    </label>
+    <label for="css-source" class="editor-label">
+        <span
+            class="editor-heading"><span>slides.css</span><small>CSS · applies only to your slides</small></span>
+        <textarea id="css-source" spellcheck="false" aria-describedby="privacy-note"
+                  placeholder="/* Your slide styles */&#10;.slide { background: white; color: black; }"></textarea>
+    </label>
+    <small id="asset-summary">ZIP: slides.md + slides.css</small>
+    <details id="font-diagnostics" hidden>
+        <summary id="font-summary" aria-live="polite">Fonts &amp; assets</summary>
+        <pre id="font-report"></pre>
+        <button type="button" id="copy-font-report">Copy report</button>
+    </details>
+    <small id="save-state" role="status" aria-live="polite">Preparing local draft…</small>
+    <small id="privacy-note">Live preview. Drafts stay in this browser; ZIP files travel with you.
+        Presentation assets are read locally.</small>
+</aside>
+<input type="file" id="zip-input" accept=".zip,application/zip,application/x-zip-compressed" hidden>
+<dialog id="replace-dialog" aria-labelledby="replace-title">
+    <article>
+        <header><h3 id="replace-title">Replace presentation?</h3></header>
+        <p>Replace the current presentation and its local draft? Download ZIP first to keep a
+            separate copy.</p>
+        <footer>
+            <button type="button" id="cancel-replace" autofocus>Cancel</button>
+            <button type="button" id="confirm-replace" class="btn-primary">Replace</button>
+        </footer>
+    </article>
+</dialog>
+<dialog id="overview-dialog" class="modal-info" aria-labelledby="overview-title">
+    <article>
+        <header><h3 id="overview-title">Slide overview</h3></header>
+        <div id="overview-list" class="dialog-content"></div>
+        <footer>
+            <button type="button" data-close="overview-dialog">Close</button>
+        </footer>
+    </article>
+</dialog>
+<dialog id="notes-dialog" class="modal-info" aria-labelledby="notes-title">
+    <article>
+        <header><h3 id="notes-title">Speaker notes</h3></header>
+        <div id="notes-content" class="dialog-content"></div>
+        <footer>
+            <button type="button" data-close="notes-dialog">Close</button>
+        </footer>
+    </article>
+</dialog>
+<dialog id="help-dialog" class="modal-info" aria-labelledby="help-title">
+    <article>
+        <header><h3 id="help-title">A presentation is a ZIP</h3></header>
+        <div class="dialog-content">
+            <p>Keep <code>slides.md</code> and <code>slides.css</code> together at the ZIP root (a
+                single enclosing folder also works). Include any images or other assets they
+                reference. Open a ZIP or drop it onto the preview; Download ZIP preserves both
+                editor files and the other assets.</p>
+            <h4>Writing slides</h4>
+            <p>Separate slides with a line containing <code>---</code>. Separators inside fenced
+                code blocks are ignored. Each slide needs a <code># Heading</code>. Use <code>==highlight==</code>
+                for emphasis and <code>&lt;!-- notes --&gt;</code> before speaker notes.</p>
+            <p>Optional first-line metadata: <code>&lt;!-- layout: cover | section: Intro | footer:
+                Source | lang: en --&gt;</code>. Layouts: <code>generic</code>, <code>cover</code>,
+                <code>caveat</code>, <code>metric</code>, <code>metric-pie</code>,
+                <code>quality</code> and <code>result</code>. Additional metadata: <code>logo</code>,
+                <code>logo-alt</code>, <code>stat-label</code>, <code>unit: number</code>, <code>unit:
+                    decimal</code> or <code>unit: duration</code>.</p>
+            <h4>Styling slides</h4>
+            <p>The slide document has a fixed 1600 × 900 canvas. Target <code>.slide</code>, <code>.slide-title</code>,
+                <code>.slide-top</code>, <code>.slide-footer</code> and the layout classes. Change
+                <code>--paper</code>, <code>--ink</code>, <code>--accent</code>,
+                <code>--display</code> and <code>--body</code> on <code>:root</code>. Your
+                stylesheet is applied after the neutral slide defaults and cannot style this editor.
+            </p>
+            <p>Relative <code>url(...)</code> references and Markdown images resolve to files in the
+                ZIP. Scripts, remote images, external stylesheets and CSS imports are blocked in
+                slides. ZIP fonts are embedded into both slide documents as data URLs; the editable
+                CSS keeps its relative paths. Fonts and images may also use authored data URLs. The
+                Fonts &amp; assets report distinguishes decoding failures, missing paths, local-only
+                sources and unreferenced font files. Extra files are retained when downloading.</p>
+            <h4>Keyboard</h4>
+            <p><kbd>←</kbd> / <kbd>→</kbd> or <kbd>Space</kbd>: navigate. <kbd>Home</kbd> /
+                <kbd>End</kbd>: first / last. <kbd>1</kbd>–<kbd>9</kbd>: jump. <kbd>F</kbd>: full
+                screen. <kbd>O</kbd>: overview. <kbd>N</kbd>: notes. <kbd>E</kbd>: editors.
+                <kbd>K</kbd>: confetti (disabled when reduced motion is preferred). <kbd>?</kbd>:
+                help. <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>S</kbd>: download ZIP. Navigation
+                shortcuts do not run while typing.</p>
+            <p>Print renders all slides, not just the current slide. Invalid Markdown leaves the
+                last valid preview intact; editor text is still saved and exportable. Browsers
+                ignore invalid CSS declarations. Download a ZIP to keep a durable copy of your
+                work.</p>
         </div>
-        <label for="markdown-source" class="editor-label">
-            <span class="editor-heading"><span>slides.md</span><small>Markdown · separate slides with ---</small></span>
-            <textarea id="markdown-source" spellcheck="false" aria-describedby="privacy-note" placeholder="# Your title&#10;&#10;Start writing Markdown…"></textarea>
-        </label>
-        <label for="css-source" class="editor-label">
-            <span class="editor-heading"><span>slides.css</span><small>CSS · applies only to your slides</small></span>
-            <textarea id="css-source" spellcheck="false" aria-describedby="privacy-note" placeholder="/* Your slide styles */&#10;.slide { background: white; color: black; }"></textarea>
-        </label>
-        <small id="asset-summary">ZIP: slides.md + slides.css</small>
-        <details id="font-diagnostics" hidden>
-            <summary id="font-summary" aria-live="polite">Fonts &amp; assets</summary>
-            <pre id="font-report"></pre>
-            <button type="button" id="copy-font-report">Copy report</button>
-        </details>
-        <small id="save-state" role="status" aria-live="polite">Preparing local draft…</small>
-        <small id="privacy-note">Live preview. Drafts stay in this browser; ZIP files travel with you. Presentation assets are read locally.</small>
-    </aside>
-    <input type="file" id="zip-input" accept=".zip,application/zip,application/x-zip-compressed" hidden>
-    <dialog id="replace-dialog" aria-labelledby="replace-title">
-        <article>
-            <header><h3 id="replace-title">Replace presentation?</h3></header>
-            <p>Replace the current presentation and its local draft? Download ZIP first to keep a separate copy.</p>
-            <footer>
-                <button type="button" id="cancel-replace" autofocus>Cancel</button>
-                <button type="button" id="confirm-replace" class="btn-primary">Replace</button>
-            </footer>
-        </article>
-    </dialog>
-    <dialog id="overview-dialog" class="modal-info" aria-labelledby="overview-title">
-        <article>
-            <header><h3 id="overview-title">Slide overview</h3></header>
-            <div id="overview-list" class="dialog-content"></div>
-            <footer><button type="button" data-close="overview-dialog">Close</button></footer>
-        </article>
-    </dialog>
-    <dialog id="notes-dialog" class="modal-info" aria-labelledby="notes-title">
-        <article>
-            <header><h3 id="notes-title">Speaker notes</h3></header>
-            <div id="notes-content" class="dialog-content"></div>
-            <footer><button type="button" data-close="notes-dialog">Close</button></footer>
-        </article>
-    </dialog>
-    <dialog id="help-dialog" class="modal-info" aria-labelledby="help-title">
-        <article>
-            <header><h3 id="help-title">A presentation is a ZIP</h3></header>
-            <div class="dialog-content">
-                <p>Keep <code>slides.md</code> and <code>slides.css</code> together at the ZIP root (a single enclosing folder also works). Include any images or other assets they reference. Open a ZIP or drop it onto the preview; Download ZIP preserves both editor files and the other assets.</p>
-                <h4>Writing slides</h4>
-                <p>Separate slides with a line containing <code>---</code>. Separators inside fenced code blocks are ignored. Each slide needs a <code># Heading</code>. Use <code>==highlight==</code> for emphasis and <code>&lt;!-- notes --&gt;</code> before speaker notes.</p>
-                <p>Optional first-line metadata: <code>&lt;!-- layout: cover | section: Intro | footer: Source | lang: en --&gt;</code>. Layouts: <code>generic</code>, <code>cover</code>, <code>caveat</code>, <code>metric</code>, <code>metric-pie</code>, <code>quality</code> and <code>result</code>. Additional metadata: <code>logo</code>, <code>logo-alt</code>, <code>stat-label</code>, <code>unit: number</code>, <code>unit: decimal</code> or <code>unit: duration</code>.</p>
-                <h4>Styling slides</h4>
-                <p>The slide document has a fixed 1600 × 900 canvas. Target <code>.slide</code>, <code>.slide-title</code>, <code>.slide-top</code>, <code>.slide-footer</code> and the layout classes. Change <code>--paper</code>, <code>--ink</code>, <code>--accent</code>, <code>--display</code> and <code>--body</code> on <code>:root</code>. Your stylesheet is applied after the neutral slide defaults and cannot style this editor.</p>
-                <p>Relative <code>url(...)</code> references and Markdown images resolve to files in the ZIP. Scripts, remote images, external stylesheets and CSS imports are blocked in slides. ZIP fonts are embedded into both slide documents as data URLs; the editable CSS keeps its relative paths. Fonts and images may also use authored data URLs. The Fonts &amp; assets report distinguishes decoding failures, missing paths, local-only sources and unreferenced font files. Extra files are retained when downloading.</p>
-                <h4>Keyboard</h4>
-                <p><kbd>←</kbd> / <kbd>→</kbd> or <kbd>Space</kbd>: navigate. <kbd>Home</kbd> / <kbd>End</kbd>: first / last. <kbd>1</kbd>–<kbd>9</kbd>: jump. <kbd>F</kbd>: full screen. <kbd>O</kbd>: overview. <kbd>N</kbd>: notes. <kbd>E</kbd>: editors. <kbd>K</kbd>: confetti (disabled when reduced motion is preferred). <kbd>?</kbd>: help. <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>S</kbd>: download ZIP. Navigation shortcuts do not run while typing.</p>
-                <p>Print renders all slides, not just the current slide. Invalid Markdown leaves the last valid preview intact; editor text is still saved and exportable. Browsers ignore invalid CSS declarations. Download a ZIP to keep a durable copy of your work.</p>
-            </div>
-            <footer><button type="button" data-close="help-dialog">Close</button></footer>
-        </article>
-    </dialog>
-    <!-- These defaults are inert in the tool. They are cloned into a sandboxed
-         slide document; presentation CSS follows them in the same document. -->
-    <template id="slide-document">
-        <meta charset="utf-8">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src blob: data:; font-src blob: data:; media-src blob: data:; base-uri 'none'; form-action 'none'">
-        <style id="slide-defaults">
-            :root {
-                --paper: #ffffff; --ink: #20232a; --muted: #59616e; --rule: #dce0e5;
-                --surface: #f4f5f7; --context: #cbd1d9; --accent: #455b78;
-                --accent-text: var(--accent); --display: system-ui, sans-serif; --body: system-ui, sans-serif;
-                color-scheme: light;
+        <footer>
+            <button type="button" data-close="help-dialog">Close</button>
+        </footer>
+    </article>
+</dialog>
+<!-- These defaults are inert in the tool. They are cloned into a sandboxed
+     slide document; presentation CSS follows them in the same document. -->
+<template id="slide-document">
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src blob: data:; font-src blob: data:; media-src blob: data:; base-uri 'none'; form-action 'none'">
+    <style id="slide-defaults">
+        :root {
+            --paper: #ffffff;
+            --ink: #20232a;
+            --muted: #59616e;
+            --rule: #dce0e5;
+            --surface: #f4f5f7;
+            --context: #cbd1d9;
+            --accent: #455b78;
+            --accent-text: var(--accent);
+            --display: system-ui, sans-serif;
+            --body: system-ui, sans-serif;
+            color-scheme: light;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 1600px;
+            height: 900px;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font: 300 28px/1.45 var(--body);
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        #deck {
+            width: 1600px;
+            height: 900px;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            width: 1600px;
+            height: 900px;
+            overflow: hidden;
+            padding: 140px 88px 100px;
+            color: var(--ink);
+            background: var(--paper);
+        }
+
+        h1, h2, h3, p, ul, figure {
+            margin: 0;
+        }
+
+        h1, h2 {
+            font-family: var(--display);
+            font-weight: 800;
+        }
+
+        h3 {
+            font-size: 30px;
+            font-weight: 700;
+        }
+
+        p, li {
+            font-size: 28px;
+            line-height: 1.45;
+        }
+
+        strong {
+            font-weight: 700;
+        }
+
+        a {
+            color: var(--accent-text);
+        }
+
+        code, pre {
+            font-family: ui-monospace, Consolas, monospace;
+        }
+
+        code {
+            font-size: 0.88em;
+        }
+
+        pre {
+            font-size: 24px;
+            padding: 24px;
+            background: var(--surface);
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
+        mark {
+            padding: 0.015em 0.13em 0.045em;
+            color: var(--paper);
+            background: var(--accent);
+            border-radius: 0.12em;
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
+        }
+
+        .slide-title {
+            font-size: 73px;
+            line-height: 1.16;
+        }
+
+        .slide-title code {
+            font: inherit;
+            padding: 0;
+            background: none;
+        }
+
+        .slide-top {
+            position: absolute;
+            top: 40px;
+            left: 88px;
+            right: 88px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .slide-kicker {
+            font-size: 19px;
+            line-height: 1.4;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .brand {
+            display: block;
+            width: 166px;
+            height: 54px;
+            object-fit: contain;
+        }
+
+        .slide-footer {
+            position: absolute;
+            left: 88px;
+            right: 88px;
+            bottom: 33px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            padding-top: 15px;
+            border-top: 1px solid var(--rule);
+            font-size: 16px;
+            line-height: 1.4;
+            color: var(--muted);
+        }
+
+        .slide-counter {
+            font-size: 18px;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .slide-subtitle {
+            margin-top: 24px;
+            color: var(--muted);
+            font-size: 27px;
+        }
+
+        .slide-note {
+            position: absolute;
+            left: 88px;
+            right: 88px;
+            bottom: 93px;
+            color: var(--muted);
+            font-size: 19px;
+            line-height: 1.45;
+        }
+
+        .note {
+            padding: 0;
+            margin: 0;
+            border: 0;
+        }
+
+        .generic-content {
+            margin-top: 40px;
+        }
+
+        .generic-content > * + * {
+            margin-top: 24px;
+        }
+
+        .generic-content h2 {
+            font-size: 44px;
+        }
+
+        .generic-content img {
+            max-height: 420px;
+        }
+
+        .generic-content ul, .generic-content ol {
+            padding-left: 38px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 26px;
+            line-height: 1.35;
+        }
+
+        th, td {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--rule);
+            vertical-align: top;
+            text-align: left;
+        }
+
+        th {
+            font-weight: 700;
+        }
+
+        .align-left {
+            text-align: left;
+        }
+
+        .align-right {
+            text-align: right;
+        }
+
+        .align-center {
+            text-align: center;
+        }
+
+        .cover .slide-title {
+            font-size: 90px;
+        }
+
+        .cover-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            margin-top: 72px;
+        }
+
+        .cover-section {
+            border-top: 3px solid var(--accent);
+            padding-top: 24px;
+        }
+
+        .cover-section h3 {
+            margin-bottom: 18px;
+        }
+
+        .caveat-panel {
+            margin-top: 86px;
+            padding-top: 36px;
+            border-top: 2px solid var(--rule);
+        }
+
+        .caveat-panel h2 {
+            font: 700 34px/1.3 var(--body);
+        }
+
+        .caveat-panel p {
+            margin-top: 23px;
+        }
+
+        .caveat .slide-note {
+            position: static;
+            font-size: 28px;
+            margin: 56px 0 0;
+        }
+
+        .metric-layout {
+            display: grid;
+            grid-template-columns: 440px 1fr;
+            gap: 41px;
+            align-items: center;
+            margin-top: 68px;
+        }
+
+        .metric-stat h2 {
+            font-size: 145px;
+            line-height: 1.15;
+            white-space: nowrap;
+        }
+
+        .metric-stat p {
+            max-width: 370px;
+            margin-top: 16px;
+            color: var(--muted);
+        }
+
+        .comparison-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 36px;
+            width: 100%;
+        }
+
+        .chart-label-line {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 28px;
+            margin-bottom: 14px;
+        }
+
+        .chart-label {
+            font-size: 26px;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .chart-value {
+            font: 800 43px/1.15 var(--display);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .chart-bar-container, .chart-track {
+            display: block;
+            width: 100%;
+            height: 61px;
+        }
+
+        .chart-bar {
+            fill: var(--context);
+        }
+
+        .chart-row.focal .chart-bar {
+            fill: var(--accent);
+        }
+
+        .chart-detail {
+            margin-top: 12px;
+            font-size: 20px;
+            line-height: 1.3;
+            color: var(--muted);
+        }
+
+        .pie-chart-container {
+            display: flex;
+            align-items: center;
+            gap: 52px;
+        }
+
+        .pie-svg {
+            width: 340px;
+            height: 340px;
+            flex-shrink: 0;
+        }
+
+        .pie-slice {
+            stroke: var(--paper);
+            stroke-width: 2.5;
+            stroke-linejoin: round;
+        }
+
+        .pie-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            flex-grow: 1;
+        }
+
+        .pie-legend-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            border-bottom: 1px solid var(--rule);
+            padding-bottom: 8px;
+        }
+
+        .pie-legend-label-wrap, .pie-legend-value-wrap {
+            display: flex;
+            align-items: baseline;
+            gap: 14px;
+        }
+
+        .pie-legend-dot {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            border-radius: 3px;
+        }
+
+        .pie-legend-label {
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .pie-legend-value {
+            font: 800 40px/1.15 var(--display);
+            white-space: nowrap;
+        }
+
+        .pie-legend-percent {
+            font-size: 22px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .pie-legend-detail {
+            font-size: 20px;
+            color: var(--muted);
+            padding-left: 28px;
+        }
+
+        .series-1 {
+            fill: #455b78;
+            background-color: #455b78;
+        }
+
+        .series-2 {
+            fill: #65788f;
+            background-color: #65788f;
+        }
+
+        .series-3 {
+            fill: #8594a7;
+            background-color: #8594a7;
+        }
+
+        .series-4 {
+            fill: #a3aebd;
+            background-color: #a3aebd;
+        }
+
+        .series-5 {
+            fill: #bbc3ce;
+            background-color: #bbc3ce;
+        }
+
+        .series-6 {
+            fill: #d4d9e0;
+            background-color: #d4d9e0;
+        }
+
+        .quality .slide-title {
+            font-size: 68px;
+        }
+
+        .quality-table {
+            margin-top: 37px;
+        }
+
+        .quality table {
+            table-layout: fixed;
+        }
+
+        .quality th:first-child, .quality td:first-child {
+            width: 235px;
+            padding-left: 0;
+            font-size: 23px;
+            font-weight: 700;
+        }
+
+        .result .slide-title {
+            font-size: 72px;
+        }
+
+        .result-summary {
+            display: grid;
+            grid-template-columns: 440px 1fr;
+            gap: 55px;
+            align-items: center;
+            margin-top: 24px;
+        }
+
+        .result-stat h2 {
+            font-size: 145px;
+            line-height: 1.1;
+        }
+
+        .stat-label {
+            font-size: 23px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .size-flow {
+            display: grid;
+            grid-template-columns: 1fr 54px 1fr;
+            gap: 22px;
+            align-items: center;
+        }
+
+        .size-step-label {
+            font-size: 23px;
+            color: var(--muted);
+            margin-bottom: 14px;
+        }
+
+        .size-step-value {
+            font: 800 59px/1.15 var(--display);
+            white-space: nowrap;
+        }
+
+        .size-step-value small {
+            display: block;
+            font: 300 24px/1.4 var(--body);
+            color: var(--muted);
+            margin-top: 7px;
+        }
+
+        .size-step:last-child .size-step-value {
+            color: var(--accent-text);
+        }
+
+        .size-arrow {
+            font-size: 43px;
+            color: var(--muted);
+        }
+
+        .result-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 65px;
+            margin-top: 30px;
+        }
+
+        .result-section {
+            padding-top: 19px;
+            border-top: 2px solid var(--rule);
+        }
+
+        .result-section h3 {
+            margin-bottom: 11px;
+        }
+
+        .result-section p {
+            font-size: 26px;
+            line-height: 1.4;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
+        }
+    </style>
+    <style id="slide-custom"></style>
+    <!-- Display/printing invariants are separate from presentation design. -->
+    <style id="slide-invariants">
+        [hidden] {
+            display: none !important;
+        }
+
+        html[data-print="true"], html[data-print="true"] body, html[data-print="true"] #deck {
+            height: auto;
+            overflow: visible;
+        }
+
+        html[data-print="true"] .slide {
+            display: block !important;
+            position: relative;
+            inset: auto;
+            width: 1600px;
+            height: 900px;
+            break-after: page;
+            page-break-after: always;
+        }
+
+        html[data-print="true"] .slide:last-child {
+            break-after: auto;
+            page-break-after: auto;
+        }
+
+        @page {
+            size: 1600px 900px;
+            margin: 0;
+        }
+
+        @media print {
+            html, body, #deck {
+                height: auto !important;
+                overflow: visible !important;
             }
-            * { box-sizing: border-box; }
-            html, body { width: 1600px; height: 900px; margin: 0; overflow: hidden; }
-            body { color: var(--ink); background: var(--paper); font: 300 28px/1.45 var(--body); }
-            [hidden] { display: none !important; }
-            #deck { width: 1600px; height: 900px; position: relative; }
-            .slide { position: absolute; inset: 0; width: 1600px; height: 900px; overflow: hidden; padding: 140px 88px 100px; color: var(--ink); background: var(--paper); }
-            h1, h2, h3, p, ul, figure { margin: 0; }
-            h1, h2 { font-family: var(--display); font-weight: 800; }
-            h3 { font-size: 30px; font-weight: 700; }
-            p, li { font-size: 28px; line-height: 1.45; }
-            strong { font-weight: 700; }
-            a { color: var(--accent-text); }
-            code, pre { font-family: ui-monospace, Consolas, monospace; }
-            code { font-size: 0.88em; }
-            pre { font-size: 24px; padding: 24px; background: var(--surface); white-space: pre-wrap; overflow-wrap: anywhere; }
-            img { max-width: 100%; height: auto; object-fit: contain; }
-            mark { padding: 0.015em 0.13em 0.045em; color: var(--paper); background: var(--accent); border-radius: 0.12em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
-            .slide-title { font-size: 73px; line-height: 1.16; }
-            .slide-title code { font: inherit; padding: 0; background: none; }
-            .slide-top { position: absolute; top: 40px; left: 88px; right: 88px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
-            .slide-kicker { font-size: 19px; line-height: 1.4; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
-            .brand { display: block; width: 166px; height: 54px; object-fit: contain; }
-            .slide-footer { position: absolute; left: 88px; right: 88px; bottom: 33px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-top: 15px; border-top: 1px solid var(--rule); font-size: 16px; line-height: 1.4; color: var(--muted); }
-            .slide-counter { font-size: 18px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-            .slide-subtitle { margin-top: 24px; color: var(--muted); font-size: 27px; }
-            .slide-note { position: absolute; left: 88px; right: 88px; bottom: 93px; color: var(--muted); font-size: 19px; line-height: 1.45; }
-            .note { padding: 0; margin: 0; border: 0; }
-            .generic-content { margin-top: 40px; }
-            .generic-content > * + * { margin-top: 24px; }
-            .generic-content h2 { font-size: 44px; }
-            .generic-content img { max-height: 420px; }
-            .generic-content ul, .generic-content ol { padding-left: 38px; }
-            table { width: 100%; border-collapse: collapse; font-size: 26px; line-height: 1.35; }
-            th, td { padding: 18px 24px; border-bottom: 1px solid var(--rule); vertical-align: top; text-align: left; }
-            th { font-weight: 700; }
-            .align-left { text-align: left; } .align-right { text-align: right; } .align-center { text-align: center; }
-            .cover .slide-title { font-size: 90px; }
-            .cover-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; margin-top: 72px; }
-            .cover-section { border-top: 3px solid var(--accent); padding-top: 24px; }
-            .cover-section h3 { margin-bottom: 18px; }
-            .caveat-panel { margin-top: 86px; padding-top: 36px; border-top: 2px solid var(--rule); }
-            .caveat-panel h2 { font: 700 34px/1.3 var(--body); }
-            .caveat-panel p { margin-top: 23px; }
-            .caveat .slide-note { position: static; font-size: 28px; margin: 56px 0 0; }
-            .metric-layout { display: grid; grid-template-columns: 440px 1fr; gap: 41px; align-items: center; margin-top: 68px; }
-            .metric-stat h2 { font-size: 145px; line-height: 1.15; white-space: nowrap; }
-            .metric-stat p { max-width: 370px; margin-top: 16px; color: var(--muted); }
-            .comparison-chart { display: flex; flex-direction: column; gap: 36px; width: 100%; }
-            .chart-label-line { display: flex; align-items: baseline; justify-content: space-between; gap: 28px; margin-bottom: 14px; }
-            .chart-label { font-size: 26px; font-weight: 700; line-height: 1.35; }
-            .chart-value { font: 800 43px/1.15 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
-            .chart-bar-container, .chart-track { display: block; width: 100%; height: 61px; }
-            .chart-bar { fill: var(--context); }
-            .chart-row.focal .chart-bar { fill: var(--accent); }
-            .chart-detail { margin-top: 12px; font-size: 20px; line-height: 1.3; color: var(--muted); }
-            .pie-chart-container { display: flex; align-items: center; gap: 52px; }
-            .pie-svg { width: 340px; height: 340px; flex-shrink: 0; }
-            .pie-slice { stroke: var(--paper); stroke-width: 2.5; stroke-linejoin: round; }
-            .pie-legend { display: flex; flex-direction: column; gap: 24px; flex-grow: 1; }
-            .pie-legend-header { display: flex; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--rule); padding-bottom: 8px; }
-            .pie-legend-label-wrap, .pie-legend-value-wrap { display: flex; align-items: baseline; gap: 14px; }
-            .pie-legend-dot { display: inline-block; width: 14px; height: 14px; flex-shrink: 0; border-radius: 3px; }
-            .pie-legend-label { font-size: 26px; font-weight: 700; }
-            .pie-legend-value { font: 800 40px/1.15 var(--display); white-space: nowrap; }
-            .pie-legend-percent { font-size: 22px; color: var(--muted); white-space: nowrap; }
-            .pie-legend-detail { font-size: 20px; color: var(--muted); padding-left: 28px; }
-            .series-1 { fill: #455b78; background-color: #455b78; }
-            .series-2 { fill: #65788f; background-color: #65788f; }
-            .series-3 { fill: #8594a7; background-color: #8594a7; }
-            .series-4 { fill: #a3aebd; background-color: #a3aebd; }
-            .series-5 { fill: #bbc3ce; background-color: #bbc3ce; }
-            .series-6 { fill: #d4d9e0; background-color: #d4d9e0; }
-            .quality .slide-title { font-size: 68px; }
-            .quality-table { margin-top: 37px; }
-            .quality table { table-layout: fixed; }
-            .quality th:first-child, .quality td:first-child { width: 235px; padding-left: 0; font-size: 23px; font-weight: 700; }
-            .result .slide-title { font-size: 72px; }
-            .result-summary { display: grid; grid-template-columns: 440px 1fr; gap: 55px; align-items: center; margin-top: 24px; }
-            .result-stat h2 { font-size: 145px; line-height: 1.1; }
-            .stat-label { font-size: 23px; color: var(--muted); margin-top: 4px; }
-            .size-flow { display: grid; grid-template-columns: 1fr 54px 1fr; gap: 22px; align-items: center; }
-            .size-step-label { font-size: 23px; color: var(--muted); margin-bottom: 14px; }
-            .size-step-value { font: 800 59px/1.15 var(--display); white-space: nowrap; }
-            .size-step-value small { display: block; font: 300 24px/1.4 var(--body); color: var(--muted); margin-top: 7px; }
-            .size-step:last-child .size-step-value { color: var(--accent-text); }
-            .size-arrow { font-size: 43px; color: var(--muted); }
-            .result-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 65px; margin-top: 30px; }
-            .result-section { padding-top: 19px; border-top: 2px solid var(--rule); }
-            .result-section h3 { margin-bottom: 11px; }
-            .result-section p { font-size: 26px; line-height: 1.4; }
-            .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-        </style>
-        <style id="slide-custom"></style>
-        <!-- Display/printing invariants are separate from presentation design. -->
-        <style id="slide-invariants">
-            [hidden] { display: none !important; }
-            html[data-print="true"], html[data-print="true"] body, html[data-print="true"] #deck { height: auto; overflow: visible; }
-            html[data-print="true"] .slide { display: block !important; position: relative; inset: auto; width: 1600px; height: 900px; break-after: page; page-break-after: always; }
-            html[data-print="true"] .slide:last-child { break-after: auto; page-break-after: auto; }
-            @page { size: 1600px 900px; margin: 0; }
-            @media print {
-                html, body, #deck { height: auto !important; overflow: visible !important; }
-                .slide, .slide[hidden] { display: block !important; position: relative; inset: auto; width: 1600px; height: 900px; break-after: page; page-break-after: always; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-                .slide:last-child { break-after: auto; page-break-after: auto; }
+
+            .slide, .slide[hidden] {
+                display: block !important;
+                position: relative;
+                inset: auto;
+                width: 1600px;
+                height: 900px;
+                break-after: page;
+                page-break-after: always;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
             }
-        </style>
-    </template>
-    <iframe id="print-frame" title="All slides for printing" sandbox="allow-same-origin allow-modals" referrerpolicy="no-referrer" aria-hidden="true" tabindex="-1"></iframe>
-    <script src="../one.js"></script>
-    <script src="md-renderer.js"></script>
-    <script src="zip-reader.js"></script>
-    <script src="asset-loader.js"></script>
-    <script src="app.js"></script>
+
+            .slide:last-child {
+                break-after: auto;
+                page-break-after: auto;
+            }
+        }
+    </style>
+</template>
+<iframe id="print-frame" title="All slides for printing" sandbox="allow-same-origin allow-modals"
+        referrerpolicy="no-referrer" aria-hidden="true" tabindex="-1"></iframe>
+<script src="../one.js"></script>
+<script src="md-renderer.js"></script>
+<script src="zip-reader.js"></script>
+<script src="asset-loader.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

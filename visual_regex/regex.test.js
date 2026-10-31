@@ -55,7 +55,11 @@ for (const joined of [false, true]) {
 }
 
 test("repetitions apply to an entire multi-character Text block without creating a capture", () => {
-    const block = { type: TYPES.LITERAL, value: "ab", quantifier: { min: 2, max: 3, greedy: false } };
+    const block = {
+        type: TYPES.LITERAL,
+        value: "ab",
+        quantifier: { min: 2, max: 3, greedy: false },
+    };
     const pattern = `^${Generator.generate(block)}(c)$`;
     expect(observableMatch(pattern, "", "ababc")?.values).toEqual(["ababc", "c"]);
     expect(observableMatch(pattern, "", "abababc")?.values).toEqual(["abababc", "c"]);
@@ -64,7 +68,11 @@ test("repetitions apply to an entire multi-character Text block without creating
 });
 
 test("whole-block repetitions also escape punctuation in Text", () => {
-    const block = { type: TYPES.LITERAL, value: "a.", quantifier: { min: 2, max: 2, greedy: true } };
+    const block = {
+        type: TYPES.LITERAL,
+        value: "a.",
+        quantifier: { min: 2, max: 2, greedy: true },
+    };
     const pattern = `^${Generator.generate(block)}$`;
     expect(observableMatch(pattern, "", "a.a.")?.values).toEqual(["a.a."]);
     expect(observableMatch(pattern, "", "a..")).toBeNull();

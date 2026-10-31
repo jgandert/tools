@@ -24,8 +24,20 @@ const kernels = Array.from({ length: PHASES - 1 }, (_, phase) => {
 class MasterLimiterProcessor extends AudioWorkletProcessor {
     static get parameterDescriptors() {
         return [
-            { name: "ceiling", defaultValue: -1, minValue: -24, maxValue: -1, automationRate: "k-rate" },
-            { name: "release", defaultValue: 0.1, minValue: 0.01, maxValue: 2, automationRate: "k-rate" },
+            {
+                name: "ceiling",
+                defaultValue: -1,
+                minValue: -24,
+                maxValue: -1,
+                automationRate: "k-rate",
+            },
+            {
+                name: "release",
+                defaultValue: 0.1,
+                minValue: 0.01,
+                maxValue: 2,
+                automationRate: "k-rate",
+            },
         ];
     }
 

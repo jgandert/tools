@@ -95,7 +95,8 @@
         <article id="setup-results-container" hidden>
             <h3>Example Starting-Placement Order</h3>
             <p>This sequence shows two rounds, forward and then reverse. It assumes the maximum
-                player count for the selected board size; for fewer players, omit the unused player.</p>
+                player count for the selected board size; for fewer players, omit the unused
+                player.</p>
             <output id="draft-order-output"></output>
 
             <h3>Generated Island Layout</h3>
@@ -153,7 +154,9 @@
                 <summary>Deck Composition and Draws</summary>
                 <div class="table-container">
                     <table>
-                        <caption>Full-set counts and draw history; remaining counts ignore any hidden burn</caption>
+                        <caption>Full-set counts and draw history; remaining counts ignore any
+                            hidden burn
+                        </caption>
                         <thead>
                         <tr>
                             <th scope="col">Roll</th>
@@ -192,8 +195,10 @@
             </dd>
 
             <dt>The Friendly Bandit (Edge Case Protection)</dt>
-            <dd>When a 7 activates the robber, move it to a different hex that is not adjacent to a settlement
-                owned by a player still at the starting total of 2 victory points. Since Victory Point
+            <dd>When a 7 activates the robber, move it to a different hex that is not adjacent to a
+                settlement
+                owned by a player still at the starting total of 2 victory points. Since Victory
+                Point
                 cards are hidden, agree before play whether they count toward that threshold.
             </dd>
 
@@ -244,7 +249,8 @@
                 <label for="bandit-grace">House-Rule Bandit Grace Period</label>
                 <input type="number" id="bandit-grace" name="bandit-grace" min="0" max="10"
                        value="3">
-                <small>Moves 7s out of the first N draws; those 7s remain later in the cycle.</small>
+                <small>Moves 7s out of the first N draws; those 7s remain later in the
+                    cycle.</small>
             </p>
 
             <p>
@@ -262,7 +268,9 @@
 </aside>
 
 <footer>
-    <p>This is an independent, unofficial companion tool. It is not affiliated with or endorsed by the game's publisher. All trademarks and copyrights in the original game remain the property of their respective owners.</p>
+    <p>This is an independent, unofficial companion tool. It is not affiliated with or endorsed by
+        the game's publisher. All trademarks and copyrights in the original game remain the property
+        of their respective owners.</p>
 </footer>
 
 <script>

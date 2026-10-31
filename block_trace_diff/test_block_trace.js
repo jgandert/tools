@@ -210,7 +210,7 @@ function runBenchmarks() {
             for (let rep = 0; rep < 3; rep++) {
                 const engine = new BlockTraceDiff();
                 const original = engine._seedAndExpand;
-                engine._seedAndExpand = function (...args) {
+                engine._seedAndExpand = function(...args) {
                     const start = performance.now();
                     const result = original.apply(this, args);
                     expansionTimes.push(performance.now() - start);
@@ -316,7 +316,10 @@ console.log("\n=== BlockTraceDiff: Initialization and Options ===");
 console.log("\n=== BlockTraceDiff: Line Normalization ===");
 {
     // Legacy whitespace collapsing remains available explicitly, not as a hidden default.
-    const engine = new BlockTraceDiff({ ignoreTrailingWhitespace: true, ignoreInternalWhitespace: true });
+    const engine = new BlockTraceDiff({
+        ignoreTrailingWhitespace: true,
+        ignoreInternalWhitespace: true,
+    });
     const source = [
         "  function foo() {  ",
         "let x = 1; \t ",
@@ -919,7 +922,7 @@ testCase("maxOccurrences: 0 intentionally disables anchoring", () => {
 
 testCase("internal and trailing whitespace changes are visible by default", () => {
     for (const [source, target] of [
-        ['const s = "a  b";', 'const s = "a b";'],
+        ["const s = \"a  b\";", "const s = \"a b\";"],
         ["const r = /a  b/;", "const r = /a b/;"],
         ["const s = `a\tb`;", "const s = `a b`;"],
         ["value  ", "value"],
@@ -956,14 +959,21 @@ testCase("leading, internal, and trailing normalization options are independent"
             }
         }
     }
-    const internalOnly = new BlockTraceDiff({ ignoreLeadingWhitespace: false, ignoreInternalWhitespace: true });
+    const internalOnly = new BlockTraceDiff({
+        ignoreLeadingWhitespace: false,
+        ignoreInternalWhitespace: true,
+    });
     strictAssert.equal(internalOnly._normalizeAndIntern([" \t "])[0].normalizedText, " \t ");
 });
 
 testCase("explicitly ignored differences preserve both raw texts", () => {
-    const engine = new BlockTraceDiff({ ignoreInternalWhitespace: true, ignoreTrailingWhitespace: true, skipWhitespaceOps: false });
-    const source = ['  const s = "a  b";  '];
-    const target = ['const s = "a b";'];
+    const engine = new BlockTraceDiff({
+        ignoreInternalWhitespace: true,
+        ignoreTrailingWhitespace: true,
+        skipWhitespaceOps: false,
+    });
+    const source = ["  const s = \"a  b\";  "];
+    const target = ["const s = \"a b\";"];
     const ops = engine.diff(source, target);
     strictAssert.equal(ops[0].type, "EQUAL");
     strictAssert.equal(ops[0].isExact, false);
@@ -975,14 +985,20 @@ testCase("EQUAL ownership is consistent for ordinary, exact, stitched, and gap m
     const target = ["A", "B", "new", "C", "D"];
     const equalPayloads = [];
     for (const maxStitchGap of [0, 2]) {
-        const ops = new BlockTraceDiff({ maxStitchGap, skipWhitespaceOps: false }).diff(source, target);
+        const ops = new BlockTraceDiff({
+            maxStitchGap,
+            skipWhitespaceOps: false,
+        }).diff(source, target);
         equalPayloads.push(ops.filter(op => op.type === "EQUAL"));
         validatePublicDiff(source, target, ops);
     }
     strictAssert.deepEqual(equalPayloads[0], equalPayloads[1]);
     const gapSource = ["  A", "  B", "old1", "  gap", "old2", "  C", "  D"];
     const gapTarget = ["A", "B", "new1", "gap", "new2", "C", "D"];
-    const gapOps = new BlockTraceDiff({ maxStitchGap: 3, skipWhitespaceOps: false }).diff(gapSource, gapTarget);
+    const gapOps = new BlockTraceDiff({
+        maxStitchGap: 3,
+        skipWhitespaceOps: false,
+    }).diff(gapSource, gapTarget);
     strictAssert.ok(gapOps.some(op => op.type === "EQUAL" && op.sourceText === "  gap" && op.targetText === "gap"));
     validatePublicDiff(gapSource, gapTarget, gapOps);
     validatePublicDiff(["  only"], ["only"], new BlockTraceDiff().diff(["  only"], ["only"]));
@@ -1004,7 +1020,10 @@ testCase("blank edits do not consume visible replacement partners", () => {
         [["old"], ["\t", "new"]],
         [["", "old", " "], ["\t", "new", "\t\t"]],
     ]) {
-        const engine = new BlockTraceDiff({ ignoreLeadingWhitespace: false, skipWhitespaceOps: true });
+        const engine = new BlockTraceDiff({
+            ignoreLeadingWhitespace: false,
+            skipWhitespaceOps: true,
+        });
         const ops = engine.diff(source, target);
         const replacements = ops.filter(op => op.type === "REPLACE");
         strictAssert.equal(replacements.length, 1);
@@ -1150,8 +1169,22 @@ testCase("weighted stationary selection matches an exhaustive subset oracle", ()
 
 testCase("unmatched stitched gaps do not inflate stationary weights", () => {
     const moves = [
-        { id: "large-gap", srcStart: 0, srcEnd: 999, targetStart: 20, targetEnd: 1019, exactBlocks: [{ length: 2 }, { length: 2 }] },
-        { id: "retained", srcStart: 1000, srcEnd: 1009, targetStart: 0, targetEnd: 9, exactBlocks: [{ length: 10 }] },
+        {
+            id: "large-gap",
+            srcStart: 0,
+            srcEnd: 999,
+            targetStart: 20,
+            targetEnd: 1019,
+            exactBlocks: [{ length: 2 }, { length: 2 }],
+        },
+        {
+            id: "retained",
+            srcStart: 1000,
+            srcEnd: 1009,
+            targetStart: 0,
+            targetEnd: 9,
+            exactBlocks: [{ length: 10 }],
+        },
     ];
     strictAssert.deepEqual(new BlockTraceDiff()._selectStationaryMoves(moves), new Set(["retained"]));
 });
@@ -1185,7 +1218,7 @@ testCase("Public API: coverage, ordering, text, and move pairs in 10,000 synthet
     const rand = createRandom(0x7187369);
     const engine = new BlockTraceDiff({ skipWhitespaceOps: false });
     const originalStitching = engine._gapStitching;
-    engine._gapStitching = function (...args) {
+    engine._gapStitching = function(...args) {
         const moves = originalStitching.apply(this, args);
         validateMoveRanges(moves);
         return moves;
@@ -1201,7 +1234,7 @@ testCase("Public API: coverage, ordering, text, and move pairs in 10,000 synthet
 
 testCase("Public API: 5,000 cases with whitespace, suppression, and varied matching options", () => {
     const rand = createRandom(0x9716241);
-    const lines = ["", " ", "\t", "A", "  A", "A ", "B", "B\t", "C", "a  b", "a b", 's = "a  b";', 's = "a b";'];
+    const lines = ["", " ", "\t", "A", "  A", "A ", "B", "B\t", "C", "a  b", "a b", "s = \"a  b\";", "s = \"a b\";"];
     for (let i = 0; i < 5000; i++) {
         const engine = new BlockTraceDiff({
             kGramSize: 1 + rand(4), maxStitchGap: rand(5), maxOccurrences: rand(8),
@@ -1253,7 +1286,7 @@ testCase("a large stitched modified block expands without argument spreading", (
     const engine = new BlockTraceDiff({ maxStitchGap: 150000, skipWhitespaceOps: false });
     let expanded = false;
     const original = engine._calcInternalMod;
-    engine._calcInternalMod = function (...args) {
+    engine._calcInternalMod = function(...args) {
         expanded = true;
         return original.apply(this, args);
     };
@@ -1267,8 +1300,16 @@ testCase("a large stitched modified block expands without argument spreading", (
 testCase("150,000 replacements can be assembled without overflowing function arguments", () => {
     // Isolate output assembly; a completely unrelated 150k-by-150k Myers problem
     // would test quadratic edit distance rather than the argument-spread regression.
-    const source = Array.from({ length: 150000 }, (_, i) => ({ type: "DELETE", srcLine: i + 1, text: "old" }));
-    const target = Array.from({ length: 150000 }, (_, i) => ({ type: "INSERT", targetLine: i + 1, text: "new" }));
+    const source = Array.from({ length: 150000 }, (_, i) => ({
+        type: "DELETE",
+        srcLine: i + 1,
+        text: "old",
+    }));
+    const target = Array.from({ length: 150000 }, (_, i) => ({
+        type: "INSERT",
+        targetLine: i + 1,
+        text: "new",
+    }));
     const ops = new BlockTraceDiff()._identifyReplacements(source.concat(target));
     strictAssert.equal(ops.length, 150000);
     strictAssert.ok(ops.every((op, i) => op.type === "REPLACE" && op.srcLine === i + 1 && op.targetLine === i + 1));
@@ -1289,7 +1330,12 @@ testCase("seed expansion scans each equal diagonal run once, including nearly id
             for (const arr of [src, tgt]) {
                 for (const line of arr) {
                     const value = line.intVal;
-                    Object.defineProperty(line, "intVal", { get() { reads++; return value; } });
+                    Object.defineProperty(line, "intVal", {
+                        get() {
+                            reads++;
+                            return value;
+                        },
+                    });
                 }
             }
             const candidates = engine._seedAndExpand(anchors, src, tgt);

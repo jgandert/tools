@@ -214,7 +214,8 @@ export const TrackVoiceManager = {
             const loading = parent._sampleLoading.then(buffer => {
                 if (this._sampleLoading !== loading) return;
                 this._sampleBuffer = buffer;
-            }).catch(() => {}).finally(() => {
+            }).catch(() => {
+            }).finally(() => {
                 if (this._sampleLoading !== loading) return;
                 this._sourcePending = false;
                 notifySourceReadinessChange();
@@ -580,7 +581,11 @@ export const TrackVoiceManager = {
 
         // Same ArrayBuffer must not appear twice in a transfer list (mono case).
         const transfer = right === left ? [left.buffer] : [left.buffer, right.buffer];
-        source.port.postMessage({ leftBuffer: left, rightBuffer: right, bufferSampleRate: buffer.sampleRate }, transfer);
+        source.port.postMessage({
+            leftBuffer: left,
+            rightBuffer: right,
+            bufferSampleRate: buffer.sampleRate,
+        }, transfer);
     },
 
     /**
@@ -805,7 +810,11 @@ export const TrackVoiceManager = {
                 outputChannelCount: [2],
             });
 
-            voiceNode.port.postMessage({ type: "REGISTER_SYNTH", code: fnCode, transform: !!inputSource });
+            voiceNode.port.postMessage({
+                type: "REGISTER_SYNTH",
+                code: fnCode,
+                transform: !!inputSource,
+            });
 
             if (_startTime !== null) {
                 const freqParam = voiceNode.parameters.get("frequency");
@@ -1148,7 +1157,11 @@ export const TrackVoiceManager = {
             event = {
                 ...event,
                 value: event.value?.isRamp
-                    ? { ...event.value, from: mapDegree(event.value.from), to: mapDegree(event.value.to) }
+                    ? {
+                        ...event.value,
+                        from: mapDegree(event.value.from),
+                        to: mapDegree(event.value.to),
+                    }
                     : mapDegree(event.value),
             };
         }

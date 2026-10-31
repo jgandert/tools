@@ -26,16 +26,28 @@ export function makeEdgeArtifactArtwork() {
     for (let y = 1; y < canvas.height - 1; y++) {
         for (let x = 1; x < canvas.width - 1; x++) {
             const p = y * canvas.width + x;
-            if (clean[4 * p + 3] < 128 || clean[4 * p] > 100) { continue; }
+            if (clean[4 * p + 3] < 128 || clean[4 * p] > 100) {
+                continue;
+            }
             const edge = [-1, 1, -canvas.width, canvas.width].some(offset => clean[4 * (p + offset) + 3] < 128);
-            if (edge) { image.data.set([100, 175, 197, clean[4 * p + 3]], 4 * p); }
+            if (edge) {
+                image.data.set([100, 175, 197, clean[4 * p + 3]], 4 * p);
+            }
         }
     }
     for (let y = 24; y < 27; y++) {
-        for (let x = 24; x < 56; x++) { image.data.set([204, 38, 49, 255], (y * canvas.width + x) * 4); }
+        for (let x = 24; x < 56; x++) {
+            image.data.set([204, 38, 49, 255], (y * canvas.width + x) * 4);
+        }
     }
     ctx.putImageData(image, 0, 0);
-    return {width: canvas.width, height: canvas.height, data: Array.from(image.data), png: canvas.toDataURL(), clean};
+    return {
+        width: canvas.width,
+        height: canvas.height,
+        data: Array.from(image.data),
+        png: canvas.toDataURL(),
+        clean,
+    };
 }
 
 export function makeTransparentDetailsArtwork(kind) {
@@ -58,12 +70,17 @@ export function makeTransparentDetailsArtwork(kind) {
         ctx.fillRect(180, 40, 1.5, 80);
     }
     const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    return {width: canvas.width, height: canvas.height, data: Array.from(image.data), png: canvas.toDataURL()};
+    return {
+        width: canvas.width,
+        height: canvas.height,
+        data: Array.from(image.data),
+        png: canvas.toDataURL(),
+    };
 }
 
 // Original capsule geometry, sampled at pixel centers rather than rasterized by
 // canvas. Its diagonal reaches the frame close to a corner with binary alpha.
-export function makeClippedBinaryCapsule({slope = .45, quarterTurns = 0, clipped = true} = {}) {
+export function makeClippedBinaryCapsule({ slope = .45, quarterTurns = 0, clipped = true } = {}) {
     const radius = 18;
     const endX = 90;
     const endY = slope * endX + radius * Math.hypot(1, slope) + .05;
@@ -102,12 +119,12 @@ export function makeClippedBinaryCapsule({slope = .45, quarterTurns = 0, clipped
             data[offset + 3] = 255;
         }
     }
-    return {width, height, data};
+    return { width, height, data };
 }
 
 if (import.meta.main) {
-    const {chromium} = await import("playwright");
-    const browser = await chromium.launch({headless: true});
+    const { chromium } = await import("playwright");
+    const browser = await chromium.launch({ headless: true });
     try {
         const page = await browser.newPage();
         const cases = [

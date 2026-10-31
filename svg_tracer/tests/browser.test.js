@@ -1,12 +1,12 @@
 /* Copyright 2026 Joschua Gandert - SPDX-License-Identifier: Apache-2.0 */
 /* global Buffer, process */
-import {afterAll, afterEach, beforeAll, beforeEach, expect, test} from "bun:test";
-import {createRequire} from "node:module";
+import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from "bun:test";
+import { createRequire } from "node:module";
 
 const playwrightPath = createRequire(import.meta.url).resolve("playwright", {
     paths: [import.meta.dir, ...(process.env.NODE_PATH || "").split(":").filter(Boolean)],
 });
-const {chromium} = await import(playwrightPath);
+const { chromium } = await import(playwrightPath);
 
 let browser;
 let context;
@@ -16,17 +16,22 @@ let externalRequests;
 const toolURL = new URL("../index.html", import.meta.url).href;
 
 beforeAll(async () => {
-    browser = await chromium.launch({headless: true});
+    browser = await chromium.launch({ headless: true });
 });
 
 beforeEach(async () => {
-    context = await browser.newContext({acceptDownloads: true, viewport: {width: 1440, height: 1000}});
+    context = await browser.newContext({
+        acceptDownloads: true,
+        viewport: { width: 1440, height: 1000 },
+    });
     page = await context.newPage();
     errors = [];
     externalRequests = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("request", request => {
-        if (/^https?:/.test(request.url())) {externalRequests.push(request.url());}
+        if (/^https?:/.test(request.url())) {
+            externalRequests.push(request.url());
+        }
     });
     await page.goto(toolURL);
 });
@@ -53,7 +58,11 @@ async function uploadPNG(name = "test-art.png") {
         ctx.fillRect(10, 10, 50, 30);
         return canvas.toDataURL("image/png").split(",")[1];
     });
-    await page.locator("#file").setInputFiles({name, mimeType: "image/png", buffer: Buffer.from(png, "base64")});
+    await page.locator("#file").setInputFiles({
+        name,
+        mimeType: "image/png",
+        buffer: Buffer.from(png, "base64"),
+    });
     await page.waitForFunction(() => !document.getElementById("trace").disabled);
 }
 
@@ -64,7 +73,9 @@ async function trace() {
 }
 
 test("file URL traces in a worker, preserves export dimensions, and invalidates changed options", async () => {
-    await page.locator("#source-options details").evaluate(details => { details.open = true; });
+    await page.locator("#source-options details").evaluate(details => {
+        details.open = true;
+    });
     await page.locator("#example").click();
     await page.waitForFunction(() => !document.getElementById("trace").disabled);
     await page.locator("#max-size").fill("96");
@@ -98,8 +109,12 @@ test("failed imports keep the previous image and result, including repeated file
     await trace();
     const previous = await page.locator("#svg-text").inputValue();
     for (const file of [
-        {name: "vector.svg", mimeType: "image/svg+xml", buffer: Buffer.from("<svg xmlns=\"http://www.w3.org/2000/svg\"/>")},
-        {name: "broken.png", mimeType: "image/png", buffer: Buffer.from("not an image")},
+        {
+            name: "vector.svg",
+            mimeType: "image/svg+xml",
+            buffer: Buffer.from("<svg xmlns=\"http://www.w3.org/2000/svg\"/>"),
+        },
+        { name: "broken.png", mimeType: "image/png", buffer: Buffer.from("not an image") },
     ]) {
         await page.locator("#file").setInputFiles(file);
         await page.waitForFunction(() => !document.getElementById("error").hidden && document.getElementById("content").getAttribute("aria-busy") === "false");
@@ -117,15 +132,23 @@ test("cancel and blocked workers restore controls without publishing stale resul
     await page.evaluate(() => {
         const button = document.getElementById("trace");
         button.click();
-        if (document.getElementById("content").getAttribute("aria-busy") !== "true") {throw Error("Missing busy state");}
-        if (!document.getElementById("options").disabled) {throw Error("Options were not disabled");}
+        if (document.getElementById("content").getAttribute("aria-busy") !== "true") {
+            throw Error("Missing busy state");
+        }
+        if (!document.getElementById("options").disabled) {
+            throw Error("Options were not disabled");
+        }
         document.getElementById("cancel").click();
     });
     expect(await page.locator("#download").isVisible()).toBe(false);
     expect(await page.locator("#trace").isEnabled()).toBe(true);
     expect(await page.locator("#options").isDisabled()).toBe(false);
     await page.evaluate(() => {
-        window.Worker = class { constructor() { throw Error("Workers blocked by browser policy"); } };
+        window.Worker = class {
+            constructor() {
+                throw Error("Workers blocked by browser policy");
+            }
+        };
     });
     await page.locator("#trace").click();
     expect(await page.locator("#error").textContent()).toContain("Workers blocked");
@@ -135,7 +158,7 @@ test("cancel and blocked workers restore controls without publishing stale resul
 });
 
 test.each(["light", "dark"])("%s layout fits wide, narrow, and zoom-sized viewports with visible results", async colorScheme => {
-    await page.emulateMedia({colorScheme, reducedMotion: "reduce"});
+    await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
     await uploadPNG("a-very-long-source-image-name-that-should-wrap-without-expanding-the-page.png");
     await trace();
     await page.locator("#stats-details, #svg-details").evaluateAll(panels => {
@@ -146,7 +169,7 @@ test.each(["light", "dark"])("%s layout fits wide, narrow, and zoom-sized viewpo
     const colors = await page.evaluate(() => [getComputedStyle(document.body).backgroundColor, getComputedStyle(document.body).color]);
     expect(colors[0]).not.toBe(colors[1]);
     for (const width of [1440, 900, 720, 375, 320]) {
-        await page.setViewportSize({width, height: 800});
+        await page.setViewportSize({ width, height: 800 });
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
         const preview = await page.locator("#preview").boundingBox();
         expect(preview.x + preview.width).toBeLessThanOrEqual(width);
@@ -172,8 +195,12 @@ test.each(["light", "dark"])("%s layout fits wide, narrow, and zoom-sized viewpo
 });
 
 test("shape sampler and image decoding fallback remain usable without browser permissions", async () => {
-    await page.evaluate(() => { window.createImageBitmap = undefined; });
-    await page.locator("#source-options details").evaluate(details => { details.open = true; });
+    await page.evaluate(() => {
+        window.createImageBitmap = undefined;
+    });
+    await page.locator("#source-options details").evaluate(details => {
+        details.open = true;
+    });
     await page.locator("#shape-example").click();
     await page.waitForFunction(() => !document.getElementById("trace").disabled);
     await page.locator("#max-size").fill("160");

@@ -10,7 +10,7 @@ const playwrightPath = createRequire(import.meta.url).resolve("playwright", {
 });
 const { chromium } = await import(playwrightPath);
 const toolUrl = new URL("index.html", import.meta.url).href;
-const svgText = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" fill="red"/></svg>';
+const svgText = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\"><rect width=\"32\" height=\"32\" fill=\"red\"/></svg>";
 
 let browser;
 let context;
@@ -104,7 +104,9 @@ nativeCases.push(["png", true, true]);
 
 test.each(nativeCases)("native %s downloads have correct bytes and names, ZIP=%s, STORE fallback=%s", async (format, zip, fallback) => {
     if (fallback) {
-        await page.evaluate(() => { window.CompressionStream = undefined; });
+        await page.evaluate(() => {
+            window.CompressionStream = undefined;
+        });
     }
     await page.locator("#format-input").selectOption(format);
     await page.locator("#zip-toggle").setChecked(zip);
@@ -298,7 +300,12 @@ test.each([[375, "light"], [1280, "dark"]])("supported-format guidance stays vis
     await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
     const geometry = await page.locator("#format-support").evaluate(element => {
         const rect = element.getBoundingClientRect();
-        return { left: rect.left, right: rect.right, width: element.clientWidth, contentWidth: element.scrollWidth };
+        return {
+            left: rect.left,
+            right: rect.right,
+            width: element.clientWidth,
+            contentWidth: element.scrollWidth,
+        };
     });
     expect(geometry.left).toBeGreaterThanOrEqual(0);
     expect(geometry.right).toBeLessThanOrEqual(width);
