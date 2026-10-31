@@ -5,7 +5,6 @@ icon.orig.svg
 # Usually included, but we don't want them here
 bun.lock
 eslint.config.mjs
-package.json
 web.iml
 .idea
 
