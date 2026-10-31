@@ -1,6 +1,6 @@
 root = true
 
-[{client-zip.js,turndown-standalone.js,*.svg}]
+[{client-zip.js,*.svg}]
 ij_formatter_enabled = false
 
 [*]

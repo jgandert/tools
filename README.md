@@ -40,13 +40,11 @@ required.
 
 ## License
 
-Licensed under [Apache License, Version 2.0](LICENSE) except for the following:
-
-[Paste To Markdown](paste_to_markdown/index.html) is licensed under MIT (due to it being based on a tool with that license).
+Licensed under [Apache License, Version 2.0](LICENSE).
 
 ### Third-party assets
 
-`turndown-standalone.js` (used in 'Paste To Markdown') and `client-zip.js` (used in multiple tools) are distributed under the MIT license.
+`client-zip.js` (used in multiple tools) is distributed under the MIT license.
 
 The `material-symbols.woff2` and most of the icons are based on
 [Material Symbols](https://github.com/google/material-design-icons) by Google, licensed under the Apache License 2.0.
