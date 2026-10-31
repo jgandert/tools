@@ -10,7 +10,6 @@
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
     <script src="../one.js"></script>
-    <script src="../client-zip.js"></script>
     <style>
         .split-card {
             display: flex;
@@ -790,36 +789,36 @@
             const c32 = renderToCanvas(32, 32, clSet);
             zipFiles.push({
                 name: "favicon.ico",
-                lastModified: new Date(),
-                input: await getCanvasBlob(c32),
+                mtime: new Date(),
+                content: await getCanvasBlob(c32),
             });
 
             const c96 = renderToCanvas(96, 96, clSet);
             zipFiles.push({
                 name: "favicon-96x96.png",
-                lastModified: new Date(),
-                input: await getCanvasBlob(c96),
+                mtime: new Date(),
+                content: await getCanvasBlob(c96),
             });
 
             const c180 = renderToCanvas(180, 180, apSet);
             zipFiles.push({
                 name: "apple-touch-icon.png",
-                lastModified: new Date(),
-                input: await getCanvasBlob(c180),
+                mtime: new Date(),
+                content: await getCanvasBlob(c180),
             });
 
             const c192 = renderToCanvas(192, 192, anSet);
             zipFiles.push({
                 name: "web-app-manifest-192x192.png",
-                lastModified: new Date(),
-                input: await getCanvasBlob(c192),
+                mtime: new Date(),
+                content: await getCanvasBlob(c192),
             });
 
             const c512 = renderToCanvas(512, 512, anSet);
             zipFiles.push({
                 name: "web-app-manifest-512x512.png",
-                lastModified: new Date(),
-                input: await getCanvasBlob(c512),
+                mtime: new Date(),
+                content: await getCanvasBlob(c512),
             });
 
             let outPath = document.getElementById("out-path").value || "/";
@@ -848,33 +847,26 @@
             }, null, 2);
             zipFiles.push({
                 name: "site.webmanifest",
-                lastModified: new Date(),
-                input: manifestStr,
+                mtime: new Date(),
+                content: manifestStr,
             });
 
             if (uploadedFile.type === "image/svg+xml") {
                 zipFiles.push({
                     name: "favicon.svg",
-                    lastModified: new Date(),
-                    input: await uploadedFile.text(),
+                    mtime: new Date(),
+                    content: await uploadedFile.text(),
                 });
             } else {
                 zipFiles.push({
                     name: "favicon.svg",
-                    lastModified: new Date(),
-                    input: buildRasterSVG(originalDataUrl, originalImage.width, originalImage.height, clSet, cdSet),
+                    mtime: new Date(),
+                    content: buildRasterSVG(originalDataUrl, originalImage.width, originalImage.height, clSet, cdSet),
                 });
             }
 
-            const zipBlob = await downloadZip(zipFiles).blob();
             const filename = `favicons_${one.getTimestamp()}.zip`;
-
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(zipBlob);
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            await one.zip(zipFiles, filename);
         } catch (e) {
             console.error(e);
             one.alert("An error occurred during export.");

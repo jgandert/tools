@@ -160,7 +160,6 @@
 </main>
 
 <script src="../one.js"></script>
-<script src="../client-zip.js"></script>
 
 <script>
     // --- DOM Elements ---
@@ -312,19 +311,16 @@
 
                 actionBtn.innerText = "Zipping...";
 
-                // Bundle with client-zip
-                const blob = await downloadZip(processedFiles).blob();
-
                 // Generate filename
                 const timestamp = new Date().toISOString().slice(0, 10);
                 const zipName = `converted_svgs_${timestamp}.zip`;
 
-                downloadBlob(blob, zipName);
+                await one.zip(processedFiles, zipName);
             } else {
                 // ONE BY ONE MODE: Download immediately when done
                 for (let i = 0; i < files.length; i++) {
                     const result = await processFileToBlob(files[i]);
-                    downloadBlob(result.input, result.name);
+                    downloadBlob(result.content, result.name);
                     // Small delay to prevent browser throttling downloads
                     await new Promise((r) => setTimeout(r, 200));
                 }
@@ -379,7 +375,7 @@
 
     /**
      * Processes a single SVG file and returns a Promise resolving to
-     * an object compatible with client-zip: { name, lastModified, input: Blob }
+     * a shared ZIP descriptor: { name, mtime, content: Blob }
      */
     function processFileToBlob(file) {
         return new Promise((resolve, reject) => {
@@ -469,8 +465,8 @@
                             if (blob) {
                                 resolve({
                                     name: finalFilename,
-                                    lastModified: new Date(),
-                                    input: blob,
+                                    mtime: new Date(),
+                                    content: blob,
                                 });
                             } else {
                                 reject(new Error("Canvas toBlob failed"));

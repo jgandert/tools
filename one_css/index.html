@@ -1051,7 +1051,6 @@ Done!
 </dialog>
 
 <script src="../one.js"></script>
-<script src="../client-zip.js"></script>
 <script>
     // --- Download Showcase ZIP Logic ---
     async function triggerZipDownload(triggerEl) {
@@ -1066,10 +1065,11 @@ Done!
             }
             triggerEl.textContent = "downloading";
 
-            const [htmlRes, cssRes, jsRes, fontInterRes, fontSymbolsRes] = await Promise.all([
+            const [htmlRes, cssRes, jsRes, licenseRes, fontInterRes, fontSymbolsRes] = await Promise.all([
                 fetch(window.location.href),
                 fetch("../one.css"),
                 fetch("../one.js"),
+                fetch("../LICENSE"),
                 fetch("../Inter-VariableFont_opsz,wght.ttf"),
                 fetch("../material-symbols.woff2"),
             ]);
@@ -1085,35 +1085,27 @@ Done!
                 .replaceAll("href=\"../material-symbols.woff2\"", "href=\"material-symbols.woff2\"")
                 // Remove the downloader UI and its script logic from the downloaded bundle:
                 // nav list item holding the download button, the Installation link (keep its
-                // text), this whole script section (up to the next section marker), and the
-                // client-zip script tag
+                // text), and this whole script section (up to the next section marker).
                 .replace(/<li>\s*<button[^>]*id="download-zip-btn"[\s\S]*?<\/button>\s*<\/li>\s*/, "")
                 .replace(/<a href="#" id="download-zip-link">([\s\S]*?)<\/a>/, "$1")
-                .replace(/\/\/ --- Download Showcase ZIP Logic ---[\s\S]*?(?=\/\/ --- JS Library Logic ---)/, "")
-                .replace(/<script src="\.\.\/client-zip\.js"><\/script>\s*/g, "");
+                .replace(/\/\/ --- Download Showcase ZIP Logic ---[\s\S]*?(?=\/\/ --- JS Library Logic ---)/, "");
 
             const files = [
-                { name: "index.html", input: htmlText },
-                { name: "one.css", input: new Uint8Array(await cssRes.arrayBuffer()) },
-                { name: "one.js", input: new Uint8Array(await jsRes.arrayBuffer()) },
+                { name: "index.html", content: htmlText },
+                { name: "one.css", content: new Uint8Array(await cssRes.arrayBuffer()) },
+                { name: "one.js", content: new Uint8Array(await jsRes.arrayBuffer()) },
+                { name: "LICENSE", content: await licenseRes.text() },
                 {
                     name: "Inter-VariableFont_opsz,wght.ttf",
-                    input: new Uint8Array(await fontInterRes.arrayBuffer()),
+                    content: new Uint8Array(await fontInterRes.arrayBuffer()),
                 },
                 {
                     name: "material-symbols.woff2",
-                    input: new Uint8Array(await fontSymbolsRes.arrayBuffer()),
+                    content: new Uint8Array(await fontSymbolsRes.arrayBuffer()),
                 },
             ];
 
-            const response = downloadZip(files);
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "one-css-bundle.zip";
-            a.click();
-            URL.revokeObjectURL(url);
+            await one.zip(files, "one-css-bundle.zip");
         } catch (err) {
             console.error("ZIP generation failed:", err);
             alert("Failed to generate ZIP download. Please check console for details.");

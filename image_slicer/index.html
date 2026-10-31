@@ -9,7 +9,6 @@
     <title>Image Slicer</title>
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <script src="../one.js"></script>
-    <script src="../client-zip.js"></script>
     <link rel="stylesheet" href="../one.css">
     <style>
         /* ------------------------------------------------------------------
@@ -628,12 +627,8 @@
                     canvas.toBlob(resolve, state.config.format, 0.9),
                 );
 
-                // Create File object for client-zip
                 const filename = `slice_${(i + 1).toString().padStart(3, "0")}.${fileExt}`;
-
-                // Wrap the blob in a File object so client-zip can include it with the right filename
-                const fileObj = new File([blob], filename, { type: state.config.format });
-                filesForZip.push(fileObj);
+                filesForZip.push({ name: filename, content: blob, mtime: new Date() });
 
                 // Update UI
                 const pct = Math.round(((i + 1) / state.slices.length) * 100);
@@ -646,17 +641,8 @@
 
             els.downloadBtn.textContent = "Zipping...";
 
-            // Use client-zip to generate the archive
-            const blob = await downloadZip(filesForZip).blob();
-
             const filename = `slices_${one.getTimestamp()}.zip`;
-
-            // Trigger download
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            link.click();
-            link.remove();
+            await one.zip(filesForZip, filename);
         } catch (err) {
             console.error(err);
             one.alert("Error generating slices: " + err.message);

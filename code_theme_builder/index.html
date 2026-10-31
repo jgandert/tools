@@ -1114,7 +1114,6 @@
 </aside>
 
 <script src="../one.js"></script>
-<script src="../client-zip.js"></script>
 <script>
     // --- OKLCH → sRGB gamut mapping ---
     function oklchToLinearRgb(L, C, H) {
@@ -2118,19 +2117,13 @@ Color=${hexToRgbString(fg)}
     async function generateIjJar() {
         const state = collectThemeState();
         const files = [
-            { name: "META-INF/MANIFEST.MF", input: buildManifest() },
-            { name: "META-INF/plugin.xml", input: buildPluginXml(state) },
-            { name: "META-INF/pluginIcon.svg", input: getPluginIcon(state) },
-            { name: `theme/${state.slug}.theme.json`, input: buildThemeJson(state) },
-            { name: `theme/${state.slug}-editor-theme.xml`, input: buildEditorXml(state) },
+            { name: "META-INF/MANIFEST.MF", content: buildManifest() },
+            { name: "META-INF/plugin.xml", content: buildPluginXml(state) },
+            { name: "META-INF/pluginIcon.svg", content: getPluginIcon(state) },
+            { name: `theme/${state.slug}.theme.json`, content: buildThemeJson(state) },
+            { name: `theme/${state.slug}-editor-theme.xml`, content: buildEditorXml(state) },
         ];
-        const blob = await downloadZip(files).blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${state.slug}.ij.theme.jar`;
-        a.click();
-        URL.revokeObjectURL(url);
+        await one.zip(files, `${state.slug}.ij.theme.jar`);
     }
 
     const KATE_THEME_TEMPLATE = {

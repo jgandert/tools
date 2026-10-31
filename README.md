@@ -1,28 +1,19 @@
 # Tools Dashboard
 
-A collection of lightweight, privacy-focused browser utilities that run entirely
-client-side. No data ever leaves your machine — every tool works offline and
-requires zero server interaction.
+A collection of lightweight, privacy-focused browser utilities that run entirely client-side. No data ever leaves your machine — every tool works offline and requires zero server interaction.
 
 ## Features
 
-- **Various standalone tools** spanning data transformation, image manipulation,
-  developer diagnostics, creative design, and productivity.
-- **Unified design system** — all tools<sup>1</sup> share
-  [`one.css`](https://jgandert.github.io/tools/one_css/index.html), a class-lite semantic stylesheet providing
-  consistent theming (including dark mode), typography, layout primitives, and
-  iconography across every page.
-- **Single-file architecture** — each tool is a nearly self-contained `index.html`
-  that can be opened directly in a browser.
+- **Various standalone tools** spanning data transformation, image manipulation, developer diagnostics, creative design, and productivity.
+- **Unified design system** — all tools<sup>1</sup> share [`one.css`](https://jgandert.github.io/tools/one_css/index.html), a class-lite semantic stylesheet providing consistent theming (including dark mode), typography, layout primitives, and iconography across every page.
+- **Single-file architecture** — each tool is a nearly self-contained `index.html` that can be opened directly in a browser.
 - **Offline-ready** — everything runs in the browser; no backend needed.
 
 <sup>1</sup> "Recursive Grid JSON Editor" has different requirements, so it uses its own style.
 
 ## Getting started
 
-Open `index.html` in any modern browser to reach the dashboard, then click
-through to the tool you need. No installation, bundling, or dev server is
-required.
+Open `index.html` in any modern browser to reach the dashboard, then click through to the tool you need. No installation, bundling, or dev server is required.
 
 ## Project structure
 
@@ -38,15 +29,16 @@ required.
 └── README.md           # This file
 ```
 
+## Shared JavaScript
+
+See [one.js documentation](one.js.md) for the shared ZIP API, supported archive formats, limits, and test instructions.
+
 ## License
 
 Licensed under [Apache License, Version 2.0](LICENSE).
 
 ### Third-party assets
 
-`client-zip.js` (used in multiple tools) is distributed under the MIT license.
-
-The `material-symbols.woff2` and most of the icons are based on
-[Material Symbols](https://github.com/google/material-design-icons) by Google, licensed under the Apache License 2.0.
+The `material-symbols.woff2` and most of the icons are based on [Material Symbols](https://github.com/google/material-design-icons) by Google, licensed under the Apache License 2.0.
 
 The Inter font (`Inter-VariableFont_opsz,wght.ttf`) is released under the <a href="https://openfontlicense.org/open-font-license-official-text/">SIL OPEN FONT LICENSE Version 1.1</a>.
