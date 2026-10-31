@@ -606,7 +606,7 @@ Dates & Times:
             }
                 break;
             case "list-generator":
-                result = "[" + text.split(/\r?\n/).map(line => "\"" + line.replace(/"/g, "\\\"") + "\"").join(", ") + "]";
+                result = "[" + text.split(/\r?\n/).map(line => JSON.stringify(line)).join(", ") + "]";
                 break;
 
             // Encoding & Transformation
