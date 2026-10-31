@@ -3,6 +3,7 @@ import {
     noteToMidi,
     midiToHz,
     parseDurationToSeconds,
+    musicalDurationBeats,
     Tie,
     degreeToMidi,
 } from "../motif.js";
@@ -14,6 +15,7 @@ import {
     safeDisconnect,
     CONSTANTS,
     ensureGranularStretcher,
+    notifySourceReadinessChange,
 } from "./helpers.js";
 
 const MOTIF_SYNTH_PROCESSOR_SRC = `
@@ -30,6 +32,8 @@ class MotifSynthProcessor extends AudioWorkletProcessor {
         this._phase = 0;
         this._time = 0;
         this._state = {};
+        this._channelStates = [];
+        this._transform = false;
         this._startTime = null;
         this._endTime = null;
         this._done = false;
@@ -37,6 +41,7 @@ class MotifSynthProcessor extends AudioWorkletProcessor {
         this.port.onmessage = ({ data }) => {
             if (data.type === 'REGISTER_SYNTH') {
                 this._synthFn = (new Function('return ' + data.code))();
+                this._transform = !!data.transform;
             } else if (data.type === 'START') {
                 this._startTime = data.startTime;
             } else if (data.type === 'STOP_AT') {
@@ -80,23 +85,26 @@ class MotifSynthProcessor extends AudioWorkletProcessor {
             }
 
             const freq = isARate ? freqArr[i] : freqArr[0];
-            const val = this._synthFn({ t: this._time, p: this._phase, freq, state: this._state, sampleRate });
-            if (typeof val !== 'number' || isNaN(val) || !isFinite(val)) {
-                this.port.postMessage({
-                    type: 'SYNTH_ERROR',
-                    message: '[Motif Worklet] Synth function generated non-finite value: ' + val + ' (freq: ' + freq + ', time: ' + this._time + ')'
-                });
-                ch[i] = 0;
-                this._done = true;
-                this.port.postMessage({ type: 'VOICE_ENDED' });
-                throw new Error('Synth function generated non-finite value: ' + val);
+            const channels = this._transform ? output.length : 1;
+            for (let c = 0; c < channels; c++) {
+                const input = inputs[0]?.[c] || inputs[0]?.[0];
+                const state = this._transform ? (this._channelStates[c] ||= {}) : this._state;
+                const val = this._synthFn({ t: this._time, p: this._phase, i: input?.[i] || 0, freq, state, sampleRate, channel: c });
+                if (typeof val !== 'number' || !Number.isFinite(val)) {
+                    this._done = true;
+                    this.port.postMessage({ type: 'SYNTH_ERROR', message: '[Motif Worklet] Callback must return a finite sample number; received ' + val });
+                    this.port.postMessage({ type: 'VOICE_ENDED' });
+                    throw new Error('Callback must return a finite sample number; received ' + val);
+                }
+                output[c][i] = val;
             }
-            ch[i] = val;
             this._time += 1 / sampleRate;
             this._phase = (this._phase + freq / sampleRate) % 1.0;
         }
 
-        for (let c = 1; c < output.length; c++) output[c].set(ch);
+        if (!this._transform) {
+            for (let c = 1; c < output.length; c++) output[c].set(ch);
+        }
 
         return !this._done;
     }
@@ -108,6 +116,16 @@ registerProcessor('motif-synth-voice', MotifSynthProcessor);
 let _synthWorkletCtx = null;
 let _synthWorkletPromise = null;
 let _synthWorkletLoaded = false;
+const BUILT_IN_SYNTH_TYPES = new Set([
+    "sine",
+    "square",
+    "sawtooth",
+    "triangle",
+    "saw",
+    "noise",
+    "fm",
+    "pluck",
+]);
 
 // getChannelData() returns the AudioBuffer's LIVE internal Float32Array; posting
 // it with a transfer list would detach and corrupt the AudioBuffer for every
@@ -145,6 +163,7 @@ export const TrackVoiceManager = {
         this._voiceLimit = Infinity;
         this._voiceMode = "none";
         this._activeVoices = new Map();
+        this._retiredVoices = new Set();
         this._envelope = null;
         this._sampleUrl = null;
         this._sampleBuffer = null;
@@ -155,6 +174,7 @@ export const TrackVoiceManager = {
         this._samplerRelease = 0.1;
         this._samplerLoading = null;
         this._useSampler = false;
+        this._sourcePending = false;
         this._slices = null;
         this._sliceIndices = null;
         this._fitDuration = null;
@@ -171,13 +191,56 @@ export const TrackVoiceManager = {
         this._monoBufferCache = null;
     },
 
+    _copySplitSource(parent) {
+        this._useSample = parent._useSample;
+        this._sampleUrl = parent._sampleUrl;
+        this._sampleBuffer = parent._sampleBuffer;
+        this._useSampler = parent._useSampler;
+        this._samplerBuffers = parent._samplerBuffers;
+        this._samplerKeys = [...parent._samplerKeys];
+        this._samplerRelease = parent._samplerRelease;
+        this._clearMonoBufferCache();
+
+        if (!parent._sourcePending) return;
+
+        this._sourcePending = true;
+
+        // Capture the split-time load and Map: later parent edits must not
+        // change this shadow, and right-side setters supersede its adoption.
+
+        if (this._useSample) {
+            // The parent load reports rejection; the shadow stays silent.
+
+            const loading = parent._sampleLoading.then(buffer => {
+                if (this._sampleLoading !== loading) return;
+                this._sampleBuffer = buffer;
+            }).catch(() => {}).finally(() => {
+                if (this._sampleLoading !== loading) return;
+                this._sourcePending = false;
+                notifySourceReadinessChange();
+            });
+            this._sampleLoading = loading;
+        } else if (this._useSampler) {
+            const buffers = this._samplerBuffers;
+            const loading = parent._samplerLoading.then(() => {
+                if (this._samplerLoading !== loading) return;
+                this._samplerKeys = [...buffers.keys()].sort((a, b) => a - b);
+                this._sourcePending = false;
+                notifySourceReadinessChange();
+            });
+            this._samplerLoading = loading;
+        }
+    },
+
     _resetSamplerState() {
+        this._sourcePending = false;
         this._useSampler = false;
         this._samplerBuffers = new Map();
         this._samplerKeys = [];
         this._samplerLoading = null;
         this._sliceIndices = null;
         this._fitDuration = null;
+        this._setPatternEvents(this._notePattern ?? this._freqPattern);
         this._clearMonoBufferCache();
     },
 
@@ -187,12 +250,23 @@ export const TrackVoiceManager = {
      * @returns {TrackVoiceManager} this
      */
     synth(type) {
-        this._synthType = type || "sine";
+        const synthType = type || "sine";
+        const isRegisteredSynth = Motif.synthRegistry && Motif.synthRegistry.has(synthType);
+
+        if (!BUILT_IN_SYNTH_TYPES.has(synthType) && !isRegisteredSynth) {
+            if (Motif.sampleRegistry && Motif.sampleRegistry.has(synthType)) {
+                throw new Error(`[Motif] Unknown synth type '${synthType}'. '${synthType}' is a registered sample; use .sample('${synthType}') or .sound('${synthType}').`);
+            }
+            throw new Error(`[Motif] Unknown synth type '${synthType}'. Use a built-in synth or a registered custom DSP name.`);
+        }
+
+        this._synthType = synthType;
         this._useSample = false;
         this._sampleBuffer = null;
         this._sampleUrl = null;
         this._sampleLoading = null;
         this._resetSamplerState();
+        notifySourceReadinessChange();
         return this;
     },
 
@@ -210,10 +284,12 @@ export const TrackVoiceManager = {
             this._sampleLoading = null;
             this._useSample = false;
             this._slices = null;
+            notifySourceReadinessChange();
             return this;
         }
 
         this._sampleUrl = path;
+        this._sampleBuffer = null;
         this._useSample = true;
         this._synthType = null;
 
@@ -222,9 +298,13 @@ export const TrackVoiceManager = {
         if (entry && typeof entry === "object" && typeof entry.getChannelData === "function") {
             bufPromise = Promise.resolve(entry);
         } else if (typeof entry === "function") {
-            const buf = entry();
-            Motif.sampleRegistry.set(path, buf);
-            bufPromise = Promise.resolve(buf);
+            try {
+                const buf = entry();
+                Motif.sampleRegistry.set(path, buf);
+                bufPromise = Promise.resolve(buf);
+            } catch (err) {
+                bufPromise = Promise.reject(err);
+            }
         } else {
             const loadPath = typeof entry === "string" ? entry : path;
             bufPromise = Motif._loadAndCacheBuffer(loadPath);
@@ -237,6 +317,7 @@ export const TrackVoiceManager = {
         }
 
         this._sampleLoading = bufPromise;
+        this._sourcePending = true;
         bufPromise.then(buf => {
             // Generation guard: only adopt this buffer if it is still the
             // in-flight load for the current path. A later sample()/synth()
@@ -246,15 +327,20 @@ export const TrackVoiceManager = {
                 this._sampleBuffer = buf;
             }
         }).catch((err) => {
-            console.error(`[Motif] Failed to load sample "${path}":`, err.message || err);
+            console.error(`[Motif] Failed to load sample "${path}":`, err?.message || err);
+        }).finally(() => {
+            if (this._sampleLoading !== bufPromise) return;
+            this._sourcePending = false;
+            notifySourceReadinessChange();
         });
+
+        notifySourceReadinessChange();
 
         return this;
     },
 
     sound(name) {
-        const nativeOscillators = ["sine", "square", "sawtooth", "triangle", "saw"];
-        if (nativeOscillators.includes(name) || (Motif.synthRegistry && Motif.synthRegistry.has(name))) {
+        if (BUILT_IN_SYNTH_TYPES.has(name) || (Motif.synthRegistry && Motif.synthRegistry.has(name))) {
             return this.synth(name);
         }
         return this.sample(name);
@@ -269,12 +355,14 @@ export const TrackVoiceManager = {
      * @returns {TrackVoiceManager} this
      */
     sampler({ urls = {}, baseUrl = "", release = 0.1 } = {}) {
+        this._sourcePending = false;
         this._useSample = false;
         this._sampleUrl = null;
         this._sampleBuffer = null;
         this._sampleLoading = null;
         this._sliceIndices = null;
         this._fitDuration = null;
+        this._setPatternEvents(this._notePattern ?? this._freqPattern);
         this._clearMonoBufferCache();
 
         this._samplerBuffers = new Map();
@@ -301,9 +389,13 @@ export const TrackVoiceManager = {
             if (entry && typeof entry === "object" && typeof entry.getChannelData === "function") {
                 bufPromise = Promise.resolve(entry);
             } else if (typeof entry === "function") {
-                const buf = entry();
-                Motif.sampleRegistry.set(fullUrl, buf);
-                bufPromise = Promise.resolve(buf);
+                try {
+                    const buf = entry();
+                    Motif.sampleRegistry.set(fullUrl, buf);
+                    bufPromise = Promise.resolve(buf);
+                } catch (err) {
+                    bufPromise = Promise.reject(err);
+                }
             } else {
                 const loadPath = typeof entry === "string" ? entry : fullUrl;
                 bufPromise = Motif._loadAndCacheBuffer(loadPath);
@@ -318,14 +410,20 @@ export const TrackVoiceManager = {
             const localMidi = midi;
             loads.push(bufPromise.then(buf => {
                 buffers.set(localMidi, buf);
-            }).catch(() => {
+            }).catch(err => {
+                console.error(`[Motif] Failed to load sampler zone "${rawKey}" from "${fullUrl}":`, err?.message || err);
             }));
         }
 
         this._samplerLoading = Promise.all(loads).then(() => {
             if (this._samplerBuffers !== buffers) return;
             this._samplerKeys = [...buffers.keys()].sort((a, b) => a - b);
+            this._sourcePending = false;
+            notifySourceReadinessChange();
         });
+
+        this._sourcePending = true;
+        notifySourceReadinessChange();
 
         return this;
     },
@@ -401,17 +499,27 @@ export const TrackVoiceManager = {
      * @returns {TrackVoiceManager} this
      */
     chop(slices) {
-        this._slices = (typeof slices === "number" && slices > 0) ? slices : null;
+        this._slices = Number.isInteger(slices) && slices > 0 ? slices : null;
         return this;
     },
 
     /**
-     * Sets a slice playback pattern mapping index array.
-     * @param {Array<number>} sliceIndices - Index mappings.
+     * Schedules a nested slice-index rhythm independently of its note pitches.
+     * @param {Array| null} sliceIndices - Nested integer indices and null rests; null clears slice scheduling.
      * @returns {TrackVoiceManager} this
      */
     pattern(sliceIndices) {
-        this._sliceIndices = Array.isArray(sliceIndices) ? sliceIndices : null;
+        const validate = value => {
+            if (Array.isArray(value)) {
+                for (const item of value) validate(item);
+                return;
+            }
+            if (value !== null && !Number.isInteger(value)) throw new Error("pattern() requires integer slice indices, rests, or nested arrays.");
+        };
+        if (sliceIndices !== null && !Array.isArray(sliceIndices)) throw new Error("pattern() requires an array or null.");
+        validate(sliceIndices);
+        this._sliceIndices = sliceIndices === null ? null : structuredClone(sliceIndices);
+        this._setPatternEvents(this._notePattern ?? this._freqPattern);
         return this;
     },
 
@@ -472,7 +580,7 @@ export const TrackVoiceManager = {
 
         // Same ArrayBuffer must not appear twice in a transfer list (mono case).
         const transfer = right === left ? [left.buffer] : [left.buffer, right.buffer];
-        source.port.postMessage({ leftBuffer: left, rightBuffer: right }, transfer);
+        source.port.postMessage({ leftBuffer: left, rightBuffer: right, bufferSampleRate: buffer.sampleRate }, transfer);
     },
 
     /**
@@ -482,6 +590,12 @@ export const TrackVoiceManager = {
     _cleanupActiveVoices() {
         if (!this._activeVoices) return;
         const now = Motif.ctx.currentTime;
+        for (const voice of this._retiredVoices || []) {
+            if (voice.endTime > now) continue;
+            safeDisconnect(voice.oscillator);
+            safeDisconnect(voice.gainNode);
+            this._retiredVoices.delete(voice);
+        }
         for (const [key, voice] of this._activeVoices.entries()) {
             if (voice.endTime <= now) {
                 safeDisconnect(voice.oscillator);
@@ -542,10 +656,16 @@ export const TrackVoiceManager = {
 
         if (targetKey !== null && targetVoice) {
             const ctx = Motif.ctx;
-            safeStop(targetVoice.oscillator, ctx.currentTime);
-            safeDisconnect(targetVoice.oscillator);
-            safeDisconnect(targetVoice.gainNode);
+            const stopTime = Math.max(ctx.currentTime, Math.min(targetVoice.endTime, targetStartTime ?? ctx.currentTime));
+            safeStop(targetVoice.oscillator, stopTime);
+            targetVoice.endTime = stopTime;
+
+            // Free the scheduling slot now, but retain routing until the audio clock
+            // reaches the replacement onset. Wall-clock timers do not work offline.
+
+            this._retiredVoices.add(targetVoice);
             this._activeVoices.delete(targetKey);
+            this._cleanupActiveVoices();
         }
     },
 
@@ -556,7 +676,7 @@ export const TrackVoiceManager = {
      * @param {number|null} hzTo - Glide target frequency in Hertz.
      * @param {boolean} isRamp - True to enable slide glides.
      * @param {number} startTime - Start time in seconds.
-     * @param {number} duration - Step duration in seconds.
+     * @param {number} duration - Pitch glide duration in seconds, independent of the note gate.
      * @returns {Object} Wrapper object containing node outputs, start, stop and disconnect.
      * @private
      */
@@ -616,102 +736,16 @@ export const TrackVoiceManager = {
             nodes = [osc];
             output = filter;
         } else if (!["sine", "square", "sawtooth", "triangle", "saw"].includes(type) && Motif.synthRegistry && Motif.synthRegistry.has(type)) {
-            const fnCode = Motif.synthRegistry.get(type).toString();
-
-            ensureSynthWorklet(ctx);
-
-            const outputGain = ctx.createGain();
-            let voiceNode = null;
-            let _startTime = null;
-            let _endTime = null;
-
-            const _createWorkletNode = () => {
-                // If the note window has already elapsed by the time the worklet loaded, skip.
-                if (_endTime !== null && _endTime <= ctx.currentTime) {
-                    safeDisconnect(outputGain);
-                    return;
-                }
-
-                voiceNode = new AudioWorkletNode(ctx, "motif-synth-voice", {
-                    numberOfInputs: 0,
-                    numberOfOutputs: 1,
-                    outputChannelCount: [2],
-                });
-
-                voiceNode.port.postMessage({ type: "REGISTER_SYNTH", code: fnCode });
-
-                if (_startTime !== null) {
-                    const freqParam = voiceNode.parameters.get("frequency");
-                    const schedAt = Math.max(_startTime, ctx.currentTime);
-                    freqParam.setValueAtTime(hz, schedAt);
-                    if (isRamp && hzTo !== null && !isNaN(hzTo)) {
-                        freqParam.linearRampToValueAtTime(hzTo, schedAt + duration);
-                    }
-                    voiceNode.port.postMessage({ type: "START", startTime: _startTime });
-                    if (_endTime !== null) {
-                        voiceNode.port.postMessage({ type: "STOP_AT", endTime: _endTime });
-                    }
-                }
-
-                voiceNode.connect(outputGain);
-                voiceNode.port.onmessage = ({ data }) => {
-                    if (data.type === "VOICE_ENDED") {
-                        safeDisconnect(voiceNode);
-                        voiceNode = null;
-                    } else if (data.type === "SYNTH_ERROR") {
-                        console.error(data.message);
-                    }
-                };
-            };
-
-            if (_synthWorkletLoaded) {
-                _createWorkletNode();
-            } else {
-                _synthWorkletPromise.then(_createWorkletNode).catch(() => {
-                });
-            }
-
-            const wrapper = {
-                output: outputGain,
-                start: (t) => {
-                    _startTime = t;
-                    if (voiceNode) {
-                        const freqParam = voiceNode.parameters.get("frequency");
-                        freqParam.setValueAtTime(hz, t);
-                        if (isRamp && hzTo !== null && !isNaN(hzTo)) {
-                            freqParam.linearRampToValueAtTime(hzTo, t + duration);
-                        }
-                        voiceNode.port.postMessage({ type: "START", startTime: t });
-                    }
-                },
-                stop: (t) => {
-                    _endTime = t;
-                    if (voiceNode) {
-                        if (t === undefined) {
-                            voiceNode.port.postMessage({ type: "STOP" });
-                        } else {
-                            voiceNode.port.postMessage({ type: "STOP_AT", endTime: t });
-                        }
-                    }
-                },
-                disconnect: () => {
-                    if (voiceNode) {
-                        safeDisconnect(voiceNode);
-                        voiceNode = null;
-                    }
-                    safeDisconnect(outputGain);
-                },
-            };
-            return wrapper;
+            return this._createWorkletVoice(Motif.synthRegistry.get(type).toString(), hz, hzTo, isRamp, duration);
         } else {
-            const osc = ctx.createOscillator();
             let oscType = type || "sine";
             if (oscType === "saw") oscType = "sawtooth";
-            const VALID_OSC_TYPES = ["sine", "square", "sawtooth", "triangle", "custom"];
+            const VALID_OSC_TYPES = ["sine", "square", "sawtooth", "triangle"];
             if (!VALID_OSC_TYPES.includes(oscType)) {
                 console.error(`[Motif] Unknown synth type '${type}' — not in synthRegistry and not a valid oscillator type. Did you mean .sample('${type}')?`);
                 return null;
             }
+            const osc = ctx.createOscillator();
             osc.type = oscType;
 
             osc.frequency.setValueAtTime(hz, startTime);
@@ -748,7 +782,106 @@ export const TrackVoiceManager = {
         return wrapper;
     },
 
-    _scheduleAdsrGain(voiceGain, startTime, duration, safeGainVal, isTied) {
+    _createWorkletVoice(fnCode, hz, hzTo, isRamp, duration, inputSource = null) {
+        const ctx = Motif.ctx;
+        ensureSynthWorklet(ctx);
+
+        const outputGain = ctx.createGain();
+        let voiceNode = null;
+        let _startTime = null;
+        let _endTime = null;
+        let disconnected = false;
+
+        const _createWorkletNode = () => {
+            // If the note window has already elapsed by the time the worklet loaded, skip.
+            if (disconnected || (_endTime !== null && _endTime <= ctx.currentTime)) {
+                safeDisconnect(outputGain);
+                return;
+            }
+
+            voiceNode = new AudioWorkletNode(ctx, "motif-synth-voice", {
+                numberOfInputs: inputSource ? 1 : 0,
+                numberOfOutputs: 1,
+                outputChannelCount: [2],
+            });
+
+            voiceNode.port.postMessage({ type: "REGISTER_SYNTH", code: fnCode, transform: !!inputSource });
+
+            if (_startTime !== null) {
+                const freqParam = voiceNode.parameters.get("frequency");
+                const schedAt = Math.max(_startTime, ctx.currentTime);
+                const canGlide = isRamp && hzTo !== null && !isNaN(hzTo);
+                const rampEnd = _startTime + duration;
+                const progress = Math.min(1, Math.max(0, (schedAt - _startTime) / duration));
+                freqParam.setValueAtTime(canGlide ? hz + (hzTo - hz) * progress : hz, schedAt);
+                if (canGlide && schedAt < rampEnd) {
+                    freqParam.linearRampToValueAtTime(hzTo, rampEnd);
+                }
+                voiceNode.port.postMessage({ type: "START", startTime: _startTime });
+                if (_endTime !== null) {
+                    voiceNode.port.postMessage({ type: "STOP_AT", endTime: _endTime });
+                }
+            }
+
+            if (inputSource) (inputSource.output || inputSource).connect(voiceNode);
+            voiceNode.connect(outputGain);
+            voiceNode.port.onmessage = ({ data }) => {
+                if (data.type === "VOICE_ENDED") {
+                    safeDisconnect(voiceNode);
+                    voiceNode = null;
+                } else if (data.type === "SYNTH_ERROR") {
+                    console.error(data.message);
+                }
+            };
+        };
+
+        if (_synthWorkletLoaded) {
+            _createWorkletNode();
+        } else {
+            _synthWorkletPromise.then(_createWorkletNode).catch(() => {
+            });
+        }
+
+        const wrapper = {
+            output: outputGain,
+            connect: (...args) => outputGain.connect(...args),
+            start: (t, ...args) => {
+                if (inputSource) inputSource.start(t, ...args);
+                _startTime = t;
+                if (voiceNode) {
+                    const freqParam = voiceNode.parameters.get("frequency");
+                    freqParam.setValueAtTime(hz, t);
+                    if (isRamp && hzTo !== null && !isNaN(hzTo)) {
+                        freqParam.linearRampToValueAtTime(hzTo, t + duration);
+                    }
+                    voiceNode.port.postMessage({ type: "START", startTime: t });
+                }
+            },
+            stop: (t) => {
+                if (inputSource) safeStop(inputSource, t);
+                _endTime = t === undefined ? ctx.currentTime : t;
+                if (voiceNode) {
+                    if (t === undefined) {
+                        voiceNode.port.postMessage({ type: "STOP" });
+                    } else {
+                        voiceNode.port.postMessage({ type: "STOP_AT", endTime: t });
+                    }
+                }
+            },
+            disconnect: () => {
+                disconnected = true;
+                if (inputSource) safeDisconnect(inputSource);
+                if (voiceNode) {
+                    safeDisconnect(voiceNode);
+                    voiceNode = null;
+                }
+                safeDisconnect(outputGain);
+            },
+        };
+        return wrapper;
+    },
+
+    _scheduleAdsrGain(voiceGain, startTime, duration, safeGainVal, isTied = false, releaseTime = startTime + duration) {
         const env = this._envelope;
         const attack = parseDurationToSeconds(env.attack !== undefined ? env.attack : CONSTANTS.ENVELOPE.DEFAULT_ATTACK, Motif.tempo, Motif.beatsPerBar);
         const decay = parseDurationToSeconds(env.decay !== undefined ? env.decay : CONSTANTS.ENVELOPE.DEFAULT_DECAY, Motif.tempo, Motif.beatsPerBar);
@@ -761,29 +894,38 @@ export const TrackVoiceManager = {
         const floorVal = 0.0001 * safeGainVal;
         const off = startTime + duration;
 
-        voiceGain.gain.setValueAtTime(floorVal, startTime);
-        voiceGain.gain.linearRampToValueAtTime(peakVal, startTime + attack);
-        voiceGain.gain.exponentialRampToValueAtTime(sustainVal, startTime + attack + decay);
-
-        if (isTied) {
-            if (typeof voiceGain.gain.cancelAndHoldAtTime === "function") {
-                voiceGain.gain.cancelAndHoldAtTime(off);
-            }
-            return Infinity;
-        } else {
-            let valAtOff = sustainVal;
-            if (off < startTime + attack) {
-                valAtOff = floorVal + (peakVal - floorVal) * ((off - startTime) / attack);
-            } else if (off < startTime + attack + decay) {
-                valAtOff = decay > 0
-                    ? peakVal * Math.pow(sustainVal / peakVal, (off - (startTime + attack)) / decay)
-                    : sustainVal;
-            }
-            voiceGain.gain.setValueAtTime(valAtOff, off);
-            voiceGain.gain.exponentialRampToValueAtTime(floorVal, off + release);
-            voiceGain.gain.setValueAtTime(0, off + release);
-            return duration + release;
+        const attackEnd = startTime + attack;
+        const decayEnd = attackEnd + decay;
+        let valAtOff = sustainVal;
+        if (off < attackEnd) {
+            valAtOff = floorVal + (peakVal - floorVal) * (duration / attack);
+        } else if (off < decayEnd) {
+            valAtOff = peakVal * Math.pow(sustainVal / peakVal, (off - attackEnd) / decay);
         }
+
+        // Truncate each phase with its original ramp type. A set at note-off
+        // before an untruncated endpoint would erase the preceding interpolation.
+        voiceGain.gain.setValueAtTime(floorVal, startTime);
+        if (attack > 0) {
+            voiceGain.gain.linearRampToValueAtTime(off < attackEnd ? valAtOff : peakVal, Math.min(off, attackEnd));
+        } else {
+            voiceGain.gain.setValueAtTime(peakVal, startTime);
+        }
+        if (off >= attackEnd) {
+            if (decay > 0) {
+                voiceGain.gain.exponentialRampToValueAtTime(off < decayEnd ? valAtOff : sustainVal, Math.min(off, decayEnd));
+            } else {
+                voiceGain.gain.setValueAtTime(sustainVal, attackEnd);
+            }
+        }
+        if (releaseTime > off || off >= decayEnd) {
+            voiceGain.gain.setValueAtTime(valAtOff, releaseTime);
+        }
+        if (release > 0) {
+            voiceGain.gain.exponentialRampToValueAtTime(floorVal, releaseTime + release);
+        }
+        voiceGain.gain.setValueAtTime(0, releaseTime + release);
+        return { duration: releaseTime - startTime + release, holdValue: valAtOff };
     },
 
     /**
@@ -792,11 +934,10 @@ export const TrackVoiceManager = {
      * @param {number} startTime - Absolute startTime in seconds.
      * @param {number} duration - Playback duration in seconds.
      * @param {number} [playbackRate=1.0] - Playback rate stretching multiplier.
-     * @param {boolean} [isTied=false] - True to hold decay/sustain past bounds.
      * @param {Object} [event=null] - The source scheduling event structure.
      * @private
      */
-    _playAudioBuffer(buffer, startTime, duration, playbackRate = 1.0, isTied = false, event = null) {
+    _playAudioBuffer(buffer, startTime, duration, playbackRate = 1.0, event = null) {
         const ctx = Motif.ctx;
         this._cleanupActiveVoices();
 
@@ -811,7 +952,11 @@ export const TrackVoiceManager = {
         const useGranular = !!(this._fitDuration && this._fitOptions && this._fitOptions.mode === "stretch" && typeof AudioWorkletNode !== "undefined");
 
         if (useGranular) {
-            source = new AudioWorkletNode(ctx, "granular-stretcher");
+            source = new AudioWorkletNode(ctx, "granular-stretcher", {
+                numberOfInputs: 0,
+                numberOfOutputs: 1,
+                outputChannelCount: [2],
+            });
             let stretchFactor = 1.0;
             let pitchRatio = 1.0;
             const targetSecs = parseDurationToSeconds(this._fitDuration, Motif.tempo, Motif.beatsPerBar);
@@ -831,7 +976,10 @@ export const TrackVoiceManager = {
                 source.parameters.get("overlap").setValueAtTime(this._fitOptions.overlap, startTime);
             }
 
-            this._postGranularChannels(source, buffer);
+            const granularBuffer = this._monoChannel === null || this._monoChannel === undefined
+                ? buffer
+                : this._getMonoBuffer(buffer, this._monoChannel);
+            this._postGranularChannels(source, granularBuffer);
 
             source.playbackRate = {
                 setValueAtTime: (val, time) => {
@@ -852,10 +1000,9 @@ export const TrackVoiceManager = {
             };
         } else {
             source = ctx.createBufferSource();
-            source.buffer = buffer;
-            if (this._monoChannel !== null && this._monoChannel !== undefined) {
-                source.buffer = this._getMonoBuffer(source.buffer, this._monoChannel);
-            }
+            source.buffer = this._monoChannel === null || this._monoChannel === undefined
+                ? buffer
+                : this._getMonoBuffer(buffer, this._monoChannel);
 
             if (source.playbackRate && typeof source.playbackRate.setValueAtTime === "function") {
                 source.playbackRate.setValueAtTime(playbackRate, startTime);
@@ -865,26 +1012,30 @@ export const TrackVoiceManager = {
         }
 
         const voiceGain = ctx.createGain();
-        const currentGainVal = (typeof this._gainLevel === "number" && !isNaN(this._gainLevel)) ? this._gainLevel : 1.0;
-        const safeGainVal = Math.max(0.0001, currentGainVal);
+        const safeGainVal = 1.0;
         let actualDuration = duration;
+        let tieGainValue = safeGainVal;
+        const releaseTime = Math.max(startTime + duration, event?.tieReleaseTime || 0);
 
         if (this._envelope) {
-            actualDuration = this._scheduleAdsrGain(voiceGain, startTime, duration, safeGainVal, isTied);
+            const envelope = this._scheduleAdsrGain(voiceGain, startTime, duration, safeGainVal, !!event?.tied, releaseTime);
+            actualDuration = envelope.duration;
+            tieGainValue = envelope.holdValue;
         } else {
             voiceGain.gain.setValueAtTime(safeGainVal, startTime);
-            if (isTied) {
-                actualDuration = Infinity;
-            } else {
-                const release = (this._useSampler) ? parseDurationToSeconds(this._samplerRelease, Motif.tempo, Motif.beatsPerBar) : 0.005;
-                const off = startTime + duration;
-                actualDuration = duration + release;
-                voiceGain.gain.setValueAtTime(safeGainVal, off);
-                voiceGain.gain.exponentialRampToValueAtTime(0.0001 * safeGainVal, off + release);
-                voiceGain.gain.setValueAtTime(0, off + release);
-            }
+            const release = (this._useSampler) ? parseDurationToSeconds(this._samplerRelease, Motif.tempo, Motif.beatsPerBar) : 0.005;
+            const off = releaseTime;
+            actualDuration = off - startTime + release;
+            voiceGain.gain.setValueAtTime(safeGainVal, off);
+            voiceGain.gain.exponentialRampToValueAtTime(0.0001 * safeGainVal, off + release);
+            voiceGain.gain.setValueAtTime(0, off + release);
         }
 
+        if (this._dspCallback) {
+            const note = event?.value;
+            const hz = this._freqPattern ? Number(note) : midiToHz(note === true ? 60 : note);
+            source = this._createWorkletVoice(this._dspCallback.toString(), Number.isFinite(hz) ? hz : 440, null, false, duration, source);
+        }
         source.connect(voiceGain);
         voiceGain.connect(this.trackInputNode);
 
@@ -892,29 +1043,24 @@ export const TrackVoiceManager = {
             const sliceDuration = buffer.duration / this._slices;
             let sliceIndex = 0;
 
-            if (this._sliceIndices && this._sliceIndices.length > 0) {
-                const stepIndex = event.index !== undefined ? event.index : 0;
-                sliceIndex = this._sliceIndices[stepIndex % this._sliceIndices.length];
+            if (event.sliceIndex !== undefined && event.sliceIndex !== null) {
+                sliceIndex = event.sliceIndex;
             } else if (typeof event.value === "number") {
                 sliceIndex = event.value % this._slices;
             } else {
-                const stepIndex = event.index !== undefined ? event.index : 0;
-                sliceIndex = stepIndex % this._slices;
+                sliceIndex = event.index ?? 0;
             }
 
             sliceIndex = ((sliceIndex % this._slices) + this._slices) % this._slices;
 
             const offset = sliceIndex * sliceDuration;
             source.start(startTime, offset, sliceDuration);
-            if (actualDuration !== Infinity) {
-                const realSliceDuration = sliceDuration / playbackRate;
-                safeStop(source, startTime + Math.min(actualDuration, realSliceDuration));
-            }
+            const baseRate = buffer.duration / parseDurationToSeconds(this._fitDuration, Motif.tempo, Motif.beatsPerBar);
+            const realSliceDuration = sliceDuration / (useGranular ? baseRate : playbackRate);
+            safeStop(source, startTime + Math.min(actualDuration, realSliceDuration));
         } else {
             source.start(startTime);
-            if (actualDuration !== Infinity) {
-                safeStop(source, startTime + actualDuration);
-            }
+            safeStop(source, startTime + actualDuration);
         }
 
         const voiceKey = Symbol("voice");
@@ -922,11 +1068,37 @@ export const TrackVoiceManager = {
             oscillator: source,
             gainNode: voiceGain,
             startTime,
-            endTime: actualDuration === Infinity ? Infinity : startTime + actualDuration,
-            gainValue: currentGainVal,
+            endTime: startTime + actualDuration,
+            gainValue: safeGainVal,
+            tieTargets: event?.tieTargets,
+            tieCycle: event?.tieCycle,
+            tieEndTime: startTime + duration,
+            tieReleaseTime: releaseTime,
+            tieGainValue,
         });
 
         for (const cb of this._sidechainListeners) cb(startTime);
+    },
+
+    _scheduleTieRelease(voice, holdTime, releaseTime) {
+        const gain = voice.gainNode.gain;
+        if (typeof gain.cancelAndHoldAtTime === "function") {
+            gain.cancelAndHoldAtTime(holdTime);
+        } else {
+            gain.cancelScheduledValues(holdTime);
+        }
+        gain.setValueAtTime(voice.tieGainValue, holdTime);
+        gain.setValueAtTime(voice.tieGainValue, releaseTime);
+        const release = this._envelope
+            ? parseDurationToSeconds(this._envelope.release !== undefined ? this._envelope.release : .1, Motif.tempo, Motif.beatsPerBar)
+            : 0;
+        if (release > 0) {
+            gain.exponentialRampToValueAtTime(.0001 * voice.gainValue, releaseTime + release);
+        }
+        gain.setValueAtTime(0, releaseTime + release);
+        voice.tieReleaseTime = releaseTime;
+        voice.endTime = releaseTime + release;
+        safeStop(voice.oscillator, voice.endTime);
     },
 
     /**
@@ -953,66 +1125,63 @@ export const TrackVoiceManager = {
         }
 
         if (event.value === Tie) {
-            let activeVoice = null;
-            let maxStartTime = -1;
-            for (const voice of this._activeVoices.values()) {
-                if (voice.startTime > maxStartTime) {
-                    maxStartTime = voice.startTime;
-                    activeVoice = voice;
-                }
-            }
+            for (const activeVoice of this._activeVoices.values()) {
+                if (activeVoice.tieCycle !== event.tieCycle || !activeVoice.tieTargets?.includes(event.tieId)) continue;
+                activeVoice.tieTargets = [
+                    ...activeVoice.tieTargets.filter(id => id !== event.tieId),
+                    ...(event.tieTargets || []),
+                ];
+                const off = Math.max(activeVoice.tieEndTime || 0, startTime + duration);
+                activeVoice.tieEndTime = off;
 
-            if (activeVoice) {
-                const off = startTime + duration;
-                if (event.tied) {
-                    if (typeof activeVoice.gainNode.gain.cancelAndHoldAtTime === "function") {
-                        activeVoice.gainNode.gain.cancelAndHoldAtTime(off);
-                    }
-                } else {
-                    const env = this._envelope;
-                    if (env) {
-                        const release = parseDurationToSeconds(env.release !== undefined ? env.release : 0.1, Motif.tempo, Motif.beatsPerBar);
-                        const floorVal = 0.0001 * activeVoice.gainValue;
-                        const valAtOff = activeVoice.gainNode.gain.value !== undefined ? activeVoice.gainNode.gain.value : activeVoice.gainValue;
-
-                        activeVoice.gainNode.gain.setValueAtTime(valAtOff, off);
-                        activeVoice.gainNode.gain.exponentialRampToValueAtTime(floorVal, off + release);
-                        activeVoice.gainNode.gain.setValueAtTime(0, off + release);
-
-                        activeVoice.endTime = off + release;
-                        safeStop(activeVoice.oscillator, off + release);
-                    } else {
-                        activeVoice.gainNode.gain.setValueAtTime(0, off);
-                        activeVoice.endTime = off;
-                        safeStop(activeVoice.oscillator, off);
-                    }
-                }
+                // Keep a finite fallback stop. A continuation must replace it before
+                // the gate ends, so a removed or missed Tie cannot hold forever.
+                this._scheduleTieRelease(activeVoice, startTime, Math.max(off, event.tieReleaseTime || 0));
             }
             return;
         }
 
-        if (this._scaleRoot !== undefined && !this._freqPattern &&
-            typeof event.value === "number" && !isNaN(event.value)) {
+        if (this._scaleRoot !== undefined && !this._freqPattern && !event.nativeSlicePitch) {
+            const mapDegree = value => typeof value === "number" && !isNaN(value)
+                ? degreeToMidi(value, this._scaleRoot, this._scaleName || "major")
+                : value;
             event = {
                 ...event,
-                value: degreeToMidi(event.value, this._scaleRoot, this._scaleName || "major"),
+                value: event.value?.isRamp
+                    ? { ...event.value, from: mapDegree(event.value.from), to: mapDegree(event.value.to) }
+                    : mapDegree(event.value),
             };
         }
 
-        if (this._useSampler && this._samplerBuffers.size > 0) {
+        if (event.value?.isRamp && (this._useSample || this._useSampler || this._synthType === "noise")) {
+            throw new Error(`[Motif] Pitch Ramp requires a pitched synth; samples, samplers, and noise are unsupported on track "${this.id}".`);
+        }
+
+        if (this._useSampler) {
             return this._playSamplerEvent(event, startTime, duration);
         }
 
-        if (this._useSample && this._sampleBuffer) {
+        if (this._useSample) {
             return this._playSampleEvent(event, startTime, duration);
         }
 
         let hz;
         let hzTo = null;
+        let glideDuration = duration;
         let isRamp = Boolean(event.value && event.value.isRamp);
 
         if (isRamp) {
             const ramp = event.value;
+            if (ramp.duration !== undefined) {
+                const beats = musicalDurationBeats(ramp.duration, Motif.beatsPerBar);
+                const requestedDuration = beats === null
+                    ? parseDurationToSeconds(ramp.duration, Motif.tempo, Motif.beatsPerBar)
+                    : Motif._timeAtBeat(Motif._beatAtTime(startTime) + beats) - startTime;
+                if (!Number.isFinite(requestedDuration) || requestedDuration <= 0) {
+                    throw new Error(`[Motif] Pitch Ramp duration must be finite and positive on track "${this.id}".`);
+                }
+                glideDuration = Math.min(duration, requestedDuration);
+            }
             if (this._freqPattern) {
                 hz = typeof ramp.from === "number" ? ramp.from : parseFloat(ramp.from);
                 hzTo = typeof ramp.to === "number" ? ramp.to : parseFloat(ramp.to);
@@ -1045,50 +1214,54 @@ export const TrackVoiceManager = {
             if (this._activeVoices.size >= this._voiceLimit) return;
         }
 
-        const voice = this._createVoiceSource(this._synthType, hz, hzTo, isRamp, startTime, duration);
+        let voice = this._createVoiceSource(this._synthType, hz, hzTo, isRamp, startTime, glideDuration);
+        if (voice && this._dspCallback) {
+            voice = this._createWorkletVoice(this._dspCallback.toString(), hz, hzTo, isRamp, glideDuration, voice);
+        }
         if (!voice) return;
         const voiceGain = ctx.createGain();
-        const currentGainVal = (typeof this._gainLevel === "number" && !isNaN(this._gainLevel)) ? this._gainLevel : 1.0;
-        const safeGainVal = Math.max(0.0001, currentGainVal);
+        const safeGainVal = 1.0;
 
         let actualDuration = duration;
-        let isTiedNote = !!event.tied;
+        let tieGainValue = safeGainVal;
+        const releaseTime = Math.max(startTime + duration, event?.tieReleaseTime || 0);
 
         if (this._envelope) {
-            actualDuration = this._scheduleAdsrGain(voiceGain, startTime, duration, safeGainVal, isTiedNote);
+            const envelope = this._scheduleAdsrGain(voiceGain, startTime, duration, safeGainVal, !!event?.tied, releaseTime);
+            actualDuration = envelope.duration;
+            tieGainValue = envelope.holdValue;
         } else {
             voiceGain.gain.setValueAtTime(safeGainVal, startTime);
-            if (isTiedNote) {
-                actualDuration = Infinity;
-            } else {
-                const release = 0.015; // 15ms click preventative fade-out
-                const off = startTime + duration;
-                if (typeof voiceGain.gain.exponentialRampToValueAtTime === "function") {
-                    voiceGain.gain.setValueAtTime(safeGainVal, off);
-                    voiceGain.gain.exponentialRampToValueAtTime(0.0001 * safeGainVal, off + release);
-                    voiceGain.gain.setValueAtTime(0, off + release);
-                } else if (typeof voiceGain.gain.setValueAtTime === "function") {
-                    voiceGain.gain.setValueAtTime(safeGainVal, off);
-                    voiceGain.gain.setValueAtTime(0, off + release);
-                }
-                actualDuration = duration + release;
+            const release = 0.015; // 15ms click preventative fade-out
+            const off = releaseTime;
+            if (typeof voiceGain.gain.exponentialRampToValueAtTime === "function") {
+                voiceGain.gain.setValueAtTime(safeGainVal, off);
+                voiceGain.gain.exponentialRampToValueAtTime(0.0001 * safeGainVal, off + release);
+                voiceGain.gain.setValueAtTime(0, off + release);
+            } else if (typeof voiceGain.gain.setValueAtTime === "function") {
+                voiceGain.gain.setValueAtTime(safeGainVal, off);
+                voiceGain.gain.setValueAtTime(0, off + release);
             }
+            actualDuration = off - startTime + release;
         }
 
         voice.output.connect(voiceGain);
         voiceGain.connect(this.trackInputNode);
         voice.start(startTime);
-        if (actualDuration !== Infinity) {
-            voice.stop(startTime + actualDuration);
-        }
+        voice.stop(startTime + actualDuration);
 
         const voiceKey = Symbol("voice");
         this._activeVoices.set(voiceKey, {
             oscillator: voice,
             gainNode: voiceGain,
             startTime,
-            endTime: actualDuration === Infinity ? Infinity : startTime + actualDuration,
-            gainValue: currentGainVal,
+            endTime: startTime + actualDuration,
+            gainValue: safeGainVal,
+            tieTargets: event?.tieTargets,
+            tieCycle: event?.tieCycle,
+            tieEndTime: startTime + duration,
+            tieReleaseTime: releaseTime,
+            tieGainValue,
         });
 
         for (const cb of this._sidechainListeners) cb(startTime);
@@ -1102,8 +1275,16 @@ export const TrackVoiceManager = {
      * @private
      */
     _playSamplerEvent(event, startTime, duration) {
-        const targetMidi = typeof event.value === "number" ? event.value : noteToMidi(event.value);
-        if (typeof targetMidi !== "number" || isNaN(targetMidi)) return;
+        let targetMidi;
+        if (this._freqPattern) {
+            const hz = typeof event.value === "number" ? event.value : parseFloat(event.value);
+            if (!Number.isFinite(hz) || hz <= 0) return;
+
+            targetMidi = 69 + 12 * Math.log2(hz / 440);
+        } else {
+            targetMidi = typeof event.value === "number" ? event.value : noteToMidi(event.value);
+        }
+        if (!Number.isFinite(targetMidi)) return;
 
         const sourceKey = this._findNearestSamplerKey(targetMidi);
         if (sourceKey === null) return;
@@ -1120,7 +1301,9 @@ export const TrackVoiceManager = {
         }
 
         const playbackRate = fitMultiplier * Math.pow(2, (targetMidi - sourceKey) / 12);
-        this._playAudioBuffer(buffer, startTime, duration, playbackRate, !!event.tied, event);
+        if (!Number.isFinite(playbackRate) || playbackRate <= 0) return;
+
+        this._playAudioBuffer(buffer, startTime, duration, playbackRate, event);
     },
 
     /**
@@ -1142,7 +1325,7 @@ export const TrackVoiceManager = {
         }
 
         let playbackRate = baseRate;
-        if (this._notePattern) {
+        if (this._notePattern !== null || this._sliceIndices !== null && this._freqPattern === null) {
             const midi = noteToMidi(event.value);
             if (typeof midi === "number" && !isNaN(midi)) {
                 playbackRate = baseRate * Math.pow(2, (midi - 60) / 12);
@@ -1154,7 +1337,7 @@ export const TrackVoiceManager = {
             }
         }
 
-        this._playAudioBuffer(this._sampleBuffer, startTime, duration, playbackRate, !!event.tied, event);
+        this._playAudioBuffer(this._sampleBuffer, startTime, duration, playbackRate, event);
     },
 
     /**

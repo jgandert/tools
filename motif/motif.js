@@ -6,10 +6,13 @@ import {
     sampleBufferCache,
     trackRegistry,
     applyParamModulation,
+    disposeModulationBindings,
     SimplexNoise,
     safeDisconnect,
     reconnectNodes,
     ensureGranularStretcher,
+    sourceReadinessListeners,
+    notifySourceReadinessChange,
 } from "./src/helpers.js";
 import { TrackAudioChain } from "./src/TrackAudioChain.js";
 import { TrackVoiceManager, ensureSynthWorklet } from "./src/TrackVoiceManager.js";
@@ -43,7 +46,7 @@ export class RampNode {
 }
 
 /**
- * Creates a ramp primitive that tags a step for linear interpolation between two values over the step's duration.
+ * Creates a ramp primitive for interpolation; pitched synth steps use the explicit duration or their gate duration.
  * @param {*} from - The starting value.
  * @param {*} to - The ending value.
  * @param {string|number} [duration] - Optional duration for the ramp.
@@ -114,15 +117,12 @@ export function Arrange(sections, options = {}) {
         }
     }
 
-    let currentTime = 0;
-    // Note: Arrange uses the Motif global transport settings
-    const bpm = Motif.tempo;
+    let currentBeat = 0;
     const beatsPerBar = Motif.beatsPerBar;
-    const barDuration = (60 / bpm) * beatsPerBar;
 
     for (const section of activeSections) {
-        const sectionDuration = (section.bars || 0) * barDuration;
-        const sectionStart = currentTime;
+        const sectionDuration = (section.bars || 0) * beatsPerBar;
+        const sectionStart = currentBeat;
         const sectionEnd = sectionStart + sectionDuration;
 
         if (section.tracks && Array.isArray(section.tracks)) {
@@ -131,19 +131,27 @@ export function Arrange(sections, options = {}) {
                 if (!track) continue;
                 if (track._isSolo) continue;
                 if (typeof track.start === "function" && typeof track.stop === "function") {
-                    track.start(sectionStart).stop(sectionEnd);
+                    track._activeSegments.push({
+                        startBeat: sectionStart,
+                        stopBeat: sectionEnd,
+                        get start() { return track._arrangedTime(sectionStart); },
+                        get stop() { return track._arrangedTime(sectionEnd); },
+                    });
 
                     if (track._gainRampsQueue && track._gainRampsQueue.length > 0) {
                         const rampNode = track._gainRampsQueue.shift();
                         track._scheduledRamps = track._scheduledRamps || [];
 
-                        const d = rampNode.duration !== undefined
-                            ? parseDurationToSeconds(rampNode.duration, Motif.tempo, Motif.beatsPerBar)
-                            : sectionDuration;
+                        const duration = rampNode.duration;
 
                         track._scheduledRamps.push({
-                            start: sectionStart,
-                            duration: d,
+                            startBeat: sectionStart,
+                            durationBeats: duration === undefined ? sectionDuration : musicalDurationBeats(duration, beatsPerBar),
+                            durationSeconds: duration === undefined ? null : parseDurationToSeconds(duration, Motif.tempo, beatsPerBar),
+                            get start() { return track._arrangedTime(sectionStart); },
+                            get duration() {
+                                return this.durationBeats === null ? this.durationSeconds : track._arrangedTime(sectionStart + this.durationBeats) - this.start;
+                            },
                             from: typeof rampNode.from === "number" ? rampNode.from : 1.0,
                             to: typeof rampNode.to === "number" ? rampNode.to : 0.0,
                             scheduled: false,
@@ -152,12 +160,23 @@ export function Arrange(sections, options = {}) {
                 }
             }
         }
-        currentTime = sectionEnd;
+        currentBeat = sectionEnd;
     }
+    Motif._arrangementEndBeat = currentBeat;
 }
 
 
 export const Tie = Symbol("Tie");
+
+function copyRampValue(value) {
+    if (value?.isRamp !== true) return value;
+
+    return Object.assign(Object.create(Object.getPrototypeOf(value)), value);
+}
+
+export function copyPatternEvent(event) {
+    return { ...event, value: copyRampValue(event.value) };
+}
 
 
 export class MotifEventArray extends Array {
@@ -165,6 +184,7 @@ export class MotifEventArray extends Array {
         this.forEach(e => {
             if (e && e.value !== undefined && e.value !== null) {
                 if (e.value.isRamp === true) {
+                    e.value = copyRampValue(e.value);
                     if (typeof e.value.from === "string" && e.value.from !== "Tie") {
                         const m = noteToMidi(e.value.from);
                         if (m !== undefined && !isNaN(m)) e.value.from = midiToNote(m + semitones);
@@ -240,9 +260,9 @@ export class MotifEventArray extends Array {
                 } else if (chosenAction === "ratchet") {
                     const newEvents = [];
                     for (const e of this) {
-                        const e1 = { ...e };
+                        const e1 = copyPatternEvent(e);
                         e1.duration /= 2;
-                        const e2 = { ...e1 };
+                        const e2 = copyPatternEvent(e1);
                         e2.startTime += e1.duration;
                         newEvents.push(e1, e2);
                     }
@@ -263,7 +283,7 @@ export class MotifEventArray extends Array {
     offset(timeShift, modifier) {
         const shift = parseDurationToFraction(timeShift);
         const offsetEvents = this.map(e => {
-            const clone = { ...e };
+            const clone = copyPatternEvent(e);
             clone.startTime += shift;
             if (modifier) {
                 const res = modifier(clone);
@@ -301,16 +321,16 @@ export class PatternParser {
      * @returns {Array<Object>} Flat array of parsed event objects.
      * @private
      */
-    static _parseRecursive(pattern, startTime, duration) {
+    static _parseRecursive(pattern, startTime, duration, tieScope = new Map()) {
         if (pattern && pattern.isParallel) {
-            return PatternParser._parseParallel(pattern.items, startTime, duration);
+            return PatternParser._parseParallel(pattern.items, startTime, duration, tieScope);
         }
 
         if (!Array.isArray(pattern)) {
-            return [{ value: pattern, startTime, duration }];
+            return [{ value: pattern, startTime, duration, tieScope }];
         }
 
-        return PatternParser._parseSequential(pattern, startTime, duration);
+        return PatternParser._parseSequential(pattern, startTime, duration, tieScope);
     }
 
     /**
@@ -321,10 +341,13 @@ export class PatternParser {
      * @returns {Array<Object>} Flat array of parsed event objects.
      * @private
      */
-    static _parseParallel(items, startTime, duration) {
+    static _parseParallel(items, startTime, duration, tieScope) {
         const events = [];
-        for (const item of items) {
-            events.push(...PatternParser._parseRecursive(item, startTime, duration));
+        const group = Symbol("parallel");
+        for (const [index, item] of items.entries()) {
+            const branchScope = new Map(tieScope);
+            branchScope.set(group, index);
+            events.push(...PatternParser._parseRecursive(item, startTime, duration, branchScope));
         }
         return events;
     }
@@ -337,7 +360,7 @@ export class PatternParser {
      * @returns {Array<Object>} Flat array of parsed event objects.
      * @private
      */
-    static _parseSequential(pattern, startTime, duration) {
+    static _parseSequential(pattern, startTime, duration, tieScope) {
         const length = pattern.length;
         if (length === 0) return [];
 
@@ -347,7 +370,7 @@ export class PatternParser {
         for (let i = 0; i < length; i++) {
             const element = pattern[i];
             const elementStartTime = startTime + i * stepDuration;
-            events.push(...PatternParser._parseRecursive(element, elementStartTime, stepDuration));
+            events.push(...PatternParser._parseRecursive(element, elementStartTime, stepDuration, tieScope));
         }
 
         return events;
@@ -359,18 +382,28 @@ export class PatternParser {
      * @private
      */
     static _postProcessTies(events) {
-        const tieStartTimes = new Set();
-        for (let i = 0; i < events.length; i++) {
-            const ev = events[i];
-            if (ev.value === Tie) {
-                tieStartTimes.add(Math.round(ev.startTime * 1e9));
-            }
+        const tiesAt = new Map();
+        for (const event of events) {
+            if (event.value !== Tie) continue;
+            event.tieId = Symbol("tie");
+            const time = Math.round(event.startTime * 1e9);
+            if (!tiesAt.has(time)) tiesAt.set(time, []);
+            tiesAt.get(time).push(event);
         }
 
-        for (let i = 0; i < events.length; i++) {
-            const ev = events[i];
-            const end = ev.startTime + ev.duration;
-            ev.tied = tieStartTimes.has(Math.round(end * 1e9));
+        for (const event of events) {
+            const end = Math.round((event.startTime + event.duration) * 1e9);
+            const candidates = tiesAt.get(end) || [];
+
+            // A Tie inside a Parallel branch cannot hold a sibling branch's notes.
+
+            event.tieTargets = candidates.filter(tie => {
+                for (const [group, branch] of event.tieScope || []) {
+                    if (tie.tieScope?.has(group) && tie.tieScope.get(group) !== branch) return false;
+                }
+                return true;
+            }).map(tie => tie.tieId);
+            event.tied = event.tieTargets.length > 0;
         }
     }
 }
@@ -594,6 +627,14 @@ export function parseDurationToSeconds(duration, bpm, beatsPerBar = 4) {
     return 0;
 }
 
+// Musical durations are beat counts; numbers and explicit seconds stay on the audio clock.
+export function musicalDurationBeats(duration, beatsPerBar = 4) {
+    if (typeof duration !== "string") return null;
+    const value = duration.trim().toLowerCase();
+    if (!/^(?:\d+\/\d+\s*(?:b|bar|bars|beat|beats)?|\d+(?:\.\d+)?\s*(?:b|bar|bars|beat|beats))$/.test(value)) return null;
+    return parseDurationToSeconds(duration, 60, beatsPerBar);
+}
+
 const LOOKAHEAD_INTERVAL_MS = 25;
 const LOOKAHEAD_WINDOW_S = 0.1;
 
@@ -605,6 +646,12 @@ export class MotifEngine {
         this.masterMidFilter = null;
         this.masterHighFilter = null;
         this.masterCompressor = null;
+        this.masterLimiter = null;
+        this._masterLimiterEnabled = true;
+        this._masterCompressorEnabled = false;
+        this._masterLimiterSettings = { ceiling: -1, release: 0.1 };
+        this._masterLimiterReady = null;
+        this._masterLimiterError = null;
         this.isPlaying = false;
         this.tempo = 120;
         this.beatsPerBar = 4;
@@ -624,8 +671,11 @@ export class MotifEngine {
         this._arrangementOptions = null;
         this._loopTimeout = null;
         this._debugPlaybackStart = null;
+        this._naturalCompletionDrains = new Map();
         this._suspendedByEngine = false;
         this._suspendPromise = null;
+        this._startGeneration = 0;
+        this._pendingStart = null;
         this._sampleSeed = 0;
     }
 
@@ -738,12 +788,14 @@ export class MotifEngine {
 
         this.masterCompressor = this.ctx.createDynamicsCompressor();
 
-        // Default Chain routing: masterGain -> low -> mid -> high -> masterCompressor -> destination
+        // The final limiter is connected only after its worklet is ready.
         this.masterGain.connect(this.masterLowFilter);
         this.masterLowFilter.connect(this.masterMidFilter);
         this.masterMidFilter.connect(this.masterHighFilter);
-        this.masterHighFilter.connect(this.masterCompressor);
-        this.masterCompressor.connect(this.ctx.destination);
+        this.masterLimiter = null;
+        this._masterLimiterError = null;
+        this._prepareMasterLimiter();
+        this._updateMasterRouting();
 
         // Initialize sample-accurate BPM param using ConstantSourceNode if available
         if (typeof this.ctx.createConstantSource === "function") {
@@ -777,56 +829,108 @@ export class MotifEngine {
     }
 
     /**
-     * Starts the transport.
-     * Guards execution with a check that the AudioContext is running (i.e. resumed by a user gesture).
-     * Returns a Promise that resolves when the transport actually starts (after any pending samples load).
+     * Starts the transport after a user gesture or an engine-initiated suspend.
+     * Resolves on launch, or promptly without launching when cancelled.
      */
     start() {
-        if (this.ctx.state !== "running") {
-            // Engine-initiated suspend (pause/stop): resume instead of throwing.
+        this._cancelPendingStart();
+        const request = { generation: this._startGeneration };
+        request.cancelled = new Promise(resolve => { request.cancel = resolve; });
+        this._pendingStart = request;
+
+        const launch = async () => {
             if (this._suspendedByEngine && typeof this.ctx.resume === "function") {
-                this._suspendedByEngine = false;
-                return Promise.resolve(this.ctx.resume()).then(() => this._launchTransport());
+                await Promise.race([this._suspendPromise, request.cancelled]);
+                if (!this._isCurrentStart(request)) return;
+                if (this.ctx.state !== "running") {
+                    const resumed = Promise.resolve(this.ctx.resume()).catch(error => {
+                        if (this._isCurrentStart(request)) throw error;
+                        console.warn("Cancelled Motif.start() resume failed:", error);
+                    });
+                    await Promise.race([resumed, request.cancelled]);
+                    if (!this._isCurrentStart(request)) return;
+                }
             }
+            this._suspendedByEngine = false;
+            return this._launchTransport(request);
+        };
+
+        if (this.ctx.state !== "running" && !(this._suspendedByEngine && typeof this.ctx.resume === "function")) {
+            this._pendingStart = null;
             throw new Error("AudioContext is suspended. Motif.start() must be called after a user gesture has resumed the AudioContext.");
         }
 
-        this._suspendedByEngine = false;
-        return this._launchTransport();
+        return launch().finally(() => {
+            if (this._pendingStart === request) this._pendingStart = null;
+        });
+    }
+
+    _cancelPendingStart() {
+        this._startGeneration++;
+        this._pendingStart?.cancel();
+        this._pendingStart = null;
+    }
+
+    _isCurrentStart(request) {
+        return request.generation === this._startGeneration;
     }
 
     /**
-     * Marks the transport as playing and kicks off the scheduler once any
-     * pending sample loads settle.
+     * Starts scheduling only while this launch request remains current.
      * @private
-     * @returns {Promise} Resolves when the transport is actually running.
      */
-    _launchTransport() {
-        const onReady = () => {
+    async _launchTransport(request) {
+        if (!this._isCurrentStart(request)) return;
+        if (this._loadingSamples.length > 0 || this._hasPendingTrackSources()) {
+            const resources = Promise.allSettled(this._loadingSamples).then(results => {
+                const failed = results.find(result => result.status === "rejected");
+                if (failed) {
+                    console.error("Failed to load some resources/samples:", failed.reason);
+                }
+            });
+            await Promise.race([resources, request.cancelled]);
+            if (!this._isCurrentStart(request)) return;
             this._loadingSamples = [];
-            this._debugPlaybackStart = this._debugPlaybackStart !== null ? this._debugPlaybackStart : this.ctx.currentTime;
-            this.isPlaying = true;
-            this._startScheduler();
-        };
-
-        if (this._loadingSamples && this._loadingSamples.length > 0) {
-            return Promise.all(this._loadingSamples)
-                .then(onReady)
-                .catch(err => {
-                    console.error("Failed to load some resources/samples:", err);
-                    this._loadingSamples = [];
-                    onReady();
-                });
+            this._assertMasterReady();
+            await this._awaitTrackSources(request);
+            if (!this._isCurrentStart(request)) return;
         }
 
-        onReady();
-        return Promise.resolve();
+        this._assertMasterReady();
+        this._loadingSamples = [];
+        this._debugPlaybackStart = this._debugPlaybackStart !== null ? this._debugPlaybackStart : this.ctx.currentTime;
+        this.isPlaying = true;
+        this._startScheduler();
+    }
+
+    _hasPendingTrackSources() {
+        for (const track of trackRegistry.values()) {
+            if (typeof track._schedule !== "function" || !track._sourcePending) continue;
+            return true;
+        }
+        return false;
+    }
+
+    async _awaitTrackSources(request) {
+        while (this._isCurrentStart(request) && this._hasPendingTrackSources()) {
+            let changed;
+            const sourceChanged = new Promise(resolve => { changed = resolve; });
+            sourceReadinessListeners.add(changed);
+            try {
+                // Replacements and removals must wake startup even when an old
+                // fetch never settles. Load completion also signals this change.
+                await Promise.race([sourceChanged, request.cancelled]);
+            } finally {
+                sourceReadinessListeners.delete(changed);
+            }
+        }
     }
 
     /**
      * Suspends the transport without resetting position.
      */
     pause() {
+        this._cancelPendingStart();
         this.isPlaying = false;
         this._stopScheduler();
         if (this._loopTimeout) {
@@ -845,12 +949,15 @@ export class MotifEngine {
      * Stops the transport and resets playhead/position to zero.
      */
     stop() {
+        this._cancelPendingStart();
         this.isPlaying = false;
         this.position = 0;
         this._debugPlaybackStart = null;
+        this._naturalCompletionDrains.clear();
         this._stopScheduler();
         this._schedQueue = [];
         this._tempoRamp = null;
+        this._tempoMap = null;
 
         if (this._loopTimeout) {
             clearTimeout(this._loopTimeout);
@@ -895,6 +1002,13 @@ export class MotifEngine {
         if (!this.ctx) return;
         if (this.ctx.state && this.ctx.state !== "running") return;
 
+        this._tick();
+    }
+
+    // Offline renderers advance the same scheduler while the audio clock is suspended.
+
+    _tick() {
+        const wasRamping = !!this._tempoRamp;
         if (this._tempoRamp) {
             const now = this.ctx.currentTime;
             const { startBpm, targetBpm, startTime, endTime } = this._tempoRamp;
@@ -907,7 +1021,35 @@ export class MotifEngine {
             }
         }
 
+        if (wasRamping) this._mappedTempo = this.tempo;
         const horizon = this.ctx.currentTime + this.lookaheadWindowS;
+        const shouldLoop = !!this._arrangementOptions?.loop;
+        const limiterLatency = this._masterLimiterEnabled && this.masterLimiter && this.ctx.sampleRate > 0
+            ? (Math.ceil(this.ctx.sampleRate * 0.005) + 128) / this.ctx.sampleRate
+            : 0;
+        const tracksWithFiniteVoices = new Set();
+
+        // Capture final audio before scheduling removes ended voices. The limiter
+        // still holds its lookahead frames after their source graphs disconnect.
+
+        if (this.isPlaying && !shouldLoop) {
+            for (const track of this._naturalCompletionDrains.keys()) {
+                if (trackRegistry.get(track.id) !== track) this._naturalCompletionDrains.delete(track);
+            }
+            for (const track of trackRegistry.values()) {
+                if (track.id === "__temp_probe__") continue;
+                for (const pool of [track._activeVoices, track._retiredVoices]) {
+                    for (const voice of pool?.values() || []) {
+                        if (!Number.isFinite(voice.endTime)) continue;
+                        tracksWithFiniteVoices.add(track);
+                        if (voice.endTime <= this.ctx.currentTime) {
+                            const previousDrain = this._naturalCompletionDrains.get(track) ?? 0;
+                            this._naturalCompletionDrains.set(track, Math.max(previousDrain, voice.endTime + limiterLatency));
+                        }
+                    }
+                }
+            }
+        }
 
         // Schedule track-specific events
         for (const track of trackRegistry.values()) {
@@ -942,19 +1084,44 @@ export class MotifEngine {
             let maxStopTime = 0;
 
             for (const track of trackRegistry.values()) {
-                if (track.id === "__temp_probe__" || (!track._notePattern && !track._freqPattern)) {
-                    continue;
+                if (track.id === "__temp_probe__") continue;
+
+                // Live edits can empty a pattern while its submitted notes still sound.
+
+                if (!shouldLoop) {
+                    maxStopTime = Math.max(maxStopTime, this._naturalCompletionDrains.get(track) ?? 0);
+                    for (const pool of [track._activeVoices, track._retiredVoices]) {
+                        for (const voice of pool?.values() || []) {
+                            if (!Number.isFinite(voice.endTime)) continue;
+                            tracksWithFiniteVoices.add(track);
+                            maxStopTime = Math.max(maxStopTime, voice.endTime + limiterLatency);
+                        }
+                    }
+                }
+
+                let boundaryTrack = track;
+                while (boundaryTrack._splitParent) boundaryTrack = boundaryTrack._splitParent;
+
+                // Empty patterns participate only while draining submitted audio
+                // under finite activity boundaries. Imperative previews stay open.
+
+                if (!track._parsedEvents?.length) {
+                    const hasSubmittedAudio = tracksWithFiniteVoices.has(track) || this._naturalCompletionDrains.has(track);
+                    if (shouldLoop || !hasSubmittedAudio) continue;
+                    const hasFiniteActivity = boundaryTrack._activeSegments.length > 0
+                        && boundaryTrack._activeSegments.every(segment => Number.isFinite(segment.stop));
+                    if (!hasFiniteActivity) continue;
                 }
 
                 hasTracks = true;
-                if (track._activeSegments.length === 0) {
+                if (boundaryTrack._activeSegments.length === 0) {
                     allFinished = false;
                     break;
                 }
 
-                const refTime = track._playbackStartTime !== null && track._playbackStartTime !== undefined ? track._playbackStartTime : this.ctx.currentTime;
+                const refTime = boundaryTrack._playbackStartTime !== null && boundaryTrack._playbackStartTime !== undefined ? boundaryTrack._playbackStartTime : this.ctx.currentTime;
                 let trackMaxStop = 0;
-                for (const seg of track._activeSegments) {
+                for (const seg of boundaryTrack._activeSegments) {
                     if (seg.stop === Infinity) {
                         allFinished = false;
                         break;
@@ -972,14 +1139,19 @@ export class MotifEngine {
                 }
             }
 
+            if (allFinished && this._arrangementEndBeat !== undefined) {
+                const first = [...trackRegistry.values()].find(track => track._playbackStartTime != null);
+                const origin = first?._playbackStartTime ?? this._debugPlaybackStart ?? this.ctx.currentTime;
+                maxStopTime = Math.max(maxStopTime, this._timeAtBeat(this._beatAtTime(origin) + this._arrangementEndBeat));
+            }
+
             if (hasTracks && allFinished && this.ctx.currentTime >= maxStopTime) {
                 const options = this._arrangementOptions || {};
-                const shouldLoop = !!options.loop;
 
                 // Diagnostic: log if arrangement ends much earlier than expected.
                 const elapsed = this.ctx.currentTime - (this._debugPlaybackStart || this.ctx.currentTime);
                 if (elapsed < 5 && maxStopTime > 0) {
-                    console.warn("[Motif] Arrangement ended after only", elapsed.toFixed(2), "s. maxStopTime:", maxStopTime.toFixed(2), "currentTime:", this.ctx.currentTime.toFixed(2), "— check that all tracks in Arrange() have .note() set and _activeSegments populated.");
+                    console.warn("[Motif] Arrangement ended after only", elapsed.toFixed(2), "s. maxStopTime:", maxStopTime.toFixed(2), "currentTime:", this.ctx.currentTime.toFixed(2), "- check track patterns and arrangement boundaries.");
                 }
 
                 this.stop();
@@ -1037,17 +1209,91 @@ export class MotifEngine {
         this._schedInterval = null;
     }
 
+    _ensureTempoMap() {
+        if (this._tempoMapContext === this.ctx && this._tempoMap) {
+            if (this._mappedTempo === this.tempo) return;
+            // Public tempo assignments before playback also configure the transport.
+            this._tempoMap = null;
+        }
+        this._mappedTempo = this.tempo;
+        this._tempoMapContext = this.ctx;
+        this._tempoMap = [{ time: 0, beat: 0, bpm: this.tempo, slope: 0 }];
+    }
+
+    _beatAtTime(time) {
+        this._ensureTempoMap();
+        let segment = this._tempoMap[0];
+        for (const entry of this._tempoMap) {
+            if (entry.time > time) break;
+            segment = entry;
+        }
+        const elapsed = time - segment.time;
+        return segment.beat + (segment.bpm * elapsed + segment.slope * elapsed * elapsed / 2) / 60;
+    }
+
+    _timeAtBeat(beat) {
+        this._ensureTempoMap();
+        if (!Number.isFinite(beat)) return beat;
+        let segment = this._tempoMap[0];
+        for (const entry of this._tempoMap) {
+            if (entry.beat > beat) break;
+            segment = entry;
+        }
+        const area = (beat - segment.beat) * 60;
+        const elapsed = segment.slope === 0 ? area / segment.bpm
+            : 2 * area / (segment.bpm + Math.sqrt(segment.bpm ** 2 + 2 * segment.slope * area));
+        return segment.time + elapsed;
+    }
+
+    _tempoChangeTime() {
+        // Already submitted audio cannot be recalled. Change at the committed lookahead edge.
+        let time = this.ctx.currentTime;
+        for (const track of trackRegistry.values()) {
+            if (track._playbackStartTime !== null) time = Math.max(time, track._scheduledUntil || 0);
+        }
+        return time;
+    }
+
+    _mapTempoChange(bpm, time, seconds = 0) {
+        this._ensureTempoMap();
+        const beat = this._beatAtTime(time);
+        let previous = this._tempoMap[0];
+        for (const entry of this._tempoMap) {
+            if (entry.time > time) break;
+            previous = entry;
+        }
+        const startBpm = previous.bpm + previous.slope * (time - previous.time);
+        this._tempoMap = this._tempoMap.filter(entry => entry.time < time);
+        this._tempoMap.push({ time, beat, bpm: seconds > 0 ? startBpm : bpm, slope: seconds > 0 ? (bpm - startBpm) / seconds : 0 });
+        if (seconds > 0) this._tempoMap.push({ time: time + seconds, beat: beat + (startBpm + bpm) * seconds / 120, bpm, slope: 0 });
+        for (const track of trackRegistry.values()) {
+            for (const ramp of track._scheduledRamps || []) {
+                if (ramp.startBeat !== undefined) ramp.scheduled = false;
+            }
+        }
+        return startBpm;
+    }
+
+    _arrangementDuration() {
+        return this._arrangementEndBeat === undefined ? null : this._timeAtBeat(this._beatAtTime(0) + this._arrangementEndBeat);
+    }
+
     /**
      * Sets the global tempo (BPM).
      * @param {number} bpm - The target tempo.
      */
     setTempo(bpm) {
-        if (typeof bpm !== "number" || isNaN(bpm) || bpm <= 0) {
+        if (typeof bpm !== "number" || !Number.isFinite(bpm) || bpm <= 0) {
             throw new Error("Tempo must be a positive number.");
         }
+        const time = this._tempoChangeTime();
+        this._mapTempoChange(bpm, time);
+        this._tempoRamp = null;
         this.tempo = bpm;
+        this._mappedTempo = bpm;
         if (this.bpmParam) {
-            this.bpmParam.setValueAtTime(bpm, this.ctx.currentTime);
+            this.bpmParam.cancelScheduledValues?.(time);
+            this.bpmParam.setValueAtTime(bpm, time);
         }
     }
 
@@ -1058,74 +1304,128 @@ export class MotifEngine {
      * @param {Object} [options] - Additional options. Pass { smooth: true } to interpolate scheduler tempo.
      */
     rampTempo(bpm, duration, options = {}) {
-        if (typeof bpm !== "number" || isNaN(bpm) || bpm <= 0) {
+        if (typeof bpm !== "number" || !Number.isFinite(bpm) || bpm <= 0) {
             throw new Error("Target tempo must be a positive number.");
         }
 
         // Use average tempo for duration parsing to ensure ramp ends exactly at target beat
         const avgBpm = (this.tempo + bpm) / 2;
         const seconds = parseDurationToSeconds(duration, avgBpm, this.beatsPerBar);
-        const startTime = this.ctx.currentTime;
+        if (!Number.isFinite(seconds) || seconds < 0) throw new Error("Tempo ramp duration must be finite and non-negative.");
+        const startTime = this._tempoChangeTime();
         const endTime = startTime + seconds;
+        const startBpm = this._mapTempoChange(bpm, startTime, options.smooth === true ? seconds : 0);
+        this._tempoRamp = options.smooth === true && seconds > 0 ? { startBpm, targetBpm: bpm, startTime, endTime } : null;
 
         if (this.bpmParam) {
             // Anchor the ramp at the current value and current time
-            this.bpmParam.setValueAtTime(this.tempo, startTime);
+            this.bpmParam.cancelScheduledValues?.(startTime);
+            this.bpmParam.setValueAtTime(startBpm, startTime);
             this.bpmParam.linearRampToValueAtTime(bpm, endTime);
 
-            if (options.smooth === true) {
-                this._tempoRamp = {
-                    startBpm: this.tempo,
-                    targetBpm: bpm,
-                    startTime,
-                    endTime,
-                };
-            } else {
-                this.tempo = bpm;
-            }
-        } else {
-            this.tempo = bpm;
         }
+        if (!this._tempoRamp) this.tempo = bpm;
+        this._mappedTempo = this.tempo;
     }
 
-    /**
-     * Internal helper to dynamically route the output graph based on limiter status.
-     * @private
-     */
-    _updateMasterRouting(limiterEnabled) {
+    _prepareMasterLimiter() {
+        const ctx = this.ctx;
+        this._masterLimiterReady = Promise.resolve().then(async () => {
+            if (!ctx.audioWorklet || typeof AudioWorkletNode === "undefined") {
+                throw new Error("The master limiter requires AudioWorklet support.");
+            }
+            await ctx.audioWorklet.addModule(new URL("./src/worklets/MasterLimiterProcessor.js", import.meta.url).href);
+            if (this.ctx !== ctx) return;
+            this.masterLimiter = new AudioWorkletNode(ctx, "master-limiter", {
+                numberOfInputs: 1,
+                numberOfOutputs: 1,
+                outputChannelCount: [2],
+                channelCount: 2,
+                channelCountMode: "explicit",
+                parameterData: this._masterLimiterSettings,
+            });
+            this.masterLimiter.onprocessorerror = () => {
+                if (this.ctx !== ctx) return;
+                this._masterLimiterError = new Error("The master limiter processor failed.");
+                this._updateMasterRouting();
+                if (this._masterLimiterEnabled) {
+                    this.isPlaying = false;
+                    this._stopScheduler();
+                }
+                console.error(this._masterLimiterError);
+            };
+            this._updateMasterRouting();
+        }).catch(error => {
+            if (this.ctx === ctx) this._masterLimiterError = error;
+        });
+        this._loadingSamples.push(this._masterLimiterReady);
+    }
+
+    _assertMasterReady() {
+        if (!this._masterLimiterEnabled) return;
+        if (this._masterLimiterError) throw this._masterLimiterError;
+        if (!this.masterLimiter) throw new Error("The master limiter is not ready.");
+    }
+
+    _updateMasterRouting() {
         if (!this.ctx) return;
 
-        // Disconnect all filters and compressors to ensure clean state
         this.masterHighFilter.disconnect();
         this.masterCompressor.disconnect();
+        if (this.masterLimiter) this.masterLimiter.disconnect();
 
-        if (limiterEnabled) {
+        let output = this.masterHighFilter;
+        if (this._masterCompressorEnabled) {
             this.masterHighFilter.connect(this.masterCompressor);
-            this.masterCompressor.connect(this.ctx.destination);
-        } else {
-            this.masterHighFilter.connect(this.ctx.destination);
+            output = this.masterCompressor;
         }
+        if (this._masterLimiterEnabled) {
+            if (!this.masterLimiter || this._masterLimiterError) return;
+            output.connect(this.masterLimiter);
+            output = this.masterLimiter;
+        }
+        output.connect(this.ctx.destination);
     }
 
     /**
-     * Configures the master output stage (gain, EQ, and dynamics compressor/limiter).
+     * Configures gain, EQ, optional compression, and final true-peak limiting.
      * @param {Object} options - Master configuration options.
      * @param {number} [options.gain] - Master gain level.
      * @param {boolean|Object} [options.limiter] - Limiter enable state or configuration object.
+     * @param {boolean|Object} [options.compressor] - Optional DynamicsCompressor configuration.
      * @param {Object} [options.eq] - Three-band EQ configuration.
      * @param {number} [options.eq.low] - Low band gain in dB.
      * @param {number} [options.eq.mid] - Mid band gain in dB.
      * @param {number} [options.eq.high] - High band gain in dB.
      */
-    master({ gain, limiter, eq } = {}) {
+    master({ gain, limiter, compressor, eq } = {}) {
+        if (limiter !== undefined && typeof limiter !== "boolean" && (!limiter || typeof limiter !== "object" || Array.isArray(limiter))) {
+            throw new TypeError("limiter must be a boolean or { ceiling, release }.");
+        }
+        if (limiter && typeof limiter === "object") {
+            for (const [key, value] of Object.entries(limiter)) {
+                if (key !== "ceiling" && key !== "release") throw new TypeError(`Unknown limiter option '${key}'; compression options belong in compressor.`);
+                const [min, max] = key === "ceiling" ? [-24, -1] : [0.01, 2];
+                if (!Number.isFinite(value) || value < min || value > max) throw new RangeError(`limiter.${key} must be between ${min} and ${max}.`);
+            }
+        }
+        if (compressor !== undefined && typeof compressor !== "boolean" && (!compressor || typeof compressor !== "object" || Array.isArray(compressor))) {
+            throw new TypeError("compressor must be a boolean or a compression settings object.");
+        }
+        if (compressor && typeof compressor === "object") {
+            const ranges = { threshold: [-100, 0], knee: [0, 40], ratio: [1, 20], attack: [0, 1], release: [0, 1] };
+            for (const [key, value] of Object.entries(compressor)) {
+                if (!Object.hasOwn(ranges, key)) throw new TypeError(`Unknown compressor option '${key}'.`);
+                const [min, max] = ranges[key];
+                if (!Number.isFinite(value) || value < min || value > max) throw new RangeError(`compressor.${key} must be between ${min} and ${max}.`);
+            }
+        }
         const time = this.ctx.currentTime;
 
-        // 1. Configure master gain
         if (typeof gain === "number") {
             this.masterGain.gain.setValueAtTime(gain, time);
         }
 
-        // 2. Configure EQ
         if (eq) {
             if (typeof eq.low === "number") {
                 this.masterLowFilter.gain.setValueAtTime(eq.low, time);
@@ -1138,20 +1438,24 @@ export class MotifEngine {
             }
         }
 
-        // 3. Configure limiter / Dynamics Compressor
-        if (limiter === true || (limiter && typeof limiter === "object")) {
-            this._updateMasterRouting(true);
-            if (typeof limiter === "object") {
-                if (typeof limiter.threshold === "number") this.masterCompressor.threshold.setValueAtTime(limiter.threshold, time);
-                if (typeof limiter.knee === "number") this.masterCompressor.knee.setValueAtTime(limiter.knee, time);
-                if (typeof limiter.ratio === "number") this.masterCompressor.ratio.setValueAtTime(limiter.ratio, time);
-                if (typeof limiter.attack === "number") this.masterCompressor.attack.setValueAtTime(limiter.attack, time);
-                if (typeof limiter.release === "number") this.masterCompressor.release.setValueAtTime(limiter.release, time);
+        if (compressor !== undefined) {
+            this._masterCompressorEnabled = compressor !== false;
+            if (compressor && typeof compressor === "object") {
+                for (const key of ["threshold", "knee", "ratio", "attack", "release"]) {
+                    if (typeof compressor[key] === "number") this.masterCompressor[key].setValueAtTime(compressor[key], time);
+                }
             }
-        } else if (limiter === false) {
-            this._updateMasterRouting(false);
         }
-
+        if (limiter !== undefined) {
+            this._masterLimiterEnabled = limiter !== false;
+            if (typeof limiter === "object") Object.assign(this._masterLimiterSettings, limiter);
+            if (this.masterLimiter) {
+                for (const [key, value] of Object.entries(this._masterLimiterSettings)) {
+                    this.masterLimiter.parameters.get(key).setValueAtTime(value, time);
+                }
+            }
+        }
+        if (limiter !== undefined || compressor !== undefined) this._updateMasterRouting();
         return this;
     }
 
@@ -1397,6 +1701,7 @@ Object.assign(TrackClass.prototype, TrackVoiceManager);
 Object.assign(TrackClass.prototype, TrackScheduler);
 
 const busRegistry = new Map();
+const MAX_FEEDBACK_DELAY_SECONDS = 60;
 
 class BusClass extends EffectChain {
     constructor(id) {
@@ -1447,14 +1752,22 @@ class BusClass extends EffectChain {
         }
     }
 
-    feedback({ amount = 0.5 } = {}) {
+    feedback({ amount = 0.5, time } = {}) {
         const ctx = Motif.ctx;
         const sampleRate = ctx.sampleRate || 44100;
         const minDelay = 128 / sampleRate;
+        const hasTime = time !== undefined;
+        const seconds = hasTime
+            ? parseDurationToSeconds(time, Motif.tempo, Motif.beatsPerBar)
+            : minDelay;
+
+        if (hasTime && (!Number.isFinite(seconds) || seconds < minDelay || seconds > MAX_FEEDBACK_DELAY_SECONDS)) {
+            throw new RangeError(`delay time must be between ${minDelay} and ${MAX_FEEDBACK_DELAY_SECONDS} seconds.`);
+        }
 
         if (!this.feedbackDelayNode) {
-            this.feedbackDelayNode = ctx.createDelay ? ctx.createDelay(1) : ctx.createDelay();
-            this.feedbackDelayNode.delayTime.setValueAtTime(minDelay, ctx.currentTime);
+            this.feedbackDelayNode = ctx.createDelay(MAX_FEEDBACK_DELAY_SECONDS);
+            this.feedbackDelayNode.delayTime.setValueAtTime(seconds, ctx.currentTime);
             this.feedbackGainNode = ctx.createGain();
             this.feedbackGainNode.gain.setValueAtTime(amount, ctx.currentTime);
 
@@ -1463,6 +1776,9 @@ class BusClass extends EffectChain {
             this.feedbackDelayNode.connect(this.input);
         } else {
             this.feedbackGainNode.gain.setValueAtTime(amount, ctx.currentTime);
+            if (hasTime) {
+                this.feedbackDelayNode.delayTime.setValueAtTime(seconds, ctx.currentTime);
+            }
         }
 
         return this;
@@ -1480,28 +1796,12 @@ export function Bus(id) {
     return b;
 }
 
-const EFFECT_MODULATOR_PROPS = [
-    "_filterCutoffModulator",
-    "_panModulator",
-    "_eqLowModulator",
-    "_eqMidModulator",
-    "_eqHighModulator",
-    "_volumeModulator",
-    "_compressorThresholdModulator",
-    "_compressorKneeModulator",
-    "_compressorRatioModulator",
-    "_compressorAttackModulator",
-    "_compressorReleaseModulator",
-];
-
 function disposeBus(bus) {
     safeDisconnect(bus.input);
     safeDisconnect(bus.output);
     safeDisconnect(bus.feedbackDelayNode);
     safeDisconnect(bus.feedbackGainNode);
-    for (const prop of EFFECT_MODULATOR_PROPS) {
-        safeDisconnect(bus[prop]);
-    }
+    disposeModulationBindings(bus);
 }
 
 function disposeTrack(track) {
@@ -1519,21 +1819,15 @@ function disposeTrack(track) {
             safeDisconnect(sendGainNode);
         }
     }
-    if (track._modulators) {
-        for (const prev of track._modulators.values()) {
-            safeDisconnect(prev.depthGain);
-        }
-    }
+    track._clearGainSignal();
+    disposeModulationBindings(track);
     const internalNodes = [
         "filterNode", "pannerNode", "volumeNode",
         "eqLowNode", "eqMidNode", "eqHighNode",
-        "compressorNode", "distortionNode", "dspNode",
+        "compressorNode", "distortionNode",
         "duckGainNode", "_mergerNode",
     ];
     for (const prop of internalNodes) {
-        safeDisconnect(track[prop]);
-    }
-    for (const prop of EFFECT_MODULATOR_PROPS) {
         safeDisconnect(track[prop]);
     }
 
@@ -1592,6 +1886,7 @@ export function Track(id) {
         newTrack._sidechainListeners.push(...globalThis._pendingSidechains.get(id));
         globalThis._pendingSidechains.delete(id);
     }
+    notifySourceReadinessChange();
     return newTrack;
 }
 
@@ -1600,16 +1895,28 @@ Track.clearRegistry = function() {
         disposeTrack(track);
     }
     trackRegistry.clear();
+    notifySourceReadinessChange();
 };
 
 Track.pruneExcept = function(activeIds) {
     const ids = new Set(activeIds || []);
+    const retainedParents = new Set();
     for (const [id, track] of trackRegistry.entries()) {
-        if (id !== "__temp_probe__" && !ids.has(id)) {
-            disposeTrack(track);
-            trackRegistry.delete(id);
-        }
+        if (id === "__temp_probe__" || ids.has(id)) retainedParents.add(track);
     }
+    for (const [id, track] of trackRegistry.entries()) {
+        const parent = track._splitParent;
+
+        // Compiler declarations contain the parent ID, not its internal shadow.
+        const retained = parent
+            ? retainedParents.has(parent) && parent._rightTrack === track
+            : retainedParents.has(track);
+        if (retained) continue;
+
+        disposeTrack(track);
+        trackRegistry.delete(id);
+    }
+    notifySourceReadinessChange();
 };
 
 export class LFOSignal {
@@ -1849,6 +2156,312 @@ function mulberry32(seed) {
 // - sampleRate: the audio context sample rate
 
 const MotifSynths = {
+    // Self-contained PolyBLEP oscillators survive worklet callback serialization.
+
+
+    // Narrow, DC-compensated PolyBLEP pulse: tiny pitch drift, restrained PWM and a decaying TPT low-pass filter.
+    "arp-narrow-drift": (ctx) => {
+        const s = ctx.state;
+        const sr = ctx.sampleRate;
+        if (!(sr > 0.0) || !Number.isFinite(sr)
+            || !(ctx.freq > 0.0) || !Number.isFinite(ctx.freq)) return 0.0;
+        const invSr = 1.0 / sr;
+        const f0 = Math.min(ctx.freq, sr * 0.49);
+        const topGain = Math.max(0.0, Math.min(1.0, (0.49 - ctx.freq * invSr) / 0.09));
+
+        if (s._darkVoice !== 1 || s._darkRate !== sr) {
+            s._darkVoice = 1;
+            s._darkRate = sr;
+
+            // Randomize only at note initialization; set driftPhase for reproducible notes.
+            const driftPhase = Number.isFinite(s.driftPhase)
+                ? ((s.driftPhase % 1.0) + 1.0) % 1.0 : Math.random();
+            s.mdPhaseA = Number.isFinite(ctx.p) ? ((ctx.p % 1.0) + 1.0) % 1.0 : 0.0;
+            s.mdLfoA = (0.13 + driftPhase) % 1.0;
+            s.mdLfoB = (0.61 + driftPhase) % 1.0;
+            s.mdLfoC = (0.17 + driftPhase) % 1.0;
+            s.mdRatioA = 1.0;
+            s.mdWidth = 0.14;
+            s.mdG = -1.0;
+            s.mdIc1 = 0.0;
+            s.mdIc2 = 0.0;
+            s.mdDcInput = 0.0;
+            s.mdDcOutput = 0.0;
+            s.mdDcPole = Math.exp(-TWO_PI * Math.min(12.0, sr / 6.0) * invSr);
+            s.mdSmooth = 1.0 - Math.exp(-invSr / 0.003);
+            s.mdControl = 0;
+        }
+
+
+        // Expensive modulation and tangent calculations run once per 32 samples.
+        if (s.mdControl <= 0) {
+            const age = Number.isFinite(ctx.t) ? Math.max(0.0, ctx.t) : 0.0;
+            const brightness = Number.isFinite(s.brightness)
+                ? Math.max(0.0, Math.min(1.0, s.brightness)) : 0.5;
+            const driftCents = 2.2 * Math.sin(TWO_PI * s.mdLfoA)
+                + 0.7 * Math.sin(TWO_PI * s.mdLfoB);
+            s.mdRatioTargetA = Math.exp(driftCents * 0.0005776226504666211);
+            s.mdWidthTarget = 0.14 + 0.011 * Math.sin(TWO_PI * s.mdLfoC);
+            const filterEnv = Math.exp(-age / 0.135);
+            const cutoff = Math.min(sr / 6.0, Math.max(25.0,
+                180.0 + f0 * (0.8 + 1.4 * brightness)
+                + (500.0 + 1800.0 * brightness) * filterEnv));
+            s.mdGTarget = Math.tan(Math.PI * cutoff * invSr);
+            if (s.mdG < 0.0) {
+                s.mdG = s.mdGTarget;
+                s.mdRatioA = s.mdRatioTargetA;
+                s.mdWidth = s.mdWidthTarget;
+            }
+            s.mdLfoA = (s.mdLfoA + 32.0 * 0.19 * invSr) % 1.0;
+            s.mdLfoB = (s.mdLfoB + 32.0 * 0.71 * invSr) % 1.0;
+            s.mdLfoC = (s.mdLfoC + 32.0 * 0.11 * invSr) % 1.0;
+            s.mdControl = 32;
+        }
+        s.mdControl -= 1;
+        s.mdRatioA += s.mdSmooth * (s.mdRatioTargetA - s.mdRatioA);
+        s.mdWidth += s.mdSmooth * (s.mdWidthTarget - s.mdWidth);
+        s.mdG += s.mdSmooth * (s.mdGTarget - s.mdG);
+
+        const step = Math.min(0.49, f0 * invSr * s.mdRatioA);
+        s.mdPhaseA = (s.mdPhaseA + step) % 1.0;
+        const fallingPhase = (s.mdPhaseA + 1.0 - s.mdWidth) % 1.0;
+        let risingBlep = 0.0;
+        let fallingBlep = 0.0;
+        if (s.mdPhaseA < step) {
+            const x = s.mdPhaseA / step;
+            risingBlep = x + x - x * x - 1.0;
+        } else if (s.mdPhaseA > 1.0 - step) {
+            const x = (s.mdPhaseA - 1.0) / step;
+            risingBlep = x * x + x + x + 1.0;
+        }
+        if (fallingPhase < step) {
+            const x = fallingPhase / step;
+            fallingBlep = x + x - x * x - 1.0;
+        } else if (fallingPhase > 1.0 - step) {
+            const x = (fallingPhase - 1.0) / step;
+            fallingBlep = x * x + x + x + 1.0;
+        }
+        let pulse = (s.mdPhaseA < s.mdWidth ? 1.0 : -1.0)
+            + risingBlep - fallingBlep - (2.0 * s.mdWidth - 1.0);
+        if (step > 0.10) {
+            const fundamental = 1.2732395447351628 * Math.sin(Math.PI * s.mdWidth)
+                * Math.cos(TWO_PI * (s.mdPhaseA - s.mdWidth * 0.5));
+            const blend = Math.min(1.0, (step - 0.10) * 10.0);
+            pulse += blend * (fundamental - pulse);
+        }
+        const input = pulse * topGain;
+
+
+        // Complete topology-preserving SVF; damping k = 1/Q. Interpolate g, then
+
+        // derive the denominator each sample so all filter coefficients agree.
+        const g = s.mdG;
+        const a1 = 1.0 / (1.0 + g * (g + 1.05));
+        const band = a1 * (s.mdIc1 + g * (input - s.mdIc2));
+        const low = s.mdIc2 + g * band;
+        s.mdIc1 = 2.0 * band - s.mdIc1;
+        s.mdIc2 = 2.0 * low - s.mdIc2;
+
+
+        // Saturating an asymmetric pulse can reintroduce DC; block it afterward.
+        const driven = Math.tanh(low * 1.55);
+        s.mdDcOutput = driven - s.mdDcInput + s.mdDcPole * s.mdDcOutput;
+        s.mdDcInput = driven;
+
+        // |DC output| <= 2 for an input bounded by 1; leave headroom without clipping.
+        return s.mdDcOutput * 0.48;
+    },
+
+
+    // Compact two-saw bass: +/-3-cent PolyBLEP unison, a short filter contour and a separately accumulated clean octave sub.
+    "bass-compact-saw": (ctx) => {
+        const s = ctx.state;
+        const sr = ctx.sampleRate;
+        if (!(sr > 0.0) || !Number.isFinite(sr)
+            || !(ctx.freq > 0.0) || !Number.isFinite(ctx.freq)) return 0.0;
+        const invSr = 1.0 / sr;
+        const f0 = Math.min(ctx.freq, sr * 0.49);
+        const topGain = Math.max(0.0, Math.min(1.0, (0.49 - ctx.freq * invSr) / 0.09));
+
+        if (s._darkVoice !== 2 || s._darkRate !== sr) {
+            s._darkVoice = 2;
+            s._darkRate = sr;
+            const driftPhase = Number.isFinite(s.driftPhase)
+                ? ((s.driftPhase % 1.0) + 1.0) % 1.0 : Math.random();
+            s.mdPhaseA = Number.isFinite(ctx.p) ? ((ctx.p % 1.0) + 1.0) % 1.0 : 0.0;
+            s.mdPhaseB = (s.mdPhaseA + 0.19) % 1.0;
+            s.mdPhaseSub = 0.0;
+            s.mdLfoA = (0.23 + driftPhase) % 1.0;
+            s.mdRatioA = 1.0;
+            s.mdG = -1.0;
+            s.mdIc1 = 0.0;
+            s.mdIc2 = 0.0;
+            s.mdSmooth = 1.0 - Math.exp(-invSr / 0.003);
+            s.mdControl = 0;
+        }
+
+        if (s.mdControl <= 0) {
+            const age = Number.isFinite(ctx.t) ? Math.max(0.0, ctx.t) : 0.0;
+            const brightness = Number.isFinite(s.brightness)
+                ? Math.max(0.0, Math.min(1.0, s.brightness)) : 0.5;
+            s.mdRatioTargetA = Math.exp(0.65 * Math.sin(TWO_PI * s.mdLfoA)
+                * 0.0005776226504666211);
+            const filterEnv = Math.exp(-age / 0.13);
+            const cutoff = Math.min(sr / 6.0, Math.max(25.0,
+                110.0 + f0 * (1.6 + 2.4 * brightness)
+                + (100.0 + 600.0 * brightness) * filterEnv));
+            s.mdGTarget = Math.tan(Math.PI * cutoff * invSr);
+            if (s.mdG < 0.0) {
+                s.mdG = s.mdGTarget;
+                s.mdRatioA = s.mdRatioTargetA;
+            }
+            s.mdLfoA = (s.mdLfoA + 32.0 * 0.17 * invSr) % 1.0;
+            s.mdControl = 32;
+        }
+        s.mdControl -= 1;
+        s.mdRatioA += s.mdSmooth * (s.mdRatioTargetA - s.mdRatioA);
+        s.mdG += s.mdSmooth * (s.mdGTarget - s.mdG);
+
+        const baseStep = f0 * invSr;
+        const stepA = Math.min(0.49, baseStep * s.mdRatioA * 0.9982686325973925);
+        const stepB = Math.min(0.49, baseStep * s.mdRatioA * 1.001734370234696);
+        s.mdPhaseA = (s.mdPhaseA + stepA) % 1.0;
+        s.mdPhaseB = (s.mdPhaseB + stepB) % 1.0;
+        s.mdPhaseSub = (s.mdPhaseSub + baseStep * 0.5) % 1.0;
+        let saws = 0.0;
+        for (let oscillator = 0; oscillator < 2; oscillator++) {
+            const phase = oscillator === 0 ? s.mdPhaseA : s.mdPhaseB;
+            const step = oscillator === 0 ? stepA : stepB;
+            let blep = 0.0;
+            if (phase < step) {
+                const x = phase / step;
+                blep = x + x - x * x - 1.0;
+            } else if (phase > 1.0 - step) {
+                const x = (phase - 1.0) / step;
+                blep = x * x + x + x + 1.0;
+            }
+            let saw = phase * 2.0 - 1.0 - blep;
+            if (step > 0.10) {
+                const fundamental = -0.6366197723675814 * Math.sin(TWO_PI * phase);
+                const blend = Math.min(1.0, (step - 0.10) * 10.0);
+                saw += blend * (fundamental - saw);
+            }
+            saws += saw * 0.5;
+        }
+        const input = saws * topGain;
+
+        const g = s.mdG;
+        const a1 = 1.0 / (1.0 + g * (g + 1.25));
+        const band = a1 * (s.mdIc1 + g * (input - s.mdIc2));
+        const low = s.mdIc2 + g * band;
+        s.mdIc1 = 2.0 * band - s.mdIc1;
+        s.mdIc2 = 2.0 * low - s.mdIc2;
+
+
+        // The sub bypasses the saw drive and low-pass, preserving a steady low end.
+        const sub = Math.sin(TWO_PI * s.mdPhaseSub) * topGain;
+        return Math.tanh(low * 1.65) * 0.62 + sub * 0.28;
+    },
+
+
+    // Warm three-saw pad: restrained detune and slow drift into a gently breathing TPT low-pass; the host supplies attack and release.
+    "pad-dusk-saws": (ctx) => {
+        const s = ctx.state;
+        const sr = ctx.sampleRate;
+        if (!(sr > 0.0) || !Number.isFinite(sr)
+            || !(ctx.freq > 0.0) || !Number.isFinite(ctx.freq)) return 0.0;
+        const invSr = 1.0 / sr;
+        const f0 = Math.min(ctx.freq, sr * 0.49);
+        const topGain = Math.max(0.0, Math.min(1.0, (0.49 - ctx.freq * invSr) / 0.09));
+
+        if (s._darkVoice !== 3 || s._darkRate !== sr) {
+            s._darkVoice = 3;
+            s._darkRate = sr;
+            const driftPhase = Number.isFinite(s.driftPhase)
+                ? ((s.driftPhase % 1.0) + 1.0) % 1.0 : Math.random();
+            s.mdPhaseA = Number.isFinite(ctx.p) ? ((ctx.p % 1.0) + 1.0) % 1.0 : 0.0;
+            s.mdPhaseB = (s.mdPhaseA + 0.19) % 1.0;
+            s.mdPhaseC = (s.mdPhaseA + 0.43) % 1.0;
+            s.mdLfoA = (0.17 + driftPhase) % 1.0;
+            s.mdLfoB = (0.63 + driftPhase) % 1.0;
+            s.mdRatioA = 1.0;
+            s.mdRatioB = 0.9971160533345892;
+            s.mdRatioC = 1.0028922878693671;
+            s.mdG = -1.0;
+            s.mdIc1 = 0.0;
+            s.mdIc2 = 0.0;
+            s.mdSmooth = 1.0 - Math.exp(-invSr / 0.005);
+            s.mdControl = 0;
+        }
+
+        if (s.mdControl <= 0) {
+            const age = Number.isFinite(ctx.t) ? Math.max(0.0, ctx.t) : 0.0;
+            const brightness = Number.isFinite(s.brightness)
+                ? Math.max(0.0, Math.min(1.0, s.brightness)) : 0.5;
+            const drift = 0.7 * Math.sin(TWO_PI * s.mdLfoA);
+            const spread = 5.0 + 0.8 * Math.sin(TWO_PI * s.mdLfoB);
+            s.mdRatioTargetA = Math.exp(drift * 0.0005776226504666211);
+            s.mdRatioTargetB = Math.exp((drift - spread) * 0.0005776226504666211);
+            s.mdRatioTargetC = Math.exp((drift + spread) * 0.0005776226504666211);
+            const breath = 1.0 + 0.12 * Math.sin(TWO_PI * s.mdLfoB);
+            const opening = 0.72 + 0.28 * (1.0 - Math.exp(-age / 1.1));
+            const cutoff = Math.min(sr / 6.0, Math.max(25.0,
+                (220.0 + f0 * (2.8 + 5.0 * brightness)) * breath * opening));
+            s.mdGTarget = Math.tan(Math.PI * cutoff * invSr);
+            if (s.mdG < 0.0) {
+                s.mdG = s.mdGTarget;
+                s.mdRatioA = s.mdRatioTargetA;
+                s.mdRatioB = s.mdRatioTargetB;
+                s.mdRatioC = s.mdRatioTargetC;
+            }
+            s.mdLfoA = (s.mdLfoA + 32.0 * 0.083 * invSr) % 1.0;
+            s.mdLfoB = (s.mdLfoB + 32.0 * 0.117 * invSr) % 1.0;
+            s.mdControl = 32;
+        }
+        s.mdControl -= 1;
+        s.mdRatioA += s.mdSmooth * (s.mdRatioTargetA - s.mdRatioA);
+        s.mdRatioB += s.mdSmooth * (s.mdRatioTargetB - s.mdRatioB);
+        s.mdRatioC += s.mdSmooth * (s.mdRatioTargetC - s.mdRatioC);
+        s.mdG += s.mdSmooth * (s.mdGTarget - s.mdG);
+
+        const baseStep = f0 * invSr;
+        const stepA = Math.min(0.49, baseStep * s.mdRatioA);
+        const stepB = Math.min(0.49, baseStep * s.mdRatioB);
+        const stepC = Math.min(0.49, baseStep * s.mdRatioC);
+        s.mdPhaseA = (s.mdPhaseA + stepA) % 1.0;
+        s.mdPhaseB = (s.mdPhaseB + stepB) % 1.0;
+        s.mdPhaseC = (s.mdPhaseC + stepC) % 1.0;
+        let saws = 0.0;
+        for (let oscillator = 0; oscillator < 3; oscillator++) {
+            const phase = oscillator === 0 ? s.mdPhaseA : oscillator === 1 ? s.mdPhaseB : s.mdPhaseC;
+            const step = oscillator === 0 ? stepA : oscillator === 1 ? stepB : stepC;
+            let blep = 0.0;
+            if (phase < step) {
+                const x = phase / step;
+                blep = x + x - x * x - 1.0;
+            } else if (phase > 1.0 - step) {
+                const x = (phase - 1.0) / step;
+                blep = x * x + x + x + 1.0;
+            }
+            let saw = phase * 2.0 - 1.0 - blep;
+            if (step > 0.10) {
+                const fundamental = -0.6366197723675814 * Math.sin(TWO_PI * phase);
+                const blend = Math.min(1.0, (step - 0.10) * 10.0);
+                saw += blend * (fundamental - saw);
+            }
+            saws += saw * (oscillator === 0 ? 0.46 : 0.27);
+        }
+        const input = saws * topGain;
+
+        const g = s.mdG;
+        const a1 = 1.0 / (1.0 + g * (g + 1.4142135623730951));
+        const band = a1 * (s.mdIc1 + g * (input - s.mdIc2));
+        const low = s.mdIc2 + g * band;
+        s.mdIc1 = 2.0 * band - s.mdIc1;
+        s.mdIc2 = 2.0 * low - s.mdIc2;
+        return Math.tanh(low * 1.35) * 0.70;
+    },
+
     // ------------------------------------------
     // CLASSIC ANALOG & RETRO WAVEFORMS
     // ------------------------------------------
@@ -2116,8 +2729,10 @@ const MotifSynths = {
 
         // Base Waveform (Sawtooth mixed with a Sub Triangle)
         const saw = (ctx.state.phase * 2.0) - 1.0;
-        const subPhase = (ctx.state.phase * 0.5) % 1.0;
-        const sub = Math.abs(subPhase * 4.0 - 2.0) - 1.0;
+
+        // Keep the sub's cycle across main-phase wraps so it sounds an octave below.
+        ctx.state.subPhase = ((ctx.state.subPhase || 0) + actualFreq * 0.5 / ctx.sampleRate) % 1.0;
+        const sub = Math.abs(ctx.state.subPhase * 4.0 - 2.0) - 1.0;
         let rawMix = (saw * 0.6) + (sub * 0.4);
 
         // Inject tape hiss (Brown noise) directly into the pre-filter signal
@@ -2839,6 +3454,1590 @@ const MotifSynths = {
         const out = (tone * 0.65) + (s.bp * 0.35);
         return Math.tanh(out * attackEnv) * 0.8;
     },
+
+    // Solo orchestral voices use scalar state and unrolled harmonic recurrences.
+
+    // Solo violin: sixteen body-weighted harmonics, bow noise, and delayed pitch/timbre vibrato.
+
+    'orch-violin': (ctx) => {
+        const s = ctx.state, sr = ctx.sampleRate, inputFreq = ctx.freq;
+        if (!(sr > 0) || !Number.isFinite(sr) || !(inputFreq > 0) || !Number.isFinite(inputFreq)) return 0;
+        const f = Math.min(inputFreq, sr * 0.49);
+        if (s.init !== 1) {
+            s.init = 1;
+            s.phase = 0;
+            const suppliedSeed = Number.isFinite(s.seed);
+            const initialSeed = suppliedSeed ? (s.seed | 0) : 194731;
+            const phaseOffset = suppliedSeed ? (initialSeed >>> 0) / 4294967296 : 0;
+            s.seed = initialSeed || 194731;
+            s.vPhase = phaseOffset;
+            s.dPhase = (0.17 + phaseOffset) % 1.0;
+            s.v = 0;
+            s.drift = 0;
+            s.vDelta = 0;
+            s.dDelta = 0;
+            s.control = 0;
+            s.attack = 0;
+            s.brightness = 0;
+            s.vDepth = 0;
+            s.noiseLo = 0;
+            s.noiseHi = 0;
+            s.rate = 0;
+            s.profileFreq = f;
+            s.profileTick = 0;
+            s.lastProfileFreq = -1;
+            s.maskProfile = -2;
+            s.maskFreq = -1;
+        }
+        if (s.rate !== sr) {
+            s.rate = sr;
+            s.invSr = 1 / sr;
+            s.control = 0;
+            s.profileA = 1 - Math.exp(-TWO_PI * Math.min(32, sr / 6) / sr);
+            s.fullBandLimit = sr * 0.36 / (16 * 1.0131);
+            s.profileTick = 0;
+            s.lastProfileFreq = -1;
+            s.maskProfile = -2;
+            s.maskFreq = -1;
+            s.aC = 1 - Math.exp(-1 / (0.017 * sr));
+            s.bC = 1 - Math.exp(-1 / (0.055 * sr));
+            s.vC = 1 - Math.exp(-1 / (0.16 * sr));
+            s.nLoC = 1 - Math.exp(-TWO_PI * Math.min(640, sr / 6) / sr);
+            s.nHiC = 1 - Math.exp(-TWO_PI * Math.min(4600, sr / 6) / sr);
+        }
+        s.profileFreq += s.profileA * (f - s.profileFreq);
+        s.profileTick--;
+        if (s.profileTick <= 0) {
+            s.profileTick = 64;
+            if (Math.abs(s.profileFreq - s.lastProfileFreq) > 0.0001) {
+                s.lastProfileFreq = s.profileFreq;
+                const f = s.profileFreq;
+                let x, u, v, w, a, b, c, h, d, q, total = 0;
+                // The body-response slope links harmonic color to the slow pitch vibrato.
+
+                x = 1 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 1.000000000 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h1 = h;
+                s.d1 = d;
+                total += h + Math.abs(d);
+                x = 2 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.473028823 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h2 = h;
+                s.d2 = d;
+                total += h + Math.abs(d);
+                x = 3 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.305287516 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h3 = h;
+                s.d3 = d;
+                total += h + Math.abs(d);
+                x = 4 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.223756268 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h4 = h;
+                s.d4 = d;
+                total += h + Math.abs(d);
+                x = 5 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.175837862 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h5 = h;
+                s.d5 = d;
+                total += h + Math.abs(d);
+                x = 6 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.144409794 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h6 = h;
+                s.d6 = d;
+                total += h + Math.abs(d);
+                x = 7 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.122262738 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h7 = h;
+                s.d7 = d;
+                total += h + Math.abs(d);
+                x = 8 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.105843164 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h8 = h;
+                s.d8 = d;
+                total += h + Math.abs(d);
+                x = 9 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.093200467 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h9 = h;
+                s.d9 = d;
+                total += h + Math.abs(d);
+                x = 10 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.083176377 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h10 = h;
+                s.d10 = d;
+                total += h + Math.abs(d);
+                x = 11 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.075040531 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h11 = h;
+                s.d11 = d;
+                total += h + Math.abs(d);
+                x = 12 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.068309995 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h12 = h;
+                s.d12 = d;
+                total += h + Math.abs(d);
+                x = 13 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.062652900 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h13 = h;
+                s.d13 = d;
+                total += h + Math.abs(d);
+                x = 14 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.057833799 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h14 = h;
+                s.d14 = d;
+                total += h + Math.abs(d);
+                x = 15 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.053681104 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h15 = h;
+                s.d15 = d;
+                total += h + Math.abs(d);
+                x = 16 * f;
+                u = (x - 290) / 65;
+                v = (x - 560) / 125;
+                w = (x - 2550) / 650;
+                a = 1 / (1 + u * u);
+                b = 1 / (1 + v * v);
+                c = 1 / (1 + w * w);
+                q = 0.050066867 / (1 + (x / 9000) * (x / 9000));
+                h = q * (0.24 + 1.20 * a + 1.05 * b + 1.15 * c);
+                d = -0.0125 * x * q * (0.0369230769 * u * a * a + 0.0168000000 * v * b * b + 0.0035384615 * w * c * c);
+                s.h16 = h;
+                s.d16 = d;
+                total += h + Math.abs(d);
+                s.norm = 1 / total;
+            }
+        }
+        // Body color updates at control rate; harmonic guards follow pitch immediately.
+
+        if (s.maskProfile !== s.lastProfileFreq ||
+                (s.maskFreq !== f && (f > s.fullBandLimit || s.maskFreq > s.fullBandLimit))) {
+            s.maskProfile = s.lastProfileFreq;
+            s.maskFreq = f;
+            const guardedStep = f * 1.0131 / sr;
+            let cutoff = guardedStep, gate;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w1 = s.h1 * gate;
+            s.e1 = s.d1 * gate;
+            s.audible = gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w2 = s.h2 * gate;
+            s.e2 = s.d2 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w3 = s.h3 * gate;
+            s.e3 = s.d3 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w4 = s.h4 * gate;
+            s.e4 = s.d4 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w5 = s.h5 * gate;
+            s.e5 = s.d5 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w6 = s.h6 * gate;
+            s.e6 = s.d6 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w7 = s.h7 * gate;
+            s.e7 = s.d7 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w8 = s.h8 * gate;
+            s.e8 = s.d8 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w9 = s.h9 * gate;
+            s.e9 = s.d9 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w10 = s.h10 * gate;
+            s.e10 = s.d10 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w11 = s.h11 * gate;
+            s.e11 = s.d11 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w12 = s.h12 * gate;
+            s.e12 = s.d12 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w13 = s.h13 * gate;
+            s.e13 = s.d13 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w14 = s.h14 * gate;
+            s.e14 = s.d14 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w15 = s.h15 * gate;
+            s.e15 = s.d15 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.36 ? 1 : Math.max(0, (0.46 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w16 = s.h16 * gate;
+            s.e16 = s.d16 * gate;
+        }
+        if (s.control === 0) {
+            const v = Math.sin(TWO_PI * s.vPhase), d = Math.sin(TWO_PI * s.dPhase);
+            s.vDelta = (v - s.v) / 64;
+            s.dDelta = (d - s.drift) / 64;
+            s.control = 64;
+            s.vPhase = (s.vPhase + (5.8 + 0.16 * d) * 64 * s.invSr) % 1.0;
+            s.dPhase = (s.dPhase + 0.37 * 64 * s.invSr) % 1.0;
+        }
+        s.v += s.vDelta;
+        s.drift += s.dDelta;
+        s.control--;
+        const attack = s.attack, bright = s.brightness, vibrato = s.v * s.vDepth;
+        s.attack += s.aC * (1 - s.attack);
+        s.brightness += s.bC * (1 - s.brightness);
+        if (bright > 0.82) s.vDepth += s.vC * (1 - s.vDepth);
+        s.phase = (s.phase + f * s.invSr * (1 + 0.0125 * vibrato + 0.00055 * s.drift - 0.001 * (1 - attack))) % 1.0;
+        // Unrolled sin(n*x) recurrence: one audio-rate sine/cosine pair, no oscillator banks or allocation.
+
+        const twiceCos = 2 * Math.cos(TWO_PI * s.phase);
+        let previous = 0, current = Math.sin(TWO_PI * s.phase), next, low = 0, mid = 0, high = 0;
+        low += current * (s.w1 + vibrato * s.e1);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        low += current * (s.w2 + vibrato * s.e2);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        low += current * (s.w3 + vibrato * s.e3);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        mid += current * (s.w4 + vibrato * s.e4);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        mid += current * (s.w5 + vibrato * s.e5);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        mid += current * (s.w6 + vibrato * s.e6);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        mid += current * (s.w7 + vibrato * s.e7);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        high += current * (s.w8 + vibrato * s.e8);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        high += current * (s.w9 + vibrato * s.e9);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        high += current * (s.w10 + vibrato * s.e10);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        high += current * (s.w11 + vibrato * s.e11);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        high += current * (s.w12 + vibrato * s.e12);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        high += current * (s.w13 + vibrato * s.e13);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        high += current * (s.w14 + vibrato * s.e14);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        high += current * (s.w15 + vibrato * s.e15);
+        next = twiceCos * current - previous;
+        previous = current;
+        current = next;
+        high += current * (s.w16 + vibrato * s.e16);
+        s.seed = (Math.imul(s.seed, 1664525) + 1013904223) | 0;
+        const white = s.seed / 2147483648;
+        s.noiseLo += s.nLoC * (white - s.noiseLo);
+        s.noiseHi += s.nHiC * (white - s.noiseHi);
+        const noise = 0.5 * (s.noiseHi - s.noiseLo) * s.audible;
+        const tone = (low + (0.45 + 0.55 * bright) * mid + (0.18 + 0.82 * bright * bright) * high) * s.norm;
+        const output = attack * (0.88 * (0.99 + 0.01 * s.drift) * tone + (0.005 + 0.021 * (1 - bright)) * noise);
+        return output;
+    },
+
+    // Solo cello: thirty-two bowed harmonics retain low-register body and bridge color.
+
+    'orch-cello': (ctx) => {
+        const s = ctx.state;
+        const sr = ctx.sampleRate;
+        const inputFreq = ctx.freq;
+        if (!(sr > 0) || !Number.isFinite(sr) || !(inputFreq > 0) || !Number.isFinite(inputFreq)) return 0;
+        const baseFreq = Math.min(inputFreq, sr * 0.49);
+        const age = ctx.t > 0 && Number.isFinite(ctx.t) ? ctx.t : 0;
+        if (s.ready !== 1) {
+            s.ready = 1;
+            s.phase = 0.0;
+            const suppliedSeed = Number.isFinite(s.seed);
+            const initialSeed = suppliedSeed ? (s.seed | 0) : 0x68e31da4;
+            const phaseOffset = suppliedSeed ? (initialSeed >>> 0) / 4294967296 : 0;
+            s.seed = initialSeed || 0x68e31da4;
+            s.vibratoPhase = phaseOffset;
+            s.breathPhase = (0.19 + phaseOffset) % 1.0;
+            s.noiseLow = 0.0;
+            s.noiseHigh = 0.0;
+            s.drift = 0.0;
+            s.profileFreq = baseFreq;
+            s.profileTick = 0;
+            s.lastProfileFreq = -1.0;
+            s.rate = 0;
+            s.maskProfile = -2;
+            s.maskFreq = -1;
+        }
+
+        // Fixed coefficients change only with sample rate; every cutoff is <= sr / 6.
+
+        if (s.rate !== sr) {
+            s.rate = sr;
+            s.noiseLowA = 1.0 - Math.exp(-TWO_PI * Math.min(900.0, sr / 6.0) / sr);
+            s.noiseHighA = 1.0 - Math.exp(-TWO_PI * Math.min(4200.0, sr / 6.0) / sr);
+            s.driftA = 1.0 - Math.exp(-TWO_PI * Math.min(13.0, sr / 6.0) / sr);
+            s.profileA = 1.0 - Math.exp(-TWO_PI * Math.min(32.0, sr / 6.0) / sr);
+            s.profileTick = 0;
+            s.lastProfileFreq = -1.0;
+            s.maskProfile = -2;
+            s.maskFreq = -1;
+            s.fullBandLimit = sr * 0.35 / (32 * 1.012);
+        }
+        s.profileFreq += s.profileA * (baseFreq - s.profileFreq);
+        s.profileTick -= 1;
+        if (s.profileTick <= 0) {
+            s.profileTick = 64;
+            if (Math.abs(s.profileFreq - s.lastProfileFreq) > 0.0001) {
+                s.lastProfileFreq = s.profileFreq;
+                let sum = 0.0;
+                let ripplePrevious = 1.0;
+                let rippleCosine = 0.7384685587295879;
+                for (let n = 1; n <= 32; n += 1) {
+                    const hz = s.profileFreq * n;
+
+                    // Tuned broad body/bridge contours; these are not measured cello modes.
+
+                    const lowBody = (hz - 185.0) / 115.0;
+                    const midBody = (hz - 510.0) / 230.0;
+                    const bridge = (hz - 2100.0) / 1100.0;
+                    const loss = hz / 4900.0;
+                    const body = 0.48 + 0.78 / (1.0 + lowBody * lowBody)
+                        + 0.95 / (1.0 + midBody * midBody) + 0.36 / (1.0 + bridge * bridge);
+                    // A modest bow-position ripple avoids a uniform textbook saw spectrum.
+
+                    const ripple = 0.79 + 0.21 * rippleCosine;
+                    const rippleNext = 1.4769371174591758 * rippleCosine - ripplePrevious;
+                    ripplePrevious = rippleCosine;
+                    rippleCosine = rippleNext;
+                    const a = body * ripple / (n * (1.0 + loss * loss));
+                    sum += a;
+                    switch (n) {
+                        case 1: s.h1 = a;
+                        break;
+                        case 2: s.h2 = a;
+                        break;
+                        case 3: s.h3 = a;
+                        break;
+                        case 4: s.h4 = a;
+                        break;
+                        case 5: s.h5 = a;
+                        break;
+                        case 6: s.h6 = a;
+                        break;
+                        case 7: s.h7 = a;
+                        break;
+                        case 8: s.h8 = a;
+                        break;
+                        case 9: s.h9 = a;
+                        break;
+                        case 10: s.h10 = a;
+                        break;
+                        case 11: s.h11 = a;
+                        break;
+                        case 12: s.h12 = a;
+                        break;
+                        case 13: s.h13 = a;
+                        break;
+                        case 14: s.h14 = a;
+                        break;
+                        case 15: s.h15 = a;
+                        break;
+                        case 16: s.h16 = a;
+                        break;
+                        case 17: s.h17 = a;
+                        break;
+                        case 18: s.h18 = a;
+                        break;
+                        case 19: s.h19 = a;
+                        break;
+                        case 20: s.h20 = a;
+                        break;
+                        case 21: s.h21 = a;
+                        break;
+                        case 22: s.h22 = a;
+                        break;
+                        case 23: s.h23 = a;
+                        break;
+                        case 24: s.h24 = a;
+                        break;
+                        case 25: s.h25 = a;
+                        break;
+                        case 26: s.h26 = a;
+                        break;
+                        case 27: s.h27 = a;
+                        break;
+                        case 28: s.h28 = a;
+                        break;
+                        case 29: s.h29 = a;
+                        break;
+                        case 30: s.h30 = a;
+                        break;
+                        case 31: s.h31 = a;
+                        break;
+                        case 32: s.h32 = a;
+                        break;
+                    }
+                }
+                s.toneGain = 0.84 / Math.max(sum, 0.000000001);
+            }
+        }
+
+        let random = s.seed | 0;
+        random ^= random << 13;
+        random ^= random >>> 17;
+        random ^= random << 5;
+        s.seed = random;
+        const white = random * 4.656612873077393e-10;
+        s.drift += s.driftA * (white - s.drift);
+        s.noiseLow += s.noiseLowA * (white - s.noiseLow);
+        s.noiseHigh += s.noiseHighA * (white - s.noiseHigh);
+
+        s.breathPhase = (s.breathPhase + 0.27 / sr) % 1.0;
+        const slow = Math.sin(TWO_PI * s.breathPhase);
+        s.vibratoPhase = (s.vibratoPhase + (5.15 + 0.11 * slow) / sr) % 1.0;
+        const vibDepth = Math.min(1.0, Math.max(0.0, (age - 0.17) / 0.42));
+        const deviation = 0.0063 * vibDepth * Math.sin(TWO_PI * s.vibratoPhase) + 0.0007 * s.drift;
+        s.phase = (s.phase + baseFreq * (1.0 + deviation) / sr) % 1.0;
+
+        // Body color updates at control rate; harmonic guards follow pitch immediately.
+
+        if (s.maskProfile !== s.lastProfileFreq ||
+                (s.maskFreq !== baseFreq && (baseFreq > s.fullBandLimit || s.maskFreq > s.fullBandLimit))) {
+            s.maskProfile = s.lastProfileFreq;
+            s.maskFreq = baseFreq;
+            const guardedStep = baseFreq * 1.012 / sr;
+            let cutoff = guardedStep, gate;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w1 = s.h1 * gate;
+            s.audible = gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w2 = s.h2 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w3 = s.h3 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w4 = s.h4 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w5 = s.h5 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w6 = s.h6 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w7 = s.h7 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w8 = s.h8 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w9 = s.h9 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w10 = s.h10 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w11 = s.h11 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w12 = s.h12 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w13 = s.h13 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w14 = s.h14 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w15 = s.h15 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w16 = s.h16 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w17 = s.h17 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w18 = s.h18 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w19 = s.h19 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w20 = s.h20 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w21 = s.h21 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w22 = s.h22 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w23 = s.h23 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w24 = s.h24 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w25 = s.h25 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w26 = s.h26 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w27 = s.h27 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w28 = s.h28 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w29 = s.h29 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w30 = s.h30 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w31 = s.h31 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w32 = s.h32 * gate;
+        }
+        const sine = Math.sin(TWO_PI * s.phase);
+        const twiceCos = 2.0 * Math.cos(TWO_PI * s.phase);
+        let previous = 0, harmonic = sine, next, core = 0, edge = 0;
+        core += harmonic * s.w1;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        core += harmonic * s.w2;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        core += harmonic * s.w3;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        core += harmonic * s.w4;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w5;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w6;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w7;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w8;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w9;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w10;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w11;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w12;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w13;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w14;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w15;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w16;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w17;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w18;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w19;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w20;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w21;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w22;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w23;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w24;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w25;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w26;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w27;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w28;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w29;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w30;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w31;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w32;
+        let attack = Math.min(1.0, age / 0.045);
+        attack = attack * attack * (3.0 - 2.0 * attack);
+        let bloom = Math.min(1.0, age / 0.11);
+        bloom = bloom * bloom * (3.0 - 2.0 * bloom);
+        const tone = (core + edge * (0.68 + 0.32 * bloom)) * s.toneGain;
+        const rosin = (s.noiseHigh - s.noiseLow) * s.audible * (0.007 + 0.018 * (1.0 - bloom));
+        const finalOutput = attack * (tone * (0.982 + 0.018 * slow) + rosin);
+        return finalOutput;
+    },
+
+    // French horn: twenty-four lip harmonics, a rounded bell contour, and a gradual brass bloom.
+
+    'orch-french-horn': (ctx) => {
+        const s = ctx.state;
+        const sr = ctx.sampleRate;
+        const inputFreq = ctx.freq;
+        if (!(sr > 0) || !Number.isFinite(sr) || !(inputFreq > 0) || !Number.isFinite(inputFreq)) return 0;
+        const baseFreq = Math.min(inputFreq, sr * 0.49);
+        const age = ctx.t > 0 && Number.isFinite(ctx.t) ? ctx.t : 0;
+        if (s.ready !== 1) {
+            s.ready = 1;
+            s.phase = 0.0;
+            const suppliedSeed = Number.isFinite(s.seed);
+            const initialSeed = suppliedSeed ? (s.seed | 0) : 0x7f4a7c15;
+            const phaseOffset = suppliedSeed ? (initialSeed >>> 0) / 4294967296 : 0;
+            s.seed = initialSeed || 0x7f4a7c15;
+            s.vibratoPhase = phaseOffset;
+            s.breathPhase = (0.19 + phaseOffset) % 1.0;
+            s.noiseLow = 0.0;
+            s.noiseHigh = 0.0;
+            s.drift = 0.0;
+            s.profileFreq = baseFreq;
+            s.profileTick = 0;
+            s.lastProfileFreq = -1.0;
+            s.rate = 0;
+            s.maskProfile = -2;
+            s.maskFreq = -1;
+        }
+
+        // Fixed coefficients change only with sample rate; every cutoff is <= sr / 6.
+
+        if (s.rate !== sr) {
+            s.rate = sr;
+            s.noiseLowA = 1.0 - Math.exp(-TWO_PI * Math.min(500.0, sr / 6.0) / sr);
+            s.noiseHighA = 1.0 - Math.exp(-TWO_PI * Math.min(2300.0, sr / 6.0) / sr);
+            s.driftA = 1.0 - Math.exp(-TWO_PI * Math.min(13.0, sr / 6.0) / sr);
+            s.profileA = 1.0 - Math.exp(-TWO_PI * Math.min(32.0, sr / 6.0) / sr);
+            s.profileTick = 0;
+            s.lastProfileFreq = -1.0;
+            s.maskProfile = -2;
+            s.maskFreq = -1;
+            s.fullBandLimit = sr * 0.35 / (24 * 1.006);
+        }
+        s.profileFreq += s.profileA * (baseFreq - s.profileFreq);
+        s.profileTick -= 1;
+        if (s.profileTick <= 0) {
+            s.profileTick = 64;
+            if (Math.abs(s.profileFreq - s.lastProfileFreq) > 0.0001) {
+                s.lastProfileFreq = s.profileFreq;
+                let sum = 0.0;
+                let rolloff = 0.8780954309205613;
+                for (let n = 1; n <= 24; n += 1) {
+                    const hz = s.profileFreq * n;
+
+                    // Tuned mouthpiece/bell emphasis and progressively damped lip harmonics.
+
+                    const bell = (hz - 700.0) / 700.0;
+                    const loss = hz / 2700.0;
+                    const a = n * rolloff * (0.5 + 0.9 / (1.0 + bell * bell))
+                        / ((1.6 + n * n) * (1.0 + loss * loss * loss * loss));
+                    rolloff *= 0.8780954309205613;
+                    sum += a;
+                    switch (n) {
+                        case 1: s.h1 = a;
+                        break;
+                        case 2: s.h2 = a;
+                        break;
+                        case 3: s.h3 = a;
+                        break;
+                        case 4: s.h4 = a;
+                        break;
+                        case 5: s.h5 = a;
+                        break;
+                        case 6: s.h6 = a;
+                        break;
+                        case 7: s.h7 = a;
+                        break;
+                        case 8: s.h8 = a;
+                        break;
+                        case 9: s.h9 = a;
+                        break;
+                        case 10: s.h10 = a;
+                        break;
+                        case 11: s.h11 = a;
+                        break;
+                        case 12: s.h12 = a;
+                        break;
+                        case 13: s.h13 = a;
+                        break;
+                        case 14: s.h14 = a;
+                        break;
+                        case 15: s.h15 = a;
+                        break;
+                        case 16: s.h16 = a;
+                        break;
+                        case 17: s.h17 = a;
+                        break;
+                        case 18: s.h18 = a;
+                        break;
+                        case 19: s.h19 = a;
+                        break;
+                        case 20: s.h20 = a;
+                        break;
+                        case 21: s.h21 = a;
+                        break;
+                        case 22: s.h22 = a;
+                        break;
+                        case 23: s.h23 = a;
+                        break;
+                        case 24: s.h24 = a;
+                        break;
+                    }
+                }
+                s.toneGain = 0.84 / Math.max(sum, 0.000000001);
+            }
+        }
+
+        let random = s.seed | 0;
+        random ^= random << 13;
+        random ^= random >>> 17;
+        random ^= random << 5;
+        s.seed = random;
+        const white = random * 4.656612873077393e-10;
+        s.drift += s.driftA * (white - s.drift);
+        s.noiseLow += s.noiseLowA * (white - s.noiseLow);
+        s.noiseHigh += s.noiseHighA * (white - s.noiseHigh);
+
+        s.breathPhase = (s.breathPhase + 0.27 / sr) % 1.0;
+        const slow = Math.sin(TWO_PI * s.breathPhase);
+        s.vibratoPhase = (s.vibratoPhase + (4.65 + 0.11 * slow) / sr) % 1.0;
+        const vibDepth = Math.min(1.0, Math.max(0.0, (age - 0.32) / 0.6));
+        const settle = Math.max(0.0, 1.0 - age / 0.09);
+        const deviation = 0.0018 * vibDepth * Math.sin(TWO_PI * s.vibratoPhase)
+            + 0.00035 * s.drift - 0.0022 * settle * settle;
+        s.phase = (s.phase + baseFreq * (1.0 + deviation) / sr) % 1.0;
+
+        // Body color updates at control rate; harmonic guards follow pitch immediately.
+
+        if (s.maskProfile !== s.lastProfileFreq ||
+                (s.maskFreq !== baseFreq && (baseFreq > s.fullBandLimit || s.maskFreq > s.fullBandLimit))) {
+            s.maskProfile = s.lastProfileFreq;
+            s.maskFreq = baseFreq;
+            const guardedStep = baseFreq * 1.006 / sr;
+            let cutoff = guardedStep, gate;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w1 = s.h1 * gate;
+            s.audible = gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w2 = s.h2 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w3 = s.h3 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w4 = s.h4 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w5 = s.h5 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w6 = s.h6 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w7 = s.h7 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w8 = s.h8 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w9 = s.h9 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w10 = s.h10 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w11 = s.h11 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w12 = s.h12 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w13 = s.h13 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w14 = s.h14 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w15 = s.h15 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w16 = s.h16 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w17 = s.h17 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w18 = s.h18 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w19 = s.h19 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w20 = s.h20 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w21 = s.h21 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w22 = s.h22 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w23 = s.h23 * gate;
+            cutoff += guardedStep;
+            gate = cutoff <= 0.35 ? 1 : Math.max(0, (0.45 - cutoff) / 0.1);
+            gate *= gate * (3 - 2 * gate);
+            s.w24 = s.h24 * gate;
+        }
+        const sine = Math.sin(TWO_PI * s.phase);
+        const twiceCos = 2.0 * Math.cos(TWO_PI * s.phase);
+        let previous = 0, harmonic = sine, next, core = 0, edge = 0;
+        core += harmonic * s.w1;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        core += harmonic * s.w2;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w3;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w4;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w5;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w6;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w7;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w8;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w9;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w10;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w11;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w12;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w13;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w14;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w15;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w16;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w17;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w18;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w19;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w20;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w21;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w22;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w23;
+        next = twiceCos * harmonic - previous;
+        previous = harmonic;
+        harmonic = next;
+        edge += harmonic * s.w24;
+        let attack = Math.min(1.0, age / 0.055);
+        attack = attack * attack * (3.0 - 2.0 * attack);
+        let bloom = Math.min(1.0, age / 0.16);
+        bloom = bloom * bloom * (3.0 - 2.0 * bloom);
+        const tone = (core + edge * (0.35 + 0.65 * bloom)) * s.toneGain;
+        const breath = (s.noiseHigh - s.noiseLow) * s.audible * (0.003 + 0.009 * (1.0 - bloom));
+        const finalOutput = attack * (tone * (0.99 + 0.01 * slow) + breath);
+        return finalOutput;
+    },
+
+    // Eight tapered flute partials with breath onset, pressure bloom, and delayed vibrato.
+
+    'orch-flute': (ctx) => {
+        const s = ctx.state;
+        const sr = ctx.sampleRate;
+        const f = ctx.freq;
+        if (!(sr > 0) || !Number.isFinite(sr) || !(f > 0) || !Number.isFinite(f)) return 0;
+        if (f >= sr * 0.5) return 0;
+        if (s.fluteReady !== 1) {
+            s.fluteReady = 1;
+            s.rate = 0;
+            s.profileTick = 0;
+            s.lastProfile = -1;
+            s.maskFreq = -1;
+            s.profileFreq = Math.max(8, f);
+            s.phase = 0;
+            s.vPhase = 0;
+            s.dPhase = 0.37;
+            s.v = 0;
+            s.drift = 0;
+            s.vDelta = 0;
+            s.dDelta = 0;
+            s.control = 0;
+            s.amplitude = 0;
+            s.airAmplitude = 0;
+            s.pressure = 0;
+            s.vibratoDepth = 0;
+            s.transient = 1;
+            s.airLow = 0;
+            s.airHigh = 0;
+            s.rng = (s.seed | 0) || 0x6d2b79f5;
+            if (Number.isFinite(s.seed)) {
+                s.vPhase = (s.rng >>> 0) / 4294967296;
+                s.dPhase = (s.vPhase + 0.37) % 1.0;
+            }
+        }
+        if (s.rate !== sr) {
+            s.rate = sr;
+            s.invSr = 1 / sr;
+            s.profileTick = 0;
+            s.lastProfile = -1;
+            s.maskFreq = -1;
+            s.control = 0;
+            s.attackC = 1 - Math.exp(-1 / (0.018 * sr));
+            s.airAttackC = 1 - Math.exp(-1 / (0.004 * sr));
+            s.pressureC = 1 - Math.exp(-1 / (0.065 * sr));
+            s.vibratoC = 1 - Math.exp(-1 / (0.085 * sr));
+            s.transientDecay = Math.exp(-1 / (0.050 * sr));
+            s.profileC = 1 - Math.exp(-TWO_PI * Math.min(32, sr / 6.0) / sr);
+        }
+        // Body and air color follow a smoothed pitch at control rate; oscillator pitch stays current.
+
+        s.profileFreq += s.profileC * (Math.max(8, f) - s.profileFreq);
+        let profileChanged = false;
+        if (s.profileTick === 0) {
+            s.profileTick = 64;
+            if (Math.abs(s.profileFreq - s.lastProfile) > 0.0001) {
+                s.lastProfile = s.profileFreq;
+                const register = Math.max(0, Math.min(1, Math.log2(s.profileFreq / 440) / 2.5));
+                s.a1 = 1 - 0.22 * register;
+                s.a2 = 0.235 + 0.11 * register;
+                s.a3 = 0.082 + 0.025 * register;
+                s.a4 = 0.031 + 0.009 * register;
+                s.a5 = 0.018;
+                s.a6 = 0.009;
+                s.a7 = 0.005;
+                s.a8 = 0.003;
+                s.norm = 1 / (s.a1 + s.a2 + s.a3 + s.a4 + s.a5 + s.a6 + s.a7 + s.a8);
+                const lowCutoff = Math.min(440 + 0.4 * s.profileFreq, 1400, sr / 6.0);
+                const highCutoff = Math.min(3300 + 2.1 * s.profileFreq, 6200, sr / 6.0);
+                s.airLowC = 1 - Math.exp(-TWO_PI * lowCutoff / sr);
+                s.airHighC = 1 - Math.exp(-TWO_PI * highCutoff / sr);
+                profileChanged = true;
+            }
+        }
+        s.profileTick--;
+        // Masks follow every external pitch change, including abrupt register jumps.
+
+        if (s.maskFreq !== f || profileChanged) {
+            s.maskFreq = f;
+            const step = f * 1.012 * s.invSr;
+            let edge;
+            edge = Math.max(0, Math.min(1, (0.45 - 1 * step) * 10));
+            s.audible = edge * edge * (3 - 2 * edge);
+            s.w1 = s.a1 * s.norm * s.audible;
+            edge = Math.max(0, Math.min(1, (0.45 - 2 * step) * 10));
+            s.w2 = s.a2 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 3 * step) * 10));
+            s.w3 = s.a3 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 4 * step) * 10));
+            s.w4 = s.a4 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 5 * step) * 10));
+            s.w5 = s.a5 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 6 * step) * 10));
+            s.w6 = s.a6 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 7 * step) * 10));
+            s.w7 = s.a7 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 8 * step) * 10));
+            s.w8 = s.a8 * s.norm * edge * edge * (3 - 2 * edge);
+        }
+        if (s.control === 0) {
+            const v = Math.sin(TWO_PI * s.vPhase);
+            const d = Math.sin(TWO_PI * s.dPhase);
+            s.vDelta = (v - s.v) / 64;
+            s.dDelta = (d - s.drift) / 64;
+            s.control = 64;
+            s.vPhase = (s.vPhase + (5.25 + 0.11 * d) * 64 * s.invSr) % 1.0;
+            s.dPhase = (s.dPhase + 0.19 * 64 * s.invSr) % 1.0;
+        }
+        s.v += s.vDelta;
+        s.drift += s.dDelta;
+        s.control--;
+        const amplitude = s.amplitude;
+        const airAmplitude = s.airAmplitude;
+        s.amplitude += s.attackC * (1 - s.amplitude);
+        s.airAmplitude += s.airAttackC * (1 - s.airAmplitude);
+        s.pressure += s.pressureC * (1 - s.pressure);
+        s.vibratoDepth += s.vibratoC * ((ctx.t > 0.24 ? 1 : 0) - s.vibratoDepth);
+        s.transient = s.transient > 1e-8 ? s.transient * s.transientDecay : 0;
+        const vibrato = s.v * s.vibratoDepth;
+        const motion = 1 + 0.0037 * vibrato + 0.00045 * s.drift - 0.0016 * s.transient;
+        s.phase = (s.phase + f * s.invSr * motion) % 1.0;
+        // A sine/cosine pair supplies the entire harmonic series by recurrence.
+
+        const h1 = Math.sin(TWO_PI * s.phase);
+        const c = 2 * Math.cos(TWO_PI * s.phase);
+        const h2 = c * h1;
+        const h3 = c * h2 - h1;
+        const h4 = c * h3 - h2;
+        const h5 = c * h4 - h3;
+        const h6 = c * h5 - h4;
+        const h7 = c * h6 - h5;
+        const h8 = c * h7 - h6;
+        const upper = s.w2 * h2 + s.w3 * h3 + s.w4 * h4 + s.w5 * h5
+            + s.w6 * h6 + s.w7 * h7 + s.w8 * h8;
+        const tone = s.w1 * h1 + (0.72 + 0.28 * s.pressure) * upper;
+        s.rng ^= s.rng << 13;
+        s.rng ^= s.rng >>> 17;
+        s.rng ^= s.rng << 5;
+        const noise = s.rng / 2147483648;
+        s.airLow += s.airLowC * (noise - s.airLow);
+        s.airHigh += s.airHighC * (noise - s.airHigh);
+        const breath = (s.airHigh - s.airLow) * (0.85 + 0.15 * h1);
+        const air = 0.055 * breath * airAmplitude * (0.55 + 0.45 * s.transient) * s.audible;
+        const finalOutput = 0.74 * (tone * amplitude * (0.97 + 0.025 * vibrato) + air);
+        return finalOutput;
+    },
+
+    // Sixteen formant-weighted oboe partials with a focused reed attack and delayed vibrato.
+
+    'orch-oboe': (ctx) => {
+        const s = ctx.state;
+        const sr = ctx.sampleRate;
+        const f = ctx.freq;
+        if (!(sr > 0) || !Number.isFinite(sr) || !(f > 0) || !Number.isFinite(f)) return 0;
+        if (f >= sr * 0.5) return 0;
+        if (s.oboeReady !== 1) {
+            s.oboeReady = 1;
+            s.rate = 0;
+            s.profileTick = 0;
+            s.lastProfile = -1;
+            s.maskFreq = -1;
+            s.profileFreq = Math.max(8, f);
+            s.phase = 0;
+            s.vPhase = 0.07;
+            s.dPhase = 0.41;
+            s.v = 0;
+            s.drift = 0;
+            s.vDelta = 0;
+            s.dDelta = 0;
+            s.control = 0;
+            s.env = 0;
+            s.air = 0;
+            s.bloom = 0;
+            s.tongue = 1;
+            s.noiseLo = 0;
+            s.noiseHi = 0;
+            s.rng = (s.seed | 0) || 1367130551;
+            if (Number.isFinite(s.seed)) {
+                s.vPhase = (s.rng >>> 0) / 4294967296;
+                s.dPhase = (s.vPhase + 0.41) % 1.0;
+            }
+        }
+        if (s.rate !== sr) {
+            s.rate = sr;
+            s.invSr = 1 / sr;
+            s.profileTick = 0;
+            s.lastProfile = -1;
+            s.maskFreq = -1;
+            s.control = 0;
+            s.attackC = 1 - Math.exp(-1 / (0.012 * sr));
+            s.airC = 1 - Math.exp(-1 / (0.003 * sr));
+            s.bloomC = 1 - Math.exp(-1 / (0.025 * sr));
+            s.tongueDecay = Math.exp(-1 / (0.025 * sr));
+            s.noiseLoC = 1 - Math.exp(-TWO_PI * Math.min(700, sr / 6.0) / sr);
+            s.noiseHiC = 1 - Math.exp(-TWO_PI * Math.min(4300, sr / 6.0) / sr);
+            s.profileC = 1 - Math.exp(-TWO_PI * Math.min(32, sr / 6.0) / sr);
+        }
+        s.profileFreq += s.profileC * (Math.max(8, f) - s.profileFreq);
+        let profileChanged = false;
+        if (s.profileTick === 0) {
+            s.profileTick = 64;
+            if (Math.abs(s.profileFreq - s.lastProfile) > 0.0001) {
+                s.lastProfile = s.profileFreq;
+                let total = 0;
+                // Broad hand-voiced spectral peaks; these are not measured instrument responses.
+
+                for (let n = 1; n <= 16; n++) {
+                    const hz = n * s.profileFreq;
+                    const a = (hz - 1150) / 650;
+                    const b = (hz - 2900) / 1200;
+                    const rolloff = hz / 5800;
+                    const weight = (0.15 + 1.9 / (1 + a * a) + 0.28 / (1 + b * b))
+                        * (hz / (hz + 450)) / (n * (1 + rolloff * rolloff));
+                    total += weight;
+                    switch (n) {
+                        case 1: s.a1 = weight;
+                        break;
+                        case 2: s.a2 = weight;
+                        break;
+                        case 3: s.a3 = weight;
+                        break;
+                        case 4: s.a4 = weight;
+                        break;
+                        case 5: s.a5 = weight;
+                        break;
+                        case 6: s.a6 = weight;
+                        break;
+                        case 7: s.a7 = weight;
+                        break;
+                        case 8: s.a8 = weight;
+                        break;
+                        case 9: s.a9 = weight;
+                        break;
+                        case 10: s.a10 = weight;
+                        break;
+                        case 11: s.a11 = weight;
+                        break;
+                        case 12: s.a12 = weight;
+                        break;
+                        case 13: s.a13 = weight;
+                        break;
+                        case 14: s.a14 = weight;
+                        break;
+                        case 15: s.a15 = weight;
+                        break;
+                        case 16: s.a16 = weight;
+                        break;
+                    }
+                }
+                s.norm = 1 / total;
+                profileChanged = true;
+            }
+        }
+        s.profileTick--;
+        // Normalize before the current-pitch taper so near-Nyquist harmonics fade away.
+
+        if (s.maskFreq !== f || profileChanged) {
+            s.maskFreq = f;
+            const step = f * 1.012 * s.invSr;
+            let edge;
+            edge = Math.max(0, Math.min(1, (0.45 - 1 * step) * 10));
+            s.audible = edge * edge * (3 - 2 * edge);
+            s.w1 = s.a1 * s.norm * s.audible;
+            edge = Math.max(0, Math.min(1, (0.45 - 2 * step) * 10));
+            s.w2 = s.a2 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 3 * step) * 10));
+            s.w3 = s.a3 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 4 * step) * 10));
+            s.w4 = s.a4 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 5 * step) * 10));
+            s.w5 = s.a5 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 6 * step) * 10));
+            s.w6 = s.a6 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 7 * step) * 10));
+            s.w7 = s.a7 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 8 * step) * 10));
+            s.w8 = s.a8 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 9 * step) * 10));
+            s.w9 = s.a9 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 10 * step) * 10));
+            s.w10 = s.a10 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 11 * step) * 10));
+            s.w11 = s.a11 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 12 * step) * 10));
+            s.w12 = s.a12 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 13 * step) * 10));
+            s.w13 = s.a13 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 14 * step) * 10));
+            s.w14 = s.a14 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 15 * step) * 10));
+            s.w15 = s.a15 * s.norm * edge * edge * (3 - 2 * edge);
+            edge = Math.max(0, Math.min(1, (0.45 - 16 * step) * 10));
+            s.w16 = s.a16 * s.norm * edge * edge * (3 - 2 * edge);
+        }
+        if (s.control === 0) {
+            const v = Math.sin(TWO_PI * s.vPhase);
+            const d = Math.sin(TWO_PI * s.dPhase);
+            s.vDelta = (v - s.v) / 64;
+            s.dDelta = (d - s.drift) / 64;
+            s.control = 64;
+            s.vPhase = (s.vPhase + (5.35 + 0.14 * d) * 64 * s.invSr) % 1.0;
+            s.dPhase = (s.dPhase + 0.29 * 64 * s.invSr) % 1.0;
+        }
+        s.v += s.vDelta;
+        s.drift += s.dDelta;
+        s.control--;
+        const env = s.env;
+        const air = s.air;
+        s.env += s.attackC * (1 - s.env);
+        s.air += s.airC * (1 - s.air);
+        s.bloom += s.bloomC * (1 - s.bloom);
+        s.tongue = s.tongue > 1e-8 ? s.tongue * s.tongueDecay : 0;
+        let depth = Math.max(0, Math.min(1, (ctx.t - 0.22) / 0.40));
+        depth *= depth * (3 - 2 * depth);
+        const motion = 1 + depth * (0.0045 * s.v + 0.0003 * s.drift) + 0.0015 * s.tongue;
+        s.phase = (s.phase + f * s.invSr * motion) % 1.0;
+        const h1 = Math.sin(TWO_PI * s.phase);
+        const c = 2 * Math.cos(TWO_PI * s.phase);
+        const h2 = c * h1;
+        const h3 = c * h2 - h1;
+        const h4 = c * h3 - h2;
+        const h5 = c * h4 - h3;
+        const h6 = c * h5 - h4;
+        const h7 = c * h6 - h5;
+        const h8 = c * h7 - h6;
+        const h9 = c * h8 - h7;
+        const h10 = c * h9 - h8;
+        const h11 = c * h10 - h9;
+        const h12 = c * h11 - h10;
+        const h13 = c * h12 - h11;
+        const h14 = c * h13 - h12;
+        const h15 = c * h14 - h13;
+        const h16 = c * h15 - h14;
+        const low = s.w1 * h1 + s.w2 * h2;
+        const upper = s.w3 * h3 + s.w4 * h4 + s.w5 * h5 + s.w6 * h6
+            + s.w7 * h7 + s.w8 * h8 + s.w9 * h9 + s.w10 * h10 + s.w11 * h11
+            + s.w12 * h12 + s.w13 * h13 + s.w14 * h14 + s.w15 * h15 + s.w16 * h16;
+        const tone = low + (0.65 + 0.35 * s.bloom) * upper;
+        s.rng ^= s.rng << 13;
+        s.rng ^= s.rng >>> 17;
+        s.rng ^= s.rng << 5;
+        const white = s.rng / 2147483648;
+        s.noiseLo += s.noiseLoC * (white - s.noiseLo);
+        s.noiseHi += s.noiseHiC * (white - s.noiseHi);
+        const reedNoise = 0.5 * (s.noiseHi - s.noiseLo);
+        const tremolo = 1 - 0.010 * depth + 0.010 * depth * s.v;
+        const finalOutput = 0.82 * env * tremolo * tone
+            + air * (0.012 + 0.068 * s.tongue) * reedNoise * s.audible;
+        return finalOutput;
+    },
 };
 
 
@@ -2857,6 +5056,268 @@ const MotifSamples = (() => {
     };
 
     return {
+        // Sine pitch fall, briefly emphasized low harmonics, and a muted bandpassed beater; smooth weighted DC removal and a 0.76 peak.
+        "dark-thud": () => {
+            const buffer = createBuffer(0.46);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            const sr = sampleRate;
+            const end = (data.length - 1) / sr;
+            const weights = new Float64Array(data.length);
+            const smooth = x => {
+                x = Math.max(0, Math.min(1, x));
+                return x * x * (3 - 2 * x);
+            };
+            const fastA = 1 - Math.exp(-TWO_PI * Math.min(1450, sr * 0.22) / sr);
+            const slowA = 1 - Math.exp(-TWO_PI * 180 / sr);
+            const noiseScale = Math.sqrt(sr / 44100);
+            let seed = (0x6D2B79F5 ^ Motif._sampleSeed) || 1;
+            let phase = 0;
+            let fast = 0;
+            let slow = 0;
+            let sum = 0;
+            let weightSum = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                seed ^= seed << 13;
+                seed ^= seed >>> 17;
+                seed ^= seed << 5;
+                const noise = ((seed >>> 0) / 2147483648 - 1) * noiseScale;
+                fast += fastA * (noise - fast);
+                slow += slowA * (noise - slow);
+                const freq = 48 + 92 * Math.exp(-t / 0.010) + 20 * Math.exp(-t / 0.040);
+                phase += freq / sr;
+                phase -= Math.floor(phase);
+                const angle = TWO_PI * phase;
+                const body = Math.sin(angle)
+                    + 0.17 * Math.sin(2 * angle) * Math.exp(-t / 0.045)
+                    + 0.035 * Math.sin(3 * angle) * Math.exp(-t / 0.020);
+                const beater = 0.14 * (fast - slow) * Math.exp(-t / 0.008);
+                const weight = Math.exp(-t / 0.110) * smooth(t / 0.002) * smooth((end - t) / 0.035);
+                weights[i] = weight;
+                data[i] = (body + beater) * weight;
+                sum += data[i];
+                weightSum += weight;
+            }
+
+            // Subtract through the same envelope: silence and the smooth endpoints stay silent.
+            const dc = weightSum > 0 ? sum / weightSum : 0;
+            let peak = 0;
+            for (let i = 0; i < data.length; i++) {
+                data[i] -= dc * weights[i];
+                peak = Math.max(peak, Math.abs(data[i]));
+            }
+            const gain = peak > 0 ? 0.76 / peak : 0;
+            for (let i = 0; i < data.length; i++) data[i] *= gain;
+            data[0] = 0;
+            data[data.length - 1] = 0;
+            return buffer;
+        },
+
+
+        // Two falling sine shell modes under filtered seeded noise; a rounded 40 ms gate closes the dry tail, with a 0.58 peak.
+        "dark-gated-snare": () => {
+            const buffer = createBuffer(0.22);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            const sr = sampleRate;
+            const weights = new Float64Array(data.length);
+            const smooth = x => {
+                x = Math.max(0, Math.min(1, x));
+                return x * x * (3 - 2 * x);
+            };
+            const hpA = 1 - Math.exp(-TWO_PI * Math.min(650, sr * 0.10) / sr);
+            const lpA = 1 - Math.exp(-TWO_PI * Math.min(4400, sr * 0.30) / sr);
+            const noiseScale = Math.sqrt(sr / 44100);
+            let seed = (0xA341316C ^ Motif._sampleSeed) || 1;
+            let phase1 = 0;
+            let phase2 = 0;
+            let low = 0;
+            let lp1 = 0;
+            let lp2 = 0;
+            let sum = 0;
+            let weightSum = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                seed ^= seed << 13;
+                seed ^= seed >>> 17;
+                seed ^= seed << 5;
+                const noise = ((seed >>> 0) / 2147483648 - 1) * noiseScale;
+                low += hpA * (noise - low);
+                lp1 += lpA * (noise - low - lp1);
+                lp2 += lpA * (lp1 - lp2);
+                const fall = Math.exp(-t / 0.012);
+                phase1 += (174 + 42 * fall) / sr;
+                phase2 += (311 + 37 * fall) / sr;
+                phase1 -= Math.floor(phase1);
+                phase2 -= Math.floor(phase2);
+                const body = (0.34 * Math.sin(TWO_PI * phase1) + 0.16 * Math.sin(TWO_PI * phase2))
+                    * Math.exp(-t / 0.035);
+                const wire = 0.82 * lp2 * Math.exp(-t / 0.068);
+                const edge = smooth(t / 0.0008) * smooth((0.200 - t) / 0.040);
+                const weight = Math.exp(-t / 0.068) * edge;
+                weights[i] = weight;
+                data[i] = (body + wire) * edge;
+                sum += data[i];
+                weightSum += weight;
+            }
+            const dc = weightSum > 0 ? sum / weightSum : 0;
+            let peak = 0;
+            for (let i = 0; i < data.length; i++) {
+                data[i] -= dc * weights[i];
+                peak = Math.max(peak, Math.abs(data[i]));
+            }
+            const gain = peak > 0 ? 0.58 / peak : 0;
+            for (let i = 0; i < data.length; i++) data[i] *= gain;
+            data[0] = 0;
+            data[data.length - 1] = 0;
+            return buffer;
+        },
+
+
+        // Nyquist-limited inharmonic sine modes plus softly bandpassed noise; short exponential damping gives a dark metallic tick at a 0.29 peak.
+        "dark-shadow-hat": () => {
+            const buffer = createBuffer(0.145);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            const sr = sampleRate;
+            const end = (data.length - 1) / sr;
+            const weights = new Float64Array(data.length);
+            const smooth = x => {
+                x = Math.max(0, Math.min(1, x));
+                return x * x * (3 - 2 * x);
+            };
+            const freqs = [1379, 1847, 2389, 2837, 3491, 4271, 5231, 6299, 7541, 8819];
+            const phases = new Float64Array(freqs.length);
+            const amps = new Float64Array(freqs.length);
+            let seed = (0xC8013EA4 ^ Motif._sampleSeed) || 1;
+            let ampSum = 0;
+            for (let k = 0; k < freqs.length; k++) {
+                seed ^= seed << 13;
+                seed ^= seed >>> 17;
+                seed ^= seed << 5;
+                phases[k] = (seed >>> 0) / 4294967296;
+
+                // Modes fade out between 0.35 and 0.43 times the sample rate; never fold them down.
+                amps[k] = Math.sqrt(1379 / freqs[k]) * smooth((0.43 * sr - freqs[k]) / (0.08 * sr));
+                ampSum += amps[k];
+            }
+            const modeGain = ampSum > 0 ? 0.78 / ampSum : 0;
+            const hpA = 1 - Math.exp(-TWO_PI * Math.min(1200, sr * 0.15) / sr);
+            const lpA = 1 - Math.exp(-TWO_PI * Math.min(6200, sr * 0.32) / sr);
+            const noiseScale = Math.sqrt(sr / 44100);
+            let low = 0;
+            let top = 0;
+            let sum = 0;
+            let weightSum = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                let metal = 0;
+                for (let k = 0; k < freqs.length; k++) {
+                    if (amps[k] === 0) continue;
+                    phases[k] += freqs[k] / sr;
+                    phases[k] -= Math.floor(phases[k]);
+                    metal += amps[k] * Math.sin(TWO_PI * phases[k]) * Math.exp(-t * freqs[k] / 360);
+                }
+                seed ^= seed << 13;
+                seed ^= seed >>> 17;
+                seed ^= seed << 5;
+                const noise = ((seed >>> 0) / 2147483648 - 1) * noiseScale;
+                const raw = metal * modeGain + 0.22 * noise;
+                low += hpA * (raw - low);
+                top += lpA * (raw - low - top);
+                const weight = Math.exp(-t / 0.027) * smooth(t / 0.0005) * smooth((end - t) / 0.025);
+                weights[i] = weight;
+                data[i] = top * weight;
+                sum += data[i];
+                weightSum += weight;
+            }
+            const dc = weightSum > 0 ? sum / weightSum : 0;
+            let peak = 0;
+            for (let i = 0; i < data.length; i++) {
+                data[i] -= dc * weights[i];
+                peak = Math.max(peak, Math.abs(data[i]));
+            }
+            const gain = peak > 0 ? 0.29 / peak : 0;
+            for (let i = 0; i < data.length; i++) data[i] *= gain;
+            data[0] = 0;
+            data[data.length - 1] = 0;
+            return buffer;
+        },
+
+
+        // Inharmonic glass modes and an opening filtered-noise breath rise through a curved envelope; a 45 ms rounded exit ends at silence, with a 0.42 peak.
+        "dark-reverse-glass": () => {
+            const buffer = createBuffer(1.20);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            const sr = sampleRate;
+            const end = (data.length - 1) / sr;
+            const weights = new Float64Array(data.length);
+            const smooth = x => {
+                x = Math.max(0, Math.min(1, x));
+                return x * x * (3 - 2 * x);
+            };
+            const freqs = [440, 617, 997, 1591, 2477, 3851, 5923];
+            const phases = new Float64Array(freqs.length);
+            const amps = new Float64Array(freqs.length);
+            let seed = (0xAD90777D ^ Motif._sampleSeed) || 1;
+            let ampSum = 0;
+            for (let k = 0; k < freqs.length; k++) {
+                seed ^= seed << 13;
+                seed ^= seed >>> 17;
+                seed ^= seed << 5;
+                phases[k] = (seed >>> 0) / 4294967296;
+                amps[k] = Math.pow(440 / freqs[k], 0.45) * smooth((0.43 * sr - freqs[k]) / (0.08 * sr));
+                ampSum += amps[k];
+            }
+            const modeGain = ampSum > 0 ? 0.82 / ampSum : 0;
+            const hpA = 1 - Math.exp(-TWO_PI * 420 / sr);
+            const noiseScale = Math.sqrt(sr / 44100);
+            let low = 0;
+            let air1 = 0;
+            let air2 = 0;
+            let sum = 0;
+            let weightSum = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                const progress = i / (data.length - 1);
+                let glass = 0;
+                for (let k = 0; k < freqs.length; k++) {
+                    if (amps[k] === 0) continue;
+                    phases[k] += freqs[k] / sr;
+                    phases[k] -= Math.floor(phases[k]);
+                    const brightness = 0.25 + 0.75 * Math.pow(progress, 0.35 + freqs[k] / 4000);
+                    glass += amps[k] * brightness * Math.sin(TWO_PI * phases[k]);
+                }
+                seed ^= seed << 13;
+                seed ^= seed >>> 17;
+                seed ^= seed << 5;
+                const noise = ((seed >>> 0) / 2147483648 - 1) * noiseScale;
+                low += hpA * (noise - low);
+                const cutoff = Math.min(750 + 3400 * progress * progress, sr * 0.30);
+                const lpA = 1 - Math.exp(-TWO_PI * cutoff / sr);
+                air1 += lpA * (noise - low - air1);
+                air2 += lpA * (air1 - air2);
+                const weight = Math.pow(progress, 2.5) * smooth(t / 0.025) * smooth((end - t) / 0.045);
+                weights[i] = weight;
+                data[i] = (glass * modeGain + 0.32 * air2) * weight;
+                sum += data[i];
+                weightSum += weight;
+            }
+            const dc = weightSum > 0 ? sum / weightSum : 0;
+            let peak = 0;
+            for (let i = 0; i < data.length; i++) {
+                data[i] -= dc * weights[i];
+                peak = Math.max(peak, Math.abs(data[i]));
+            }
+            const gain = peak > 0 ? 0.42 / peak : 0;
+            for (let i = 0; i < data.length; i++) data[i] *= gain;
+            data[0] = 0;
+            data[data.length - 1] = 0;
+            return buffer;
+        },
+
         // ------------------------------------------
         // ELECTRONIC & SYNTHESIZED DRUMS
         // ------------------------------------------
@@ -3603,8 +6064,13 @@ const MotifSamples = (() => {
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
             const duration = data.length / sampleRate;
-            const svfF = 2 * Math.sin(Math.PI * 3800 / sampleRate);
+
+            // TPT integration keeps the resonant bandpass stable at low sample rates.
+
+            const cutoff = Math.min(3800, sampleRate * 0.4);
+            const svfG = Math.tan(Math.PI * cutoff / sampleRate);
             const svfDamp = 1 / 1.1;
+            const svfA = 1 / (1 + svfG * (svfG + svfDamp));
             const rand = mulberry32(0x846CA68B ^ Motif._sampleSeed);
             let phase1 = 0;
             let phase2 = 0;
@@ -3620,12 +6086,13 @@ const MotifSamples = (() => {
                     + Math.sin(phase2) * Math.exp(-t / 0.05) * 0.34;
                 // State-variable bandpass around 3.8 kHz shapes white noise into the wire rattle, decaying faster than the shell
                 const excite = (rand() * 2 - 1) * Math.exp(-t / 0.042);
-                low += svfF * band;
-                const high = excite - low - svfDamp * band;
-                band += svfF * high;
+                const bandOutput = svfA * (band + svfG * (excite - low));
+                const lowOutput = low + svfG * bandOutput;
+                band = 2 * bandOutput - band;
+                low = 2 * lowOutput - low;
                 const attack = Math.min(1, t / 0.0015);
                 const fade = Math.min(1, (duration - t) / 0.008);
-                data[i] = (body + band * 0.45) * 0.5 * attack * fade;
+                data[i] = (body + bandOutput * 0.45) * 0.5 * attack * fade;
             }
             return buffer;
         },
@@ -3833,24 +6300,91 @@ const MotifSamples = (() => {
             return buffer;
         },
 
+        // D2 timpani: air-loaded diametric modes, felt impact, and an integrated tension-settling glide.
+
         "timpani": () => {
-            const buffer = createBuffer(1.5);
+            const buffer = createBuffer(3.8);
             if (!buffer) return null;
             const data = buffer.getChannelData(0);
-            const rand = mulberry32(0x3243F6A8 ^ Motif._sampleSeed);
-            let phase = 0;
+            const root = 73.41619197935188;
+            // Ratio to the practical (1,1) principal tone; amplitude; decay rate; glide depth.
+
+            const specifications = [
+                [1.000, 1.000, 1.95, 0.018], [1.501, 0.400, 1.72, 0.015],
+                [1.998, 0.305, 1.94, 0.012], [2.443, 0.145, 3.20, 0.011],
+                [2.905, 0.073, 4.35, 0.010], [3.340, 0.034, 5.90, 0.009],
+                [0.810, 0.170, 18.0, 0.025], [1.650, 0.105, 12.5, 0.021],
+                [2.070, 0.090, 15.0, 0.018], [2.730, 0.057, 20.0, 0.015],
+                [3.760, 0.040, 24.0, 0.012], [5.230, 0.028, 33.0, 0.010],
+                [7.370, 0.018, 46.0, 0.008], [10.410, 0.012, 65.0, 0.006]
+            ];
+            const modes = [];
+            const glideStep = Math.exp(-1 / (sampleRate * 0.060));
+            const glideIntegral = 0.060 * sampleRate * (1 - glideStep);
+            for (let k = 0; k < specifications.length; k++) {
+                const specification = specifications[k];
+                const frequency = root * specification[0];
+                const upperFrequency = frequency * (1 + specification[3]);
+                if (upperFrequency >= sampleRate * 0.43) continue;
+                const edge = Math.max(0, Math.min(1, (sampleRate * 0.43 - upperFrequency) / (sampleRate * 0.09)));
+                modes.push({
+                    phase: k < 6 ? 0 : 0.19 * (k - 6),
+                    step: TWO_PI * frequency / sampleRate,
+                    amplitude: specification[1] * edge * edge * (3 - 2 * edge),
+                    decay: Math.exp(-specification[2] / sampleRate),
+                    glideArea: specification[3] * glideIntegral
+                });
+            }
+            const noiseDecay = Math.exp(-1 / (sampleRate * 0.016));
+            const noiseLowCoefficient = 1 - Math.exp(-TWO_PI * Math.min(1750, sampleRate * 0.20) / sampleRate);
+            const noiseHighCoefficient = 1 - Math.exp(-TWO_PI * Math.min(140, sampleRate * 0.035) / sampleRate);
+            const dcPole = Math.exp(-TWO_PI * 6 / sampleRate);
+            const last = data.length - 1;
+            const tailSamples = sampleRate * 0.50;
+            let seed = (0x2974bc15 ^ Motif._sampleSeed) || 0x2974bc15;
+            let glide = 1;
+            let noiseEnvelope = 0.19;
+            let noiseLow = 0;
+            let noiseLow2 = 0;
+            let noiseHigh = 0;
+            let previousInput = 0;
+            let dcOutput = 0;
+            let peak = 0;
             for (let i = 0; i < data.length; i++) {
                 const t = i / sampleRate;
-                // Large drum body dropping into pitch slightly
-                const freq = 80 + 20 * Math.exp(-t * 10);
-                phase += freq / sampleRate;
-
-                const skin = Math.sin(TWO_PI * phase);
-                const mallet = (rand() * 2 - 1) * Math.exp(-t * 80) * 0.05; // Soft strike
-                const attack = Math.min(1.0, t * 50); // slight ramping so it doesn't click
-
-                data[i] = (skin + mallet) * attack * Math.exp(-t * 2.5);
+                let value = 0;
+                for (let k = 0; k < modes.length; k++) {
+                    const mode = modes[k];
+                    value += mode.amplitude * Math.sin(mode.phase);
+                    mode.phase += mode.step * (1 + mode.glideArea * glide);
+                    if (mode.phase >= TWO_PI) mode.phase -= TWO_PI;
+                    mode.amplitude *= mode.decay;
+                }
+                seed ^= seed << 13;
+                seed ^= seed >>> 17;
+                seed ^= seed << 5;
+                const noise = (seed >>> 0) / 2147483648 - 1;
+                noiseLow += noiseLowCoefficient * (noise - noiseLow);
+                noiseLow2 += noiseLowCoefficient * (noiseLow - noiseLow2);
+                noiseHigh += noiseHighCoefficient * (noiseLow2 - noiseHigh);
+                value += (noiseLow2 - noiseHigh) * noiseEnvelope;
+                const attackPosition = Math.min(1, t / 0.0018);
+                const attack = attackPosition * attackPosition * (3 - 2 * attackPosition);
+                const dcInput = value * attack;
+                dcOutput = dcInput - previousInput + dcPole * dcOutput;
+                previousInput = dcInput;
+                const tailPosition = Math.max(0, Math.min(1, (last - i) / tailSamples));
+                const tail = tailPosition * tailPosition * (3 - 2 * tailPosition);
+                const finalOutput = dcOutput * tail;
+                data[i] = finalOutput;
+                peak = Math.max(peak, Math.abs(data[i]));
+                glide *= glideStep;
+                noiseEnvelope *= noiseDecay;
             }
+            const gain = peak > 0 ? 0.78 / peak : 1;
+            for (let i = 0; i < data.length; i++) data[i] *= gain;
+            data[0] = 0;
+            data[last] = 0;
             return buffer;
         },
 
@@ -4048,6 +6582,278 @@ const MotifSamples = (() => {
                 const tailFade = Math.max(0.0, 1.0 - (i / data.length));
                 data[i] = Math.tanh(mix * 0.8) * attack * tailFade;
             }
+            return buffer;
+        },
+
+        // Finger-plucked concert harp: almost harmonic strings, two decay polarizations, and a quiet soundboard bloom; C4 root.
+
+        'orch-harp-c4': () => {
+            const buffer = createBuffer(5.5);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            // Sounding C4, MIDI 60; playbackRate = desiredHz / root.
+
+            const root = 261.6255653005986;
+            const modes = [];
+            let seed = (0x47a91c25 ^ Motif._sampleSeed) || 0x47a91c25;
+            const noise = () => {
+                seed ^= seed << 13;
+                seed ^= seed >>> 17;
+                seed ^= seed << 5;
+                return (seed >>> 0) / 2147483648 - 1;
+            };
+            const addMode = (frequency, amplitude, t60, phase, riseSeconds = 0) => {
+                if (frequency >= sampleRate * 0.4) return;
+                const edge = Math.min(1, (sampleRate * 0.4 - frequency) / (sampleRate * 0.08));
+                const radius = Math.exp(-6.907755278982137 / (t60 * sampleRate));
+                const angle = TWO_PI * frequency / sampleRate;
+                modes.push({
+                    x: amplitude * edge * Math.cos(phase),
+                    y: amplitude * edge * Math.sin(phase),
+                    c: radius * Math.cos(angle),
+                    s: radius * Math.sin(angle),
+                    framesLeft: Math.ceil(t60 * sampleRate * 3),
+                    rise: riseSeconds > 0 ? 1 : 0,
+                    riseDecay: riseSeconds > 0 ? Math.exp(-1 / (sampleRate * riseSeconds)) : 0
+                });
+            };
+
+            // A pluck-position comb and gentle stiffness leave the upper partials recognizably string-like.
+
+            for (let harmonic = 1; harmonic <= 28; harmonic++) {
+                const frequency = root * harmonic * Math.sqrt((1 + 0.0000035 * harmonic * harmonic) / 1.0000035);
+                const amplitude = Math.sin(Math.PI * 0.19 * harmonic) * Math.exp(-Math.pow(harmonic / 21, 2)) / Math.pow(harmonic, 1.38);
+                const damping = 1 + 0.06 * (harmonic - 1) + 0.012 * Math.pow(harmonic - 1, 2);
+                addMode(frequency, amplitude * 0.86, 4.7 / damping, 0.08 * harmonic);
+                // The weak second polarization survives longer and is only a fraction of a cent away.
+
+                addMode(frequency * (1.00023 + 0.00006 * Math.sin(harmonic * 1.7)), amplitude * 0.14, 5.65 / damping, 0.38 + 0.08 * harmonic, 0.012);
+            }
+            [[184, 0.032, 0.28], [331, 0.022, 0.2], [579, 0.018, 0.14], [967, 0.01, 0.095], [1543, 0.006, 0.065]].forEach(([frequency, amplitude, t60]) => {
+                addMode(frequency, amplitude, t60, noise() * Math.PI, 0.0015);
+            });
+            // Small delayed components approximate sympathetic response through the soundboard.
+
+            [[1.0008, 0.007], [1.9995, 0.009], [2.9991, 0.005], [3.9992, 0.003]].forEach(([ratio, amplitude]) => {
+                addMode(root * ratio, amplitude, 4.9, noise() * Math.PI, 0.045);
+            });
+
+            const fingerFast = 1 - Math.exp(-TWO_PI * Math.min(3500, sampleRate * 0.22) / sampleRate);
+            const fingerSlow = 1 - Math.exp(-TWO_PI * Math.min(520, sampleRate * 0.08) / sampleRate);
+            const dcPole = Math.exp(-TWO_PI * 7 / sampleRate);
+            const attackFrames = Math.max(1, Math.round(sampleRate * 0.0018));
+            const tailFrames = Math.max(1, Math.round(sampleRate * 0.2));
+            let fingerLP = 0, fingerLow = 0, previousRaw = 0, previousHP = 0, peak = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                let strings = 0;
+                for (let j = 0; j < modes.length; j++) {
+                    const mode = modes[j];
+                    if (mode.framesLeft-- <= 0) continue;
+                    strings += mode.y * (1 - mode.rise);
+                    const nextX = mode.c * mode.x - mode.s * mode.y;
+                    mode.y = mode.s * mode.x + mode.c * mode.y;
+                    mode.x = nextX;
+                    mode.rise = mode.rise > 1e-9 ? mode.rise * mode.riseDecay : 0;
+                }
+                const white = noise();
+                fingerLP += fingerFast * (white - fingerLP);
+                fingerLow += fingerSlow * (fingerLP - fingerLow);
+                const finger = (fingerLP - fingerLow) * (0.045 * Math.exp(-t / 0.0045) + 0.012 * Math.exp(-t / 0.022));
+                const raw = strings + finger;
+                const attack = i < attackFrames ? 0.5 - 0.5 * Math.cos(Math.PI * i / attackFrames) : 1;
+                const dcInput = raw * attack;
+                const highPassed = dcInput - previousRaw + dcPole * previousHP;
+                previousRaw = dcInput;
+                previousHP = highPassed;
+                const remaining = data.length - 1 - i;
+                const tail = remaining < tailFrames ? 0.5 - 0.5 * Math.cos(Math.PI * remaining / tailFrames) : 1;
+                const finalOutput = highPassed * tail;
+                data[i] = finalOutput;
+                peak = Math.max(peak, Math.abs(data[i]));
+            }
+            const gain = peak > 0 ? 0.74 / peak : 0;
+            for (let i = 0; i < data.length; i++) data[i] *= gain;
+            data[0] = 0;
+            data[data.length - 1] = 0;
+            return buffer;
+        },
+
+        // Soft felt celesta strike: an inharmonic steel-plate attack settling into its tuned wooden resonator; sounding C5 root.
+
+        'orch-celesta-c5': () => {
+            const buffer = createBuffer(5.8);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            // Sounding C5, MIDI 72; written celesta pitch would be C4.
+
+            const root = 523.2511306011972;
+            const modes = [];
+            let seed = (0x6ce19a37 ^ Motif._sampleSeed) || 0x6ce19a37;
+            const noise = () => {
+                seed ^= seed << 13;
+                seed ^= seed >>> 17;
+                seed ^= seed << 5;
+                return (seed >>> 0) / 2147483648 - 1;
+            };
+            const addMode = (frequency, amplitude, t60, phase, riseSeconds = 0) => {
+                if (frequency >= sampleRate * 0.4) return;
+                const edge = Math.min(1, (sampleRate * 0.4 - frequency) / (sampleRate * 0.08));
+                const radius = Math.exp(-6.907755278982137 / (t60 * sampleRate));
+                const angle = TWO_PI * frequency / sampleRate;
+                modes.push({
+                    x: amplitude * edge * Math.cos(phase),
+                    y: amplitude * edge * Math.sin(phase),
+                    c: radius * Math.cos(angle),
+                    s: radius * Math.sin(angle),
+                    framesLeft: Math.ceil(t60 * sampleRate * 3),
+                    rise: riseSeconds > 0 ? 1 : 0,
+                    riseDecay: riseSeconds > 0 ? Math.exp(-1 / (sampleRate * riseSeconds)) : 0
+                });
+            };
+
+            // Idealized bending-mode ratios, voiced for a soft celesta; these are not measurements of a particular instrument.
+
+            [[1, 0.76, 4.65], [2.756, 0.145, 2.35], [5.404, 0.065, 1.3], [8.933, 0.024, 0.85], [13.347, 0.009, 0.5], [18.639, 0.003, 0.3]].forEach(([ratio, amplitude, t60], index) => {
+                addMode(root * ratio, amplitude, t60, 0.11 + index * 0.63, 0.0008 + index * 0.00015);
+            });
+            // The fundamental is reinforced as the tuned soundbox takes up energy; no vibraphone-like tremolo.
+
+            addMode(root, 0.27, 4.1, 0.08, 0.013);
+            addMode(root * 1.00035, 0.035, 4.7, 0.5, 0.025);
+            addMode(root * 2.004, 0.014, 0.8, 0.7, 0.003);
+            [[193, 0.009, 0.075], [817, 0.008, 0.065], [1337, 0.004, 0.045]].forEach(([frequency, amplitude, t60]) => {
+                addMode(frequency, amplitude, t60, noise() * Math.PI, 0.001);
+            });
+
+            const feltFast = 1 - Math.exp(-TWO_PI * Math.min(2600, sampleRate * 0.2) / sampleRate);
+            const feltSlow = 1 - Math.exp(-TWO_PI * Math.min(700, sampleRate * 0.09) / sampleRate);
+            const dcPole = Math.exp(-TWO_PI * 7 / sampleRate);
+            const attackFrames = Math.max(1, Math.round(sampleRate * 0.0012));
+            const tailFrames = Math.max(1, Math.round(sampleRate * 0.22));
+            let feltLP = 0, feltLow = 0, previousRaw = 0, previousHP = 0, peak = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                let metalAndBox = 0;
+                for (let j = 0; j < modes.length; j++) {
+                    const mode = modes[j];
+                    if (mode.framesLeft-- <= 0) continue;
+                    metalAndBox += mode.y * (1 - mode.rise);
+                    const nextX = mode.c * mode.x - mode.s * mode.y;
+                    mode.y = mode.s * mode.x + mode.c * mode.y;
+                    mode.x = nextX;
+                    mode.rise = mode.rise > 1e-9 ? mode.rise * mode.riseDecay : 0;
+                }
+                const white = noise();
+                feltLP += feltFast * (white - feltLP);
+                feltLow += feltSlow * (feltLP - feltLow);
+                const contact = 0.055 * Math.exp(-t / 0.0028) + 0.012 * Math.exp(-t / 0.013);
+                const raw = metalAndBox + (feltLP - feltLow) * contact;
+                const attack = i < attackFrames ? 0.5 - 0.5 * Math.cos(Math.PI * i / attackFrames) : 1;
+                const dcInput = raw * attack;
+                const highPassed = dcInput - previousRaw + dcPole * previousHP;
+                previousRaw = dcInput;
+                previousHP = highPassed;
+                const remaining = data.length - 1 - i;
+                const tail = remaining < tailFrames ? 0.5 - 0.5 * Math.cos(Math.PI * remaining / tailFrames) : 1;
+                const finalOutput = highPassed * tail;
+                data[i] = finalOutput;
+                peak = Math.max(peak, Math.abs(data[i]));
+            }
+            const gain = peak > 0 ? 0.73 / peak : 0;
+            for (let i = 0; i < data.length; i++) data[i] *= gain;
+            data[0] = 0;
+            data[data.length - 1] = 0;
+            return buffer;
+        },
+
+        // C5 tubular bell: capped-tube flexural modes with a C5 residue pitch and a hard mallet strike.
+
+        'orch-tubular-bells-c5': () => {
+            const buffer = createBuffer(5.8);
+            if (!buffer) return null;
+            const data = buffer.getChannelData(0);
+            const root = 523.2511306011972;
+            // P4-P6 support the strike pitch near 2:3:4; the lower and upper modes remain inharmonic.
+
+            const specifications = [
+                [0.236, 0.010, 1.65], [0.635, 0.034, 1.48], [1.216, 0.125, 1.36],
+                [2.000, 0.720, 1.34], [2.988, 0.440, 1.56], [4.018, 0.250, 1.88],
+                [5.280, 0.150, 2.35], [6.680, 0.105, 3.00], [8.220, 0.078, 3.90],
+                [9.910, 0.055, 4.95], [11.780, 0.040, 6.20], [13.820, 0.027, 7.70],
+                [16.030, 0.018, 9.40], [18.400, 0.012, 11.2]
+            ];
+            const modes = [];
+            for (let k = 0; k < specifications.length; k++) {
+                const specification = specifications[k];
+                const frequency = root * specification[0];
+                const splitRatio = 1 + 0.00048 + 0.000025 * k;
+                const upperFrequency = frequency * splitRatio;
+                if (upperFrequency >= sampleRate * 0.43) continue;
+                const edge = Math.max(0, Math.min(1, (sampleRate * 0.43 - upperFrequency) / (sampleRate * 0.09)));
+                const amplitude = specification[1] * edge * edge * (3 - 2 * edge);
+                modes.push({
+                    phase: 0.16 * Math.sin(k * 2.31),
+                    phase2: 0.16 * Math.sin(k * 2.31) + 0.12,
+                    step: TWO_PI * frequency / sampleRate,
+                    step2: TWO_PI * frequency * splitRatio / sampleRate,
+                    amplitude: amplitude * 0.80,
+                    amplitude2: amplitude * 0.20,
+                    decay: Math.exp(-specification[2] / sampleRate),
+                    decay2: Math.exp(-(specification[2] * 0.79 + 0.08) / sampleRate)
+                });
+            }
+            const noiseDecay = Math.exp(-1 / (sampleRate * 0.0031));
+            const noiseLowCoefficient = 1 - Math.exp(-TWO_PI * Math.min(6800, sampleRate * 0.24) / sampleRate);
+            const noiseHighCoefficient = 1 - Math.exp(-TWO_PI * Math.min(1450, sampleRate * 0.10) / sampleRate);
+            const dcPole = Math.exp(-TWO_PI * 8 / sampleRate);
+            const last = data.length - 1;
+            const tailSamples = sampleRate * 0.75;
+            let seed = (0x6c187be9 ^ Motif._sampleSeed) || 0x6c187be9;
+            let noiseEnvelope = 0.23;
+            let noiseLow = 0;
+            let noiseLow2 = 0;
+            let noiseHigh = 0;
+            let previousInput = 0;
+            let dcOutput = 0;
+            let peak = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                let value = 0;
+                for (let k = 0; k < modes.length; k++) {
+                    const mode = modes[k];
+                    value += mode.amplitude * Math.sin(mode.phase) + mode.amplitude2 * Math.sin(mode.phase2);
+                    mode.phase += mode.step;
+                    mode.phase2 += mode.step2;
+                    if (mode.phase >= TWO_PI) mode.phase -= TWO_PI;
+                    if (mode.phase2 >= TWO_PI) mode.phase2 -= TWO_PI;
+                    mode.amplitude *= mode.decay;
+                    mode.amplitude2 *= mode.decay2;
+                }
+                seed ^= seed << 13;
+                seed ^= seed >>> 17;
+                seed ^= seed << 5;
+                const noise = (seed >>> 0) / 2147483648 - 1;
+                noiseLow += noiseLowCoefficient * (noise - noiseLow);
+                noiseLow2 += noiseLowCoefficient * (noiseLow - noiseLow2);
+                noiseHigh += noiseHighCoefficient * (noiseLow2 - noiseHigh);
+                value += (noiseLow2 - noiseHigh) * noiseEnvelope;
+                const attackPosition = Math.min(1, t / 0.0009);
+                const attack = attackPosition * attackPosition * (3 - 2 * attackPosition);
+                const dcInput = value * attack;
+                dcOutput = dcInput - previousInput + dcPole * dcOutput;
+                previousInput = dcInput;
+                const tailPosition = Math.max(0, Math.min(1, (last - i) / tailSamples));
+                const tail = tailPosition * tailPosition * (3 - 2 * tailPosition);
+                const finalOutput = dcOutput * tail;
+                data[i] = finalOutput;
+                peak = Math.max(peak, Math.abs(data[i]));
+                noiseEnvelope *= noiseDecay;
+            }
+            const gain = peak > 0 ? 0.78 / peak : 1;
+            for (let i = 0; i < data.length; i++) data[i] *= gain;
+            data[0] = 0;
+            data[last] = 0;
             return buffer;
         },
     };

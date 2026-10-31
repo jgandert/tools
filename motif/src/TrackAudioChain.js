@@ -1,13 +1,16 @@
-import { Motif, Bus, parseDurationToSeconds } from "../motif.js";
+import { Motif, Bus } from "../motif.js";
 import {
     trackRegistry,
     applyParamModulation,
+    disconnectParamModulation,
+    disposeModulationBindings,
     safeDisconnect,
     reconnectNodes,
     CONSTANTS,
+    notifySourceReadinessChange,
 } from "./helpers.js";
 
-let _dspProcCounter = 0;
+import { ensureSynthWorklet } from "./TrackVoiceManager.js";
 let _feedbackWarned = false;
 
 // Wet-mix level for the internal feedback-delay send created by Track.delay().
@@ -157,7 +160,7 @@ export const TrackAudioChain = {
         this._mergerNode = null;
         this._monoChannel = null;
         this._gainLevel = 1.0;
-        this.dspNode = null;
+        this._dspCallback = null;
         this._dspReady = null;
     },
 
@@ -172,7 +175,6 @@ export const TrackAudioChain = {
             this.trackInputNode,
             this.filterNode,
             this.distortionNode,
-            this.dspNode,
             this.pannerNode,
             this.eqLowNode,
             this.eqMidNode,
@@ -223,11 +225,13 @@ export const TrackAudioChain = {
             "trackInputNode", "preFaderNode", "muteGainNode",
             "filterNode", "pannerNode", "volumeNode",
             "eqLowNode", "eqMidNode", "eqHighNode",
-            "compressorNode", "distortionNode", "dspNode",
-            "duckGainNode", "_mergerNode",
+            "compressorNode", "distortionNode",
+            "duckGainNode", "_mergerNode", "_gainSignalGate",
         ];
 
         const disconnectInternalNodes = (track) => {
+            track._clearGainSignal();
+            disposeModulationBindings(track);
             for (const prop of internalNodes) {
                 if (track[prop]) safeDisconnect(track[prop]);
             }
@@ -253,11 +257,6 @@ export const TrackAudioChain = {
                     safeDisconnect(sendGainNode);
                 }
             }
-            if (this._modulators) {
-                for (const m of this._modulators.values()) {
-                    safeDisconnect(m.depthGain);
-                }
-            }
 
             if (rightTrack) {
                 stopTrack(rightTrack);
@@ -267,13 +266,9 @@ export const TrackAudioChain = {
                         safeDisconnect(sendGainNode);
                     }
                 }
-                if (rightTrack._modulators) {
-                    for (const m of rightTrack._modulators.values()) {
-                        safeDisconnect(m.depthGain);
-                    }
-                }
                 if (trackRegistry.get(rightTrack.id) === rightTrack) {
                     trackRegistry.delete(rightTrack.id);
+                    notifySourceReadinessChange();
                 }
             }
         }, duration * 1000);
@@ -288,13 +283,8 @@ export const TrackAudioChain = {
         Motif.init();
         const ctx = Motif.ctx;
 
-        if (this._useSplitStereo && !this._mergerNode) {
-            this._mergerNode = ctx.createChannelMerger(2);
-            this._mergerNode.connect(Motif.masterGain);
-        }
-
         this.trackInputNode = ctx.createGain();
-        this.trackInputNode.gain.setValueAtTime(1.0, ctx.currentTime);
+        this._applyGainLevel();
 
         this.preFaderNode = ctx.createGain();
         this.preFaderNode.gain.setValueAtTime(1.0, ctx.currentTime);
@@ -305,9 +295,52 @@ export const TrackAudioChain = {
         this._rebuildSignalChain();
     },
 
+    _applyGainLevel() {
+        const ctx = Motif.ctx;
+        const param = this.trackInputNode.gain;
+        this._clearGainSignal();
+        param.cancelScheduledValues?.(ctx.currentTime);
+        const level = this._gainLevel;
+        const signal = level && (typeof level.connect === "function" ? level : level.output);
+        if (signal && typeof signal.connect === "function") {
+            // A gate preserves modulation until a future arranged Ramp actually starts.
+            this._gainSignalGate = ctx.createGain();
+            param.setValueAtTime(0, ctx.currentTime);
+            applyParamModulation(this, this._gainSignalGate, signal, "_gainSignal");
+            this._gainSignalGate.connect(param);
+            return;
+        }
+        param.setValueAtTime(typeof level === "number" && !isNaN(level) ? level : 1, ctx.currentTime);
+    },
+
+    _clearGainSignal() {
+        if (!this._gainSignalGate) return;
+        disconnectParamModulation(this, "_gainSignal");
+        safeDisconnect(this._gainSignalGate);
+        this._gainSignalGate = null;
+        this._gainSignal = null;
+        this._gainSignalStopTime = null;
+        this._gainSignalRamp = null;
+    },
+
+    _suspendGainSignal(time, ramp) {
+        if (!this._gainSignalGate) return;
+        if (time <= Motif.ctx.currentTime) {
+            this._clearGainSignal();
+            return;
+        }
+        if (this._gainSignalRamp !== ramp && time >= (this._gainSignalStopTime ?? Infinity)) return;
+        const gate = this._gainSignalGate.gain;
+        gate.cancelScheduledValues(Motif.ctx.currentTime);
+        gate.setValueAtTime(1, Motif.ctx.currentTime);
+        gate.setValueAtTime(0, time);
+        this._gainSignalStopTime = time;
+        this._gainSignalRamp = ramp;
+    },
+
     /**
-     * Sets the track gain level using scalar float values, infinity, or decibel strings.
-     * @param {number|string} level - Scalar gain level, -Infinity, or decibel string (e.g. "-3dB").
+     * Sets the track gain level using scalar values, decibel strings, signals, or Ramps.
+     * @param {number|string|Object} level - Linear gain, decibel string, Signal, or Ramp.
      * @returns {TrackAudioChain} this
      */
     gain(level) {
@@ -345,10 +378,14 @@ export const TrackAudioChain = {
 
         this._gainLevel = targetLevel;
 
-        // Apply immediately to the track's input gain node if it exists
-        if (this.trackInputNode && typeof targetLevel === "number" && !isNaN(targetLevel)) {
-            const ctx = Motif.ctx;
-            this.trackInputNode.gain.setValueAtTime(targetLevel, ctx.currentTime);
+        // Track gain owns level changes for both active and future voices.
+        if ((typeof targetLevel === "number" && !isNaN(targetLevel)) ||
+            (targetLevel && (typeof targetLevel.connect === "function" || typeof targetLevel.output?.connect === "function"))) {
+            if (this.trackInputNode) this._applyGainLevel();
+            for (const ramp of this._scheduledRamps || []) {
+                if (ramp.scheduled) ramp.overridden = true;
+            }
+            this._gainRampsQueue = [];
         }
 
         return this;
@@ -360,34 +397,41 @@ export const TrackAudioChain = {
      * @returns {TrackAudioChain} this
      */
     splitStereo(modifier) {
+        const rightId = this.id + "_right";
+        const existingRight = trackRegistry.get(rightId);
+        if (existingRight && existingRight !== this._rightTrack && existingRight._splitParent?.id !== this.id) {
+            throw new Error(`splitStereo reserves Track ID "${rightId}"; choose another Track ID.`);
+        }
         this._useSplitStereo = true;
         this._monoChannel = 0; // Main track becomes Left
         this._mergerIndex = 0;
 
+        // Replacement crossfades can initialize audio before stereo routing.
+        Motif.init();
+        if (!this._mergerNode) {
+            this._mergerNode = Motif.ctx.createChannelMerger(2);
+            this._mergerNode.connect(Motif.masterGain);
+        }
         this._initAudio();
 
         if (!this._rightTrack) {
-            this._rightTrack = new this.constructor(this.id + "_right");
+            this._rightTrack = new this.constructor(rightId);
         }
 
+        this._rightTrack._splitParent = this;
         this._rightTrack._monoChannel = 1; // Right
         this._rightTrack._mergerIndex = 1;
         this._rightTrack._outputNode = this._mergerNode;
         this._rightTrack._useSplitStereo = false;
 
         // Sync patterns and types
-        if (this._notePattern) this._rightTrack.note(this._notePattern);
+        if (this._hasPitchPattern && this._freqPattern === null) this._rightTrack.note(this._notePattern);
         if (this._freqPattern) this._rightTrack.freq(this._freqPattern);
         this._rightTrack.synth(this._synthType);
+        if (this._dspCallback) this._rightTrack.dsp(this._dspCallback);
 
-        // Sync sampler/sample state
-        this._rightTrack._useSample = this._useSample;
-        this._rightTrack._sampleUrl = this._sampleUrl;
-        this._rightTrack._sampleBuffer = this._sampleBuffer;
-        this._rightTrack._useSampler = this._useSampler;
-        this._rightTrack._samplerBuffers = this._samplerBuffers;
-        this._rightTrack._samplerKeys = this._samplerKeys;
-        this._rightTrack._samplerRelease = this._samplerRelease;
+        this._rightTrack._copySplitSource(this);
+        if (this._sliceIndices !== null) this._rightTrack.pattern(this._sliceIndices);
 
         this._rightTrack._initAudio();
 
@@ -398,6 +442,7 @@ export const TrackAudioChain = {
 
         // Register shadow track for independent scheduling
         trackRegistry.set(this._rightTrack.id, this._rightTrack);
+        notifySourceReadinessChange();
 
         if (typeof modifier === "function") {
             modifier(this._rightTrack);
@@ -497,7 +542,8 @@ export const TrackAudioChain = {
         const key = parameter;
         if (this._modulators.has(key)) {
             const prev = this._modulators.get(key);
-            safeDisconnect(prev.depthGain, prev.param);
+            safeDisconnect(prev.sourceNode, prev.depthGain);
+            safeDisconnect(prev.depthGain);
         }
 
         const depthGain = ctx.createGain();
@@ -584,24 +630,15 @@ export const TrackAudioChain = {
     /**
      * Sugar for a feedback-delay (echo) effect. Lazily creates an internal,
      * per-track Bus (`<id>__delay`) carrying a feedback loop, then routes this
-     * track into it via a send. Repeated calls reuse the same bus and just
-     * update the delay time / feedback amount.
+     * track into it via a send. Repeated calls reuse the same bus; omitted time
+     * preserves its current delay while an explicit time updates it.
      * @param {Object} [options] - Delay options.
-     * @param {number|string} [options.time="3/16"] - Delay time (seconds, or a musical duration string like "3/16").
+     * @param {number|string} [options.time] - Delay time (seconds, or a musical duration string like "3/16"); initially defaults to "3/16".
      * @param {number} [options.feedback=0.3] - Feedback amount (0..0.95); higher = longer tail.
      * @returns {TrackAudioChain} this
      */
-    delay({ time = "3/16", feedback = 0.3 } = {}) {
+    delay({ time, feedback = 0.3 } = {}) {
         this._initAudio();
-        const ctx = Motif.ctx;
-        const sampleRate = ctx.sampleRate || 44100;
-        const minDelay = 128 / sampleRate;
-
-        let seconds = parseDurationToSeconds(time, Motif.tempo, Motif.beatsPerBar);
-        if (!Number.isFinite(seconds) || seconds <= 0) seconds = minDelay;
-
-        // Web Audio DelayNode default max is 1s (Bus.feedback creates createDelay(1)).
-        seconds = Math.min(Math.max(seconds, minDelay), 0.999);
 
         let amount = typeof feedback === "number" ? feedback : 0.3;
         if (!Number.isFinite(amount)) amount = 0.3;
@@ -609,6 +646,7 @@ export const TrackAudioChain = {
 
         const delayBusId = `${this.id}__delay`;
         const liveBus = Bus(delayBusId);
+        const requestedTime = time === undefined && !liveBus.feedbackDelayNode ? "3/16" : time;
 
         // A live-coder hot reload may have pruned+disposed the previous internal
         // delay bus and replaced it with a fresh registry entry. If our stored
@@ -630,46 +668,24 @@ export const TrackAudioChain = {
         this._delayBus._isInternalDelayBus = true;
         this._delayBus._ownerTrackId = this.id;
 
-        this._delayBus.feedback({ amount });
-        this._delayBus.feedbackDelayNode.delayTime.setValueAtTime(seconds, ctx.currentTime);
+        this._delayBus.feedback({ amount, time: requestedTime });
 
         this.send(this._delayBus, DELAY_SEND_AMOUNT);
         return this;
     },
 
     /**
-     * Registers a custom AudioWorklet DSP callback to process multi-channel inputs and outputs directly.
-     * @param {Function} callback - AudioWorklet process method block callback.
+     * Transforms each voice sample before its envelope and track effects.
+     * @param {Function} callback - Receives {t, p, i, freq, state, sampleRate, channel}; returns a finite sample number.
      * @returns {TrackAudioChain} this
      */
     dsp(callback) {
-        if (typeof callback !== "function") return this;
-        const ctx = Motif.ctx;
-        if (!ctx || !ctx.audioWorklet) return this;
-
-        const name = `dsp-proc-${_dspProcCounter++}`;
-        const src = callback.toString();
-        const code = [
-            `class DspProcessor extends AudioWorkletProcessor {`,
-            `  process(inputs, outputs, parameters) {`,
-            `    return (${src}).call(this, inputs, outputs, parameters);`,
-            `  }`,
-            `}`,
-            `registerProcessor('${name}', DspProcessor);`,
-        ].join("\n");
-
-        const blob = new Blob([code], { type: "application/javascript" });
-        const url = URL.createObjectURL(blob);
-
-        this._dspReady = ctx.audioWorklet.addModule(url).then(() => {
-            URL.revokeObjectURL(url);
-            this.dspNode = new AudioWorkletNode(ctx, name);
-            this._rebuildSignalChain();
-        }).catch(err => {
-            URL.revokeObjectURL(url);
-            console.error("AudioWorklet DSP load failed:", err);
-        });
-
+        if (typeof callback !== "function") throw new TypeError("DSP callback must be a function");
+        this._dspCallback = callback;
+        if (Motif.ctx) {
+            this._dspReady = ensureSynthWorklet(Motif.ctx);
+            Motif._loadingSamples.push(this._dspReady);
+        }
         return this;
     },
 

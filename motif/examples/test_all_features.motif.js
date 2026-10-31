@@ -110,12 +110,14 @@ const createMockSnare = () => {
 const createMockLoop = () => {
     const ctx = Motif.ctx;
     if (!ctx) return null;
+    const beatDuration = 0.25;
+    const subdivisionDuration = 0.125;
     const buffer = ctx.createBuffer(1, sampleRate * 2.0, sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < data.length; i++) {
         const t = i / sampleRate;
-        const beatIndex = Math.floor(t * 4);
-        const timeWithinBeat = t - (beatIndex * 0.5);
+        const beatIndex = Math.floor(t / beatDuration);
+        const timeWithinBeat = t - beatIndex * beatDuration;
 
         let sampleVal = 0;
         if (beatIndex % 2 === 0) {
@@ -127,10 +129,10 @@ const createMockLoop = () => {
         }
 
         // Add hihat ticks on subdivisions
-        const subBeat = Math.floor(t * 8) % 2;
-        if (subBeat === 1) {
-            const timeWithinSub = t - (Math.floor(t * 8) * 0.25);
-            sampleVal += (Math.random() * 2 - 1) * Math.exp(-timeWithinSub * 45) * 0.12;
+        const subdivisionIndex = Math.floor(t / subdivisionDuration);
+        if (subdivisionIndex % 2 === 1) {
+            const timeWithinSubdivision = t - subdivisionIndex * subdivisionDuration;
+            sampleVal += (Math.random() * 2 - 1) * Math.exp(-timeWithinSubdivision * 45) * 0.12;
         }
 
         data[i] = sampleVal;
@@ -268,7 +270,8 @@ return (async () => {
     await runTest(7, "Master Output Configuration (EQ, Limiter)", () => {
         Motif.master({
             gain: 0.85,
-            limiter: { threshold: -8, knee: 15, ratio: 12, attack: 0.003, release: 0.15 },
+            compressor: { threshold: -8, knee: 15, ratio: 12, attack: 0.003, release: 0.15 },
+            limiter: true,
             eq: { low: 4.0, mid: -2.0, high: 5.0 },
         });
 
@@ -499,7 +502,7 @@ return (async () => {
         Track("breakbeat")
             .sample("mock-loop")
             .chop(4)                          // Chop 2-second loop into 4 slices
-            .pattern([0, 2, [1, 1], [3, 0]]) // Re-order slices dynamically
+            .pattern([0, 2, [1, 1], [3, 0]]) // Native-pitch triggers; nested arrays subdivide slots
 
             // Warp playback speed with granular time-stretching
             .fit("1b", { mode: "stretch", grainSize: 0.05, overlap: 4 })
@@ -671,11 +674,14 @@ return (async () => {
         ]);
     });
 
-    // --- TEST 37: ASYNCHRONOUS SAMPLE PRELOADING ---
-    await runTest(37, "Asynchronous Sample Manifest Preloads", async () => {
-        // Safely mock fetch and decodeAudioData to test preloading manifest flow cleanly!
+    // --- TEST 37: ASYNCHRONOUS SAMPLE MANIFEST AND DECODING ---
+    await runTest(37, "Asynchronous Sample Manifest Registration and Decode", async () => {
         const originalFetch = globalThis.fetch;
-        const originalDecode = Motif.ctx ? Motif.ctx.decodeAudioData : null;
+        const context = Motif.ctx;
+        const originalDecode = context ? context.decodeAudioData : null;
+        const hadOwnDecode = context
+            ? Object.prototype.hasOwnProperty.call(context, "decodeAudioData")
+            : false;
 
         globalThis.fetch = async (url) => {
             if (url.includes("manifest.json")) {
@@ -690,27 +696,32 @@ return (async () => {
             };
         };
 
-        if (Motif.ctx && originalDecode) {
-            Motif.ctx.decodeAudioData = (ab, resolve) => {
+        if (context && originalDecode) {
+            context.decodeAudioData = (ab, resolve) => {
                 resolve(createMockKick());
             };
         }
 
-        console.log("  [Preload] Fetching manifest.json...");
-        await Motif.loadSamples("manifest.json");
-        console.log("  [Preload] Manifest loaded successfully!");
+        try {
+            console.log("  [Preload] Registering manifest.json...");
+            await Motif.loadSamples("manifest.json");
 
-        // Restore original methods immediately
-        globalThis.fetch = originalFetch;
-        if (Motif.ctx && originalDecode) {
-            Motif.ctx.decodeAudioData = originalDecode;
+            const track = Track("preload-audio")
+                .sample("kick")
+                .note(["C3", "C3", "C3", "C3"])
+                .gain(0.85);
+            await track._sampleLoading;
+            console.log("  [Preload] Manifest registered and kick decoded successfully!");
+        } finally {
+            globalThis.fetch = originalFetch;
+            if (context && originalDecode) {
+                if (hadOwnDecode) {
+                    context.decodeAudioData = originalDecode;
+                } else {
+                    delete context.decodeAudioData;
+                }
+            }
         }
-
-        // Play a sequence using the preloaded asset key
-        Track("preload-audio")
-            .sample("kick") // Resolves straight to cached kick buffer
-            .note(["C3", "C3", "C3", "C3"])
-            .gain(0.85);
     });
 
     // --- TEST 38: GENERATIVE SIMPLEX NOISE MODULATION ---

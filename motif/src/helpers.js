@@ -1,5 +1,11 @@
 import { Motif, parseDurationToSeconds } from "../motif.js";
 
+export const sourceReadinessListeners = new Set();
+
+export function notifySourceReadinessChange() {
+    for (const listener of sourceReadinessListeners) listener();
+}
+
 /**
  * Safely disconnects a Web Audio API node, catching potential disconnect errors gracefully.
  * @param {AudioNode} node - The audio node to disconnect.
@@ -14,12 +20,30 @@ export function safeDisconnect(node, target) {
             node.disconnect();
         }
     } catch (e) {
-        if (target !== undefined) {
-            try {
-                node.disconnect();
-            } catch (err) {
-            }
+        // A missing targeted edge must never disconnect surviving destinations.
+    }
+}
+
+export function disconnectParamModulation(instance, prop) {
+    const binding = instance._paramModulationBindings?.get(prop);
+    if (!binding) return;
+    safeDisconnect(binding.source, binding.target);
+    instance._paramModulationBindings.delete(prop);
+    instance[prop] = null;
+}
+
+export function disposeModulationBindings(instance) {
+    if (instance._paramModulationBindings) {
+        for (const prop of instance._paramModulationBindings.keys()) {
+            disconnectParamModulation(instance, prop);
         }
+    }
+    if (instance._modulators) {
+        for (const binding of instance._modulators.values()) {
+            safeDisconnect(binding.sourceNode, binding.depthGain);
+            safeDisconnect(binding.depthGain);
+        }
+        instance._modulators.clear();
     }
 }
 
@@ -123,10 +147,7 @@ export function applyParamModulation(instance, param, value, modulatorPropName, 
     const ctx = Motif.ctx;
     const time = startTime !== undefined ? startTime : ctx.currentTime;
 
-    if (instance[modulatorPropName]) {
-        safeDisconnect(instance[modulatorPropName], param);
-        instance[modulatorPropName] = null;
-    }
+    disconnectParamModulation(instance, modulatorPropName);
 
     // Handle objects by attempting to extract a primary value (gain, value, cutoff, etc.)
     if (value && typeof value === "object" && !value.connect && !value.output && !value.isRamp && !Array.isArray(value)) {
@@ -172,6 +193,8 @@ export function applyParamModulation(instance, param, value, modulatorPropName, 
     if (valNode) {
         valNode.connect(param);
         instance[modulatorPropName] = valNode;
+        instance._paramModulationBindings ??= new Map();
+        instance._paramModulationBindings.set(modulatorPropName, { source: valNode, target: param });
     } else if (value && value.isRamp === true) {
         const fromVal = mapValueFn ? mapValueFn(value.from) : value.from;
         const toVal = mapValueFn ? mapValueFn(value.to) : value.to;
@@ -433,4 +456,3 @@ export function ensureGranularStretcher(ctx) {
 
     return _granularStretcherPromise;
 }
-

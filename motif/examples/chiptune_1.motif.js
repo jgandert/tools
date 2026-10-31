@@ -1,7 +1,7 @@
 Motif.setTempo(135);
 
 Motif.master({
-    gain: 0.8,
+    gain: 0.5,
     limiter: true,
     eq: { low: 2.0, mid: 0.0, high: 1.5 },
 });
@@ -9,7 +9,8 @@ Motif.master({
 const chiptuneDelay = Bus("echo")
     .pan(LFO.square({ min: -0.75, max: 0.75, speed: "1/2" }))
     .filter({ type: "lowpass", cutoff: 3500, resonance: 0.5 })
-    .feedback({ amount: 0.35 });
+    .feedback({ amount: 0.35 })
+    .volume(-12);
 
 // ==========================================
 // DRUMS

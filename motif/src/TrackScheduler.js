@@ -1,9 +1,11 @@
 import {
     Motif,
     MotifEventArray,
+    copyPatternEvent,
     PatternParser,
     parseDurationToFraction,
     parseDurationToSeconds,
+    musicalDurationBeats,
     degreeToMidi,
     noteToMidi,
     midiToNote,
@@ -24,6 +26,7 @@ export const TrackScheduler = {
     _initScheduler() {
         this._notePattern = null;
         this._freqPattern = null;
+        this._hasPitchPattern = false;
         this._parsedEvents = [];
         this._patternTopLevelSteps = 0;
         this._stepLengthFraction = null;
@@ -31,6 +34,9 @@ export const TrackScheduler = {
         this._scheduledUntil = null;
         this._currentCycle = null;
         this._currentCycleStartTime = null;
+        this._currentCycleStartBeat = null;
+        this._cycleEvents = null;
+        this._pendingCycles = new Map();
         this._modifiers = [];
         this._seed = 12345;
         this._activeSegments = [];
@@ -67,6 +73,11 @@ export const TrackScheduler = {
         return this;
     },
 
+    _arrangedTime(beat) {
+        const origin = this._playbackStartTime ?? 0;
+        return Motif._timeAtBeat(Motif._beatAtTime(origin) + beat) - origin;
+    },
+
     /**
      * Checks if the given absolute clock time falls within any active scheduled segment.
      * @param {number} t - Absolute context clock time in seconds.
@@ -74,6 +85,7 @@ export const TrackScheduler = {
      * @private
      */
     _isTimeActive(t) {
+        if (this._splitParent) return this._splitParent._isTimeActive(t);
         if (this._activeSegments.length === 0) return true;
         const refTime = this._playbackStartTime !== null && this._playbackStartTime !== undefined ? this._playbackStartTime : 0;
         const elapsed = t - refTime;
@@ -106,13 +118,33 @@ export const TrackScheduler = {
     },
 
     _setPatternEvents(pattern) {
-        this._parsedEvents = PatternParser.parse(pattern);
-        if (this._parsedEvents) {
-            this._parsedEvents.forEach((ev, idx) => {
-                ev.index = idx;
-            });
+        const slices = this._sliceIndices;
+        if (slices === null || slices === undefined) {
+            this._parsedEvents = pattern === null ? new MotifEventArray() : PatternParser.parse(pattern);
+        } else {
+            const pitches = this._hasPitchPattern ? PatternParser.parse(pattern) : null;
+            this._parsedEvents = new MotifEventArray();
+            for (const slice of PatternParser.parse(slices)) {
+                const active = pitches === null ? [{ value: 60 }] : pitches.filter(pitch =>
+                    pitch.startTime <= slice.startTime + 1e-9 &&
+                    pitch.startTime + pitch.duration > slice.startTime + 1e-9);
+                for (const pitch of active) {
+                    this._parsedEvents.push({
+                        ...slice,
+                        value: slice.value === null ? null : pitch.value,
+                        sliceIndex: slice.value,
+                        nativeSlicePitch: pitches === null,
+                        tieScope: pitch.tieScope || slice.tieScope,
+                    });
+                }
+            }
+            PatternParser._postProcessTies(this._parsedEvents);
         }
-        this._patternTopLevelSteps = Array.isArray(pattern) ? pattern.length : 1;
+        this._parsedEvents.forEach((ev, idx) => {
+            ev.index = idx;
+        });
+        const rhythm = slices ?? pattern;
+        this._patternTopLevelSteps = Array.isArray(rhythm) ? rhythm.length : 1;
     },
 
     /**
@@ -121,6 +153,7 @@ export const TrackScheduler = {
      * @returns {TrackScheduler} this
      */
     note(pattern) {
+        this._hasPitchPattern = true;
         this._notePattern = pattern;
         this._freqPattern = null;
         this._setPatternEvents(pattern);
@@ -133,6 +166,7 @@ export const TrackScheduler = {
      * @returns {TrackScheduler} this
      */
     freq(pattern) {
+        this._hasPitchPattern = true;
         this._freqPattern = pattern;
         this._notePattern = null;
         this._setPatternEvents(pattern);
@@ -340,19 +374,25 @@ export const TrackScheduler = {
         this._scheduledUntil = null;
         this._currentCycle = null;
         this._currentCycleStartTime = null;
+        this._currentCycleStartBeat = null;
+        this._cycleEvents = null;
+        this._pendingCycles = new Map();
         this._playbackStartTime = null;
+        this._prevVoicingNotes = [];
         if (this._scheduledRamps) {
             for (const ramp of this._scheduledRamps) {
                 ramp.scheduled = false;
+                ramp.overridden = false;
             }
         }
         if (this._activeVoices) {
-            for (const voice of this._activeVoices.values()) {
+            for (const voice of [...this._activeVoices.values(), ...(this._retiredVoices || [])]) {
                 safeStop(voice.oscillator);
                 safeDisconnect(voice.oscillator);
                 safeDisconnect(voice.gainNode);
             }
             this._activeVoices.clear();
+            this._retiredVoices?.clear();
         }
     },
 
@@ -495,7 +535,7 @@ export const TrackScheduler = {
         const modifier = mod.modifier;
 
         const offsetEvents = events.map(e => {
-            const clone = { ...e };
+            const clone = copyPatternEvent(e);
             clone.startTime += shift;
             if (modifier) {
                 const res = modifier(clone);
@@ -542,16 +582,16 @@ export const TrackScheduler = {
 
                 if (chosenAction === "reverse") {
                     return events.map(e => {
-                        const clone = { ...e };
+                        const clone = copyPatternEvent(e);
                         clone.startTime = 1.0 - (e.startTime + e.duration);
                         return clone;
                     }).sort((a, b) => a.startTime - b.startTime);
                 } else if (chosenAction === "ratchet") {
                     const newEvents = [];
                     for (const e of events) {
-                        const e1 = { ...e };
+                        const e1 = copyPatternEvent(e);
                         e1.duration /= 2;
-                        const e2 = { ...e1 };
+                        const e2 = copyPatternEvent(e1);
                         e2.startTime += e1.duration;
                         newEvents.push(e1, e2);
                     }
@@ -707,29 +747,125 @@ export const TrackScheduler = {
         return newEvents.sort((a, b) => a.startTime - b.startTime);
     },
 
+    _cycleInputsUnchanged(cycle) {
+        return cycle.pattern === this._parsedEvents && cycle.modifierCount === this._modifiers.length &&
+            cycle.seed === this._seed && cycle.stepLength === this._stepLengthFraction &&
+            cycle.loopLength === this._loopLengthFraction && cycle.beatsPerBar === Motif.beatsPerBar;
+    },
+
+    // Retain one transformed sequence while a cycle's pattern and modifiers are unchanged.
+    _getCycleEvents(cycleIndex) {
+        const previous = this._cycleEvents;
+        const sameCycle = previous && previous.cycleIndex === cycleIndex;
+        if (sameCycle && this._cycleInputsUnchanged(previous)) {
+            return previous.events;
+        }
+
+        // Live edits rebuild remaining events from the voicing state at cycle entry.
+        const voicingBefore = sameCycle ? previous.voicingBefore : [...this._prevVoicingNotes];
+        this._prevVoicingNotes = [...voicingBefore];
+        let eventsToPlay = this._parsedEvents.map(copyPatternEvent);
+        for (const mod of this._modifiers) {
+            const modifierName = `_apply${mod.type.charAt(0).toUpperCase() + mod.type.slice(1)}Modifier`;
+            if (typeof this[modifierName] !== "function") continue;
+
+            try {
+                eventsToPlay = this[modifierName](eventsToPlay, mod, cycleIndex);
+            } catch (err) {
+                console.error(`[Motif] Modifier "${mod.type}" threw on track "${this.id}", keeping unmodified events:`, err);
+            }
+        }
+
+        // Clones give duplicated events distinct Tie IDs while retaining branch ancestry.
+        eventsToPlay = eventsToPlay.map(copyPatternEvent);
+        PatternParser._postProcessTies(eventsToPlay);
+        eventsToPlay.sort((a, b) => a.startTime - b.startTime);
+
+        // A setter inside a cycle callback also cancels older pending snapshots.
+        if (previous && !this._cycleInputsUnchanged(previous)) this._pendingCycles.clear();
+
+        // Capture inputs after callbacks so a setter inside a callback does not retrigger it.
+        this._cycleEvents = {
+            cycleIndex,
+            pattern: this._parsedEvents,
+            modifierCount: this._modifiers.length,
+            seed: this._seed,
+            stepLength: this._stepLengthFraction,
+            loopLength: this._loopLengthFraction,
+            beatsPerBar: Motif.beatsPerBar,
+            voicingBefore,
+            events: eventsToPlay,
+        };
+        return eventsToPlay;
+    },
+
     /**
      * Looks ahead and schedules parsed note/frequency events up to the time horizon.
      * @param {number} horizon - Absolute context horizon time in seconds.
      * @private
      */
     _schedule(horizon) {
-        if (this._scheduledUntil === null || this._scheduledUntil === undefined || this._scheduledUntil < Motif.ctx.currentTime) {
+        this._cleanupActiveVoices();
+        if (this._gainSignalStopTime != null && this._gainSignalStopTime <= Motif.ctx.currentTime) {
+            this._clearGainSignal();
+        }
+        if (this._scheduledUntil === null || this._scheduledUntil === undefined) {
+            const origin = this._playbackStartTime ?? this._splitParent?._playbackStartTime ?? Motif.ctx.currentTime;
             this._currentCycle = 0;
-            this._currentCycleStartTime = Motif.ctx.currentTime;
-            this._playbackStartTime = Motif.ctx.currentTime;
+            this._currentCycleStartTime = origin;
+            this._currentCycleStartBeat = Motif._beatAtTime(origin);
+            this._playbackStartTime = origin;
             this._scheduledUntil = Motif.ctx.currentTime;
         }
+
+        // A late tick skips missed onsets without moving the musical timeline.
+        this._scheduledUntil = Math.max(this._scheduledUntil, Motif.ctx.currentTime);
 
         if (this._scheduledRamps && this._scheduledRamps.length > 0) {
             const refTime = this._playbackStartTime !== null && this._playbackStartTime !== undefined ? this._playbackStartTime : Motif.ctx.currentTime;
             for (const ramp of this._scheduledRamps) {
-                if (!ramp.scheduled) {
+                if (!ramp.scheduled && !ramp.overridden) {
                     const absStart = refTime + ramp.start;
-                    if (absStart >= this._scheduledUntil && absStart < horizon) {
+                    if (absStart < horizon) {
                         if (this.trackInputNode) {
                             const gainParam = this.trackInputNode.gain;
-                            gainParam.setValueAtTime(ramp.from, absStart);
-                            gainParam.linearRampToValueAtTime(ramp.to, absStart + ramp.duration);
+                            const start = Math.max(absStart, this._scheduledUntil);
+                            const end = absStart + ramp.duration;
+                            if (end <= start && ramp.startBeat !== undefined) {
+                                ramp.scheduled = true;
+                                continue;
+                            }
+                            const musical = ramp.durationBeats != null;
+                            const originBeat = Motif._beatAtTime(refTime);
+                            const progressAt = time => musical
+                                ? Math.min(1, Math.max(0, (Motif._beatAtTime(time) - originBeat - ramp.startBeat) / ramp.durationBeats))
+                                : ramp.duration > 0 ? Math.min(1, (time - absStart) / ramp.duration) : 1;
+                            const valueAt = time => time >= end ? ramp.to : ramp.from + (ramp.to - ramp.from) * progressAt(time);
+                            if (ramp.startBeat !== undefined) {
+                                if (gainParam.cancelAndHoldAtTime) gainParam.cancelAndHoldAtTime(start);
+                                else gainParam.cancelScheduledValues?.(start);
+                            }
+                            this._suspendGainSignal(start, ramp);
+                            gainParam.setValueAtTime(valueAt(start), start);
+                            if (end > start) {
+                                if (musical) {
+                                    // Linear BPM creates quadratic beat progress. Short linear audio segments
+                                    // follow that curve and preserve exact endpoints at tempo discontinuities.
+                                    for (let i = 0; i < Motif._tempoMap.length; i++) {
+                                        const segment = Motif._tempoMap[i];
+                                        const left = Math.max(start, segment.time);
+                                        const right = Math.min(end, Motif._tempoMap[i + 1]?.time ?? end);
+                                        if (right <= left) continue;
+                                        const count = segment.slope === 0 ? 1 : Math.ceil((right - left) / 0.025);
+                                        for (let n = 1; n <= count; n++) {
+                                            const time = left + (right - left) * n / count;
+                                            gainParam.linearRampToValueAtTime(valueAt(time), time);
+                                        }
+                                    }
+                                } else {
+                                    gainParam.linearRampToValueAtTime(ramp.to, end);
+                                }
+                            }
                         } else {
                             console.warn(`[Motif] gain(Ramp(...)) called before audio is initialized on track "${this.id}". Ramp ignored.`);
                         }
@@ -737,7 +873,8 @@ export const TrackScheduler = {
                     }
                 }
             }
-        } else if (this._gainRampsQueue && this._gainRampsQueue.length > 0) {
+        }
+        if (this._gainRampsQueue && this._gainRampsQueue.length > 0) {
             const refTime = this._playbackStartTime !== null && this._playbackStartTime !== undefined ? this._playbackStartTime : Motif.ctx.currentTime;
             while (this._gainRampsQueue.length > 0) {
                 const rampNode = this._gainRampsQueue.shift();
@@ -748,14 +885,22 @@ export const TrackScheduler = {
                     const d = rampNode.duration !== undefined
                         ? parseDurationToSeconds(rampNode.duration, Motif.tempo, Motif.beatsPerBar)
                         : 0.05;
-                    gainParam.setValueAtTime(from, refTime);
-                    gainParam.linearRampToValueAtTime(to, refTime + d);
+                    const start = Math.max(refTime, Motif.ctx.currentTime);
+                    this._suspendGainSignal(start);
+                    gainParam.cancelScheduledValues?.(start);
+                    gainParam.setValueAtTime(from, start);
+                    gainParam.linearRampToValueAtTime(to, start + d);
                 } else {
                     console.warn(`[Motif] gain(Ramp(...)) called before audio is initialized on track "${this.id}". Ramp ignored.`);
                 }
             }
         }
 
+        // Structural edits cancel unscheduled copies from older cycles. The current
+        // cycle is rebuilt below, preserving the existing submitted-time boundary.
+        if (this._cycleEvents && !this._cycleInputsUnchanged(this._cycleEvents)) {
+            this._pendingCycles.clear();
+        }
         if (!this._parsedEvents || this._parsedEvents.length === 0) return;
 
         let anySoloed = false;
@@ -767,112 +912,121 @@ export const TrackScheduler = {
         }
         if (anySoloed && !this._isSolo) return;
 
-        let cycleDuration;
-        if (this._stepLengthFraction !== null && this._stepLengthFraction !== undefined && this._patternTopLevelSteps > 0) {
-            const stepDuration = parseDurationToSeconds(this._stepLengthFraction, Motif.tempo, Motif.beatsPerBar);
-            cycleDuration = this._patternTopLevelSteps * stepDuration;
-        } else {
-            cycleDuration = (60 / Motif.tempo) * Motif.beatsPerBar;
-        }
-
-        const hasLoopLength = this._loopLengthFraction !== null && this._loopLengthFraction !== undefined;
-        let loopDuration = cycleDuration;
-        let loopFraction = 1.0;
-        if (hasLoopLength) {
-            loopDuration = parseDurationToSeconds(this._loopLengthFraction, Motif.tempo, Motif.beatsPerBar);
-            loopFraction = cycleDuration > 0 ? loopDuration / cycleDuration : 1.0;
-        }
-
-        const effectiveCycleDuration = hasLoopLength ? loopDuration : cycleDuration;
-        if (!(cycleDuration > 0) || (hasLoopLength && !(loopDuration > 0))) {
+        const stepBeats = this._stepLengthFraction == null ? Motif.beatsPerBar
+            : musicalDurationBeats(this._stepLengthFraction, Motif.beatsPerBar);
+        const patternBeats = stepBeats === null ? null
+            : stepBeats * (this._stepLengthFraction == null ? 1 : this._patternTopLevelSteps);
+        const patternSeconds = patternBeats === null
+            ? parseDurationToSeconds(this._stepLengthFraction, Motif.tempo, Motif.beatsPerBar) * this._patternTopLevelSteps : null;
+        const hasLoopLength = this._loopLengthFraction != null;
+        const loopBeats = hasLoopLength ? musicalDurationBeats(this._loopLengthFraction, Motif.beatsPerBar) : patternBeats;
+        const loopSeconds = hasLoopLength && loopBeats === null
+            ? parseDurationToSeconds(this._loopLengthFraction, Motif.tempo, Motif.beatsPerBar) : patternSeconds;
+        if (!((patternBeats ?? patternSeconds) > 0) || !((loopBeats ?? loopSeconds) > 0)) {
             this._scheduledUntil = horizon;
             return;
         }
 
-        const swingAmount = this._swingAmount !== null ? this._swingAmount : (Motif._swingAmount || 0);
-        const topLevelSteps = this._patternTopLevelSteps || 1;
-        const stepFractionSize = 1.0 / topLevelSteps;
-        const perStepDurationS = cycleDuration / topLevelSteps;
-        const swingDelayS = swingAmount > 0 ? perStepDurationS * swingAmount * (2 / 3) : 0;
-
+        const windowStart = this._scheduledUntil;
         while (this._scheduledUntil < horizon) {
-            const cycleStartTime = this._currentCycleStartTime;
-            const cycleIndex = this._currentCycle;
+            const cycleBeat = this._currentCycleStartBeat;
+            const cycleStart = loopBeats === null ? this._currentCycleStartTime : Motif._timeAtBeat(cycleBeat);
+            const nextCycleStart = loopBeats === null ? cycleStart + loopSeconds : Motif._timeAtBeat(cycleBeat + loopBeats);
 
-            let eventsToPlay = this._parsedEvents;
-
-            if (this._modifiers && this._modifiers.length > 0) {
-                eventsToPlay = eventsToPlay.map(e => ({ ...e }));
-
-                for (const mod of this._modifiers) {
-                    const modifierName = `_apply${mod.type.charAt(0).toUpperCase() + mod.type.slice(1)}Modifier`;
-                    if (typeof this[modifierName] !== "function") continue;
-
-                    try {
-                        eventsToPlay = this[modifierName](eventsToPlay, mod, cycleIndex);
-                    } catch (err) {
-                        console.error(`[Motif] Modifier "${mod.type}" threw on track "${this.id}", keeping unmodified events:`, err);
-                    }
+            // Skip complete missed cycles without running their callbacks.
+            if (nextCycleStart > windowStart) {
+                this._getCycleEvents(this._currentCycle);
+                const cycle = this._cycleEvents;
+                if (this._pendingCycles.get(this._currentCycle) !== cycle) {
+                    Object.assign(cycle, {
+                        startTime: this._currentCycleStartTime,
+                        startBeat: cycleBeat,
+                        patternBeats,
+                        patternSeconds,
+                        loopBeats,
+                        loopSeconds,
+                        hasLoopLength,
+                        steps: this._patternTopLevelSteps || 1,
+                        pending: new Set(cycle.events),
+                    });
+                    this._pendingCycles.set(this._currentCycle, cycle);
                 }
             }
-
-            for (const event of eventsToPlay) {
-                if (hasLoopLength) {
-                    const wrappedFraction = loopFraction > 0 ? event.startTime % loopFraction : 0;
-
-                    if (event.startTime >= loopFraction) continue;
-
-                    let eventStartTime = cycleStartTime + wrappedFraction * cycleDuration;
-
-                    if (swingDelayS > 0) {
-                        const stepIndex = Math.floor(event.startTime / stepFractionSize + 1e-9);
-                        if (stepIndex % 2 === 1) {
-                            eventStartTime += swingDelayS;
-                        }
-                    }
-
-                    const maxDuration = (loopFraction - wrappedFraction) * cycleDuration;
-                    const eventDuration = Math.min(event.duration * cycleDuration, maxDuration);
-
-                    if (eventStartTime >= this._scheduledUntil && eventStartTime < horizon) {
-                        if (this._isTimeActive(eventStartTime)) {
-                            try {
-                                this._playEvent(event, eventStartTime, eventDuration);
-                            } catch (err) {
-                                console.error(`[Motif] _playEvent threw on track "${this.id}":`, err);
-                            }
-                        }
-                    }
-                } else {
-                    let eventStartTime = cycleStartTime + event.startTime * cycleDuration;
-                    const eventDuration = event.duration * cycleDuration;
-
-                    if (swingDelayS > 0) {
-                        const stepIndex = Math.floor(event.startTime / stepFractionSize + 1e-9);
-                        if (stepIndex % 2 === 1) {
-                            eventStartTime += swingDelayS;
-                        }
-                    }
-
-                    if (eventStartTime >= this._scheduledUntil && eventStartTime < horizon) {
-                        if (this._isTimeActive(eventStartTime)) {
-                            try {
-                                this._playEvent(event, eventStartTime, eventDuration);
-                            } catch (err) {
-                                console.error(`[Motif] _playEvent threw on track "${this.id}":`, err);
-                            }
-                        }
-                    }
-                }
-            }
-
-            const nextCycleStartTime = cycleStartTime + effectiveCycleDuration;
-            if (nextCycleStartTime <= horizon) {
+            if (nextCycleStart <= horizon) {
                 this._currentCycle++;
-                this._currentCycleStartTime = nextCycleStartTime;
-                this._scheduledUntil = nextCycleStartTime;
+                this._currentCycleStartTime = nextCycleStart;
+                this._currentCycleStartBeat = loopBeats === null ? Motif._beatAtTime(nextCycleStart) : cycleBeat + loopBeats;
+                this._scheduledUntil = Math.max(this._scheduledUntil, nextCycleStart);
             } else {
                 this._scheduledUntil = horizon;
+            }
+        }
+
+        const swing = this._swingAmount ?? Motif._swingAmount ?? 0;
+        const submissions = [];
+        for (const [cycleIndex, cycle] of this._pendingCycles) {
+            const cycleStart = cycle.loopBeats === null ? cycle.startTime : Motif._timeAtBeat(cycle.startBeat);
+            const patternTime = fraction => cycle.patternBeats === null ? cycleStart + fraction * cycle.patternSeconds
+                : Motif._timeAtBeat(Motif._beatAtTime(cycleStart) + fraction * cycle.patternBeats);
+            const nextCycleStart = cycle.loopBeats === null ? cycleStart + cycle.loopSeconds
+                : Motif._timeAtBeat(cycle.startBeat + cycle.loopBeats);
+            const swingFraction = event => Math.floor(event.startTime * cycle.steps + 1e-9) % 2 === 1
+                ? event.startTime + swing * (2 / 3) / cycle.steps : event.startTime;
+            const tieStarts = new Map();
+            for (const event of cycle.events) {
+                if (event.value !== Tie || !(event.duration > 0)) continue;
+                if (cycle.hasLoopLength && patternTime(event.startTime) >= nextCycleStart - 1e-9) continue;
+                const start = patternTime(swingFraction(event));
+                if ((!cycle.hasLoopLength || start < nextCycleStart - 1e-9) && this._isTimeActive(start)) {
+                    tieStarts.set(event.tieId, start);
+                }
+            }
+
+            // Refresh pending continuations even after their originating cycle ends.
+            for (const voice of this._activeVoices.values()) {
+                if (voice.tieCycle !== cycleIndex || !voice.tieTargets?.length) continue;
+                let releaseTime = voice.tieEndTime;
+                for (const id of voice.tieTargets) releaseTime = Math.max(releaseTime, tieStarts.get(id) ?? releaseTime);
+                if (Math.abs(releaseTime - voice.tieReleaseTime) < 1e-9) continue;
+                const holdTime = Math.max(Motif.ctx.currentTime, voice.tieEndTime);
+                this._scheduleTieRelease(voice, holdTime, Math.max(holdTime, releaseTime));
+            }
+            for (const event of cycle.pending) {
+                const unswungStart = patternTime(event.startTime);
+                if (cycle.hasLoopLength && unswungStart >= nextCycleStart - 1e-9) {
+                    cycle.pending.delete(event);
+                    continue;
+                }
+                const fraction = swingFraction(event);
+                const eventStart = patternTime(fraction);
+                if (eventStart >= horizon - 1e-9) continue;
+                cycle.pending.delete(event);
+                if (eventStart < windowStart - 1e-9 || !this._isTimeActive(eventStart)) continue;
+                let eventEnd = patternTime(fraction + event.duration);
+                if (cycle.hasLoopLength) eventEnd = Math.min(eventEnd, nextCycleStart);
+
+                // Swing may delay a continuation past the original gate. Bound the
+                // fallback at that onset so intact ties survive the timing gap.
+                let tieReleaseTime = eventEnd;
+                for (const id of event.tieTargets || []) {
+                    tieReleaseTime = Math.max(tieReleaseTime, tieStarts.get(id) ?? eventEnd);
+                }
+                submissions.push({ event: { ...event, tieCycle: cycleIndex, tieReleaseTime },
+                    start: eventStart, duration: Math.max(0, eventEnd - eventStart) });
+            }
+            if (cycle.pending.size === 0 && cycleIndex !== this._currentCycle) {
+                this._pendingCycles.delete(cycleIndex);
+            }
+        }
+
+        // Older delayed notes and current events can overlap within one lookahead.
+        // Submit by onset so every Tie sees all earlier voices in its own cycle.
+        submissions.sort((a, b) => a.start - b.start);
+        for (const { event, start, duration } of submissions) {
+            try {
+                this._playEvent(event, start, duration);
+            } catch (err) {
+                console.error(`[Motif] _playEvent threw on track "${this.id}":`, err);
             }
         }
     },

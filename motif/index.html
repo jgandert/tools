@@ -49,10 +49,7 @@
             resize: none;
             margin-bottom: 0;
             border-radius: var(--radius);
-            border: 1px solid var(--outline-variant);
             padding: var(--spacing-md);
-            background-color: var(--surface-container-highest);
-            color: var(--on-surface);
         }
 
         #logs-panel {
@@ -591,7 +588,8 @@ Arrange([
 <script type="module">
     import {
         Motif, Track, Bus, Parallel, Ramp, LFO, Arrange, Tie,
-        noteToMidi, midiToNote, degreeToMidi, midiToHz, SCALES, SimplexNoise,
+        noteToMidi, midiToNote, degreeToMidi, midiToHz,
+        parseDurationToFraction, parseDurationToSeconds, SCALES, SimplexNoise,
         trackRegistry, busRegistry,
     } from "./motif.js";
 
@@ -618,7 +616,8 @@ Arrange([
             }).constructor;
             const probeFn = new AsyncFunction(
                 "Motif", "Track", "Bus", "Parallel", "Ramp", "LFO", "Arrange", "Tie",
-                "noteToMidi", "midiToNote", "degreeToMidi", "midiToHz", "SCALES", "SimplexNoise",
+                "noteToMidi", "midiToNote", "degreeToMidi", "midiToHz",
+                "parseDurationToFraction", "parseDurationToSeconds", "SCALES", "SimplexNoise",
                 "\"use strict\";\nthrow new Error(\"__wrapper_line_probe__\");",
             );
             await probeFn();
@@ -710,10 +709,14 @@ Track("bell")
     // If it fails to load, `one` stays undefined and `one.storage` is unavailable.
     function checkVendorDependencies() {
         const missing = [];
-        if (typeof one === "undefined") missing.push("one.js");
-        if (typeof one?.storage?.get !== "function") missing.push("one.storage");
+        if (!globalThis.one) missing.push("one.js");
+        if (typeof globalThis.one?.storage?.get !== "function" || typeof globalThis.one?.storage?.set !== "function") missing.push("one.storage");
+        for (const method of ["prompt", "confirm", "alert"]) {
+            if (typeof globalThis.one?.[method] !== "function") missing.push(`one.${method}`);
+        }
+        if (typeof globalThis.renderMarkdownFileToElement !== "function") missing.push("md-renderer.js");
         if (missing.length > 0) {
-            logToConsole(`Missing vendor file(s): ${missing.join(", ")}. Preset dialogs and/or persistence will not work.`, "error");
+            logToConsole(`Missing vendor file(s): ${missing.join(", ")}. Preset dialogs, persistence, and/or documentation will not work.`, "error");
         }
         return missing.length === 0;
     }
@@ -1304,7 +1307,7 @@ return runShowcase().then(() => "STOP_MOTIF");
         e.target.value = "";
     });
 
-    pastePresetBtn.addEventListener("click", async () => {
+    pastePresetBtn.addEventListener("click", withErrorLog(async () => {
         try {
             let clipboardText = "";
             if (navigator.clipboard && navigator.clipboard.readText) {
@@ -1347,10 +1350,12 @@ return runShowcase().then(() => "STOP_MOTIF");
             console.error("Paste failed:", err);
             one.alert("Could not paste composition: " + err.message);
         }
-    });
+    }));
 
     // --- Motif Live Compiler ---
     function runUserCode(isHotReload = false) {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = null;
         const code = codeEditor.value;
         try {
             if (!isHotReload) {
@@ -1363,7 +1368,12 @@ return runShowcase().then(() => "STOP_MOTIF");
 
             const wrappedTrack = (id) => {
                 if (id) declaredTrackIds.add(id);
-                return Track(id);
+                const previous = trackRegistry.get(id);
+                const track = Track(id);
+                if (isHotReload) {
+                    track._playbackStartTime = previous?._playbackStartTime ?? Motif._debugPlaybackStart;
+                }
+                return track;
             };
             wrappedTrack.clearRegistry = Track.clearRegistry;
             wrappedTrack.pruneExcept = Track.pruneExcept;
@@ -1379,17 +1389,20 @@ return runShowcase().then(() => "STOP_MOTIF");
             }).constructor;
             const compileFn = new AsyncFunction(
                 "Motif", "Track", "Bus", "Parallel", "Ramp", "LFO", "Arrange", "Tie",
-                "noteToMidi", "midiToNote", "degreeToMidi", "midiToHz", "SCALES", "SimplexNoise",
+                "noteToMidi", "midiToNote", "degreeToMidi", "midiToHz",
+                "parseDurationToFraction", "parseDurationToSeconds", "SCALES", "SimplexNoise",
                 `"use strict";\n${code}`,
             );
 
             const resultPromise = compileFn(
                 Motif, wrappedTrack, wrappedBus, Parallel, Ramp, LFO, Arrange, Tie,
-                noteToMidi, midiToNote, degreeToMidi, midiToHz, SCALES, SimplexNoise,
+                noteToMidi, midiToNote, degreeToMidi, midiToHz,
+                parseDurationToFraction, parseDurationToSeconds, SCALES, SimplexNoise,
             );
 
             resultPromise.then((returnValue) => {
                 logToConsole(isHotReload ? "Live changes applied." : "Code compiled and applied successfully.", "success");
+                if (codeEditor.value === code) isDirty = false;
 
                 if (isHotReload) {
                     Track.pruneExcept(declaredTrackIds);
@@ -1485,14 +1498,17 @@ return runShowcase().then(() => "STOP_MOTIF");
             }
         }
 
+        isDirty = true;
+        clearTimeout(debounceTimeout);
+
         // If not currently playing, don't auto-compile (wait for play press)
         if (!Motif.isPlaying) {
-            isDirty = true;
             return;
         }
 
-        clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
+            debounceTimeout = null;
+            if (!Motif.isPlaying) return;
             logToConsole("Auto-applying live changes...");
             runUserCode(true);
         }, 1200);
@@ -1553,42 +1569,43 @@ return runShowcase().then(() => "STOP_MOTIF");
     function updateHud() {
         if (Motif.ctx && Motif._debugPlaybackStart !== null) {
             const elapsed = Motif.ctx.currentTime - Motif._debugPlaybackStart;
+            const originBeat = Motif._beatAtTime(Motif._debugPlaybackStart);
+            const totalBeats = Math.max(0, Motif._beatAtTime(Motif.ctx.currentTime) - originBeat);
+            const beatsPerBar = Motif.beatsPerBar;
 
-            // Calculate duration from Arrangement
             let totalDurationS = 0;
+            let arrangementBeats = 0;
             let currentSectionName = "Looping Pattern";
 
             if (Motif._arrangementSections && Motif._arrangementSections.length > 0) {
-                const bpm = Motif.tempo;
-                const beatsPerBar = Motif.beatsPerBar;
-                const barDuration = (60 / bpm) * beatsPerBar;
-
-                let cumulativeTime = 0;
-                let activeSecFound = false;
-
-                for (let i = 0; i < Motif._arrangementSections.length; i++) {
+                let startIndex = 0;
+                for (let i = Motif._arrangementSections.length - 1; i >= 0; i--) {
                     const section = Motif._arrangementSections[i];
-                    const sectionDuration = (section.bars || 0) * barDuration;
-
-                    if (!activeSecFound && elapsed >= cumulativeTime && elapsed < cumulativeTime + sectionDuration) {
-                        currentSectionName = `Phase ${i + 1}${section.name ? ": " + section.name : ""}`;
-                        activeSecFound = true;
-                    }
-                    cumulativeTime += sectionDuration;
+                    if (!section.s && !section.start) continue;
+                    startIndex = i;
+                    break;
                 }
-                totalDurationS = cumulativeTime;
+
+                for (let i = startIndex; i < Motif._arrangementSections.length; i++) {
+                    const section = Motif._arrangementSections[i];
+                    const sectionBeats = (section.bars || 0) * beatsPerBar;
+
+                    if (totalBeats >= arrangementBeats && totalBeats < arrangementBeats + sectionBeats) {
+                        currentSectionName = `Phase ${i + 1}${section.name ? ": " + section.name : ""}`;
+                    }
+                    arrangementBeats += sectionBeats;
+                }
+                totalDurationS = Motif._timeAtBeat(originBeat + arrangementBeats) - Motif._debugPlaybackStart;
+                if (arrangementBeats > 0 && totalBeats >= arrangementBeats) {
+                    currentSectionName = "Arrangement complete";
+                }
             }
 
-            // Beat / Bar calculation
-            const bpm = Motif.tempo;
-            const beatsPerBar = Motif.beatsPerBar;
-            const beatDuration = 60 / bpm;
-            const barDuration = beatDuration * beatsPerBar;
-            const totalBeats = elapsed / beatDuration;
-            const currentBar = Math.floor(totalBeats / beatsPerBar) + 1;
-            const currentBeat = Math.floor(totalBeats % beatsPerBar) + 1;
+            const displayBeats = arrangementBeats > 0 ? Math.min(totalBeats, Math.max(0, arrangementBeats - 1e-9)) : totalBeats;
+            const currentBar = Math.floor(displayBeats / beatsPerBar) + 1;
+            const currentBeat = Math.floor(displayBeats % beatsPerBar) + 1;
 
-            const totalBars = totalDurationS > 0 ? Math.round(totalDurationS / barDuration) : 0;
+            const totalBars = Math.ceil(arrangementBeats / beatsPerBar);
 
             // Update HUD text
             let timeStr = `Bar ${currentBar}`;
@@ -1604,8 +1621,8 @@ return runShowcase().then(() => "STOP_MOTIF");
                 playbackProgress.max = totalDurationS;
                 playbackProgress.value = Math.min(elapsed, totalDurationS);
             } else {
-                playbackProgress.max = barDuration;
-                playbackProgress.value = elapsed % barDuration;
+                playbackProgress.max = beatsPerBar;
+                playbackProgress.value = totalBeats % beatsPerBar;
             }
 
             // Update active instruments
@@ -1676,6 +1693,8 @@ return runShowcase().then(() => "STOP_MOTIF");
             await Motif.ctx.resume();
 
             if (Motif.isPlaying) {
+                clearTimeout(debounceTimeout);
+                debounceTimeout = null;
                 Motif.pause();
                 playPauseBtn.textContent = "play_arrow";
                 playPauseBtn.setAttribute("data-tooltip", "Play / Resume");
@@ -1683,14 +1702,11 @@ return runShowcase().then(() => "STOP_MOTIF");
                 stopHudLoop();
                 updateHud();
             } else {
-                if (isDirty) {
-                    Motif.stop();
-                    isDirty = false;
-                    await Motif.ctx.resume();
-                }
-
                 if (Motif._debugPlaybackStart !== null) {
-                    // Resume from pause without rebuilding/re-registering tracks
+                    if (isDirty && !runUserCode(true)) {
+                        Motif.pause();
+                        return;
+                    }
                     await Motif.start();
                     playPauseBtn.textContent = "pause";
                     playPauseBtn.setAttribute("data-tooltip", "Pause");
@@ -1714,6 +1730,8 @@ return runShowcase().then(() => "STOP_MOTIF");
 
     async function restartPlayback() {
         try {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = null;
             Motif.init();
             Motif.stop();
             isDirty = false;
@@ -1954,13 +1972,15 @@ return runShowcase().then(() => "STOP_MOTIF");
 
     async function showDocsModal() {
         if (!isDocsLoaded && window.renderMarkdownFileToElement) {
-            await window.renderMarkdownFileToElement("README.md", "#modal-info-content");
+            await window.renderMarkdownFileToElement("README.md", "#modal-info-content", {
+                toc: { injectIfAbsent: true, minLevel: 2, maxLevel: 3 },
+            });
             isDocsLoaded = true;
         }
         modalInfo?.showModal?.();
     }
 
-    openModalBtn?.addEventListener("click", showDocsModal);
+    openModalBtn?.addEventListener("click", withErrorLog(showDocsModal));
     modalInfo?.addEventListener("click", (e) => {
         if (e.target === modalInfo || e.target.closest("[data-action='close']")) {
             modalInfo.close();

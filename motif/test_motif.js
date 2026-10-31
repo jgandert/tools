@@ -12,6 +12,7 @@ import {
     parseDurationToSeconds,
     Track,
     LFO,
+    LFOSignal,
     Bus,
     Arrange,
     MotifEventArray,
@@ -19,9 +20,10 @@ import {
     busRegistry,
     SimplexNoise,
 } from "./motif.js";
-import { applyParamModulation, sampleBufferCache } from "./src/helpers.js";
+import { applyParamModulation, disposeModulationBindings, safeDisconnect, sampleBufferCache } from "./src/helpers.js";
 import {
     MockAudioParam,
+    MockAudioNode,
     MockGainNode,
     MockOscillatorNode,
     MockAudioContext,
@@ -38,6 +40,313 @@ function assert(cond, msg) {
         failed++;
         failures.push(msg);
         console.log(`  FAIL: ${msg}`);
+    }
+}
+
+console.log("\n=== Pad Sub Octave and Acoustic Snare Stability ===");
+{
+    const registered = Motif.synthRegistry.get("pad-hauntology");
+    const dsp = new Function("TWO_PI", `return (${registered.toString()});`)(2 * Math.PI);
+
+    // Hold age where wow/flutter cross zero to isolate the oscillator spectrum.
+    const ctx = { t: 10, p: 0, freq: 200, state: {}, sampleRate: 48000 };
+    for (let frame = 0; frame < ctx.sampleRate; frame++) dsp(ctx);
+    let subSin = 0;
+    let subCos = 0;
+    let mainSin = 0;
+    let mainCos = 0;
+    let finite = true;
+    for (let frame = 0; frame < ctx.sampleRate; frame++) {
+        const value = dsp(ctx);
+        finite &&= Number.isFinite(value);
+        const angle = 2 * Math.PI * 100 * frame / ctx.sampleRate;
+        subSin += value * Math.sin(angle);
+        subCos += value * Math.cos(angle);
+        mainSin += value * Math.sin(2 * angle);
+        mainCos += value * Math.cos(2 * angle);
+    }
+    const subAmplitude = 2 * Math.hypot(subSin, subCos) / ctx.sampleRate;
+    const mainAmplitude = 2 * Math.hypot(mainSin, mainCos) / ctx.sampleRate;
+    assert(finite && subAmplitude > 0.08 && subAmplitude > mainAmplitude * 0.25,
+        "pad-hauntology: rendered output contains an octave below the requested pitch");
+
+    const savedContext = Motif.ctx;
+    const savedSeed = Motif._sampleSeed;
+    try {
+        for (const sampleRate of [8000, 16000, 44100, 48000, 96000]) {
+            Motif.ctx = new MockAudioContext();
+            Motif.ctx.sampleRate = sampleRate;
+            for (const seed of [0, 1, 12345]) {
+                Motif._sampleSeed = seed;
+                const data = Motif.sampleRegistry.get("snare-acoustic")().getChannelData(0);
+                let finite = true;
+                let peak = 0;
+                let tailPeak = 0;
+                for (let frame = 0; frame < data.length; frame++) {
+                    finite &&= Number.isFinite(data[frame]);
+                    peak = Math.max(peak, Math.abs(data[frame]));
+                    if (frame > data.length * 0.9) tailPeak = Math.max(tailPeak, Math.abs(data[frame]));
+                }
+                assert(finite && peak > 0.05 && peak < 2,
+                    `snare-acoustic: finite, bounded, audible at ${sampleRate} Hz / seed ${seed}`);
+                assert(tailPeak < peak * 0.1,
+                    `snare-acoustic: tail decays at ${sampleRate} Hz / seed ${seed}`);
+            }
+        }
+    } finally {
+        Motif.ctx = savedContext;
+        Motif._sampleSeed = savedSeed;
+    }
+}
+
+// =============================================================================
+// Orchestral instruments: isolated worklet callbacks and seeded sample buffers
+// =============================================================================
+console.log("\n=== Orchestral Synths: Serialized DSP ===");
+{
+    const ranges = {
+        "orch-violin": [196, 440, 2637],
+        "orch-cello": [65.406, 146.832, 523.251],
+        "orch-french-horn": [87.307, 195.998, 523.251],
+        "orch-flute": [261.626, 783.991, 2349.318],
+        "orch-oboe": [233.082, 440, 1567.982],
+    };
+
+    for (const [name, pitches] of Object.entries(ranges)) {
+        const registered = Motif.synthRegistry.get(name);
+        assert(typeof registered === "function", `${name}: registered as a synth`);
+        if (typeof registered !== "function") continue;
+
+        // AudioWorklets reconstruct the callback without the registry's closure.
+
+        const dsp = new Function("TWO_PI", `return (${registered.toString()});`)(2 * Math.PI);
+        for (const sampleRate of [8000, 44100, 48000, 96000]) {
+            for (const frequency of pitches) {
+                const ctx = { t: 0, p: 0, freq: frequency, state: {}, sampleRate };
+                let finite = true;
+                let peak = 0;
+                for (let frame = 0; frame < sampleRate / 2; frame++) {
+                    ctx.t = frame / sampleRate;
+                    ctx.p = (ctx.p + frequency / sampleRate) % 1;
+                    const value = dsp(ctx);
+                    finite &&= Number.isFinite(value);
+                    peak = Math.max(peak, Math.abs(value));
+                }
+                assert(finite && peak > 0.01 && peak <= 1,
+                    `${name}: finite, bounded, non-silent at ${frequency} Hz / ${sampleRate} Hz`);
+            }
+
+            const ctx = { t: 0, p: 0, freq: pitches[0], state: {}, sampleRate };
+            let bounded = true;
+            for (let frame = 0; frame < sampleRate; frame++) {
+                ctx.t = frame / sampleRate;
+                ctx.freq = frame < sampleRate / 2
+                    ? pitches[0] * (pitches[2] / pitches[0]) ** (2 * ctx.t)
+                    : pitches[0];
+                const value = dsp(ctx);
+                bounded &&= Number.isFinite(value) && Math.abs(value) <= 1;
+            }
+            assert(bounded, `${name}: glide and abrupt register jump remain bounded at ${sampleRate} Hz`);
+
+            ctx.t = 1e12;
+            ctx.freq = pitches[1];
+            for (let frame = 0; frame < 1024; frame++) {
+                const value = dsp(ctx);
+                bounded &&= Number.isFinite(value) && Math.abs(value) <= 1;
+            }
+            assert(bounded, `${name}: large note age preserves finite output at ${sampleRate} Hz`);
+
+            ctx.freq = sampleRate * 0.49;
+            assert(dsp(ctx) === 0, `${name}: near-Nyquist fundamentals fade to silence`);
+        }
+
+        for (const freq of [0, -440, NaN, Infinity]) {
+            assert(dsp({ t: 0, p: 0, freq, state: {}, sampleRate: 48000 }) === 0,
+                `${name}: invalid frequency ${freq} returns silence`);
+        }
+    }
+}
+
+console.log("\n=== Orchestral Samples: Buffer Safety and Seeding ===");
+{
+    const savedContext = Motif.ctx;
+    const savedSeed = Motif._sampleSeed;
+    const samples = {
+        "orch-harp-c4": [5.5, 0.74],
+        "orch-celesta-c5": [5.8, 0.73],
+        "timpani": [3.8, 0.78],
+        "orch-tubular-bells-c5": [5.8, 0.78],
+    };
+    const sameData = (a, b) => a.length === b.length && a.every((value, i) => value === b[i]);
+
+    try {
+        for (const [name, [duration, targetPeak]] of Object.entries(samples)) {
+            const generator = Motif.sampleRegistry.get(name);
+            assert(typeof generator === "function", `${name}: registered as a sample`);
+            if (typeof generator !== "function") continue;
+
+            Motif.ctx = null;
+            assert(generator() === null, `${name}: no context returns null`);
+            for (const sampleRate of [8000, 44100, 48000]) {
+                Motif.ctx = new MockAudioContext();
+                Motif.ctx.sampleRate = sampleRate;
+                Motif._sampleSeed = 0;
+                const buffer = generator();
+                const data = buffer.getChannelData(0);
+                let finite = true;
+                let peak = 0;
+                let sum = 0;
+                for (const value of data) {
+                    finite &&= Number.isFinite(value);
+                    peak = Math.max(peak, Math.abs(value));
+                    sum += value;
+                }
+                assert(Math.abs(data.length / sampleRate - duration) < 1 / sampleRate,
+                    `${name}: expected duration at ${sampleRate} Hz`);
+                assert(finite && Math.abs(peak - targetPeak) < 1e-6,
+                    `${name}: finite and normalized at ${sampleRate} Hz`);
+                assert(data[0] === 0 && data.at(-1) === 0,
+                    `${name}: exact zero endpoints at ${sampleRate} Hz`);
+                assert(Math.abs(sum / data.length) < 1e-6,
+                    `${name}: negligible DC offset at ${sampleRate} Hz`);
+
+                if (sampleRate !== 8000) continue;
+                assert(sameData(data, generator().getChannelData(0)),
+                    `${name}: repeated canonical rendering is identical`);
+                Motif._sampleSeed = 42;
+                const variation = generator().getChannelData(0);
+                assert(!sameData(data, variation), `${name}: global sample seed changes the rendering`);
+                assert(sameData(variation, generator().getChannelData(0)),
+                    `${name}: repeated nonzero seed rendering is identical`);
+            }
+        }
+
+        assert(!Motif.sampleRegistry.has("orch-suspended-cymbal"), "excluded orchestral cymbal is absent");
+        assert(!Motif.sampleRegistry.has("orch-timpani-d2"), "timpani has one canonical registry name");
+
+        Motif.ctx = new MockAudioContext();
+        const celesta = Track("orchestra-root-test")
+            .sampler({ urls: { C5: "orch-celesta-c5" } })
+            .note(["C5", "C6"]);
+        await celesta._samplerLoading;
+        const rates = [];
+        celesta._playAudioBuffer = (buffer, time, duration, rate) => rates.push(rate);
+        celesta._playEvent({ value: "C5" }, 0, 1);
+        celesta._playEvent({ value: "C6" }, 1, 1);
+        assert(rates.length === 2 && rates[0] === 1 && rates[1] === 2,
+            "orchestral samples support concert-pitch note mapping through the existing sampler");
+    } finally {
+        Track.clearRegistry();
+        Motif.ctx = savedContext;
+        Motif._sampleSeed = savedSeed;
+        Motif._invalidateProceduralSamples();
+    }
+}
+
+// =============================================================================
+// Dark percussion and analog voices: serialized DSP and generated buffers
+// These numeric checks cover callback isolation and buffer safety, not perceived sound quality.
+// =============================================================================
+console.log("\n=== Analog Voices: Serialized DSP ===");
+{
+    for (const name of ["arp-narrow-drift", "bass-compact-saw", "pad-dusk-saws"]) {
+        const registered = Motif.synthRegistry.get(name);
+        assert(typeof registered === "function", `${name}: registered as a synth`);
+        if (typeof registered !== "function") continue;
+
+        const dsp = new Function("TWO_PI", `return (${registered.toString()});`)(2 * Math.PI);
+        for (const sampleRate of [8000, 44100, 48000, 96000]) {
+            for (const frequency of [55, 440, sampleRate * 0.2, sampleRate * 0.45]) {
+                const ctx = { t: 0, p: 0, freq: frequency, state: { driftPhase: 0.375 }, sampleRate };
+                let finite = true;
+                let peak = 0;
+                for (let frame = 0; frame < sampleRate / 8; frame++) {
+                    ctx.t = frame / sampleRate;
+                    const value = dsp(ctx);
+                    finite &&= Number.isFinite(value);
+                    peak = Math.max(peak, Math.abs(value));
+                    ctx.p = (ctx.p + frequency / sampleRate) % 1;
+                }
+                assert(finite && peak > 0.001 && peak <= 1,
+                    `${name}: isolated callback is finite, bounded and non-silent at ${frequency} Hz / ${sampleRate} Hz`);
+            }
+
+            const ctx = { t: 0, p: 0, freq: 55, state: { driftPhase: 0.375 }, sampleRate };
+            let bounded = true;
+            for (let frame = 0; frame < sampleRate / 4; frame++) {
+                ctx.t = frame / sampleRate;
+                ctx.freq = frame < sampleRate / 8 ? 55 * 32 ** (8 * ctx.t) : 110;
+                ctx.state.brightness = (frame % 257) / 256;
+                const value = dsp(ctx);
+                bounded &&= Number.isFinite(value) && Math.abs(value) <= 1;
+            }
+            assert(bounded, `${name}: pitch and brightness changes stay bounded at ${sampleRate} Hz`);
+
+            for (const frequency of [sampleRate * 0.49, sampleRate, 0, -440, NaN, Infinity]) {
+                const value = dsp({ t: 0, p: 0, freq: frequency, state: {}, sampleRate });
+                assert(value === 0, `${name}: invalid or above-band frequency ${frequency} starts silent`);
+            }
+        }
+    }
+}
+
+console.log("\n=== Dark Samples: Buffer Safety and Seeding ===");
+{
+    const savedContext = Motif.ctx;
+    const savedSeed = Motif._sampleSeed;
+    const samples = {
+        "dark-thud": [0.46, 0.76, 0x6D2B79F5],
+        "dark-gated-snare": [0.22, 0.58, 0xA341316C],
+        "dark-shadow-hat": [0.145, 0.29, 0xC8013EA4],
+        "dark-reverse-glass": [1.2, 0.42, 0xAD90777D],
+    };
+    const sameData = (a, b) => a.length === b.length && a.every((value, i) => value === b[i]);
+
+    try {
+        for (const [name, [duration, targetPeak, noiseSeed]] of Object.entries(samples)) {
+            const generator = Motif.sampleRegistry.get(name);
+            assert(typeof generator === "function", `${name}: registered as a sample`);
+            if (typeof generator !== "function") continue;
+
+            Motif.ctx = null;
+            assert(generator() === null, `${name}: no context returns null`);
+            for (const sampleRate of [8000, 44100, 48000, 96000]) {
+                Motif.ctx = new MockAudioContext();
+                Motif.ctx.sampleRate = sampleRate;
+                Motif._sampleSeed = 0;
+                const buffer = generator();
+                const data = buffer.getChannelData(0);
+                let finite = true;
+                let peak = 0;
+                let sum = 0;
+                for (const value of data) {
+                    finite &&= Number.isFinite(value);
+                    peak = Math.max(peak, Math.abs(value));
+                    sum += value;
+                }
+                assert(buffer.numberOfChannels === 1 && buffer.sampleRate === sampleRate
+                    && Math.abs(data.length / sampleRate - duration) < 1 / sampleRate,
+                    `${name}: mono buffer has the expected rate and duration at ${sampleRate} Hz`);
+                assert(finite && Math.abs(peak - targetPeak) < 1e-6,
+                    `${name}: finite and normalized at ${sampleRate} Hz`);
+                assert(data[0] === 0 && data.at(-1) === 0 && Math.abs(sum / data.length) < 1e-7,
+                    `${name}: silent endpoints and negligible DC at ${sampleRate} Hz`);
+
+                if (sampleRate !== 8000) continue;
+                assert(sameData(data, generator().getChannelData(0)), `${name}: canonical rendering repeats exactly`);
+                for (const seed of [42, noiseSeed]) {
+                    Motif._sampleSeed = seed;
+                    const variation = generator().getChannelData(0);
+                    assert(!sameData(data, variation) && variation.every(Number.isFinite),
+                        `${name}: seed ${seed} produces a finite variation`);
+                    assert(sameData(variation, generator().getChannelData(0)), `${name}: seed ${seed} is repeatable`);
+                }
+            }
+        }
+    } finally {
+        Motif.ctx = savedContext;
+        Motif._sampleSeed = savedSeed;
+        Motif._invalidateProceduralSamples();
     }
 }
 
@@ -261,6 +570,7 @@ console.log("\n=== Motif Engine: Web Audio Initialization ===");
             this.state = "suspended";
             this.currentTime = 0;
             this.destination = {};
+            this.audioWorklet = { addModule: async () => {} };
         }
 
         createGain() {
@@ -296,10 +606,18 @@ console.log("\n=== Motif Engine: Web Audio Initialization ===");
 
     if (typeof window === "undefined") {
         globalThis.AudioContext = MockAudioContext;
+        globalThis.AudioWorkletNode = class extends MockGainNode {
+            constructor(ctx, name, options = {}) {
+                super();
+                this.parameters = new Map(Object.entries(options.parameterData || {}).map(([key, value]) => [key, new MockAudioParam(value)]));
+            }
+        };
     }
 
     // Initialize Motif
     Motif.init();
+    await Motif._masterLimiterReady;
+    delete globalThis.AudioWorkletNode;
 
     assert(Motif.ctx !== null, "Motif.ctx should not be null after initialization");
     assert(Motif.ctx instanceof MockAudioContext, "Motif.ctx should be an instance of MockAudioContext in test environment");
@@ -320,7 +638,7 @@ console.log("\n=== Motif Engine: Global Transport Controls ===");
 
     let threwError = false;
     try {
-        Motif.start();
+        await Motif.start();
     } catch (e) {
         threwError = true;
         assert(e.message.includes("suspended"), `expected error message about suspended context, got: "${e.message}"`);
@@ -335,7 +653,7 @@ console.log("\n=== Motif Engine: Global Transport Controls ===");
     // Test successful start
     let startThrew = false;
     try {
-        Motif.start();
+        await Motif.start();
     } catch (e) {
         startThrew = true;
     }
@@ -479,13 +797,31 @@ console.log("\n=== Motif Engine: Master Output Configuration ===");
 
     // Test Limiter (object) configuration
     Motif.master({
-        limiter: { threshold: -12, knee: 15, ratio: 8, attack: 0.005, release: 0.12 },
+        compressor: { threshold: -12, knee: 15, ratio: 8, attack: 0.005, release: 0.12 },
     });
     assert(Motif.masterCompressor.threshold.value === -12, `expected compressor threshold to be -12, got ${Motif.masterCompressor.threshold.value}`);
     assert(Motif.masterCompressor.knee.value === 15, `expected compressor knee to be 15, got ${Motif.masterCompressor.knee.value}`);
     assert(Motif.masterCompressor.ratio.value === 8, `expected compressor ratio to be 8, got ${Motif.masterCompressor.ratio.value}`);
     assert(Motif.masterCompressor.attack.value === 0.005, `expected compressor attack to be 0.005, got ${Motif.masterCompressor.attack.value}`);
     assert(Motif.masterCompressor.release.value === 0.12, `expected compressor release to be 0.12, got ${Motif.masterCompressor.release.value}`);
+
+    for (const options of [
+        { limiter: { threshold: -12 } },
+        { limiter: { ceiling: NaN } },
+        { limiter: { release: 0 } },
+        { limiter: [] },
+        { compressor: { ratio: 0 } },
+        { compressor: { attack: Infinity } },
+        { compressor: null },
+    ]) {
+        let rejected = false;
+        try { Motif.master(options); } catch { rejected = true; }
+        assert(rejected, `invalid master settings must be rejected: ${JSON.stringify(options)}`);
+    }
+
+    Motif.master({ limiter: { ceiling: -3, release: 0.2 }, compressor: false });
+    assert(Motif._masterLimiterSettings.ceiling === -3, "limiter settings must persist while the module loads");
+    assert(Motif._masterLimiterEnabled && !Motif._masterCompressorEnabled, "limiting and compression must be independently enabled");
 
     // Test Limiter bypass
     Motif.master({ limiter: false });
@@ -539,7 +875,7 @@ console.log("\n=== Motif Engine: Lookahead Scheduler ===");
     Motif.ctx.state = "running";
     Motif.isPlaying = false;
     Motif._stopScheduler();
-    Motif.start();
+    await Motif.start();
     assert(Motif._schedInterval !== null, "Motif._schedInterval should be set after start()");
 
     // stop() should clear interval and queue
@@ -1240,6 +1576,49 @@ console.log("\n=== Track Polyphonic Voice Pool & Voice Stealing ===");
     Motif._schedQueue = [];
 }
 
+// Voice stealing retains graph connections until the scheduled audio cutoff.
+{
+    const previousContext = Motif.ctx;
+    Motif.ctx = { currentTime: 0.4 };
+    for (const mode of ["oldest", "quietest"]) {
+        const track = Track(`deferred-steal-${mode}`).voices(2, mode);
+        const makeVoice = (startTime, gainValue, endTime = 2) => ({
+            startTime, gainValue, endTime,
+            oscillator: { stop(time) { this.stoppedAt = time; }, disconnect() { this.disconnected = true; } },
+            gainNode: { disconnect() { this.disconnected = true; } },
+        });
+        const old = makeVoice(0, 0.8);
+        const quiet = makeVoice(0.1, 0.2);
+        track._activeVoices.set('old', old);
+        track._activeVoices.set('quiet', quiet);
+        track._stealVoice(mode, 0.5);
+        const stolen = mode === "oldest" ? old : quiet;
+        assert(stolen.oscillator.stoppedAt === 0.5, `${mode}: stop at replacement onset`);
+        assert(!stolen.oscillator.disconnected && !stolen.gainNode.disconnected, `${mode}: preserve pending audio routing`);
+        assert(track._activeVoices.size === 1, `${mode}: free scheduling capacity immediately`);
+        Motif.ctx.currentTime = 0.499;
+        track._cleanupActiveVoices();
+        assert(!stolen.oscillator.disconnected, `${mode}: retain routing before cutoff`);
+        Motif.ctx.currentTime = 0.5;
+        track._cleanupActiveVoices();
+        assert(stolen.oscillator.disconnected && stolen.gainNode.disconnected, `${mode}: disconnect rendered voice`);
+        assert(track._retiredVoices.size === 0, `${mode}: release retired accounting`);
+        Motif.ctx.currentTime = 0.4;
+        track._stealVoice(mode, 0.8);
+        const remaining = mode === "oldest" ? quiet : old;
+        track._resetScheduling();
+        assert(remaining.oscillator.disconnected && remaining.gainNode.disconnected, `${mode}: reset cleans pending retired voices`);
+        assert(track._retiredVoices.size === 0, `${mode}: reset clears retired accounting`);
+        const finished = makeVoice(0, 1, 0.6);
+        track._activeVoices.set('finished', finished);
+        track._stealVoice(mode, 0.8);
+        assert(finished.oscillator.stoppedAt === 0.6, `${mode}: stealing never extends natural lifetime`);
+        track._resetScheduling();
+    }
+    Motif.ctx = previousContext;
+    Track.clearRegistry();
+}
+
 // =============================================================================
 // Track Envelope (ADSR) Scheduling
 // =============================================================================
@@ -1374,7 +1753,7 @@ console.log("\n=== Track Envelope (ADSR) Scheduling ===");
 
     assert(lastGainParam !== null, "GainNode should have been created");
     if (lastGainParam) {
-        const calls = lastGainParam.calls;
+        const calls = lastGainParam.calls.map(call => ({ ...call, value: call.value * t.trackInputNode.gain.value }));
         assert(calls.length === 6, `expected 6 scheduled envelope calls, got ${calls.length}`);
 
         // 1. Initial floor: setValueAtTime(0.00008, 0.0)
@@ -1449,6 +1828,8 @@ console.log("\n=== Tied Note Rendering: Gain Holds Across Tie Boundary ===");
         }
 
         cancelAndHoldAtTime(t) {
+            // Inspect the remaining automation, excluding releases cancelled by a Tie.
+            this.calls = this.calls.filter(call => call.type === "cancelAndHold" || call.time < t);
             this.calls.push({ type: "cancelAndHold", time: t });
             return this;
         }
@@ -2346,8 +2727,10 @@ console.log("\n=== Bus.feedback & Connect Topology ===");
             return makeRecordingNode("panner");
         }
 
-        createDelay() {
-            return makeRecordingNode("delay");
+        createDelay(maxDelayTime) {
+            const delay = makeRecordingNode("delay");
+            delay.maxDelayTime = maxDelayTime;
+            return delay;
         }
 
         createConstantSource() {
@@ -2373,16 +2756,18 @@ console.log("\n=== Bus.feedback & Connect Topology ===");
     connections.length = 0; // clear connections from Bus init
 
     // 1. Chainability
-    assert(b.feedback({ amount: 0.4 }) === b, "feedback() should be chainable");
+    assert(b.feedback({ amount: 0.4, time: "3/16" }) === b, "feedback() should be chainable");
 
     // 2. Nodes created
     assert(b.feedbackDelayNode !== null, "feedbackDelayNode should exist after feedback()");
     assert(b.feedbackGainNode !== null, "feedbackGainNode should exist after feedback()");
+    assert(b.feedbackDelayNode.maxDelayTime === 60,
+        `feedback DelayNode should allocate the documented 60s range, got ${b.feedbackDelayNode.maxDelayTime}`);
 
-    // 3. Delay is exactly 128/sampleRate
-    const expectedDelay = 128 / sampleRate;
+    // 3. Musical delay time is parsed using the current transport tempo/meter
+    const expectedDelay = (3 / 16) * (60 / Motif.tempo) * Motif.beatsPerBar;
     assert(Math.abs(b.feedbackDelayNode.delayTime.value - expectedDelay) < 1e-9,
-        `delayTime should be 128/sampleRate (${expectedDelay}), got ${b.feedbackDelayNode.delayTime.value}`);
+        `delayTime should be 3/16 of a bar (${expectedDelay}), got ${b.feedbackDelayNode.delayTime.value}`);
 
     // 4. Gain equals amount
     assert(Math.abs(b.feedbackGainNode.gain.value - 0.4) < 1e-6,
@@ -2396,16 +2781,82 @@ console.log("\n=== Bus.feedback & Connect Topology ===");
     assert(hasFeedbackGainToDelay, "feedbackGainNode should connect to feedbackDelayNode");
     assert(hasDelayToInput, "feedbackDelayNode should connect back to bus.input (closing the cycle)");
 
-    // 6. Second call only updates gain, no new nodes
+    // 6. Repeated calls reuse nodes and explicit time updates the delay
     const prevDelayNode = b.feedbackDelayNode;
     const prevGainNode = b.feedbackGainNode;
-    b.feedback({ amount: 0.8 });
+    b.feedback({ amount: 0.8, time: "1/4" });
     assert(b.feedbackDelayNode === prevDelayNode, "second feedback() should not create a new DelayNode");
     assert(b.feedbackGainNode === prevGainNode, "second feedback() should not create a new feedbackGainNode");
     assert(Math.abs(b.feedbackGainNode.gain.value - 0.8) < 1e-6,
         `feedbackGain should be updated to 0.8, got ${b.feedbackGainNode.gain.value}`);
+    const updatedDelay = (1 / 4) * (60 / Motif.tempo) * Motif.beatsPerBar;
+    assert(Math.abs(b.feedbackDelayNode.delayTime.value - updatedDelay) < 1e-9,
+        `explicit time should update delayTime to ${updatedDelay}, got ${b.feedbackDelayNode.delayTime.value}`);
 
-    // 7. _rebuildSignalChain reconnects the feedback tap on output
+    // 7. An omitted time preserves an existing delay
+    b.feedback({ amount: 0.6 });
+    assert(Math.abs(b.feedbackDelayNode.delayTime.value - updatedDelay) < 1e-9,
+        `omitted time should preserve delayTime ${updatedDelay}, got ${b.feedbackDelayNode.delayTime.value}`);
+
+    // 8. The first call without time retains the original short safety delay
+    const defaultTimeBus = Bus("fb-default-time").feedback({ amount: 0.2 });
+    const minimumDelay = 128 / sampleRate;
+    assert(Math.abs(defaultTimeBus.feedbackDelayNode.delayTime.value - minimumDelay) < 1e-9,
+        `initial omitted time should use 128/sampleRate (${minimumDelay}), got ${defaultTimeBus.feedbackDelayNode.delayTime.value}`);
+
+    // 9. Long musical and numeric times are honored without truncation
+    const prevTempo = Motif.tempo;
+    Motif.tempo = 126;
+    const longDelayBus = Bus("fb-long-time").feedback({ amount: 0.4, time: "1/1" });
+    const oneBarAt126 = (60 / 126) * Motif.beatsPerBar;
+    assert(Math.abs(longDelayBus.feedbackDelayNode.delayTime.value - oneBarAt126) < 1e-9,
+        `one-bar delay at 126 BPM should be ${oneBarAt126}s, got ${longDelayBus.feedbackDelayNode.delayTime.value}`);
+    longDelayBus.feedback({ amount: 0.45, time: 2.5 });
+    assert(Math.abs(longDelayBus.feedbackDelayNode.delayTime.value - 2.5) < 1e-9,
+        `numeric delay above one second should remain 2.5s, got ${longDelayBus.feedbackDelayNode.delayTime.value}`);
+    Motif.tempo = prevTempo;
+
+    // 10. Short valid times work; rejected updates preserve both prior parameters
+    longDelayBus.feedback({ amount: 0.35, time: 0.01 });
+    assert(Math.abs(longDelayBus.feedbackDelayNode.delayTime.value - 0.01) < 1e-9,
+        `short valid delay should remain 0.01s, got ${longDelayBus.feedbackDelayNode.delayTime.value}`);
+    let lowTimeError = null;
+    try {
+        longDelayBus.feedback({ amount: 0.9, time: 0 });
+    } catch (error) {
+        lowTimeError = error;
+    }
+    assert(lowTimeError instanceof RangeError, "a delay below the 128-frame minimum should throw RangeError");
+    assert(Math.abs(longDelayBus.feedbackDelayNode.delayTime.value - 0.01) < 1e-9,
+        "a rejected short delay must preserve the previous valid time");
+    assert(Math.abs(longDelayBus.feedbackGainNode.gain.value - 0.35) < 1e-9,
+        "a rejected short delay must preserve the previous feedback amount");
+
+    let highTimeError = null;
+    try {
+        longDelayBus.feedback({ amount: 0.9, time: 60.001 });
+    } catch (error) {
+        highTimeError = error;
+    }
+    assert(highTimeError instanceof RangeError, "a delay above 60 seconds should throw RangeError");
+    assert(Math.abs(longDelayBus.feedbackDelayNode.delayTime.value - 0.01) < 1e-9,
+        "a rejected long delay must preserve the previous valid time");
+    assert(Math.abs(longDelayBus.feedbackGainNode.gain.value - 0.35) < 1e-9,
+        "a rejected long delay must preserve the previous feedback amount");
+
+    let invalidTimeError = null;
+    try {
+        longDelayBus.feedback({ amount: 0.9, time: "not-a-duration" });
+    } catch (error) {
+        invalidTimeError = error;
+    }
+    assert(invalidTimeError instanceof RangeError, "an invalid explicit delay should throw RangeError");
+    assert(Math.abs(longDelayBus.feedbackDelayNode.delayTime.value - 0.01) < 1e-9,
+        "an invalid explicit delay must preserve the previous valid time");
+    assert(Math.abs(longDelayBus.feedbackGainNode.gain.value - 0.35) < 1e-9,
+        "an invalid explicit delay must preserve the previous feedback amount");
+
+    // 11. _rebuildSignalChain reconnects the feedback tap on output
     connections.length = 0;
     b._rebuildSignalChain();
     const rebuiltFeedbackTap = connections.some(c => c.from === b.output && c.to === b.feedbackGainNode);
@@ -2418,9 +2869,12 @@ console.log("\n=== Bus.feedback & Connect Topology ===");
 
     const reverbBus2 = Bus("reverb2");
     const leadTrack = Track("lead2");
+    const padTrack = Track("pad2");
     leadTrack._initAudio();
+    padTrack._initAudio();
     leadTrack.send(reverbBus2, 0.6);
-    reverbBus2.feedback({ amount: 0.35 });
+    padTrack.send(reverbBus2, 0.25);
+    reverbBus2.feedback({ amount: 0.35, time: "1/8" });
 
     // send: preFaderNode → sendGain → bus.input
     const sendGain = leadTrack._sends.get("reverb2");
@@ -2429,6 +2883,12 @@ console.log("\n=== Bus.feedback & Connect Topology ===");
     assert(hasSendPath, "send: preFaderNode should connect to sendGainNode");
     const hasSendToBusInput = connections.some(c => c.from === sendGain && c.to === reverbBus2.input);
     assert(hasSendToBusInput, "send: sendGainNode should connect to bus.input");
+    const padSendGain = padTrack._sends.get("reverb2");
+    assert(padSendGain !== undefined, "second track send gain node should be stored");
+    assert(connections.some(c => c.from === padTrack.preFaderNode && c.to === padSendGain),
+        "second send: preFaderNode should connect to sendGainNode");
+    assert(connections.some(c => c.from === padSendGain && c.to === reverbBus2.input),
+        "second send: sendGainNode should connect to the shared bus input");
 
     // feedback: bus.output → feedbackGain → delay → bus.input
     const hasFBOutputPath = connections.some(c => c.from === reverbBus2.output && c.to === reverbBus2.feedbackGainNode);
@@ -2437,6 +2897,9 @@ console.log("\n=== Bus.feedback & Connect Topology ===");
     assert(hasFBOutputPath, "feedback topology: output → feedbackGainNode");
     assert(hasFBGainToDelay, "feedback topology: feedbackGainNode → feedbackDelayNode");
     assert(hasFBDelayToInput, "feedback topology: feedbackDelayNode → bus.input (DelayNode breaks cycle)");
+    const sharedDelay = (1 / 8) * (60 / Motif.tempo) * Motif.beatsPerBar;
+    assert(Math.abs(reverbBus2.feedbackDelayNode.delayTime.value - sharedDelay) < 1e-9,
+        `shared feedback bus delay should be ${sharedDelay}, got ${reverbBus2.feedbackDelayNode.delayTime.value}`);
 
     Motif.ctx = prevCtx;
     Bus.clearRegistry();
@@ -4315,29 +4778,22 @@ console.log("\n=== Track .pattern(): Slice Reordering and Repetition ===");
         assert(Math.abs(offlineCtx.createdBufferSources[3].offset - 0.0) < 1e-9, `step 3: expected offset 0.0, got ${offlineCtx.createdBufferSources[3].offset}`);
     }
 
-    // TEST 3: Repeating slices (pattern shorter than sequence)
+    // Slice rhythm owns timing; pitch is read at each slice onset.
     Track.clearRegistry();
     const offlineCtx3 = new TestOfflineCtx(1, Math.ceil(sampleRate * 2.5), sampleRate);
     Motif.ctx = offlineCtx3;
     Motif._schedQueue = [];
-
-    const t3 = Track("pattern-repeat");
-    t3.note([0, 1, 2, 3]).sample("/audio/loop.wav").chop(4).pattern([1, 2]);
-
+    const t3 = Track("pattern-repeat").sample("/audio/loop.wav").chop(4)
+        .pattern([1, 2]).note([60, 61, 72, 73]);
     await t3._sampleLoading;
     t3._resetScheduling();
     await offlineCtx3.startRendering();
-
-    if (offlineCtx3.createdBufferSources.length >= 4) {
-        // Step 0: pattern[0%2] = 1 => 0.5s
-        assert(Math.abs(offlineCtx3.createdBufferSources[0].offset - 0.5) < 1e-9, `step 0: expected offset 0.5, got ${offlineCtx3.createdBufferSources[0].offset}`);
-        // Step 1: pattern[1%2] = 2 => 1.0s
-        assert(Math.abs(offlineCtx3.createdBufferSources[1].offset - 1.0) < 1e-9, `step 1: expected offset 1.0, got ${offlineCtx3.createdBufferSources[1].offset}`);
-        // Step 2: pattern[2%2] = 1 => 0.5s
-        assert(Math.abs(offlineCtx3.createdBufferSources[2].offset - 0.5) < 1e-9, `step 2: expected offset 0.5, got ${offlineCtx3.createdBufferSources[2].offset}`);
-        // Step 3: pattern[3%2] = 2 => 1.0s
-        assert(Math.abs(offlineCtx3.createdBufferSources[3].offset - 1.0) < 1e-9, `step 3: expected offset 1.0, got ${offlineCtx3.createdBufferSources[3].offset}`);
-    }
+    assert(t3._parsedEvents.length === 2 && t3._parsedEvents[1].value === 72,
+        "slice onsets sample explicit pitches on the normalized note timeline");
+    assert(offlineCtx3.createdBufferSources.length >= 3,
+        "two slice events repeat on the next cycle");
+    assert(offlineCtx3.createdBufferSources.slice(0, 3).map(source => source.offset).join() === "0.5,1,0.5",
+        "slice rhythm repeats independently of the number of explicit pitches");
 
     globalThis.fetch = origFetch;
     Motif.ctx = prevCtx;
@@ -5694,46 +6150,40 @@ console.log("\n=== Track: .dsp(callback) ===");
     Motif.ctx = mockCtx;
     Motif.tempo = 120;
 
-    const callback = function(inputs, outputs, parameters) {
-        const out = outputs[0];
-        for (let ch = 0; ch < out.length; ch++) out[ch].fill(0.5);
-    };
-
+    const callback = context => context.i * 0.5;
     const t = Track("dsp-test").dsp(callback);
-
-    assert(typeof t.note === "function" && typeof t.synth === "function", ".dsp() returns this (chainable track)");
-    assert(addModuleCalled, "addModule was called with the Blob URL");
-    assert(addModuleUrl === "blob:mock-url", "addModule received the Blob URL");
-    assert(capturedCode !== null, "Blob was constructed with code string");
-    assert(capturedCode.includes("registerProcessor"), "generated code contains registerProcessor");
-    assert(capturedCode.includes("AudioWorkletProcessor"), "generated code extends AudioWorkletProcessor");
-    assert(capturedCode.includes("dsp-proc-"), "generated code uses unique processor name");
-    assert(capturedCode.includes(callback.toString()), "generated code embeds serialized callback");
-
-    // Wait for the async addModule promise to resolve, then check worklet node
-    await (t._dspReady || Promise.resolve());
-    assert(workletNodeCreated, "AudioWorkletNode was instantiated after addModule resolved");
-    assert(workletNodeName && workletNodeName.startsWith("dsp-proc-"), "AudioWorkletNode uses the unique processor name");
-    assert(t.dspNode !== null, "track.dspNode is set after worklet loads");
-
-    // Test that two .dsp() calls use distinct processor names
-    Track.clearRegistry();
-    let name1 = null, name2 = null;
-    globalThis.AudioWorkletNode = class MockAudioWorkletNode2 {
-        constructor(ctx, name) {
-            if (!name1) name1 = name; else name2 = name;
-        }
-
-        connect() {
-        }
-
-        disconnect() {
-        }
-    };
-    const t2 = Track("dsp-test-a").dsp(callback);
-    const t3 = Track("dsp-test-b").dsp(callback);
-    await Promise.all([t2._dspReady, t3._dspReady]);
-    assert(name1 !== name2, "each .dsp() call generates a unique processor name");
+    assert(t._dspCallback === callback && typeof t.note === "function", "DSP stores the per-sample callback and remains chainable");
+    assert(addModuleCalled && addModuleUrl === "blob:mock-url", "DSP preloads its voice worklet");
+    await t._dspReady;
+    assert(!workletNodeCreated, "DSP allocates no continuously running track-level processor");
+    let Processor;
+    new Function("AudioWorkletProcessor", "registerProcessor", "sampleRate", "currentTime", capturedCode)(
+        class { constructor() { this.port = { postMessage() {} }; } },
+        (_name, cls) => { Processor = cls; }, 48000, 0
+    );
+    const processor = new Processor();
+    processor.port.onmessage({ data: { type: "REGISTER_SYNTH", code: callback.toString(), transform: true } });
+    processor.port.onmessage({ data: { type: "START", startTime: 0 } });
+    const output = [[new Float32Array(8), new Float32Array(8)]];
+    const input = [[new Float32Array(8).fill(.6), new Float32Array(8).fill(-.4)]];
+    assert(processor.process(input, output, { frequency: [440] }), "Numeric samples keep DSP alive");
+    assert(Math.abs(output[0][0][3] - .3) < 1e-7 && Math.abs(output[0][1][3] + .2) < 1e-7, "DSP transforms each stereo input channel");
+    const contexts = [];
+    processor._synthFn = context => { contexts.push({ ...context }); return 0; };
+    assert(processor.process([], output, { frequency: [480] }), "Zero sample return keeps processor alive");
+    assert(contexts[0].i === 0 && Math.abs(contexts[0].t - 8 / 48000) < 1e-12, "DSP absent input is zero and time counts active samples");
+    assert(Math.abs(contexts[0].p - 8 * 440 / 48000) < 1e-12 && Math.abs(contexts[2].p - contexts[0].p - .01) < 1e-12, "DSP phase integrates frequency once per frame");
+    assert(contexts[0].state !== contexts[1].state && contexts[0].state === contexts[2].state, "DSP state is persistent and channel-local");
+    processor.port.onmessage({ data: { type: "STOP_AT", endTime: 0 } });
+    assert(!processor.process([], output, { frequency: [440] }), "Scheduled stop terminates DSP lifetime");
+    for (const invalid of [undefined, false, NaN, Infinity]) {
+        const invalidProcessor = new Processor();
+        invalidProcessor._startTime = 0;
+        invalidProcessor._synthFn = () => invalid;
+        let rejected = false;
+        try { invalidProcessor.process([], output, { frequency: [440] }); } catch { rejected = true; }
+        assert(rejected, "DSP rejects nonnumeric or nonfinite sample returns");
+    }
 
     // Restore globals
     globalThis.Blob = savedBlob;
@@ -7058,11 +7508,14 @@ console.log("\n=== Motif Engine: Auto-Stop on Arrangement Completion ===");
     assert(Motif.isPlaying === true, "Motif should still be playing before max stop time is reached");
     assert(callbackFired === false, "onPlaybackFinished should not have been called yet");
 
-    // Advance mock current time to 12.0s (exact stop time)
+    // The last note's click-prevention fade continues past the arranged boundary.
     mockCtx.currentTime = 12.0;
     Motif.tick();
+    assert(Motif.isPlaying === true && callbackFired === false, "Motif should preserve the final note fade after its arranged boundary");
+    mockCtx.currentTime = 12.015;
+    Motif.tick();
     assert(Motif.isPlaying === false, "Motif should have automatically stopped");
-    assert(callbackFired === true, "onPlaybackFinished should have fired when maximum stop time was reached");
+    assert(callbackFired === true, "onPlaybackFinished should fire after the final note fade ends");
 
     // Clean up
     Motif.onPlaybackFinished = null;
@@ -7464,7 +7917,7 @@ console.log("\n=== Arrangement Start Parameter: Skip Previous Sections ===");
             inst.process([], outputs, { frequency: [440] });
         } catch (e) {
             threw = true;
-            assert(e.message.includes("non-finite value"), "Exception should contain non-finite info");
+            assert(e.message.includes("finite sample number"), "Exception should contain non-finite info");
         }
         assert(threw === true, "Processor should throw on NaN output");
         assert(portMsgs.some(m => m.type === "SYNTH_ERROR"), "Should post SYNTH_ERROR port message");
@@ -7704,6 +8157,183 @@ console.log("\n=== TrackScheduler._schedule: isolates modifier and _playEvent er
 }
 
 // =============================================================================
+console.log("\n=== TrackScheduler: preserves musical position after scheduling gaps ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevTempo = Motif.tempo;
+    const prevBeatsPerBar = Motif.beatsPerBar;
+    const savedTracks = new Map(trackRegistry);
+    trackRegistry.clear();
+    Motif.ctx = { state: "running", currentTime: 10 };
+    Motif.tempo = 120;
+    Motif.beatsPerBar = 4;
+
+    try {
+        const track = Track("scheduler-gap").note([60, 62, 64, 65]);
+        const played = [];
+        track._playEvent = (event, time) => played.push([event.value, time]);
+        track._schedule(10.1);
+        Motif.ctx.currentTime = 10.3;
+        track._schedule(10.6);
+        assert(JSON.stringify(played) === JSON.stringify([[60, 10], [62, 10.5]]),
+            "late tick skips missed notes and preserves subsequent beat timing");
+
+        const gainCalls = [];
+        track.trackInputNode = { gain: {
+            setValueAtTime: (value, time) => gainCalls.push(["set", value, time]),
+            linearRampToValueAtTime: (value, time) => gainCalls.push(["ramp", value, time]),
+        } };
+        track._scheduledRamps = [
+            { start: 1, duration: 1, from: 0, to: 1, scheduled: false },
+            { start: 5, duration: 2, from: 1, to: 0, scheduled: false },
+        ];
+        track.start(6).stop(7);
+        Motif.ctx.currentTime = 16.3;
+        track._schedule(17.1);
+        assert(JSON.stringify(played.slice(2)) === JSON.stringify([[62, 16.5]]),
+            "multi-cycle gap preserves arrangement start and stop times");
+        assert(track._currentCycle === 3, "multi-cycle recovery retains the absolute cycle index");
+        assert(gainCalls[0][0] === "set" && gainCalls[0][1] === 1 && gainCalls[0][2] === 16.3,
+            "completed gain ramp catches up to its final value after a stall");
+        assert(gainCalls[1][0] === "set" && Math.abs(gainCalls[1][1] - 0.35) < 1e-9 && gainCalls[1][2] === 16.3,
+            "active gain ramp resumes at its interpolated value after a stall");
+        assert(JSON.stringify(gainCalls[2]) === JSON.stringify(["ramp", 0, 17]),
+            "active gain ramp retains its original end time after a stall");
+
+        track._clearActiveSegments();
+        const solo = Track("scheduler-gap-solo").note([67]).solo();
+        Motif.ctx.currentTime = 18.3;
+        track._schedule(18.6);
+        const countWhileSoloed = played.length;
+        solo._isSolo = false;
+        Motif.ctx.currentTime = 20.3;
+        track._schedule(20.6);
+        assert(played.length === countWhileSoloed + 1 && played.at(-1)[1] === 20.5,
+            "track rejoins its original beat after being excluded by solo");
+
+        track._resetScheduling();
+        Motif.ctx.currentTime = 25;
+        track._schedule(25.1);
+        assert(JSON.stringify(played.at(-1)) === JSON.stringify([60, 25]),
+            "explicit transport reset still restarts the opening note");
+
+        const loop = Track("scheduler-gap-loop").note([60, 62, 64, 65]).loopLength("1/4");
+        const loopTimes = [];
+        loop._playEvent = (event, time) => loopTimes.push(time);
+        loop._schedule(25.1);
+        Motif.ctx.currentTime = 27.3;
+        loop._schedule(27.6);
+        assert(JSON.stringify(loopTimes) === JSON.stringify([25, 27.5]),
+            "short loop recovery keeps the original loop boundary and skips past onsets");
+    } finally {
+        trackRegistry.clear();
+        for (const [id, track] of savedTracks) trackRegistry.set(id, track);
+        Motif.ctx = prevCtx;
+        Motif.tempo = prevTempo;
+        Motif.beatsPerBar = prevBeatsPerBar;
+    }
+}
+
+// =============================================================================
+console.log("\n=== TrackScheduler: stable cycle transformations and live edits ===");
+{
+    const prevCtx = Motif.ctx;
+    const prevTempo = Motif.tempo;
+    const prevBeatsPerBar = Motif.beatsPerBar;
+    const savedTracks = new Map(trackRegistry);
+    trackRegistry.clear();
+    Motif.ctx = { state: "running", currentTime: 0 };
+    Motif.tempo = 120;
+    Motif.beatsPerBar = 4;
+
+    try {
+        let calls = 0;
+        const track = Track("cycle-transform").note([60, 60, 60, 60]).every(1, events => {
+            calls++;
+            return events.map(event => ({ ...event, value: event.value + calls }));
+        });
+        const played = [];
+        track._playEvent = (event, time) => played.push([event.value, time]);
+        track._schedule(0.1);
+        track._schedule(0.6);
+        track._schedule(1.6);
+        assert(calls === 1 && played.every(([value]) => value === 61),
+            "stateful every callback runs once and preserves all notes within a cycle");
+        track._schedule(2.6);
+        assert(calls === 2 && played.at(-1)[0] === 62,
+            "crossing a cycle boundary evaluates a fresh transformation once");
+        Motif.ctx.currentTime = 8.3;
+        track._schedule(8.6);
+        track._schedule(9.1);
+        assert(calls === 3 && played.at(-1)[0] === 63,
+            "stall recovery evaluates the resumed cycle once without replaying skipped callbacks");
+        track._resetScheduling();
+        track._schedule(8.4);
+        assert(calls === 4 && played.at(-1)[0] === 64,
+            "transport reset discards the retained cycle transformation");
+
+        Motif.ctx.currentTime = 0;
+        const edited = Track("cycle-edit").note([60, 62, 64, 65]);
+        const editedValues = [];
+        edited._playEvent = event => editedValues.push([event.value, edited._freqPattern !== null]);
+        edited._schedule(0.1);
+        edited.freq([440, 450, 460, 470]);
+        edited._schedule(0.6);
+        let editCalls = 0;
+        edited.every(1, events => {
+            editCalls++;
+            return events.map(event => ({ ...event, value: event.value + 1 }));
+        });
+        edited._schedule(1.1);
+        edited._schedule(1.6);
+        assert(JSON.stringify(editedValues) === JSON.stringify([[60, false], [450, true], [461, true], [471, true]]),
+            "note-to-frequency edits and new modifiers apply to unscheduled events immediately");
+        assert(editCalls === 1, "adding the first modifier rebuilds the cycle only once");
+        edited.seed(99);
+        edited._schedule(1.7);
+        edited._schedule(1.8);
+        assert(editCalls === 2, "seed edits rebuild once without repeating on later ticks");
+
+        let setterCalls = 0;
+        const selfEditing = Track("cycle-self-edit").note([60, 62]).every(1, events => {
+            setterCalls++;
+            selfEditing.note([64, 65]);
+            return events;
+        });
+        selfEditing._playEvent = () => {};
+        selfEditing._schedule(0.1);
+        selfEditing._schedule(1.1);
+        assert(setterCalls === 1, "a pattern setter inside a callback does not retrigger the same cycle");
+
+        const editedVoicing = Track("cycle-voicing-edit").note([Parallel(60, 64, 67), 84]).chordVoicing({ mode: "smooth" });
+        const editedChordNotes = [];
+        editedVoicing._playEvent = event => editedChordNotes.push(event.value);
+        editedVoicing._schedule(0.1);
+        editedVoicing.note([Parallel(60, 64, 67), Parallel(60, 64, 67)]);
+        editedVoicing._schedule(1.1);
+        assert(JSON.stringify(editedChordNotes) === JSON.stringify([60, 64, 67, 60, 64, 67]),
+            "mid-cycle pattern edits voice remaining chords from cycle-entry history, not discarded future chords");
+
+        const voiced = Track("cycle-voicing").note([Parallel(60, 64, 67), Parallel(65, 69, 72)]).chordVoicing({ mode: "smooth" });
+        const voicedNotes = [];
+        voiced._playEvent = event => voicedNotes.push(event.value);
+        voiced._schedule(0.1);
+        voiced._schedule(1.1);
+        const firstPass = [...voicedNotes];
+        voiced._resetScheduling();
+        voiced._schedule(1.1);
+        assert(JSON.stringify(voicedNotes.slice(firstPass.length)) === JSON.stringify(firstPass),
+            "transport restart resets smooth chord voicing as well as retained events");
+    } finally {
+        trackRegistry.clear();
+        for (const [id, track] of savedTracks) trackRegistry.set(id, track);
+        Motif.ctx = prevCtx;
+        Motif.tempo = prevTempo;
+        Motif.beatsPerBar = prevBeatsPerBar;
+    }
+}
+
+// =============================================================================
 // TODO: Guard non-positive cycle durations (TrackScheduler._schedule)
 // =============================================================================
 console.log("\n=== TrackScheduler._schedule: guards non-positive cycle durations ===");
@@ -7810,6 +8440,7 @@ console.log("\n=== Worklet Stop: GranularStretcherProcessor termination ===");
             data: {
                 leftBuffer: new Float32Array(44100),
                 rightBuffer: new Float32Array(44100),
+                bufferSampleRate: 44100,
             },
         });
         inst.port.onmessage({ data: { type: "START", startTime: 0 } });
@@ -8482,6 +9113,7 @@ console.log("\n=== MotifEngine: auto-loop restart race with pending suspend ==="
     const loopTrack = {
         id: "loop-race",
         _notePattern: ["C3"],
+        _parsedEvents: [{ value: "C3" }],
         _activeSegments: [{ start: 0, stop: 1 }],
         _playbackStartTime: 0,
         _schedule() {
@@ -8736,6 +9368,82 @@ console.log("\n=== prompt.md: Audio Routing lists .feedback({ amount }) as Bus-o
 // =============================================================================
 // Docs & Tests: documented-but-untested APIs — Track.sound() router, SimplexNoise
 // =============================================================================
+console.log("\n=== Track.synth(): eager name validation preserves source state ===");
+{
+    const sampleName = "__test_synth_validation_sample__";
+    const sampleBuffer = {
+        getChannelData: () => new Float32Array(10),
+        duration: 0.5,
+        sampleRate: 44100,
+        numberOfChannels: 1,
+        length: 10,
+    };
+    Motif.sampleRegistry.set(sampleName, sampleBuffer);
+
+    const track = Track("synth-validation-state").sample(sampleName);
+    await track._sampleLoading;
+    const sourceState = {
+        synthType: track._synthType,
+        useSample: track._useSample,
+        sampleBuffer: track._sampleBuffer,
+        sampleUrl: track._sampleUrl,
+        sampleLoading: track._sampleLoading,
+    };
+
+    let sampleError = null;
+    try {
+        track.synth(sampleName);
+    } catch (error) {
+        sampleError = error;
+    }
+
+    assert(sampleError instanceof Error, "a registered sample name passed to .synth() should throw immediately");
+    assert(sampleError && sampleError.message.includes(`.sample('${sampleName}')`) && sampleError.message.includes(`.sound('${sampleName}')`),
+        "the synth error for a registered sample should suggest .sample() and .sound()");
+    assert(track._synthType === sourceState.synthType
+        && track._useSample === sourceState.useSample
+        && track._sampleBuffer === sourceState.sampleBuffer
+        && track._sampleUrl === sourceState.sampleUrl
+        && track._sampleLoading === sourceState.sampleLoading,
+    "invalid .synth() input should leave the existing sample source unchanged");
+
+    let unknownError = null;
+    try {
+        track.synth("__missing_synth__");
+    } catch (error) {
+        unknownError = error;
+    }
+    assert(unknownError instanceof Error && /registered custom DSP name/.test(unknownError.message),
+        "an unregistered synth name should throw an actionable error");
+
+    let bareCustomError = null;
+    try {
+        track.synth("custom");
+    } catch (error) {
+        bareCustomError = error;
+    }
+    assert(bareCustomError instanceof Error,
+        "bare 'custom' should be rejected because custom synthesis requires a registered DSP name");
+
+    const accepted = Track("synth-validation-built-ins");
+    assert(accepted.synth() === accepted && accepted._synthType === "sine", ".synth() should default to sine and remain chainable");
+    assert(accepted.synth("saw") === accepted && accepted._synthType === "saw", ".synth('saw') should preserve the saw alias");
+    for (const type of ["noise", "fm", "pluck", "triangle"]) {
+        accepted.synth(type);
+        assert(accepted._synthType === type, `.synth('${type}') should accept the built-in source`);
+    }
+
+    const customSynthName = "__test_synth_validation_dsp__";
+    Motif.synthRegistry.set(customSynthName, (ctx) => Math.sin(ctx.p * Math.PI * 2));
+    assert(accepted.synth(customSynthName) === accepted && accepted._synthType === customSynthName,
+        ".synth() should accept a name registered in Motif.synthRegistry");
+
+    Motif.synthRegistry.delete(customSynthName);
+    Motif.sampleRegistry.delete(sampleName);
+    trackRegistry.delete("synth-validation-state");
+    trackRegistry.delete("synth-validation-built-ins");
+}
+
 console.log("\n=== Track.sound(): synth/sample routing convenience method ===");
 {
     const prevCtx = Motif.ctx;
@@ -8912,6 +9620,62 @@ console.log("\n=== Shared MockAudioContext: factory completeness ===");
     assert(merger && typeof merger.connect === "function" && merger.numberOfInputs === 2,
         "createChannelMerger(2) node is connectable with numberOfInputs === 2");
 
+    const defaultBuffer = sharedCtx.createBuffer();
+    assert(defaultBuffer.numberOfChannels === 1 && defaultBuffer.length === 44100
+        && defaultBuffer.sampleRate === 44100 && defaultBuffer.duration === 1,
+        "createBuffer() preserves the runner's legitimate one-second mono default");
+
+    const sampleBuffer = sharedCtx.createBuffer(2, 72000, 48000);
+    const left = sampleBuffer.getChannelData(0);
+    const right = sampleBuffer.getChannelData(1);
+    left[0] = 0.25;
+    right[0] = -0.5;
+    assert(sampleBuffer.numberOfChannels === 2 && sampleBuffer.length === 72000
+        && sampleBuffer.sampleRate === 48000 && sampleBuffer.duration === 1.5,
+        "createBuffer() exposes requested channel, frame, sample-rate, and duration metadata");
+    assert(sampleBuffer.getChannelData(0) === left && sampleBuffer.getChannelData(1) === right,
+        "getChannelData() returns stable arrays for each channel");
+    assert(left !== right && left[0] === 0.25 && right[0] === -0.5,
+        "AudioBuffer mock channels have independent storage");
+
+    class SchedulingMockAudioContext extends MockAudioContext {
+        constructor() {
+            super();
+            this.createdBufferSources = [];
+        }
+
+        createBufferSource() {
+            const source = super.createBufferSource();
+            const start = source.start;
+            source.start = (when = 0, offset = 0, duration) => {
+                source.startTime = when;
+                source.offset = offset;
+                source.duration = duration;
+                start.call(source, when);
+            };
+            this.createdBufferSources.push(source);
+            return source;
+        }
+    }
+
+    const schedulingCtx = new SchedulingMockAudioContext();
+    Motif.ctx = schedulingCtx;
+    Motif.tempo = 120;
+    Track.clearRegistry();
+
+    const fitTrack = Track("shared-buffer-fit").note([60]).fit("1b", { mode: "repitch" });
+    fitTrack._sampleBuffer = sampleBuffer;
+    fitTrack._playSampleEvent({ value: 60, index: 0 }, 0, 0.5);
+    assert(Math.abs(schedulingCtx.createdBufferSources[0].playbackRate.value - 0.75) < 1e-9,
+        "fit scheduling derives playback rate 0.75 from a 1.5-second buffer and two-second bar");
+
+    const chopTrack = Track("shared-buffer-chop").note([4]).chop(6);
+    chopTrack._sampleBuffer = sampleBuffer;
+    chopTrack._playSampleEvent({ value: 4, index: 0 }, 0, 0.5);
+    const chopSource = schedulingCtx.createdBufferSources[1];
+    assert(Math.abs(chopSource.offset - 1) < 1e-9 && Math.abs(chopSource.duration - 0.25) < 1e-9,
+        "chop scheduling derives slice offset 1.0 and duration 0.25 from non-default buffer dimensions");
+
     // Drive splitStereo through the shared mock end-to-end (the runner's path):
     // must not throw "createChannelMerger is not a function".
     globalThis.window = globalThis;
@@ -8929,6 +9693,51 @@ console.log("\n=== Shared MockAudioContext: factory completeness ===");
     }
     assert(splitStereoThrew === null,
         `splitStereo through shared mock must not throw, got: ${splitStereoThrew}`);
+
+    const parent = Track("split-boundaries").freq([220, 440]).splitStereo(right => right.freq([660, 880]));
+    const splitRight = parent._rightTrack;
+    for (const splitAfter of [false, true]) {
+        const arranged = splitAfter ? Track("split-late").freq([330]) : parent;
+        Arrange([{ bars: 1, tracks: [] }, { bars: 1, tracks: [arranged] }, { bars: 1, tracks: [] }]);
+        if (splitAfter) arranged.splitStereo();
+        const shadow = arranged._rightTrack;
+        for (const time of [0.1, 1.9, 2, 3.9, 4, 6]) {
+            assert(shadow._isTimeActive(time) === (time >= 2 && time < 4),
+                `split ${splitAfter ? "after" : "before"} Arrange obeys boundary at ${time}`);
+        }
+        Arrange([{ bars: 1, tracks: [arranged] }]);
+        assert(shadow._isTimeActive(0.5) && !shadow._isTimeActive(2.5), "shadow follows replaced arrangement segments");
+        arranged._clearActiveSegments();
+        arranged.start(3).stop(5);
+        assert(!shadow._isTimeActive(2) && shadow._isTimeActive(4) && !shadow._isTimeActive(5), "shadow follows direct parent start/stop");
+        arranged._playbackStartTime = 10;
+        assert(shadow._isTimeActive(14) && !shadow._isTimeActive(4), "shadow boundaries use parent playback origin");
+    }
+    assert(splitRight._freqPattern.join() === "660,880", "parent arrangement edits preserve independent right pattern");
+    const early = Track("split-early").splitStereo().note([60]);
+    assert(early._rightTrack._notePattern === null, "notes assigned after splitting are not mirrored");
+    const occupied = Track("split-collision_right").note([60]);
+    let collision = false;
+    try { Track("split-collision").splitStereo(); } catch (error) { collision = /reserves Track ID/.test(error.message); }
+    assert(collision && trackRegistry.get(occupied.id) === occupied, "split rejects occupied right ID without overwriting it");
+
+    Track.clearRegistry();
+    const finishing = Track("split-finish").freq([440]).splitStereo();
+    finishing.start(2).stop(4);
+    finishing._playbackStartTime = 0;
+    finishing._rightTrack._playbackStartTime = 10;
+    finishing._schedule = finishing._rightTrack._schedule = () => {};
+    const transport = new MotifEngine();
+    transport.ctx = { currentTime: 5 };
+    transport.tempo = 120;
+    transport._arrangementEndBeat = 12;
+    transport.isPlaying = true;
+    transport.stop = () => { transport.isPlaying = false; };
+    transport._tick();
+    assert(transport.isPlaying, "split transport retains trailing empty section");
+    transport.ctx.currentTime = 6;
+    transport._tick();
+    assert(!transport.isPlaying, "independently registered shadow does not prevent transport completion");
 
     Track.clearRegistry();
     Bus.clearRegistry();
@@ -9004,7 +9813,7 @@ console.log("\n=== Granular perf: process() output equivalence (frozen reference
     const newInst = new NewClass();
     for (const inst of [refInst, newInst]) {
         // Each instance gets its own copy (processors mutate their buffers' owners over transfer).
-        inst.port.onmessage({ data: { leftBuffer: left.slice(), rightBuffer: right.slice() } });
+        inst.port.onmessage({ data: { leftBuffer: left.slice(), rightBuffer: right.slice(), bufferSampleRate: 44100 } });
         inst.port.onmessage({ data: { type: "START", startTime: 0 } });
     }
 
@@ -9085,6 +9894,7 @@ console.log("\n=== Granular perf: _postGranularChannels transfer list (throwaway
     t._postGranularChannels(mockSource, buffer);
 
     assert(posts.length === 1, "one post recorded for first trigger");
+    assert(posts[0].msg.bufferSampleRate === 44100, "granular transfer includes the AudioBuffer sample rate");
     assert(Array.isArray(posts[0].transfer), "post supplies a transfer list");
     assert(posts[0].transfer.length === 2, "stereo transfer list carries both channel ArrayBuffers");
     assert(posts[0].transfer[0] === posts[0].msg.leftBuffer.buffer,
@@ -9178,10 +9988,13 @@ console.log("\n=== Track.delay(): feedback-delay send sugar ===");
     assert(Math.abs(t3._delayBus.feedbackGainNode.gain.value - 0.95) < 1e-9,
         `feedback should clamp to 0.95, got ${t3._delayBus.feedbackGainNode.gain.value}`);
 
-    // Delay time is clamped below the 1s DelayNode max even for long musical values
-    const t4 = Track("t4").synth("saw").delay({ time: "4/1", feedback: 0.3 });
-    assert(t4._delayBus.feedbackDelayNode.delayTime.value <= 0.999,
-        `delay time should clamp to <= 0.999s, got ${t4._delayBus.feedbackDelayNode.delayTime.value}`);
+    // Long musical values remain exact when they fit the documented range
+    Motif.tempo = 126;
+    const t4 = Track("t4").synth("saw").delay({ time: "1/1", feedback: 0.3 });
+    const oneBarAt126 = (60 / 126) * Motif.beatsPerBar;
+    assert(Math.abs(t4._delayBus.feedbackDelayNode.delayTime.value - oneBarAt126) < 1e-9,
+        `one-bar delay at 126 BPM should remain ${oneBarAt126}s, got ${t4._delayBus.feedbackDelayNode.delayTime.value}`);
+    Motif.tempo = 120;
 
     // Defaults apply when called with no arguments (no throw)
     const t5 = Track("t5").synth("saw").delay();
@@ -9193,6 +10006,28 @@ console.log("\n=== Track.delay(): feedback-delay send sugar ===");
     assert(bells._delayBus === busRef, "repeated Track.delay() reuses the same internal bus");
     assert(Math.abs(bells._delayBus.feedbackGainNode.gain.value - 0.7) < 1e-9,
         `repeated delay() updates feedback amount to 0.7, got ${bells._delayBus.feedbackGainNode.gain.value}`);
+    const updatedSeconds = (1 / 4) * (60 / 120) * 4;
+    assert(Math.abs(bells._delayBus.feedbackDelayNode.delayTime.value - updatedSeconds) < 1e-9,
+        `repeated delay() updates time through Bus.feedback() to ${updatedSeconds}, got ${bells._delayBus.feedbackDelayNode.delayTime.value}`);
+
+    bells.delay({ feedback: 0.6 });
+    assert(Math.abs(bells._delayBus.feedbackDelayNode.delayTime.value - updatedSeconds) < 1e-9,
+        `repeated delay() without time should preserve ${updatedSeconds}, got ${bells._delayBus.feedbackDelayNode.delayTime.value}`);
+
+    const stableDelayNode = bells._delayBus.feedbackDelayNode;
+    let rejectedTrackTime = null;
+    try {
+        bells.delay({ time: 61, feedback: 0.9 });
+    } catch (error) {
+        rejectedTrackTime = error;
+    }
+    assert(rejectedTrackTime instanceof RangeError, "Track.delay() should reject times above 60 seconds");
+    assert(bells._delayBus.feedbackDelayNode === stableDelayNode,
+        "a rejected repeated Track.delay() call should retain its DelayNode");
+    assert(Math.abs(bells._delayBus.feedbackDelayNode.delayTime.value - updatedSeconds) < 1e-9,
+        "a rejected repeated Track.delay() call should preserve the valid delay time");
+    assert(Math.abs(bells._delayBus.feedbackGainNode.gain.value - 0.6) < 1e-9,
+        "a rejected repeated Track.delay() call should preserve the valid feedback amount");
 
     Motif.tempo = prevTempo;
     Track.clearRegistry();
@@ -9385,24 +10220,6 @@ console.log("\n=== Track.delay(): survives live-coder hot-reload prune ===");
 // ._invalidateProceduralSamples(); src/TrackVoiceManager.js: Track.sample())
 // =============================================================================
 
-// A createBuffer() that persists a real backing Float32Array so writes made
-// by the sample generator survive to be read back by the test (the base
-// MockAudioContext.createBuffer() hands out a fresh zeroed array on every
-// getChannelData() call, which throws away whatever a generator wrote).
-class SeedSampleMockCtx extends MockAudioContext {
-    createBuffer(numberOfChannels, length, sampleRate) {
-        const data = new Float32Array(length);
-        return {
-            numberOfChannels, length, sampleRate,
-            duration: length / sampleRate,
-            getChannelData: () => data,
-            copyToChannel(src) {
-                data.set(src);
-            },
-        };
-    }
-}
-
 console.log("\n=== Motif.sampleSeed(): default value ===");
 {
     assert(new MotifEngine()._sampleSeed === 0,
@@ -9413,7 +10230,7 @@ console.log("\n=== Motif.sampleSeed(): deterministic procedural sample rendering
 {
     const prevCtx = Motif.ctx;
     const prevSeed = Motif._sampleSeed;
-    Motif.ctx = new SeedSampleMockCtx();
+    Motif.ctx = new MockAudioContext();
 
     const NOISE_SAMPLE_ID = "snare-electronic";
 
@@ -9481,7 +10298,7 @@ console.log("\n=== Motif.sampleSeed(): reseeding invalidates already-rendered Tr
 {
     const prevCtx = Motif.ctx;
     const prevSeed = Motif._sampleSeed;
-    Motif.ctx = new SeedSampleMockCtx();
+    Motif.ctx = new MockAudioContext();
     Track.clearRegistry();
 
     const NOISE_SAMPLE_ID = "snare-electronic";
@@ -9537,6 +10354,2146 @@ console.log("\n=== Motif.sampleSeed(): reseeding invalidates already-rendered Tr
 }
 
 // =============================================================================
+// Offline clock scheduling
+// =============================================================================
+{
+    const engine = new MotifEngine();
+    engine.ctx = { currentTime: 0, state: "suspended" };
+    const fired = [];
+    engine.schedule(0.05, time => fired.push(time));
+    engine.tick();
+    assert(fired.length === 0, "real-time tick must leave suspended contexts untouched");
+    engine._tick();
+    assert(fired.length === 1 && fired[0] === 0.05, "offline tick must dispatch queued audio-clock events while suspended");
+    engine._tick();
+    assert(fired.length === 1, "offline ticks must not repeat dispatched callbacks");
+}
+
+console.log("\n=== Arrangement tempo map: shared real-time/offline scheduling ===");
+{
+    const saved = { ...Motif, stop: Motif.stop };
+    for (const mode of ["constant", "configured", "immediate", "smooth"]) {
+        for (const offline of [false, true]) {
+            Track.clearRegistry();
+            Motif.ctx = new MockAudioContext();
+            Motif.ctx.state = offline ? "suspended" : "running";
+            Motif.tempo = 120;
+            Motif._tempoMap = null;
+            Motif._tempoRamp = null;
+            Motif._schedQueue = [];
+            Motif.isPlaying = true;
+            Motif._arrangementOptions = {};
+            Motif.lookaheadWindowS = 0.1;
+            const calls = [];
+            const gainEvents = [];
+            const a = Track("tempo-a").note([60, 61, 62, 63]);
+            const b = Track("tempo-b").note([64, 65, 66, 67]);
+            a._gainRampsQueue = [Ramp(0, 1), Ramp(1, 0)];
+            a.trackInputNode = { gain: {
+                setValueAtTime(value, time) { gainEvents.push({ value, time }); },
+                linearRampToValueAtTime(value, time) { gainEvents.push({ value, time }); },
+                cancelAndHoldAtTime(time) { while (gainEvents.at(-1)?.time >= time) gainEvents.pop(); },
+            } };
+            for (const track of [a, b]) track._playEvent = (event, time, duration) => calls.push({ id: track.id, value: event.value, time, duration });
+            Arrange([{ tracks: [a], bars: 1 }, { tracks: [b], bars: 1 }, { tracks: [a], bars: 1 }, { tracks: [], bars: 1 }]);
+            if (mode === "configured") Motif.setTempo(240);
+            let finished = null;
+            Motif.stop = () => { finished = Motif.ctx.currentTime; Motif.isPlaying = false; };
+            Motif.onPlaybackFinished = null;
+            const tick = () => offline ? Motif._tick() : Motif.tick();
+            tick();
+            for (let n = 1; n < 1000 && finished === null; n++) {
+                Motif.ctx.currentTime = n / 40;
+                if (n === 30 && ["immediate", "smooth"].includes(mode)) {
+                    if (mode === "smooth") Motif.rampTempo(240, 2, { smooth: true });
+                    else Motif.setTempo(240);
+                }
+                tick();
+            }
+            // The previous tick at .725 committed through .825 seconds.
+            const change = 0.825;
+            const timeAt = beat => {
+                if (mode === "constant") return beat / 2;
+                if (mode === "configured") return beat / 4;
+                if (beat <= change * 2) return beat / 2;
+                const after = beat - change * 2;
+                if (mode === "immediate") return change + after / 4;
+                return after <= 6 ? change + Math.sqrt(4 + 2 * after) - 2 : change + 2 + (after - 6) / 4;
+            };
+            const label = `${mode} ${offline ? "offline" : "real-time"}`;
+            assert(calls.length === 12, `${label}: exactly four steps per active bar, repeated Track retains both windows`);
+            for (let beat = 0; beat < 12; beat++) {
+                const call = calls[beat];
+                assert(call && Math.abs(call.time - timeAt(beat)) < 1e-8, `${label}: beat ${beat} onset follows integrated tempo`);
+                assert(call?.id === (beat >= 4 && beat < 8 ? "tempo-b" : "tempo-a"), `${label}: beat ${beat} uses correct section`);
+            }
+            assert(finished >= timeAt(16) - 1e-8 && finished < timeAt(16) + 0.026, `${label}: final stop includes silent final bar`);
+            assert(gainEvents.some(event => event.value === 1 && Math.abs(event.time - timeAt(4)) < 1e-8), `${label}: first gain ramp ends at section exit`);
+            assert(gainEvents.some(event => event.value === 0 && Math.abs(event.time - timeAt(12)) < 1e-8), `${label}: reused Track's second gain ramp ends at its exit`);
+            const beatAt = time => {
+                if (mode === "constant") return time * 2;
+                if (mode === "configured") return time * 4;
+                if (time <= change) return time * 2;
+                const elapsed = time - change;
+                if (mode === "immediate") return change * 2 + elapsed * 4;
+                return change * 2 + (elapsed <= 2 ? elapsed * 2 + elapsed ** 2 / 2 : 6 + (elapsed - 2) * 4);
+            };
+            for (const event of gainEvents) {
+                const beat = beatAt(event.time);
+                const expected = beat <= 4 + 1e-8 ? beat / 4 : 1 - (beat - 8) / 4;
+                assert(Math.abs(event.value - expected) < 1e-8, `${label}: gain follows musical progress at ${event.time}`);
+            }
+        }
+    }
+    Track.clearRegistry();
+    Motif.ctx = new MockAudioContext();
+    Motif.ctx.state = "running";
+    Motif.tempo = 120;
+    Motif._tempoMap = null;
+    Motif._tempoRamp = null;
+    Motif.isPlaying = false;
+    const numeric = Track("tempo-seconds").note([60]).stepLength(0.1);
+    const numericEvents = [];
+    numeric._playEvent = (event, time) => numericEvents.push(time);
+    Arrange([{ tracks: [numeric], bars: .5 }]);
+    Motif.setTempo(60);
+    numeric._schedule(2.01);
+    assert(numericEvents.length === 20 && Math.abs(numericEvents[19] - 1.9) < 1e-8, "numeric-second steps retain clock spacing while arranged bars lengthen");
+    Track.clearRegistry();
+    Motif.ctx = new MockAudioContext();
+    Motif.tempo = 120;
+    Motif._tempoMap = null;
+    Motif.rampTempo(240, 2, { smooth: true });
+    Motif.ctx.currentTime = 1;
+    Motif.setTempo(60);
+    assert(Math.abs(Motif._beatAtTime(1) - 2.5) < 1e-8, "interrupting a smooth ramp preserves accumulated beats");
+    assert(Math.abs(Motif._timeAtBeat(4) - 2.5) < 1e-8, "immediate tempo replaces the rest of a smooth ramp");
+    Motif.ctx.currentTime = 2;
+    Motif._tick();
+    assert(Motif.tempo === 60, "cancelled smooth ramp does not overwrite a later immediate tempo");
+    for (const invalid of [Infinity, -1, NaN]) {
+        let threw = false;
+        try { Motif.setTempo(invalid); } catch { threw = true; }
+        assert(threw && Motif.tempo === 60, `invalid tempo ${invalid} leaves transport unchanged`);
+    }
+    Object.assign(Motif, saved);
+}
+
+console.log("\n=== Explicit pitch Ramp duration and gate ===");
+{
+    const saved = Object.fromEntries(["ctx", "tempo", "beatsPerBar", "_tempoMap", "_tempoMapContext", "_mappedTempo", "_tempoRamp", "isPlaying"].map(key => [key, Motif[key]]));
+    const savedRegistry = new Map(trackRegistry);
+    trackRegistry.clear();
+    const originalWorklet = globalThis.AudioWorkletNode;
+    const oscillators = [];
+    const worklets = [];
+    const record = param => {
+        param.calls = [];
+        param.setValueAtTime = (value, time) => param.calls.push({ op: "set", value, time });
+        param.linearRampToValueAtTime = (value, time) => param.calls.push({ op: "ramp", value, time });
+        return param;
+    };
+    Motif.ctx = new MockAudioContext();
+    Motif.tempo = 120;
+    Motif.beatsPerBar = 4;
+    Motif.isPlaying = false;
+    Motif._tempoMap = null;
+    const createOscillator = Motif.ctx.createOscillator.bind(Motif.ctx);
+    Motif.ctx.createOscillator = () => {
+        const osc = createOscillator();
+        record(osc.frequency);
+        osc.stop = time => { osc.stoppedAt = time; };
+        oscillators.push(osc);
+        return osc;
+    };
+    globalThis.AudioWorkletNode = class extends MockGainNode {
+        constructor() {
+            super();
+            this.parameters = new Map([["frequency", record(new MockAudioParam())]]);
+            this.port = { postMessage() {} };
+            worklets.push(this);
+        }
+    };
+    const { ensureSynthWorklet } = await import("./src/TrackVoiceManager.js");
+    await ensureSynthWorklet(Motif.ctx);
+    Motif.synthRegistry.set("pitch-duration-test", ({ p }) => Math.sin(p * Math.PI * 2));
+    let serial = 0;
+    try {
+        const sharedRamp = Object.freeze(Ramp(0, 7, "1/16"));
+        const cases = [
+            [sharedRamp, "C4", "major", false, 60, 72],
+            [sharedRamp, "D4", "minor", false, 62, 74],
+            [sharedRamp, "C4", "major", false, 60, 72],
+            [Ramp(-1, 2, "1/16"), "C4", "minor", false, 58, 63],
+            [Ramp(0, "C5", "1/16"), "C4", "major", false, 60, 72],
+            [Ramp("C4", 7, "1/16"), "C4", "major", false, 60, 72],
+            [Ramp(60, 72, "1/16"), undefined, undefined, false, 60, 72],
+            [Ramp(220, 440, "1/16"), "C4", "major", true, 220, 440],
+        ];
+        for (const [ramp, root, scale, freq, from, to] of cases) {
+            oscillators.length = 0;
+            const track = Track(`pitch-scale-${serial++}`).synth("sine");
+            if (root) track.scale(root, scale);
+            if (freq) track.freq([ramp]);
+            else track.note([ramp]);
+            track.trackInputNode = Motif.ctx.createGain();
+            track._playEvent({ value: ramp }, 1, 2);
+            const calls = oscillators[0].frequency.calls;
+            assert(calls.some(c => c.op === "set" && c.value === (freq ? from : midiToHz(from)) && c.time === 1), `${track.id}: mapped glide onset`);
+            assert(calls.some(c => c.op === "ramp" && c.value === (freq ? to : midiToHz(to)) && c.time === 1.125), `${track.id}: mapped glide target preserves explicit timing`);
+            if (!freq) {
+                oscillators.length = 0;
+                track.tuning("17-EDO");
+                track._playEvent({ value: ramp }, 4, 2);
+                assert(oscillators[0].frequency.calls.some(c => c.op === "set" && c.value === track._convertToTuningHz(from)), `${track.id}: scale onset passes through tuning`);
+                assert(oscillators[0].frequency.calls.some(c => c.op === "ramp" && c.value === track._convertToTuningHz(to)), `${track.id}: scale target passes through tuning`);
+            }
+        }
+        assert(sharedRamp.from === 0 && sharedRamp.to === 7 && sharedRamp.duration === "1/16", "shared scale Ramp stays unchanged across tracks and cycles");
+        for (const type of ["sine", "fm", "pluck", "pitch-duration-test"]) {
+            for (const [requested, expected] of [[undefined, 2], ["1/16", .125], [.3, .3], ["100ms", .1], ["2 bars", 2]]) {
+                oscillators.length = 0;
+                worklets.length = 0;
+                const track = Track(`pitch-duration-${serial++}`).synth(type).note([Ramp("C4", "C5", requested)]);
+                track.trackInputNode = Motif.ctx.createGain();
+                track._playEvent({ value: track._notePattern[0] }, 1, 2);
+                const param = type === "pitch-duration-test" ? worklets[0].parameters.get("frequency") : oscillators[0].frequency;
+                assert(param.calls.some(c => c.op === "set" && c.value === midiToHz("C4") && c.time === 1), `${type} ${requested}: starts at C4 at onset`);
+                assert(param.calls.some(c => c.op === "ramp" && c.value === midiToHz("C5") && Math.abs(c.time - 1 - expected) < 1e-9), `${type} ${requested}: reaches C5 at requested/clamped glide end`);
+                assert([...track._activeVoices.values()][0].endTime === 3.015, `${type} ${requested}: gate and release remain two seconds plus fade`);
+                if (type === "fm") {
+                    assert(oscillators[1].frequency.calls.some(c => c.op === "ramp" && c.value === midiToHz("C5") * 2 && Math.abs(c.time - 1 - expected) < 1e-9), `FM ${requested}: modulator follows glide duration`);
+                }
+            }
+        }
+        oscillators.length = 0;
+        const chord = Track(`pitch-duration-${serial++}`).note([Parallel(Ramp("C4", "C5", "1/16"), Ramp("E4", "E5"))]).stepLength("1 bar");
+        chord.trackInputNode = Motif.ctx.createGain();
+        chord._schedule(.1);
+        assert(oscillators.length === 2 && oscillators[0].frequency.calls.at(-1).time === .125 && oscillators[1].frequency.calls.at(-1).time === 2, "scheduled Parallel pitch Ramps retain explicit and omitted durations independently");
+        oscillators.length = 0;
+        const hzTrack = Track(`pitch-duration-${serial++}`).freq([Ramp(220, 440, .25)]);
+        hzTrack.trackInputNode = Motif.ctx.createGain();
+        hzTrack._playEvent({ value: Ramp(220, 440, .25) }, 1, 2);
+        assert(oscillators[0].frequency.calls.at(-1).value === 440 && oscillators[0].frequency.calls.at(-1).time === 1.25, "freq Ramp endpoints stay in Hz with explicit duration");
+        for (const invalid of [0, -1, Infinity, NaN, "invalid"]) {
+            const before = oscillators.length;
+            let error;
+            try { hzTrack._playEvent({ value: Ramp(220, 440, invalid) }, 1, 2); } catch (e) { error = e; }
+            assert(error?.message.includes("finite and positive") && oscillators.length === before, `invalid pitch duration ${invalid} rejects before allocating audio`);
+        }
+        for (const kind of ["sample", "sampler", "noise"]) {
+            const track = Track(`pitch-duration-${serial++}`).note([Ramp("C4", "C5")]);
+            track._useSample = kind === "sample";
+            track._useSampler = kind === "sampler";
+            if (kind === "noise") track.synth("noise");
+            let error;
+            try { track._playEvent({ value: Ramp("C4", "C5") }, 1, 2); } catch (e) { error = e; }
+            assert(error?.message.includes("requires a pitched synth") && track._activeVoices.size === 0, `${kind} rejects pitch Ramps explicitly even before buffers load`);
+        }
+        chord._scheduledUntil = 0;
+        Motif.rampTempo(240, 2, { smooth: true });
+        oscillators.length = 0;
+        hzTrack._playEvent({ value: Ramp(220, 440, "1 beat") }, 1, 2);
+        assert(Math.abs(oscillators[0].frequency.calls.at(-1).time - (Math.sqrt(11) - 2)) < 1e-9, "musical pitch duration integrates the tempo ramp from note onset");
+        hzTrack._playEvent({ value: Ramp(220, 440, .25) }, 1, 2);
+        assert(oscillators[1].frequency.calls.at(-1).time === 1.25, "numeric pitch duration stays clock-based under tempo ramp");
+        Motif.ctx = new MockAudioContext();
+        Motif.tempo = 120;
+        Motif._tempoMap = null;
+        let ready;
+        Motif.ctx.audioWorklet.addModule = () => new Promise(resolve => { ready = resolve; });
+        const late = Track(`pitch-duration-${serial++}`).synth("pitch-duration-test");
+        late.trackInputNode = Motif.ctx.createGain();
+        worklets.length = 0;
+        late._playEvent({ value: Ramp("C4", "C5", .125) }, 1, 2);
+        Motif.ctx.currentTime = 1.1;
+        ready();
+        await ensureSynthWorklet(Motif.ctx);
+        const lateCalls = worklets[0].parameters.get("frequency").calls;
+        assert(Math.abs(lateCalls[0].value - (midiToHz("C4") + .8 * (midiToHz("C5") - midiToHz("C4")))) < 1e-8, "late custom worklet starts at elapsed glide pitch");
+        assert(lateCalls.at(-1).time === 1.125, "late custom worklet retains original pitch endpoint time");
+    } finally {
+        for (let n = 0; n < serial; n++) trackRegistry.delete(`pitch-duration-${n}`);
+        for (const [id, track] of savedRegistry) trackRegistry.set(id, track);
+        Motif.synthRegistry.delete("pitch-duration-test");
+        globalThis.AudioWorkletNode = originalWorklet;
+        Object.assign(Motif, saved);
+    }
+}
+
+console.log("\n=== Chord Tie Associations and Voice Cleanup ===");
+{
+    const savedCtx = Motif.ctx;
+    const savedTempo = Motif.tempo;
+    Motif.ctx = new MockAudioContext();
+    Motif.tempo = 120;
+    const track = Track("chord-tie-regression").synth("sine")
+        .envelope({ attack: .01, decay: .01, sustain: .5, release: .05 });
+    track.trackInputNode = Motif.ctx.createGain();
+    const play = (events, cycle = 0, offset = 0) => {
+        for (const event of [...events].sort((a, b) => a.startTime - b.startTime)) {
+            track._playEvent({ ...event, tieCycle: cycle }, offset + event.startTime * 2, event.duration * 2);
+        }
+    };
+    try {
+        const chord = PatternParser.parse([Parallel("C4", "E4", "G4"), Tie, null, null]);
+        play(chord);
+        assert(track._activeVoices.size === 3, "chord Tie holds original voices without retriggering");
+        assert([...track._activeVoices.values()].every(v => v.endTime === 1.05), "final chord Tie releases all three voices with the envelope tail");
+        Motif.ctx.currentTime = 1.2;
+        track._cleanupActiveVoices();
+        assert(track._activeVoices.size === 0, "released chord voices leave the voice pool");
+        Motif.ctx.currentTime = 0;
+
+        const nested = PatternParser.parse([Parallel(["C4", Tie], ["E4", null]), null]);
+        play(nested);
+        const nestedVoices = [...track._activeVoices.values()];
+        assert(nestedVoices[0].endTime === 1.05, "nested Tie releases its own branch voice");
+        assert(nestedVoices[1].endTime === .55, "nested Tie does not extend a simultaneous sibling note");
+        track._activeVoices.clear();
+
+        const forked = PatternParser.parse([Parallel("C4", "E4"), Parallel([Tie, null], Tie), null]);
+        play(forked);
+        assert([...track._activeVoices.values()].every(v => Math.abs(v.endTime - (4 / 3 + .05)) < 1e-9), "parallel continuations of one chord hold all voices until the longest continuation ends");
+        track._activeVoices.clear();
+
+        const independent = PatternParser.parse([Parallel(["C4", Tie, Tie, null], ["E4", Tie, null, null]), null]);
+        play(independent);
+        const independentVoices = [...track._activeVoices.values()];
+        assert(independentVoices[0].endTime === .8, "parallel Tie chains retain independent final releases");
+        assert(independentVoices[1].endTime === .55, "a longer sibling Tie chain cannot extend the shorter chain");
+        track._activeVoices.clear();
+
+        play(PatternParser.parse(["G4"]));
+        const unrelated = [...track._activeVoices.values()][0];
+        play(PatternParser.parse([Tie, null]));
+        assert(unrelated.endTime === 2.05, "an orphan Tie cannot capture an unrelated active voice");
+        track._activeVoices.clear();
+
+        const staggered = PatternParser.parse([Parallel("C4", ["E4", "G4"]), Tie, Tie, null]);
+        play(staggered);
+        const staggeredVoices = [...track._activeVoices.values()];
+        assert(staggeredVoices[0].endTime === 1.55 && staggeredVoices[2].endTime === 1.55, "outer Tie chain holds all notes ending at its boundary despite different onsets");
+        assert(staggeredVoices[1].endTime === .3, "outer Tie leaves an earlier completed subdivision alone");
+        track._activeVoices.clear();
+
+        play(chord.slice(0, 3), 0);
+        const older = [...track._activeVoices.values()];
+        play(chord.slice(0, 3), 1, .1);
+        const newer = [...track._activeVoices.values()].slice(3);
+        play(chord.slice(3), 1, .1);
+        assert(older.every(v => v.endTime === .55), "a later cycle's Tie cannot extend an older overlapping chord beyond its fallback release");
+        assert(newer.every(v => Math.abs(v.endTime - 1.15) < 1e-9), "a later cycle's Tie releases every voice from that cycle");
+        play(chord.slice(3), 0);
+        assert(older.every(v => v.endTime === 1.05), "older chord remains associated with its own Tie");
+        track._activeVoices.clear();
+
+        track._envelope = null;
+        const buffer = Motif.ctx.createBuffer(1, 96000, 48000);
+        for (const event of chord.slice(0, 3)) track._playAudioBuffer(buffer, 0, .5, 1, event);
+        track._playEvent(chord[3], .5, .5);
+        assert([...track._activeVoices.values()].every(v => v.endTime === 1), "sample chord Tie releases every buffer voice without an envelope");
+    } finally {
+        track._activeVoices.clear();
+        trackRegistry.delete(track.id);
+        Motif.ctx = savedCtx;
+        Motif.tempo = savedTempo;
+    }
+}
+
+console.log("\n=== Missing and Transformed Tie Continuations ===");
+{
+    const saved = { ctx: Motif.ctx, tempo: Motif.tempo, map: Motif._tempoMap };
+    const savedRegistry = new Map(trackRegistry);
+    Track.clearRegistry();
+    Motif.ctx = new MockAudioContext();
+    Motif.tempo = 120;
+    Motif._tempoMap = null;
+    let serial = 0;
+    const make = pattern => {
+        const track = Track(`bounded-tie-${serial++}`).synth("sine").note(pattern)
+            .envelope({ attack: .01, decay: .01, sustain: .5, release: .05 });
+        track.trackInputNode = Motif.ctx.createGain();
+        return track;
+    };
+    const ends = track => [...track._activeVoices.values()].map(voice => voice.endTime);
+    const expectEnds = (track, expected, message) => {
+        const actual = ends(track);
+        assert(actual.length === expected.length && actual.every((end, i) => Math.abs(end - expected[i]) < 1e-9),
+            `${message}; expected ${expected}, got ${actual}`);
+    };
+    try {
+        const masked = make([60, Tie, null, null]).mask([true, false, true, true]);
+        masked._schedule(1.2);
+        expectEnds(masked, [.55], "masked Tie releases at the original gate");
+
+        const degraded = make([60, Tie]).seed(4).degrade(.5);
+        degraded._schedule(1.2);
+        expectEnds(degraded, [1.05], "deterministically degraded Tie releases its surviving note");
+
+        const chain = make([60, Tie, Tie, null]).mask([true, true, false, true]);
+        chain._schedule(1.6);
+        expectEnds(chain, [1.05], "removed later continuation releases at the last surviving Tie gate");
+
+        const replaced = make([60, Tie, null, null]).mask([false, true], event => ({ ...event, value: 64 }));
+        replaced._schedule(1.2);
+        expectEnds(replaced, [.55, 1.05], "transforming a Tie into a pitch removes its old association");
+
+        const reverse = make([60, Tie, null, null]).every(1, events => events.rev());
+        reverse._schedule(2);
+        expectEnds(reverse, [2.05], "reversed orphan Tie cannot hold the later note");
+
+        const ratchet = make([60, Tie, null, null]).mutate({ chance: 1, actions: { ratchet: 1 } });
+        ratchet._schedule(1.2);
+        expectEnds(ratchet, [.3, 1.05], "ratchet holds only the note ending at the first Tie boundary");
+
+        const reordered = make([60, Tie, null, null]).every(1, events => [...events].reverse());
+        reordered._schedule(1.2);
+        expectEnds(reordered, [1.05], "reordered transformed events still consume continuations after their note");
+
+        const fast = make([60, Tie, null, null]).every(1, events => events.fast(2));
+        fast._schedule(1);
+        expectEnds(fast, [.55], "faster structural timing retains an intact Tie");
+
+        const offset = make([60, Tie, null, null]).offset("1/8");
+        offset._schedule(1.5);
+        expectEnds(offset, [1.05, 1.3], "offset copies retain distinct continuation identities");
+
+        const branches = make([Parallel([60, Tie, Tie, null], [64, Tie, null, null]), null])
+            .mask([true, true, true, true, true, false, true, true, true]);
+        branches._schedule(1.5);
+        expectEnds(branches, [.8, .3], "reconciled Tie chains preserve independent Parallel branches");
+
+        const staggered = make([Parallel(60, [64, 67]), Tie, Tie, null]).every(1, events => events);
+        staggered._schedule(1.6);
+        expectEnds(staggered, [1.55, .3, 1.55], "reconciled outer Tie holds staggered chord endings");
+
+        const swung = make([60, Tie, null, null]).swing(1);
+        swung._schedule(.1);
+        expectEnds(swung, [5 / 6 + .05], "swung continuation bounds the pending release at its delayed onset");
+        swung._schedule(1.5);
+        expectEnds(swung, [4 / 3 + .05], "intact swung Tie extends the same voice across the timing gap");
+
+        const inactive = make([60, Tie, null, null]).start(0).stop(.4);
+        inactive._schedule(1.2);
+        expectEnds(inactive, [.55], "inactive continuation leaves a bounded fallback release");
+
+        const clipped = make([60, Tie, null, null]).loopLength(.4);
+        clipped._schedule(.1);
+        expectEnds(clipped, [.45], "loop-clipped continuation releases at the clipped gate");
+
+        const stalled = make([60, Tie, null, null]);
+        stalled._schedule(.1);
+        expectEnds(stalled, [.55], "a tied note submits its fallback before any continuation runs");
+        Motif.ctx.currentTime = .75;
+        stalled._schedule(.85);
+        expectEnds(stalled, [], "scheduler stall skips the Tie and cleans the released voice");
+        Motif.ctx.currentTime = 0;
+
+        Track.clearRegistry();
+        const slowed = make([60, Tie, null, null]);
+        slowed._schedule(.1);
+        Motif.ctx.currentTime = .2;
+        Motif.setTempo(60);
+        slowed._schedule(.3);
+        expectEnds(slowed, [.85], "live tempo slowdown moves the pending fallback to the later continuation onset");
+        for (let time = .225; time < 1.5; time += .025) {
+            Motif.ctx.currentTime = time;
+            slowed._schedule(time + .1);
+        }
+        expectEnds(slowed, [1.85], "slowed intact Tie extends and releases at its new gate");
+        Motif.ctx.currentTime = 0;
+        Motif.tempo = 120;
+        Motif._tempoMap = null;
+
+        for (const useEnvelope of [false, true]) {
+            const sample = make([60, Tie, null, null]);
+            if (!useEnvelope) sample._envelope = null;
+            sample._useSample = true;
+            sample._sampleBuffer = Motif.ctx.createBuffer(1, 192000, 48000);
+            sample.mask([true, false, true, true]);
+            sample._schedule(1.2);
+            expectEnds(sample, [useEnvelope ? .55 : .505], `removed sample Tie has a finite stop (envelope=${useEnvelope})`);
+
+            const intact = make([60, Tie, null, null]);
+            if (!useEnvelope) intact._envelope = null;
+            intact._useSample = true;
+            intact._sampleBuffer = sample._sampleBuffer;
+            intact._schedule(1.2);
+            expectEnds(intact, [useEnvelope ? 1.05 : 1], `intact sample Tie extends its pending stop (envelope=${useEnvelope})`);
+        }
+    } finally {
+        Track.clearRegistry();
+        for (const [id, track] of savedRegistry) trackRegistry.set(id, track);
+        Motif.ctx = saved.ctx;
+        Motif.tempo = saved.tempo;
+        Motif._tempoMap = saved.map;
+    }
+}
+
+console.log("\n=== Gain signals: shared destinations and replacement ===");
+{
+    const savedCtx = Motif.ctx;
+    Motif.ctx = new MockAudioContext();
+    const signal = LFO.sine({ min: .04, max: .09, frequency: 1 });
+    const a = Track("gain-signal-a").gain(signal).pan(0);
+    const b = Track("gain-signal-b").pan(0).gain(signal);
+    const events = [];
+    const originalDisconnect = signal.disconnect.bind(signal);
+    signal.disconnect = target => { events.push(target); return originalDisconnect(target); };
+    const gate = a._gainSignalGate;
+    a.gain(.3);
+    assert(events.length === 1 && events[0] === gate, "scalar gain disconnects only its shared signal destination");
+    assert(b._gainSignal === signal && b._gainSignalGate.gain.value === 1, "shared signal remains active on the other track");
+    assert(a.trackInputNode.gain.value === .3, "scalar replacement is an absolute track level");
+    a.gain(signal);
+    const replacement = LFO.sine({ min: .2, max: .4, frequency: 1 });
+    a.gain(replacement);
+    assert(a._gainSignal === replacement && events.length === 2, "replacement signal detaches the previous destination");
+    assert(a.trackInputNode.gain.value === 0, "signal input has no intrinsic unity offset");
+    const gateEvents = [];
+    a._gainSignalGate.gain.setValueAtTime = (value, time) => gateEvents.push({ value, time });
+    a._gainSignalGate.gain.cancelScheduledValues = time => {
+        while (gateEvents.at(-1)?.time >= time) gateEvents.pop();
+    };
+    const arrangedRamp = {};
+    a._suspendGainSignal(2, arrangedRamp);
+    a._suspendGainSignal(3, arrangedRamp);
+    assert(gateEvents.at(-1).time === 3 && !gateEvents.some(event => event.time === 2), "tempo re-anchoring moves the pending signal cutoff");
+    a._suspendGainSignal(4, {});
+    assert(gateEvents.at(-1).time === 3, "a later section cannot delay the first signal cutoff");
+    const preservedGate = a._gainSignalGate;
+    a.pan(.1);
+    assert(a._gainSignalGate === preservedGate, "effect edits preserve an existing signal binding");
+    a.gain(0);
+    b.gain(0);
+    trackRegistry.delete(a.id);
+    trackRegistry.delete(b.id);
+    Motif.ctx = savedCtx;
+}
+
+console.log("\n=== Granular stretching: stereo output and channel selection ===");
+{
+    const savedCtx = Motif.ctx;
+    const savedWorklet = globalThis.AudioWorkletNode;
+    const created = [];
+    class GranularWorkletNode extends MockGainNode {
+        constructor(ctx, name, options) {
+            super();
+            this.name = name;
+            this.options = options;
+            this.messages = [];
+            this.parameters = new Map([
+                ["stretchFactor", new MockAudioParam()],
+                ["pitchRatio", new MockAudioParam()],
+                ["grainSize", new MockAudioParam()],
+                ["overlap", new MockAudioParam()],
+            ]);
+            this.port = { postMessage: (message, transfer) => this.messages.push({ message, transfer }) };
+            created.push(this);
+        }
+    }
+
+    try {
+        Motif.ctx = new MockAudioContext();
+        globalThis.AudioWorkletNode = GranularWorkletNode;
+        const stereo = Motif.ctx.createBuffer(2, 4, 48000);
+        stereo.copyToChannel(new Float32Array([1, 2, 3, 4]), 0);
+        stereo.copyToChannel(new Float32Array([5, 6, 7, 8]), 1);
+
+        const play = track => {
+            track.trackInputNode = Motif.ctx.createGain();
+            track._playAudioBuffer(stereo, 0, 1, 1, { value: 60, index: 0 });
+            return created.at(-1);
+        };
+
+        const stereoTrack = Track("granular-stereo").fit(2, { mode: "stretch" });
+        const first = play(stereoTrack);
+        const firstChannels = first.messages[0].message;
+        assert(first.name === "granular-stretcher" && first.options.numberOfInputs === 0 && first.options.numberOfOutputs === 1
+            && first.options.outputChannelCount.length === 1 && first.options.outputChannelCount[0] === 2,
+        "granular worklet explicitly allocates one stereo output");
+        assert(firstChannels.leftBuffer.join() === "1,2,3,4" && firstChannels.rightBuffer.join() === "5,6,7,8",
+            "granular stereo playback transfers both distinct source channels");
+        assert(first.messages[0].transfer.length === 2 && first.messages[0].transfer[0] !== first.messages[0].transfer[1],
+            "granular stereo playback transfers one fresh buffer per channel");
+
+        const second = play(stereoTrack);
+        assert(second.messages[0].message.leftBuffer !== firstChannels.leftBuffer
+            && second.messages[0].message.rightBuffer !== firstChannels.rightBuffer,
+        "repeated granular notes retain fresh transferable channel copies");
+
+        const mono = Motif.ctx.createBuffer(1, 4, 48000);
+        mono.copyToChannel(new Float32Array([9, 10, 11, 12]), 0);
+        const monoTrack = Track("granular-mono").fit(2, { mode: "stretch" });
+        monoTrack.trackInputNode = Motif.ctx.createGain();
+        monoTrack._playAudioBuffer(mono, 0, 1, 1, { value: 60, index: 0 });
+        const monoPost = created.at(-1).messages[0];
+        assert(monoPost.message.leftBuffer === monoPost.message.rightBuffer && monoPost.transfer.length === 1,
+            "granular mono playback duplicates one transferred source channel safely");
+
+        const split = Track("granular-split").sample(stereo).fit(2, { mode: "stretch" }).note([60]).splitStereo(right => right.fit(2, { mode: "stretch" }));
+        const splitLeft = play(split).messages[0].message;
+        const splitRight = play(split._rightTrack).messages[0].message;
+        assert(splitLeft.leftBuffer.join() === "1,2,3,4" && splitLeft.rightBuffer === splitLeft.leftBuffer,
+            "granular split parent selects and duplicates only the left source channel");
+        assert(splitRight.leftBuffer.join() === "5,6,7,8" && splitRight.rightBuffer === splitRight.leftBuffer,
+            "granular split shadow selects and duplicates only the right source channel");
+    } finally {
+        Track.clearRegistry();
+        Motif.ctx = savedCtx;
+        globalThis.AudioWorkletNode = savedWorklet;
+    }
+}
+
+// Slice scheduling shares nested parser timing and keeps pitch independent of selection.
+{
+    const slices = [0, 1, [2, 2], -1];
+    const track = Track("slice-contract").chop(4).pattern(slices);
+    assert(track._parsedEvents.length === 5, "slice patterns create five events without note triggers");
+    assert(track._parsedEvents.map(event => event.startTime).join() === "0,0.25,0.5,0.625,0.75",
+        "nested slice onset fractions subdivide the third slot");
+    assert(track._parsedEvents.map(event => event.duration).join() === "0.25,0.25,0.125,0.125,0.25",
+        "nested slices inherit subdivided gate durations");
+    assert(track._parsedEvents.every(event => event.value === 60), "slice indices default to native MIDI60 pitch");
+    assert(track._parsedEvents.map(event => event.sliceIndex).join() === "0,1,2,2,-1", "slice selection is separate event metadata");
+    track.note([60, null, 72, 67]);
+    assert(track._parsedEvents.map(event => event.value).join() === "60,,72,72,67", "explicit pitches and rests apply to nested slice onsets");
+    const reverseOrder = Track("slice-contract-order").note([60, null, 72, 67]).pattern(slices);
+    assert(reverseOrder._parsedEvents.map(event => event.value).join() === track._parsedEvents.map(event => event.value).join(),
+        "note and slice setters are independent of chaining order");
+    track.pattern(null);
+    assert(track._parsedEvents.length === 4 && track._parsedEvents[2].sliceIndex === undefined, "pattern(null) restores explicit note rhythm");
+    let invalid = 0;
+    for (const value of [[NaN], [[1.5]], [Infinity], ["2"], 1, new Array(2)]) {
+        try { track.pattern(value); } catch { invalid++; }
+    }
+    assert(invalid === 6 && track._parsedEvents.length === 4, "invalid slice patterns fail before changing scheduler events");
+    track.pattern([]);
+    assert(track._parsedEvents.length === 0, "empty slice pattern is silent");
+    Track.clearRegistry();
+}
+
+{
+    const saved = { ctx: Motif.ctx, tempo: Motif.tempo, map: Motif._tempoMap };
+    const ctx = new MockAudioContext();
+    const sources = [];
+    ctx.createBufferSource = () => {
+        const source = { playbackRate: new MockAudioParam(1), connect() {}, disconnect() {},
+            start(time, offset, duration) { Object.assign(this, { time, offset, duration }); },
+            stop(stopTime) { this.stopTime = stopTime; } };
+        sources.push(source);
+        return source;
+    };
+    Motif.ctx = ctx;
+    Motif.tempo = 120;
+    Motif._tempoMap = null;
+    try {
+        const track = Track("slice-scheduled").chop(4).pattern([0, 1, [2, 2], -1]).stepLength(1)
+            .fit(4, { mode: "repitch" }).scale("C5", "major");
+        track._useSample = true;
+        track._sampleBuffer = ctx.createBuffer(2, 96000, 48000);
+        track._schedule(4);
+        assert(sources.length === 5 && sources.map(source => source.time).join() === "0,1,2,2.5,3",
+            "scheduler submits exactly five nested slice sources at the specified clock onsets");
+        assert(sources.map(source => source.offset).join() === "0,0.5,1,1,1.5",
+            "sample sources receive correct repeated and wrapped slice offsets");
+        assert(sources.every(source => source.duration === 0.5 && source.playbackRate.value === 0.5),
+            "native slices preserve fit rate even with an active scale");
+        assert(Math.abs(sources[2].stopTime - 2.505) < 1e-9 && sources[4].stopTime === 4,
+            "nested sources stop at subdivided gates with release and final slice stops at fitted end");
+        track.note([0, 0, 0, 0]);
+        track._playEvent(track._parsedEvents[0], 5, 1);
+        assert(sources.at(-1).playbackRate.value === 1, "explicit notes retain C5 scale mapping while slice offsets remain independent");
+        track.every(1, events => events.rev());
+        const reversed = track._getCycleEvents(0);
+        assert(reversed[0].sliceIndex === -1 && reversed[1].sliceIndex === 2,
+            "event transforms preserve slice selection with their moved onsets");
+        track.note(null);
+        assert(track._parsedEvents.every(event => event.value === null), "explicit scalar null pitch silences slice triggers");
+        const chord = Track("slice-chord").note([Parallel(60, 72)]).pattern([0, [1, 2]]);
+        assert(chord._parsedEvents.length === 6 && chord._parsedEvents[3].sliceIndex === 1,
+            "parallel pitches allocate independent voices at nested slice onsets");
+    } finally {
+        Track.clearRegistry();
+        Motif.ctx = saved.ctx;
+        Motif.tempo = saved.tempo;
+        Motif._tempoMap = saved.map;
+    }
+}
+
+// =============================================================================
+// Track source readiness: startup, failures, supersession, and live edits
+// =============================================================================
+console.log("\n=== Track source readiness ===");
+{
+    const savedMotif = { ...Motif };
+    const savedFetch = globalThis.fetch;
+    const savedError = console.error;
+    const ctx = new MockAudioContext();
+    const buffer = ctx.createBuffer(1, 44100, 44100);
+    const errors = [];
+    const flush = () => new Promise(resolve => setTimeout(resolve, 0));
+    const deferred = () => {
+        let resolve, reject;
+        const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+        return { promise, resolve, reject };
+    };
+    let oscillatorCalls = 0;
+    let bufferCalls = 0;
+    const createOscillator = ctx.createOscillator.bind(ctx);
+    const createBufferSource = ctx.createBufferSource.bind(ctx);
+    ctx.createOscillator = () => { oscillatorCalls++; return createOscillator(); };
+    ctx.createBufferSource = () => { bufferCalls++; return createBufferSource(); };
+    console.error = (...args) => errors.push(args);
+    Object.assign(Motif, {
+        ctx,
+        masterGain: ctx.createGain(),
+        sampleRegistry: new Map(),
+        _loadingSamples: [],
+        _masterLimiterEnabled: false,
+        _startScheduler() {},
+        _stopScheduler() {},
+        isPlaying: false,
+        _suspendedByEngine: false,
+    });
+    const configure = (track, kind, path) => kind === "sample"
+        ? track.sample(path)
+        : track.sampler({ urls: { C4: path } });
+    const reset = () => {
+        Track.clearRegistry();
+        Motif.isPlaying = false;
+        Motif._debugPlaybackStart = null;
+    };
+
+    try {
+        Track.clearRegistry();
+        Motif.sampleRegistry.set("readiness-buffer", buffer);
+        for (const kind of ["sample", "sampler"]) {
+            const track = configure(Track(`readiness-registered-${kind}`).note([60]), kind, "readiness-buffer");
+            const starting = Motif.start();
+            assert(!Motif.isPlaying, `readiness: registered ${kind} buffer adoption precedes startup`);
+            await starting;
+            const previousBuffers = bufferCalls;
+            track._playEvent(track._parsedEvents[0], 0, 1);
+            assert(Motif.isPlaying && bufferCalls === previousBuffers + 1,
+                `readiness: registered ${kind} is playable when start resolves`);
+            reset();
+        }
+
+        for (const kind of ["sample", "sampler"]) {
+            const pending = deferred();
+            Motif._loadAndCacheBuffer = () => pending.promise;
+            const track = configure(Track(`readiness-failure-${kind}`).note([60]), kind, "failure.wav");
+            let resolved = false;
+            const starting = Motif.start().then(() => { resolved = true; });
+            await flush();
+            assert(!resolved && !Motif.isPlaying, `readiness: slow ${kind} blocks startup`);
+            const previousOscillators = oscillatorCalls;
+            track._playEvent(track._parsedEvents[0], 0, 1);
+            assert(oscillatorCalls === previousOscillators, `readiness: pending ${kind} cannot synthesize`);
+            const previousErrors = errors.length;
+            pending.reject(new Error("unavailable source"));
+            await starting;
+            track._playEvent(track._parsedEvents[0], 0, 1);
+            assert(Motif.isPlaying && oscillatorCalls === previousOscillators,
+                `readiness: failed ${kind} starts silently without synth fallback`);
+            assert(errors.length === previousErrors + 1, `readiness: failed ${kind} logs its load error`);
+            reset();
+        }
+
+        for (const kind of ["sample", "sampler"]) {
+            Motif.sampleRegistry.set("readiness-broken-generator", () => { throw null; });
+            const track = configure(Track(`readiness-generator-${kind}`).note([60]), kind, "readiness-broken-generator");
+            await Motif.start();
+            const previousOscillators = oscillatorCalls;
+            track._playEvent(track._parsedEvents[0], 0, 1);
+            assert(Motif.isPlaying && oscillatorCalls === previousOscillators,
+                `readiness: throwing ${kind} generator follows the logged silent-source policy`);
+            reset();
+        }
+
+        const concurrent = [deferred(), deferred(), deferred()];
+        Motif._loadAndCacheBuffer = path => concurrent[Number(path)].promise;
+        Track("readiness-concurrent-sample").sample("0").note([60]);
+        Track("readiness-concurrent-sampler").sampler({ urls: { C4: "1" } }).note([60]);
+        let concurrentResolved = false;
+        const concurrentStart = Motif.start().then(() => { concurrentResolved = true; });
+        await flush();
+        Track("readiness-added-during-start").sample("2").note([60]);
+        concurrent[0].resolve(buffer);
+        concurrent[1].resolve(buffer);
+        await flush();
+        assert(!concurrentResolved && !Motif.isPlaying, "readiness: tracks added during startup join current source readiness");
+        concurrent[2].resolve(buffer);
+        await concurrentStart;
+        assert(Motif.isPlaying, "readiness: all concurrent current track loads release startup");
+        reset();
+
+        const good = deferred();
+        const bad = deferred();
+        Motif._loadAndCacheBuffer = path => path === "good.wav" ? good.promise : bad.promise;
+        const partial = Track("readiness-partial").sampler({ urls: { C4: "good.wav", G4: "bad.wav" } }).note([67]);
+        let partialResolved = false;
+        const partialStart = Motif.start().then(() => { partialResolved = true; });
+        good.resolve(buffer);
+        await flush();
+        assert(!partialResolved && !Motif.isPlaying, "readiness: sampler waits for every zone to settle");
+        bad.reject(new Error("missing zone"));
+        await partialStart;
+        let playedBuffer, playedRate;
+        partial._playAudioBuffer = (value, time, duration, rate) => { playedBuffer = value; playedRate = rate; };
+        partial._playEvent(partial._parsedEvents[0], 0, 1);
+        assert(playedBuffer === buffer && Math.abs(playedRate - Math.pow(2, 7 / 12)) < 1e-9,
+            "readiness: partial sampler uses the nearest successfully loaded zone");
+        reset();
+
+        const empty = Track("readiness-empty").sampler({ urls: {} }).note([60]);
+        await Motif.start();
+        const beforeEmpty = oscillatorCalls;
+        empty._playEvent(empty._parsedEvents[0], 0, 1);
+        assert(Motif.isPlaying && oscillatorCalls === beforeEmpty, "readiness: empty sampler starts silently");
+        reset();
+
+        for (const from of ["sample", "sampler"]) {
+            for (const to of ["sample", "sampler", "synth", "remove"]) {
+                const old = deferred();
+                const current = deferred();
+                Motif._loadAndCacheBuffer = path => path === "old.wav" ? old.promise : current.promise;
+                const track = configure(Track(`readiness-replace-${from}-${to}`).note([60]), from, "old.wav");
+                let resolved = false;
+                const starting = Motif.start().then(() => { resolved = true; });
+                await flush();
+                if (to === "synth") track.synth("triangle");
+                else if (to === "remove") track.sample(null);
+                else configure(track, to, "current.wav");
+                await flush();
+                if (to === "sample" || to === "sampler") {
+                    assert(!resolved, `readiness: ${from} replacement waits for current ${to}`);
+                    current.resolve(buffer);
+                    await flush();
+                }
+                assert(resolved && Motif.isPlaying, `readiness: ${from} to ${to} abandons a never-settling superseded load`);
+                old.resolve(ctx.createBuffer(1, 22050, 44100));
+                await flush();
+                assert(to === "sample" ? track._sampleBuffer === buffer
+                    : to === "sampler" ? track._samplerBuffers.get(60) === buffer
+                    : !track._useSample && !track._useSampler && track._sampleBuffer === null,
+                    `readiness: superseded ${from} cannot revive after switching to ${to}`);
+                await starting;
+                reset();
+            }
+        }
+
+        for (const action of ["replaceTrack", "prune", "clear"]) {
+            const pending = deferred();
+            Motif._loadAndCacheBuffer = () => pending.promise;
+            Track("readiness-registry").sample("never.wav").note([60]);
+            let resolved = false;
+            const starting = Motif.start().then(() => { resolved = true; });
+            await flush();
+            if (action === "replaceTrack") Track("readiness-registry").synth("sine").note([60]);
+            if (action === "prune") Track.pruneExcept([]);
+            if (action === "clear") Track.clearRegistry();
+            await flush();
+            assert(resolved && Motif.isPlaying, `readiness: registry ${action} releases startup without settling old fetch`);
+            await starting;
+            reset();
+        }
+
+        const live = Track("readiness-live").sample("readiness-buffer").note([60]);
+        await Motif.start();
+        const replacement = deferred();
+        Motif._loadAndCacheBuffer = () => replacement.promise;
+        live.sample("replacement.wav");
+        const beforeLive = { oscillators: oscillatorCalls, buffers: bufferCalls };
+        live._playEvent(live._parsedEvents[0], 0, 1);
+        assert(oscillatorCalls === beforeLive.oscillators && bufferCalls === beforeLive.buffers,
+            "readiness: live sample replacement clears the old buffer and skips unready events");
+        replacement.resolve(buffer);
+        await flush();
+        live._playEvent(live._parsedEvents[0], 1, 1);
+        assert(bufferCalls === beforeLive.buffers + 1, "readiness: live sample becomes playable after adoption");
+        const liveFailedSample = deferred();
+        Motif._loadAndCacheBuffer = () => liveFailedSample.promise;
+        live.sample("live-failed-sample.wav");
+        liveFailedSample.reject(new Error("live sample unavailable"));
+        await flush();
+        live._playEvent(live._parsedEvents[0], 2, 1);
+        assert(oscillatorCalls === beforeLive.oscillators && bufferCalls === beforeLive.buffers + 1,
+            "readiness: live failed sample remains silent without replaying the prior source");
+        const liveSampler = deferred();
+        Motif._loadAndCacheBuffer = () => liveSampler.promise;
+        live.sampler({ urls: { C4: "live-sampler.wav" } });
+        live._playEvent(live._parsedEvents[0], 2, 1);
+        assert(oscillatorCalls === beforeLive.oscillators && bufferCalls === beforeLive.buffers + 1,
+            "readiness: live unready sampler skips events without replacing the running transport");
+        liveSampler.reject(new Error("live zone unavailable"));
+        await flush();
+        live._playEvent(live._parsedEvents[0], 3, 1);
+        assert(oscillatorCalls === beforeLive.oscillators, "readiness: live failed sampler remains silent");
+        live.synth("sine");
+        live._playEvent(live._parsedEvents[0], 4, 1);
+        assert(oscillatorCalls === beforeLive.oscillators + 1, "readiness: explicit live synth selection restores synthesis");
+        reset();
+
+        Motif._loadAndCacheBuffer = savedMotif._loadAndCacheBuffer;
+        let fetches = 0;
+        globalThis.fetch = async () => {
+            fetches++;
+            return { ok: true, arrayBuffer: async () => new ArrayBuffer(4) };
+        };
+        ctx.decodeAudioData = (bytes, resolve) => { resolve(buffer); };
+        Track("readiness-cache-a").sample("readiness-cache-unique.wav").note([60]);
+        Track("readiness-cache-b").sampler({ urls: { C4: "readiness-cache-unique.wav" } }).note([60]);
+        await Motif.start();
+        assert(fetches === 1, "readiness: sample and sampler keep shared successful buffer caching");
+        reset();
+        sampleBufferCache.delete("readiness-cache-unique.wav");
+
+        let retryFetches = 0;
+        globalThis.fetch = async () => {
+            retryFetches++;
+            if (retryFetches === 1) throw new Error("retryable fetch failure");
+            return { ok: true, arrayBuffer: async () => new ArrayBuffer(4) };
+        };
+        const retry = Track("readiness-retry").sample("readiness-retry-unique.wav").note([60]);
+        await Motif.start();
+        retry.sample("readiness-retry-unique.wav");
+        await Motif.start();
+        assert(retryFetches === 2 && retry._sampleBuffer === buffer,
+            "readiness: failed cached fetch is evicted and reassigning the source retries");
+        reset();
+        sampleBufferCache.delete("readiness-retry-unique.wav");
+
+        const limiterError = new Error("limiter unavailable");
+        Motif._masterLimiterEnabled = true;
+        Motif._masterLimiterError = limiterError;
+        Motif._loadingSamples = [Promise.reject(limiterError)];
+        Motif._loadAndCacheBuffer = () => new Promise(() => {});
+        Track("readiness-limiter-pending-source").sample("never-ready.wav").note([60]);
+        let rejected;
+        try { await Motif.start(); } catch (error) { rejected = error; }
+        assert(rejected === limiterError && !Motif.isPlaying, "readiness: unavailable enabled limiter rejects startup without waiting for a pending source");
+    } finally {
+        Track.clearRegistry();
+        sampleBufferCache.delete("readiness-cache-unique.wav");
+        sampleBufferCache.delete("readiness-retry-unique.wav");
+        console.error = savedError;
+        globalThis.fetch = savedFetch;
+        for (const key of Object.keys(Motif)) {
+            if (!(key in savedMotif)) delete Motif[key];
+        }
+        Object.assign(Motif, savedMotif);
+    }
+}
+
+// =============================================================================
+// Verified review regressions: these assertions describe the desired behavior.
+// =============================================================================
+console.log("\n=== Verified review regressions ===");
+{
+    const savedMotif = { ...Motif };
+    const savedWorklet = globalThis.AudioWorkletNode;
+    const ctx = new MockAudioContext();
+    globalThis.AudioWorkletNode = class extends MockAudioNode {
+        constructor() {
+            super();
+            this.port = { postMessage() {} };
+            this.parameters = new Map(["ceiling", "release", "frequency"].map(key => [key, new MockAudioParam()]));
+        }
+    };
+    Motif.ctx = ctx;
+    Motif.masterGain = ctx.createGain();
+    Motif.tempo = 120;
+    Motif._tempoMap = null;
+    Motif._loadingSamples = [];
+    Motif._masterLimiterEnabled = false;
+    Motif._startScheduler = () => {};
+    Motif._stopScheduler = () => {};
+    Motif._arrangementEndBeat = undefined;
+    Motif._arrangementOptions = {};
+    Motif.onPlaybackFinished = null;
+    Motif.isPlaying = false;
+
+    try {
+        const masked = Track("review-masked-tie").synth("sine").note([60, Tie]).mask([true, false]);
+        for (let time = 0; time < 6.1; time += .025) {
+            ctx.currentTime = time;
+            masked._schedule(time + .1);
+        }
+        const held = [...masked._activeVoices.values()].filter(voice => voice.endTime === Infinity).length;
+        assert(held === 0, `review-tie: removing the continuation must release its note; observed ${held} infinite voices`);
+        Track.clearRegistry();
+        ctx.currentTime = 0;
+
+        for (const kind of ["sample", "sampler"]) {
+            let resolveBuffer;
+            const pending = new Promise(resolve => { resolveBuffer = resolve; });
+            Motif._loadAndCacheBuffer = () => pending;
+            const cold = Track(`review-cold-${kind}`);
+            if (kind === "sample") cold.sample("review-slow.wav");
+            if (kind === "sampler") cold.sampler({ urls: { C4: "review-slow.wav" } });
+            cold.note([60]);
+            let resolvedStart = false;
+            const starting = Motif.start().then(() => { resolvedStart = true; });
+            await Promise.resolve();
+            await Promise.resolve();
+            assert(!resolvedStart && !Motif.isPlaying, `review-readiness: start must await pending ${kind} sources`);
+            let oscillatorCalls = 0;
+            const createOscillator = ctx.createOscillator;
+            ctx.createOscillator = () => {
+                oscillatorCalls++;
+                return createOscillator.call(ctx);
+            };
+            cold._playEvent(cold._parsedEvents[0], 0, 1);
+            ctx.createOscillator = createOscillator;
+            assert(oscillatorCalls === 0, `review-readiness: unready ${kind} must not allocate a synth; observed ${oscillatorCalls}`);
+            resolveBuffer(ctx.createBuffer(1, 44100, 44100));
+            await (kind === "sample" ? cold._sampleLoading : cold._samplerLoading);
+            await starting;
+            Motif.stop();
+            Track.clearRegistry();
+        }
+        Motif._loadAndCacheBuffer = savedMotif._loadAndCacheBuffer;
+        ctx.state = "running";
+        Motif._suspendedByEngine = false;
+        Motif.sampleRegistry.set("review-stereo-buffer", ctx.createBuffer(2, 44100, 44100));
+
+        const sample = Track("review-split-sample").sample("review-stereo-buffer").note([60]).splitStereo();
+        await sample._sampleLoading;
+        await sample._rightTrack._sampleLoading;
+        assert(sample._rightTrack._sampleBuffer === sample._sampleBuffer,
+            "review-split-load: the right sample must receive the resolved parent buffer");
+        Track.clearRegistry();
+        const sampler = Track("review-split-sampler").sampler({ urls: { C4: "review-stereo-buffer" } }).note([60]).splitStereo();
+        await sampler._samplerLoading;
+        await sampler._rightTrack._samplerLoading;
+        assert(sampler._rightTrack._findNearestSamplerKey(60) === 60,
+            `review-split-load: the right sampler must select its loaded zone; observed keys ${sampler._rightTrack._samplerKeys}`);
+        Track.clearRegistry();
+
+        for (const kind of ["sample", "sampler"]) {
+            for (const action of ["resolve", "reject", "parent-replace", "right-synth", "right-sample", "right-sampler", "repeat-split", "replace-track"]) {
+                for (const oldFirst of [false, true]) {
+                    let resolveOld, rejectOld, resolveNew;
+                    const oldLoad = new Promise((resolve, reject) => { resolveOld = resolve; rejectOld = reject; });
+                    const newLoad = new Promise(resolve => { resolveNew = resolve; });
+                    Motif._loadAndCacheBuffer = path => path === "split-old.wav" ? oldLoad : newLoad;
+                    const oldBuffer = ctx.createBuffer(2, 4410, 44100);
+                    const newBuffer = ctx.createBuffer(2, 8820, 44100);
+                    const configure = (track, sourceKind, path) => sourceKind === "sample"
+                        ? track.sample(path)
+                        : track.sampler({ urls: { C4: path } });
+                    const parent = configure(Track("split-loading"), kind, "split-old.wav").note([60]).splitStereo();
+                    const right = parent._rightTrack;
+                    const oldRightLoad = kind === "sample" ? right._sampleLoading : right._samplerLoading;
+                    const label = `split loading ${kind}/${action}/${oldFirst}`;
+                    assert(right._sourcePending, `${label}: shadow is pending before adoption`);
+                    let expectedKind = kind;
+                    let expectedBuffer = oldBuffer;
+                    if (action === "parent-replace") configure(parent, kind, "split-new.wav");
+                    if (action === "right-synth") {
+                        right.synth("square");
+                        expectedKind = "synth";
+                    }
+                    if (action === "right-sample" || action === "right-sampler") {
+                        expectedKind = action.slice(6);
+                        expectedBuffer = newBuffer;
+                        configure(right, expectedKind, "split-new.wav");
+                    }
+                    if (action === "repeat-split") {
+                        configure(parent, kind, "split-new.wav").splitStereo();
+                        expectedBuffer = newBuffer;
+                        assert(parent._rightTrack === right, `${label}: repeated split reuses its shadow`);
+                    }
+                    let replacement;
+                    if (action === "replace-track") {
+                        replacement = configure(Track(parent.id), kind, "split-new.wav").note([60]).splitStereo();
+                        assert(replacement._rightTrack !== right, `${label}: replacement gets an independent shadow`);
+                    }
+                    const settleOld = () => action === "reject" ? rejectOld(new Error("expected split failure")) : resolveOld(oldBuffer);
+                    if (oldFirst) {
+                        settleOld();
+                        await oldRightLoad;
+                        resolveNew(newBuffer);
+                    } else {
+                        resolveNew(newBuffer);
+                        await Promise.resolve();
+                        await Promise.resolve();
+                        settleOld();
+                    }
+                    await oldRightLoad;
+                    await right._sampleLoading;
+                    await right._samplerLoading;
+                    assert(!right._sourcePending, `${label}: current shadow load completes`);
+                    if (action === "reject") {
+                        assert(kind === "sample" ? right._sampleBuffer === null : right._findNearestSamplerKey(60) === null,
+                            `${label}: rejection leaves a silent source`);
+                    } else if (expectedKind === "synth") {
+                        assert(right._synthType === "square" && !right._useSample && !right._useSampler,
+                            `${label}: late source does not replace explicit synth`);
+                    } else {
+                        const adopted = expectedKind === "sample" ? right._sampleBuffer : right._samplerBuffers.get(right._findNearestSamplerKey(60));
+                        assert(adopted === expectedBuffer, `${label}: adopts the correct split-time or explicit right source`);
+                    }
+                    if (replacement) {
+                        await replacement._rightTrack._sampleLoading;
+                        await replacement._rightTrack._samplerLoading;
+                        const replacementBuffer = kind === "sample" ? replacement._rightTrack._sampleBuffer : replacement._rightTrack._samplerBuffers.get(60);
+                        assert(replacementBuffer === newBuffer, `${label}: old source does not affect replacement shadow`);
+                    }
+                    Track.clearRegistry();
+                }
+            }
+        }
+        Motif._loadAndCacheBuffer = savedMotif._loadAndCacheBuffer;
+
+        const stereo = Track("review-prune-split").note([60]).splitStereo();
+        Track.pruneExcept([stereo.id]);
+        assert(trackRegistry.get(stereo.id + "_right") === stereo._rightTrack,
+            "review-split-prune: keeping the parent must keep its scheduled right track");
+        stereo._rightTrack.note([72]).gain(.25).delay({ amount: .1 });
+        const rightDelay = stereo._rightTrack._delayBus;
+        Track.pruneExcept([stereo.id]);
+        Bus.pruneExcept([]);
+        assert(stereo._rightTrack._notePattern[0] === 72 && stereo._rightTrack._gainLevel === .25,
+            "review-split-prune: pruning preserves independent right transforms");
+        assert(busRegistry.get(rightDelay.id) === rightDelay,
+            "review-split-prune: retained shadow keeps its internal delay bus");
+        const replaced = Track(stereo.id).note([60]).splitStereo();
+        Track.pruneExcept([replaced.id]);
+        assert(trackRegistry.get(replaced.id + "_right") === replaced._rightTrack && replaced._rightTrack !== stereo._rightTrack,
+            "review-split-prune: replacement retains only its current shadow");
+        const plain = Track(replaced.id).note([60]);
+        Track.pruneExcept([plain.id]);
+        assert(trackRegistry.size === 1 && !trackRegistry.has(plain.id + "_right"),
+            "review-split-prune: redefining without split removes the superseded shadow");
+        const removed = Track(plain.id).note([60]).splitStereo();
+        removed._rightTrack.delay({ amount: .1 });
+        const removedDelayId = removed._rightTrack._delayBus.id;
+        Track.pruneExcept([removed._rightTrack.id]);
+        assert(trackRegistry.size === 0, "review-split-prune: removing the parent must also remove its right track");
+        assert(!busRegistry.has(removedDelayId), "review-split-prune: removed shadow disposes its internal delay bus");
+
+        const hzSampler = Track("review-sampler-hz").sampler({ urls: { A4: "review-stereo-buffer" } }).freq([440]);
+        await hzSampler._samplerLoading;
+        let rate;
+        hzSampler._playAudioBuffer = (_buffer, _start, _duration, playbackRate) => { rate = playbackRate; };
+        hzSampler._playEvent(hzSampler._parsedEvents[0], 0, 1);
+        assert(Math.abs(rate - 1) < 1e-9, `review-sampler-hz: 440 Hz on an A4 zone must use rate 1; observed ${rate}`);
+        const samplerCalls = [];
+        hzSampler._playAudioBuffer = (buffer, _start, _duration, playbackRate) => samplerCalls.push({ buffer, playbackRate });
+        const playSamplerPitch = (mode, value) => {
+            hzSampler[mode]([value]);
+            hzSampler._playEvent({ value }, 0, 1);
+            return samplerCalls.at(-1);
+        };
+        for (const [hz, note, expected] of [[220, "A3", .5], [440, "A4", 1], [880, "A5", 2]]) {
+            const frequencyCall = playSamplerPitch("freq", hz);
+            const noteCall = playSamplerPitch("note", note);
+            assert(frequencyCall.buffer === noteCall.buffer && Math.abs(frequencyCall.playbackRate - expected) < 1e-9
+                && Math.abs(noteCall.playbackRate - expected) < 1e-9,
+                `review-sampler-hz: ${hz} Hz and ${note} share a zone and rate ${expected}`);
+        }
+        const lowZone = hzSampler._samplerBuffers.get(69);
+        const highZone = new MockAudioContext().createBuffer(1, 48000, 48000);
+        hzSampler._samplerBuffers.set(81, highZone);
+        hzSampler._samplerKeys = [69, 81];
+        for (const midi of [70, 79]) {
+            const hz = 440 * 2 ** ((midi - 69) / 12);
+            const frequencyCall = playSamplerPitch("freq", hz);
+            const noteCall = playSamplerPitch("note", midi);
+            const root = midi === 70 ? 69 : 81;
+            assert(frequencyCall.buffer === (root === 69 ? lowZone : highZone) && frequencyCall.buffer === noteCall.buffer
+                && Math.abs(frequencyCall.playbackRate - 2 ** ((midi - root) / 12)) < 1e-9
+                && Math.abs(frequencyCall.playbackRate - noteCall.playbackRate) < 1e-9,
+                `review-sampler-hz: non-root MIDI ${midi} equivalent selects and transposes the nearest zone`);
+        }
+        hzSampler.fit(.5);
+        const fitted = playSamplerPitch("freq", 880);
+        assert(Math.abs(fitted.playbackRate - highZone.duration / .5) < 1e-9,
+            "review-sampler-hz: fit multiplies the selected root's rate");
+        hzSampler.scale("A4", "major");
+        const degreeCall = playSamplerPitch("note", 0);
+        const hzCall = playSamplerPitch("freq", 440);
+        assert(degreeCall.buffer === lowZone && hzCall.buffer === lowZone && degreeCall.playbackRate === hzCall.playbackRate,
+            "review-sampler-hz: scale degrees retain note mapping while Hz bypasses it");
+        hzSampler._scaleRoot = undefined;
+        for (const invalid of [0, -440, NaN, Infinity, -Infinity, "invalid"]) {
+            const count = samplerCalls.length;
+            playSamplerPitch("freq", invalid);
+            assert(samplerCalls.length === count, `review-sampler-hz: invalid Hz ${invalid} never submits audio`);
+        }
+        const count = samplerCalls.length;
+        playSamplerPitch("note", 0);
+        assert(samplerCalls.length === count + 1, "review-sampler-hz: MIDI zero remains a valid note");
+        let rejectedRamp = false;
+        try { playSamplerPitch("freq", Ramp(440, 880)); } catch { rejectedRamp = true; }
+        assert(rejectedRamp, "review-sampler-hz: sampler frequency Ramps remain unsupported");
+        Track.clearRegistry();
+
+        const ramp = Ramp(60, 72, "1/8");
+        let rampCallbacks = 0;
+        const transposed = Track("review-ramp-transpose").note([ramp]).every(1, events => {
+            rampCallbacks++;
+            return events.transpose(12);
+        });
+        const firstCycle = transposed._getCycleEvents(0);
+        const firstFrom = firstCycle[0].value.from;
+        assert(transposed._getCycleEvents(0) === firstCycle && rampCallbacks === 1,
+            "review-ramp-copy: cached cycle retains its events without rerunning the callback");
+        const secondFrom = transposed._getCycleEvents(1)[0].value.from;
+        assert(firstFrom === 72 && secondFrom === 72,
+            `review-ramp-copy: every cycle must transpose from the base pitch; observed ${firstFrom}, ${secondFrom}`);
+        assert(ramp.from === 60 && ramp.to === 72, "review-ramp-copy: cycle transforms must preserve the caller's Ramp");
+        assert(firstCycle[0].value instanceof ramp.constructor && firstCycle[0].value.duration === "1/8",
+            "review-ramp-copy: transformed Ramp preserves its type and duration");
+        const shared = Track("review-ramp-shared").note([ramp]);
+        const sharedCycle = shared._getCycleEvents(0);
+        firstCycle[0].value.from = 96;
+        assert(sharedCycle[0].value.from === 60 && transposed._getCycleEvents(1)[0].value.from === 72 && ramp.from === 60,
+            "review-ramp-copy: direct endpoint edits are isolated across tracks, cycles, and caller values");
+
+        const offsetRamp = Ramp(60, 72, .125);
+        const shiftedTrack = Track("review-ramp-offset").note([offsetRamp]).offset("1/4", event => {
+            event.value.from += 7;
+            event.value.to += 7;
+        });
+        for (const cycle of [0, 1]) {
+            const shifted = shiftedTrack._getCycleEvents(cycle);
+            assert(shifted[0].value.from === 60 && shifted[1].value.from === 67 && shifted[1].value.to === 79,
+                `review-ramp-copy: offset callback changes only the duplicate in cycle ${cycle}`);
+            shifted[1].value.to = 90;
+            assert(shifted[0].value.to === 72 && offsetRamp.to === 72,
+                "review-ramp-copy: returned offset copy retains independent endpoints");
+        }
+
+        const nameRamp = Ramp("C4", "G4", "1/16");
+        const direct = PatternParser.parse([nameRamp]);
+        const directCopy = direct.map(event => ({ ...event }));
+        directCopy.transpose(2);
+        assert(direct[0].value.from === "C4" && nameRamp.to === "G4" && directCopy[0].value.from === "D4" && directCopy[0].value.to === "A4",
+            "review-ramp-copy: direct array transposition isolates name Ramp endpoints from a shallow event copy");
+        direct.offset("1/4", event => { event.value.from = "E4"; });
+        assert(direct[0].value.from === "C4" && direct[1].value.from === "E4" && nameRamp.from === "C4",
+            "review-ramp-copy: direct array offset owns its Ramp payload");
+
+        const scope = [Symbol("review-ramp-scope")];
+        const association = Symbol("review-ramp-association");
+        const metadata = new MotifEventArray({ value: ramp, startTime: 0, duration: .5,
+            tieScope: scope, tieId: association, tieCycle: 3, sliceIndex: 2, nativeSlicePitch: true });
+        metadata.offset("1/4");
+        assert(metadata[1].tieScope === scope && metadata[1].tieId === association && metadata[1].tieCycle === 3
+            && metadata[1].sliceIndex === 2 && metadata[1].nativeSlicePitch === true,
+            "review-ramp-copy: event copies retain Symbols, branch scope, cycle, and slice metadata");
+        metadata[1].value.from = 88;
+        assert(metadata[0].value.from === 60, "review-ramp-copy: offset without a callback still isolates mutable endpoints");
+
+        const ratcheted = PatternParser.parse([ramp]).mutate({ chance: 1, actions: { ratchet: 1 } });
+        ratcheted[1].value.from = 88;
+        assert(ratcheted[0].value.from === 60 && ramp.from === 60,
+            "review-ramp-copy: direct ratchet copies own independent Ramp endpoints");
+        const ratchetTrack = Track("review-ramp-ratchet").note([ramp]).mutate({ chance: 1, actions: { ratchet: 1 } })
+            .every(1, events => { events[1].value.from += 7; });
+        const ratchetCycle = ratchetTrack._getCycleEvents(0);
+        assert(ratchetCycle[0].value.from === 60 && ratchetCycle[1].value.from === 67 && ramp.from === 60,
+            "review-ramp-copy: scheduler ratchet copies are isolated before subsequent callbacks");
+        Track.clearRegistry();
+
+        const deferredStart = () => {
+            let resolve, reject;
+            const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+            return { promise, resolve, reject };
+        };
+        const flushStart = async () => {
+            for (let i = 0; i < 12; i++) await Promise.resolve();
+        };
+        const cancellationEngine = () => {
+            const engine = new MotifEngine();
+            engine.ctx = new MockAudioContext();
+            engine.ctx.resume = () => { engine.ctx.state = "running"; return Promise.resolve(); };
+            engine.ctx.suspend = () => { engine.ctx.state = "suspended"; return Promise.resolve(); };
+            engine._masterLimiterEnabled = false;
+            engine.schedulerStarts = 0;
+            engine._startScheduler = () => { engine.schedulerStarts++; };
+            return engine;
+        };
+        const savedStartError = console.error;
+        const savedStartWarn = console.warn;
+        const startFailures = [];
+        console.error = (...args) => { startFailures.push(args); };
+        console.warn = (...args) => { startFailures.push(args); };
+        try {
+            for (const action of ["stop", "pause"]) {
+                for (const outcome of ["resolve", "reject", "pending"]) {
+                    const engine = cancellationEngine();
+                    const resource = deferredStart();
+                    engine._loadingSamples = [resource.promise];
+                    engine.position = 5;
+                    let settled = false;
+                    const starting = engine.start().then(value => { settled = value === undefined; });
+                    engine[action]();
+                    await flushStart();
+                    assert(settled, `review-start-cancel: ${action} promptly settles cancelled start before ${outcome} resource`);
+                    const failure = new Error(`late ${action} resource rejection`);
+                    if (outcome === "resolve") resource.resolve();
+                    if (outcome === "reject") resource.reject(failure);
+                    await flushStart();
+                    if (settled) await starting;
+                    assert(!engine.isPlaying && engine.schedulerStarts === 0,
+                        `review-start-cancel: ${action} prevents late ${outcome} resource launch`);
+                    assert(engine.position === (action === "pause" ? 5 : 0),
+                        `review-start-cancel: ${action} preserves its position contract`);
+                    if (outcome === "reject") {
+                        assert(startFailures.some(args => args.includes(failure)),
+                            "review-start-cancel: cancelled late resource rejection remains reported");
+                    }
+                }
+
+                const engine = cancellationEngine();
+                const resumed = deferredStart();
+                engine.ctx.state = "suspended";
+                engine._suspendedByEngine = true;
+                engine.ctx.resume = () => resumed.promise;
+                let settled = false;
+                const starting = engine.start().then(() => { settled = true; });
+                await flushStart();
+                engine[action]();
+                await flushStart();
+                assert(settled, `review-start-cancel: ${action} settles while resume is still pending`);
+                resumed.resolve();
+                await flushStart();
+                if (settled) await starting;
+                assert(!engine.isPlaying && engine.schedulerStarts === 0,
+                    `review-start-cancel: delayed resume cannot launch after ${action}`);
+
+                const sourceEngine = cancellationEngine();
+                trackRegistry.set("review-start-never-source", { _sourcePending: true, _schedule() {} });
+                let sourceSettled = false;
+                const sourceStart = sourceEngine.start().then(() => { sourceSettled = true; });
+                await flushStart();
+                sourceEngine[action]();
+                await flushStart();
+                assert(sourceSettled && !sourceEngine.isPlaying && sourceEngine.schedulerStarts === 0,
+                    `review-start-cancel: ${action} cancels a never-settling track source wait`);
+                if (sourceSettled) await sourceStart;
+                trackRegistry.delete("review-start-never-source");
+            }
+
+            const superseded = cancellationEngine();
+            const firstResource = deferredStart();
+            const secondResource = deferredStart();
+            superseded._loadingSamples = [firstResource.promise];
+            let firstSettled = false;
+            const first = superseded.start().then(() => { firstSettled = true; });
+            superseded._loadingSamples = [secondResource.promise];
+            const second = superseded.start();
+            await flushStart();
+            assert(firstSettled, "review-start-cancel: superseding start promptly settles old resource wait");
+            secondResource.resolve();
+            await second;
+            firstResource.resolve();
+            await first;
+            assert(superseded.isPlaying && superseded.schedulerStarts === 1,
+                "review-start-cancel: only newest resource launch starts scheduling");
+
+            const resumedEngine = cancellationEngine();
+            resumedEngine.ctx.state = "suspended";
+            resumedEngine._suspendedByEngine = true;
+            const resumes = [deferredStart(), deferredStart()];
+            let resumeCalls = 0;
+            resumedEngine.ctx.resume = () => resumes[resumeCalls++].promise;
+            const oldResumeStart = resumedEngine.start();
+            await flushStart();
+            const newResumeStart = resumedEngine.start();
+            await flushStart();
+            assert(resumeCalls === 2, "review-start-cancel: superseding resume retains engine suspension ownership");
+            resumes[1].resolve();
+            await newResumeStart;
+            resumes[0].reject(new Error("obsolete resume failure"));
+            await oldResumeStart;
+            await flushStart();
+            assert(resumedEngine.isPlaying && resumedEngine.schedulerStarts === 1,
+                "review-start-cancel: obsolete resume rejection cannot disrupt newest launch");
+            assert(startFailures.some(args => args[0] === "Cancelled Motif.start() resume failed:"),
+                "review-start-cancel: obsolete resume rejection remains reported");
+
+            const failedResumeEngine = cancellationEngine();
+            failedResumeEngine.ctx.state = "suspended";
+            failedResumeEngine._suspendedByEngine = true;
+            const resumeError = new Error("active resume failure");
+            failedResumeEngine.ctx.resume = () => Promise.reject(resumeError);
+            let failedResume;
+            try { await failedResumeEngine.start(); } catch (error) { failedResume = error; }
+            assert(failedResume === resumeError && !failedResumeEngine.isPlaying,
+                "review-start-cancel: current resume rejection propagates");
+
+            const failedLimiterEngine = cancellationEngine();
+            failedLimiterEngine._masterLimiterEnabled = true;
+            const limiterError = new Error("active limiter failure");
+            failedLimiterEngine._masterLimiterError = limiterError;
+            failedLimiterEngine._loadingSamples = [Promise.reject(limiterError)];
+            let failedLimiter;
+            try { await failedLimiterEngine.start(); } catch (error) { failedLimiter = error; }
+            assert(failedLimiter === limiterError && !failedLimiterEngine.isPlaying,
+                "review-start-cancel: current limiter failure still rejects launch");
+
+            const suspendEngine = cancellationEngine();
+            const suspend = deferredStart();
+            suspendEngine.ctx.suspend = () => suspend.promise;
+            suspendEngine.pause();
+            const afterPause = suspendEngine.start();
+            await flushStart();
+            assert(!suspendEngine.isPlaying, "review-start-cancel: manual restart waits for pending engine suspend");
+            suspendEngine.ctx.state = "suspended";
+            suspend.resolve();
+            await afterPause;
+            assert(suspendEngine.ctx.state === "running" && suspendEngine.isPlaying && suspendEngine.schedulerStarts === 1,
+                "review-start-cancel: restart resumes after pending suspend lands");
+        } finally {
+            console.error = savedStartError;
+            console.warn = savedStartWarn;
+            trackRegistry.delete("review-start-never-source");
+        }
+
+        for (const lookahead of [.03, .1]) {
+            ctx.currentTime = 0;
+            const delayed = Track(`review-offset-${lookahead}`).note([60, 62, 64, 65]).offset("1/2");
+            const played = [];
+            delayed._playEvent = (event, time) => { played.push({ value: event.value, time }); };
+            for (let time = 0; time < 4.1; time += .025) {
+                ctx.currentTime = time;
+                delayed._schedule(time + lookahead);
+            }
+            const values = played.filter(event => Math.abs(event.time - 2.5) < 1e-6).map(event => event.value).sort();
+            assert(values.join() === "62,65",
+                `review-offset: delayed previous-cycle 65 must coexist with 62 at 2.5s (${lookahead}s lookahead); observed ${values}`);
+            Track.clearRegistry();
+        }
+
+        ctx.currentTime = 0;
+        const sliced = Track("review-slice-completion").sample("review-stereo-buffer").chop(2).pattern([0, 1]).start(0).stop(1);
+        await sliced._sampleLoading;
+        sliced._schedule = () => {};
+        sliced._playbackStartTime = 0;
+        let finished = 0;
+        Motif.onPlaybackFinished = () => { finished++; };
+        ctx.currentTime = 2;
+        Motif.isPlaying = true;
+        Motif._tick();
+        assert(!Motif.isPlaying && finished === 1,
+            `review-slice-completion: finite slice-only playback must finish once; observed playing=${Motif.isPlaying}, callbacks=${finished}`);
+        Motif._tick();
+        assert(finished === 1, "review-slice-completion: subsequent ticks do not finish twice");
+
+        const resetCompletion = () => {
+            Track.clearRegistry();
+            ctx.currentTime = 0;
+            Motif._tempoMap = null;
+            Motif._arrangementEndBeat = undefined;
+            Motif._arrangementOptions = {};
+            Motif.isPlaying = true;
+            finished = 0;
+        };
+        const sliceTrack = id => Track(id).sample("review-stereo-buffer").chop(2).pattern([0, 1]);
+
+        resetCompletion();
+        const arrangedSlices = sliceTrack("review-slice-arrange");
+        await arrangedSlices._sampleLoading;
+        Arrange([{ tracks: [arrangedSlices], bars: .5 }, { tracks: [], bars: .5 }]);
+        Motif._tick();
+        ctx.currentTime = 1.5;
+        Motif._tick();
+        assert(Motif.isPlaying && finished === 0, "review-slice-completion: trailing empty arrangement section retains transport");
+        ctx.currentTime = 2;
+        Motif._tick();
+        assert(!Motif.isPlaying && finished === 1, "review-slice-completion: slice-only arrangement finishes at its full boundary");
+
+        resetCompletion();
+        const splitSlices = sliceTrack("review-slice-split").start(0).stop(1);
+        await splitSlices._sampleLoading;
+        splitSlices.splitStereo();
+        Track("review-slice-empty").note([]);
+        Track("__temp_probe__").note([60]);
+        Motif._tick();
+        ctx.currentTime = 1;
+        Motif._tick();
+        assert(Motif.isPlaying && finished === 0, "review-slice-completion: finite split sample preserves its final 5ms fade");
+        ctx.currentTime = 1.005;
+        Motif._tick();
+        assert(!Motif.isPlaying && finished === 1, "review-slice-completion: shadow follows finite parent; empty patterns and probes do not block completion");
+
+        resetCompletion();
+        const mixedSlices = sliceTrack("review-slice-mixed").start(0).stop(1);
+        await mixedSlices._sampleLoading;
+        Track("review-slice-mixed-hz").synth("sine").freq([440]).start(0).stop(2);
+        Track("review-slice-mixed-rests").note([null, null]).start(0).stop(3);
+        Motif._tick();
+        ctx.currentTime = 2;
+        Motif._tick();
+        assert(Motif.isPlaying && finished === 0, "review-slice-completion: all-rest patterns participate in mixed finite timing");
+        ctx.currentTime = 3;
+        Motif._tick();
+        assert(!Motif.isPlaying && finished === 1, "review-slice-completion: mixed sample/frequency/rest tracks finish at latest boundary");
+
+        resetCompletion();
+        const finiteSlices = sliceTrack("review-slice-unrestricted").start(0).stop(1);
+        await finiteSlices._sampleLoading;
+        const unrestricted = Track("review-slice-unrestricted-rests").note([null]);
+        Motif._tick();
+        ctx.currentTime = 2;
+        Motif._tick();
+        assert(Motif.isPlaying && finished === 0, "review-slice-completion: unrestricted all-rest pattern keeps transport open");
+        unrestricted.start(0).stop(2);
+        Motif._tick();
+        assert(!Motif.isPlaying && finished === 1, "review-slice-completion: finite boundary restores completion for all-rest pattern");
+
+        resetCompletion();
+        const loopSlices = sliceTrack("review-slice-loop");
+        await loopSlices._sampleLoading;
+        Arrange([{ tracks: [loopSlices], bars: .5 }], { loop: true });
+        let looped = false;
+        Motif.onPlaybackFinished = result => { finished++; looped = result.looped; };
+        Motif._tick();
+        ctx.currentTime = 1;
+        Motif._tick();
+        assert(!Motif.isPlaying && finished === 1 && looped, "review-slice-completion: slice-only loop finishes once with loop notification");
+        await new Promise(resolve => setTimeout(resolve, 10));
+        assert(Motif.isPlaying && finished === 1, "review-slice-completion: slice-only loop restarts transport");
+        Motif.stop();
+    } finally {
+        Track.clearRegistry();
+        Motif.sampleRegistry.delete("review-stereo-buffer");
+        for (const key of Object.keys(Motif)) {
+            if (!(key in savedMotif)) delete Motif[key];
+        }
+        Object.assign(Motif, savedMotif);
+        globalThis.AudioWorkletNode = savedWorklet;
+    }
+}
+
+console.log("\n=== Delayed offset cycle retention ===");
+{
+    const savedMotif = { ...Motif };
+    const savedRegistry = new Map(trackRegistry);
+    Track.clearRegistry();
+    const ctx = new MockAudioContext();
+    Motif.ctx = ctx;
+    Motif.masterGain = ctx.createGain();
+    Motif.isPlaying = false;
+    let serial = 0;
+    const reset = () => {
+        Track.clearRegistry();
+        ctx.currentTime = 0;
+        Motif.tempo = 120;
+        Motif.beatsPerBar = 4;
+        Motif._tempoMap = null;
+        Motif._swingAmount = 0;
+    };
+    const capture = track => {
+        const played = [];
+        track._playEvent = (event, time, duration) => played.push({ ...event, time, duration });
+        return played;
+    };
+    const tick = (track, start, stop, lookahead = .1) => {
+        for (let index = 0; start + index * .025 < stop; index++) {
+            ctx.currentTime = start + index * .025;
+            track._schedule(ctx.currentTime + lookahead);
+        }
+    };
+    const signature = events => events.map(event => `${event.tieCycle}:${event.value}:${event.time.toFixed(6)}`)
+        .sort().join("|");
+    try {
+        for (const lookahead of [.03, .1, 4.2]) {
+            reset();
+            let calls = 0;
+            const track = Track(`offset-long-${serial++}`).note([60, 62]).every(1, events => {
+                calls++;
+                return events.map(event => ({ ...event, value: event.value + 10 * calls }));
+            }).offset(2).offset(3);
+            const played = capture(track);
+            tick(track, 0, 14.1, lookahead);
+            const horizon = track._scheduledUntil;
+            const expected = [];
+            for (let cycle = 0; cycle * 2 < horizon - 1e-9; cycle++) {
+                for (const delay of [0, 4, 6, 10]) {
+                    for (const [value, position] of [[60, 0], [62, 1]]) {
+                        const time = cycle * 2 + delay + position;
+                        if (time < horizon - 1e-9) expected.push({ tieCycle: cycle, value: value + 10 * (cycle + 1), time });
+                    }
+                }
+            }
+            assert(signature(played) === signature(expected),
+                `review-offset: long chained offsets submit each originating copy once (${lookahead}s lookahead)`);
+            assert(new Set(played.filter(event => Math.abs(event.time - 10) < 1e-9).map(event => event.tieCycle)).size === 4,
+                `review-offset: copies from four cycles coexist at 10s (${lookahead}s lookahead)`);
+            assert(played.every((event, index) => index === 0 || event.time >= played[index - 1].time - 1e-9),
+                `review-offset: overlapping cycles submit in onset order (${lookahead}s lookahead)`);
+            const oldCalls = calls;
+            track._schedule(horizon);
+            assert(calls === oldCalls && calls === Math.ceil((horizon - 1e-9) / 2),
+                `review-offset: callbacks run once per entered cycle, including large lookahead (${lookahead}s)`);
+        }
+
+        const probabilistic = [];
+        for (const lookahead of [.03, 4.2]) {
+            reset();
+            const track = Track(`offset-random-${serial++}`).note([60, 62, 64, 65]).offset(2).seed(32).degrade(.35);
+            const played = capture(track);
+            tick(track, 0, 9.1, lookahead);
+            probabilistic.push(signature(played.filter(event => event.time < 9)));
+        }
+        assert(probabilistic[0] === probabilistic[1], "review-offset: retention keeps cycle randomness independent of lookahead");
+
+        for (const clockSteps of [false, true]) {
+            for (const smooth of [false, true]) {
+                reset();
+                const track = Track(`offset-tempo-${serial++}`).note([60, 62]).offset(2);
+                if (clockSteps) track.stepLength(.25);
+                const played = capture(track);
+                tick(track, 0, .625);
+                if (smooth) Motif.rampTempo(60, 1, { smooth: true });
+                else Motif.setTempo(60);
+                tick(track, .625, 10.1);
+                const horizon = track._scheduledUntil;
+                const expected = [];
+                for (let cycle = 0; cycle < 30; cycle++) {
+                    for (const position of [0, .5, 2, 2.5]) {
+                        const time = clockSteps ? (cycle + position) * .5 : Motif._timeAtBeat((cycle + position) * 4);
+                        if (time < horizon - 1e-9) expected.push({ tieCycle: cycle, value: position % 1 === 0 ? 60 : 62, time });
+                    }
+                }
+                assert(signature(played) === signature(expected),
+                    `review-offset: ${clockSteps ? "clock" : "musical"} copies retain their original timing basis across ${smooth ? "smooth" : "immediate"} tempo edits`);
+                assert(played.filter(event => event.tieCycle === 0 && event.value === 60).length === 2,
+                    "review-offset: tempo edits do not replay an already submitted original");
+            }
+        }
+
+        for (const edit of ["note", "freq", "seed", "modifier", "step", "loop", "meter", "silent", "reset"]) {
+            reset();
+            const track = Track(`offset-edit-${serial++}`).note([60, 62]).offset(2);
+            const played = capture(track);
+            tick(track, 0, 2.125);
+            const before = played.length;
+            ctx.currentTime = 2.2;
+            if (edit === "note") track.note([64, 65]);
+            if (edit === "freq") track.freq([440, 450]);
+            if (edit === "seed") track.seed(99);
+            if (edit === "modifier") track.offset(.25);
+            if (edit === "step") track.stepLength(.25);
+            if (edit === "loop") track.loopLength(.5);
+            if (edit === "meter") Motif.beatsPerBar = 3;
+            if (edit === "silent") track.note([]);
+            if (edit === "reset") track._resetScheduling();
+            tick(track, 2.2, 8.1);
+            const later = played.slice(before);
+            assert(edit === "reset" ? !later.some(event => Math.abs(event.time - 4) < 1e-9 || Math.abs(event.time - 5) < 1e-9)
+                : later.every(event => event.tieCycle !== 0),
+                `review-offset: ${edit} cancels unscheduled older-cycle copies`);
+            if (edit === "freq") assert(later.every(event => event.value >= 440), "review-offset: mode edits cannot dispatch old MIDI values as frequencies");
+            if (edit === "silent") assert(later.length === 0, "review-offset: an empty replacement pattern cancels every pending copy");
+            if (edit === "reset") assert(later[0]?.time === 2.2, "review-offset: reset starts a fresh pattern at the current audio clock");
+        }
+
+        for (const loop of [.5, 2, 6]) {
+            reset();
+            const track = Track(`offset-loop-${serial++}`).note([60, 62]).offset(2).loopLength(loop);
+            const played = capture(track);
+            tick(track, 0, 6.1);
+            const olderCopies = played.filter(event => event.tieCycle === 0 && event.time >= 4);
+            assert(olderCopies.length === (loop === 6 ? 2 : 0), `review-offset: explicit ${loop}s loop clips only copies outside its boundary`);
+            assert(played.every(event => event.time + event.duration <= (event.tieCycle + 1) * loop + 1e-9),
+                `review-offset: explicit ${loop}s loop clips each surviving gate`);
+        }
+
+        reset();
+        let stallCalls = 0;
+        const stalled = Track(`offset-stall-${serial++}`).note([60, 62]).offset(2).every(1, events => { stallCalls++; return events; });
+        const afterStall = capture(stalled);
+        stalled._schedule(.1);
+        tick(stalled, 4.9, 5.15);
+        assert(afterStall.some(event => event.tieCycle === 0 && event.value === 62 && event.time === 5),
+            "review-offset: a retained older copy survives a multi-cycle stall when its onset is still ahead");
+        assert(!afterStall.some(event => event.time === 4) && stallCalls === 2 && stalled._currentCycle === 2,
+            "review-offset: recovery skips missed onsets and callbacks without moving the cycle phase");
+
+        reset();
+        let setterCalls = 0;
+        const selfEditing = Track(`offset-callback-edit-${serial++}`).note([60, 62]).offset(2)
+            .every(1, events => {
+                if (++setterCalls === 2) selfEditing.note([64, 65]);
+                return events;
+            });
+        const callbackEdits = capture(selfEditing);
+        tick(selfEditing, 0, 5.1);
+        assert(!callbackEdits.some(event => event.tieCycle === 0 && event.time >= 4),
+            "review-offset: a pattern setter inside a later-cycle callback cancels older pending copies");
+        assert(setterCalls === 3, "review-offset: a callback setter does not rerun that cycle's transform");
+
+        reset();
+        const swungTie = Track(`offset-tie-swing-${serial++}`).synth("sine").note([60, Tie]).stepLength(.5).offset(2)
+            .envelope({ attack: .01, decay: .01, sustain: .5, release: .05 });
+        swungTie.trackInputNode = ctx.createGain();
+        tick(swungTie, 0, 2.075, .03);
+        const delayedVoice = [...swungTie._activeVoices.values()].find(voice => voice.tieCycle === 0 && voice.startTime === 2);
+        assert(delayedVoice?.tieTargets.length > 0, "review-offset: an overflow note retains its not-yet-submitted Tie");
+        swungTie.swing(1);
+        ctx.currentTime = 2.075;
+        swungTie._schedule(2.105);
+        assert(delayedVoice?.endTime > 2.88, "review-offset: a live swing edit refreshes an older cycle's bounded Tie release");
+        tick(swungTie, 2.1, 2.9, .03);
+        assert(delayedVoice?.endTime > 3.38, "review-offset: the delayed swung Tie extends its originating voice after multiple cycle boundaries");
+
+        reset();
+        const slowedOverflow = Track(`offset-tie-tempo-${serial++}`).synth("sine").note([60, Tie]).stepLength("1/4").offset(2)
+            .envelope({ attack: .01, decay: .01, sustain: .5, release: .05 });
+        slowedOverflow.trackInputNode = ctx.createGain();
+        tick(slowedOverflow, 0, 2.1, .03);
+        const pendingTieVoice = [...slowedOverflow._activeVoices.values()].find(voice => voice.tieCycle === 0 && voice.startTime === 2);
+        ctx.currentTime = 2.1;
+        Motif.setTempo(60);
+        slowedOverflow._schedule(2.13);
+        const continuationStart = Motif._timeAtBeat(5);
+        assert(pendingTieVoice && Math.abs(pendingTieVoice.tieReleaseTime - continuationStart) < 1e-9,
+            "review-offset: a tempo edit refreshes an older cycle's pending Tie release without moving its submitted attack");
+        tick(slowedOverflow, 2.125, continuationStart + .05, .03);
+        assert(pendingTieVoice && Math.abs(pendingTieVoice.endTime - Motif._timeAtBeat(6) - .05) < 1e-9,
+            "review-offset: the retimed overflow Tie extends its original voice through the new musical gate");
+
+        reset();
+        const sliced = Track(`offset-slice-${serial++}`).pattern([0, 1]).offset(2);
+        const sliceEvents = capture(sliced);
+        tick(sliced, 0, 5.1);
+        const delayedSlices = sliceEvents.filter(event => event.tieCycle === 0 && event.time >= 4);
+        assert(delayedSlices.length === 2 && delayedSlices[0].sliceIndex === 0 && delayedSlices[1].sliceIndex === 1
+            && delayedSlices.every(event => event.nativeSlicePitch && event.value === 60),
+            "review-offset: old slice copies preserve selection and native-pitch metadata");
+
+        reset();
+        const tied = Track(`offset-tie-${serial++}`).synth("sine")
+            .note([Parallel([60, Tie], [64, null]), null]).offset(1.75)
+            .envelope({ attack: .01, decay: .01, sustain: .5, release: .05 });
+        tied.trackInputNode = ctx.createGain();
+        const tieEvents = [];
+        const playTie = tied._playEvent.bind(tied);
+        tied._playEvent = (event, time, duration) => {
+            tieEvents.push({ ...event, time });
+            playTie(event, time, duration);
+        };
+        tick(tied, 0, 3.75);
+        const olderVoices = [...tied._activeVoices.values()].filter(voice => voice.tieCycle === 0);
+        assert(olderVoices.length === 2 && olderVoices.some(voice => voice.tieTargets?.length),
+            "review-offset: delayed branch voices keep their originating cycle beyond the next boundary");
+        tick(tied, 3.75, 4.1);
+        assert(olderVoices[0].endTime === 4.55 && olderVoices[1].endTime === 4.05,
+            "review-offset: a retained branch Tie extends only its own delayed voice after cycle advancement");
+        assert(tieEvents.some(event => event.tieCycle === 0 && event.value === Tie && event.time === 4),
+            "review-offset: overflowing Tie retains its originating identity while current-cycle notes overlap");
+    } finally {
+        Track.clearRegistry();
+        for (const [id, track] of savedRegistry) trackRegistry.set(id, track);
+        for (const key of Object.keys(Motif)) {
+            if (!(key in savedMotif)) delete Motif[key];
+        }
+        Object.assign(Motif, savedMotif);
+    }
+}
+
+console.log("\n=== Shared modulation binding ownership ===");
+{
+    const savedMotif = { ...Motif };
+    const savedTimeout = globalThis.setTimeout;
+    const ctx = new MockAudioContext();
+    Motif.ctx = ctx;
+    Motif.masterGain = ctx.createGain();
+    Motif.isPlaying = false;
+
+    class ConnectionSource extends MockAudioNode {
+        constructor() {
+            super();
+            this.destinations = new Set();
+            this.allDisconnects = 0;
+        }
+
+        connect(target) {
+            this.destinations.add(target);
+            return target;
+        }
+
+        disconnect(target) {
+            if (target === undefined) {
+                this.allDisconnects++;
+                this.destinations.clear();
+                return;
+            }
+            if (!this.destinations.delete(target)) throw new Error("Missing modulation edge");
+        }
+    }
+
+    const configure = (instance, signal) => instance.pan(signal).filter({ cutoff: signal })
+        .volume(signal).eq({ low: signal, mid: signal, high: signal })
+        .compress({ threshold: signal, knee: signal, ratio: signal, attack: signal, release: signal });
+
+    try {
+        for (const kind of ["track", "bus"]) {
+            const source = new ConnectionSource();
+            const signal = new LFOSignal(null, null, source);
+            const keep = configure(kind === "track" ? Track(`r6-keep-${kind}`) : Bus(`r6-keep-${kind}`), signal);
+            const drop = configure(kind === "track" ? Track(`r6-drop-${kind}`) : Bus(`r6-drop-${kind}`), signal);
+            const survivors = new Set(source.destinations);
+            for (const binding of drop._paramModulationBindings.values()) survivors.delete(binding.target);
+            drop.pan(0);
+            drop.pan(signal);
+            drop.pan(Ramp(0, 1, .1));
+            drop.pan(signal);
+            source.disconnect(drop.pannerNode.pan);
+            drop.pan(0);
+            drop.pan(0);
+            assert([...survivors].every(target => source.destinations.has(target)), `r6-${kind}: scalar/Ramp replacement and a missing edge preserve every surviving effect`);
+            const registry = kind === "track" ? Track : Bus;
+            registry.pruneExcept([keep.id]);
+            registry.pruneExcept([keep.id]);
+            disposeModulationBindings(drop);
+            assert(source.destinations.size === survivors.size && [...survivors].every(target => source.destinations.has(target)), `r6-${kind}: prune and repeated disposal remove only the disposed consumer's effects`);
+            registry.clearRegistry();
+            assert(source.destinations.size === 0 && source.allDisconnects === 0, `r6-${kind}: registry clear detaches every binding without an all-edge disconnect`);
+        }
+
+        const source = new ConnectionSource();
+        const signal = new LFOSignal(null, null, source);
+        const keep = Track("r6-gain-keep").gain(signal).pan(signal).modulate("pan", signal);
+        const keepEdges = new Set(source.destinations);
+        const drop = Track("r6-gain-drop").gain(signal).pan(signal).modulate("pan", signal);
+        drop.modulate("pan", signal, { depth: .5 });
+        assert(source.destinations.size === keepEdges.size + 3, "r6-additive: replacing modulation detaches its old source-to-depth edge");
+        drop.gain(.2);
+        drop.gain(signal);
+        const gate = drop._gainSignalGate;
+        source.disconnect(gate);
+        drop._clearGainSignal();
+        assert([...keepEdges].every(target => source.destinations.has(target)), "r6-gain: missing gain gate edge cannot detach survivor gain, effect, or additive bindings");
+        drop.gain(signal);
+        const replacement = Track("r6-crossfade-new");
+        const callbacks = [];
+        globalThis.setTimeout = callback => { callbacks.push(callback); return 0; };
+        drop._crossfadeOut(replacement, 0);
+        globalThis.setTimeout = savedTimeout;
+        for (const callback of callbacks) {
+            callback();
+            callback();
+        }
+        assert(source.destinations.size === keepEdges.size && [...keepEdges].every(target => source.destinations.has(target)), "r6-crossfade: repeated cleanup detaches direct, additive and gain edges while preserving shared destinations");
+        assert(drop._gainSignalGate === null && drop._modulators.size === 0, "r6-crossfade: disposed gain gates and additive bindings are cleared");
+        Track.pruneExcept([keep.id]);
+        assert(source.destinations.size === keepEdges.size && source.allDisconnects === 0, "r6-crossfade: subsequent prune remains consumer-specific");
+
+        const instance = {};
+        const first = new MockAudioParam();
+        const second = new MockAudioParam();
+        applyParamModulation(instance, first, signal, "_signal");
+        applyParamModulation(instance, second, signal, "_signal");
+        assert(!source.destinations.has(first) && source.destinations.has(second), "r6-binding: changed destination releases the original connection");
+        disposeModulationBindings(instance);
+        safeDisconnect(source, first);
+        assert([...keepEdges].every(target => source.destinations.has(target)) && source.allDisconnects === 0, "r6-disconnect: a failed targeted disconnect never widens to every destination");
+    } finally {
+        globalThis.setTimeout = savedTimeout;
+        Track.clearRegistry();
+        Bus.clearRegistry();
+        for (const key of Object.keys(Motif)) {
+            if (!(key in savedMotif)) delete Motif[key];
+        }
+        Object.assign(Motif, savedMotif);
+    }
+}
+
+console.log("\n=== Live reload preserves track phase ===");
+{
+    const savedMotif = { ...Motif };
+    const savedRegistry = new Map(trackRegistry);
+    trackRegistry.clear();
+    const ctx = new MockAudioContext();
+    ctx.currentTime = 10;
+    Motif.ctx = ctx;
+    Motif.masterGain = ctx.createGain();
+    Motif.tempo = 120;
+    Motif.beatsPerBar = 4;
+    Motif._tempoMap = null;
+    Motif._swingAmount = 0;
+    Motif.isPlaying = false;
+
+    try {
+        const original = Track("reload-phase").note([60, 62, 64, 65]);
+        original._playEvent = () => {};
+        original._schedule(10.1);
+
+        ctx.currentTime = 13.2;
+        const replacement = Track("reload-phase").note([72, 74, 76, 77]);
+        replacement._playbackStartTime = original._playbackStartTime;
+        const played = [];
+        let cycles = 0;
+        replacement.every(1, () => { cycles++; });
+        replacement._playEvent = (event, time) => played.push([event.value, time]);
+        replacement._schedule(13.6);
+        assert(JSON.stringify(played) === JSON.stringify([[77, 13.5]]),
+            "live reload: edited notes resume at the original phrase position without replaying past onsets");
+        assert(replacement._currentCycle === 1 && cycles === 1,
+            "live reload: current cycle is recovered without executing callbacks for missed cycles");
+        assert(replacement._playbackStartTime === 10,
+            "live reload: replacement retains the original arrangement origin");
+
+        const shorter = Track("reload-phase").note([72, 74, 76, 77]).stepLength(.5).loopLength(1);
+        shorter._playbackStartTime = replacement._playbackStartTime;
+        const shorterNotes = [];
+        shorter._playEvent = (event, time) => shorterNotes.push([event.value, time]);
+        shorter._schedule(13.6);
+        assert(JSON.stringify(shorterNotes) === JSON.stringify([[74, 13.5]]) && shorter._currentCycle === 3,
+            "live reload: changed clock-based loop length recomputes phase against the original origin");
+
+        Track.clearRegistry();
+        Motif._tempoMap = null;
+        ctx.currentTime = 12;
+        Motif.setTempo(240);
+        ctx.currentTime = 13.2;
+        const musical = Track("reload-musical").note([72, 74, 76, 77]).stepLength("1/4");
+        musical._playbackStartTime = 10;
+        const musicalNotes = [];
+        musical._playEvent = (event, time) => musicalNotes.push([event.value, time]);
+        musical._schedule(13.6);
+        assert(musicalNotes.length === 2 && musicalNotes[0][0] === 74 && musicalNotes[1][0] === 76 &&
+            Math.abs(musicalNotes[0][1] - 13.25) < 1e-9 && Math.abs(musicalNotes[1][1] - 13.5) < 1e-9,
+            "live reload: musical phase follows the accumulated tempo timeline");
+
+        Motif.tempo = 120;
+        Motif._tempoMap = null;
+        const parent = Track("reload-split").synth("sine").note([60, 62, 64, 65]).splitStereo().start(2).stop(6);
+        parent._playbackStartTime = 10;
+        const shadow = parent._rightTrack;
+        const shadowNotes = [];
+        shadow._playEvent = (event, time) => shadowNotes.push([event.value, time]);
+        shadow._schedule(13.6);
+        assert(shadow._playbackStartTime === 10 && JSON.stringify(shadowNotes) === JSON.stringify([[65, 13.5]]),
+            "live reload: a fresh split shadow joins its parent's phase and activity window");
+
+        musical._resetScheduling();
+        ctx.currentTime = 20;
+        musicalNotes.length = 0;
+        musical._schedule(20.1);
+        assert(JSON.stringify(musicalNotes) === JSON.stringify([[72, 20]]),
+            "live reload: an explicit reset still starts the opening note from zero");
+    } finally {
+        Track.clearRegistry();
+        for (const [id, track] of savedRegistry) trackRegistry.set(id, track);
+        for (const key of Object.keys(Motif)) {
+            if (!(key in savedMotif)) delete Motif[key];
+        }
+        Object.assign(Motif, savedMotif);
+    }
+}
+
+console.log("\n=== Natural completion preserves submitted voice tails ===");
+{
+    const savedMotif = { ...Motif };
+    const savedTimeout = globalThis.setTimeout;
+    const ctx = new MockAudioContext();
+    let finished = 0;
+    let lastResult = null;
+    const reset = () => {
+        Motif.stop();
+        Track.clearRegistry();
+        ctx.currentTime = 0;
+        ctx.state = "running";
+        Motif.tempo = 120;
+        Motif.beatsPerBar = 4;
+        Motif._arrangementEndBeat = undefined;
+        Motif._arrangementOptions = {};
+        Motif._masterLimiterEnabled = false;
+        Motif._loadingSamples = [];
+        Motif.isPlaying = true;
+        finished = 0;
+        lastResult = null;
+    };
+    const finiteTrack = (id, stop, release) => {
+        const track = Track(id).synth("sine").note([60])
+            .envelope({ attack: 0, decay: 0, sustain: 1, release })
+            .start(0).stop(stop);
+        track._playbackStartTime = 0;
+        track._schedule = () => track._cleanupActiveVoices();
+        return track;
+    };
+    const tick = time => {
+        ctx.currentTime = time;
+        Motif._tick();
+    };
+    Motif.ctx = ctx;
+    Motif.masterGain = ctx.createGain();
+    Motif._startScheduler = () => {};
+    Motif._stopScheduler = () => {};
+    Motif.onPlaybackFinished = result => {
+        finished++;
+        lastResult = result;
+    };
+
+    try {
+        reset();
+        Motif.tempo = 70;
+        const boundary = 16 * 4 * 60 / 70;
+        const bass = finiteTrack("finish-bass", boundary, 6);
+        const pad = finiteTrack("finish-pad", boundary, 8);
+        bass._playEvent({ value: 60 }, 52, 4);
+        pad._playEvent({ value: 60 }, 52, 4);
+        const padVoice = [...pad._activeVoices.values()][0];
+        let disconnected = false;
+        const disconnect = padVoice.oscillator.disconnect;
+        padVoice.oscillator.disconnect = function() {
+            disconnected = true;
+            return disconnect.call(this);
+        };
+        tick(boundary);
+        assert(Motif.isPlaying && finished === 0 && !disconnected, "natural completion: 70 BPM arrangement boundary preserves the final gate and release");
+        tick(62);
+        assert(Motif.isPlaying && finished === 0 && !disconnected, "natural completion: shorter bass release does not cut the longer pad release");
+        tick(63.999);
+        assert(Motif.isPlaying && finished === 0 && !disconnected, "natural completion: final voice stays connected until its audio-clock end");
+        tick(64);
+        assert(!Motif.isPlaying && finished === 1 && disconnected && lastResult?.looped === false, "natural completion: final release ends playback once at 64 seconds");
+        tick(65);
+        assert(finished === 1, "natural completion: later ticks do not repeat the finish notification");
+
+        reset();
+        const emptied = finiteTrack("finish-empty-active", 1, 5);
+        emptied._playEvent({ value: 60 }, 0, 1);
+        emptied.note([]);
+        tick(1);
+        assert(Motif.isPlaying && finished === 0, "natural completion: emptying a pattern preserves its already submitted active voice");
+        tick(6);
+        assert(!Motif.isPlaying && finished === 1, "natural completion: a now-empty pattern finishes after its voice release");
+
+        reset();
+        const imperative = Track("finish-imperative-preview").synth("sine")
+            .envelope({ attack: 0, decay: 0, sustain: 1, release: 1 });
+        imperative._playEvent({ value: 60 }, 0, 1);
+        tick(2);
+        assert(Motif.isPlaying && finished === 0 && imperative._activeVoices.size === 0,
+            "natural completion: unrestricted imperative-only playback remains open between instruments after voice cleanup");
+        imperative._playEvent({ value: 64 }, 2, 1);
+        tick(4);
+        assert(Motif.isPlaying && finished === 0 && imperative._activeVoices.size === 0,
+            "natural completion: an empty-pattern preview can play successive instruments without finishing transport");
+
+        reset();
+        const ignoredEmpty = finiteTrack("finish-unused-empty", 100, 0).note([]);
+        const bounded = finiteTrack("finish-bounded-pattern", 1, 0);
+        bounded._playEvent({ value: 60 }, 0, 1);
+        tick(1);
+        assert(!Motif.isPlaying && finished === 1 && ignoredEmpty._activeVoices.size === 0,
+            "natural completion: empty finite patterns with no submitted audio do not extend another track's completion");
+
+        reset();
+        const retired = finiteTrack("finish-empty-retired", 1, 7);
+        retired._playEvent({ value: 60 }, 0, 1);
+        retired._stealVoice("oldest", 4);
+        retired.note([]);
+        assert(retired._activeVoices.size === 0 && retired._retiredVoices.size === 1, "natural completion fixture: stolen voice retains only its retired allocation");
+        tick(1);
+        tick(3.999);
+        assert(Motif.isPlaying && finished === 0 && retired._retiredVoices.size === 1, "natural completion: retired voices on empty patterns keep playback alive until their scheduled stop");
+        tick(4);
+        assert(!Motif.isPlaying && finished === 1 && retired._retiredVoices.size === 0, "natural completion: retired-only playback finishes at the stolen voice's shortened end");
+
+        reset();
+        const split = finiteTrack("finish-split", 1, 0);
+        split.splitStereo();
+        const shadow = trackRegistry.get("finish-split_right");
+        shadow.envelope({ attack: 0, decay: 0, sustain: 1, release: 7 });
+        shadow._schedule = () => shadow._cleanupActiveVoices();
+        shadow._playbackStartTime = 0;
+        shadow._playEvent({ value: 60 }, 0, 1);
+        tick(1);
+        assert(Motif.isPlaying && finished === 0, "natural completion: independently scheduled split shadow can outlive its parent's arranged boundary");
+        tick(8);
+        assert(!Motif.isPlaying && finished === 1, "natural completion: finite split shadow releases before the finish notification");
+
+        reset();
+        Motif._masterLimiterEnabled = true;
+        Motif.masterLimiter = new MockAudioNode();
+        const limited = finiteTrack("finish-limiter", 1, 1);
+        limited._playEvent({ value: 60 }, 0, 1);
+        const latency = (Math.ceil(ctx.sampleRate * .005) + 128) / ctx.sampleRate;
+        tick(1);
+        tick(2);
+        assert(Motif.isPlaying && finished === 0 && limited._activeVoices.size === 0, "natural completion: voice cleanup leaves the context running for buffered limiter output");
+        tick(2 + latency / 2);
+        assert(Motif.isPlaying && finished === 0, "natural completion: subsequent short ticks retain the limiter drain deadline after voice cleanup");
+        tick(2 + latency);
+        assert(!Motif.isPlaying && finished === 1, "natural completion: playback finishes when all limiter lookahead frames drain");
+
+        reset();
+        Motif._masterLimiterEnabled = true;
+        const emptyLimited = finiteTrack("finish-empty-limiter", 1, 1);
+        emptyLimited._playEvent({ value: 60 }, 0, 1);
+        emptyLimited.note([]);
+        tick(2);
+        tick(2 + latency / 2);
+        assert(Motif.isPlaying && finished === 0 && emptyLimited._activeVoices.size === 0,
+            "natural completion: a finite empty pattern retains its own limiter drain after voice cleanup");
+        tick(2 + latency);
+        assert(!Motif.isPlaying && finished === 1,
+            "natural completion: a finite empty pattern finishes when its own limiter drain ends");
+
+        reset();
+        const cancelled = finiteTrack("finish-explicit-stop", 1, 8);
+        cancelled._playEvent({ value: 60 }, 0, 1);
+        tick(1);
+        Motif.stop();
+        assert(!Motif.isPlaying && finished === 0 && cancelled._activeVoices.size === 0, "natural completion: explicit stop immediately cancels tails without a finish notification");
+        cancelled.note([null])._schedule = () => {};
+        cancelled._playbackStartTime = 1;
+        await Motif.start();
+        tick(2);
+        assert(!Motif.isPlaying && finished === 1, "natural completion: restarting after explicit stop does not inherit a cancelled release deadline");
+
+        reset();
+        const open = finiteTrack("finish-unrestricted", 1, 3);
+        open._playEvent({ value: 60 }, 0, 1);
+        Track("finish-unrestricted-rest").note([null]);
+        tick(5);
+        assert(Motif.isPlaying && finished === 0, "natural completion: an unrestricted rest pattern keeps transport open after every finite voice ends");
+
+        reset();
+        const loop = finiteTrack("finish-loop", 1, 8);
+        loop._playEvent({ value: 60 }, 0, 1);
+        Motif._arrangementOptions = { loop: true, loopDelay: .25 };
+        let loopCallback;
+        let loopDelay;
+        globalThis.setTimeout = (callback, delay) => {
+            loopCallback = callback;
+            loopDelay = delay;
+            return 987654;
+        };
+        tick(1);
+        assert(!Motif.isPlaying && finished === 1 && lastResult?.looped === true && loopDelay === 250,
+            "natural completion: arrangement loops retain section-boundary timing and configured delay despite long releases");
+        Motif.stop();
+        loopCallback();
+        await Promise.resolve();
+        await Promise.resolve();
+        assert(!Motif.isPlaying && finished === 1, "natural completion: explicit stop cancels an already queued loop restart");
+    } finally {
+        globalThis.setTimeout = savedTimeout;
+        Motif.stop();
+        Track.clearRegistry();
+        for (const key of Object.keys(Motif)) {
+            if (!(key in savedMotif)) delete Motif[key];
+        }
+        Object.assign(Motif, savedMotif);
+    }
+}
+
+// =============================================================================
 // Summary
 // =============================================================================
 console.log(`\n${"=".repeat(60)}`);
@@ -9550,4 +12507,3 @@ if (failures.length > 0) {
 console.log("=".repeat(60));
 
 process.exit(failed > 0 ? 1 : 0);
-

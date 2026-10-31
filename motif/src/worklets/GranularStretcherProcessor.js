@@ -11,6 +11,8 @@ class GranularStretcherProcessor extends AudioWorkletProcessor {
     constructor() {
         super();
         this.leftBuffer = null;
+        this.bufferSampleRate = sampleRate;
+        this.sourceFramesPerOutputFrame = 1;
         this.rightBuffer = null;
         this.grains = [];
         this.virtualReadPointer = 0;
@@ -19,16 +21,20 @@ class GranularStretcherProcessor extends AudioWorkletProcessor {
         this._startTime = null;
         this._endTime = null;
         this._done = false;
+        this._sliceEndFrame = Infinity;
 
         this.port.onmessage = ({ data }) => {
             if (data.leftBuffer) {
                 this.leftBuffer = data.leftBuffer;
+                this.bufferSampleRate = data.bufferSampleRate;
+                this.sourceFramesPerOutputFrame = this.bufferSampleRate / sampleRate;
                 this.rightBuffer = data.rightBuffer || data.leftBuffer;
             }
             if (data.type === "START") {
                 this._startTime = data.startTime;
+                this._sliceEndFrame = data.duration === undefined ? Infinity : ((data.offset || 0) + data.duration) * this.bufferSampleRate;
                 if (data.offset !== undefined && data.offset !== null) {
-                    this.virtualReadPointer = data.offset * sampleRate;
+                    this.virtualReadPointer = data.offset * this.bufferSampleRate;
                     this.lastSpawnCount = -Infinity;
                 }
             }
@@ -61,7 +67,7 @@ class GranularStretcherProcessor extends AudioWorkletProcessor {
         const grainSizeArr = parameters.grainSize;
         const overlapArr = parameters.overlap;
 
-        const bufferLength = this.leftBuffer.length;
+        const bufferLength = Math.min(this.leftBuffer.length, this._sliceEndFrame);
 
         for (let i = 0; i < len; i++) {
             const t = currentTime + i / sampleRate;
@@ -114,7 +120,7 @@ class GranularStretcherProcessor extends AudioWorkletProcessor {
 
             for (let g = 0; g < this.grains.length; g++) {
                 const grain = this.grains[g];
-                const readIndex = Math.floor(grain.position + (grain.age * pitchRatio));
+                const readIndex = Math.floor(grain.position + (grain.age * pitchRatio * this.sourceFramesPerOutputFrame));
                 let leftVal = 0;
                 let rightVal = 0;
 
@@ -141,8 +147,8 @@ class GranularStretcherProcessor extends AudioWorkletProcessor {
             leftChan[i] = leftSum;
             if (output[1]) rightChan[i] = rightSum;
 
-            // Advance playhead by 1 / stretchFactor per output sample
-            this.virtualReadPointer += 1.0 / stretchFactor;
+            // Source positions use buffer frames; grain ages and windows use output frames.
+            this.virtualReadPointer += this.sourceFramesPerOutputFrame / stretchFactor;
             this.outputSampleCount++;
 
             if (this.virtualReadPointer >= bufferLength && this.grains.length === 0) {
