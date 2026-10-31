@@ -132,6 +132,10 @@
 
 
         /* Individual Icons (SVGs inline for portability, could be images) */
+        .card-slide-editor {
+            --bg-icon: url("./slide_editor/icon.svg");
+        }
+
         .card-md-preview {
             --bg-icon: url("./md_preview/icon.svg");
         }
@@ -688,6 +692,19 @@
             </p>
             <div class="card-footer">
                 Open Tool <span class="sym arrow"></span>
+            </div>
+        </a>
+
+        <!-- Slide Editor -->
+        <a href="./slide_editor/index.html" class="tool-card card-slide-editor">
+            <div class="card-header">
+                <h2 class="card-title">Slide Editor</h2>
+            </div>
+            <p class="card-desc">
+                Edit Markdown and CSS presentations locally, present slides, and import or export presentation ZIPs.
+            </p>
+            <div class="card-footer">
+                Open Tool <span class="sym arrow" aria-hidden="true"></span>
             </div>
         </a>
 
