@@ -309,7 +309,7 @@
                 <input type="checkbox" id="join-literals" checked onchange="updateASTFromInput()">
                 Join successive Literals in Structure Tree
             </label>
-            <div id="error-msg" class="error-message" hidden></div>
+            <div id="error-msg" class="error-message" role="alert" hidden></div>
         </form>
     </section>
 
@@ -342,7 +342,7 @@
     <h2>Glossary</h2>
     <ul>
         <li>
-            <dfn>Literal</dfn>: Matches exact text characters.
+            <dfn>Literal</dfn>: Matches exact text characters. Repetitions apply to the entire Text block.
         </li>
         <li>
             <dfn>Set</dfn>: Matches any single character from a set or range.
@@ -420,427 +420,8 @@
 </aside>
 
 <script src="../one.js"></script>
+<script src="regex.js"></script>
 <script>
-    /**
-     * REVERSE REGEX BUILDER
-     * * Architecture:
-     * 1. AST: A JSON tree representing the Regex.
-     * 2. Parser: String -> AST.
-     * 3. Generator: AST -> String.
-     * 4. Renderer: AST -> DOM (Reactive).
-     */
-
-    /* --- 1. Constants & AST Node Definitions --- */
-
-    const TYPES = {
-        ROOT: "ROOT",
-        LITERAL: "LITERAL",     // Normal text
-        SET: "SET",             // [a-z] or \d
-        GROUP: "GROUP",         // (...)
-        BRANCH: "BRANCH",       // | (Alternation)
-        ANCHOR: "ANCHOR",       // ^ $ \b
-        DOT: "DOT",             // .
-        FLAGS: "FLAGS",          // (?ix) inline flags
-        BACKREF: "BACKREF",      // \1, \2...
-    };
-
-    // Creates a default unique ID for nodes to help with DOM diffing/event handling
-    const uid = () => Math.random().toString(36).substring(2, 11);
-
-    /* --- 2. The Parser (Recursive Descent) --- */
-
-    class RegexParser {
-        constructor(pattern) {
-            this.pattern = pattern;
-            this.pos = 0;
-            this.len = pattern.length;
-        }
-
-        peek() {
-            return this.pos < this.len ? this.pattern[this.pos] : null;
-        }
-
-        consume() {
-            return this.pos < this.len ? this.pattern[this.pos++] : null;
-        }
-
-        match(char) {
-            if (this.peek() === char) {
-                this.pos++;
-                return true;
-            }
-            return false;
-        }
-
-        // Match an exact substring at the current position
-        matchStr(str) {
-            if (this.pattern.substring(this.pos, this.pos + str.length) === str) {
-                this.pos += str.length;
-                return true;
-            }
-            return false;
-        }
-
-        error(msg) {
-            throw new Error(`${msg} at position ${this.pos}`);
-        }
-
-        parse() {
-            const root = { type: TYPES.ROOT, children: [], id: uid() };
-            root.children = this.parseAlternation();
-            return root;
-        }
-
-        // Handles a | b | c
-        parseAlternation() {
-            const options = [];
-            let currentSequence = [];
-
-            while (this.pos < this.len && this.peek() !== ")") {
-                if (this.match("|")) {
-                    options.push(currentSequence);
-                    currentSequence = [];
-                } else {
-                    const atom = this.parseAtom();
-                    if (atom) {
-                        // Flags nodes cannot have quantifiers
-                        const quantified = atom.type === TYPES.FLAGS ? atom : this.parseQuantifier(atom);
-                        currentSequence.push(quantified);
-                    } else {
-                        break;
-                    }
-                }
-            }
-
-            options.push(currentSequence);
-
-            if (options.length > 1) {
-                return [{
-                    type: TYPES.BRANCH,
-                    branches: options,
-                    id: uid(),
-                }];
-            } else {
-                return currentSequence;
-            }
-        }
-
-        // Check if the substring at current pos (after '(?') is a flags-only group
-        // e.g. (?ix), (?i), etc. — no content, just flags followed by ')'
-        isInlineFlagsOnly() {
-            const saved = this.pos;
-            let flags = "";
-            while (this.pos < this.len && /[aimsux]/.test(this.peek())) {
-                flags += this.consume();
-            }
-            if (flags.length > 0 && this.peek() === ")") {
-                // It's a flags-only group like (?ix)
-                this.pos = saved;
-                return true;
-            }
-            this.pos = saved;
-            return false;
-        }
-
-        parseAtom() {
-            const char = this.peek();
-            if (char === null) return null;
-
-            // End of group
-            if (char === ")" || char === "|") return null;
-
-            // Group
-            if (this.match("(")) {
-                let capturing = true;
-                let name = null;
-
-                if (this.match("?")) {
-                    // Inline flags only: (?ix)
-                    if (this.isInlineFlagsOnly()) {
-                        let flags = "";
-                        while (this.pos < this.len && /[aimsux]/.test(this.peek())) {
-                            flags += this.consume();
-                        }
-                        if (!this.match(")")) this.error("Expected ) after inline flags");
-                        return {
-                            type: TYPES.FLAGS,
-                            flags: flags,
-                            id: uid(),
-                        };
-                    }
-                    // Lookahead/lookbehind: (?=...) (?!...) (?<=...) (?<!...)
-                    else if ("=!".includes(this.peek()) || (this.peek() === "<" && this.pos + 1 < this.len && "=!".includes(this.pattern[this.pos + 1]))) {
-                        let lookType;
-                        if (this.match("<")) {
-                            lookType = "<" + this.consume(); // <= or <!
-                        } else {
-                            lookType = this.consume(); // = or !
-                        }
-                        const children = this.parseAlternation();
-                        if (!this.match(")")) this.error("Unclosed lookaround group");
-                        return {
-                            type: TYPES.GROUP,
-                            capturing: false,
-                            lookType: "?" + lookType,
-                            children: children,
-                            id: uid(),
-                        };
-                    }
-                    // Atomic group: (?>...)
-                    else if (this.match(">")) {
-                        const children = this.parseAlternation();
-                        if (!this.match(")")) this.error("Unclosed atomic group");
-                        return {
-                            type: TYPES.GROUP,
-                            capturing: false,
-                            lookType: "?>",
-                            children: children,
-                            id: uid(),
-                        };
-                    }
-                    // Named group: (?P<name>...) or (?<name>...)
-                    else if (this.matchStr("P<") || this.match("<")) {
-                        name = "";
-                        while (this.pos < this.len && this.peek() !== ">") {
-                            name += this.consume();
-                        }
-                        if (!this.match(">")) this.error("Expected > after group name");
-                        capturing = true;
-                    }
-                    // Python style named backreference: (?P=name)
-                    else if (this.matchStr("P=")) {
-                        let name = "";
-                        while (this.pos < this.len && this.peek() !== ")") {
-                            name += this.consume();
-                        }
-                        if (!this.match(")")) this.error("Expected ) after named backref");
-                        return {
-                            type: TYPES.BACKREF,
-                            named: true,
-                            value: name,
-                            id: uid(),
-                        };
-                    }
-                    // Non-capturing: (?:...)
-                    else if (this.match(":")) {
-                        capturing = false;
-                    }
-                }
-
-                const children = this.parseAlternation();
-                if (!this.match(")")) this.error("Unclosed group");
-
-                return {
-                    type: TYPES.GROUP,
-                    capturing: capturing,
-                    name: name,
-                    children: children,
-                    id: uid(),
-                };
-            }
-
-            // Set [...]
-            if (this.match("[")) {
-                let content = "";
-                let negated = false;
-                if (this.match("^")) {
-                    negated = true;
-                }
-
-                // Proper set content parsing that handles escape sequences
-                while (this.pos < this.len) {
-                    if (this.peek() === "\\") {
-                        // Consume the backslash and the next char as a pair
-                        content += this.consume(); // backslash
-                        if (this.pos < this.len) content += this.consume(); // escaped char
-                    } else if (this.peek() === "]") {
-                        this.consume();
-                        break;
-                    } else {
-                        content += this.consume();
-                    }
-                }
-
-                return {
-                    type: TYPES.SET,
-                    content: content,
-                    negated: negated,
-                    id: uid(),
-                };
-            }
-
-            // Anchors
-            if (this.match("^")) return {
-                type: TYPES.ANCHOR,
-                kind: "Start",
-                value: "^",
-                id: uid(),
-            };
-            if (this.match("$")) return { type: TYPES.ANCHOR, kind: "End", value: "$", id: uid() };
-            if (this.match(".")) return { type: TYPES.DOT, id: uid() };
-
-            // Escapes
-            if (this.match("\\")) {
-                const esc = this.consume();
-                // Backreference \1, \2...
-                if (/[1-9]/.test(esc)) {
-                    let val = esc;
-                    while (this.pos < this.len && /[0-9]/.test(this.peek())) {
-                        val += this.consume();
-                    }
-                    return { type: TYPES.BACKREF, value: val, id: uid() };
-                }
-                // Predefined sets
-                if ("dDwWsS".includes(esc)) {
-                    return {
-                        type: TYPES.SET,
-                        predefined: "\\" + esc,
-                        id: uid(),
-                    };
-                }
-                // Anchor \b \B
-                if ("bB".includes(esc)) {
-                    return {
-                        type: TYPES.ANCHOR,
-                        kind: "Boundary",
-                        value: "\\" + esc,
-                        id: uid(),
-                    };
-                }
-                // Escaped literal (e.g. \. \* \+ etc.)
-                return {
-                    type: TYPES.LITERAL,
-                    value: esc,
-                    escaped: true,
-                    id: uid(),
-                };
-            }
-
-            // Literal
-            const val = this.consume();
-            if ("*+?{}".includes(val)) this.error(`Unexpected quantifier ${val}`);
-
-            return { type: TYPES.LITERAL, value: val, id: uid() };
-        }
-
-        parseQuantifier(atom) {
-            let min = 1, max = 1;
-            let greedy = true;
-            let quantified = false;
-
-            if (this.match("*")) {
-                min = 0;
-                max = Infinity;
-                quantified = true;
-            } else if (this.match("+")) {
-                min = 1;
-                max = Infinity;
-                quantified = true;
-            } else if (this.match("?")) {
-                min = 0;
-                max = 1;
-                quantified = true;
-            } else if (this.match("{")) {
-                const start = this.pos;
-                while (this.pos < this.len && this.peek() !== "}") this.pos++;
-                const content = this.pattern.substring(start, this.pos);
-                this.consume(); // }
-
-                const parts = content.split(",");
-                min = parseInt(parts[0], 10) || 0;
-                if (parts.length === 1) max = min;
-                else max = parts[1] === "" ? Infinity : parseInt(parts[1], 10);
-                quantified = true;
-            }
-
-            if (quantified) {
-                if (this.match("?")) greedy = false;
-                atom.quantifier = { min, max, greedy };
-            }
-
-            return atom;
-        }
-    }
-
-    /* --- 3. The Generator (AST -> String) --- */
-
-    const SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/;
-
-    const Generator = {
-        generate(node) {
-            if (Array.isArray(node)) return node.map(n => Generator.generate(n)).join("");
-
-            let out = "";
-
-            switch (node.type) {
-                case TYPES.ROOT:
-                    out = Generator.generate(node.children);
-                    break;
-                case TYPES.LITERAL:
-                    // Escape special chars, but preserve already-escaped literals
-                    if (node.escaped) {
-                        out = "\\" + node.value;
-                    } else {
-                        out = node.value.split("").map(c => SPECIAL_CHARS.test(c) ? "\\" + c : c).join("");
-                    }
-                    break;
-                case TYPES.DOT:
-                    out = ".";
-                    break;
-                case TYPES.ANCHOR:
-                    out = node.value;
-                    break;
-                case TYPES.SET:
-                    if (node.predefined) {
-                        out = node.predefined;
-                    } else {
-                        out = `[${node.negated ? "^" : ""}${node.content}]`;
-                    }
-                    break;
-                case TYPES.GROUP: {
-                    const inner = Generator.generate(node.children);
-                    if (node.lookType) {
-                        out = `(${node.lookType}${inner})`;
-                    } else if (node.name) {
-                        out = `(?P<${node.name}>${inner})`;
-                    } else if (node.capturing) {
-                        out = `(${inner})`;
-                    } else {
-                        out = `(?:${inner})`;
-                    }
-                    break;
-                }
-                case TYPES.BRANCH:
-                    out = node.branches.map(b => Generator.generate(b)).join("|");
-                    break;
-                case TYPES.FLAGS:
-                    out = `(?${node.flags})`;
-                    break;
-                case TYPES.BACKREF:
-                    if (node.named) {
-                        out = `(?P=${node.value})`;
-                    } else {
-                        out = "\\" + node.value;
-                    }
-                    break;
-            }
-
-            // Append quantifier
-            if (node.quantifier) {
-                const { min, max, greedy } = node.quantifier;
-                if (min === 0 && max === Infinity) out += "*";
-                else if (min === 1 && max === Infinity) out += "+";
-                else if (min === 0 && max === 1) out += "?";
-                else if (min === max) out += `{${min}}`;
-                else out += `{${min},${max === Infinity ? "" : max}}`;
-
-                if (!greedy) out += "?";
-            }
-
-            return out;
-        },
-    };
-
     /* --- 4. State Management --- */
 
     let state = {
@@ -862,60 +443,22 @@
     const updateASTFromInput = () => {
         const input = document.getElementById("regex-out").value;
         try {
-            if (!input) {
-                state.ast = { type: TYPES.ROOT, children: [], id: uid() };
-            } else {
-                const parser = new RegexParser(input);
-                state.ast = parser.parse();
-            }
+            const ast = new RegexParser(input).parse();
 
             const joinCheck = document.getElementById("join-literals");
             if (joinCheck && joinCheck.checked) {
-                joinLiteralsInAST(state.ast);
+                joinLiteralsInAST(ast);
             }
 
-            numberGroups(state.ast);
+            numberGroups(ast);
+            state.ast = ast;
             setError("");
-            render();
         } catch (e) {
+            state.ast = null;
             setError("Invalid Regex: " + e.message);
         }
+        render();
     };
-
-    function joinLiteralsInAST(node) {
-        if (!node || typeof node !== "object") return;
-        if (node.children) {
-            node.children = joinLiteralsInArray(node.children);
-            node.children.forEach(joinLiteralsInAST);
-        }
-        if (node.branches) {
-            for (let i = 0; i < node.branches.length; i++) {
-                node.branches[i] = joinLiteralsInArray(node.branches[i]);
-                node.branches[i].forEach(joinLiteralsInAST);
-            }
-        }
-    }
-
-    function joinLiteralsInArray(arr) {
-        const result = [];
-        for (let i = 0; i < arr.length; i++) {
-            const current = arr[i];
-            if (result.length > 0 && current.type === TYPES.LITERAL) {
-                const prev = result[result.length - 1];
-                if (prev.type === TYPES.LITERAL) {
-                    const prevQuant = prev.quantifier ? JSON.stringify(prev.quantifier) : null;
-                    const currQuant = current.quantifier ? JSON.stringify(current.quantifier) : null;
-                    if (prevQuant === currQuant) {
-                        prev.value += current.value;
-                        delete prev.escaped;
-                        continue;
-                    }
-                }
-            }
-            result.push(current);
-        }
-        return result;
-    }
 
     /* --- 5. Rendering & Interaction --- */
 
@@ -953,6 +496,7 @@
 
     // Helper to update a node in the tree by ID
     const triggerUpdate = () => {
+        if (!state.ast) return;
         numberGroups(state.ast);
         updateRegexInput();
         render();
@@ -961,6 +505,9 @@
     function renderQuantifierInputs(node, container) {
         if (!node.quantifier) {
             const btn = tip(createEl("button", "btn-sym", "", "autorenew"), "Add Repetitions");
+            if (node.type === TYPES.LITERAL && !node.escaped) {
+                tip(btn, "Add Repetitions to the entire Text block");
+            }
             btn.onclick = () => {
                 node.quantifier = { min: 1, max: 1, greedy: true };
                 triggerUpdate();
@@ -971,6 +518,7 @@
 
         const wrapper = createEl("span", "repeat-group");
         wrapper.setAttribute("role", "group");
+        wrapper.setAttribute("aria-label", "Repetitions for the entire block");
         wrapper.appendChild(createEl("span", "sym", "repeat"));
 
         // Min
@@ -1189,16 +737,22 @@
             if (node.named) contentDiv.appendChild(createEl("span", "description", ")"));
         }
 
-        if (node.type === TYPES.LITERAL && node.value.length > 1) {
+        if (node.type === TYPES.LITERAL && !node.escaped && node.value.length > 1) {
             const splitBtn = tip(createEl("button", "btn-sym", "", "content_cut"), "Split into individual characters");
             splitBtn.onclick = () => {
                 const chars = node.value.split("");
-                const newNodes = chars.map(c => {
-                    const newNode = { type: TYPES.LITERAL, value: c, id: uid() };
-                    if (node.quantifier) newNode.quantifier = JSON.parse(JSON.stringify(node.quantifier));
-                    return newNode;
-                });
-                parentArray.splice(index, 1, ...newNodes);
+                const newNodes = chars.map(c => ({ type: TYPES.LITERAL, value: c, id: uid() }));
+                if (node.quantifier) {
+                    parentArray.splice(index, 1, {
+                        type: TYPES.GROUP,
+                        capturing: false,
+                        children: newNodes,
+                        quantifier: node.quantifier,
+                        id: node.id,
+                    });
+                } else {
+                    parentArray.splice(index, 1, ...newNodes);
+                }
                 triggerUpdate();
             };
             contentDiv.appendChild(splitBtn);
@@ -1371,6 +925,13 @@
     function render() {
         const rootEl = document.getElementById("tree-root");
         rootEl.innerHTML = "";
+        document.getElementById("generate-btn").disabled = !state.ast;
+
+        if (!state.ast) {
+            const message = createEl("p", "description", "Fix the invalid regex above to edit its structure.");
+            rootEl.appendChild(message);
+            return;
+        }
 
         if (!state.ast.children || state.ast.children.length === 0) {
             rootEl.innerHTML = "<p class=\"description\">Empty pattern. Add blocks to build your regex visually.</p>";
@@ -1590,6 +1151,7 @@
     let _generateAbort = null;
 
     async function generateTestStrings() {
+        if (!state.ast) return;
         // Abort any previous generation in progress
         if (_generateAbort) _generateAbort.abort = true;
         const token = { abort: false };
@@ -1703,7 +1265,10 @@
         try {
             re = buildTestRegex(pattern);
         } catch (e) {
-            testResults.innerHTML = `<p class="description">Invalid regex: ${e.message}</p>`;
+            const error = document.createElement("p");
+            error.className = "description";
+            error.textContent = `Invalid regex: ${e.message}`;
+            testResults.appendChild(error);
             return;
         }
 
@@ -1729,15 +1294,12 @@
             if (matches.length > 0) {
                 let lastIdx = 0;
                 matches.forEach(m => {
-                    // Skip empty matches that don't advance (to avoid infinite loops, though matchAll handles this)
-                    if (m[0] === "" && m.index === lastIdx && lastIdx !== 0) return;
-
                     text.appendChild(document.createTextNode(line.substring(lastIdx, m.index)));
                     const mark = document.createElement("mark");
                     mark.textContent = m[0] || "ε"; // Show epsilon for empty matches
                     if (m[0] === "") tip(mark, "Empty match");
                     text.appendChild(mark);
-                    lastIdx = m.index + (m[0].length || 1);
+                    lastIdx = m.index + m[0].length;
                 });
                 text.appendChild(document.createTextNode(line.substring(lastIdx)));
             } else {
@@ -1752,7 +1314,9 @@
                 for (const [k, v] of Object.entries(matches[0].groups)) {
                     if (v === undefined) continue;
                     const span = document.createElement("span");
-                    span.innerHTML = `<strong>${k}</strong>: ${v}`;
+                    const label = document.createElement("strong");
+                    label.textContent = k;
+                    span.append(label, document.createTextNode(`: ${v}`));
                     groups.appendChild(span);
                 }
                 body.appendChild(groups);
