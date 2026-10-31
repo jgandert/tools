@@ -484,15 +484,16 @@ const one = (() => {
 
     const compress = {
         /**
-         * Compress text into a Base64URL string formatted as a URL parameter.
+         * Encode text as deflate Base64URL, or URI-encoded text with a raw "text:" prefix.
          * @param {string} text - Input text to compress.
-         * @param {string} [param="z"] - Parameter key name (pass null for bare Base64URL).
-         * @returns {Promise<string>} e.g. "z=eJz..."
+         * @param {string|null} [param="z"] - Parameter key name (pass null for a bare payload).
+         * @returns {Promise<string>} e.g. "z=y0jNyckHAA" or "z=text:hello%20world".
          */
         url: async (text, param = "z") => {
             if (!text) return "";
             if (typeof CompressionStream === "undefined") {
-                return param ? `${param}=${encodeURIComponent(text)}` : encodeURIComponent(text);
+                const payload = `text:${encodeURIComponent(text)}`;
+                return param ? `${param}=${payload}` : payload;
             }
             try {
                 const bytes = new TextEncoder().encode(text);
@@ -510,34 +511,55 @@ const one = (() => {
                 return param ? `${param}=${b64}` : b64;
             } catch (err) {
                 console.error("one.compress.url error:", err);
-                return param ? `${param}=${encodeURIComponent(text)}` : encodeURIComponent(text);
+                const payload = `text:${encodeURIComponent(text)}`;
+                return param ? `${param}=${payload}` : payload;
             }
         },
     };
 
     const decompress = {
         /**
-         * Extract and decompress a Base64URL payload from a hash, URL, or string.
+         * Decode a URL payload, including tagged plain text and existing untagged links.
          * @param {string} input - location.hash, full URL, or parameter string.
-         * @param {string} [param="z"] - Parameter key to extract.
+         * @param {string|null} [param="z"] - Parameter key to extract (pass null for a bare payload).
          * @returns {Promise<string|null>} Decompressed string or null on failure.
          */
         url: async (input, param = "z") => {
             if (!input) return null;
-            let b64 = input;
+            let encodedPayload = input;
+            let payload = input;
             if (param) {
                 const str = input.replace(/^[^?#]*[?#]/, "");
-                b64 = new URLSearchParams(str).get(param);
-                if (!b64) return null;
-            }
-            if (typeof DecompressionStream === "undefined") {
+                payload = null;
+                for (const part of str.split("&")) {
+                    const value = new URLSearchParams(part).get(param);
+                    if (value === null) {
+                        continue;
+                    }
+                    encodedPayload = part.slice(part.indexOf("=") + 1);
+                    payload = value;
+                    break;
+                }
+                if (!payload) {
+                    return null;
+                }
+            } else {
                 try {
-                    return decodeURIComponent(b64);
+                    payload = decodeURIComponent(encodedPayload);
                 } catch {
                     return null;
                 }
             }
-            b64 = b64.replace(/-/g, "+").replace(/_/g, "/");
+
+            // Old URI-encoded text escapes the colon; only a raw prefix tags plain text.
+            if (encodedPayload.startsWith("text:")) {
+                return payload.slice(5);
+            }
+            if (typeof DecompressionStream === "undefined") {
+                return payload;
+            }
+
+            let b64 = payload.replace(/-/g, "+").replace(/_/g, "/");
             while (b64.length % 4) b64 += "=";
             try {
                 const bin = atob(b64);
@@ -552,11 +574,7 @@ const one = (() => {
                 const buf = await new Response(ds).arrayBuffer();
                 return new TextDecoder().decode(buf);
             } catch {
-                try {
-                    return decodeURIComponent(b64);
-                } catch {
-                    return null;
-                }
+                return payload;
             }
         },
     };
