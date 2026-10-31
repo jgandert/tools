@@ -4,6 +4,8 @@ icon.orig.svg
 
 # Generated audit output
 /motif/test/render-audit/output/
+/svg_tracer/tests/test-results.json
+/svg_tracer/.quality-work/
 
 # Usually included, but we don't want them here
 bun.lock

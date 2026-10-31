@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en" class="theme-teal">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="color-scheme" content="light dark">
+        <meta name="description" content="Trace flat-color raster images into SVG with shared boundaries, smooth curves, and local processing.">
+        <title>SVG Tracer</title>
+        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+        <!-- Copyright 2026 Joschua Gandert - License: Apache 2.0 -->
+        <link rel="stylesheet" href="../one.css">
+        <script src="../one.js"></script>
+        <script src="tracer.js"></script>
+        <style>
+            :root {
+                --aside-width: 340px;
+            }
+
+            body {
+                height: 100dvh;
+                overflow: hidden;
+            }
+
+            #content, aside {
+                min-height: 0;
+                overflow-y: auto;
+            }
+
+            .previews {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: var(--spacing-lg);
+                margin-block: var(--spacing-lg);
+            }
+
+            .previews figure {
+                min-width: 0;
+                margin: 0;
+            }
+
+            .previews figcaption {
+                margin-bottom: var(--spacing-sm);
+                font-weight: 500;
+            }
+
+            .preview-frame {
+                display: grid;
+                place-items: center;
+                min-height: 280px;
+                padding: var(--spacing-md);
+                overflow: auto;
+                background-color: #fff;
+                background-image: conic-gradient(#edf0f3 25%, transparent 0 50%, #edf0f3 0 75%, transparent 0);
+                background-size: 20px 20px;
+                border: 1px solid var(--outline-variant);
+                border-radius: var(--radius-sm);
+            }
+
+            .preview-frame canvas, .preview-frame img {
+                display: block;
+                max-width: 100%;
+                max-height: 60vh;
+                width: 100%;
+                height: auto;
+                object-fit: contain;
+            }
+
+            .preview-frame p {
+                max-width: 28ch;
+                margin: 0;
+                color: #394653;
+                text-align: center;
+            }
+
+            #stats {
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+                font-size: 0.85rem;
+            }
+
+            #svg-text {
+                font-family: var(--font-code);
+                font-size: 0.85rem;
+            }
+
+            #error {
+                color: var(--error);
+                overflow-wrap: anywhere;
+            }
+
+            #size {
+                color: var(--on-surface-variant);
+                font-size: 0.85rem;
+            }
+
+            #source-name {
+                overflow-wrap: anywhere;
+            }
+
+            #progress {
+                width: 100%;
+            }
+
+            @media (max-width: 1100px) {
+                .previews {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            @media (max-width: 899px) {
+                :root {
+                    --aside-width: min(340px, 100vw);
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <a href="#content" class="skip-link">Skip to content</a>
+        <input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle browsing and options">
+        <header>
+            <label for="aside-state" class="aside-toggle-btn" title="Browse and options"></label>
+            <hgroup>
+                <h1>SVG Tracer</h1>
+                <p>Turn flat-color images into vector artwork.</p>
+            </hgroup>
+            <button id="trace" type="button" class="btn-primary" aria-label="Trace SVG" title="Trace SVG" disabled>
+                <span class="sym" aria-hidden="true">draw</span>
+                <span class="hide-mobile">Trace SVG</span>
+            </button>
+            <button id="cancel" type="button" aria-label="Cancel tracing" title="Cancel tracing" hidden>
+                <span class="sym" aria-hidden="true">close</span>
+                <span class="hide-mobile">Cancel</span>
+            </button>
+            <a id="download" class="btn" aria-label="Save SVG" title="Save SVG" hidden>
+                <span class="sym" aria-hidden="true">download</span>
+                <span class="hide-mobile">Save SVG</span>
+            </a>
+        </header>
+        <main id="content" aria-busy="false">
+            <p id="status" role="status" aria-live="polite">Choose an image from the sidebar, or try an example, to start tracing.</p>
+            <p id="error" role="alert" hidden></p>
+            <progress id="progress" aria-label="Tracing image" hidden></progress>
+            <p id="size"></p>
+            <div class="previews">
+                <figure>
+                    <figcaption>Source image</figcaption>
+                    <div class="preview-frame">
+                        <p id="source-empty">Open Browse and options to choose a PNG, JPEG, WebP, BMP, or GIF.</p>
+                        <canvas id="source" width="1" height="1" aria-label="Source raster image" hidden></canvas>
+                    </div>
+                </figure>
+                <figure>
+                    <figcaption>SVG result</figcaption>
+                    <div class="preview-frame">
+                        <p id="result-empty">Load an image, adjust the options, then choose Trace SVG.</p>
+                        <img id="preview" alt="Traced SVG preview" hidden>
+                    </div>
+                </figure>
+            </div>
+            <details id="stats-details" hidden>
+                <summary>Trace statistics</summary>
+        <pre id="stats"></pre>
+            </details>
+            <details id="svg-details" hidden>
+                <summary>SVG source</summary>
+                <label for="svg-text">Generated SVG
+                    <textarea id="svg-text" rows="14" readonly spellcheck="false"></textarea>
+                </label>
+            </details>
+        </main>
+        <aside aria-label="Browse and tracing options">
+            <fieldset id="source-options">
+                <legend>Source image</legend>
+                <label for="file" class="file-drop-area">
+                    <span class="sr-only">Browse raster images</span>
+                    <input id="file" type="file" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif,.png,.jpg,.jpeg,.webp,.bmp,.gif">
+                </label>
+                <p id="source-name" hidden></p>
+                <small>Your image stays in your browser. No uploads or network requests.</small>
+                <details>
+                    <summary>Try an example</summary>
+                    <div class="form-actions">
+                        <button id="example" type="button">Noisy JPEG</button>
+                        <button id="shape-example" type="button">Shape sampler</button>
+                    </div>
+                </details>
+            </fieldset>
+            <fieldset id="options">
+                <legend>Tracing options</legend>
+                <label for="colors">Colors
+                    <input id="colors" type="number" min="0" max="64" step="1" value="0" required aria-describedby="colors-help">
+                </label>
+                <small id="colors-help">0 = Auto. Include the opaque background in a known count.</small>
+                <label for="tolerance">Boundary tolerance (working pixels)
+                    <input id="tolerance" type="number" min="0.15" max="6" step="0.05" value="1.25" required aria-describedby="tolerance-help">
+                </label>
+                <small id="tolerance-help">Higher values allow simpler geometry.</small>
+                <label for="noise">Noise cleanup
+                    <input id="noise" type="number" min="0" max="40" step="1" value="10" required aria-describedby="noise-help">
+                </label>
+                <small id="noise-help">0 disables the prefilter; antialias decoding stays enabled.</small>
+                <label for="min-area">Minimum region area (working pixels)
+                    <input id="min-area" type="number" min="0" max="10000" step="1" value="6" required aria-describedby="area-help">
+                </label>
+                <small id="area-help">Smaller regions are removed. Use 0 to preserve all regions.</small>
+                <label for="max-size">Maximum working dimension (pixels)
+                    <input id="max-size" type="number" min="32" max="2000" step="1" value="1024" required aria-describedby="size-help">
+                </label>
+                <small id="size-help">The exported SVG retains the original image dimensions.</small>
+                <label for="preserve-details">
+                    <input id="preserve-details" type="checkbox" checked>Protect thin outlines and small accents
+                </label>
+                <label for="smooth-junctions">
+                    <input id="smooth-junctions" type="checkbox" checked>Continue smooth curves through junctions
+                </label>
+                <label for="remove-background">
+                    <input id="remove-background" type="checkbox">Remove the dominant border-connected background
+                </label>
+            </fieldset>
+            <details>
+                <summary>How tracing works</summary>
+                <p>Best for flat-color artwork such as logos and diagrams. Shared borders are fitted once, so neighboring regions use matching geometry. Outlines remain filled regions.</p>
+                <p>Auto color counts and shape recognition are heuristic. Set a known color count if shadows or small details are misread. Downsampling can erase narrow features before tracing.</p>
+                <p>Gradients, translucent fills, text recovery, and hidden objects are not supported. Separate fills may show antialias seams in some SVG viewers; no overlapping strokes are added to hide them.</p>
+                <p>
+                    <a href="README.md">Algorithm, limits, and testing</a>
+                </p>
+            </details>
+        </aside>
+        <script>
+/* global createTracer, one */
+/* Browser adapter: no network requests, dependencies, or build step. */
+(() => {
+    "use strict";
+    const $ = id => document.getElementById(id);
+    const source = $("source");
+    const context = source.getContext("2d", {willReadFrequently: true});
+    const numericOptions = [...$("options").querySelectorAll("input[type=\"number\"]")];
+    let image = null;
+    let worker = null;
+    let workerURL = null;
+    let svgURL = null;
+    let filename = "trace";
+    let loadID = 0;
+    let runID = 0;
+    let busy = false;
+
+    function updateTraceButton() {
+        $("trace").disabled = busy || !image || numericOptions.some(input => !input.validity.valid);
+    }
+
+    function setBusy(value, tracing = false) {
+        busy = value;
+        $("source-options").disabled = value;
+        $("options").disabled = value;
+        $("cancel").hidden = !tracing;
+        $("progress").hidden = !value;
+        $("content").setAttribute("aria-busy", String(value));
+        updateTraceButton();
+    }
+
+    function stop() {
+        runID++;
+        worker?.terminate();
+        worker = null;
+        if (workerURL) URL.revokeObjectURL(workerURL);
+        workerURL = null;
+        setBusy(false);
+    }
+
+    function setError(message = "") {
+        $("error").textContent = message;
+        $("error").hidden = !message;
+    }
+
+    function invalidate() {
+        $("download").hidden = true;
+        $("download").removeAttribute("href");
+        $("svg-text").value = "";
+        $("preview").hidden = true;
+        $("preview").removeAttribute("src");
+        $("result-empty").hidden = false;
+        $("stats").textContent = "";
+        $("stats-details").hidden = true;
+        $("svg-details").hidden = true;
+        if (svgURL) URL.revokeObjectURL(svgURL);
+        svgURL = null;
+    }
+
+    function rasterize() {
+        if (!image) return;
+        const maximum = Math.max(32, Math.min(2000, Number($("max-size").value) || 1024));
+        const width = image.naturalWidth || image.width;
+        const height = image.naturalHeight || image.height;
+        const scale = Math.min(1, maximum / Math.max(width, height));
+        source.width = Math.max(1, Math.round(width * scale));
+        source.height = Math.max(1, Math.round(height * scale));
+        context.clearRect(0, 0, source.width, source.height);
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = "high";
+        context.drawImage(image, 0, 0, source.width, source.height);
+        source.hidden = false;
+        $("source-empty").hidden = true;
+        $("size").textContent = `${width} x ${height} original; ${source.width} x ${source.height} working pixels.`;
+    }
+
+    async function decodeImage(blob) {
+        if (typeof createImageBitmap === "function") return createImageBitmap(blob);
+        const url = URL.createObjectURL(blob);
+        try {
+            const decoded = new Image();
+            decoded.src = url;
+            await decoded.decode();
+            return decoded;
+        } finally {
+            URL.revokeObjectURL(url);
+        }
+    }
+
+    async function load(blob, name, colors) {
+        const supportedType = /^image\/(png|jpeg|webp|bmp|gif)$/i.test(blob.type);
+        const supportedExtension = /\.(png|jpe?g|webp|bmp|gif)$/i.test(name);
+        if (!supportedType && !(blob.type === "" && supportedExtension)) {
+            setError("Choose a PNG, JPEG, WebP, BMP, or GIF raster image.");
+            $("file").value = "";
+            return;
+        }
+        stop();
+        const id = ++loadID;
+        setError();
+        setBusy(true);
+        $("status").textContent = "Decoding image...";
+        try {
+            const decoded = await decodeImage(blob);
+            if (id !== loadID) {
+                decoded.close?.();
+                return;
+            }
+            image?.close?.();
+            image = decoded;
+            filename = (name || "trace").replace(/\.[^.]+$/, "");
+            if (colors !== undefined) $("colors").value = colors;
+            invalidate();
+            rasterize();
+            $("source-name").textContent = name;
+            $("source-name").hidden = false;
+            $("status").textContent = "Ready. Adjust the tracing options, then choose Trace SVG.";
+            if (matchMedia("(max-width: 899px)").matches) $("aside-state").checked = false;
+        } catch {
+            if (id !== loadID) return;
+            setError("Could not decode this image. Try another raster file.");
+            $("status").textContent = image ? "Previous image retained." : "Choose an image to start tracing.";
+        } finally {
+            if (id === loadID) {
+                $("file").value = "";
+                setBusy(false);
+            }
+        }
+    }
+
+    $("file").addEventListener("change", () => {
+        const file = $("file").files[0];
+        if (file) load(file, file.name);
+    });
+    $("options").addEventListener("input", () => {
+        invalidate();
+        setError();
+        updateTraceButton();
+        if (image) $("status").textContent = "Options changed. Trace again to update the SVG.";
+    });
+    $("max-size").addEventListener("change", () => {
+        if ($("max-size").validity.valid) rasterize();
+    });
+    $("cancel").addEventListener("click", () => {
+        stop();
+        $("status").textContent = "Ready to trace again.";
+        one.alert("Tracing canceled.");
+    });
+    $("trace").addEventListener("click", () => {
+        if ($("trace").disabled) return;
+        stop();
+        invalidate();
+        setError();
+        setBusy(true, true);
+        const job = runID;
+        $("status").textContent = "Preparing image...";
+        const script = `'use strict';const createTracer=${createTracer.toString()};const tracer=createTracer();
+            self.onmessage=e=>{try{const {width,height,buffer,options}=e.data;
+                const result=tracer.trace({width,height,data:new Uint8ClampedArray(buffer)},options,stage=>self.postMessage({type:'progress',stage}));
+                self.postMessage({type:'result',result});
+            }catch(e){self.postMessage({type:'error',message:e.message||String(e)});}};`;
+        try {
+            rasterize();
+            const data = context.getImageData(0, 0, source.width, source.height);
+            const options = {
+                colors: Number($("colors").value), noise: Number($("noise").value),
+                tolerance: Number($("tolerance").value), minArea: Number($("min-area").value),
+                removeBackground: $("remove-background").checked,
+                preserveDetails: $("preserve-details").checked, smoothJunctions: $("smooth-junctions").checked,
+                outputWidth: image.naturalWidth || image.width, outputHeight: image.naturalHeight || image.height
+            };
+            workerURL = URL.createObjectURL(new Blob([script], {type: "text/javascript"}));
+            worker = new Worker(workerURL);
+            worker.onmessage = event => {
+                if (job !== runID) return;
+                const message = event.data;
+                if (message.type === "progress") {
+                    $("status").textContent = message.stage + "...";
+                    return;
+                }
+                try {
+                    if (message.type === "error") throw Error(message.message);
+                    showResult(message.result);
+                } catch (error) {
+                    setError(error.message || String(error));
+                    $("status").textContent = "Trace failed. Adjust the options or choose another image.";
+                } finally {
+                    stop();
+                }
+            };
+            worker.onerror = event => {
+                if (job !== runID) return;
+                stop();
+                setError(event.message || "The local worker failed. Try a smaller working size.");
+                $("status").textContent = "Trace failed. Your image is still available.";
+            };
+            worker.postMessage({width: data.width, height: data.height, buffer: data.data.buffer, options}, [data.data.buffer]);
+        } catch (error) {
+            stop();
+            setError("Could not start tracing: " + error.message);
+            $("status").textContent = "Your image is still available. Try again or reduce the working size.";
+        }
+    });
+
+    function showResult(result) {
+        const s = result.stats;
+        svgURL = URL.createObjectURL(new Blob([result.svg], {type: "image/svg+xml;charset=utf-8"}));
+        $("preview").src = svgURL;
+        $("preview").hidden = false;
+        $("result-empty").hidden = true;
+        $("download").href = svgURL;
+        $("download").download = filename + ".svg";
+        $("download").hidden = false;
+        $("svg-text").value = result.svg;
+        $("stats-details").hidden = false;
+        $("svg-details").hidden = false;
+        const geometry=["circle","ellipse","rect","polygon","path"].filter(k=>s.elements[k]).map(k=>`${s.elements[k]} ${k}${s.elements[k]===1?"":"s"}`).join(", ");
+        $("stats").textContent=`${s.colors} colors (${s.palette.join(", ")}). ${geometry}.\n`+
+          `Recognized closed primitives: ${s.primitives.circle} circles, ${s.primitives.ellipse} ellipses, ${s.primitives.roundedRect} rounded rectangles/capsules.\n`+
+          `Recovered ${s.recoveredPaints} small/outline paints; retained ${s.weakPaintPixels} weak-core outline pixels.\n`+
+          `${s.threePaintPixels} three-paint mixtures; ${s.alphaBoundarySamples} alpha-based boundary samples.\n`+
+          `${s.primitiveGuides} multi-chain primitive guides; ${s.junctionJoins} smooth junction proposals; ${s.featureProbes} distributed feature checks.\n`+
+          `${s.rawEdges.toLocaleString()} raster edges to ${s.segments} shared geometric segments. `+
+          `${new TextEncoder().encode(result.svg).length.toLocaleString()} SVG bytes.\n`+
+          `Reassigned ${s.relabeledPixels} pixels using locally supported paints; removed ${s.removedPixels} speckle pixels.\n`+
+          `Target tolerance: ${s.tolerance} working pixels. Detail-limited chains: ${s.detailLimitedChains}.\n`+
+          `Local repairs: ${s.repairedChains} chains; sample fallbacks: ${s.sampleFallbackChains}; exact fallbacks: ${s.fallbackChains}.\n`+
+          `${s.smoothJoins} tangent-matched Bezier joins; largest angular mismatch: ${s.maxSmoothJoinAngleDegrees.toFixed(5)} degrees.\n`+
+          `Topology validation: ${s.validation}. Completed in ${(s.ms/1000).toFixed(2)} s.\n`+s.warnings.join("\n");
+        $("status").textContent = "Trace complete. Save the SVG or inspect its source and statistics below.";
+    }
+
+    $("example").addEventListener("click", () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 480;
+        canvas.height = 320;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#15944a";
+        ctx.beginPath();
+        ctx.arc(180, 162, 106, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = "#df303b";
+        ctx.beginPath();
+        ctx.moveTo(264, 47);
+        ctx.lineTo(433, 263);
+        ctx.lineTo(210, 263);
+        ctx.closePath();
+        ctx.fill();
+        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        let seed = 12345;
+        for (let i = 0; i < pixels.data.length; i += 4) {
+            for (let channel = 0; channel < 3; channel++) {
+                seed = (Math.imul(1664525, seed) + 1013904223) >>> 0;
+                pixels.data[i + channel] = Math.max(0, Math.min(255, pixels.data[i + channel] + ((seed >>> 28) - 8) * .65));
+            }
+        }
+        const pending = loadID;
+        ctx.putImageData(pixels, 0, 0);
+        canvas.toBlob(blob => {
+            if (blob && pending === loadID) load(blob, "circle-triangle-example.jpg", 3);
+        }, "image/jpeg", .74);
+    });
+    $("shape-example").addEventListener("click", () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 640;
+        canvas.height = 400;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#e7b329";
+        ctx.beginPath();
+        ctx.arc(139.2, 140.6, 92.4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = "#202b38";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = "#df435e";
+        ctx.beginPath();
+        ctx.roundRect(157.4, 109.6, 174.2, 128.8, 23);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#3389cd";
+        ctx.beginPath();
+        ctx.ellipse(263.2, 94.7, 62.5, 32.2, -.45, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = "#1b987b";
+        ctx.beginPath();
+        for (let i = 0; i < 18; i++) {
+            const angle = i * Math.PI / 9 - Math.PI / 2;
+            const radius = i % 2 ? 35 : 81;
+            ctx.lineTo(498.3 + radius * Math.cos(angle), 126.7 + radius * Math.sin(angle));
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#e7b329";
+        ctx.beginPath();
+        ctx.roundRect(38.4, 289.5, 233.6, 54.2, 27.1);
+        ctx.fill();
+        ctx.fillStyle = "#3389cd";
+        ctx.beginPath();
+        ctx.arc(357.3, 308.8, 45.6, 0, 2 * Math.PI);
+        ctx.arc(357.3, 308.8, 24.2, 0, 2 * Math.PI, true);
+        ctx.fill("evenodd");
+        ctx.fillStyle = "#df435e";
+        ctx.beginPath();
+        ctx.moveTo(438, 333);
+        ctx.bezierCurveTo(428, 250, 496, 234, 505, 296);
+        ctx.bezierCurveTo(547, 231, 607, 283, 570, 333);
+        ctx.bezierCurveTo(539, 376, 477, 356, 438, 333);
+        ctx.fill();
+        ctx.fillStyle = "#1b987b";
+        ctx.fillRect(299, 303, 4, 4);
+        const pending = loadID;
+        canvas.toBlob(blob => {
+            if (blob && pending === loadID) load(blob, "shape-sampler.png", 0);
+        }, "image/png");
+    });
+    window.addEventListener("beforeunload", () => {
+        loadID++;
+        stop();
+        if (svgURL) URL.revokeObjectURL(svgURL);
+        image?.close?.();
+    });
+    window.FlatLogoTracer = createTracer();
+})();
+</script>
+    </body>
+</html>

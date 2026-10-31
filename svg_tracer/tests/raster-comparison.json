@@ -1,0 +1,107 @@
+[
+  {
+    "name": "primitives",
+    "referenceError": 0.6830565210932764,
+    "maxError": 0.689
+  },
+  {
+    "name": "overlapping",
+    "referenceError": 0.5910548534517993,
+    "maxError": 0.597
+  },
+  {
+    "name": "outlined",
+    "referenceError": 1.126649356617651,
+    "maxError": 0.832
+  },
+  {
+    "name": "thin_outline_auto",
+    "referenceError": 0.4972273667279418,
+    "maxError": 0.275
+  },
+  {
+    "name": "small_accents_auto",
+    "referenceError": 0,
+    "maxError": 0.001
+  },
+  {
+    "name": "transparent",
+    "referenceError": 0.5090165343915354,
+    "maxError": 0.515
+  },
+  {
+    "name": "concave_star",
+    "referenceError": 1.1958319035947724,
+    "maxError": 1.201
+  },
+  {
+    "name": "rounded_capsules",
+    "referenceError": 0.9162171781756164,
+    "maxError": 0.922
+  },
+  {
+    "name": "organic",
+    "referenceError": 0.6567986383442281,
+    "maxError": 0.662
+  },
+  {
+    "name": "holes",
+    "referenceError": 0.6283444184491982,
+    "maxError": 0.634
+  },
+  {
+    "name": "narrow_bridges",
+    "referenceError": 0.01391731607172784,
+    "maxError": 0.019
+  },
+  {
+    "name": "jpeg_overlap",
+    "referenceError": 1.9205907002005336,
+    "maxError": 1.848
+  },
+  {
+    "name": "gray_edge_blue_decoy",
+    "referenceError": 0.2793081232493002,
+    "maxError": 0.285
+  },
+  {
+    "name": "twenty_colors",
+    "referenceError": 0,
+    "maxError": 0.001
+  },
+  {
+    "name": "diagonal_topology",
+    "referenceError": 0,
+    "maxError": 0.001
+  },
+  {
+    "name": "transparent_empty",
+    "referenceError": 0,
+    "maxError": 0.001
+  },
+  {
+    "name": "single_color",
+    "referenceError": 0,
+    "maxError": 0.001
+  },
+  {
+    "name": "tiny_pixels",
+    "referenceError": 0,
+    "maxError": 0.001
+  },
+  {
+    "name": "edge_artifacts",
+    "referenceError": 0.13984604779411766,
+    "maxError": 0.049
+  },
+  {
+    "name": "transparent_outline_auto",
+    "referenceError": 0.4477568825510004,
+    "maxError": 0.448
+  },
+  {
+    "name": "transparent_accent_auto",
+    "referenceError": 0.16336801841948914,
+    "maxError": 0.065
+  }
+]
