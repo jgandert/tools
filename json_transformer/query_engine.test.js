@@ -1171,6 +1171,87 @@ testWith("Backtick field name mapped over array",
     "items.`x-y`",
     [1, 2]);
 
+const quotedFieldKeys = [
+    "a\"b",
+    "a'b",
+    "a\\b",
+    "trailing\\",
+    "white space",
+    "tab\tline\n",
+    "normal",
+    "and or not = ... but normal",
+    "__FIELD_0__",
+    "a\"] || true || __ctx[\"b",
+    "cost$&",
+];
+
+for (const key of quotedFieldKeys) {
+    const field = "`" + key + "`";
+    const label = JSON.stringify(key);
+    const rows = [{ id: 1, [key]: "keep" }, { id: 2, [key]: "drop" }];
+    const data = { items: rows, [key]: "root" };
+
+    testWith(`Quoted root field ${label} resolves the exact key`,
+        data,
+        field,
+        "root");
+
+    testWith(`Quoted array field ${label} resolves the exact key`,
+        data,
+        "items." + field,
+        ["keep", "drop"]);
+
+    testWith(`Quoted filter field ${label} cannot alter the condition`,
+        data,
+        "items.{" + field + " == \"keep\"}.id",
+        [1]);
+
+    testWith(`Quoted inline modifier field ${label} resolves the exact key`,
+        data,
+        "items.{" + field + ":upper == \"KEEP\"}.id",
+        [1]);
+
+    testWith(`Quoted projection key and value ${label} preserve the property`,
+        data,
+        "items => {" + field + ": " + field + "}",
+        rows.map(row => ({ [key]: row[key] })));
+
+    testWith(`Quoted projection key and inline modifier ${label} preserve the property`,
+        data,
+        "items => {" + field + ": " + field + ":upper}",
+        rows.map(row => ({ [key]: row[key].toUpperCase() })));
+}
+
+testWith("Quoted field with a double quote supports has",
+    { items: [{ "a\"b": 1 }, { ab: 1 }] },
+    "items.{has `a\"b`}",
+    [{ "a\"b": 1 }]);
+
+testWith("Quoted field with a double quote supports contains",
+    { items: [{ "a\"b": "keep" }, { "a\"b": "drop" }] },
+    "items.{`a\"b` contains \"ee\"}",
+    [{ "a\"b": "keep" }]);
+
+testWith("Quoted field with a backslash supports in",
+    { items: [{ "a\\b": ["keep"] }, { "a\\b": ["drop"] }] },
+    "items.{\"keep\" in `a\\b`}",
+    [{ "a\\b": ["keep"] }]);
+
+testWith("Quoted modifier field and expression string are separate tokens",
+    { items: [{ "a\"b": ["one", "two"] }] },
+    "items => {joined: `a\"b`:join(\" / \")}",
+    [{ joined: "one / two" }]);
+
+testWith("Backticks inside expression strings remain string contents",
+    { items: [{ label: "`normal`" }, { label: "normal" }] },
+    "items.{label == \"`normal`\"}",
+    [{ label: "`normal`" }]);
+
+testWith("Quoted output key does not become an inline modifier",
+    { upper: "value" },
+    "=> {`a\"b`:upper}",
+    { "a\"b": "value" });
+
 // ============================================================
 // 21. Filter operator: <= (strict)
 // ============================================================
@@ -1923,6 +2004,172 @@ test("Single = does not break >= operator",
 test("Single = does not break =~ operator",
     "users.{name =~ /^A/}.name",
     ["Alice Vance"]);
+
+const regexFilterCases = [
+    ["exact quantifier", ["aa", "a", "aaa"], "/^a{2}$/", ["aa"]],
+    ["bounded quantifier", ["a", "aa", "aaa", "aaaa"], "/^a{1,3}$/", ["a", "aa", "aaa"]],
+    ["literal closing brace", ["}", "a"], "/}/", ["}"]],
+    ["literal opening brace", ["{", "a"], "/{/", ["{"]],
+    ["escaped braces", ["{}", "}"], String.raw`/\{\}/`, ["{}"]],
+    ["escaped slash", ["a/b", "ab"], String.raw`/^a\/b$/`, ["a/b"]],
+    ["escaped backslash before delimiter", ["a\\", "a"], String.raw`/^a\\/`, ["a\\"]],
+    ["braces and slash in a character class", ["}", "{", "/", "a"], "/^[{}/]$/", ["}", "{", "/"]],
+    ["escaped class delimiter", ["]}", "a"], String.raw`/^[\]}]{2}$/`, ["]}"]],
+    ["case-insensitive flag", ["AA", "aa", "a"], "/^a{2}$/i", ["AA", "aa"]],
+    ["dotAll flag", ["a\na", "aa"], "/^a.{1}a$/s", ["a\na"]],
+    ["Unicode flag", ["aa", "a"], "/^a{2}$/u", ["aa"]],
+    ["global flag without sharing lastIndex", ["aa", "aa", "b"], "/^a{2}$/g", ["aa", "aa"]],
+    ["sticky flag without sharing lastIndex", ["aa", "aa", "baa"], "/a{2}/y", ["aa", "aa"]],
+    ["query keywords", ["and or not", "&& || !"], "/^and or not$/", ["and or not"]],
+    ["quotes, backticks, and inline-modifier syntax", ["a'b\"c`d:upper = and", "a"], "/^a'b\"c`d:upper = and$/", ["a'b\"c`d:upper = and"]],
+];
+
+for (const [description, names, pattern, expected] of regexFilterCases) {
+    testWith(`Regex filter preserves ${description} and trailing traversal`,
+        { items: names.map(name => ({ name })) },
+        `items.{name =~ ${pattern}}.name`,
+        expected);
+}
+
+testWith("Negated regex preserves quantifiers and multiple regex literals",
+    { items: ["aa", "bbb", "c"].map(name => ({ name })) },
+    "items.{name !~ /^a{2}$/ and name =~ /^[bc]{1,3}$/}.name",
+    ["bbb", "c"]);
+
+testWith("Regex filter preserves backtick fields and placeholder-like field names",
+    { items: [{ "name} =~ /": "aa", __REGEX_0__: true }, { "name} =~ /": "aa", __REGEX_0__: false }] },
+    "items.{`name} =~ /` =~ /^a{2}$/ and __REGEX_0__}.`name} =~ /`",
+    ["aa"]);
+
+testWith("Regex filter keeps inline modifiers outside the pattern",
+    { items: [{ name: "aa" }, { name: "a" }] },
+    "items.{name:upper == 'AA' and name =~ /^a{2}$/}.name",
+    ["aa"]);
+
+testWith("Regex filter offsets survive surrounding whitespace",
+    { items: ["aa", "AA", "bbb", "c"].map(name => ({ name })) },
+    "items.{ \n  name =~ /^a{2}$/i or name =~ /^b{1,3}$/ \n}.name",
+    ["aa", "AA", "bbb"]);
+
+testWith("Division remains a non-regex filter expression",
+    { items: [{ name: "yes", count: 2 }, { name: "no", count: 4 }] },
+    "items.{count / 2 == 1}.name",
+    ["yes"]);
+
+testWith("Composition ignores braces and commas inside filter regex literals",
+    { items: ["}", "{", "aa", "and", "\""].map(name => ({ name })) },
+    "{braces: items.{name =~ /^[{}]$/}.name, bounded: items.{name =~ /^a{1,3}$/}.name, quoted: items.{name =~ /^\"$/}.name, all: items.name}",
+    { braces: ["}", "{"], bounded: ["aa"], quoted: ["\""], all: ["}", "{", "aa", "and", "\""] });
+
+testWith("Composition ignores an unmatched literal brace inside a filter regex",
+    { items: [{ name: "}" }, { name: "aa" }] },
+    "{braces: items.{name =~ /}/}.name, all: items.name}",
+    { braces: ["}"], all: ["}", "aa"] });
+
+for (const name of ["a\"}b", "a'}b", "a\\", " =~ /}"]) {
+    testWith(`Filter string ${JSON.stringify(name)} preserves quotes, escapes, and braces`,
+        { items: [{ name }, { name: "other" }] },
+        `items.{name == ${JSON.stringify(name)}}.name`,
+        [name]);
+}
+
+for (const [query, error] of [
+    ["users.{name =~ /a{2}}.name", "Unterminated regex literal"],
+    ["users.{name =~ /[a}]/", "Unterminated filter"],
+    ["users.{name =~ /[a{2}/}.name", "Unterminated regex literal"],
+    ["users.{name =~ /a\\", "Unterminated regex literal"],
+    ["users.{name =~ /a\na/}.name", "Unterminated regex literal"],
+    ["users.{name =~ /a{3,2}/}.name", "Invalid regex literal"],
+    ["users.{name =~ /(/}.name", "Invalid regex literal"],
+    ["users.{name =~ /[z-a]/}.name", "Invalid regex literal"],
+    ["users.{name =~ /a/q}.name", "Invalid regex literal"],
+    ["users.{name =~ /a/ii}.name", "Invalid regex literal"],
+]) {
+    testThrows(`Malformed regex filter reports ${error}: ${query}`,
+        query,
+        `Syntax Error: ${error}`);
+}
+
+// Prototype-named output keys must survive both serializers as own properties.
+const dictionaryKeys = ["__proto__", "constructor", "toString", "x", "__proto__", "constructor", "toString", "x"];
+const dictionaryData = { items: dictionaryKeys.map((kind, id) => ({ kind, id })) };
+const uniqueDictionaryKeys = [...new Set(dictionaryKeys)];
+const dictionaryCases = [
+    {
+        description: "group_by preserves repeated prototype-named and ordinary keys",
+        data: dictionaryData,
+        query: "items:group_by(kind)",
+        expected: Object.fromEntries(uniqueDictionaryKeys.map(key => [key, dictionaryData.items.filter(item => item.kind === key)])),
+    },
+    {
+        description: "count_by returns numeric counts for prototype-named and ordinary keys",
+        data: dictionaryData,
+        query: "items:count_by(kind)",
+        expected: Object.fromEntries(uniqueDictionaryKeys.map(key => [key, 2])),
+    },
+    {
+        description: "composition preserves prototype-named aliases with object values",
+        data: { x: { inheritedMarker: true }, y: 2 },
+        query: "{__proto__: x, constructor: y, toString: y, ordinary: x}",
+        expected: Object.fromEntries([["__proto__", { inheritedMarker: true }], ["constructor", 2], ["toString", 2], ["ordinary", { inheritedMarker: true }]]),
+    },
+    {
+        description: "composition preserves a primitive __proto__ alias",
+        data: { x: 1 },
+        query: "{__proto__: x}",
+        expected: JSON.parse('{"__proto__":1}'),
+    },
+    {
+        description: "composition replaces repeated aliases without changing its prototype",
+        data: { x: { inheritedMarker: true }, y: null },
+        query: "{__proto__: x, __proto__: y, constructor: x, constructor: y, toString: x, toString: y, ordinary: x, ordinary: y}",
+        expected: Object.fromEntries(["__proto__", "constructor", "toString", "ordinary"].map(key => [key, null])),
+    },
+];
+
+for (const key of uniqueDictionaryKeys) {
+    const data = { kind: key };
+    dictionaryCases.push({
+        description: `group_by preserves the single-object key ${key}`,
+        data,
+        query: ":group_by(kind)",
+        expected: Object.fromEntries([[key, [data]]]),
+    }, {
+        description: `count_by preserves the single-object key ${key}`,
+        data,
+        query: ":count_by(kind)",
+        expected: Object.fromEntries([[key, 1]]),
+    });
+}
+
+for (const { description, data, query, expected } of dictionaryCases) {
+    try {
+        const engine = new JSONQuery(data);
+        const result = engine.update(query);
+        const prototype = Object.getPrototypeOf(result);
+        if (prototype !== null && prototype !== Object.prototype) {
+            throw new Error("Output acquired a user-selected prototype");
+        }
+        if (!deepEqual(result, expected) || Object.keys(expected).some(key => !Object.hasOwn(result, key))) {
+            throw new Error(`Output properties differ: ${serialize(result)}`);
+        }
+        if (!deepEqual(JSON.parse(JSON.stringify(result)), expected)) {
+            throw new Error("JSON.stringify lost output properties");
+        }
+        if (!deepEqual(JSON.parse(stringifyWithUndefined(result)), expected)) {
+            throw new Error("Run output serializer lost output properties");
+        }
+        if (!deepEqual(engine.update(query), expected)) {
+            throw new Error("Cached output properties differ");
+        }
+        passed++;
+    } catch (err) {
+        failed++;
+        console.error(`FAIL: ${description}`);
+        console.error(`  Query: ${query}`);
+        console.error(`  Error: ${err.message}`);
+    }
+}
 
 // ============================================================
 // Summary

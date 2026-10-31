@@ -4,14 +4,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JSON Query & Transform Tool</title>
+    <title>JSON Transformer</title>
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
     <style>
+        body {
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        main,
+        aside,
+        #query-section,
+        aside form,
+        label[for="json-output"],
+        label[for="json-input"] {
+            min-height: 0;
+        }
+
+        main,
+        #query-section,
+        aside,
+        aside form,
+        label[for="json-output"],
+        label[for="json-input"] {
+            display: flex;
+            flex-direction: column;
+        }
+
+        main,
+        #query-section {
+            height: 100%;
+        }
+
+        #query-section {
+            margin-bottom: 0;
+        }
+
+        aside {
+            overflow: hidden;
+        }
+
+        aside form,
+        label[for="json-output"],
+        label[for="json-input"],
+        #json-output,
+        #json-input {
+            flex: 1;
+        }
+
         .code-area {
             font-family: monospace;
             white-space: pre;
+            min-height: 0;
+            margin-bottom: 0;
+            overflow: auto;
+            resize: none;
+        }
+
+        #query-input {
+            font-family: var(--font-code);
+            font-variant-ligatures: none;
         }
 
         .error-message {
@@ -29,7 +84,7 @@
 <header>
     <label for="aside-state" class="aside-toggle-btn"></label>
     <hgroup>
-        <h1>JSON Query & Transform Tool</h1>
+        <h1>JSON Transformer</h1>
         <p>Load or paste JSON data and test queries.</p>
     </hgroup>
     <button type="button" id="open-modal" class="btn-sym" aria-haspopup="dialog"
@@ -142,6 +197,9 @@
         Indentation
         <input type="number" id="indent-input" min="0" max="8" value="4">
     </label>
+    <button type="button" id="restore-default-btn" class="btn">
+        <span class="sym" aria-hidden="true">history</span> Restore Default Example
+    </button>
 </aside>
 
 <dialog id="modal-info" class="modal-info" aria-labelledby="dialog-title"
@@ -949,6 +1007,7 @@
     </article>
 </dialog>
 
+<script src="../one.js"></script>
 <script src="query_engine.js"></script>
 <script>
     // --- Modal Logic ---
@@ -972,6 +1031,47 @@
     const fileInput = document.getElementById("file-input");
     const errorMsg = document.getElementById("error-msg");
     const indentInput = document.getElementById("indent-input");
+    const restoreDefaultBtn = document.getElementById("restore-default-btn");
+    const STORAGE_KEY = "json_query_state";
+    const DEFAULT_STATE = Object.freeze({
+        version: 1,
+        sourceJson: jsonInput.value.trim(),
+        query: queryInput.value,
+    });
+    let saveTimerId;
+
+    async function saveState() {
+        try {
+            await one.storage.set(STORAGE_KEY, {
+                version: DEFAULT_STATE.version,
+                sourceJson: jsonInput.value,
+                query: queryInput.value,
+            });
+        } catch (error) {
+            console.error("Failed to save JSON Query state", error);
+        }
+    }
+
+    function scheduleSaveState() {
+        clearTimeout(saveTimerId);
+        saveTimerId = setTimeout(saveState, 250);
+    }
+
+    async function loadState() {
+        try {
+            const savedState = await one.storage.get(STORAGE_KEY);
+            if (!savedState || savedState.version !== DEFAULT_STATE.version) return;
+
+            if (typeof savedState.sourceJson === "string") {
+                jsonInput.value = savedState.sourceJson;
+            }
+            if (typeof savedState.query === "string") {
+                queryInput.value = savedState.query;
+            }
+        } catch (error) {
+            console.error("Failed to load JSON Query state", error);
+        }
+    }
 
     // Load indentation from localStorage
     const savedIndent = localStorage.getItem("json-query-indent");
@@ -995,10 +1095,14 @@
         const reader = new FileReader();
         reader.onload = (e) => {
             jsonInput.value = e.target.result;
+            scheduleSaveState();
         };
         reader.readAsText(file);
         fileInput.value = ""; // Reset input to allow reloading the same file
     });
+
+    jsonInput.addEventListener("input", scheduleSaveState);
+    queryInput.addEventListener("input", scheduleSaveState);
 
     runQueryBtn.addEventListener("click", () => {
         errorMsg.textContent = "";
@@ -1042,8 +1146,26 @@
         }
     });
 
-    // Run the default query on load
-    runQueryBtn.click();
+    restoreDefaultBtn.addEventListener("click", async () => {
+        const confirmed = await one.confirm(
+            "Restore the default source JSON and query? Current values will be lost.",
+        );
+        if (!confirmed) return;
+
+        clearTimeout(saveTimerId);
+        jsonInput.value = DEFAULT_STATE.sourceJson;
+        queryInput.value = DEFAULT_STATE.query;
+        runQueryBtn.click();
+        await saveState();
+        one.alert("Default example restored");
+    });
+
+    async function initialize() {
+        await loadState();
+        runQueryBtn.click();
+    }
+
+    initialize();
 </script>
 </body>
 

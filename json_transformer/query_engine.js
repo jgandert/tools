@@ -45,6 +45,13 @@ class JSONQuery {
         for (let i = 0; i < content.length; i++) {
             const char = content[i];
 
+            if (!inString && phase === "QUERY" && char === "/" && /[=!]~\s*$/.test(currentQuery)) {
+                const literal = this._readRegexLiteral(content, i);
+                currentQuery += content.slice(i, literal.end);
+                i = literal.end - 1;
+                continue;
+            }
+
             if ((char === "\"" || char === "'" || char === "`") && content[i - 1] !== "\\") {
                 if (!inString) {
                     inString = true;
@@ -107,7 +114,7 @@ class JSONQuery {
 
         const composition = this._parseComposition(queryStr);
         if (composition) {
-            const result = {};
+            const result = Object.create(null);
             for (const { alias, query } of composition) {
                 result[alias] = this.update(query);
             }
@@ -156,10 +163,10 @@ class JSONQuery {
                 continue;
             }
 
-            match = remaining.match(/^(?:\.)?{((?:[^'"`}]|'[^']*'|"[^"]*"|`[^`]*`)+)}/);
-            if (match) {
-                tokens.push({ type: "FILTER", val: match[1].trim(), raw: match[0] });
-                cursor += match[0].length;
+            const filter = this._readFilterToken(remaining);
+            if (filter) {
+                tokens.push(filter);
+                cursor += filter.raw.length;
                 continue;
             }
 
@@ -210,6 +217,100 @@ class JSONQuery {
         return tokens;
     }
 
+    _readRegexLiteral(str, start) {
+        let inCharacterClass = false;
+
+        for (let cursor = start + 1; cursor < str.length; cursor++) {
+            const char = str[cursor];
+            if (/[\r\n\u2028\u2029]/.test(char)) {
+                throw new Error("Syntax Error: Unterminated regex literal before line break.");
+            }
+            if (char === "\\") {
+                if (cursor + 1 === str.length || /[\r\n\u2028\u2029]/.test(str[cursor + 1])) {
+                    throw new Error("Syntax Error: Unterminated regex literal after escape.");
+                }
+                cursor++;
+                continue;
+            }
+            if (char === "[" && !inCharacterClass) {
+                inCharacterClass = true;
+                continue;
+            }
+            if (char === "]" && inCharacterClass) {
+                inCharacterClass = false;
+                continue;
+            }
+            if (char !== "/" || inCharacterClass) {
+                continue;
+            }
+
+            const pattern = str.slice(start + 1, cursor);
+            let end = cursor + 1;
+            while (end < str.length && /[a-zA-Z]/.test(str[end])) {
+                end++;
+            }
+            const flags = str.slice(cursor + 1, end);
+            try {
+                new RegExp(pattern, flags);
+            } catch (error) {
+                throw new Error(`Syntax Error: Invalid regex literal: ${error.message}`);
+            }
+            return { end, pattern, flags };
+        }
+
+        throw new Error(`Syntax Error: Unterminated regex literal${inCharacterClass ? " character class" : ""}.`);
+    }
+
+    _readFilterToken(str) {
+        const opening = str.match(/^\.?{/);
+        if (!opening) {
+            return null;
+        }
+        const contentStart = opening[0].length;
+        const regexLiterals = [];
+        let quote = "";
+
+        for (let cursor = contentStart; cursor < str.length; cursor++) {
+            const char = str[cursor];
+            if (quote) {
+                if (char === quote) {
+                    quote = "";
+                } else if (char === "\\" && quote !== "`") {
+                    cursor++;
+                }
+                continue;
+            }
+            if (char === "'" || char === "\"" || char === "`") {
+                quote = char;
+                continue;
+            }
+            if (char === "/" && /[=!]~\s*$/.test(str.slice(contentStart, cursor))) {
+                const literal = this._readRegexLiteral(str, cursor);
+                regexLiterals.push({ start: cursor, ...literal });
+                cursor = literal.end - 1;
+                continue;
+            }
+            if (char !== "}") {
+                continue;
+            }
+
+            const content = str.slice(contentStart, cursor);
+            const offset = contentStart + content.length - content.trimStart().length;
+            return {
+                type: "FILTER",
+                val: content.trim(),
+                raw: str.slice(0, cursor + 1),
+                regexLiterals: regexLiterals.map(literal => ({
+                    ...literal,
+                    start: literal.start - offset,
+                    end: literal.end - offset,
+                })),
+            };
+        }
+
+        throw new Error("Syntax Error: Unterminated filter; expected closing '}'.");
+    }
+
     _resolvePath(obj, pathStr) {
         if (!pathStr || obj === null || obj === undefined) {
             return undefined;
@@ -219,37 +320,54 @@ class JSONQuery {
 
     _replaceInlineModifiers(str, isProjection = false) {
         const strings = [];
-        let js = str.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, match => {
+        const quotedFields = [];
+        let fieldPrefix = "__FIELD_";
+        while (str.includes(fieldPrefix)) {
+            fieldPrefix += "_";
+        }
+
+        // Protect field names until every expression rewrite has finished.
+
+        let js = str.replace(/`[^`]+`|(["'])(?:(?=(\\?))\2.)*?\1/g, match => {
+            if (match.startsWith("`")) {
+                const key = match.slice(1, -1);
+                quotedFields.push({ key, code: `__ctx[${JSON.stringify(key)}]` });
+                return `${fieldPrefix}${quotedFields.length - 1}__`;
+            }
+
             strings.push(match);
             return `__STR_${strings.length - 1}__`;
         });
 
         if (isProjection) {
-            js = js.replace(/(^|[,{])\s*`([^`]+)`\s*:/g, (match, prefix, key) => {
-                return `${prefix}"${key}":`;
+            const keyRegex = new RegExp(`(^|[,{])\\s*(${fieldPrefix}(\\d+)__)\\s*:`, "g");
+            js = js.replace(keyRegex, (_match, prefix, placeholder, index) => {
+                quotedFields[index].code = JSON.stringify(quotedFields[index].key).slice(1, -1);
+                return `${prefix}"${placeholder}":`;
             });
         }
 
         const knownMods = "len|flat|unique|join|limit|sum|avg|max|min|group_by|sort|reverse|keys|values|count_by|upper|lower|trim|entries";
-        const modRegex = new RegExp(`(?:\\b([a-zA-Z_][a-zA-Z0-9_.]*)|\`([^\`]+)\`):(${knownMods})(?:\\(([^)]*)\\))?`, "g");
+        const modRegex = new RegExp(`\\b([a-zA-Z_][a-zA-Z0-9_.]*):(${knownMods})(?:\\(([^)]*)\\))?`, "g");
 
-        js = js.replace(modRegex, (m, path, backtickPath, mod, args) => {
-            const safePath = backtickPath ? `__ctx["${backtickPath}"]` : path;
+        js = js.replace(modRegex, (_match, path, mod, args) => {
             if (!args) {
-                return `__mod(${safePath}, "${mod}", null)`;
+                return `__mod(${path}, "${mod}", null)`;
             }
             const trimmed = args.trim();
             const safeArgs = /^__STR_\d+__$/.test(trimmed) ? trimmed : `"${args.replace(/"/g, "\\\"")}"`;
-            return `__mod(${safePath}, "${mod}", ${safeArgs})`;
+            return `__mod(${path}, "${mod}", ${safeArgs})`;
         });
-
-        js = js.replace(/`([^`]+)`/g, "__ctx[\"$1\"]");
 
         strings.forEach((s, i) => {
-            js = js.replace(`__STR_${i}__`, s);
+            js = js.replace(`__STR_${i}__`, () => s);
         });
 
-        return js;
+        const fieldRegex = new RegExp(`\\b${fieldPrefix}(\\d+)__\\b`, "g");
+        return {
+            code: js,
+            restoreFields: code => code.replace(fieldRegex, (_match, index) => quotedFields[index].code),
+        };
     }
 
     _evaluateStep(data, token) {
@@ -296,7 +414,7 @@ class JSONQuery {
             }
 
             case "FILTER": {
-                const jsCondition = this._transpileFilter(token.val);
+                const jsCondition = this._transpileFilter(token.val, token.regexLiterals);
                 const evaluator = new Function("__ctx", "createSandboxProxy", "__mod", `
           try {
             with(createSandboxProxy(__ctx)) { return (${jsCondition}); }
@@ -326,14 +444,31 @@ class JSONQuery {
         }
     }
 
-    _transpileFilter(str) {
-        let js = this._replaceInlineModifiers(str);
+    _transpileFilter(str, regexLiterals) {
+        let regexPrefix = "__REGEX_";
+        while (str.includes(regexPrefix)) {
+            regexPrefix += "_";
+        }
+
+        let protectedExpression = "";
+        let cursor = 0;
+        regexLiterals.forEach((literal, index) => {
+            protectedExpression += str.slice(cursor, literal.start) + `${regexPrefix}${index}__`;
+            cursor = literal.end;
+        });
+        protectedExpression += str.slice(cursor);
+
+        // Protect regexes from string, field, modifier, and operator rewrites.
+
+        const { code, restoreFields } = this._replaceInlineModifiers(protectedExpression);
+        let js = code;
 
         const field = "([a-zA-Z_$][a-zA-Z0-9_.$]*|__ctx\\[\"[^\"]+\"\\])";
+        const regex = `(${regexPrefix}\\d+__)`;
 
         js = js.replace(new RegExp(`\\bhas\\s+${field}`, "g"), "$1 !== undefined");
-        js = js.replace(new RegExp(`${field}\\s*!~\\s*(\\/[^/]+\\/[gim]*)`, "g"), "($1 != null && !$2.test($1))");
-        js = js.replace(new RegExp(`${field}\\s*=~\\s*(\\/[^/]+\\/[gim]*)`, "g"), "($1 != null && $2.test($1))");
+        js = js.replace(new RegExp(`${field}\\s*!~\\s*${regex}`, "g"), "($1 != null && !$2.test($1))");
+        js = js.replace(new RegExp(`${field}\\s*=~\\s*${regex}`, "g"), "($1 != null && $2.test($1))");
         js = js.replace(new RegExp(`${field}\\s+contains\\s+(["'][^"']+["'])`, "g"), "($1?.includes?.($2) ?? false)");
         js = js.replace(new RegExp(`(["'][^"']+["'])\\s+in\\s+${field}`, "g"), "($2?.includes?.($1) ?? false)");
 
@@ -341,18 +476,22 @@ class JSONQuery {
         js = js.replace(/(?<![!=<>])=(?![=~>])/g, "==");
 
         js = js.replace(/\band\b/g, "&&").replace(/\bor\b/g, "||").replace(/\bnot\b/g, "!");
-        return js;
+        return restoreFields(js).replace(new RegExp(`\\b${regexPrefix}(\\d+)__\\b`, "g"), (_match, index) => {
+            const { pattern, flags } = regexLiterals[index];
+            return `(new RegExp(${JSON.stringify(pattern)}, ${JSON.stringify(flags)}))`;
+        });
     }
 
     _transpileProjection(str) {
-        let code = this._replaceInlineModifiers(str, true);
+        const result = this._replaceInlineModifiers(str, true);
+        let code = result.code;
         let omits = [];
         code = code.replace(/\.\.\.\s*but\s+([a-zA-Z0-9_,\s]+)/, (_, fields) => {
             omits = fields.split(",").map(s => s.trim());
             return "...__rest";
         });
         code = code.replace(/\.\.\.(?!__rest)/g, "...__rest");
-        return { code, omits };
+        return { code: result.restoreFields(code), omits };
     }
 
     _applyModifier(data, mod, args) {
@@ -383,7 +522,7 @@ class JSONQuery {
                     acc[k] = acc[k] || [];
                     acc[k].push(obj);
                     return acc;
-                }, {}) : { [this._resolvePath(data, key)]: [data] };
+                }, Object.create(null)) : { [this._resolvePath(data, key)]: [data] };
             }
             case "sort": {
                 if (!isArr) {
@@ -420,7 +559,7 @@ class JSONQuery {
                     const k = this._resolvePath(obj, key) ?? "undefined";
                     acc[k] = (acc[k] || 0) + 1;
                     return acc;
-                }, {});
+                }, Object.create(null));
             }
             case "upper":
                 return isArr ? data.map(v => typeof v === "string" ? v.toUpperCase() : v)
