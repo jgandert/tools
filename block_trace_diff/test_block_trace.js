@@ -1,3 +1,5 @@
+import strictAssert from "node:assert/strict";
+import { performance } from "node:perf_hooks";
 import { StringInterner, BlockTraceDiff } from "./block_trace_diff.js";
 
 let passed = 0, failed = 0;
@@ -23,6 +25,242 @@ function assertDeepEqual(a, b, msg) {
         failures.push(`${msg} - expected ${strB}, got ${strA}`);
         console.log(`  FAIL: ${msg}\n    Expected: ${strB}\n    Got:      ${strA}`);
     }
+}
+
+function testCase(name, fn) {
+    try {
+        fn();
+        assert(true, name);
+    } catch (error) {
+        assert(false, `${name}: ${error.stack || error}`);
+    }
+}
+
+// Independent oracles and output checks verify that diffs preserve order and raw
+// text, not just line-number coverage.
+function insertionDeletionDistance(a, b) {
+    let row = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+        const next = [i];
+        for (let j = 1; j <= b.length; j++) {
+            next[j] = a[i - 1] === b[j - 1]
+                ? row[j - 1]
+                : 1 + Math.min(row[j], next[j - 1]);
+        }
+        row = next;
+    }
+    return row[b.length];
+}
+
+function validateMyers(a, b, script) {
+    let source = 0, target = 0, edits = 0;
+    for (const op of script) {
+        if (op.type === "EQUAL") {
+            strictAssert.equal(op.srcIdx, source);
+            strictAssert.equal(op.targetIdx, target);
+            strictAssert.ok(source < a.length && target < b.length);
+            strictAssert.equal(a[source++], b[target++]);
+        } else if (op.type === "DELETE") {
+            strictAssert.equal(op.srcIdx, source++);
+            strictAssert.equal(op.targetIdx, null);
+            strictAssert.ok(source <= a.length);
+            edits++;
+        } else if (op.type === "INSERT") {
+            strictAssert.equal(op.targetIdx, target++);
+            strictAssert.equal(op.srcIdx, null);
+            strictAssert.ok(target <= b.length);
+            edits++;
+        } else {
+            strictAssert.fail(`Unexpected operation: ${op.type}`);
+        }
+    }
+    strictAssert.equal(source, a.length, "incomplete source coverage");
+    strictAssert.equal(target, b.length, "incomplete target coverage");
+    strictAssert.equal(edits, insertionDeletionDistance(a, b), "non-minimal edit script");
+}
+
+function lineNumbers(ops, side) {
+    const result = [];
+    for (const op of ops) {
+        const line = side === "source" ? op.srcLine : op.targetLine;
+        const consumesLine = op.type === "EQUAL" || op.type === "REPLACE" ||
+            op.type === (side === "source" ? "DELETE" : "INSERT");
+        if (consumesLine) result.push(line);
+        if (op.type === (side === "source" ? "MOVE_FROM" : "MOVE_TO")) {
+            const start = side === "source" ? op.srcStartLine : op.targetStartLine;
+            const end = side === "source" ? op.srcEndLine : op.targetEndLine;
+            for (let i = start; i <= end; i++) result.push(i);
+        }
+    }
+    return result;
+}
+
+function validatePublicDiff(source, target, ops, skipWhitespaceOps = false, sourceStart = 1, targetStart = 1, options = {}) {
+    const matchingText = text => {
+        if (options.ignoreLeadingWhitespace !== false) text = text.trimStart();
+        if (options.ignoreTrailingWhitespace === true) text = text.trimEnd();
+        if (options.ignoreInternalWhitespace === true) text = text.replace(/(\S)\s+(?=\S)/g, "$1 ");
+        return text;
+    };
+    for (const [side, input, start] of [["source", source, sourceStart], ["target", target, targetStart]]) {
+        let next = start;
+        for (const line of lineNumbers(ops, side)) {
+            strictAssert.ok(Number.isInteger(line) && line >= next && line < start + input.length,
+                `${side}: duplicate, out-of-order, or invalid line ${line} after ${next - 1}`);
+            while (next < line) {
+                strictAssert.ok(skipWhitespaceOps && input[next - start].trim() === "", `${side}: missing line ${next}`);
+                next++;
+            }
+            next++;
+        }
+        while (next < start + input.length) {
+            strictAssert.ok(skipWhitespaceOps && input[next - start].trim() === "", `${side}: missing final line ${next}`);
+            next++;
+        }
+    }
+
+    const pairs = new Map();
+    for (const op of ops) {
+        const sourceText = source[op.srcLine - sourceStart];
+        const targetText = target[op.targetLine - targetStart];
+        if (op.type === "EQUAL") {
+            strictAssert.equal(op.text, sourceText, "EQUAL.text belongs to the source");
+            strictAssert.equal(op.sourceText, sourceText);
+            strictAssert.equal(op.targetText, targetText);
+            strictAssert.equal(op.isExact, sourceText === targetText);
+            strictAssert.equal(matchingText(sourceText), matchingText(targetText), "EQUAL must obey the configured matching policy");
+        } else if (op.type === "DELETE") {
+            strictAssert.equal(op.text, sourceText);
+        } else if (op.type === "INSERT") {
+            strictAssert.equal(op.text, targetText);
+        } else if (op.type === "REPLACE") {
+            strictAssert.equal(op.text, targetText);
+            strictAssert.deepEqual(op.lines, [targetText]);
+            strictAssert.deepEqual(op.internalDiff, [
+                { type: "DELETE", text: sourceText },
+                { type: "INSERT", text: targetText },
+            ]);
+        } else if (op.type === "MOVE_FROM" || op.type === "MOVE_TO") {
+            strictAssert.ok(typeof op.moveId === "string" && op.moveId.length > 0);
+            strictAssert.ok(op.moveType === "MOVE_EXACT" || op.moveType === "MOVE_MODIFIED");
+            strictAssert.ok(op.srcStartLine >= sourceStart && op.srcEndLine < sourceStart + source.length);
+            strictAssert.ok(op.targetStartLine >= targetStart && op.targetEndLine < targetStart + target.length);
+            strictAssert.ok(op.srcEndLine >= op.srcStartLine && op.targetEndLine >= op.targetStartLine);
+            const sourceBlock = source.slice(op.srcStartLine - sourceStart, op.srcEndLine - sourceStart + 1);
+            const targetBlock = target.slice(op.targetStartLine - targetStart, op.targetEndLine - targetStart + 1);
+            strictAssert.deepEqual(op.lines, op.type === "MOVE_FROM" ? sourceBlock : targetBlock);
+            const pair = pairs.get(op.moveId) || {};
+            strictAssert.equal(pair[op.type], undefined, `duplicate ${op.type} for ${op.moveId}`);
+            pair[op.type] = op;
+            pairs.set(op.moveId, pair);
+            if (op.type === "MOVE_TO" && op.internalDiff) {
+                // Nested coordinates are absolute and must agree with the enclosing ranges.
+                validatePublicDiff(sourceBlock, targetBlock, op.internalDiff, skipWhitespaceOps, op.srcStartLine, op.targetStartLine, options);
+            }
+        } else {
+            strictAssert.fail(`Unexpected operation: ${op.type}`);
+        }
+    }
+    for (const [id, pair] of pairs) {
+        strictAssert.ok(pair.MOVE_FROM && pair.MOVE_TO, `unpaired move ${id}`);
+        for (const key of ["moveType", "srcStartLine", "srcEndLine", "targetStartLine", "targetEndLine"]) {
+            strictAssert.equal(pair.MOVE_FROM[key], pair.MOVE_TO[key], `${id}: inconsistent ${key}`);
+        }
+    }
+}
+
+function validateMoveRanges(moves) {
+    for (const side of ["src", "target"]) {
+        const ordered = moves.slice().sort((a, b) => a[`${side}Start`] - b[`${side}Start`]);
+        let end = -1;
+        for (const move of ordered) {
+            strictAssert.ok(move[`${side}Start`] > end, `overlapping ${side} move ranges`);
+            strictAssert.ok(move[`${side}End`] >= move[`${side}Start`]);
+            end = move[`${side}End`];
+        }
+    }
+}
+
+function hasBlankEdit(ops) {
+    return ops.some(op =>
+        ((op.type === "INSERT" || op.type === "DELETE") && op.text.trim() === "") ||
+        (op.internalDiff && hasBlankEdit(op.internalDiff)));
+}
+
+function createRandom(seed) {
+    let state = seed;
+    return n => {
+        state = (Math.imul(1664525, state) + 1013904223) >>> 0;
+        return Math.floor((state / 4294967296) * n);
+    };
+}
+
+// Benchmarks are opt-in; ordinary tests use deterministic work-count checks instead
+// of environment-sensitive timing thresholds. Run: node test_block_trace.js --benchmark
+function runBenchmarks() {
+    const median = values => values.slice().sort((a, b) => a - b)[values.length >> 1];
+    console.log(`Node ${process.version}; milliseconds; median of three measured runs.`);
+    for (let i = 0; i < 4; i++) {
+        const lines = Array.from({ length: 1000 }, (_, j) => `line-${j}`);
+        new BlockTraceDiff().diff(lines, lines.slice());
+    }
+    for (const modified of [false, true]) {
+        for (const n of [2000, 4000, 8000, 16000]) {
+            const totals = [], expansionTimes = [];
+            for (let rep = 0; rep < 3; rep++) {
+                const engine = new BlockTraceDiff();
+                const original = engine._seedAndExpand;
+                engine._seedAndExpand = function (...args) {
+                    const start = performance.now();
+                    const result = original.apply(this, args);
+                    expansionTimes.push(performance.now() - start);
+                    return result;
+                };
+                const source = Array.from({ length: n }, (_, i) => `line-${i}`);
+                const target = source.slice();
+                if (modified) target[n >> 1] = "changed";
+                const start = performance.now();
+                const result = engine.diff(source, target);
+                totals.push(performance.now() - start);
+                strictAssert.equal(result.length, n);
+                strictAssert.equal(result.filter(op => op.type === "REPLACE").length, modified ? 1 : 0);
+            }
+            console.log(JSON.stringify({
+                case: modified ? "nearly-identical-unique" : "identical-unique", linesPerSide: n,
+                totalMs: median(totals), seedExpandMs: median(expansionTimes),
+            }));
+        }
+    }
+    // Isolate run construction and weighted stationary selection, not Myers/output.
+    // maxStitchGap=0 preserves independent exact two-line blocks separated by edits.
+    for (const count of [1000, 2000, 4000, 8000]) {
+        const times = [];
+        for (let rep = 0; rep < 3; rep++) {
+            const engine = new BlockTraceDiff({ maxStitchGap: 0 });
+            const a = Array.from({ length: count }, (_, i) =>
+                [`block-${i}-a`, `block-${i}-b`, `src-${i}`]).flat();
+            const b = Array.from({ length: count }, (_, i) =>
+                [`block-${i}-a`, `block-${i}-b`, `dst-${i}`]).flat();
+            const source = engine._normalizeAndIntern(a);
+            const target = engine._normalizeAndIntern(b);
+            const moves = engine._gapStitching(engine._greedyMasking(engine._seedAndExpand(
+                engine._findAnchors(source, target), source, target)));
+            engine._myersDiff = () => [];
+            engine._buildFinalOutput = () => [];
+            const start = performance.now();
+            engine._fallbackDiffAndReassemble(source, target, moves, a, b);
+            times.push(performance.now() - start);
+        }
+        console.log(JSON.stringify({
+            case: "run-building-and-stationary-selection", moves: count, linesPerSide: count * 3,
+            totalMs: median(times),
+        }));
+    }
+}
+
+if (process.argv.includes("--benchmark")) {
+    runBenchmarks();
+    process.exit(0);
 }
 
 // =============================================================================
@@ -62,6 +300,10 @@ console.log("\n=== BlockTraceDiff: Initialization and Options ===");
     assert(diffDefault.kGramSize === 2, "default kGramSize should be 2");
     assert(diffDefault.maxStitchGap === 2, "default maxStitchGap should be 2");
     assert(diffDefault.maxOccurrences === 5, "default maxOccurrences should be 5");
+    assert(diffDefault.ignoreLeadingWhitespace === true, "default should still ignore indentation");
+    assert(diffDefault.ignoreTrailingWhitespace === false, "default should preserve trailing whitespace");
+    assert(diffDefault.ignoreInternalWhitespace === false, "default should preserve internal whitespace");
+    assert(diffDefault.skipWhitespaceOps === true, "default should still hide blank-only edits");
 
     const diffCustom = new BlockTraceDiff({ kGramSize: 3, maxStitchGap: 1 });
     assert(diffCustom.kGramSize === 3, "custom kGramSize should be 3");
@@ -73,7 +315,8 @@ console.log("\n=== BlockTraceDiff: Initialization and Options ===");
 // =============================================================================
 console.log("\n=== BlockTraceDiff: Line Normalization ===");
 {
-    const engine = new BlockTraceDiff();
+    // Legacy whitespace collapsing remains available explicitly, not as a hidden default.
+    const engine = new BlockTraceDiff({ ignoreTrailingWhitespace: true, ignoreInternalWhitespace: true });
     const source = [
         "  function foo() {  ",
         "let x = 1; \t ",
@@ -278,6 +521,8 @@ console.log("\n=== BlockTraceDiff: Gap Stitching ===");
 
 // =============================================================================
 // Full Integration Test: Code Movement & Modification
+// Keep the unchanged middle larger than the helper's retained matching lines so
+// size-aware stationary selection reports the modified helper as the moved block.
 // =============================================================================
 console.log("\n=== BlockTraceDiff: Full Integration ===");
 {
@@ -293,7 +538,11 @@ console.log("\n=== BlockTraceDiff: Full Integration ===");
         "",
         "// Unchanged middle part",
         "const x = 42;",
+        "const y = x + 1;",
+        "const z = x + y;",
         "console.log(x);",
+        "console.log(y);",
+        "console.log(z);",
         "",
         "// A deleted line",
         "const toDelete = true;",
@@ -304,7 +553,11 @@ console.log("\n=== BlockTraceDiff: Full Integration ===");
         "",
         "// Unchanged middle part",
         "const x = 42;",
+        "const y = x + 1;",
+        "const z = x + y;",
         "console.log(x);",
+        "console.log(y);",
+        "console.log(z);",
         "",
         "// A function we will move",
         "function helper() {",
@@ -535,31 +788,26 @@ console.log("\n=== BlockTraceDiff: Comprehensive Edge Cases and Stress Tests ===
     const complexEngine = new BlockTraceDiff({ kGramSize: 2, maxStitchGap: 3 });
     const complexOps = complexEngine.diff(complexSource, complexTarget);
 
-    const complexMoveFrom = complexOps.find(o => o.type === "MOVE_FROM" && o.lines[0].includes("processUserData"));
-    const complexMoveTo = complexOps.find(o => o.type === "MOVE_TO" && o.lines[0].includes("processUserData"));
+    // Size-aware attribution keeps the larger retained processUserData region
+    // stationary and moves the smaller surviving billing blocks instead.
+    const processEqual = complexOps.find(o => o.type === "EQUAL" && o.text.includes("function processUserData"));
+    assert(processEqual !== undefined, "should keep the larger processUserData match stationary");
+    assert(complexOps.some(o => o.type === "MOVE_FROM"), "should identify moved billing source blocks");
+    assert(complexOps.some(o => o.type === "MOVE_TO"), "should identify moved billing target blocks");
+    assert(!complexOps.some(o => o.type === "MOVE_FROM" && o.lines[0].includes("processUserData")), "should not move the larger retained function");
 
-    assert(complexMoveFrom !== undefined, "should identify moved processUserData function");
-    assert(complexMoveTo !== undefined, "should identify processUserData target function");
-
-    if (complexMoveFrom && complexMoveTo) {
-        assert(complexMoveFrom.moveId === complexMoveTo.moveId, "processUserData move components should share move ID");
-        assert(complexMoveFrom.moveType === "MOVE_MODIFIED", "processUserData move type should be MOVE_MODIFIED");
-        assert(complexMoveTo.moveType === "MOVE_MODIFIED", "processUserData target type should be MOVE_MODIFIED");
-
-        // Verify internal modifications of the moved block
-        const internalDiff = complexMoveTo.internalDiff;
-        assert(internalDiff !== undefined, "moved processUserData target should have internal diff");
-
-        if (internalDiff) {
-            const hasTryBlockInsert = internalDiff.some(d => d.type === "INSERT" && d.text.includes("try {"));
-            const hasEmailDelete = internalDiff.some(d => d.type === "DELETE" && d.text.includes("no-email@example.com"));
-            const hasEmailInsert = internalDiff.some(d => d.type === "INSERT" && d.text.includes("unknown@example.com"));
-
-            assert(hasTryBlockInsert, "should detect inserted try block inside processUserData");
-            assert(hasEmailDelete, "should detect deleted old email fallback line");
-            assert(hasEmailInsert, "should detect inserted new email fallback line");
-        }
+    // Verify modifications still appear when a stitched modified block is stationary.
+    const hasTryBlockInsert = complexOps.some(o => o.type === "INSERT" && o.text.includes("try {"));
+    const emailReplace = complexOps.find(o => o.type === "REPLACE" && o.text.includes("unknown@example.com"));
+    assert(hasTryBlockInsert, "should detect inserted try block inside processUserData");
+    assert(emailReplace !== undefined, "should detect changed email fallback line");
+    if (emailReplace) {
+        assert(emailReplace.internalDiff[0].text.includes("no-email@example.com"), "should retain deleted old email fallback line");
+        assert(emailReplace.internalDiff[1].text.includes("unknown@example.com"), "should retain inserted new email fallback line");
     }
+    testCase("complex swap preserves coverage, order, text, and move pairs", () => {
+        validatePublicDiff(complexSource, complexTarget, complexOps, true);
+    });
 }
 
 // =============================================================================
@@ -614,7 +862,8 @@ console.log("\n=== BlockTraceDiff: Edge cases & Bugs ===");
     const hasTrimmedCand = result1.some(c => c.srcStart === 12 && c.srcEnd === 13 && c.targetStart === 12 && c.targetEnd === 13);
     assert(hasTrimmedCand, "greedy masking should keep valid sub-blocks of trimmed candidates");
 
-    // In this swap, delete_me and insert_me are in the same block, but MOVE_FROM interrupts them, preventing REPLACE.
+    // In this swap, MOVE_FROM interrupts delete_me and insert_me in the same
+    // change block. It must not prevent REPLACE or disturb either side's order.
     const engine2 = new BlockTraceDiff({ kGramSize: 2 });
     const src2 = ["delete_me", "A1", "A2", "B1", "B2"];
     const tgt2 = ["insert_me", "B1", "B2", "A1", "A2"];
@@ -629,6 +878,458 @@ console.log("\n=== BlockTraceDiff: Edge cases & Bugs ===");
     // If the interner was cleared or reset, size should not accumulate from the previous run.
     assert(engine4.interner.stringToInt.size <= 2, `interner should clear or reset on each diff call (got size ${engine4.interner.stringToInt.size})`);
 }
+
+// =============================================================================
+// Public Options and Explicit Whitespace Contracts
+// =============================================================================
+console.log("\n=== BlockTraceDiff: Public Options and Whitespace Contracts ===");
+testCase("invalid numeric options fail in the constructor", () => {
+    for (const [name, minimum] of [["kGramSize", 1], ["maxStitchGap", 0], ["maxOccurrences", 0]]) {
+        for (const value of [-1, 0.5, 1.5, NaN, Infinity, -Infinity, "2", null, true, {}, [], Number.MAX_SAFE_INTEGER + 1]) {
+            strictAssert.throws(() => new BlockTraceDiff({ [name]: value }),
+                error => error instanceof RangeError && error.message.includes(name), `${name}=${String(value)}`);
+        }
+        strictAssert.equal(new BlockTraceDiff({ [name]: minimum })[name], minimum);
+        strictAssert.equal(new BlockTraceDiff({ [name]: undefined })[name], new BlockTraceDiff()[name]);
+    }
+    strictAssert.throws(() => new BlockTraceDiff({ kGramSize: 0 }), RangeError);
+});
+
+testCase("boolean options and the options object are validated", () => {
+    for (const name of ["ignoreLeadingWhitespace", "ignoreTrailingWhitespace", "ignoreInternalWhitespace", "skipWhitespaceOps"]) {
+        for (const value of [0, 1, "false", null, NaN, {}, []]) {
+            strictAssert.throws(() => new BlockTraceDiff({ [name]: value }),
+                error => error instanceof TypeError && error.message.includes(name));
+        }
+        strictAssert.equal(new BlockTraceDiff({ [name]: false })[name], false);
+        strictAssert.equal(new BlockTraceDiff({ [name]: true })[name], true);
+    }
+    for (const value of [null, [], "options", 1, false]) strictAssert.throws(() => new BlockTraceDiff(value), TypeError);
+});
+
+testCase("maxOccurrences: 0 intentionally disables anchoring", () => {
+    const engine = new BlockTraceDiff({ maxOccurrences: 0, skipWhitespaceOps: false });
+    const source = ["A1", "A2", "B1", "B2"];
+    const target = ["B1", "B2", "A1", "A2"];
+    strictAssert.deepEqual(engine._findAnchors(engine._normalizeAndIntern(source), engine._normalizeAndIntern(target)), []);
+    const ops = engine.diff(source, target);
+    strictAssert.ok(ops.every(op => op.type !== "MOVE_FROM" && op.type !== "MOVE_TO"));
+    validatePublicDiff(source, target, ops);
+});
+
+testCase("internal and trailing whitespace changes are visible by default", () => {
+    for (const [source, target] of [
+        ['const s = "a  b";', 'const s = "a b";'],
+        ["const r = /a  b/;", "const r = /a b/;"],
+        ["const s = `a\tb`;", "const s = `a b`;"],
+        ["value  ", "value"],
+    ]) {
+        const ops = new BlockTraceDiff().diff([source], [target]);
+        strictAssert.equal(ops.length, 1);
+        strictAssert.equal(ops[0].type, "REPLACE");
+        validatePublicDiff([source], [target], ops);
+    }
+});
+
+testCase("disabling whitespace options provides an exact, lossless diff", () => {
+    const engine = new BlockTraceDiff({ ignoreLeadingWhitespace: false, skipWhitespaceOps: false });
+    for (const [source, target] of [["  a", "a"], ["a\t", "a"], ["a  b", "a b"], [" \t", ""], ["\u00a0a", "a"]]) {
+        const ops = engine.diff([source], [target]);
+        strictAssert.equal(ops[0].type, "REPLACE");
+        validatePublicDiff([source], [target], ops, false, 1, 1, engine);
+    }
+    validatePublicDiff(["", "old"], ["new", "\t"], engine.diff(["", "old"], ["new", "\t"]), false, 1, 1, engine);
+});
+
+testCase("leading, internal, and trailing normalization options are independent", () => {
+    const line = " \talpha  \t beta\t ";
+    for (const leading of [false, true]) {
+        for (const internal of [false, true]) {
+            for (const trailing of [false, true]) {
+                const engine = new BlockTraceDiff({
+                    ignoreLeadingWhitespace: leading,
+                    ignoreInternalWhitespace: internal,
+                    ignoreTrailingWhitespace: trailing,
+                });
+                const expected = (leading ? "" : " \t") + (internal ? "alpha beta" : "alpha  \t beta") + (trailing ? "" : "\t ");
+                strictAssert.equal(engine._normalizeAndIntern([line])[0].normalizedText, expected);
+            }
+        }
+    }
+    const internalOnly = new BlockTraceDiff({ ignoreLeadingWhitespace: false, ignoreInternalWhitespace: true });
+    strictAssert.equal(internalOnly._normalizeAndIntern([" \t "])[0].normalizedText, " \t ");
+});
+
+testCase("explicitly ignored differences preserve both raw texts", () => {
+    const engine = new BlockTraceDiff({ ignoreInternalWhitespace: true, ignoreTrailingWhitespace: true, skipWhitespaceOps: false });
+    const source = ['  const s = "a  b";  '];
+    const target = ['const s = "a b";'];
+    const ops = engine.diff(source, target);
+    strictAssert.equal(ops[0].type, "EQUAL");
+    strictAssert.equal(ops[0].isExact, false);
+    validatePublicDiff(source, target, ops, false, 1, 1, engine);
+});
+
+testCase("EQUAL ownership is consistent for ordinary, exact, stitched, and gap matches", () => {
+    const source = ["  A", "  B", "old", "  C", "  D"];
+    const target = ["A", "B", "new", "C", "D"];
+    const equalPayloads = [];
+    for (const maxStitchGap of [0, 2]) {
+        const ops = new BlockTraceDiff({ maxStitchGap, skipWhitespaceOps: false }).diff(source, target);
+        equalPayloads.push(ops.filter(op => op.type === "EQUAL"));
+        validatePublicDiff(source, target, ops);
+    }
+    strictAssert.deepEqual(equalPayloads[0], equalPayloads[1]);
+    const gapSource = ["  A", "  B", "old1", "  gap", "old2", "  C", "  D"];
+    const gapTarget = ["A", "B", "new1", "gap", "new2", "C", "D"];
+    const gapOps = new BlockTraceDiff({ maxStitchGap: 3, skipWhitespaceOps: false }).diff(gapSource, gapTarget);
+    strictAssert.ok(gapOps.some(op => op.type === "EQUAL" && op.sourceText === "  gap" && op.targetText === "gap"));
+    validatePublicDiff(gapSource, gapTarget, gapOps);
+    validatePublicDiff(["  only"], ["only"], new BlockTraceDiff().diff(["  only"], ["only"]));
+});
+
+testCase("normalized exact moves expose raw differences in internalDiff", () => {
+    const source = ["  A1", "  A2", "B1", "B2", "B3"];
+    const target = ["B1", "B2", "B3", "A1", "A2"];
+    const ops = new BlockTraceDiff({ skipWhitespaceOps: false }).diff(source, target);
+    const moved = ops.find(op => op.type === "MOVE_TO");
+    strictAssert.equal(moved.moveType, "MOVE_EXACT");
+    strictAssert.ok(moved.internalDiff.every(op => op.type === "EQUAL" && !op.isExact));
+    validatePublicDiff(source, target, ops);
+});
+
+testCase("blank edits do not consume visible replacement partners", () => {
+    for (const [source, target] of [
+        [["", "old"], ["new"]],
+        [["old"], ["\t", "new"]],
+        [["", "old", " "], ["\t", "new", "\t\t"]],
+    ]) {
+        const engine = new BlockTraceDiff({ ignoreLeadingWhitespace: false, skipWhitespaceOps: true });
+        const ops = engine.diff(source, target);
+        const replacements = ops.filter(op => op.type === "REPLACE");
+        strictAssert.equal(replacements.length, 1);
+        strictAssert.deepEqual(replacements[0].internalDiff, [
+            { type: "DELETE", text: "old" },
+            { type: "INSERT", text: "new" },
+        ]);
+        strictAssert.equal(hasBlankEdit(ops), false);
+        validatePublicDiff(source, target, ops, true, 1, 1, engine);
+    }
+});
+
+testCase("blank edit suppression applies inside modified moves in either direction", () => {
+    const a = ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "B4", "B5"];
+    const b = ["B1", "B2", "B3", "B4", "B5", "A1", "A2", "", "A3", "A4"];
+    for (const [source, target] of [[a, b], [b, a]]) {
+        for (const skipWhitespaceOps of [false, true]) {
+            const ops = new BlockTraceDiff({ skipWhitespaceOps }).diff(source, target);
+            const moved = ops.find(op => op.type === "MOVE_TO");
+            strictAssert.ok(moved && moved.internalDiff, "exercise a nested modified move, not just top-level edits");
+            strictAssert.equal(hasBlankEdit(ops), !skipWhitespaceOps);
+            validatePublicDiff(source, target, ops, skipWhitespaceOps);
+        }
+    }
+});
+
+// =============================================================================
+// Move Integrity, Operation Ordering, and Size-Aware Attribution
+// =============================================================================
+console.log("\n=== BlockTraceDiff: Move Integrity and Operation Ordering ===");
+testCase("stitching cannot swallow another move's destination", () => {
+    const a = ["C1", "C2", "A1", "A2", "B1", "B2"];
+    const b = ["A1", "A2", "C1", "C2", "B1", "B2"];
+    for (const [source, target] of [[a, b], [b, a]]) {
+        const engine = new BlockTraceDiff({ skipWhitespaceOps: false });
+        const src = engine._normalizeAndIntern(source);
+        const tgt = engine._normalizeAndIntern(target);
+        const exact = engine._greedyMasking(engine._seedAndExpand(engine._findAnchors(src, tgt), src, tgt));
+        const stitched = engine._gapStitching(exact);
+        strictAssert.equal(stitched.length, 3, "the target gap is already claimed");
+        validateMoveRanges(stitched);
+        validatePublicDiff(source, target, engine.diff(source, target));
+    }
+});
+
+testCase("stitching accepts only adjacent blocks on both sides and preserves its input", () => {
+    const engine = new BlockTraceDiff({ maxStitchGap: 2 });
+    const blocks = [
+        { srcStart: 6, srcEnd: 7, targetStart: 16, targetEnd: 17, length: 2 },
+        { srcStart: 0, srcEnd: 1, targetStart: 10, targetEnd: 11, length: 2 },
+        { srcStart: 3, srcEnd: 4, targetStart: 13, targetEnd: 14, length: 2 },
+    ];
+    const before = JSON.stringify(blocks);
+    const stitched = engine._gapStitching(blocks);
+    strictAssert.equal(stitched.length, 1);
+    strictAssert.equal(stitched[0].exactBlocks.length, 3);
+    strictAssert.equal(stitched[0].srcEnd, 7);
+    strictAssert.equal(stitched[0].targetEnd, 17);
+    strictAssert.equal(JSON.stringify(blocks), before);
+    validateMoveRanges(stitched);
+});
+
+testCase("ordinary edits before and after moves preserve both consuming orders", () => {
+    for (const [source, target] of [
+        [["A1", "A2", "B1", "B2"], ["B1", "B2", "A1", "A2", "X"]],
+        [["A1", "A2", "X", "B1", "B2"], ["B1", "B2", "A1", "A2"]],
+        [["delete_me", "A1", "A2", "B1", "B2"], ["insert_me", "B1", "B2", "A1", "A2"]],
+        [["old", "A1", "A2", "X", "B1", "B2"], ["new", "B1", "B2", "Y", "A1", "A2", "Z"]],
+    ]) {
+        for (const [a, b] of [[source, target], [target, source]]) {
+            const ops = new BlockTraceDiff({ skipWhitespaceOps: false }).diff(a, b);
+            strictAssert.ok(ops.some(op => op.type === "MOVE_FROM"));
+            validatePublicDiff(a, b, ops);
+        }
+    }
+});
+
+testCase("replacement pairing preserves mixed move/edit order within a hunk", () => {
+    // The paired halves of these moves can be in other hunks. Isolate this hunk's
+    // source and target projections so attribution heuristics cannot mask a regression.
+    const ops = [
+        { type: "MOVE_FROM", srcStartLine: 1, srcEndLine: 2 },
+        { type: "DELETE", srcLine: 3, text: "old1" },
+        { type: "MOVE_FROM", srcStartLine: 4, srcEndLine: 5 },
+        { type: "DELETE", srcLine: 6, text: "old2" },
+        { type: "INSERT", targetLine: 1, text: "new1" },
+        { type: "MOVE_TO", targetStartLine: 2, targetEndLine: 3 },
+        { type: "INSERT", targetLine: 4, text: "new2" },
+        { type: "MOVE_TO", targetStartLine: 5, targetEndLine: 6 },
+        { type: "INSERT", targetLine: 7, text: "extra" },
+    ];
+    const engine = new BlockTraceDiff();
+    const result = engine._identifyReplacements(engine._sortOperations(ops));
+    strictAssert.deepEqual(lineNumbers(result, "source"), [1, 2, 3, 4, 5, 6]);
+    strictAssert.deepEqual(lineNumbers(result, "target"), [1, 2, 3, 4, 5, 6, 7]);
+    strictAssert.equal(result.filter(op => op.type === "REPLACE").length, 2);
+});
+
+testCase("unequal block swaps move two lines instead of one hundred", () => {
+    const a = Array.from({ length: 100 }, (_, i) => `A${i + 1}`);
+    const b = ["B1", "B2"];
+    for (const [source, target] of [[a.concat(b), b.concat(a)], [b.concat(a), a.concat(b)]]) {
+        const ops = new BlockTraceDiff({ skipWhitespaceOps: false }).diff(source, target);
+        strictAssert.equal(ops.filter(op => op.type === "EQUAL").length, 100);
+        strictAssert.deepEqual(ops.find(op => op.type === "MOVE_FROM").lines, b);
+        strictAssert.deepEqual(ops.find(op => op.type === "MOVE_TO").lines, b);
+        validatePublicDiff(source, target, ops);
+    }
+});
+
+testCase("weighted stationary selection matches an exhaustive subset oracle", () => {
+    const rand = createRandom(0x917156);
+    const engine = new BlockTraceDiff();
+    for (let iteration = 0; iteration < 500; iteration++) {
+        const n = rand(9);
+        const order = Array.from({ length: n }, (_, i) => i);
+        for (let i = n - 1; i > 0; i--) {
+            const j = rand(i + 1);
+            [order[i], order[j]] = [order[j], order[i]];
+        }
+        const moves = order.map((targetRank, i) => ({
+            id: `test-${i}`, srcStart: i * 20, targetStart: targetRank * 20,
+            exactBlocks: [{ length: 1 + rand(10) }],
+        }));
+        let optimum = 0;
+        for (let mask = 0; mask < 2 ** n; mask++) {
+            let lastTarget = -1, weight = 0, increasing = true;
+            for (let i = 0; i < n; i++) {
+                if (!(mask & (1 << i))) continue;
+                if (moves[i].targetStart <= lastTarget) increasing = false;
+                lastTarget = moves[i].targetStart;
+                weight += moves[i].exactBlocks[0].length;
+            }
+            if (increasing) optimum = Math.max(optimum, weight);
+        }
+        const stationary = engine._selectStationaryMoves(moves);
+        const selected = moves.filter(move => stationary.has(move.id));
+        strictAssert.equal(selected.reduce((sum, move) => sum + move.exactBlocks[0].length, 0), optimum);
+        strictAssert.ok(selected.every((move, i) => i === 0 || selected[i - 1].targetStart < move.targetStart));
+        strictAssert.deepEqual(stationary, engine._selectStationaryMoves(moves.slice().reverse()));
+    }
+});
+
+testCase("unmatched stitched gaps do not inflate stationary weights", () => {
+    const moves = [
+        { id: "large-gap", srcStart: 0, srcEnd: 999, targetStart: 20, targetEnd: 1019, exactBlocks: [{ length: 2 }, { length: 2 }] },
+        { id: "retained", srcStart: 1000, srcEnd: 1009, targetStart: 0, targetEnd: 9, exactBlocks: [{ length: 10 }] },
+    ];
+    strictAssert.deepEqual(new BlockTraceDiff()._selectStationaryMoves(moves), new Set(["retained"]));
+});
+
+// =============================================================================
+// Exhaustive and Deterministic Randomized Correctness Checks
+// =============================================================================
+console.log("\n=== BlockTraceDiff: Exhaustive and Randomized Invariants ===");
+testCase("Myers: all 65,025 binary sequence pairs of lengths 0 through 7", () => {
+    const sequences = [[]];
+    for (let n = 1; n <= 7; n++) {
+        for (let mask = 0; mask < 2 ** n; mask++) {
+            sequences.push(Array.from({ length: n }, (_, i) => (mask >> i) & 1));
+        }
+    }
+    const engine = new BlockTraceDiff();
+    for (const a of sequences) for (const b of sequences) validateMyers(a, b, engine._myersDiff(a, b));
+});
+
+testCase("Myers: 20,000 deterministic randomized cases versus a distance oracle", () => {
+    const rand = createRandom(123456789);
+    const engine = new BlockTraceDiff();
+    for (let i = 0; i < 20000; i++) {
+        const a = Array.from({ length: rand(60) }, () => rand(7));
+        const b = Array.from({ length: rand(60) }, () => rand(7));
+        validateMyers(a, b, engine._myersDiff(a, b));
+    }
+});
+
+testCase("Public API: coverage, ordering, text, and move pairs in 10,000 synthetic cases", () => {
+    const rand = createRandom(0x7187369);
+    const engine = new BlockTraceDiff({ skipWhitespaceOps: false });
+    const originalStitching = engine._gapStitching;
+    engine._gapStitching = function (...args) {
+        const moves = originalStitching.apply(this, args);
+        validateMoveRanges(moves);
+        return moves;
+    };
+    for (let i = 0; i < 10000; i++) {
+        const source = Array.from({ length: rand(35) }, () => String.fromCharCode(65 + rand(6)));
+        const target = Array.from({ length: rand(35) }, () => String.fromCharCode(65 + rand(6)));
+        const ops = engine.diff(source, target);
+        // Check ordered coverage, text fidelity, and move relationships.
+        validatePublicDiff(source, target, ops);
+    }
+});
+
+testCase("Public API: 5,000 cases with whitespace, suppression, and varied matching options", () => {
+    const rand = createRandom(0x9716241);
+    const lines = ["", " ", "\t", "A", "  A", "A ", "B", "B\t", "C", "a  b", "a b", 's = "a  b";', 's = "a b";'];
+    for (let i = 0; i < 5000; i++) {
+        const engine = new BlockTraceDiff({
+            kGramSize: 1 + rand(4), maxStitchGap: rand(5), maxOccurrences: rand(8),
+            ignoreLeadingWhitespace: rand(2) === 1,
+            ignoreTrailingWhitespace: rand(2) === 1,
+            ignoreInternalWhitespace: rand(2) === 1,
+            skipWhitespaceOps: rand(2) === 1,
+        });
+        const source = Array.from({ length: rand(35) }, () => lines[rand(lines.length)]);
+        const target = Array.from({ length: rand(35) }, () => lines[rand(lines.length)]);
+        const ops = engine.diff(source, target);
+        validatePublicDiff(source, target, ops, engine.skipWhitespaceOps, 1, 1, engine);
+        if (engine.skipWhitespaceOps) strictAssert.equal(hasBlankEdit(ops), false);
+    }
+});
+
+testCase("reusing an engine is deterministic and does not mutate caller arrays", () => {
+    const source = Object.freeze(["A1", "A2", "B1", "B2", "old"]);
+    const target = Object.freeze(["B1", "B2", "A1", "A2", "new"]);
+    const engine = new BlockTraceDiff({ skipWhitespaceOps: false });
+    const first = engine.diff(source, target);
+    engine.diff(["unrelated"], ["content"]);
+    const second = engine.diff(source, target);
+    strictAssert.deepEqual(second, first);
+    validatePublicDiff(source, target, second);
+});
+
+// =============================================================================
+// Large Inputs and Deterministic Performance Regressions
+// =============================================================================
+console.log("\n=== BlockTraceDiff: Large Inputs and Bounded Work ===");
+for (const insertion of [true, false]) {
+    testCase(`150,000-line pure ${insertion ? "insertion" : "deletion"} does not overflow function arguments`, () => {
+        // The original argument-spread crash reproduced at 150k on Node 22.16.0;
+        // this also exercises presentation and both replacement-assembly leftovers.
+        const lines = Array(150000).fill("X");
+        const source = insertion ? [] : lines;
+        const target = insertion ? lines : [];
+        const ops = new BlockTraceDiff({ skipWhitespaceOps: false }).diff(source, target);
+        strictAssert.equal(ops.length, lines.length);
+        strictAssert.ok(ops.every(op => op.type === (insertion ? "INSERT" : "DELETE")));
+        validatePublicDiff(source, target, ops);
+    });
+}
+
+testCase("a large stitched modified block expands without argument spreading", () => {
+    const source = ["A1", "A2"].concat(Array(150000).fill("removed"), ["B1", "B2"]);
+    const target = ["A1", "A2", "B1", "B2"];
+    const engine = new BlockTraceDiff({ maxStitchGap: 150000, skipWhitespaceOps: false });
+    let expanded = false;
+    const original = engine._calcInternalMod;
+    engine._calcInternalMod = function (...args) {
+        expanded = true;
+        return original.apply(this, args);
+    };
+    const ops = engine.diff(source, target);
+    strictAssert.ok(expanded, "must exercise modified-block expansion");
+    strictAssert.equal(ops.length, source.length);
+    strictAssert.equal(ops.filter(op => op.type === "DELETE").length, 150000);
+    validatePublicDiff(source, target, ops);
+});
+
+testCase("150,000 replacements can be assembled without overflowing function arguments", () => {
+    // Isolate output assembly; a completely unrelated 150k-by-150k Myers problem
+    // would test quadratic edit distance rather than the argument-spread regression.
+    const source = Array.from({ length: 150000 }, (_, i) => ({ type: "DELETE", srcLine: i + 1, text: "old" }));
+    const target = Array.from({ length: 150000 }, (_, i) => ({ type: "INSERT", targetLine: i + 1, text: "new" }));
+    const ops = new BlockTraceDiff()._identifyReplacements(source.concat(target));
+    strictAssert.equal(ops.length, 150000);
+    strictAssert.ok(ops.every((op, i) => op.type === "REPLACE" && op.srcLine === i + 1 && op.targetLine === i + 1));
+});
+
+testCase("seed expansion scans each equal diagonal run once, including nearly identical files", () => {
+    for (const n of [4000, 8000]) {
+        for (const change of ["none", "replace", "insert"]) {
+            const engine = new BlockTraceDiff({ skipWhitespaceOps: false });
+            const source = Array.from({ length: n }, (_, i) => `line-${i}`);
+            const target = source.slice();
+            if (change === "replace") target[n >> 1] = "changed";
+            if (change === "insert") target.splice(n >> 1, 0, "inserted");
+            const src = engine._normalizeAndIntern(source);
+            const tgt = engine._normalizeAndIntern(target);
+            const anchors = engine._findAnchors(src, tgt).reverse();
+            let reads = 0;
+            for (const arr of [src, tgt]) {
+                for (const line of arr) {
+                    const value = line.intVal;
+                    Object.defineProperty(line, "intVal", { get() { reads++; return value; } });
+                }
+            }
+            const candidates = engine._seedAndExpand(anchors, src, tgt);
+            strictAssert.equal(candidates.length, change === "none" ? 1 : 2);
+            strictAssert.ok(reads < n * 8 + 50, `${change}, n=${n}: ${reads} interned-value reads indicates repeated expansion`);
+            validatePublicDiff(source, target, engine.diff(source, target));
+        }
+    }
+});
+
+testCase("expansion caches full runs before trimming blank padding", () => {
+    const engine = new BlockTraceDiff({ kGramSize: 1, ignoreLeadingWhitespace: false });
+    const source = engine._normalizeAndIntern(["\t", "A", "B", " ", "changed", "C", "D", "\t"]);
+    const target = engine._normalizeAndIntern(["\t", "A", "B", " ", "other", "C", "D", "\t"]);
+    const anchors = engine._findAnchors(source, target).reverse();
+    const candidates = engine._seedAndExpand(anchors, source, target);
+    strictAssert.deepEqual(candidates.map(c => [c.srcStart, c.srcEnd, c.targetStart, c.targetEnd]), [[1, 2, 1, 2], [5, 6, 5, 6]]);
+});
+
+testCase("run construction indexes moves instead of rescanning the move list", () => {
+    const count = 1000;
+    const engine = new BlockTraceDiff({ maxStitchGap: 0 });
+    const source = Array.from({ length: count }, (_, i) => [`A${i}`, `B${i}`, `old${i}`]).flat();
+    const target = Array.from({ length: count }, (_, i) => [`A${i}`, `B${i}`, `new${i}`]).flat();
+    const src = engine._normalizeAndIntern(source);
+    const tgt = engine._normalizeAndIntern(target);
+    const moves = engine._gapStitching(engine._greedyMasking(engine._seedAndExpand(engine._findAnchors(src, tgt), src, tgt)));
+    strictAssert.equal(moves.length, count);
+    let reads = 0;
+    const tracked = new Proxy(moves, {
+        get(array, key, receiver) {
+            if (typeof key === "string" && /^\d+$/.test(key)) reads++;
+            return Reflect.get(array, key, receiver);
+        },
+    });
+    engine._myersDiff = () => [];
+    engine._buildFinalOutput = () => [];
+    engine._fallbackDiffAndReassemble(src, tgt, tracked, source, target);
+    strictAssert.ok(reads < count * 30, `${reads} move-index reads indicates repeated linear searches`);
+});
 
 // =============================================================================
 // Summary

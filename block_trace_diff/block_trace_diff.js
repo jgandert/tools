@@ -18,11 +18,31 @@ class StringInterner {
 
 class BlockTraceDiff {
     constructor(options = {}) {
-        this.kGramSize = options.kGramSize || 2;
+        if (options === null || typeof options !== "object" || Array.isArray(options)) {
+            throw new TypeError("options must be an object");
+        }
+        this.kGramSize = options.kGramSize !== undefined ? options.kGramSize : 2;
         this.maxStitchGap = options.maxStitchGap !== undefined ? options.maxStitchGap : 2;
         this.maxOccurrences = options.maxOccurrences !== undefined ? options.maxOccurrences : 5;
         this.ignoreLeadingWhitespace = options.ignoreLeadingWhitespace !== undefined ? options.ignoreLeadingWhitespace : true;
+        // Internal/trailing whitespace is significant by default, including inside literals.
+        // Set all ignore* options and skipWhitespaceOps to false for an exact, lossless diff.
+        // Opt-in normalization is textual, not syntax-aware; EQUAL retains both raw texts.
+        this.ignoreTrailingWhitespace = options.ignoreTrailingWhitespace !== undefined ? options.ignoreTrailingWhitespace : false;
+        this.ignoreInternalWhitespace = options.ignoreInternalWhitespace !== undefined ? options.ignoreInternalWhitespace : false;
         this.skipWhitespaceOps = options.skipWhitespaceOps !== undefined ? options.skipWhitespaceOps : true;
+
+        for (const [name, minimum] of [["kGramSize", 1], ["maxStitchGap", 0], ["maxOccurrences", 0]]) {
+            if (!Number.isSafeInteger(this[name]) || this[name] < minimum) {
+                throw new RangeError(`${name} must be a safe integer >= ${minimum}`);
+            }
+        }
+        for (const name of ["ignoreLeadingWhitespace", "ignoreTrailingWhitespace", "ignoreInternalWhitespace", "skipWhitespaceOps"]) {
+            if (typeof this[name] !== "boolean") {
+                throw new TypeError(`${name} must be a boolean`);
+            }
+        }
+        // maxOccurrences: 0 intentionally disables anchoring (Myers-only fallback).
         this.interner = new StringInterner();
         this.moveCounter = 0;
     }
@@ -40,44 +60,56 @@ class BlockTraceDiff {
         const moves = this._gapStitching(claimedExactMoves);
 
         const rawOps = this._fallbackDiffAndReassemble(src, target, moves, sourceLines, targetLines);
-        const sortedOps = this._sortOperations(rawOps);
-        let finalOps = this._identifyReplacements(sortedOps);
+        return this._presentOperations(rawOps);
+    }
 
+    _presentOperations(ops, pairReplacements = true) {
+        // Keep the complete edit model until presentation. Hidden blank edits must not
+        // consume replacement partners, and both halves of a move stay visible together.
+        const visibleMoves = new Set();
         if (this.skipWhitespaceOps) {
-            finalOps = finalOps.filter(op => {
-                if (op.type === "EQUAL") {
-                    return true;
+            for (const op of ops) {
+                if ((op.type === "MOVE_FROM" || op.type === "MOVE_TO") && op.lines.some(line => line.trim() !== "")) {
+                    visibleMoves.add(op.moveId);
                 }
-                if (op.type === "MOVE_FROM" || op.type === "MOVE_TO") {
-                    return op.lines && op.lines.some(line => line.trim() !== "");
-                }
-                if (op.type === "REPLACE") {
-                    if (op.internalDiff) {
-                        return op.internalDiff.some(mod => mod.text.trim() !== "");
-                    }
-                    return op.text.trim() !== "";
-                }
-                return op.text.trim() !== "";
-            });
+            }
         }
 
-        return finalOps;
+        const visible = [];
+        for (const op of ops) {
+            if (this.skipWhitespaceOps) {
+                if (op.type === "MOVE_FROM" || op.type === "MOVE_TO") {
+                    if (!visibleMoves.has(op.moveId)) continue;
+                } else if (op.type !== "EQUAL" && op.text.trim() === "") {
+                    continue;
+                }
+            }
+            if (op.type === "MOVE_TO" && op.internalDiff) {
+                // Preserve the existing nested DELETE/INSERT contract rather than
+                // turning internal edits into another layer of REPLACE operations.
+                visible.push({ ...op, internalDiff: this._presentOperations(op.internalDiff, false) });
+            } else {
+                visible.push(op);
+            }
+        }
+        const sortedOps = this._sortOperations(visible);
+        return pairReplacements ? this._identifyReplacements(sortedOps) : sortedOps;
     }
 
     _normalizeAndIntern(lines) {
         return lines.map((line, index) => {
-            let leading = "";
             let normalized = line;
-            if (this.ignoreLeadingWhitespace) {
-                normalized = normalized.trimStart();
-            } else {
-                const match = normalized.match(/^\s*/);
-                if (match) {
-                    leading = match[0];
-                    normalized = normalized.slice(leading.length);
+            if (this.ignoreLeadingWhitespace) normalized = normalized.trimStart();
+            if (this.ignoreTrailingWhitespace) normalized = normalized.trimEnd();
+            if (this.ignoreInternalWhitespace) {
+                // Collapse only whitespace between nonblank characters, preserving
+                // either boundary unless its own ignore option is enabled.
+                const start = normalized.search(/\S/);
+                if (start !== -1) {
+                    const end = normalized.trimEnd().length;
+                    normalized = normalized.slice(0, start) + normalized.slice(start, end).replace(/\s+/g, " ") + normalized.slice(end);
                 }
             }
-            normalized = leading + normalized.trimEnd().replace(/\s+/g, " ");
             return {
                 originalText: line,
                 normalizedText: normalized,
@@ -88,6 +120,7 @@ class BlockTraceDiff {
     }
 
     _findAnchors(src, target) {
+        if (this.maxOccurrences === 0 || src.length < this.kGramSize || target.length < this.kGramSize) return [];
         const hashKGram = (arr, startIndex, k) => {
             let hash = "";
             for (let i = 0; i < k; i++) hash += arr[startIndex + i].intVal + ",";
@@ -124,9 +157,14 @@ class BlockTraceDiff {
 
     _seedAndExpand(anchors, src, target) {
         const candidates = [];
-        const seen = new Set();
+        // Source-ordered anchors let each diagonal remember just its last expanded
+        // end. Skip covered seeds BEFORE scanning, including subsequently trimmed padding.
+        const expandedEnds = new Map();
+        const orderedAnchors = anchors.slice().sort((a, b) => a.srcStart - b.srcStart);
 
-        for (const anchor of anchors) {
+        for (const anchor of orderedAnchors) {
+            const diagonal = anchor.targetStart - anchor.srcStart;
+            if (expandedEnds.has(diagonal) && anchor.srcStart + this.kGramSize - 1 <= expandedEnds.get(diagonal)) continue;
             let s = anchor.srcStart;
             let t = anchor.targetStart;
 
@@ -146,29 +184,26 @@ class BlockTraceDiff {
             }
             let sEnd = s;
             let tEnd = t;
+            expandedEnds.set(diagonal, sEnd);
 
             // Trim leading/trailing blank lines so they don't capture spacing padding
-            while (sStart <= sEnd && src[sStart].normalizedText === "") {
+            while (sStart <= sEnd && src[sStart].originalText.trim() === "") {
                 sStart++;
                 tStart++;
             }
-            while (sEnd >= sStart && src[sEnd].normalizedText === "") {
+            while (sEnd >= sStart && src[sEnd].originalText.trim() === "") {
                 sEnd--;
                 tEnd--;
             }
 
             if (sEnd - sStart + 1 >= this.kGramSize) {
-                const id = `${sStart}-${sEnd}-${tStart}-${tEnd}`;
-                if (!seen.has(id)) {
-                    seen.add(id);
-                    candidates.push({
-                        srcStart: sStart,
-                        srcEnd: sEnd,
-                        targetStart: tStart,
-                        targetEnd: tEnd,
-                        length: sEnd - sStart + 1,
-                    });
-                }
+                candidates.push({
+                    srcStart: sStart,
+                    srcEnd: sEnd,
+                    targetStart: tStart,
+                    targetEnd: tEnd,
+                    length: sEnd - sStart + 1,
+                });
             }
         }
         return candidates;
@@ -226,6 +261,9 @@ class BlockTraceDiff {
 
     _gapStitching(exactMoves) {
         if (exactMoves.length === 0) return [];
+        exactMoves = exactMoves.slice().sort((a, b) => a.srcStart - b.srcStart);
+        const targetOrder = exactMoves.slice().sort((a, b) => a.targetStart - b.targetStart);
+        const targetRank = new Map(targetOrder.map((move, i) => [move, i]));
         const stitched = [];
         let group = [exactMoves[0]];
 
@@ -234,7 +272,10 @@ class BlockTraceDiff {
             const srcGap = curr.srcStart - prev.srcEnd - 1;
             const targetGap = curr.targetStart - prev.targetEnd - 1;
 
-            if (srcGap >= 0 && srcGap <= this.maxStitchGap && targetGap >= 0 && targetGap <= this.maxStitchGap && curr.targetStart > prev.targetEnd) {
+            // Consecutive source blocks may have another block between them in the
+            // target. Stitch only across unclaimed gaps on BOTH sides.
+            const consecutive = targetRank.get(curr) === targetRank.get(prev) + 1;
+            if (consecutive && srcGap >= 0 && srcGap <= this.maxStitchGap && targetGap >= 0 && targetGap <= this.maxStitchGap) {
                 group.push(curr);
             } else {
                 stitched.push(this._finalizeMoveGroup(group));
@@ -257,15 +298,53 @@ class BlockTraceDiff {
         };
     }
 
+    _selectStationaryMoves(moves) {
+        // Maximum-weight increasing subsequence: retain matching lines, not just
+        // the largest number of block tokens. A Fenwick tree keeps this O(B log B).
+        const sourceOrder = moves.slice().sort((a, b) => a.srcStart - b.srcStart);
+        const targetOrder = moves.slice().sort((a, b) => a.targetStart - b.targetStart);
+        const ranks = new Map(targetOrder.map((move, i) => [move, i + 1]));
+        const tree = new Int32Array(moves.length + 1);
+        const scores = new Float64Array(moves.length + 1);
+        const previous = new Int32Array(moves.length + 1);
+        const better = (a, b) => {
+            if (scores[a] !== scores[b]) return scores[a] > scores[b] ? a : b;
+            if (a === 0 || b === 0) return a || b;
+            // Resolve equal weights deterministically, favoring the earlier target.
+            return sourceOrder[a - 1].targetStart < sourceOrder[b - 1].targetStart ? a : b;
+        };
+        const query = rank => {
+            let best = 0;
+            for (let i = rank; i > 0; i -= i & -i) best = better(best, tree[i]);
+            return best;
+        };
+
+        for (let i = 1; i <= sourceOrder.length; i++) {
+            const move = sourceOrder[i - 1];
+            const rank = ranks.get(move);
+            previous[i] = query(rank - 1);
+            // Unmatched stitched gaps do not count as retained lines.
+            scores[i] = scores[previous[i]] + move.exactBlocks.reduce((sum, block) => sum + block.length, 0);
+            for (let j = rank; j < tree.length; j += j & -j) tree[j] = better(tree[j], i);
+        }
+
+        const stationary = new Set();
+        for (let i = query(moves.length); i !== 0; i = previous[i]) stationary.add(sourceOrder[i - 1].id);
+        return stationary;
+    }
+
     _fallbackDiffAndReassemble(src, target, moves, rawSrc, rawTarget) {
         let moveIdCounter = -10000;
         moves.forEach(m => m.tokenVal = moveIdCounter--);
+        const bySourceStart = new Map(moves.map(m => [m.srcStart, m]));
+        const byTargetStart = new Map(moves.map(m => [m.targetStart, m]));
 
         const srcRun = [], targetRun = [];
         const buildRun = (arr, isSrc, runTarget) => {
+            const byStart = isSrc ? bySourceStart : byTargetStart;
             let i = 0;
             while (i < arr.length) {
-                const move = moves.find(m => isSrc ? m.srcStart === i : m.targetStart === i);
+                const move = byStart.get(i);
                 if (move) {
                     runTarget.push({ isToken: true, val: move.tokenVal, move });
                     i = isSrc ? move.srcEnd + 1 : move.targetEnd + 1;
@@ -279,7 +358,37 @@ class BlockTraceDiff {
         buildRun(src, true, srcRun);
         buildRun(target, false, targetRun);
 
-        const myersScript = this._myersDiff(srcRun.map(x => x.val), targetRun.map(x => x.val));
+        const stationary = this._selectStationaryMoves(moves);
+        const targetPositions = new Map();
+        targetRun.forEach((node, i) => {
+            if (node.isToken) targetPositions.set(node.move.id, i);
+        });
+        const srcVals = srcRun.map(node => node.val);
+        // Nonstationary tokens must produce both a deletion and an insertion.
+        // Keep their target values disjoint from source tokens and interned lines.
+        const targetVals = targetRun.map(node => node.isToken && !stationary.has(node.move.id) ? node.val - moves.length : node.val);
+        const myersScript = [];
+        let srcStart = 0, targetStart = 0;
+        const appendGap = (srcEnd, targetEnd) => {
+            const script = this._myersDiff(srcVals.slice(srcStart, srcEnd), targetVals.slice(targetStart, targetEnd));
+            for (const op of script) {
+                myersScript.push({
+                    type: op.type,
+                    srcIdx: op.srcIdx === null ? null : op.srcIdx + srcStart,
+                    targetIdx: op.targetIdx === null ? null : op.targetIdx + targetStart,
+                });
+            }
+        };
+        for (let i = 0; i < srcRun.length; i++) {
+            const node = srcRun[i];
+            if (!node.isToken || !stationary.has(node.move.id)) continue;
+            const j = targetPositions.get(node.move.id);
+            appendGap(i, j);
+            myersScript.push({ type: "EQUAL", srcIdx: i, targetIdx: j });
+            srcStart = i + 1;
+            targetStart = j + 1;
+        }
+        appendGap(srcRun.length, targetRun.length);
         return this._buildFinalOutput(myersScript, srcRun, targetRun, rawSrc, rawTarget, src, target);
     }
 
@@ -408,6 +517,20 @@ class BlockTraceDiff {
         return { x: 0, y: 0 };
     }
 
+    _formatEqual(src, target) {
+        // text consistently belongs to the source; callers can reconstruct either
+        // document even when an explicitly ignored whitespace difference matches.
+        return {
+            type: "EQUAL",
+            text: src.originalText,
+            sourceText: src.originalText,
+            targetText: target.originalText,
+            isExact: src.originalText === target.originalText,
+            srcLine: src.originalIndex + 1,
+            targetLine: target.originalIndex + 1,
+        };
+    }
+
     _buildFinalOutput(script, srcRun, targetRun, rawSrc, rawTarget, fullSrc, fullTarget) {
         const output = [];
         for (const op of script) {
@@ -417,24 +540,14 @@ class BlockTraceDiff {
                     if (n.move.type === "MOVE_EXACT") {
                         const offset = n.move.targetStart - n.move.srcStart;
                         for (let i = n.move.srcStart; i <= n.move.srcEnd; i++) {
-                            output.push({
-                                type: "EQUAL",
-                                text: fullSrc[i].originalText,
-                                srcLine: i + 1,
-                                targetLine: i + offset + 1,
-                            });
+                            output.push(this._formatEqual(fullSrc[i], fullTarget[i + offset]));
                         }
                     } else if (n.move.type === "MOVE_MODIFIED") {
-                        output.push(...this._calcInternalMod(n.move, fullSrc, fullTarget));
+                        for (const mod of this._calcInternalMod(n.move, fullSrc, fullTarget)) output.push(mod);
                     }
                 } else {
                     const nTarget = targetRun[op.targetIdx];
-                    output.push({
-                        type: "EQUAL",
-                        text: n.data.originalText,
-                        srcLine: n.data.originalIndex + 1,
-                        targetLine: nTarget.data.originalIndex + 1,
-                    });
+                    output.push(this._formatEqual(n.data, nTarget.data));
                 }
             } else if (op.type === "DELETE") {
                 const n = srcRun[op.srcIdx];
@@ -474,8 +587,11 @@ class BlockTraceDiff {
             targetStartLine: move.targetStart + 1,
             targetEndLine: move.targetEnd + 1,
         };
-        if (move.type === "MOVE_MODIFIED" && direction === "MOVE_TO") {
-            payload.internalDiff = this._calcInternalMod(move, fullSrc, fullTarget);
+        if (direction === "MOVE_TO") {
+            // MOVE_EXACT means exact under the configured matching normalization.
+            // Expose raw whitespace differences inside such a move as well.
+            const rawDifference = move.type === "MOVE_MODIFIED" || payload.lines.some((line, i) => line !== rawSrc[move.srcStart + i]);
+            if (rawDifference) payload.internalDiff = this._calcInternalMod(move, fullSrc, fullTarget);
         }
         return payload;
     }
@@ -486,12 +602,7 @@ class BlockTraceDiff {
         for (let i = 0; i < blocks.length; i++) {
             const b = blocks[i];
             for (let j = b.targetStart; j <= b.targetEnd; j++) {
-                internal.push({
-                    type: "EQUAL",
-                    text: target[j].originalText,
-                    srcLine: b.srcStart + (j - b.targetStart) + 1,
-                    targetLine: j + 1,
-                });
+                internal.push(this._formatEqual(src[b.srcStart + (j - b.targetStart)], target[j]));
             }
             if (i < blocks.length - 1) {
                 const next = blocks[i + 1];
@@ -500,12 +611,7 @@ class BlockTraceDiff {
                 const gapScript = this._myersDiff(srcVals, targetVals);
                 for (const op of gapScript) {
                     if (op.type === "EQUAL") {
-                        internal.push({
-                            type: "EQUAL",
-                            text: target[b.targetEnd + 1 + op.targetIdx].originalText,
-                            srcLine: b.srcEnd + 1 + op.srcIdx + 1,
-                            targetLine: b.targetEnd + 1 + op.targetIdx + 1,
-                        });
+                        internal.push(this._formatEqual(src[b.srcEnd + 1 + op.srcIdx], target[b.targetEnd + 1 + op.targetIdx]));
                     } else if (op.type === "DELETE") {
                         internal.push({
                             type: "DELETE",
@@ -546,7 +652,7 @@ class BlockTraceDiff {
                     if (!aIsDel && bIsDel) return 1;
                     return 0;
                 });
-                result.push(...block);
+                for (const op of block) result.push(op);
             }
         }
         return result;
@@ -568,32 +674,36 @@ class BlockTraceDiff {
                 block.push(ops[i]);
                 i++;
             }
-            const deletes = block.filter(op => op.type === "DELETE");
-            const inserts = block.filter(op => op.type === "INSERT");
-            const moveFroms = block.filter(op => op.type === "MOVE_FROM");
-            const moveTos = block.filter(op => op.type === "MOVE_TO");
-            const replaces = [];
-            const K = Math.min(deletes.length, inserts.length);
-            for (let j = 0; j < K; j++) {
-                replaces.push({
-                    type: "REPLACE",
-                    text: inserts[j].text,
-                    lines: [inserts[j].text],
-                    srcLine: deletes[j].srcLine,
-                    targetLine: inserts[j].targetLine,
-                    internalDiff: [
-                        { type: "DELETE", text: deletes[j].text },
-                        { type: "INSERT", text: inserts[j].text },
-                    ],
-                });
+            // Keep each side's consuming operations in order. Moves can interrupt
+            // replacement pairing, but must be emitted before any later line on
+            // their own side; grouping all move operations at the end breaks this.
+            const source = block.filter(op => op.type === "DELETE" || op.type === "MOVE_FROM");
+            const target = block.filter(op => op.type === "INSERT" || op.type === "MOVE_TO");
+            let s = 0, t = 0;
+            while (s < source.length || t < target.length) {
+                if (s < source.length && source[s].type === "MOVE_FROM") {
+                    result.push(source[s++]);
+                } else if (t < target.length && target[t].type === "MOVE_TO") {
+                    result.push(target[t++]);
+                } else if (s < source.length && t < target.length) {
+                    const deleted = source[s++], inserted = target[t++];
+                    result.push({
+                        type: "REPLACE",
+                        text: inserted.text,
+                        lines: [inserted.text],
+                        srcLine: deleted.srcLine,
+                        targetLine: inserted.targetLine,
+                        internalDiff: [
+                            { type: "DELETE", text: deleted.text },
+                            { type: "INSERT", text: inserted.text },
+                        ],
+                    });
+                } else if (s < source.length) {
+                    result.push(source[s++]);
+                } else {
+                    result.push(target[t++]);
+                }
             }
-            const leftoverDeletes = deletes.slice(K);
-            const leftoverInserts = inserts.slice(K);
-            result.push(...replaces);
-            result.push(...leftoverDeletes);
-            result.push(...moveFroms);
-            result.push(...leftoverInserts);
-            result.push(...moveTos);
         }
         return result;
     }

@@ -244,13 +244,13 @@ function calculateSalesTax(subtotal, region) {
         <fieldset>
             <legend>Algorithm Options</legend>
             <label for="k-gram-size">k-Gram Size</label>
-            <input type="number" id="k-gram-size" min="1" max="20" value="2">
+            <input type="number" id="k-gram-size" min="1" max="20" step="1" value="2" required>
 
             <label for="max-stitch-gap">Max Stitch Gap</label>
-            <input type="number" id="max-stitch-gap" min="0" max="20" value="2">
+            <input type="number" id="max-stitch-gap" min="0" max="20" step="1" value="2" required>
 
             <label for="max-occurrences">Max Occurrences</label>
-            <input type="number" id="max-occurrences" min="1" max="100" value="5">
+            <input type="number" id="max-occurrences" min="0" max="100" step="1" value="5" required>
 
             <label for="ignore-leading-whitespace">
                 <input type="checkbox" id="ignore-leading-whitespace" checked>
@@ -307,6 +307,7 @@ function calculateSalesTax(subtotal, region) {
     };
 
     // --- UI Rendering Pipeline ---
+    const diffForm = document.getElementById("diff-form");
     const outputEl = document.getElementById("output");
     const sourceTa = document.getElementById("source");
     const targetTa = document.getElementById("target");
@@ -317,9 +318,9 @@ function calculateSalesTax(subtotal, region) {
     const skipWhitespaceOpsInput = document.getElementById("skip-whitespace-ops");
 
     const getEngine = () => {
-        const kGramSize = parseInt(kGramSizeInput.value, 10) || 2;
-        const maxStitchGap = parseInt(maxStitchGapInput.value, 10);
-        const maxOccurrences = parseInt(maxOccurrencesInput.value, 10) || 5;
+        const kGramSize = kGramSizeInput.valueAsNumber;
+        const maxStitchGap = maxStitchGapInput.valueAsNumber;
+        const maxOccurrences = maxOccurrencesInput.valueAsNumber;
         const ignoreLeadingWhitespace = ignoreLeadingWhitespaceInput.checked;
         const skipWhitespaceOps = skipWhitespaceOpsInput.checked;
         return new BlockTraceDiff({
@@ -340,6 +341,8 @@ function calculateSalesTax(subtotal, region) {
     }
 
     const triggerDiff = () => {
+        if (!diffForm.reportValidity()) return;
+
         const src = sourceTa.value.split("\n");
         const targetLines = targetTa.value.split("\n");
         const engine = getEngine();
@@ -414,7 +417,7 @@ function calculateSalesTax(subtotal, region) {
                     }
                     chunks.push(current);
                 }
-                current.lines.push(op.text);
+                current.lines.push(op.type === "EQUAL" ? op.targetText : op.text);
                 if (op.srcLine) {
                     current.endSrcLine = op.srcLine;
                     if (!current.startSrcLine) current.startSrcLine = op.srcLine;
@@ -501,7 +504,7 @@ function calculateSalesTax(subtotal, region) {
             } else {
                 chunk.internalDiff.forEach(mod => {
                     const span = document.createElement(mod.type === "INSERT" ? "ins" : mod.type === "DELETE" ? "del" : "span");
-                    span.textContent = mod.text + "\n";
+                    span.textContent = (mod.type === "EQUAL" ? mod.targetText : mod.text) + "\n";
                     code.appendChild(span);
                 });
             }
