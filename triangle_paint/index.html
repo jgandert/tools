@@ -67,8 +67,7 @@
 
         /* Shortcut hints */
         .palette-swatch::after,
-        #btn-eraser::after,
-        .tool-switch label::after {
+        #btn-eraser::after {
             position: absolute;
             font-size: 10px;
             font-weight: 700;
@@ -133,60 +132,33 @@
 
         /* Tool Switch */
         .tool-switch {
-            display: flex;
-            background: var(--surface-container-high);
-            border-radius: 8px;
-            padding: 4px;
-            border: 1px solid var(--outline-variant);
-        }
-
-        .tool-switch input {
-            display: none;
-        }
-
-        .tool-switch label {
-            padding: 8px 16px;
-            cursor: pointer;
-            font-size: 18px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--on-surface-variant);
-            transition: var(--trans-interactive);
-            position: relative;
+            flex-wrap: nowrap;
             margin-bottom: 0;
         }
 
-        .tool-switch label:hover {
-            background: color-mix(in srgb, var(--on-surface) 5%, transparent);
-            color: var(--on-surface);
+        .tool-switch label {
+            position: relative;
         }
 
-        .tool-switch input:checked + label {
-            background: var(--primary);
-            color: white;
+        .tool-switch label::after {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            pointer-events: none;
         }
 
         .tool-switch label[for="t-draw"]::after {
             content: "D";
-            bottom: 2px;
-            right: 4px;
-            font-size: 9px;
         }
 
         .tool-switch label[for="t-fill"]::after {
             content: "F";
-            bottom: 2px;
-            right: 4px;
-            font-size: 9px;
         }
 
         .tool-switch label[for="t-scroll"]::after {
             content: "S";
-            bottom: 2px;
-            right: 4px;
-            font-size: 9px;
         }
 
         .main-content {
@@ -302,20 +274,20 @@
         <div class="divider"></div>
 
         <!-- Tools -->
-        <div class="tool-switch">
-            <input type="radio" id="t-draw" name="tool" value="draw" checked>
+        <div class="tool-switch segmented-control" role="group" aria-label="Drawing tool">
+            <input type="radio" id="t-draw" name="tool" value="draw" aria-label="Draw" checked>
             <label for="t-draw" title="Draw [D]">
-                <span class="sym lg">edit</span>
+                <span class="sym lg" aria-hidden="true">edit</span>
             </label>
 
-            <input type="radio" id="t-fill" name="tool" value="fill">
+            <input type="radio" id="t-fill" name="tool" value="fill" aria-label="Fill bucket">
             <label for="t-fill" title="Fill Bucket [F]">
-                <span class="sym lg">format_color_fill</span>
+                <span class="sym lg" aria-hidden="true">format_color_fill</span>
             </label>
 
-            <input type="radio" id="t-scroll" name="tool" value="scroll">
+            <input type="radio" id="t-scroll" name="tool" value="scroll" aria-label="Scroll/Pan">
             <label for="t-scroll" title="Scroll/Pan [S]">
-                <span class="sym lg">pan_tool</span>
+                <span class="sym lg" aria-hidden="true">pan_tool</span>
             </label>
         </div>
 

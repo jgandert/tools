@@ -466,6 +466,14 @@
             <code>.mt-4 .mb-0</code>.
         </p>
 
+        <h3>Responsive Visibility</h3>
+        <p>Use <code>.hide-desktop</code> and <code>.hide-mobile</code> to show a short button label on narrow screens and a fuller label on desktop. Resize this page: the button reads "Save" below 900px and "Save document" at 900px and wider. <code>.hide-desktop</code> is also useful for buttons that are only relevant in mobile viewports.</p>
+        <button type="button"><span class="hide-desktop">Save</span><span class="hide-mobile">Save document</span></button>
+        <pre><code>&lt;button type="button"&gt;
+    &lt;span class="hide-desktop"&gt;Save&lt;/span&gt;
+    &lt;span class="hide-mobile"&gt;Save document&lt;/span&gt;
+&lt;/button&gt;</code></pre>
+
         <h3>Responsive Tables</h3>
         <div class="table-container">
             <table>

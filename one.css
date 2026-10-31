@@ -713,7 +713,7 @@ aside h2 {
     font-size: 1.2rem;
     text-transform: uppercase;
     color: var(--on-surface-variant);
-    padding: var(--spacing-lg) var(--spacing-md) var(--spacing-sm);
+    padding: var(--spacing-lg) 0 var(--spacing-sm);
     margin: 0;
 }
 
@@ -1220,6 +1220,7 @@ input[type="radio"]:focus-visible,
 input[type="checkbox"]:not([role="switch"]):focus-visible,
 input[role="switch"]:focus-visible,
 .segmented-control input:focus-visible + label,
+.segmented-control label:has(input:focus-visible),
 .aside-toggle-btn:focus-visible,
 #aside-state:focus-visible ~ header .aside-toggle-btn {
     outline: var(--border-width-lg) solid var(--primary);
@@ -1342,6 +1343,7 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     align-items: center;
     justify-content: center;
     text-align: center;
+    gap: var(--spacing-sm);
     min-height: 32px;
     padding: calc(var(--grid) * 1) calc(var(--grid) * 3);
     border-radius: calc(var(--radius-lg) - var(--seg-padding) - var(--seg-border));
@@ -1355,11 +1357,20 @@ input[type="range"]:focus-visible::-moz-range-thumb {
     color: var(--on-surface-variant);
 }
 
+.segmented-control label:has(input[type="radio"], input[type="checkbox"]:not([role="switch"])) {
+    margin: 0;
+}
+
+.segmented-control label .sym {
+    margin-inline-end: 0;
+}
+
 .segmented-control label:hover {
     color: var(--on-surface);
 }
 
-.segmented-control input:checked + label {
+.segmented-control input:checked + label,
+.segmented-control label:has(input:checked) {
     background: var(--primary);
     color: var(--on-primary);
 }
@@ -2376,6 +2387,12 @@ dialog footer {
 @media (min-width: 900px) {
     .hide-mobile {
         display: contents !important;
+    }
+
+    /* Hide at 900px and wider; pair with .hide-mobile for short mobile labels and fuller desktop labels.
+       Also useful for buttons that are only relevant in mobile viewports. */
+    .hide-desktop {
+        display: none !important;
     }
 }
 

@@ -16,32 +16,10 @@
             ------------------------------------------------------------------ */
 
 
-        /* Custom File Input */
-        .file-drop-area {
-            border: 2px dashed var(--outline-variant);
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: var(--trans-interactive);
-            background: var(--surface-container-high);
-            margin-bottom: var(--spacing-lg);
-        }
-
-        .file-drop-area:hover,
-        .file-drop-area.drag-over {
-            border-color: var(--primary);
-            background: color-mix(in srgb, var(--primary) 5%, transparent);
-        }
-
         .file-msg {
             font-size: 0.85rem;
             color: var(--on-surface-variant);
             pointer-events: none;
-        }
-
-        input[type="file"] {
-            display: none;
         }
 
         /* Slice List */
@@ -173,7 +151,7 @@
 <aside id="sidebar">
     <h2 hidden>Sidebar</h2>
     <div class="file-drop-area" id="drop-area">
-        <input type="file" id="file-input" accept="image/*">
+        <input type="file" id="file-input" accept="image/*" aria-label="Upload image">
     </div>
 
     <fieldset>
@@ -340,7 +318,6 @@
     // --- INIT & EVENT LISTENERS ---
     function init() {
         // File Upload
-        els.dropArea.addEventListener("click", () => els.fileInput.click());
         els.fileInput.addEventListener("change", handleFileSelect);
 
         document.getElementById("zoom-fit").addEventListener("click", () => setZoom("fit"));

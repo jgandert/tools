@@ -11,54 +11,12 @@
     <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
     <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
     <link rel="stylesheet" type="text/css" href="../one.css">
+    <script src="../one.js" defer></script>
     <style>
         :root {
             --canvas-bg-inner: light-dark(color-mix(in srgb, var(--primary) 5%, var(--surface)), color-mix(in srgb, var(--primary) 4%, var(--surface)));
             --canvas-bg-outer: light-dark(color-mix(in srgb, var(--primary) 12%, var(--surface-container-low)), color-mix(in srgb, var(--surface) 65%, black));
             --ring-bg-stroke: light-dark(color-mix(in srgb, var(--on-surface) 6%, transparent), color-mix(in srgb, var(--on-surface) 8%, transparent));
-        }
-
-        /* --- one.css Sidebar Layout Overrides (Collapsed by Default) --- */
-        @media (min-width: 900px) {
-            body:has(#aside-state:not(:checked)) {
-                grid-template-columns: 0px 1fr !important;
-                grid-template-areas:
-                    "header header"
-                    "aside main"
-                    "aside footer" !important;
-            }
-
-            body:has(#aside-state:not(:checked)) aside {
-                width: 0 !important;
-                opacity: 0 !important;
-                padding: 0 !important;
-                border-right: none !important;
-                visibility: hidden !important;
-            }
-
-            body:has(#aside-state:checked) {
-                grid-template-columns: var(--aside-width) 1fr !important;
-                grid-template-areas:
-                    "header header"
-                    "aside main"
-                    "aside footer" !important;
-            }
-
-            body:has(#aside-state:checked) aside {
-                width: 100% !important;
-                opacity: 1 !important;
-                padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md) !important;
-                border-right: 1px solid var(--outline-variant) !important;
-                visibility: visible !important;
-            }
-
-            #aside-state:not(:checked) ~ header .aside-toggle-btn::before {
-                content: 'menu' !important;
-            }
-
-            #aside-state:checked ~ header .aside-toggle-btn::before {
-                content: 'menu_open' !important;
-            }
         }
 
         /* --- Touch Canvas Layout & Aesthetics --- */
@@ -284,6 +242,17 @@
 
 <body>
 <input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle sidebar">
+<script>
+    const asideState = document.getElementById("aside-state");
+    const asideBreakpoint = window.matchMedia("(min-width: 900px)");
+    asideState.checked = asideBreakpoint.matches;
+
+    // Preserve drawer visibility when the shared checkbox meaning changes at 900px.
+
+    asideBreakpoint.addEventListener("change", () => {
+        asideState.checked = !asideState.checked;
+    });
+</script>
 
 <header>
     <label for="aside-state" class="aside-toggle-btn"></label>
