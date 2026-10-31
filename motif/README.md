@@ -679,3 +679,10 @@ Motif utilizes native JavaScript `await` functionality for sample loading.
 await Motif.loadSamples('https://api.domain.com/packs/drums.json');
 ```
 
+## Automated song lint
+
+Run `bun run_song.js` to lint every `game/*.js` song, or pass song paths and directories: `bun run_song.js game examples/song.js`. The command isolates each song in a fresh process, continues after failed songs, reports song and track coverage, and exits nonzero for confirmed setup, scheduling, registry, pitch, playback, or missing non-rest note-attempt errors. An empty selection fails. Each song has a two-minute execution limit.
+
+The runner executes real DSL methods against mock Web Audio and checks the executed paths; comments, strings, ordinary array operations, and local helpers are not treated as DSL calls. Unknown methods fail during execution. It checks source registries, duplicate Track construction, scale roots/names, and inline Track construction in sidechain arguments. Pattern lengths that may suggest missing `.stepLength()` and very low sample pitches are warnings because their intent is ambiguous. External sample paths still require successful loading.
+
+Scheduled steps include rests; non-rest note attempts are reported separately, excluding ties and parameter events. These checks do not prove audible output or DSP correctness. Run `bun test_motif.js` for good/broken lint fixtures, batch failure behavior, and isolation regression checks.

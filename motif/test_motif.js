@@ -10369,6 +10369,50 @@ console.log("\n=== Motif.sampleSeed(): reseeding invalidates already-rendered Tr
     assert(fired.length === 1, "offline ticks must not repeat dispatched callbacks");
 }
 
+// =============================================================================
+// Song lint fixtures and batch isolation
+// =============================================================================
+{
+    const fixtureRoot = new URL("./test/fixtures/song-lint/", import.meta.url).pathname;
+    const durationFixture = new URL("./test/fixtures/duration-helpers.js", import.meta.url).pathname;
+    const runner = new URL("./run_song.js", import.meta.url).pathname;
+    const patternChecker = new URL("./check_patterns.js", import.meta.url).pathname;
+    const runLint = (...paths) => Bun.spawnSync([process.execPath, runner, ...paths], { timeout: 120000 });
+    const good = runLint(`${fixtureRoot}good`);
+    const goodOutput = good.stdout.toString();
+    assert(good.exitCode === 0, `valid DSL, builtins, helpers, instance reuse and isolated songs pass lint: ${goodOutput}`);
+    assert(goodOutput.includes("without explicit stepLength") && goodOutput.includes("confirm transposition is intentional"), "intent-dependent pattern lengths and sample transposition produce warnings");
+    const cases = {
+        "unknown-method": "invented",
+        "unknown-source": "unknown synth source",
+        "cross-registry": "cross-registry call",
+        "sample-as-synth": "cross-registry call",
+        "duplicate": "DUPLICATE Track() IDS",
+        "scale": "invalid scale root",
+        "sidechain": "sidechain(Track(...))",
+        "rests": "NO NOTE ATTEMPTS: rests",
+        "pitch": "INVALID PITCHES",
+        "console-error": "SETUP CONSOLE ERRORS",
+        "scheduling": "fixture scheduling failure",
+        "playback": "fixture playback failure",
+        "schedule-console": "SCHEDULING CONSOLE ERRORS",
+    };
+    for (const [name, diagnostic] of Object.entries(cases)) {
+        const result = runLint(`${fixtureRoot}broken/${name}.js`);
+        const output = result.stdout.toString();
+        assert(result.exitCode === 1 && output.includes(diagnostic) && !output.includes("OK:"), `broken ${name} fixture fails with ${diagnostic}, without OK`);
+        if (name === "scale") assert(output.includes("invalid scale name"), "invalid scale names do not silently fall back");
+        if (name === "rests") assert(output.includes("0 non-rest note attempts"), "rest steps do not count as note attempts");
+    }
+    const batch = runLint(`${fixtureRoot}broken/rests.js`, `${fixtureRoot}good/dsl.js`);
+    assert(batch.exitCode === 1 && batch.stdout.toString().includes("2 songs executed; 1 failed"), "batch continues after failure and returns aggregate failure");
+    const durationLint = runLint(durationFixture);
+    assert(durationLint.exitCode === 0, `run_song exposes duration helpers to songs: ${durationLint.stdout.toString()}`);
+    const durationPatternCheck = Bun.spawnSync([process.execPath, patternChecker, durationFixture], { timeout: 120000 });
+    assert(durationPatternCheck.exitCode === 0, `check_patterns exposes duration helpers to songs: ${durationPatternCheck.stderr.toString()}`);
+    console.log(`Song lint fixture coverage: 4 valid songs and ${Object.keys(cases).length} broken cases; batch failure and isolation checked.`);
+}
+
 console.log("\n=== Arrangement tempo map: shared real-time/offline scheduling ===");
 {
     const saved = { ...Motif, stop: Motif.stop };
