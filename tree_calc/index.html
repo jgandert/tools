@@ -67,12 +67,6 @@
             font-variant-numeric: tabular-nums;
         }
 
-        #result.center-operators-and-numbers .calculation-operator,
-        #result.center-operators-and-numbers .calculation-equals,
-        #result.center-operators-and-numbers .calculation-number {
-            text-align: center;
-        }
-
         .calculation-value > td {
             background: var(--surface-container-low);
         }
@@ -224,7 +218,7 @@
             <option value="en-US">1,234.56</option>
             <option value="de-DE">1.234,56</option>
             <option value="fr-FR">1 234,56</option>
-            <option value="de-CH">1’234.56</option>
+            <option value="de-CH">1'234.56</option>
             <option value="en-IN">12,34,567.89</option>
         </select>
         <label for="scientific-notation">
@@ -250,11 +244,6 @@
             Color Table Borders
             <input id="color-table-borders" name="color-table-borders" type="checkbox"
                    role="switch">
-        </label>
-        <label for="center-operators-and-numbers">
-            Center Operators and Numeric Values
-            <input id="center-operators-and-numbers" name="center-operators-and-numbers"
-                   type="checkbox" role="switch">
         </label>
     </fieldset>
     <button type="button" class="btn-danger" id="reset-settings">
@@ -292,7 +281,6 @@
     const commonArgumentNamesInput = document.getElementById("common-argument-names");
     const colorOperationTextInput = document.getElementById("color-operation-text");
     const colorTableBordersInput = document.getElementById("color-table-borders");
-    const centerOperatorsAndNumbersInput = document.getElementById("center-operators-and-numbers");
     const result = document.getElementById("result");
     const error = document.getElementById("error");
     let debounceTimer;
@@ -487,7 +475,6 @@
     function updateCalculation() {
         result.replaceChildren();
         result.classList.toggle("color-table-borders", colorTableBordersInput.checked);
-        result.classList.toggle("center-operators-and-numbers", centerOperatorsAndNumbersInput.checked);
         error.textContent = "";
 
         try {
@@ -514,7 +501,6 @@
             showCommonArgumentNames: commonArgumentNamesInput.checked,
             colorOperationText: colorOperationTextInput.checked,
             colorTableBorders: colorTableBordersInput.checked,
-            centerOperatorsAndNumbers: centerOperatorsAndNumbersInput.checked,
         };
         const hash = await one.compress.url(JSON.stringify(state), "z");
         if (updateId !== urlUpdateId) {
@@ -593,11 +579,6 @@
         updateUrl();
     });
 
-    centerOperatorsAndNumbersInput.addEventListener("change", () => {
-        updateCalculation();
-        updateUrl();
-    });
-
     document.getElementById("reset-settings").addEventListener("click", () => {
         decimalsInput.value = DEFAULT_DECIMALS;
         thousandsSeparatorsInput.checked = true;
@@ -607,7 +588,6 @@
         commonArgumentNamesInput.checked = false;
         colorOperationTextInput.checked = true;
         colorTableBordersInput.checked = false;
-        centerOperatorsAndNumbersInput.checked = false;
         updateCalculation();
         updateUrl();
         one.alert("Settings reset to defaults.");
@@ -631,7 +611,6 @@
         commonArgumentNamesInput.checked = state.showCommonArgumentNames ?? false;
         colorOperationTextInput.checked = state.colorOperationText ?? true;
         colorTableBordersInput.checked = state.colorTableBorders ?? state.colorNumberBorders ?? false;
-        centerOperatorsAndNumbersInput.checked = state.centerOperatorsAndNumbers ?? false;
         updateCalculation();
         return true;
     }
