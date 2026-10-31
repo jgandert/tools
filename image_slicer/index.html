@@ -458,23 +458,24 @@
         // Slice Width is fixed to Image Width.
         // Target Slice Height = Image Width / Ratio.
 
-        const sliceH = state.width / ratio;
+        const sliceH = Math.max(1, state.width / ratio);
         const totalH = state.height;
 
         state.slices = [];
         let currentY = 0;
+        let sliceIndex = 1;
 
-        // Generate full slices
-        while (currentY + sliceH <= totalH) {
-            state.slices.push({ y: currentY, h: sliceH, type: "Full" });
-            currentY += sliceH;
-        }
-
-        // Remainder
-        const remainder = totalH - currentY;
-        if (remainder > 1) {
-            // Ignore sub-pixel remainders
-            state.slices.push({ y: currentY, h: remainder, type: "Remainder" });
+        // Round shared boundaries once so adjacent slices preserve every source row.
+        while (currentY < totalH) {
+            const targetEnd = sliceIndex * sliceH;
+            const endY = Math.min(totalH, Math.floor(targetEnd));
+            state.slices.push({
+                y: currentY,
+                h: endY - currentY,
+                type: targetEnd > totalH ? "Remainder" : "Full",
+            });
+            currentY = endY;
+            sliceIndex++;
         }
 
         updateSummary();
@@ -584,19 +585,19 @@
                 const slice = state.slices[i];
 
                 canvas.width = state.width;
-                canvas.height = Math.floor(slice.h); // Integers only for canvas
+                canvas.height = slice.h;
 
                 // Draw portion
                 ctx.drawImage(
                     state.image,
                     0,
-                    Math.floor(slice.y),
+                    slice.y,
                     state.width,
-                    Math.floor(slice.h), // Source
+                    slice.h,
                     0,
                     0,
                     state.width,
-                    Math.floor(slice.h), // Dest
+                    slice.h,
                 );
 
                 // Convert to Blob
