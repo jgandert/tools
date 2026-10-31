@@ -1,0 +1,1850 @@
+<!doctype html>
+<html lang="en" class="theme-orange">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="A bilingual table guide with guided setup, core rules, and interactive examples for a river trading board game.">
+    <title>Unofficial Guide - River of Gold / Am goldenen Fluss</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../../one.css">
+    <style>
+        :root {
+            --temperature-accent: light-dark(#a94b32, #f1a38e);
+            --oxygen-accent: light-dark(#477153, #8fc99e);
+            --ocean-accent: light-dark(#3f6f91, #8bc7ed);
+        }
+
+        main {
+            max-width: 80rem;
+        }
+
+        main > section > p:first-of-type {
+            max-width: 68ch;
+        }
+
+        .setup-status {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+            color: var(--on-surface-variant);
+        }
+
+        .setup-status output,
+        .setup-status strong {
+            font-weight: 600;
+            color: var(--on-surface);
+        }
+
+        .setup-panel {
+            min-height: 25rem;
+            padding-block: var(--spacing-md);
+        }
+
+        .step-heading {
+            margin-top: var(--spacing-sm);
+        }
+
+        .step-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.85fr);
+            gap: var(--spacing-xl);
+            align-items: start;
+        }
+
+        .step-layout > * {
+            min-width: 0;
+        }
+
+        .component-list {
+            padding-left: 1.25rem;
+        }
+
+        .component-list li {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .table-layout {
+            margin: 0;
+        }
+
+        .visual-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            border: var(--border-width) solid var(--outline-variant);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .visual-card {
+            min-height: 7rem;
+            padding: var(--spacing-md);
+            background: var(--surface-container-low);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .visual-card:nth-child(odd) {
+            border-right: var(--border-width) solid var(--outline-variant);
+        }
+
+        .visual-card:nth-last-child(-n + 2) {
+            border-bottom: 0;
+        }
+
+        .visual-card strong,
+        .visual-card span {
+            display: block;
+        }
+
+        .visual-card span {
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .visual-card.is-active {
+            background: color-mix(in srgb, var(--primary) 9%, var(--surface-container-low));
+            box-shadow: inset 0 3px var(--primary);
+        }
+
+        .track-stack,
+        .station-grid,
+        .turn-sequence {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        .track-stack li,
+        .station-grid li,
+        .turn-sequence li {
+            padding: var(--spacing-sm) 0;
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .track-stack strong,
+        .station-grid strong,
+        .turn-sequence strong {
+            display: block;
+        }
+
+        .track-stack span,
+        .station-grid span,
+        .turn-sequence span {
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .station-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0 var(--spacing-lg);
+        }
+
+        .setup-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            padding-top: var(--spacing-md);
+            border-top: var(--border-width) solid var(--outline-variant);
+        }
+
+        .setup-actions button:last-child {
+            margin-left: auto;
+        }
+
+        .ready-summary {
+            max-width: 44rem;
+            padding: var(--spacing-lg) 0;
+        }
+
+        .ready-summary strong {
+            color: var(--primary);
+        }
+
+        .learn-track {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(8.5rem, 1fr));
+            gap: var(--spacing-sm);
+            padding: 0 0 var(--spacing-sm);
+            margin: var(--spacing-lg) 0;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .learn-track button {
+            width: 100%;
+            min-height: 4.5rem;
+            padding: var(--spacing-sm);
+            text-align: left;
+            background: var(--surface-container-low);
+            color: var(--on-surface);
+            border-color: var(--outline-variant);
+        }
+
+        .learn-track button span {
+            display: block;
+            margin-bottom: 2px;
+            color: var(--on-surface-variant);
+            font-size: 0.75rem;
+        }
+
+        .learn-track button[aria-current="step"] {
+            background: var(--primary);
+            color: var(--on-primary);
+            border-color: var(--primary);
+        }
+
+        .learn-track button[aria-current="step"] span {
+            color: inherit;
+        }
+
+        .learn-panel {
+            min-height: 24rem;
+            padding-top: var(--spacing-sm);
+        }
+
+        .learn-panel > p,
+        .learn-panel > ul {
+            max-width: 68ch;
+        }
+
+        .phase-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(9rem, 1fr));
+            gap: var(--spacing-sm);
+            padding: 0 0 var(--spacing-sm);
+            margin: var(--spacing-lg) 0;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .phase-strip li {
+            padding: var(--spacing-md);
+            border-left: 4px solid var(--primary);
+            background: var(--surface-container-low);
+        }
+
+        .phase-strip strong,
+        .phase-strip span {
+            display: block;
+        }
+
+        .phase-strip span {
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .turn-rule {
+            max-width: 68ch;
+            padding: var(--spacing-md);
+            margin: var(--spacing-lg) 0;
+            border-left: 4px solid var(--primary);
+            background-color: var(--surface-container);
+        }
+
+        .turn-rule p {
+            margin: var(--spacing-xs) 0 0;
+        }
+
+        .action-list,
+        .scoring-list,
+        .card-type-list {
+            margin: var(--spacing-lg) 0;
+        }
+
+        .action-list div,
+        .scoring-list div,
+        .card-type-list div {
+            display: grid;
+            grid-template-columns: minmax(9rem, 0.35fr) minmax(0, 1fr);
+            gap: var(--spacing-md);
+            padding: var(--spacing-sm) 0;
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .action-list dt,
+        .action-list dd,
+        .scoring-list dt,
+        .scoring-list dd,
+        .card-type-list dt,
+        .card-type-list dd {
+            margin: 0;
+        }
+
+        .action-list dt,
+        .scoring-list dt,
+        .card-type-list dt {
+            font-weight: 700;
+        }
+
+        .card-anatomy {
+            display: grid;
+            grid-template-columns: minmax(15rem, 0.75fr) minmax(18rem, 1.25fr);
+            gap: var(--spacing-xl);
+            align-items: start;
+            margin: var(--spacing-lg) 0;
+        }
+
+        .sample-project {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            grid-template-rows: auto auto minmax(8rem, 1fr) auto;
+            gap: var(--spacing-sm);
+            min-height: 22rem;
+            padding: var(--spacing-md);
+            color: var(--on-surface);
+            background-color: var(--surface-container-low);
+            border: var(--border-width-lg) solid var(--primary);
+            border-radius: var(--radius);
+        }
+
+        .sample-cost,
+        .sample-points {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .sample-tags {
+            text-align: right;
+        }
+
+        .sample-requirement {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: var(--error);
+        }
+
+        .sample-effect {
+            grid-column: 1 / -1;
+            display: grid;
+            place-items: center;
+            padding: var(--spacing-lg);
+            text-align: center;
+            background-color: var(--surface-container-high);
+            border-radius: var(--radius-sm);
+        }
+
+        .sample-footer {
+            grid-column: 1 / 3;
+            color: var(--on-surface-variant);
+        }
+
+        .anatomy-key {
+            margin: 0;
+        }
+
+        .anatomy-key li {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .parameter-list {
+            margin: var(--spacing-lg) 0;
+            border-top: var(--border-width) solid var(--outline-variant);
+        }
+
+        .parameter-row {
+            display: grid;
+            grid-template-columns: minmax(11rem, 0.4fr) minmax(0, 1fr);
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+            border-left: 5px solid var(--temperature-accent);
+        }
+
+        .parameter-row p {
+            margin: 0;
+        }
+
+        .parameter-row[data-parameter="oxygen"] {
+            border-left-color: var(--oxygen-accent);
+        }
+
+        .parameter-row[data-parameter="ocean"] {
+            border-left-color: var(--ocean-accent);
+        }
+
+        .reference-group > details {
+            border-left: 4px solid var(--reference-accent, var(--outline-variant));
+        }
+
+        .reference-group h3 {
+            margin-top: var(--spacing-xl);
+        }
+
+        .reference-group .economy {
+            --reference-accent: var(--primary);
+        }
+
+        .reference-group .parameters {
+            --reference-accent: var(--ocean-accent);
+        }
+
+        .reference-group .timing {
+            --reference-accent: var(--oxygen-accent);
+        }
+
+        figcaption {
+            margin-top: var(--spacing-sm);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        aside progress {
+            width: 100%;
+        }
+
+        aside output {
+            display: block;
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+        }
+
+        aside small {
+            display: block;
+            margin-top: var(--spacing-sm);
+            color: var(--on-surface-variant);
+        }
+
+        @media (max-width: 760px) {
+            .step-layout,
+            .card-anatomy {
+                grid-template-columns: 1fr;
+            }
+
+            .setup-panel,
+            .learn-panel {
+                min-height: 0;
+            }
+
+            .action-list div,
+            .scoring-list div,
+            .card-type-list div,
+            .parameter-row {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-xs);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .visual-grid,
+            .station-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .visual-card:nth-child(odd) {
+                border-right: 0;
+            }
+
+            .visual-card:nth-last-child(2) {
+                border-bottom: var(--border-width) solid var(--outline-variant);
+            }
+
+            .setup-actions button {
+                flex: 1;
+            }
+        }
+
+        html[lang="de"] body > footer [lang="en"],
+        html:not([lang="de"]) body > footer [lang="de"] {
+            display: none;
+        }
+    </style>
+  </head>
+  <body>
+    <a href="#content" class="skip-link" data-i18n="skip">Skip to guide</a>
+    <input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle guide options" data-i18n-aria="toggle">
+    <header>
+      <label for="aside-state" class="aside-toggle-btn"></label>
+      <hgroup>
+        <h1 data-i18n="title">Unofficial Guide - River of Gold / Am goldenen Fluss</h1>
+        <p data-i18n="subtitle">Guided setup and rules, one decision at a time</p>
+      </hgroup>
+      <nav aria-label="Primary" data-i18n-aria="primary">
+        <ul>
+          <li><a href="#setup" data-i18n="setup">Setup</a></li>
+          <li><a href="#learn" data-i18n="learn">Learn</a></li>
+          <li><a href="#reference" data-i18n="reference">Reference</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main id="content">
+      <noscript><p>This guide uses JavaScript for its setup steps, language choice, and examples. / Diese Spielhilfe benötigt JavaScript für die Aufbauschritte, die Sprachauswahl und die Beispiele.</p></noscript>
+    </main>
+    <aside aria-labelledby="guide-options-title">
+      <h2 id="guide-options-title" data-i18n="options">Guide options</h2>
+      <form id="guide-options" autocomplete="off">
+        <fieldset>
+          <legend data-i18n="table">Table</legend>
+          <label for="player-count"><span data-i18n="players">Players</span>
+            <select id="player-count" name="player-count" aria-describedby="ruleset-hint">
+              <option value="2" data-i18n="players2">2 players</option>
+              <option value="3" data-i18n="players3" selected>3 players</option>
+              <option value="4" data-i18n="players4">4 players</option>
+            </select>
+          </label>
+          <small id="ruleset-hint" data-i18n="standardHint">Standard game · optional Clan Patrons omitted.</small>
+        </fieldset>
+        <fieldset>
+          <legend data-i18n="progress">Setup progress</legend>
+          <label for="setup-progress" data-i18n="completed">Completed steps</label>
+          <progress id="setup-progress" value="0" max="7"></progress>
+          <output id="setup-progress-text" for="setup-progress">0 of 7</output>
+          <button type="button" id="reset-guide"><span class="sym" aria-hidden="true">refresh</span> <span data-i18n="reset">Start over</span></button>
+        </fieldset>
+        <fieldset>
+          <legend data-i18n="interface">User interface</legend>
+          <label for="language"><span data-i18n="language">Language</span>
+            <select id="language" name="language">
+              <option value="en" lang="en" selected>English</option>
+              <option value="de" lang="de">Deutsch</option>
+            </select>
+          </label>
+        </fieldset>
+      </form>
+      <p><small id="storage-status" aria-live="polite">Progress stays in this browser.</small></p>
+    </aside>
+    <!-- Localized templates are inert until copied into the main guide. -->
+    <template id="guide-en" lang="en">
+<section id="setup" aria-labelledby="setup-title">
+  <h2 id="setup-title">Set up the table</h2>
+  <p>Choose the player count in Guide options, then complete one table task at a time. This guide teaches the standard game; leave the optional Clan Patron cards in the box.</p>
+  <div class="setup-status">
+    <output id="setup-step-label" aria-live="polite">Step 1 of 7</output>
+    <strong id="setup-player-summary">3 players</strong>
+  </div>
+
+  <article class="setup-panel" data-setup-panel="0">
+    <div class="step-heading"><h3 tabindex="-1">Lay out the shared goals</h3></div>
+    <div class="step-layout">
+      <div>
+        <p>Place the board so everyone can see the river, the six regions, and the influence tracks.</p>
+        <ul class="component-list">
+          <li>Randomly assign one region scoring tile to each of the six regions.</li>
+          <li>Shuffle the six Mastery cards. Reveal three beside the board and return the other three to the box.</li>
+          <li>Use the <strong data-fill="player-side">3–4-player side</strong> of both the scoring tiles and the Mastery cards.</li>
+          <li>Read the three active Mastery conditions aloud. These are shared goals that players can claim during the game.</li>
+        </ul>
+      </div>
+      <figure class="table-layout">
+        <div class="visual-grid">
+          <div class="visual-card is-active"><strong>6 regions</strong><span>One scoring tile above each influence track</span></div>
+          <div class="visual-card"><strong>3 Mastery cards</strong><span>Face up · correct player-count side</span></div>
+          <div class="visual-card"><strong>River spaces</strong><span>The gold spaces measure sailing distance</span></div>
+          <div class="visual-card"><strong>Shore spaces</strong><span>Region number, building cost, and adjacent river spaces</span></div>
+        </div>
+        <figcaption>Region numbers matter for building and delivering. River spaces matter for sailing.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="1" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Prepare goods, Koku, and customers</h3></div>
+    <div class="step-layout">
+      <div>
+        <p>Make a shared supply within everyone's reach.</p>
+        <ul class="component-list">
+          <li>Separate the trade goods into silk, rice, and porcelain.</li>
+          <li>Sort the Koku coins by value.</li>
+          <li>Shuffle the Customer cards into a face-down deck. Leave space for a face-up discard pile.</li>
+          <li>Customers are part of the standard game. They become your permanent benefits when you deliver their orders.</li>
+        </ul>
+        <p class="note">A player can hold at most 25 Koku and 6 of each trade good. Gains beyond those limits are lost.</p>
+      </div>
+      <figure class="table-layout">
+        <div class="visual-grid">
+          <div class="visual-card is-active"><strong>Silk</strong><span>Trade good · personal limit 6</span></div>
+          <div class="visual-card"><strong>Rice</strong><span>Trade good · personal limit 6</span></div>
+          <div class="visual-card"><strong>Porcelain</strong><span>Trade good · personal limit 6</span></div>
+          <div class="visual-card"><strong>Koku</strong><span>Currency · personal limit 25</span></div>
+        </div>
+        <figcaption>Goods pay customer orders. Koku pays for buildings.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="2" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Place the Emperor's buildings</h3></div>
+    <div class="step-layout">
+      <div>
+        <ul class="component-list">
+          <li>Randomly place the three Imperial Markets on the three Imperial Market spaces.</li>
+          <li data-fill="starting-buildings-instruction">Shuffle the starting buildings and place three on the starting spaces marked for three players. Return the unused ones to the box.</li>
+          <li>Leave these buildings without player ownership markers.</li>
+        </ul>
+        <p>Their visitor rewards work throughout the game. No player receives their owner rewards.</p>
+      </div>
+      <figure class="table-layout">
+        <div class="visual-grid">
+          <div class="visual-card is-active"><strong>Imperial Markets</strong><span>Always 3</span></div>
+          <div class="visual-card"><strong>Starting buildings</strong><span data-fill="starting-buildings-count">3 for this table</span></div>
+          <div class="visual-card"><strong>Player markers</strong><span>None on these neutral buildings</span></div>
+          <div class="visual-card"><strong>Empty shore space</strong><span>Will give a visitor 1 Koku</span></div>
+        </div>
+        <figcaption>Imperial Markets count as Markets for customer effects.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="3" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Prepare the two Eras and building row</h3></div>
+    <div class="step-layout">
+      <div>
+        <ul class="component-list">
+          <li>Place the building board beside the game board.</li>
+          <li>Shuffle the Era 1 buildings and keep <strong data-fill="era-one-total">14</strong> in the Era 1 stack.</li>
+          <li>Separately shuffle the Era 2 buildings and keep <strong data-fill="era-two-total">11</strong> in the Era 2 stack.</li>
+          <li>Return all other Era buildings to the box without choosing which ones to keep.</li>
+          <li>Deal four buildings from your prepared Era 1 stack into the building row. That leaves <strong data-fill="era-one-remaining">10</strong> in its stack.</li>
+        </ul>
+        <p class="note">The selected Era 1 total includes these four revealed buildings.</p>
+      </div>
+      <figure class="table-layout">
+        <div class="visual-grid">
+          <div class="visual-card is-active"><strong>Era 1 · one dot</strong><span data-fill="era-one-visual">14 selected · 10 left after dealing</span></div>
+          <div class="visual-card"><strong>Era 2 · two dots</strong><span data-fill="era-two-visual">11 set aside for later</span></div>
+          <div class="visual-card"><strong>Building row</strong><span>4 available buildings</span></div>
+          <div class="visual-card"><strong>End of the row</strong><span>Taking this building gives 1 divine favor</span></div>
+        </div>
+        <figcaption>Buildings enter at the top of the row and slide toward its end when it is refilled.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="4" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Give each player a starting position</h3></div>
+    <div class="step-layout">
+      <div>
+        <p>Choose the first player randomly. Continue clockwise. Each player chooses a Clan board and takes its matching components.</p>
+        <ul class="component-list">
+          <li>Take two standard ships, one royal ship, 22 Clan markers, one scoring marker, one die, divine favor sun and moon markers, and a player aid card.</li>
+          <li>Put the scoring marker at 0 VP and one Clan marker at the start of each of the six influence tracks.</li>
+          <li>Set the Sun to 2 divine favor. Put the Moon between 3 and 4: the starting capacity is 3.</li>
+          <li>Take one silk, one rice, one porcelain, and two Customer cards. Keep those cards in hand.</li>
+          <li>Take starting Koku according to turn order, as shown here. Keep the royal ship beside the Clan board for a later upgrade.</li>
+        </ul>
+      </div>
+      <figure class="table-layout">
+        <ol id="player-stations" class="station-grid" aria-label="Starting Koku in turn order"></ol>
+        <figcaption>Everyone also starts with 2 divine favor, one of each good, and two customers in hand.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="5" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Position both standard ships</h3></div>
+    <div class="step-layout">
+      <div>
+        <ol class="component-list">
+          <li>Put one standard ship on the upper river start.</li>
+          <li>Roll your die and move that ship downstream by the result.</li>
+          <li>Put your other standard ship on the middle river start.</li>
+          <li>Roll again and move that second ship downstream by its own result.</li>
+        </ol>
+        <p>Count the gold river spaces. These rolls establish starting positions; collect no visitor or owner rewards during setup.</p>
+      </div>
+      <figure class="table-layout">
+        <ol class="turn-sequence">
+          <li><strong>First ship</strong><span>Upper start → its own placement roll</span></li>
+          <li><strong>Second ship</strong><span>Middle start → a separate placement roll</span></li>
+          <li><strong>Royal ship</strong><span>Stays beside your Clan board</span></li>
+        </ol>
+        <figcaption>The middle start is used for setup. A completed journey later loops back to the upper start.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="6" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Roll for the first turn</h3></div>
+    <div class="step-layout">
+      <div>
+        <p>Everyone rolls once more and leaves that result showing. This is the die you will use on your first turn.</p>
+        <ul class="component-list">
+          <li>Check that the building row has four tiles and three Mastery cards are face up.</li>
+          <li>Check both ship positions, starting Koku, three goods, two customers, and the sun and moon markers.</li>
+          <li>The first player begins by deciding whether to spend divine favor.</li>
+        </ul>
+      </div>
+      <figure class="table-layout">
+        <ol class="turn-sequence">
+          <li><strong>1 · Spend Divine Favor</strong><span>Optionally adjust the die</span></li>
+          <li><strong>2 · Take an Action</strong><span>Build, Sail, or Deliver · choose one</span></li>
+          <li><strong>3 · Claim Masteries</strong><span>Check all three shared goals</span></li>
+          <li><strong>4 · Roll Your Die</strong><span>Prepare your next turn</span></li>
+        </ol>
+        <figcaption>You normally know your next die result while the other players take their turns.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="7" hidden>
+    <div class="step-heading"><h3 tabindex="-1">The table is ready</h3></div>
+    <div class="ready-summary" role="status">
+      <p><strong data-fill="ready-summary">3 players are ready to begin.</strong></p>
+      <p>Keep the three Mastery conditions visible. Take one action each turn, check Masteries, then roll for the next turn.</p>
+      <a href="#learn" class="btn btn-primary">Learn the first turn</a>
+    </div>
+  </article>
+
+  <nav class="setup-actions" aria-label="Setup step controls">
+    <button type="button" id="setup-back"><span class="sym" aria-hidden="true">arrow_back</span> Back</button>
+    <button type="button" id="setup-next" class="btn-primary"><span id="setup-next-label">Continue</span><span class="sym" aria-hidden="true">arrow_forward</span></button>
+  </nav>
+</section>
+
+<section id="learn" aria-labelledby="learn-title">
+  <h2 id="learn-title">Learn the game</h2>
+  <p>Teach these five parts in order, or open the part your table needs. The examples are independent exercises; you can change their values without affecting setup progress.</p>
+  <ol class="learn-track" aria-label="Rule lessons">
+    <li><button type="button" data-learn-button="0" aria-current="step" aria-controls="learn-turn"><span>Lesson 1</span> Your turn</button></li>
+    <li><button type="button" data-learn-button="1" aria-controls="learn-build"><span>Lesson 2</span> Build</button></li>
+    <li><button type="button" data-learn-button="2" aria-controls="learn-sail"><span>Lesson 3</span> Sail</button></li>
+    <li><button type="button" data-learn-button="3" aria-controls="learn-deliver"><span>Lesson 4</span> Deliver</button></li>
+    <li><button type="button" data-learn-button="4" aria-controls="learn-scoring"><span>Lesson 5</span> Game end</button></li>
+  </ol>
+
+  <article id="learn-turn" class="learn-panel" data-learn-panel="0">
+    <h3 tabindex="-1">One die, three possible actions</h3>
+    <p>Earn the most victory points by developing buildings, visiting the river, satisfying customers, claiming Masteries, and competing for influence. Your die narrows your choices on each turn.</p>
+    <ol class="phase-strip">
+      <li><strong>1 · Spend Divine Favor</strong><span>Optionally change your showing die result.</span></li>
+      <li><strong>2 · Take an Action</strong><span>Choose exactly one: Build a Building, Sail a Ship, or Deliver to a Customer.</span></li>
+      <li><strong>3 · Claim Masteries</strong><span>Claim each available goal whose condition you meet.</span></li>
+      <li><strong>4 · Roll Your Die</strong><span>Leave the new result showing for your next turn. Play continues clockwise.</span></li>
+    </ol>
+    <dl class="action-list">
+      <div><dt>Build</dt><dd>The die selects a region. Pay for an empty shore space there and place one building from the row.</dd></div>
+      <div><dt>Sail</dt><dd>The die gives the exact number of gold river spaces to move one of your ships downstream.</dd></div>
+      <div><dt>Deliver</dt><dd>The die selects a region. Complete one Customer card in your hand with that region number.</dd></div>
+    </dl>
+    <div class="turn-rule"><strong>Spend divine favor before your action.</strong><p>Each point changes the die by one step up or down. The values wrap between 6 and 1. Favor gained during your action is available for later use.</p></div>
+    <form id="favor-demo" autocomplete="off">
+      <fieldset>
+        <legend>Try changing the die</legend>
+        <div class="station-grid">
+          <label for="favor-roll">Showing result<select id="favor-roll" data-die-select></select></label>
+          <label for="favor-target">Wanted result<select id="favor-target" data-die-select></select></label>
+          <label for="favor-available">Available divine favor<select id="favor-available"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+        </div>
+        <div class="turn-rule"><output id="favor-result" aria-live="polite"></output></div>
+        <p class="note">Values above 3 assume that a Monk has increased your capacity. This exercise shows the cheapest adjustment.</p>
+      </fieldset>
+    </form>
+  </article>
+
+  <article id="learn-build" class="learn-panel" data-learn-panel="1" hidden>
+    <h3 tabindex="-1">Build where your die allows</h3>
+    <ol class="component-list">
+      <li>Find an empty shore space in the region matching your adjusted die. You must be able to afford its printed Koku cost, after any applicable discount.</li>
+      <li>Pay the cost and choose any one of the four buildings in the row. Taking the tile at the end of the row also gives you 1 divine favor.</li>
+      <li>Place it on the chosen space and add one of your Clan markers to show ownership.</li>
+      <li>Gain the influence shown in the building's printed build bonus in that region. Collect every influence-track reward you reach or pass.</li>
+      <li>Slide the remaining row tiles toward the end and refill at the top from the active Era stack.</li>
+    </ol>
+    <div class="turn-rule"><strong>Your ships do not restrict building.</strong><p>Look at the die, the region, an available space, and your Koku. The building's type does not have to match the die.</p></div>
+    <dl class="card-type-list">
+      <div><dt>Port</dt><dd>Visitor rewards provide Koku.</dd></div>
+      <div><dt>Shrine</dt><dd>Visitor rewards provide victory points.</dd></div>
+      <div><dt>Manor</dt><dd>Visitor rewards provide influence in the building's region.</dd></div>
+      <div><dt>Market</dt><dd>Visitor rewards provide trade goods. Imperial Markets also count as Markets.</dd></div>
+    </dl>
+    <p>Read the individual tile for its amounts and its separate owner reward. Placing a building grants its build-bonus influence; visiting it is a different trigger.</p>
+    <h4>Follow the influence track</h4>
+    <ul class="component-list">
+      <li>Move one space per influence. Other markers do not block you; several players can share a space.</li>
+      <li>Collect each reached or passed reward, including a reward under another player's marker.</li>
+      <li>At the end of the track, excess influence is lost.</li>
+      <li>The Imperial Flower symbol is a Mastery condition, with no reward of its own.</li>
+    </ul>
+    <details><summary>Walk through a build</summary><p>Suppose your die shows 3, a free space in region 3 costs 9 Koku, and your satisfied Artisan there reduces the cost by 2. Pay 7 Koku. If you choose the last row tile, gain 1 divine favor. Place your marker, advance by that tile's printed influence, collect any track rewards, then refill the row.</p></details>
+  </article>
+
+  <article id="learn-sail" class="learn-panel" data-learn-panel="2" hidden>
+    <h3 tabindex="-1">Move one ship and visit its destination</h3>
+    <ol class="component-list">
+      <li>Choose one of your ships and move it downstream by the full die result. Count only gold river spaces.</li>
+      <li>At its final river space, collect the visitor rewards from all four adjacent shore spaces. Use the pointed end of each building tile. Each empty space gives 1 Koku.</li>
+      <li>Then the owners of those buildings collect the rewards at their flat ends. This includes you when you own a visited building.</li>
+    </ol>
+    <p>You collect at the destination; passing a building does not visit it. Influence from a building always belongs to that building's region.</p>
+    <div class="turn-rule"><strong>Your own building can reward you twice in different ways.</strong><p>As the visitor, collect its visitor reward. As an owner, also collect its owner reward. Neutral starting buildings and Imperial Markets provide visitor rewards only.</p></div>
+    <form id="visit-demo" autocomplete="off">
+      <fieldset>
+        <legend>Try visitor and owner rewards</legend>
+        <p>Invented training tile: a Market gives its visitor 1 silk, and gives each ownership marker 1 Koku and 1 VP. Change who owns it.</p>
+        <label for="visit-owner">Ownership<select id="visit-owner"><option value="other">Another player · one marker</option><option value="self" selected>You · one marker</option><option value="shared">You and another player · one marker each</option><option value="double">You · two markers</option><option value="neutral">The Emperor · no player markers</option><option value="empty">Empty shore space</option></select></label>
+        <div class="turn-rule"><output id="visit-result" aria-live="polite"></output></div>
+        <p class="note">Monks can add a second ownership marker. The real tile on your table supplies the actual reward values.</p>
+      </fieldset>
+    </form>
+    <h4>Complete a journey</h4>
+    <p>When your movement takes a ship beyond the last river space, loop to the upper start and continue any remaining movement. Reaching the last space alone does not complete the journey. Resolve the visitor and owner rewards at your final destination first, then resolve the completed journey:</p>
+    <ul class="component-list">
+      <li>Gain 3 Koku or one trade good of your choice.</li>
+      <li>Apply every satisfied Merchant's journey benefit in addition to that reward.</li>
+      <li>Discard the building at the end of the row, slide the row, and refill it. This can trigger an Era change or the end of the game.</li>
+    </ul>
+  </article>
+
+  <article id="learn-deliver" class="learn-panel" data-learn-panel="3" hidden>
+    <h3 tabindex="-1">Turn a customer order into a lasting benefit</h3>
+    <ol class="component-list">
+      <li>Choose one Customer card in your hand whose region matches your adjusted die.</li>
+      <li>Return the complete order to the supply. If you cannot pay every required good, you cannot choose this action.</li>
+      <li>Place the card face up as a satisfied customer. Apply its delivery reward and any reminder markers. Its ongoing effect is now active.</li>
+      <li>Draw two Customer cards, then discard any one card from your hand face up. You normally finish with two cards in hand again.</li>
+    </ol>
+    <p>Your ship positions do not restrict delivery. When the Customer deck runs out, shuffle its discards to make a new deck.</p>
+    <h4>Read the order and the three effects</h4>
+    <div class="visual-grid">
+      <div class="visual-card is-active"><strong>Order</strong><span>The goods paid to satisfy this customer</span></div>
+      <div class="visual-card"><strong>Delivery reward</strong><span>Resolve when this card becomes satisfied</span></div>
+      <div class="visual-card"><strong>Ongoing effect</strong><span>Applies when the card's stated trigger occurs</span></div>
+      <div class="visual-card"><strong>Endgame reward</strong><span>Additional scoring from this satisfied card</span></div>
+    </div>
+    <p>The five customer types are summarized in the reference. Read each card's particular effect when it enters play.</p>
+    <h4>Finish your action, then check Masteries</h4>
+    <p>In your Claim Masteries step, check all three face-up goals. For each one you meet or exceed, put a Clan marker on its highest empty reward space and immediately gain those VP. You can claim each Mastery once, and can claim several different Masteries in the same turn.</p>
+    <p>If a card has no free reward space, it offers no further claim. Reaching a condition during another player's turn waits until your own Mastery step; check that you still meet it then.</p>
+    <p>With 2 players, only the first claimant receives 5 VP. With 3–4 players, the three reward spaces give 7, 5, and 3 VP in that order.</p>
+    <div class="turn-rule"><strong>Goals refer to the position on the table.</strong><p>For example, Mastery of Void asks for at least 1 influence in all six regions. Mastery of Earth asks for at least three owned buildings of one type. Only the three drawn cards are active.</p></div>
+    <p>Once you have resolved Masteries, roll your die for your next turn.</p>
+  </article>
+
+  <article id="learn-scoring" class="learn-panel" data-learn-panel="4" hidden>
+    <h3 tabindex="-1">Watch the Era stacks</h3>
+    <dl class="action-list">
+      <div><dt>Last Era 1 tile enters the row</dt><dd>At the end of that turn, resolve the Emperor's Visit. All players collect the owner rewards from all their buildings. Continue with the next player and use Era 2 to refill.</dd></div>
+      <div><dt>Last Era 2 tile enters the row</dt><dd>Finish that turn. The player who caused this gains 5 VP, then every other player takes exactly one final turn. Then score the game.</dd></div>
+    </dl>
+    <p>Both building and completing a journey can refill the row. Four buildings can still be available when the final tile is drawn. During the final turns, an empty supply is simply unable to refill the row.</p>
+    <h4>Add final points to the VP already earned</h4>
+    <dl class="scoring-list">
+      <div><dt>1 · Regional influence</dt><dd>Use each region's scoring tile to reward influence rank. You need at least 1 influence there. An Elder doubles your resulting award in its region.</dd></div>
+      <div><dt>2 · Satisfied customers</dt><dd>Score one total for how many customers you satisfied. Use the count exercise below.</dd></div>
+      <div><dt>3 · Customer bonuses</dt><dd>Score every satisfied Merchant, Noble, and Artisan as its card states. The Elder's doubling is already included in the regional score.</dd></div>
+    </dl>
+    <div class="turn-rule"><strong>Most VP wins.</strong><p>If tied, compare current divine favor. If that is also tied, share the victory.</p></div>
+    <details open>
+      <summary>Practice scoring a region</summary>
+      <p>For a tie, add the awards for the places taken up by the tied players, divide by their number, and round down. Places without a printed reward contribute 0. Apply an Elder after that division.</p>
+      <p data-fill="two-player-scoring">With 3–4 players, use every rank printed on the scoring tile.</p>
+      <form id="region-demo" autocomplete="off">
+        <fieldset>
+          <legend>Training values · use your tile's awards</legend>
+          <div class="station-grid">
+            <label for="rank-first">1st-place VP<input type="number" id="rank-first" min="0" max="99" value="9" inputmode="numeric"></label>
+            <label for="rank-second">2nd-place VP<input type="number" id="rank-second" min="0" max="99" value="5" inputmode="numeric"></label>
+            <label for="rank-third" id="third-rank-label">3rd-place VP<input type="number" id="rank-third" min="0" max="99" value="2" inputmode="numeric"></label>
+          </div>
+          <p>Enter each player's influence as spaces advanced from the start. Select Elder only for a satisfied Elder in this region.</p>
+          <div id="region-players" class="station-grid"></div>
+          <div class="turn-rule"><output id="region-result" aria-live="polite"></output></div>
+        </fieldset>
+      </form>
+    </details>
+    <details>
+      <summary>Practice the customer-count award</summary>
+      <form id="customer-demo" autocomplete="off">
+        <label for="customer-count">Satisfied customers<input type="number" id="customer-count" min="0" max="30" value="4" inputmode="numeric"></label>
+        <div class="turn-rule"><output id="customer-result" aria-live="polite"></output></div>
+      </form>
+      <p data-fill="customer-score-table">0 / 1 / 2 / 3 / 4 / 5 / 6+ customers → 0 / 2 / 5 / 9 / 14 / 20 / 27 VP.</p>
+      <p>This is one award for your total count. The separate endgame rewards on satisfied cards are additional.</p>
+    </details>
+  </article>
+
+  <nav class="setup-actions" aria-label="Lesson controls">
+    <button type="button" id="learn-back" aria-label="Previous lesson"><span class="sym" aria-hidden="true">arrow_back</span> Back</button>
+    <button type="button" id="learn-next" class="btn-primary" aria-label="Next lesson">Next <span class="sym" aria-hidden="true">arrow_forward</span></button>
+  </nav>
+</section>
+
+<section id="reference" class="reference-group" aria-labelledby="reference-title">
+  <h2 id="reference-title">Rules reference</h2>
+  <p>Open a topic when it comes up. Apply the specific text on your components when an effect changes a general rule.</p>
+  <h3>Resources and timing</h3>
+  <details class="economy"><summary>Exchanges and holding limits</summary>
+    <ul class="component-list">
+      <li>At any time, trade two goods of one type for a single good of a different type that you choose.</li>
+      <li>At any time, pay 5 Koku to gain 1 divine favor. These exchanges can be repeated and do not use your action.</li>
+      <li>Keep at most 25 Koku, 6 silk, 6 rice, and 6 porcelain. Excess gains are lost.</li>
+      <li>Your Sun shows current divine favor; your Moon shows capacity. Start at 2 with capacity 3. Favor beyond capacity is lost.</li>
+      <li>The standard rules provide no general exchange of goods into Koku, or divine favor into Koku.</li>
+    </ul>
+  </details>
+  <details class="timing"><summary>Keep these action distinctions clear</summary>
+    <ul class="component-list">
+      <li>A turn contains exactly one main action, followed by Masteries and a fresh die roll.</li>
+      <li>Building and delivering use the die's region, wherever your ships are.</li>
+      <li>Sailing moves one ship the whole die result; visit all four shore spaces at its destination.</li>
+      <li>Use the building's region for any influence it awards.</li>
+      <li>Taking the last row building gives 1 divine favor. Discarding it when a journey ends gives no such bonus.</li>
+      <li>The Emperor's Visit triggers owner rewards across the river. Regional rankings score at game end.</li>
+      <li>A customer-exchange reward means draw one Customer card, then discard one card from your hand. A delivery uses its own draw-two, discard-one step.</li>
+      <li>A reward of 1 Koku per building of a shown type counts your ownership of that type. A reward per satisfied customer counts your face-up satisfied cards. Apply the multiplier to the printed reward.</li>
+    </ul>
+  </details>
+  <details class="economy"><summary>Setup quantities at a glance</summary>
+    <table>
+      <caption>All player counts use 3 Imperial Markets and 4 revealed Era 1 buildings.</caption>
+      <thead><tr><th scope="col">Players</th><th scope="col">Starting buildings</th><th scope="col">Era 1 total</th><th scope="col">Era 2 total</th></tr></thead>
+      <tbody><tr><th scope="row">2</th><td>6</td><td>12</td><td>9</td></tr><tr><th scope="row">3</th><td>3</td><td>14</td><td>11</td></tr><tr><th scope="row">4</th><td>0</td><td>16</td><td>13</td></tr></tbody>
+    </table>
+    <p>Starting Koku in turn order: 7 / 8 / 9 / 10. Each player receives one of each good, two customers, 2 divine favor, and capacity 3.</p>
+  </details>
+
+  <h3>Customer types</h3>
+  <details class="economy"><summary>Monk · divine favor and ownership</summary>
+    <p>On delivery, increase your favor capacity by 1, gain 2 divine favor, and place a second ownership marker on a building of yours or another player's, as the card permits. You gain no influence from this delivery or extra marker.</p>
+    <p>A building holds at most two Clan markers in total. Two of yours give you its owner reward twice. One of yours beside an opponent's gives each owner their own reward. Your markers count as ownership for Masteries and other effects; two of your markers count as owning the building twice. Neutral buildings cannot receive a second player marker because they have no first player marker.</p>
+  </details>
+  <details class="economy"><summary>Merchant · journey benefits</summary>
+    <p>Gain 3 influence in the customer's region. For your first satisfied Merchant, put a reminder marker at the river's journey-end area.</p>
+    <p>Whenever either of your ships completes a journey, activate all your satisfied Merchants' printed journey effects, in addition to the usual journey reward.</p>
+    <p>At game end, each satisfied Merchant scores 1 VP per complete 5 Koku you hold. For example, 17 Koku and two Merchants score 6 VP.</p>
+  </details>
+  <details class="economy"><summary>Noble · one royal ship</summary>
+    <p>Gain 2 influence in the card's region. When you satisfy your first Noble, replace one of your standard ships with your royal ship at the same river position.</p>
+    <p>Your royal ship gains the ongoing ability of every satisfied Noble, including the first one. When it sails, resolve all of those printed abilities; follow each card's trigger. You still have two ships in play.</p>
+    <p>Each satisfied Noble scores 1 VP for each building you own of the type printed on its card.</p>
+  </details>
+  <details class="economy"><summary>Artisan · regional building discount</summary>
+    <p>Gain 2 influence in the customer's region and mark its Artisan space. Your future builds in that region cost 2 Koku less.</p>
+    <p>At game end, each satisfied Artisan scores 1 VP per complete three trade goods you hold, combining silk, rice, and porcelain. For example, 11 goods and two Artisans score 6 VP.</p>
+  </details>
+  <details class="economy"><summary>Elder · double one regional award</summary>
+    <p>Mark the Elder space in the customer's region. This customer grants no delivery influence and has no ongoing effect during turns.</p>
+    <p>At game end, double your regional scoring-tile award there. If you tied, first work out your rounded share, then double it. The Elder does not double rewards printed along the influence track.</p>
+  </details>
+
+  <h3>Masteries and scoring</h3>
+  <details class="parameters"><summary>Mastery timing and ownership</summary>
+    <p>Check the three active cards during your own Claim Masteries step. Claim each eligible goal once, using its highest unoccupied reward. Several claims in one turn are allowed.</p>
+    <p>Use the correct side for your player count. With 2 players, only the first claimant gets 5 VP. With 3–4 players, the three claims score 7, 5, and 3 VP. Ownership added by Monks counts for goals. Extra influence beyond a track's end is lost, and the Imperial Flower gives no automatic reward.</p>
+  </details>
+  <details class="parameters"><summary>Ties and the two-player scoring rule</summary>
+    <p>Players with zero influence receive no regional award. A tie uses all the rank positions the tied group occupies: add those rewards, divide equally, and round down. A missing rank reward is 0.</p>
+    <p>For example, if two players tie for first and the tile pays 8 / 5, each gets 6 VP. An Elder then makes its owner's share 12 VP.</p>
+    <p>In a two-player game, the player in second must be no more than five influence spaces behind the leader to receive the second-place award, and must have at least 1 influence.</p>
+  </details>
+  <details class="timing"><summary>What triggers the last turns?</summary>
+    <p>Refilling with the last tile from the Era 2 stack starts the finish. Complete that turn and award the active player 5 VP. Every other player then takes one turn; the triggering player gets no additional turn.</p>
+    <p>Score regional influence, the satisfied-customer count, and customer endgame benefits. Keep points already earned. Koku and goods have no general endgame value without a card that scores them. Use current divine favor to break a final VP tie.</p>
+  </details>
+  <details class="timing">
+            <summary>Guide scope and independence</summary>
+            <p>This independent guide covers the standard base game for 2–4 players; the optional Clan Patron expansion is outside its scope. The explanations, exercises, and text diagrams are original. No official artwork, card scans, or Clan Patron profiles are included.</p>
+            <p>Use the supplied rulebook and the effects printed on components for specific questions.</p>
+        </details>
+</section>
+
+    </template>
+    <template id="guide-de" lang="de">
+<section id="setup" aria-labelledby="setup-title">
+  <h2 id="setup-title">Bereitet den Spieltisch vor</h2>
+  <p>Wählt die Personenzahl in den Spielhilfeoptionen und erledigt dann einen Vorbereitungsschritt nach dem anderen. Diese Hilfe erklärt das Grundspiel; lasst die optionalen Klanlegenden in der Schachtel.</p>
+  <div class="setup-status">
+    <output id="setup-step-label" aria-live="polite">Schritt 1 von 7</output>
+    <strong id="setup-player-summary">3 Personen</strong>
+  </div>
+
+  <article class="setup-panel" data-setup-panel="0">
+    <div class="step-heading"><h3 tabindex="-1">Legt die gemeinsamen Ziele aus</h3></div>
+    <div class="step-layout">
+      <div>
+        <p>Legt den Spielplan so aus, dass alle den Fluss, die sechs Regionen und die Einflusspfade sehen können.</p>
+        <ul class="component-list">
+          <li>Verteilt zufällig je ein Wertungsplättchen auf die sechs Regionen.</li>
+          <li>Mischt die sechs Meisterschaftskarten. Legt drei offen neben den Spielplan und die anderen drei zurück in die Schachtel.</li>
+          <li>Verwendet bei den Wertungsplättchen und den Meisterschaftskarten die <strong data-fill="player-side">Seite für 3–4 Personen</strong>.</li>
+          <li>Lest die Bedingungen der drei ausliegenden Meisterschaften vor. Diese gemeinsamen Ziele könnt ihr während des Spiels erreichen.</li>
+        </ul>
+      </div>
+      <figure class="table-layout">
+        <div class="visual-grid">
+          <div class="visual-card is-active"><strong>6 Regionen</strong><span>Ein Wertungsplättchen über jedem Einflusspfad</span></div>
+          <div class="visual-card"><strong>3 Meisterschaftskarten</strong><span>Offen · passende Seite zur Personenzahl</span></div>
+          <div class="visual-card"><strong>Flussabschnitte</strong><span>Die goldenen Abschnitte bestimmen die Segelstrecke</span></div>
+          <div class="visual-card"><strong>Bauplätze</strong><span>Regionsnummer, Baukosten und angrenzende Flussabschnitte</span></div>
+        </div>
+        <figcaption>Regionsnummern sind beim Bauen und Ausliefern wichtig. Flussabschnitte zählen beim Segeln.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="1" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Bereitet Handelswaren, Koku und Kunden vor</h3></div>
+    <div class="step-layout">
+      <div>
+        <p>Legt einen gemeinsamen Vorrat in Reichweite aller an.</p>
+        <ul class="component-list">
+          <li>Sortiert die Handelswaren nach Seide, Reis und Porzellan.</li>
+          <li>Sortiert die Koku nach ihrem Wert.</li>
+          <li>Mischt die Kundenkarten zu einem verdeckten Stapel. Lasst daneben Platz für einen offenen Ablagestapel.</li>
+          <li>Kunden gehören zum Grundspiel. Erfüllte Bestellungen verschaffen euch Vorteile für den weiteren Spielverlauf.</li>
+        </ul>
+        <p class="note">Du darfst höchstens 25 Koku und 6 von jeder Handelsware besitzen. Überschüssige Ressourcen verfallen.</p>
+      </div>
+      <figure class="table-layout">
+        <div class="visual-grid">
+          <div class="visual-card is-active"><strong>Seide</strong><span>Handelsware · persönliches Limit 6</span></div>
+          <div class="visual-card"><strong>Reis</strong><span>Handelsware · persönliches Limit 6</span></div>
+          <div class="visual-card"><strong>Porzellan</strong><span>Handelsware · persönliches Limit 6</span></div>
+          <div class="visual-card"><strong>Koku</strong><span>Geld · persönliches Limit 25</span></div>
+        </div>
+        <figcaption>Mit Handelswaren erfüllst du Bestellungen. Mit Koku bezahlst du Bauwerke.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="2" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Platziert die Bauwerke des Kaisers</h3></div>
+    <div class="step-layout">
+      <div>
+        <ul class="component-list">
+          <li>Verteilt die drei Kaisermärkte zufällig auf die drei Bauplätze für Kaisermärkte.</li>
+          <li data-fill="starting-buildings-instruction">Mischt die Startbauwerke und legt drei auf die für drei Personen markierten Startbauplätze. Legt die übrigen zurück in die Schachtel.</li>
+          <li>Legt keine Klanmarker auf diese Bauwerke.</li>
+        </ul>
+        <p>Ihre Belohnungen für den Besuch gelten während des gesamten Spiels. Niemand erhält ihre Belohnungen für den Besitz.</p>
+      </div>
+      <figure class="table-layout">
+        <div class="visual-grid">
+          <div class="visual-card is-active"><strong>Kaisermärkte</strong><span>Immer 3</span></div>
+          <div class="visual-card"><strong>Startbauwerke</strong><span data-fill="starting-buildings-count">3 für diese Partie</span></div>
+          <div class="visual-card"><strong>Klanmarker</strong><span>Keine auf diesen neutralen Bauwerken</span></div>
+          <div class="visual-card"><strong>Freier Bauplatz</strong><span>Bringt beim Besuch 1 Koku</span></div>
+        </div>
+        <figcaption>Kaisermärkte zählen für Kundeneffekte ebenfalls als Märkte.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="3" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Bereitet die beiden Ären und die Bauwerkauslage vor</h3></div>
+    <div class="step-layout">
+      <div>
+        <ul class="component-list">
+          <li>Legt die Bauwerktafel neben den Spielplan.</li>
+          <li>Mischt die Bauwerke der 1. Ära und legt <strong data-fill="era-one-total">14</strong> davon als Stapel für die 1. Ära bereit.</li>
+          <li>Mischt die Bauwerke der 2. Ära getrennt davon und legt <strong data-fill="era-two-total">11</strong> davon als Stapel für die 2. Ära bereit.</li>
+          <li>Legt die übrigen Bauwerke beider Ären zurück in die Schachtel. Die Auswahl bleibt zufällig.</li>
+          <li>Legt vier Bauwerke vom vorbereiteten Stapel der 1. Ära in die Bauwerkauslage. Im Stapel bleiben <strong data-fill="era-one-remaining">10</strong> Bauwerke.</li>
+        </ul>
+        <p class="note">Die Gesamtzahl der ausgewählten Bauwerke der 1. Ära schließt die vier offen ausgelegten Bauwerke ein.</p>
+      </div>
+      <figure class="table-layout">
+        <div class="visual-grid">
+          <div class="visual-card is-active"><strong>1. Ära · ein Punkt</strong><span data-fill="era-one-visual">14 ausgewählt · danach 10 im Stapel</span></div>
+          <div class="visual-card"><strong>2. Ära · zwei Punkte</strong><span data-fill="era-two-visual">11 für später bereitgelegt</span></div>
+          <div class="visual-card"><strong>Bauwerkauslage</strong><span>4 verfügbare Bauwerke</span></div>
+          <div class="visual-card"><strong>Ende der Auslage</strong><span>Wer dieses Bauwerk wählt, erhält 1 göttliche Gunst</span></div>
+        </div>
+        <figcaption>Neue Bauwerke kommen an den Anfang der Auslage. Beim Auffüllen rücken die übrigen zum Ende auf.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="4" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Bereitet eure Klans vor</h3></div>
+    <div class="step-layout">
+      <div>
+        <p>Wer zuletzt Reis gegessen hat, beginnt. Danach geht es im Uhrzeigersinn weiter. Wählt jeweils eine Klantafel und nehmt das passende Spielmaterial.</p>
+        <ul class="component-list">
+          <li>Nehmt zwei Schiffe, ein Kaiserliches Schiff, 22 Klanmarker, eine Klanfigur, einen Würfel, einen Sonnenstein, eine Mondsichel und eine Übersichtskarte.</li>
+          <li>Stellt die Klanfigur auf 0 SP und legt je einen Klanmarker auf den Anfang der sechs Einflusspfade.</li>
+          <li>Legt den Sonnenstein auf 2 göttliche Gunst. Legt die Mondsichel zwischen 3 und 4: Euer anfängliches Maximum beträgt 3.</li>
+          <li>Nehmt je eine Handelsware jeder Art (Seide, Reis und Porzellan) und zwei Kundenkarten. Behaltet die Karten auf der Hand.</li>
+          <li>Nehmt eure Start-Koku entsprechend der hier gezeigten Zugreihenfolge. Stellt das Kaiserliche Schiff für den späteren Austausch neben die Klantafel.</li>
+        </ul>
+      </div>
+      <figure class="table-layout">
+        <ol id="player-stations" class="station-grid" aria-label="Start-Koku in Zugreihenfolge"></ol>
+        <figcaption>Alle beginnen außerdem mit 2 göttlicher Gunst, einer Ware jeder Art und zwei Kundenkarten auf der Hand.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="5" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Platziert eure beiden Schiffe</h3></div>
+    <div class="step-layout">
+      <div>
+        <ol class="component-list">
+          <li>Stelle ein Schiff auf den Startpunkt im oberen Flussabschnitt.</li>
+          <li>Würfle und bewege dieses Schiff entsprechend dem Ergebnis flussabwärts.</li>
+          <li>Stelle dein anderes Schiff auf den Startpunkt im mittleren Flussabschnitt.</li>
+          <li>Würfle erneut und bewege das zweite Schiff entsprechend diesem neuen Ergebnis flussabwärts.</li>
+        </ol>
+        <p>Zähle die goldenen Flussabschnitte. Diese Würfe bestimmen die Startpositionen; während der Vorbereitung erhältst du keine Belohnungen für Besuch oder Besitz.</p>
+      </div>
+      <figure class="table-layout">
+        <ol class="turn-sequence">
+          <li><strong>Erstes Schiff</strong><span>Oberer Startpunkt → eigener Wurf für die Startposition</span></li>
+          <li><strong>Zweites Schiff</strong><span>Mittlerer Startpunkt → separater Wurf für die Startposition</span></li>
+          <li><strong>Kaiserliches Schiff</strong><span>Bleibt neben deiner Klantafel</span></li>
+        </ol>
+        <figcaption>Der mittlere Startpunkt gilt für die Vorbereitung. Beendest du später eine Reise, geht es am oberen Startpunkt weiter.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="6" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Würfelt für den ersten Zug</h3></div>
+    <div class="step-layout">
+      <div>
+        <p>Würfelt alle noch einmal und lasst das Ergebnis sichtbar liegen. Mit diesem Ergebnis führt ihr euren ersten Zug aus.</p>
+        <ul class="component-list">
+          <li>Prüft, ob vier Bauwerke in der Auslage liegen und drei Meisterschaftskarten aufgedeckt sind.</li>
+          <li>Prüft eure beiden Schiffspositionen, die Start-Koku, drei Waren, zwei Kunden sowie Sonnenstein und Mondsichel.</li>
+          <li>Wer beginnt, entscheidet zuerst, ob göttliche Gunst eingesetzt wird.</li>
+        </ul>
+      </div>
+      <figure class="table-layout">
+        <ol class="turn-sequence">
+          <li><strong>1 · Gunstphase</strong><span>Bei Bedarf das Würfelergebnis ändern</span></li>
+          <li><strong>2 · Aktionsphase</strong><span>Bauen, Segeln oder Ausliefern · eine Aktion wählen</span></li>
+          <li><strong>3 · Meisterschaftsphase</strong><span>Alle drei gemeinsamen Ziele prüfen</span></li>
+          <li><strong>4 · Würfelphase</strong><span>Den nächsten Zug vorbereiten</span></li>
+        </ol>
+        <figcaption>Während die anderen am Zug sind, kennst du normalerweise schon dein nächstes Würfelergebnis.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="setup-panel" data-setup-panel="7" hidden>
+    <div class="step-heading"><h3 tabindex="-1">Der Spieltisch ist bereit</h3></div>
+    <div class="ready-summary" role="status">
+      <p><strong data-fill="ready-summary">3 Personen können beginnen.</strong></p>
+      <p>Lasst die drei Meisterschaftsbedingungen sichtbar liegen. Führt pro Zug eine Aktion aus, prüft die Meisterschaften und würfelt dann für den nächsten Zug.</p>
+      <a href="#learn" class="btn btn-primary">Den ersten Zug kennenlernen</a>
+    </div>
+  </article>
+
+  <nav class="setup-actions" aria-label="Vorbereitungsschritte steuern">
+    <button type="button" id="setup-back"><span class="sym" aria-hidden="true">arrow_back</span> Zurück</button>
+    <button type="button" id="setup-next" class="btn-primary"><span id="setup-next-label">Weiter</span><span class="sym" aria-hidden="true">arrow_forward</span></button>
+  </nav>
+</section>
+
+<section id="learn" aria-labelledby="learn-title">
+  <h2 id="learn-title">Lernt das Spiel</h2>
+  <p>Erklärt diese fünf Teile der Reihe nach oder öffnet den Teil, den ihr gerade braucht. Die Beispiele sind eigenständige Übungen; ihre Werte lassen sich ändern, ohne euren Fortschritt bei der Vorbereitung zu beeinflussen.</p>
+  <ol class="learn-track" aria-label="Regellektionen">
+    <li><button type="button" data-learn-button="0" aria-current="step" aria-controls="learn-turn"><span>Lektion 1</span> Dein Zug</button></li>
+    <li><button type="button" data-learn-button="1" aria-controls="learn-build"><span>Lektion 2</span> Bauen</button></li>
+    <li><button type="button" data-learn-button="2" aria-controls="learn-sail"><span>Lektion 3</span> Segeln</button></li>
+    <li><button type="button" data-learn-button="3" aria-controls="learn-deliver"><span>Lektion 4</span> Ausliefern</button></li>
+    <li><button type="button" data-learn-button="4" aria-controls="learn-scoring"><span>Lektion 5</span> Spielende</button></li>
+  </ol>
+
+  <article id="learn-turn" class="learn-panel" data-learn-panel="0">
+    <h3 tabindex="-1">Ein Würfel, drei mögliche Aktionen</h3>
+    <p>Sammle möglichst viele Siegpunkte: Errichte Bauwerke, besuche Orte am Fluss, beliefere Kunden, erlange Meisterschaften und gewinne Einfluss. Dein Würfel bestimmt in jedem Zug, welche Möglichkeiten du hast.</p>
+    <ol class="phase-strip">
+      <li><strong>1 · Gunstphase</strong><span>Ändere bei Bedarf dein sichtbares Würfelergebnis.</span></li>
+      <li><strong>2 · Aktionsphase</strong><span>Wähle genau eine Aktion: ein Bauwerk bauen, mit einem Schiff segeln oder an einen Kunden ausliefern.</span></li>
+      <li><strong>3 · Meisterschaftsphase</strong><span>Erlange alle noch verfügbaren Meisterschaften, deren Bedingungen du erfüllst.</span></li>
+      <li><strong>4 · Würfelphase</strong><span>Lass das neue Ergebnis für deinen nächsten Zug sichtbar liegen. Es geht im Uhrzeigersinn weiter.</span></li>
+    </ol>
+    <dl class="action-list">
+      <div><dt>Bauen</dt><dd>Der Würfel bestimmt eine Region. Bezahle dort einen freien Bauplatz und lege ein Bauwerk aus der Auslage darauf.</dd></div>
+      <div><dt>Segeln</dt><dd>Der Würfel bestimmt, um wie viele goldene Flussabschnitte du eines deiner Schiffe genau flussabwärts bewegst.</dd></div>
+      <div><dt>Ausliefern</dt><dd>Der Würfel bestimmt eine Region. Erfülle die Bestellung einer Kundenkarte auf deiner Hand mit dieser Regionsnummer.</dd></div>
+    </dl>
+    <div class="turn-rule"><strong>Setze göttliche Gunst vor deiner Aktion ein.</strong><p>Jeder Punkt verändert den Würfel um einen Schritt nach oben oder unten. Zwischen 6 und 1 geht es in beide Richtungen weiter. Gunst, die du während deiner Aktion erhältst, steht dir für spätere Einsätze zur Verfügung.</p></div>
+    <form id="favor-demo" autocomplete="off">
+      <fieldset>
+        <legend>Probiere das Ändern des Würfels aus</legend>
+        <div class="station-grid">
+          <label for="favor-roll">Sichtbares Ergebnis<select id="favor-roll" data-die-select></select></label>
+          <label for="favor-target">Gewünschtes Ergebnis<select id="favor-target" data-die-select></select></label>
+          <label for="favor-available">Verfügbare göttliche Gunst<select id="favor-available"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+        </div>
+        <div class="turn-rule"><output id="favor-result" aria-live="polite"></output></div>
+        <p class="note">Werte über 3 setzen voraus, dass ein Mönch dein Maximum erhöht hat. Diese Übung zeigt die günstigste Änderung.</p>
+      </fieldset>
+    </form>
+  </article>
+
+  <article id="learn-build" class="learn-panel" data-learn-panel="1" hidden>
+    <h3 tabindex="-1">Baue in der Region deines Würfels</h3>
+    <ol class="component-list">
+      <li>Wähle einen freien Bauplatz in der Region deines gegebenenfalls geänderten Würfels. Du musst die aufgedruckten Koku-Kosten nach möglichen Rabatten bezahlen können.</li>
+      <li>Zahle die Kosten und wähle eines der vier Bauwerke aus der Auslage. Nimmst du das Bauwerk am Ende der Auslage, erhältst du zusätzlich 1 göttliche Gunst.</li>
+      <li>Lege es auf den gewählten Bauplatz und kennzeichne es mit einem deiner Klanmarker als deinen Besitz.</li>
+      <li>Erhalte den auf dem Bauwerk angegebenen Einfluss fürs Bauen in dieser Region. Nimm alle Belohnungen auf dem Einflusspfad, die du erreichst oder überschreitest.</li>
+      <li>Schiebe die übrigen Bauwerke zum Ende der Auslage und fülle den Anfang vom Stapel der aktuellen Ära auf.</li>
+    </ol>
+    <div class="turn-rule"><strong>Deine Schiffe schränken das Bauen nicht ein.</strong><p>Entscheidend sind Würfel, Region, ein freier Bauplatz und deine Koku. Die Art des Bauwerks muss nicht zum Würfel passen.</p></div>
+    <dl class="card-type-list">
+      <div><dt>Hafen</dt><dd>Die Belohnung für den Besuch bringt Koku.</dd></div>
+      <div><dt>Schrein</dt><dd>Die Belohnung für den Besuch bringt Siegpunkte.</dd></div>
+      <div><dt>Anwesen</dt><dd>Die Belohnung für den Besuch bringt Einfluss in der Region des Bauwerks.</dd></div>
+      <div><dt>Markt</dt><dd>Die Belohnung für den Besuch bringt Handelswaren. Kaisermärkte zählen ebenfalls als Märkte.</dd></div>
+    </dl>
+    <p>Die genauen Mengen und die separate Belohnung für den Besitz stehen auf dem jeweiligen Plättchen. Beim Bauen erhältst du den angegebenen Einfluss; ein Besuch löst andere Belohnungen aus.</p>
+    <h4>Rücke auf dem Einflusspfad vor</h4>
+    <ul class="component-list">
+      <li>Rücke pro Einfluss ein Feld vor. Andere Marker blockieren dich nicht; mehrere Klans dürfen auf demselben Feld stehen.</li>
+      <li>Nimm jede erreichte oder überschrittene Belohnung, auch wenn ein fremder Marker darauf liegt.</li>
+      <li>Am Ende des Pfads verfällt weiterer Einfluss.</li>
+      <li>Das Symbol der Kaiserlichen Blüte gehört zu einer Meisterschaftsbedingung und bringt selbst keine Belohnung.</li>
+    </ul>
+    <details><summary>Ein Baubeispiel durchgehen</summary><p>Dein Würfel zeigt beispielsweise 3. Ein freier Bauplatz in Region 3 kostet 9 Koku, und deine zufriedene Handwerkerin dort senkt die Kosten um 2. Du zahlst 7 Koku. Wählst du das letzte Bauwerk der Auslage, erhältst du 1 göttliche Gunst. Lege deinen Marker darauf, rücke um den aufgedruckten Einfluss vor, nimm die erreichten Belohnungen und fülle die Auslage auf.</p></details>
+  </article>
+
+  <article id="learn-sail" class="learn-panel" data-learn-panel="2" hidden>
+    <h3 tabindex="-1">Bewege ein Schiff und besuche seinen Zielabschnitt</h3>
+    <ol class="component-list">
+      <li>Wähle eines deiner Schiffe und bewege es um das volle Würfelergebnis flussabwärts. Zähle nur die goldenen Flussabschnitte.</li>
+      <li>Nimm am Zielabschnitt die Belohnungen für den Besuch aller vier angrenzenden Bauplätze. Sie stehen am spitzen Ende der Bauwerkplättchen. Jeder freie Bauplatz bringt 1 Koku.</li>
+      <li>Danach erhalten die Besitzer dieser Bauwerke die Belohnungen an deren geradem Ende. Auch du erhältst sie, wenn dir ein besuchtes Bauwerk gehört.</li>
+    </ol>
+    <p>Du sammelst am Ziel; an einem Bauwerk vorbeizufahren zählt nicht als Besuch. Einfluss aus einem Bauwerk gilt immer in dessen eigener Region.</p>
+    <div class="turn-rule"><strong>Dein eigenes Bauwerk kann dir zwei verschiedene Belohnungen bringen.</strong><p>Als Besucher erhältst du seine Belohnung für den Besuch. Als Besitzer erhältst du zusätzlich seine Belohnung für den Besitz. Neutrale Startbauwerke und Kaisermärkte bringen nur Belohnungen für den Besuch.</p></div>
+    <form id="visit-demo" autocomplete="off">
+      <fieldset>
+        <legend>Probiere Belohnungen für Besuch und Besitz aus</legend>
+        <p>Erfundenes Übungsplättchen: Ein Markt bringt beim Besuch 1 Seide und pro Besitzmarker 1 Koku sowie 1 SP. Ändere, wem er gehört.</p>
+        <label for="visit-owner">Besitz<select id="visit-owner"><option value="other">Ein anderer Klan · ein Marker</option><option value="self" selected>Du · ein Marker</option><option value="shared">Du und ein anderer Klan · je ein Marker</option><option value="double">Du · zwei Marker</option><option value="neutral">Der Kaiser · keine Klanmarker</option><option value="empty">Freier Bauplatz</option></select></label>
+        <div class="turn-rule"><output id="visit-result" aria-live="polite"></output></div>
+        <p class="note">Mönche können einen zweiten Besitzmarker hinzufügen. Die tatsächlichen Belohnungen stehen auf dem Plättchen in eurer Partie.</p>
+      </fieldset>
+    </form>
+    <h4>Beende eine Reise</h4>
+    <p>Zieht dein Schiff über den letzten Flussabschnitt hinaus, setzt es seine Fahrt vom oberen Startpunkt aus mit der verbleibenden Bewegung fort. Nur den letzten Abschnitt zu erreichen, beendet die Reise noch nicht. Erhaltet zuerst die Belohnungen für Besuch und Besitz am endgültigen Zielabschnitt. Danach folgen die Belohnungen und Schritte für das Ende der Reise:</p>
+    <ul class="component-list">
+      <li>Erhalte 3 Koku oder eine Handelsware deiner Wahl.</li>
+      <li>Nutze zusätzlich die Effekte aller deiner zufriedenen Händler für das Ende der Reise.</li>
+      <li>Wirf das Bauwerk am Ende der Auslage ab, schiebe die übrigen weiter und fülle auf. Das kann einen Ärawechsel oder das Spielende auslösen.</li>
+    </ul>
+  </article>
+
+  <article id="learn-deliver" class="learn-panel" data-learn-panel="3" hidden>
+    <h3 tabindex="-1">Erfülle eine Bestellung und sichere dir Vorteile</h3>
+    <ol class="component-list">
+      <li>Wähle eine Kundenkarte auf deiner Hand, deren Region zu deinem gegebenenfalls geänderten Würfelergebnis passt.</li>
+      <li>Gib alle geforderten Handelswaren in den Vorrat zurück. Wenn dir auch nur eine davon fehlt, kannst du diese Aktion nicht wählen.</li>
+      <li>Lege die Karte offen als zufriedenen Kunden aus. Erhalte ihre Belohnung beim Ausliefern und lege gegebenenfalls Erinnerungsmarker ab. Ihr dauerhafter Effekt gilt ab jetzt.</li>
+      <li>Ziehe zwei Kundenkarten und wirf dann eine beliebige Karte von deiner Hand offen ab. Danach hast du normalerweise wieder zwei Handkarten.</li>
+    </ol>
+    <p>Die Positionen deiner Schiffe schränken das Ausliefern nicht ein. Ist der Kundenstapel leer, mischt die abgeworfenen Karten zu einem neuen Stapel.</p>
+    <h4>Lies die Bestellung und die drei Effekte</h4>
+    <div class="visual-grid">
+      <div class="visual-card is-active"><strong>Bestellung</strong><span>Diese Waren gibst du ab, um den Kunden zufriedenzustellen</span></div>
+      <div class="visual-card"><strong>Belohnung beim Ausliefern</strong><span>Gilt, sobald dieser Kunde zufrieden ist</span></div>
+      <div class="visual-card"><strong>Dauerhafter Effekt</strong><span>Gilt, wenn die auf der Karte genannte Bedingung eintritt</span></div>
+      <div class="visual-card"><strong>Belohnung bei der Schlusswertung</strong><span>Zusätzliche Punkte durch diesen zufriedenen Kunden</span></div>
+    </div>
+    <p>Die fünf Kundenarten findest du im Regelüberblick. Lies den besonderen Effekt jeder Karte, sobald sie ins Spiel kommt.</p>
+    <h4>Beende deine Aktion und prüfe die Meisterschaften</h4>
+    <p>Prüfe in deiner Meisterschaftsphase alle drei offenen Ziele. Erfüllst oder übertriffst du eine Bedingung, lege einen Klanmarker auf das höchste freie Belohnungsfeld und erhalte sofort diese Siegpunkte. Du kannst jede Meisterschaft einmal und mehrere verschiedene Meisterschaften im selben Zug erlangen.</p>
+    <p>Ohne freies Belohnungsfeld kann eine Meisterschaft nicht mehr erlangt werden. Zu zweit gibt es nur ein Feld mit 5 SP für den ersten Klan; zu dritt oder viert gibt es drei Felder mit 7 / 5 / 3 SP. Erfüllst du eine Bedingung im Zug eines anderen Klans, warte bis zu deiner eigenen Meisterschaftsphase und prüfe dann, ob sie noch erfüllt ist.</p>
+    <div class="turn-rule"><strong>Es zählt die aktuelle Spielsituation.</strong><p>Für die Meisterschaft der Leere brauchst du beispielsweise mindestens 1 Einfluss in allen sechs Regionen. Die Meisterschaft der Erde verlangt mindestens drei eigene Bauwerke derselben Art. Nur die drei ausliegenden Karten sind im Spiel.</p></div>
+    <p>Würfle nach der Meisterschaftsphase für deinen nächsten Zug.</p>
+  </article>
+
+  <article id="learn-scoring" class="learn-panel" data-learn-panel="4" hidden>
+    <h3 tabindex="-1">Beobachte die Stapel der beiden Ären</h3>
+    <dl class="action-list">
+      <div><dt>Das letzte Bauwerk der 1. Ära kommt in die Auslage</dt><dd>Am Ende dieses Zugs findet der Besuch des Kaisers statt. Alle erhalten die Belohnungen für den Besitz aller ihrer Bauwerke. Danach geht es mit dem nächsten Klan weiter; füllt mit der 2. Ära auf.</dd></div>
+      <div><dt>Das letzte Bauwerk der 2. Ära kommt in die Auslage</dt><dd>Am Ende dieses Zugs erhält der auslösende Klan 5 SP und das Spielende beginnt. Danach hat jeder andere Klan genau einen letzten Zug, bevor ihr wertet.</dd></div>
+    </dl>
+    <p>Sowohl beim Bauen als auch beim Beenden einer Reise wird die Auslage aufgefüllt. Wenn das letzte Bauwerk gezogen wird, können noch vier Bauwerke zur Wahl stehen. In den letzten Zügen kann die Auslage bei leerem Stapel nicht mehr aufgefüllt werden.</p>
+    <h4>Addiert die Schlusswertung zu euren bisherigen Siegpunkten</h4>
+    <dl class="scoring-list">
+      <div><dt>1 · Regionaler Einfluss</dt><dd>Das Wertungsplättchen jeder Region vergibt Punkte nach der Reihenfolge auf ihrem Einflusspfad. Dafür brauchst du dort mindestens 1 Einfluss. Ein Ältester verdoppelt deine so ermittelte Belohnung in seiner Region.</dd></div>
+      <div><dt>2 · Zufriedene Kunden</dt><dd>Erhalte einmal Punkte für die Gesamtzahl deiner zufriedenen Kunden. Probiere dazu die Übung unten aus.</dd></div>
+      <div><dt>3 · Kundenbelohnungen</dt><dd>Werte jeden zufriedenen Händler, Adligen und jede zufriedene Handwerkerin entsprechend der Karte. Die Verdopplung durch Älteste ist bereits in der Regionswertung enthalten.</dd></div>
+    </dl>
+    <div class="turn-rule"><strong>Die meisten Siegpunkte gewinnen.</strong><p>Bei Gleichstand entscheidet die aktuelle göttliche Gunst. Besteht auch dabei Gleichstand, teilt ihr euch den Sieg.</p></div>
+    <details open>
+      <summary>Übe die Wertung einer Region</summary>
+      <p>Addiert bei Gleichstand die Belohnungen der von den Beteiligten belegten Plätze, teilt die Summe durch ihre Anzahl und rundet ab. Plätze ohne aufgedruckte Belohnung zählen als 0. Ein Ältester verdoppelt erst den so berechneten Anteil.</p>
+      <p data-fill="two-player-scoring">Zu dritt oder viert zählen alle auf dem Wertungsplättchen angegebenen Plätze.</p>
+      <form id="region-demo" autocomplete="off">
+        <fieldset>
+          <legend>Übungswerte · tragt die Belohnungen eures Plättchens ein</legend>
+          <div class="station-grid">
+            <label for="rank-first">SP für den 1. Platz<input type="number" id="rank-first" min="0" max="99" value="9" inputmode="numeric"></label>
+            <label for="rank-second">SP für den 2. Platz<input type="number" id="rank-second" min="0" max="99" value="5" inputmode="numeric"></label>
+            <label for="rank-third" id="third-rank-label">SP für den 3. Platz<input type="number" id="rank-third" min="0" max="99" value="2" inputmode="numeric"></label>
+          </div>
+          <p>Tragt für jeden Klan den Einfluss als Anzahl der vom Start aus vorgerückten Felder ein. Wählt Ältester nur bei einem zufriedenen Ältesten dieser Region.</p>
+          <div id="region-players" class="station-grid"></div>
+          <div class="turn-rule"><output id="region-result" aria-live="polite"></output></div>
+        </fieldset>
+      </form>
+    </details>
+    <details>
+      <summary>Übe die Wertung der Kundenanzahl</summary>
+      <form id="customer-demo" autocomplete="off">
+        <label for="customer-count">Zufriedene Kunden<input type="number" id="customer-count" min="0" max="30" value="4" inputmode="numeric"></label>
+        <div class="turn-rule"><output id="customer-result" aria-live="polite"></output></div>
+      </form>
+      <p data-fill="customer-score-table">0 / 1 / 2 / 3 / 4 / 5 / 6+ Kunden → 0 / 2 / 5 / 9 / 14 / 20 / 27 SP.</p>
+      <p>Du erhältst diese Belohnung einmal für die Gesamtzahl. Die einzelnen Belohnungen bei der Schlusswertung auf deinen zufriedenen Kundenkarten kommen hinzu.</p>
+    </details>
+  </article>
+
+  <nav class="setup-actions" aria-label="Lektionen steuern">
+    <button type="button" id="learn-back" aria-label="Vorherige Lektion"><span class="sym" aria-hidden="true">arrow_back</span> Zurück</button>
+    <button type="button" id="learn-next" class="btn-primary" aria-label="Nächste Lektion">Weiter <span class="sym" aria-hidden="true">arrow_forward</span></button>
+  </nav>
+</section>
+
+<section id="reference" class="reference-group" aria-labelledby="reference-title">
+  <h2 id="reference-title">Regelüberblick</h2>
+  <p>Öffnet das Thema, das ihr gerade braucht. Wenn ein Effekt eine allgemeine Regel verändert, gilt der genaue Text auf eurem Spielmaterial.</p>
+  <h3>Ressourcen und Zeitpunkte</h3>
+  <details class="economy"><summary>Tauschmöglichkeiten und Ressourcenlimits</summary>
+    <ul class="component-list">
+      <li>Tausche jederzeit zwei Handelswaren derselben Art gegen eine Handelsware einer anderen Art deiner Wahl.</li>
+      <li>Zahle jederzeit 5 Koku für 1 göttliche Gunst. Du darfst diese Tauschmöglichkeiten wiederholt nutzen; sie verbrauchen deine Aktion nicht.</li>
+      <li>Du darfst höchstens 25 Koku, 6 Seide, 6 Reis und 6 Porzellan besitzen. Überschüssige Ressourcen verfallen.</li>
+      <li>Dein Sonnenstein zeigt die aktuelle göttliche Gunst, deine Mondsichel ihr Maximum. Du beginnst mit 2 bei einem Maximum von 3. Weitere Gunst über diesem Maximum verfällt.</li>
+      <li>Das Grundspiel erlaubt keinen allgemeinen Tausch von Handelswaren in Koku oder von göttlicher Gunst in Koku.</li>
+    </ul>
+  </details>
+  <details class="timing"><summary>Diese Unterschiede zwischen den Aktionen sind wichtig</summary>
+    <ul class="component-list">
+      <li>Ein Zug enthält genau eine Hauptaktion, gefolgt von der Meisterschaftsphase und einem neuen Würfelwurf.</li>
+      <li>Beim Bauen und Ausliefern zählt die Region des Würfels, unabhängig von deinen Schiffspositionen.</li>
+      <li>Beim Segeln bewegst du ein Schiff um das volle Würfelergebnis und besuchst alle vier Bauplätze an seinem Zielabschnitt.</li>
+      <li>Ein Bauwerk gewährt Einfluss immer in seiner eigenen Region.</li>
+      <li>Das letzte Bauwerk der Auslage zu wählen, bringt 1 göttliche Gunst. Es am Ende einer Reise abzuwerfen, bringt diesen Bonus nicht.</li>
+      <li>Der Besuch des Kaisers löst die Belohnungen für den Besitz entlang des Flusses aus. Die Rangfolgen in den Regionen werden am Spielende gewertet.</li>
+      <li>Eine Belohnung zum Austauschen eines Kunden bedeutet: Ziehe eine Kundenkarte und wirf danach eine Karte von deiner Hand ab. Beim Ausliefern gilt der eigene Schritt mit zwei gezogenen und einer abgeworfenen Karte.</li>
+      <li>Bei 1 Koku pro Bauwerk einer abgebildeten Art zählt dein Besitz an dieser Art. Bei einer Belohnung pro zufriedenem Kunden zählen deine offen ausliegenden zufriedenen Kunden. Multipliziere die aufgedruckte Belohnung mit dieser Anzahl.</li>
+    </ul>
+  </details>
+  <details class="economy"><summary>Vorbereitungsmengen auf einen Blick</summary>
+    <table>
+      <caption>Bei jeder Personenzahl verwendet ihr 3 Kaisermärkte und legt 4 Bauwerke der 1. Ära offen aus.</caption>
+      <thead><tr><th scope="col">Personen</th><th scope="col">Startbauwerke</th><th scope="col">1. Ära gesamt</th><th scope="col">2. Ära gesamt</th></tr></thead>
+      <tbody><tr><th scope="row">2</th><td>6</td><td>12</td><td>9</td></tr><tr><th scope="row">3</th><td>3</td><td>14</td><td>11</td></tr><tr><th scope="row">4</th><td>0</td><td>16</td><td>13</td></tr></tbody>
+    </table>
+    <p>Start-Koku in Zugreihenfolge: 7 / 8 / 9 / 10. Alle erhalten eine Ware jeder Art, zwei Kundenkarten, 2 göttliche Gunst und ein Maximum von 3.</p>
+  </details>
+
+  <h3>Kundenarten</h3>
+  <details class="economy"><summary>Mönch · göttliche Gunst und Besitz</summary>
+    <p>Erhöhe beim Ausliefern dein Gunstmaximum um 1, erhalte 2 göttliche Gunst und lege einen zweiten Besitzmarker auf ein eigenes oder fremdes Bauwerk, wie es die Karte erlaubt. Weder für diese Lieferung noch für den zusätzlichen Marker erhältst du Einfluss.</p>
+    <p>Auf einem Bauwerk liegen höchstens zwei Klanmarker insgesamt. Zwei eigene Marker bringen dir die Belohnung für den Besitz zweimal. Liegt dein Marker neben einem fremden, erhalten beide Klans jeweils ihre Belohnung. Deine Marker zählen für Meisterschaften und andere Effekte als Besitz; bei zwei eigenen Markern besitzt du das Bauwerk zweimal. Neutrale Bauwerke können keinen zweiten Klanmarker erhalten, da sie keinen ersten Klanmarker haben.</p>
+  </details>
+  <details class="economy"><summary>Händler · Vorteile am Ende der Reise</summary>
+    <p>Erhalte 3 Einfluss in der Region des Kunden. Lege für deinen ersten zufriedenen Händler einen Erinnerungsmarker auf das Händlerfeld am Ende der Reise.</p>
+    <p>Beendet eines deiner beiden Schiffe eine Reise, aktiviere alle aufgedruckten Reiseeffekte deiner zufriedenen Händler zusätzlich zur üblichen Belohnung.</p>
+    <p>Am Spielende bringt jeder zufriedene Händler 1 SP pro volle 5 Koku in deinem Besitz. Beispielsweise ergeben 17 Koku und zwei Händler 6 SP.</p>
+  </details>
+  <details class="economy"><summary>Adliger · ein Kaiserliches Schiff</summary>
+    <p>Erhalte 2 Einfluss in der Region der Karte. Wenn du deinen ersten Adligen zufriedenstellst, ersetzt du eines deiner Standardschiffe an seiner aktuellen Flussposition durch dein Kaiserliches Schiff.</p>
+    <p>Dein Kaiserliches Schiff erhält den dauerhaften Effekt jedes zufriedenen Adligen, auch des ersten. Segelt es, löst du alle aufgedruckten Fähigkeiten entsprechend ihrer Bedingungen aus. Du hast weiterhin zwei Schiffe im Spiel.</p>
+    <p>Jeder zufriedene Adlige bringt 1 SP für jedes eigene Bauwerk der auf seiner Karte angegebenen Art.</p>
+  </details>
+  <details class="economy"><summary>Handwerkerin · günstigere Bauwerke in einer Region</summary>
+    <p>Erhalte 2 Einfluss in der Region der Kundin und lege einen Marker auf ihr Handwerkerinfeld. Künftige Bauwerke in dieser Region kosten dich 2 Koku weniger.</p>
+    <p>Am Spielende bringt jede zufriedene Handwerkerin 1 SP pro volle drei Handelswaren in deinem Besitz. Zähle Seide, Reis und Porzellan zusammen. Beispielsweise ergeben 11 Waren und zwei Handwerkerinnen 6 SP.</p>
+  </details>
+  <details class="economy"><summary>Ältester · doppelte Belohnung in einer Region</summary>
+    <p>Lege einen Marker auf das Ältestenfeld in der Region des Kunden. Dieser Kunde gewährt beim Ausliefern keinen Einfluss und hat während der Züge keinen dauerhaften Effekt.</p>
+    <p>Verdopple am Spielende deine Belohnung vom Wertungsplättchen dieser Region. Bei Gleichstand berechnest du zuerst deinen abgerundeten Anteil und verdoppelst ihn danach. Der Älteste verdoppelt keine Belohnungen auf den einzelnen Feldern des Einflusspfads.</p>
+  </details>
+
+  <h3>Meisterschaften und Wertung</h3>
+  <details class="parameters"><summary>Meisterschaften: Zeitpunkt und Besitz</summary>
+    <p>Prüfe die drei ausliegenden Karten während deiner eigenen Meisterschaftsphase. Erlange jedes erfüllte Ziel einmal und belege dabei sein höchstes freies Belohnungsfeld. Mehrere verschiedene Meisterschaften im selben Zug sind möglich.</p>
+    <p>Verwendet die passende Seite für eure Personenzahl: Zu zweit gibt es nur ein Feld mit 5 SP für den ersten Klan; zu dritt oder viert drei Felder mit 7 / 5 / 3 SP. Ohne freies Feld ist keine weitere Belohnung möglich. Durch Mönche hinzugefügter Besitz zählt für die Ziele. Einfluss über das Ende eines Pfads hinaus verfällt, und die Kaiserliche Blüte bringt keine automatische Belohnung.</p>
+  </details>
+  <details class="parameters"><summary>Gleichstände und die Wertung zu zweit</summary>
+    <p>Ohne Einfluss erhält ein Klan keine Regionsbelohnung. Bei Gleichstand zählen alle Plätze, die die beteiligten Klans belegen: Addiert deren Belohnungen, teilt gleichmäßig und rundet ab. Eine nicht angegebene Platzbelohnung zählt als 0.</p>
+    <p>Sind beispielsweise zwei Klans auf dem ersten Platz gleichauf und das Plättchen vergibt 8 / 5, erhalten beide 6 SP. Ein Ältester erhöht den Anteil seines Klans dann auf 12 SP.</p>
+    <p>Zu zweit darf der zweitplatzierte Klan höchstens fünf Einflussfelder hinter dem führenden liegen, um die Belohnung für den zweiten Platz zu erhalten. Er braucht außerdem mindestens 1 Einfluss.</p>
+  </details>
+  <details class="timing"><summary>Was löst die letzten Züge aus?</summary>
+    <p>Füllst du die Auslage mit dem letzten Bauwerk aus dem Stapel der 2. Ära auf, spielst du deinen Zug noch zu Ende. Am Ende erhältst du 5 SP und das Spielende beginnt. Danach hat jeder andere Klan noch einen Zug; du erhältst keinen zusätzlichen Zug.</p>
+    <p>Wertet regionalen Einfluss, die Anzahl zufriedener Kunden und die Kundenbelohnungen bei der Schlusswertung. Bereits erzielte Siegpunkte bleiben erhalten. Koku und Handelswaren bringen ohne passende Kundenkarte keine allgemeinen Schlusswertungspunkte. Bei Gleichstand der Siegpunkte entscheidet die aktuelle göttliche Gunst.</p>
+  </details>
+  <details class="timing">
+            <summary>Umfang und Unabhängigkeit</summary>
+            <p>Diese unabhängige Spielhilfe behandelt das Grundspiel für 2–4 Personen; die optionale Erweiterung Clan Patrons gehört nicht dazu. Erklärungen, Übungen und Textübersichten sind neu formuliert. Offizielle Illustrationen, Kartenscans oder Profile der Clan-Patron-Karten sind nicht enthalten.</p>
+            <p>Nutzt für Detailfragen die beiliegende Spielanleitung und die auf dem Spielmaterial aufgedruckten Effekte.</p>
+        </details>
+</section>
+
+    </template>
+    <footer>
+        <p lang="en">This is an independent, unofficial rules guide. It is not affiliated with or endorsed by the game's publisher. All trademarks and copyrights in the original game remain the property of their respective owners.</p>
+        <p lang="de">Dies ist ein unabhängiger, inoffizieller Regelleitfaden. Er steht in keiner Verbindung zum Verlag des Spiels und wird von diesem nicht unterstützt. Alle Marken- und Urheberrechte am Originalspiel verbleiben bei ihren jeweiligen Rechteinhabern.</p>
+    </footer>
+
+    <script src="../../one.js"></script>
+    <script>
+/* global one */
+(() => {
+  "use strict";
+
+  const STORAGE_KEY = "river-trade-guide:state";
+  const STATE_VERSION = 1;
+  const SETUP_STEP_COUNT = 7;
+  const LEARN_STEP_COUNT = 5;
+  const CUSTOMER_POINTS = [0, 2, 5, 9, 14, 20, 27];
+  const VISIT_MODES = ["other", "self", "shared", "double", "neutral", "empty"];
+  const UI = {
+    en: {
+      title: "Unofficial Guide - River of Gold / Am goldenen Fluss",
+      description: "A bilingual table guide with guided setup, core rules, and interactive examples for a river trading board game.",
+      subtitle: "Guided setup and rules, one decision at a time",
+      skip: "Skip to guide", toggle: "Toggle guide options", primary: "Primary",
+      setup: "Setup", learn: "Learn", reference: "Reference",
+      options: "Guide options", table: "Table", players: "Players",
+      players2: "2 players", players3: "3 players", players4: "4 players",
+      standardHint: "Standard game · optional Clan Patrons omitted.",
+      progress: "Setup progress", completed: "Completed steps", reset: "Start over",
+      interface: "User interface", language: "Language",
+      storage: "Progress stays in this browser.",
+      storageFailed: "Saving is unavailable. The guide still works for this session.",
+      resetTitle: "Start over?", resetQuestion: "Reset setup progress, player count, lessons, and exercises? Your language choice will stay.",
+      playerLabel: "{n} players", player: "Player {n}", playerKit: "{koku} Koku · seat {n}",
+      side2: "2-player side", side34: "3–4-player side",
+      start0: "With four players, use no neutral starting buildings. Return all six to the box.",
+      start3: "Shuffle the six starting buildings. Place three on the starting spaces marked for three players; return the unused three to the box.",
+      start6: "Shuffle the six starting buildings. Place all six on the starting spaces used in a two-player game.",
+      startingCount: "{n} for this table",
+      eraOne: "{total} selected · {left} left after dealing", eraTwo: "{n} set aside for later",
+      ready: "{n} players are ready to begin.", step: "Step {n} of {total}", finished: "Setup complete",
+      progressText: "{n} of {total}", continue: "Continue", finish: "Finish setup",
+      twoPlayerScore: "With two players, second place needs at least 1 influence and must be within five spaces of the leader. A tie for first is shared normally.",
+      manyPlayerScore: "With 3–4 players, use every rank printed on the scoring tile. A fourth-place award is 0.",
+      influence: "Player {n} · influence", elder: "Elder in this region",
+      favorSame: "No adjustment needed: {roll}. Cost: 0 divine favor. You keep all {available}.",
+      favorYes: "Minimum cost: {cost} divine favor. Path: {path}. You can make this change; {left} divine favor would remain.",
+      favorNo: "Minimum cost: {cost} divine favor. Path: {path}. You currently have {available}; you need {missing} more.",
+      visitEmpty: "You gain 1 Koku for this empty shore space. There is no owner reward.",
+      visitBase: "You gain 1 silk as the visitor.",
+      visitOwn: " Your owner reward adds {koku} Koku and {vp} VP.",
+      visitOther: " The other owner gains {koku} Koku and {vp} VP.",
+      visitNeutral: " No player receives an owner reward.",
+      regionZero: "Player {n}: 0 VP (no influence).",
+      regionFar: "Player {n}: 0 VP (more than five spaces behind).",
+      regionTie: "Player {n}: {points} VP (tie: {sum} ÷ {count}, rounded down{elder}).",
+      regionSingle: "Player {n}: {points} VP (rank {rank}{elder}).",
+      elderSuffix: ", then doubled by Elder",
+      customerResult: "Satisfied customers: {n}. Count award: {points} VP. Add any separate customer-card bonuses.",
+      customerTable: "0 / 1 / 2 / 3 / 4 / 5 / 6+ customers → 0 / 2 / 5 / 9 / 14 / 20 / 27 VP.",
+      mastery2: "With 2 players, only the first claimant receives 5 VP. With 3–4 players, the three reward spaces give 7, 5, and 3 VP in that order."
+    },
+    de: {
+      title: "Unofficial Guide - River of Gold / Am goldenen Fluss",
+      description: "Eine zweisprachige Spielhilfe mit geführtem Aufbau, Grundregeln und interaktiven Beispielen für ein Brettspiel über den Handel am Fluss.",
+      subtitle: "Geführter Spielaufbau und Regeln – eine Entscheidung nach der anderen",
+      skip: "Zur Spielhilfe springen", toggle: "Spielhilfeoptionen ein- oder ausblenden", primary: "Hauptnavigation",
+      setup: "Spielaufbau", learn: "Lernen", reference: "Nachschlagen",
+      options: "Spielhilfeoptionen", table: "Spielrunde", players: "Personenzahl",
+      players2: "2 Personen", players3: "3 Personen", players4: "4 Personen",
+      standardHint: "Grundspiel · ohne die optionalen Klanlegenden.",
+      progress: "Aufbaufortschritt", completed: "Abgeschlossene Schritte", reset: "Neu beginnen",
+      interface: "Benutzeroberfläche", language: "Sprache",
+      storage: "Der Fortschritt bleibt in diesem Browser.",
+      storageFailed: "Speichern ist nicht möglich. Die Spielhilfe funktioniert in dieser Sitzung weiterhin.",
+      resetTitle: "Neu beginnen?", resetQuestion: "Aufbaufortschritt, Personenzahl, Lektionen und Beispiele zurücksetzen? Die gewählte Sprache bleibt erhalten.",
+      playerLabel: "{n} Personen", player: "Person {n}", playerKit: "{koku} Koku · Position {n}",
+      side2: "Seite für 2 Personen", side34: "Seite für 3–4 Personen",
+      start0: "Zu viert verwendet ihr keine Startbauwerke. Legt alle sechs in die Schachtel zurück.",
+      start3: "Mischt die sechs Startbauwerke. Legt drei auf die für drei Personen markierten Startbauplätze und die übrigen drei in die Schachtel zurück.",
+      start6: "Mischt die sechs Startbauwerke. Legt alle sechs auf die Startbauplätze für das Spiel zu zweit.",
+      startingCount: "{n} für diese Spielrunde",
+      eraOne: "{total} ausgewählt · {left} nach dem Auslegen übrig", eraTwo: "{n} für später bereitgelegt",
+      ready: "{n} Personen können beginnen.", step: "Schritt {n} von {total}", finished: "Aufbau abgeschlossen",
+      progressText: "{n} von {total}", continue: "Weiter", finish: "Aufbau abschließen",
+      twoPlayerScore: "Zu zweit braucht der zweite Platz mindestens 1 Einfluss und darf höchstens fünf Felder hinter dem ersten liegen. Ein Gleichstand auf dem ersten Platz wird wie üblich geteilt.",
+      manyPlayerScore: "Zu dritt oder viert zählen die auf dem Wertungsplättchen angegebenen Plätze. Der vierte Platz bringt 0 SP.",
+      influence: "Person {n} · Einfluss", elder: "Ältester in dieser Region",
+      favorSame: "Keine Änderung nötig: {roll}. Kosten: 0 göttliche Gunst. Du behältst deine gesamte Gunst ({available}).",
+      favorYes: "Geringste Kosten: {cost} göttliche Gunst. Weg: {path}. Du kannst diese Änderung bezahlen. Verbleibende göttliche Gunst: {left}.",
+      favorNo: "Geringste Kosten: {cost} göttliche Gunst. Weg: {path}. Aktuell verfügbar: {available}. Zusätzlich nötig: {missing}.",
+      visitEmpty: "Für diesen freien Bauplatz erhältst du 1 Koku. Es gibt keine Belohnung für Besitz.",
+      visitBase: "Für den Besuch erhältst du 1 Seide.",
+      visitOwn: " Für deinen Besitz kommen {koku} Koku und {vp} SP hinzu.",
+      visitOther: " Der andere Besitzer erhält {koku} Koku und {vp} SP.",
+      visitNeutral: " Niemand erhält eine Belohnung für Besitz.",
+      regionZero: "Person {n}: 0 SP (kein Einfluss).",
+      regionFar: "Person {n}: 0 SP (mehr als fünf Felder zurück).",
+      regionTie: "Person {n}: {points} SP (Gleichstand: {sum} ÷ {count}, abgerundet{elder}).",
+      regionSingle: "Person {n}: {points} SP (Platz {rank}{elder}).",
+      elderSuffix: ", danach durch den Ältesten verdoppelt",
+      customerResult: "Zufriedene Kunden: {n} → {points} SP für die Anzahl. Zusätzliche Schlusswertungsboni der Kundenkarten kommen hinzu.",
+      customerTable: "0 / 1 / 2 / 3 / 4 / 5 / 6+ Kunden → 0 / 2 / 5 / 9 / 14 / 20 / 27 SP.",
+      mastery2: "Zu zweit erhält nur die erste Person 5 SP. Zu dritt oder viert bringen die drei Belohnungsfelder nacheinander 7, 5 und 3 SP."
+    }
+  };
+
+  function integer(value, minimum, maximum, fallback) {
+    if ((typeof value !== "number" && typeof value !== "string") || value === "") return fallback;
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.min(maximum, Math.max(minimum, Math.trunc(number))) : fallback;
+  }
+
+  function defaultState() {
+    return {
+      version: STATE_VERSION, language: "en", playerCount: 3,
+      setupStep: 0, setupProgress: 0, learnStep: 0,
+      favor: { roll: 6, target: 2, available: 2 }, visitMode: "self", customerCount: 4,
+      region: { payouts: [9, 5, 2], influence: [6, 6, 2, 0], elders: [false, false, false, false] }
+    };
+  }
+
+  function normalizeState(value) {
+    if (typeof value === "string") {
+      try { value = JSON.parse(value); } catch { return defaultState(); }
+    }
+    const base = defaultState();
+    if (!value || typeof value !== "object" || Array.isArray(value) || value.version !== STATE_VERSION) return base;
+    const favor = value.favor && typeof value.favor === "object" ? value.favor : {};
+    const region = value.region && typeof value.region === "object" ? value.region : {};
+    const step = integer(value.setupStep, 0, SETUP_STEP_COUNT, 0);
+    return {
+      version: STATE_VERSION,
+      language: value.language === "de" ? "de" : "en",
+      playerCount: integer(value.playerCount, 2, 4, 3),
+      setupStep: step,
+      setupProgress: Math.max(step, integer(value.setupProgress, 0, SETUP_STEP_COUNT, 0)),
+      learnStep: integer(value.learnStep, 0, LEARN_STEP_COUNT - 1, 0),
+      favor: {
+        roll: integer(favor.roll, 1, 6, 6), target: integer(favor.target, 1, 6, 2),
+        available: integer(favor.available, 0, 6, 2)
+      },
+      visitMode: VISIT_MODES.includes(value.visitMode) ? value.visitMode : "self",
+      customerCount: integer(value.customerCount, 0, 30, 4),
+      region: {
+        payouts: base.region.payouts.map((n, i) => integer(region.payouts?.[i], 0, 99, n)),
+        influence: base.region.influence.map((n, i) => integer(region.influence?.[i], 0, 99, n)),
+        elders: base.region.elders.map((_, i) => region.elders?.[i] === true)
+      }
+    };
+  }
+
+  function setupFor(count) {
+    const players = integer(count, 2, 4, 3);
+    const eraOne = 8 + 2 * players;
+    return {
+      players, startingBuildings: (4 - players) * 3, imperialMarkets: 3,
+      eraOne, eraTwo: 5 + 2 * players, revealed: 4, eraOneRemaining: eraOne - 4,
+      startingKoku: Array.from({ length: players }, (_, i) => 7 + i)
+    };
+  }
+
+  function favorExample(roll, target, available) {
+    roll = integer(roll, 1, 6, 6);
+    target = integer(target, 1, 6, 2);
+    available = integer(available, 0, 6, 2);
+    const up = (target - roll + 6) % 6;
+    const down = (roll - target + 6) % 6;
+    const cost = Math.min(up, down);
+    const direction = up <= down ? 1 : -1;
+    const path = [roll];
+    for (let i = 0; i < cost; i++) path.push(((path[path.length - 1] - 1 + direction + 6) % 6) + 1);
+    return { roll, target, available, cost, path, canAfford: available >= cost, remaining: available >= cost ? available - cost : null };
+  }
+
+  function visitExample(mode) {
+    const valid = VISIT_MODES.includes(mode) ? mode : "self";
+    return {
+      empty: valid === "empty", neutral: valid === "neutral",
+      visitor: { silk: valid === "empty" ? 0 : 1, koku: valid === "empty" ? 1 : 0 },
+      selfMarkers: valid === "double" ? 2 : ["self", "shared"].includes(valid) ? 1 : 0,
+      otherMarkers: ["other", "shared"].includes(valid) ? 1 : 0
+    };
+  }
+
+  function customerCountPoints(count) {
+    return CUSTOMER_POINTS[integer(count, 0, 6, 0)];
+  }
+
+  function regionExample(payouts, influence, elderFlags, playerCount) {
+    const count = integer(playerCount, 2, 4, 3);
+    const awards = Array.from({ length: count }, (_, i) => i < 3 ? integer(payouts?.[i], 0, 99, 0) : 0);
+    const levels = Array.from({ length: count }, (_, i) => integer(influence?.[i], 0, 99, 0));
+    const leader = Math.max(...levels);
+    return levels.map((level, index) => {
+      const elder = elderFlags?.[index] === true;
+      if (level === 0) return { index, points: 0, reason: "zero", elder };
+      const ahead = levels.filter(n => n > level).length;
+      const tied = levels.filter(n => n === level).length;
+      if (count === 2 && ahead === 1 && leader - level > 5) return { index, points: 0, reason: "far", elder };
+      const sum = awards.slice(ahead, ahead + tied).reduce((a, b) => a + b, 0);
+      const share = Math.floor(sum / tied);
+      return { index, points: share * (elder ? 2 : 1), reason: tied > 1 ? "tie" : "rank", rank: ahead + 1, sum, tied, share, elder };
+    });
+  }
+
+  function formatMessage(language, key, values = {}) {
+    const source = UI[language === "de" ? "de" : "en"][key];
+    if (typeof source !== "string") throw new Error("Missing interface text: " + key);
+    return source.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ""));
+  }
+
+  let state = defaultState();
+  let renderedLanguage = null;
+  let stateWasEdited = false;
+  let storageUnavailable = false;
+  let saveQueue = Promise.resolve();
+  let saveTimer;
+  const main = document.getElementById("content");
+  const options = document.getElementById("guide-options");
+  const languageSelect = document.getElementById("language");
+  const playerSelect = document.getElementById("player-count");
+  const message = (key, values) => formatMessage(state.language, key, values);
+  const byId = id => document.getElementById(id);
+
+  function sharedUI() { return typeof one === "undefined" ? null : one; }
+
+  function renderStorageStatus() {
+    byId("storage-status").textContent = message(storageUnavailable ? "storageFailed" : "storage");
+  }
+
+  async function readStoredState() {
+    // Prefer synchronous browser storage, including a last-second pagehide save.
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try { return JSON.parse(stored); } catch { /* Ignore malformed saved data. */ }
+      }
+    } catch { storageUnavailable = true; }
+    if (sharedUI()?.storage?.get) {
+      try {
+        const stored = await sharedUI().storage.get(STORAGE_KEY);
+        storageUnavailable = false;
+        return stored;
+      } catch { /* Continue with an in-memory session. */ }
+    }
+    return null;
+  }
+
+  async function persist(snapshot) {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+      storageUnavailable = false; renderStorageStatus(); return;
+    } catch { /* The shared helper may support another local storage method. */ }
+    if (sharedUI()?.storage?.set) {
+      try { await sharedUI().storage.set(STORAGE_KEY, snapshot); storageUnavailable = false; renderStorageStatus(); return; }
+      catch { /* Saving is optional. */ }
+    }
+    storageUnavailable = true;
+    renderStorageStatus();
+  }
+
+  function queueSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      const snapshot = JSON.parse(JSON.stringify(state));
+      saveQueue = saveQueue.catch(() => {}).then(() => persist(snapshot));
+    }, 100);
+  }
+
+  function renderLocale() {
+    document.documentElement.lang = state.language;
+    document.title = message("title");
+    document.querySelector('meta[name="description"]').content = message("description");
+    document.querySelectorAll("[data-i18n]").forEach(node => { node.textContent = message(node.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-aria]").forEach(node => { node.setAttribute("aria-label", message(node.dataset.i18nAria)); });
+    languageSelect.value = state.language;
+    playerSelect.value = String(state.playerCount);
+    if (renderedLanguage !== state.language) {
+      const openDetails = renderedLanguage === null ? null : Array.from(main.querySelectorAll("details"), d => d.open);
+      main.replaceChildren(byId("guide-" + state.language).content.cloneNode(true));
+      if (openDetails) main.querySelectorAll("details").forEach((d, i) => { d.open = openDetails[i] ?? false; });
+      renderedLanguage = state.language;
+      main.querySelectorAll("[data-die-select]").forEach(select => {
+        for (let n = 1; n <= 6; n++) {
+          const option = document.createElement("option");
+          option.value = String(n); option.textContent = String(n); select.append(option);
+        }
+      });
+    }
+    renderStorageStatus();
+  }
+
+  function renderSession() {
+    const setup = setupFor(state.playerCount);
+    const fills = {
+      "player-side": message(state.playerCount === 2 ? "side2" : "side34"),
+      "starting-buildings-instruction": message("start" + setup.startingBuildings),
+      "starting-buildings-count": message("startingCount", { n: setup.startingBuildings }),
+      "era-one-total": setup.eraOne, "era-two-total": setup.eraTwo, "era-one-remaining": setup.eraOneRemaining,
+      "era-one-visual": message("eraOne", { total: setup.eraOne, left: setup.eraOneRemaining }),
+      "era-two-visual": message("eraTwo", { n: setup.eraTwo }),
+      "ready-summary": message("ready", { n: state.playerCount }),
+      "two-player-scoring": message(state.playerCount === 2 ? "twoPlayerScore" : "manyPlayerScore"),
+      "customer-score-table": message("customerTable"), "mastery-rewards": message("mastery2")
+    };
+    main.querySelectorAll("[data-fill]").forEach(node => { node.textContent = String(fills[node.dataset.fill]); });
+    byId("setup-player-summary").textContent = message("playerLabel", { n: state.playerCount });
+    const stations = document.createDocumentFragment();
+    setup.startingKoku.forEach((koku, index) => {
+      const li = document.createElement("li");
+      const strong = document.createElement("strong");
+      const span = document.createElement("span");
+      strong.textContent = message("player", { n: index + 1 });
+      span.textContent = message("playerKit", { n: index + 1, koku });
+      li.append(strong, span); stations.append(li);
+    });
+    byId("player-stations").replaceChildren(stations);
+    byId("third-rank-label").hidden = state.playerCount === 2;
+    const regionPlayers = document.createDocumentFragment();
+    for (let index = 0; index < state.playerCount; index++) {
+      const box = document.createElement("div");
+      box.setAttribute("role", "group");
+      box.setAttribute("aria-label", message("player", { n: index + 1 }));
+      const label = document.createElement("label");
+      const input = document.createElement("input");
+      input.id = "influence-" + index; input.type = "number"; input.min = "0"; input.max = "99"; input.inputMode = "numeric";
+      input.dataset.influence = String(index); input.value = String(state.region.influence[index]);
+      label.htmlFor = input.id; label.append(message("influence", { n: index + 1 }), input);
+      const elderLabel = document.createElement("label");
+      const elder = document.createElement("input");
+      elder.id = "elder-" + index; elder.type = "checkbox"; elder.dataset.elder = String(index); elder.checked = state.region.elders[index];
+      elderLabel.htmlFor = elder.id; elderLabel.append(elder, " " + message("elder"));
+      box.append(label, elderLabel); regionPlayers.append(box);
+    }
+    byId("region-players").replaceChildren(regionPlayers);
+  }
+
+  function renderSetup(focus = false) {
+    const complete = state.setupStep === SETUP_STEP_COUNT;
+    main.querySelectorAll("[data-setup-panel]").forEach(panel => { panel.hidden = Number(panel.dataset.setupPanel) !== state.setupStep; });
+    byId("setup-step-label").textContent = message(complete ? "finished" : "step", { n: state.setupStep + 1, total: SETUP_STEP_COUNT });
+    byId("setup-progress").value = state.setupProgress;
+    byId("setup-progress-text").textContent = message("progressText", { n: state.setupProgress, total: SETUP_STEP_COUNT });
+    byId("setup-back").hidden = state.setupStep === 0;
+    byId("setup-next").hidden = complete;
+    byId("setup-next-label").textContent = message(state.setupStep === SETUP_STEP_COUNT - 1 ? "finish" : "continue");
+    if (focus) main.querySelector('[data-setup-panel="' + state.setupStep + '"] h3').focus();
+  }
+
+  function renderLearn(focus = false) {
+    main.querySelectorAll("[data-learn-button]").forEach(button => {
+      if (Number(button.dataset.learnButton) === state.learnStep) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    main.querySelectorAll("[data-learn-panel]").forEach(panel => { panel.hidden = Number(panel.dataset.learnPanel) !== state.learnStep; });
+    byId("learn-back").hidden = state.learnStep === 0;
+    byId("learn-next").hidden = state.learnStep === LEARN_STEP_COUNT - 1;
+    if (focus) main.querySelector('[data-learn-panel="' + state.learnStep + '"] h3').focus();
+  }
+
+  function renderExamples(syncInputs = true) {
+    if (syncInputs) {
+      byId("favor-roll").value = String(state.favor.roll);
+      byId("favor-target").value = String(state.favor.target);
+      byId("favor-available").value = String(state.favor.available);
+      byId("visit-owner").value = state.visitMode;
+      byId("customer-count").value = String(state.customerCount);
+      ["rank-first", "rank-second", "rank-third"].forEach((id, i) => { byId(id).value = String(state.region.payouts[i]); });
+      main.querySelectorAll("[data-influence]").forEach(input => { input.value = String(state.region.influence[Number(input.dataset.influence)]); });
+      main.querySelectorAll("[data-elder]").forEach(input => { input.checked = state.region.elders[Number(input.dataset.elder)]; });
+    }
+    const favor = favorExample(state.favor.roll, state.favor.target, state.favor.available);
+    byId("favor-result").textContent = message(favor.cost === 0 ? "favorSame" : favor.canAfford ? "favorYes" : "favorNo", {
+      roll: favor.roll, available: favor.available, cost: favor.cost, path: favor.path.join(" → "), left: favor.remaining, missing: favor.cost - favor.available
+    });
+    const visit = visitExample(state.visitMode);
+    let visitText = message(visit.empty ? "visitEmpty" : "visitBase");
+    if (visit.selfMarkers) visitText += message("visitOwn", { koku: visit.selfMarkers, vp: visit.selfMarkers });
+    if (visit.otherMarkers) visitText += message("visitOther", { koku: visit.otherMarkers, vp: visit.otherMarkers });
+    if (visit.neutral) visitText += message("visitNeutral");
+    byId("visit-result").textContent = visitText;
+    const scores = regionExample(state.region.payouts, state.region.influence, state.region.elders, state.playerCount);
+    byId("region-result").textContent = scores.map(result => {
+      const key = { zero: "regionZero", far: "regionFar", tie: "regionTie", rank: "regionSingle" }[result.reason];
+      return message(key, { n: result.index + 1, points: result.points, rank: result.rank, sum: result.sum, count: result.tied, elder: result.elder ? message("elderSuffix") : "" });
+    }).join(" ");
+    byId("customer-result").textContent = message("customerResult", { n: state.customerCount, points: customerCountPoints(state.customerCount) });
+  }
+
+  function renderGuide() { renderLocale(); renderSession(); renderSetup(); renderLearn(); renderExamples(); }
+
+  function visitLesson(index, focus = true) {
+    state.learnStep = integer(index, 0, LEARN_STEP_COUNT - 1, 0);
+    stateWasEdited = true; renderLearn(focus); queueSave();
+  }
+
+  main.addEventListener("click", event => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    if (button.id === "setup-next") {
+      state.setupStep = Math.min(SETUP_STEP_COUNT, state.setupStep + 1);
+      state.setupProgress = Math.max(state.setupProgress, state.setupStep);
+      stateWasEdited = true; renderSetup(true); queueSave();
+    } else if (button.id === "setup-back") {
+      state.setupStep = Math.max(0, state.setupStep - 1);
+      stateWasEdited = true; renderSetup(true); queueSave();
+    } else if (button.hasAttribute("data-learn-button")) visitLesson(Number(button.dataset.learnButton));
+    else if (button.id === "learn-back") visitLesson(state.learnStep - 1);
+    else if (button.id === "learn-next") visitLesson(state.learnStep + 1);
+  });
+
+  function handleExample(event) {
+    const input = event.target;
+    let handled = true;
+    if (input.id === "favor-roll") state.favor.roll = integer(input.value, 1, 6, 6);
+    else if (input.id === "favor-target") state.favor.target = integer(input.value, 1, 6, 2);
+    else if (input.id === "favor-available") state.favor.available = integer(input.value, 0, 6, 2);
+    else if (input.id === "visit-owner") state.visitMode = VISIT_MODES.includes(input.value) ? input.value : "self";
+    else if (input.id === "customer-count") state.customerCount = integer(input.value, 0, 30, 0);
+    else if (["rank-first", "rank-second", "rank-third"].includes(input.id)) state.region.payouts[["rank-first", "rank-second", "rank-third"].indexOf(input.id)] = integer(input.value, 0, 99, 0);
+    else if (input.hasAttribute("data-influence")) state.region.influence[Number(input.dataset.influence)] = integer(input.value, 0, 99, 0);
+    else if (input.hasAttribute("data-elder")) state.region.elders[Number(input.dataset.elder)] = input.checked;
+    else handled = false;
+    if (handled) { stateWasEdited = true; renderExamples(event.type === "change"); queueSave(); }
+  }
+  main.addEventListener("input", handleExample);
+  main.addEventListener("change", handleExample);
+  main.addEventListener("submit", event => { event.preventDefault(); });
+  options.addEventListener("submit", event => { event.preventDefault(); });
+
+  languageSelect.addEventListener("change", () => {
+    state.language = languageSelect.value === "de" ? "de" : "en";
+    stateWasEdited = true; renderGuide(); queueSave();
+  });
+  playerSelect.addEventListener("change", () => {
+    state.playerCount = integer(playerSelect.value, 2, 4, 3);
+    state.setupStep = 0; state.setupProgress = 0;
+    stateWasEdited = true; renderGuide(); queueSave();
+  });
+  byId("reset-guide").addEventListener("click", async () => {
+    let confirmed = false;
+    try {
+      confirmed = sharedUI()?.confirm ? await sharedUI().confirm(message("resetQuestion"), message("resetTitle")) : window.confirm(message("resetQuestion"));
+    } catch { confirmed = window.confirm(message("resetQuestion")); }
+    if (!confirmed) return;
+    const language = state.language;
+    state = defaultState(); state.language = language;
+    stateWasEdited = true; renderGuide(); queueSave();
+  });
+
+  window.addEventListener("pagehide", () => {
+    clearTimeout(saveTimer);
+    const snapshot = JSON.parse(JSON.stringify(state));
+    // A synchronous local fallback also preserves a last-second edit before closing.
+    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)); } catch { /* Optional persistence. */ }
+    saveQueue = saveQueue.catch(() => {}).then(() => persist(snapshot));
+  });
+
+  renderGuide();
+  void (async () => {
+    const saved = await readStoredState();
+    if (!stateWasEdited) { state = normalizeState(saved); renderGuide(); }
+    else renderStorageStatus();
+  })();
+})();
+
+    </script>
+  </body>
+</html>

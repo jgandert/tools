@@ -1,0 +1,1976 @@
+<!doctype html>
+<html lang="en" class="theme-blue">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="An independent bilingual table guide to forest protection: setup, drawing cards, actions, bonuses and victory.">
+<title>Unofficial Guide - Living Forest</title>
+<link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+<!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+<link rel="stylesheet" type="text/css" href="../../one.css">
+<style>
+        :root {
+            --phase-one: light-dark(#3f6f9f, #9ac7f5);
+            --phase-two: light-dark(#76558f, #d3afe8);
+            --phase-three: light-dark(#96652f, #e9bd82);
+            --phase-four: light-dark(#26776f, #8ed4c9);
+            --phase-five: light-dark(#98534c, #efaaa2);
+        }
+
+        main > section > p:first-of-type {
+            max-width: 68ch;
+        }
+
+        main {
+            max-width: 80rem;
+        }
+
+        .setup-status {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+            color: var(--on-surface-variant);
+        }
+
+        .setup-status output {
+            font-weight: 600;
+            color: var(--on-surface);
+        }
+
+        .setup-panel {
+            min-height: 25rem;
+            padding-block: var(--spacing-md);
+        }
+
+        .step-heading {
+            margin-top: var(--spacing-sm);
+        }
+
+        .step-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.85fr);
+            gap: var(--spacing-xl);
+            align-items: start;
+        }
+
+        .step-layout > * {
+            min-width: 0;
+        }
+
+        .component-list {
+            padding-left: 1.25rem;
+        }
+
+        .component-list li {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .table-layout {
+            margin: 0;
+        }
+
+        .supply-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            border: var(--border-width) solid var(--outline-variant);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .supply-zone {
+            min-height: 7rem;
+            padding: var(--spacing-md);
+            background: var(--surface-container-low);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .supply-zone:nth-child(odd) {
+            border-right: var(--border-width) solid var(--outline-variant);
+        }
+
+        .supply-zone:nth-last-child(-n + 2) {
+            border-bottom: 0;
+        }
+
+        .supply-zone strong,
+        .project-stack strong,
+        .zone-line strong {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .supply-zone span,
+        .project-stack span,
+        .zone-line span {
+            color: var(--on-surface-variant);
+        }
+
+        figcaption {
+            margin-top: var(--spacing-sm);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .station-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--spacing-sm) var(--spacing-lg);
+            padding: 0;
+            list-style: none;
+        }
+
+        .station-grid li {
+            padding: var(--spacing-sm) 0;
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .station-grid strong {
+            display: block;
+        }
+
+        .station-grid span {
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .tile-pair,
+        .construction-zone,
+        .zone-flow {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .tile-shape,
+        .project-stack,
+        .zone-line {
+            padding: var(--spacing-md);
+            border: var(--border-width) solid var(--outline-variant);
+            border-radius: var(--radius-sm);
+            background: var(--surface-container-low);
+        }
+
+        .tile-shape {
+            display: grid;
+            place-items: center;
+            min-height: 8rem;
+            text-align: center;
+        }
+
+        .tile-shape:first-child {
+            grid-column: span 2;
+            min-height: 6rem;
+        }
+
+        .tile-shape strong {
+            display: block;
+        }
+
+        .tile-shape span {
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .project-stack {
+            min-height: 10rem;
+        }
+
+        .zone-flow {
+            grid-template-columns: 1fr;
+        }
+
+        .zone-line {
+            display: grid;
+            grid-template-columns: minmax(7rem, 0.35fr) 1fr;
+            align-items: baseline;
+            gap: var(--spacing-md);
+        }
+
+        .setup-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            padding-top: var(--spacing-md);
+            border-top: var(--border-width) solid var(--outline-variant);
+        }
+
+        .setup-actions button:last-child {
+            margin-left: auto;
+        }
+
+        .ready-summary {
+            max-width: 44rem;
+            padding: var(--spacing-lg) 0;
+        }
+
+        .ready-summary strong {
+            color: var(--primary);
+        }
+
+        .round-track {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(8.5rem, 1fr));
+            gap: var(--spacing-sm);
+            padding: 0 0 var(--spacing-sm);
+            margin: var(--spacing-lg) 0;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .round-track button {
+            width: 100%;
+            min-height: 4.5rem;
+            padding: var(--spacing-sm);
+            text-align: left;
+            background: var(--surface-container-low);
+            color: var(--on-surface);
+            border-color: var(--outline-variant);
+        }
+
+        .round-track button span {
+            display: block;
+            margin-bottom: 2px;
+            color: var(--on-surface-variant);
+            font-size: 0.75rem;
+        }
+
+        .round-track button[aria-current="step"] {
+            background: var(--primary);
+            color: var(--on-primary);
+            border-color: var(--primary);
+        }
+
+        .round-track button[aria-current="step"] span {
+            color: inherit;
+        }
+
+        .round-panel {
+            min-height: 19rem;
+            padding-top: var(--spacing-sm);
+        }
+
+        .round-panel > p,
+        .round-panel > ul {
+            max-width: 68ch;
+        }
+
+        .assignment-strip,
+        .phase-strip,
+        .worker-cycle {
+            display: grid;
+            gap: var(--spacing-sm);
+            margin: var(--spacing-lg) 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .assignment-strip {
+            grid-template-columns: repeat(5, minmax(7rem, 1fr));
+            padding-bottom: var(--spacing-sm);
+            overflow-x: auto;
+        }
+
+        .assignment-strip li {
+            padding: var(--spacing-sm);
+            text-align: center;
+            border-bottom: 3px solid var(--outline);
+            background: var(--surface-container-low);
+        }
+
+        .phase-strip {
+            grid-template-columns: repeat(5, minmax(8rem, 1fr));
+            overflow-x: auto;
+        }
+
+        .phase-strip li {
+            padding: var(--spacing-md);
+            border-left: 4px solid var(--phase-accent);
+            background: var(--surface-container-low);
+        }
+
+        .phase-strip strong,
+        .phase-strip span {
+            display: block;
+        }
+
+        .phase-strip span {
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .phase-one {
+            --phase-accent: var(--phase-one);
+        }
+
+        .phase-two {
+            --phase-accent: var(--phase-two);
+        }
+
+        .phase-three {
+            --phase-accent: var(--phase-three);
+        }
+
+        .phase-four {
+            --phase-accent: var(--phase-four);
+        }
+
+        .phase-five {
+            --phase-accent: var(--phase-five);
+        }
+
+        .worker-cycle {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            counter-reset: worker-cycle;
+        }
+
+        .worker-cycle li {
+            counter-increment: worker-cycle;
+            position: relative;
+            padding: var(--spacing-md);
+            border-top: 3px solid var(--primary);
+            background: var(--surface-container-low);
+        }
+
+        .worker-cycle li::before {
+            content: counter(worker-cycle);
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .reference-group > details {
+            border-left: 4px solid var(--phase-accent, var(--outline-variant));
+        }
+
+        .reference-group h3 {
+            margin-top: var(--spacing-xl);
+        }
+
+        .trade-table td:first-child {
+            font-weight: 600;
+        }
+
+        aside progress {
+            width: 100%;
+        }
+
+        aside output {
+            display: block;
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+        }
+
+        aside small {
+            display: block;
+            margin-top: var(--spacing-sm);
+            color: var(--on-surface-variant);
+        }
+
+        @media (max-width: 760px) {
+            .step-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .setup-panel,
+            .round-panel {
+                min-height: 0;
+            }
+
+            .worker-cycle {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .supply-grid,
+            .station-grid,
+            .tile-pair,
+            .construction-zone,
+            .worker-cycle {
+                grid-template-columns: 1fr;
+            }
+
+            .supply-zone:nth-child(odd) {
+                border-right: 0;
+            }
+
+            .supply-zone:nth-last-child(2) {
+                border-bottom: var(--border-width) solid var(--outline-variant);
+            }
+
+            .tile-shape:first-child {
+                grid-column: auto;
+            }
+
+            .zone-line {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-xs);
+            }
+
+            .setup-actions button {
+                flex: 1;
+            }
+        }
+
+        html[lang="de"] body > footer [lang="en"],
+        html:not([lang="de"]) body > footer [lang="de"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<a data-copy="skip" href="#content" class="skip-link">Skip to guide</a>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle guide options" data-aria="toggle">
+<header><label for="aside-state" class="aside-toggle-btn"></label><hgroup><h1 data-copy="title">Unofficial Guide - Living Forest</h1><p data-copy="subtitle">Guided setup and rules, one step at a time</p></hgroup>
+<nav aria-label="Primary" data-aria="primary"><ul><li><a data-copy="navSetup" href="#setup">Setup</a></li><li><a data-copy="navLearn" href="#learn">Learn</a></li><li><a data-copy="navRef" href="#reference">Reference</a></li></ul></nav></header>
+<main id="content"><noscript><p class="note">JavaScript is needed for the setup steps, lessons and language switch. The rules reference below remains readable. / JavaScript wird für Aufbauschritte, Lektionen und Sprachwechsel benötigt. Die Regelübersicht weiter unten bleibt lesbar.</p></noscript>
+<section id="setup" aria-labelledby="setup-title"><h2 data-copy="setupTitle" id="setup-title">Set up the table</h2><p data-copy="setupIntro">Prepare the shared table, then each Forest. Choose 2, 3 or 4 players in Guide options to adjust the tree supply. This guide covers the base game only.</p>
+<div class="setup-status"><output id="setup-step-label" aria-live="polite">Step 1 of 5</output><strong id="setup-player-summary">3 players</strong></div>
+<article class="setup-panel" data-setup-panel="0"><div class="step-heading"><h3 data-copy="shared" tabindex="-1">Prepare the shared boards</h3></div><div class="step-layout"><div><p data-copy="sharedIntro">Keep the centre and all shared supplies within everyone's reach.</p><ul class="component-list"><li data-copy="sharedCircle">Place the <strong>Circle of Spirits</strong> in the middle. Put the <strong>Guardian Animal board</strong> and <strong>Fire Varan board</strong> beside it.</li><li data-copy="sharedFire">Sort the Fire tiles into values 2, 3 and 4 on the Guardian Animal board. Place <strong>one value-2 Fire tile</strong> in the Circle of Spirits.</li><li data-copy="sharedOther">Place all <strong>23 Fire Varan cards</strong> and <strong>20 Fragment tiles</strong> on their supply spaces. Nobody receives a Fragment tile at setup.</li></ul></div><figure class="table-layout"><div class="supply-grid"><div class="supply-zone"><strong data-copy="circleSupply">Circle of Spirits</strong><span data-copy="circleSupplyCopy">One value-2 Fire in the centre</span></div><div class="supply-zone"><strong data-copy="animalsSupply">Guardian Animal board</strong><span data-copy="animalsSupplyCopy">Space for three decks and their rows</span></div><div class="supply-zone"><strong data-copy="fireSupply">Fire tiles</strong><span data-copy="fireSupplyCopy">58 in total, including the starting Fire</span></div><div class="supply-zone"><strong data-copy="fragmentSupply">Fire Varan board</strong><span data-copy="fragmentSupplyCopy">23 Fire Varans · 20 Fragments</span></div></div><figcaption data-copy="sharedCaption">The centre's Fire is not owned by a player. Keep it separate from the supply.</figcaption></figure></div></article>
+<article class="setup-panel" data-setup-panel="1" hidden><div class="step-heading"><h3 data-copy="animalMarket" tabindex="-1">Reveal the Guardian Animal reserve</h3></div><div class="step-layout"><div><p data-copy="animalMarketIntro">Separate the starting cards from the three shared levels before shuffling.</p><ul class="component-list"><li data-copy="animalDecks">Make three face-down decks: <strong>23 Level 1</strong> cards with a white sun, <strong>16 Level 2</strong> with a yellow sun, and <strong>12 Level 3</strong> with a red sun. Shuffle each deck separately.</li><li data-copy="animalRows">Reveal <strong>four cards per level</strong> beside its deck: 12 face-up cards altogether, regardless of player count.</li><li data-copy="animalStarterSeparate">Keep the 14-card starting sets separate for the players. Fire Varans do not enter the reserve.</li></ul></div><figure class="table-layout"><div class="zone-flow"><div class="zone-line"><strong data-copy="levelOne">Level 1 · white sun</strong><span data-copy="levelOneCopy">23 cards → 4 face up + 19 in the deck</span></div><div class="zone-line"><strong data-copy="levelTwo">Level 2 · yellow sun</strong><span data-copy="levelTwoCopy">16 cards → 4 face up + 12 in the deck</span></div><div class="zone-line"><strong data-copy="levelThree">Level 3 · red sun</strong><span data-copy="levelThreeCopy">12 cards → 4 face up + 8 in the deck</span></div></div><figcaption data-copy="animalMarketCaption">Sun colour identifies the level. The printed number is that card's cost, not its level.</figcaption></figure></div></article>
+<article class="setup-panel" data-setup-panel="2" hidden><div class="step-heading"><h3 data-copy="treeSupply" tabindex="-1">Adjust the Protective Tree supply</h3></div><div class="step-layout"><div><p data-copy="treeSort">Place the <strong>39 non-starting Protective Trees</strong> in the two dispensers, ordered by cost. Match both cost and effect to the dispenser slot.</p><ul class="component-list" id="tree-adjustments"></ul><p data-copy="treeTypes" class="note">Costs 3, 4 and 5 each have <strong>two different tree types</strong>. Apply removals to every type, not just once per price. Starting Trees are never part of these removals.</p></div><figure class="table-layout"><div class="supply-grid"><div class="supply-zone"><strong data-copy="selectedTable">Selected table</strong><span data-copy="selectedTableCopy"><output data-player-count>3</output> players</span></div><div class="supply-zone"><strong data-copy="sharedTrees">Trees in the dispensers</strong><span data-copy="sharedTreesCopy"><output data-tree-total>33</output> shared Protective Trees</span></div><div class="supply-zone"><strong data-copy="returnedTrees">Return to the box</strong><span data-copy="returnedTreesCopy"><output data-tree-removed>6</output> shared trees</span></div><div class="supply-zone"><strong data-copy="startingTrees">Starting Trees</strong><span data-copy="startingTreesCopy">One per player, kept separate</span></div></div><figcaption data-copy="treeSupplyCaption">The player-count markings on the dispensers provide a physical cross-check.</figcaption></figure></div></article>
+<article class="setup-panel" data-setup-panel="3" hidden><div class="step-heading"><h3 data-copy="playerForest" tabindex="-1">Prepare each Forest</h3></div><div class="step-layout"><div><p data-copy="playerKit">Each player takes one matching set: a Forest board, Spirit of Nature standee, starting Protective Tree, 14 starting Guardian Animals, and three Victory tiles.</p><ul class="component-list"><li data-copy="treeCentre">Put the starting Protective Tree on the <strong>centre space</strong> of your Forest. It counts as its own tree type but supplies no elements.</li><li data-copy="victoryStarting">Place the <strong>Fire, Protective Tree and Sacred Flower Victory tiles</strong> to the left of your Forest. Each adds 1 to its victory category while you own it.</li><li data-copy="startingDeck">Shuffle your 14 starting cards and place them face down to the right as your personal draw stack. Leave room for a personal discard stack and a face-up <strong>Help Line</strong>.</li><li data-copy="unusedKit">Return unused player sets to the box. Do not deal a starting hand or reveal cards yet.</li></ul></div><figure class="table-layout"><div class="zone-flow"><div class="zone-line"><strong data-copy="zoneDraw">Personal draw</strong><span data-copy="zoneDrawCopy">14 shuffled starting cards · face down</span></div><div class="zone-line"><strong data-copy="zoneLine">Help Line</strong><span data-copy="zoneLineCopy">Empty now · reveal cards here in Phase A</span></div><div class="zone-line"><strong data-copy="zoneDiscard">Personal discard</strong><span data-copy="zoneDiscardCopy">Empty now · kept separate from the draw stack</span></div></div><figcaption data-copy="playerForestCaption">Before anyone acts, your victory totals are 2 different Trees, 1 Fire and 1 Sacred Flower, including your Victory tiles.</figcaption></figure></div></article>
+<article class="setup-panel" data-setup-panel="4" hidden><div class="step-heading"><h3 data-copy="firstPlayer" tabindex="-1">Place the Spirits of Nature</h3></div><div class="step-layout"><div><ul class="component-list"><li data-copy="randomFirst">Choose the first player at random and give them the <strong>Sacred Tree standee</strong>. This marks turn order; it is not another Protective Tree in their Forest.</li><li data-copy="circleMarkers">On the Circle of Spirits, use the printed starting-position symbols for your player count. The first player uses the rock whose white figure is first in that group.</li><li data-copy="otherPlayers">Continue in clockwise seating order: the next player uses the marking with the white figure second, then third and fourth when needed.</li><li data-copy="phaseStart">Begin with <strong>Phase A: Guardian Animals</strong>. Everyone reveals their own cards; there is no shared starting hand.</li></ul></div><figure class="table-layout"><ol id="station-grid" class="station-grid" aria-label="Starting player order" data-aria="startingOrder"></ol><figcaption data-copy="firstPlayerCaption">Clockwise seating order controls the Action phase. A standee's position on the Circle of Spirits does not change that order.</figcaption></figure></div></article>
+<article class="setup-panel" data-setup-panel="5" hidden><div class="step-heading"><h3 data-copy="setupReady" tabindex="-1">Table is ready</h3></div><div class="ready-summary" role="status"><p data-copy="readyCounts"><strong><output data-player-count>3</output> players · <output data-tree-total>33</output> shared Protective Trees · 12 face-up Guardian Animals.</strong></p><p data-copy="readyCopy">Start with the three ways to win, then reveal some cards and learn how the elements power your actions.</p><a data-copy="learnFirst" href="#learn" class="btn btn-primary">Learn the first round</a></div></article>
+<nav class="setup-actions" aria-label="Setup step controls" data-aria="setupControls"><button type="button" id="setup-back" hidden><span class="sym" aria-hidden="true">arrow_back</span><span data-copy="back">Back</span></button><button type="button" id="setup-next" class="btn-primary"><span id="setup-next-label">Continue</span><span class="sym" aria-hidden="true">arrow_forward</span></button></nav></section>
+<section id="learn" aria-labelledby="learn-title"><h2 data-copy="learnTitle" id="learn-title">Learn a round</h2><p data-copy="learnIntro">These five lessons explain a round with three phases. Open one lesson at a time, then use the reference during play.</p>
+<ol class="round-track" aria-label="Rule lessons" data-aria="lessons">
+<li><button type="button" data-round-button="0" aria-controls="learn-goals" aria-current="step"><span data-copy="lesson1">Lesson 1</span><b data-copy="goalTab">Goals & rhythm</b></button></li>
+<li><button type="button" data-round-button="1" aria-controls="learn-draw"><span data-copy="lesson2">Lesson 2</span><b data-copy="drawTab">Draw & stop</b></button></li>
+<li><button type="button" data-round-button="2" aria-controls="learn-actions"><span data-copy="lesson3">Lesson 3</span><b data-copy="actionTab">Choose actions</b></button></li>
+<li><button type="button" data-round-button="3" aria-controls="learn-bonuses"><span data-copy="lesson4">Lesson 4</span><b data-copy="bonusTab">Trees & movement</b></button></li>
+<li><button type="button" data-round-button="4" aria-controls="learn-end"><span data-copy="lesson5">Lesson 5</span><b data-copy="endTab">End the round</b></button></li>
+</ol>
+<article id="learn-goals" class="round-panel" data-round-panel="0"><h3 data-copy="goalHeading" tabindex="-1">Reach one of three targets</h3><p data-copy="goalIntro">You are competing, not sharing a team score. At the victory check, reach <strong>at least 12 in any one category</strong>; you never need all three.</p><div class="zone-flow"><div class="zone-line"><strong data-copy="goalTrees">12 different Protective Trees</strong><span data-copy="goalTreesCopy">Count different planted tree types, including your starting Tree, plus every Tree Victory tile you currently own. Duplicate planted types count once.</span></div><div class="zone-line"><strong data-copy="goalFires">12 Fires</strong><span data-copy="goalFiresCopy">Count collected Fire tiles, not their printed values, plus every Fire Victory tile you currently own.</span></div><div class="zone-line"><strong data-copy="goalFlowers">12 Sacred Flowers</strong><span data-copy="goalFlowersCopy">Count flower elements in this round's Help Line, permanent flowers in your Forest and your Flower Victory tiles. Flowers are not saved between rounds.</span></div></div><p data-copy="goalTiming" class="note"><strong>Finish everyone's actions first.</strong> Check victory before fire attacks or discarding Help Lines. A Victory tile can change hands before the check, so reaching 12 during your own turn is not an immediate win.</p><h3 data-copy="roundRhythm">Three phases, in order</h3><div class="zone-flow"><div class="zone-line"><strong data-copy="phaseA">A · Guardian Animals</strong><span data-copy="phaseACopy">Simultaneously build your own Help Line, stopping voluntarily or at three uncancelled solitary symbols.</span></div><div class="zone-line"><strong data-copy="phaseB">B · Action</strong><span data-copy="phaseBCopy">Starting with the Sacred Tree, each player completes all their regular and bonus actions, then the next seated player acts clockwise.</span></div><div class="zone-line"><strong data-copy="phaseC">C · End of Game turn</strong><span data-copy="phaseCCopy">Check victory. If nobody qualifies, defend against Fires, add Fires, refill the reserve, discard Help Lines and pass the Sacred Tree.</span></div></div></article>
+<article id="learn-draw" class="round-panel" data-round-panel="1" hidden><h3 data-copy="drawHeading" tabindex="-1">Reveal one card, then decide</h3><p data-copy="drawIntro">Reveal the top card of your personal draw stack. Add it to your Help Line with the left-hand symbols visible. After each reveal, either continue or stop. You do not play cards from a hand.</p><ul class="component-list"><li data-copy="solitaryRule">A <strong>solitary</strong> symbol is the dark circle; a <strong>gregarious</strong> symbol is the light circle. Each gregarious symbol cancels one solitary symbol. Neutral cards have neither.</li><li data-copy="threeStop">At <strong>three uncancelled solitary symbols</strong>, stop revealing. You cannot draw another card hoping it will be gregarious. The last card stays in the Help Line and its elements still count.</li><li data-copy="actionsFromLine">Finish below three: <strong>two different regular actions</strong>. Finish at three: <strong>one regular action</strong>. Cancelling a solitary symbol never removes that animal's elements.</li><li data-copy="fragmentTiming">Immediately after revealing a card, you may return <strong>one Fragment tile</strong> to the supply to remove <em>that just-revealed card</em>. A Fire Varan returns to the supply; any other Guardian Animal goes to your discard stack. Recheck the symbols, then continue or stop.</li></ul><p data-copy="emptyDraw" class="note">Only when you need to draw from an empty personal draw stack, shuffle your personal discard to make a new draw stack. Do not shuffle the current Help Line. If both stacks are empty, there is no card left to reveal.</p><details ><summary data-copy="exerciseTitle">Try the reveal / stop decision</summary><p data-copy="exampleIntro">A <strong>scripted symbol exercise</strong>, not a real deck. You start with two Fragment tiles earned in an earlier round. In the real setup you start with none. Reveal, decide, and watch the uncancelled solitary total.</p><p id="draw-example-status" role="status" aria-live="polite" aria-atomic="true"></p><ol id="draw-example-line" class="station-grid" aria-label="Example Help Line" data-aria="exampleLine"></ol><div class="tile-pair"><button data-copy="drawNext" type="button" id="draw-next">Reveal next card</button><button data-copy="useFragment" type="button" id="use-fragment">Use 1 Fragment</button><button data-copy="stopDraw" type="button" id="stop-drawing">End my drawing phase</button><button data-copy="resetExample" type="button" id="reset-example">Reset example</button></div><p data-copy="exampleRemoval" id="draw-example-message" aria-live="polite"></p></details></article>
+<article id="learn-actions" class="round-panel" data-round-panel="2" hidden><h3 data-copy="actHeading" tabindex="-1">Turn elements into actions</h3><p data-copy="oneTwoActions" class="note"><strong>Complete your turn before the next player acts.</strong> With two regular actions, choose different types unless you own the cost-11 Protective Tree. Resolve each action and any triggered bonus actions fully.</p><p data-copy="elementTotals">For each action, total its matching elements in your Help Line and Forest, including completed-line bonuses and any printed negative values. <strong>Elements are not spent.</strong> Recalculate when a new tree or bonus changes your total.</p><details class="phase-one"><summary data-copy="actFragment">Take a Fragment tile</summary><p data-copy="actFragmentCopy">Take <strong>one</strong> available Fragment tile. No elements are required. It can help in a later Guardian Animals phase, not retroactively in the phase that just ended.</p></details><details class="phase-two"><summary data-copy="actAttract">Attract one or more Guardian Animals</summary><p data-copy="actAttractCopy">Use the <strong>sun elements</strong>. Choose one or more face-up reserve cards whose combined costs fit your total. Put them face down <strong>on top of your personal draw stack</strong>, in your chosen order. Do not refill the reserve yet.</p><p data-copy="actAttractEx">Example: with 8 suns, cards costing 3 and 5 fit together. They will be revealed before the cards that were already in your draw stack.</p></details><details class="phase-three"><summary data-copy="actExtinguish">Extinguish the Fire</summary><p data-copy="actExtinguishCopy">Use the <strong>water-drop elements</strong>. Take one or more Fire tiles from the centre whose combined values do not exceed your total. Keep them beside your Forest, value side down. Each tile counts as one Fire towards victory.</p><p data-copy="actExtinguishEx">Example: with 6 water, two value-3 Fires earn two tiles. A single value-4 Fire earns only one. You cannot take a Fire from the supply or from another player.</p></details><details class="phase-four"><summary data-copy="actMove">Move forward on the Circle of Spirits</summary><p data-copy="actMoveCopy">Use the <strong>spiral elements</strong>. Move clockwise up to that many unoccupied rocks. Jump occupied rocks without counting them; take one Victory tile per jump if available. After moving at least one rock, perform the arrival rock's bonus action.</p></details><details class="phase-five"><summary data-copy="actPlant">Plant one and only one Protective Tree</summary><p data-copy="actPlantCopy">Use the <strong>sprout elements</strong>. Take exactly one affordable Protective Tree, not several with a shared budget. Plant it on a free space of your Forest, touching an existing tree along an edge. Its effect applies immediately.</p></details><p data-copy="flowersNoAction" class="note"><strong>Sacred Flowers are not an action.</strong> They contribute to a victory condition. Your Victory tiles also contribute only to victory totals; a Tree Victory tile is not a tree space and a Flower Victory tile is not an action resource.</p></article>
+<article id="learn-bonuses" class="round-panel" data-round-panel="3" hidden><h3 data-copy="bonusHeading" tabindex="-1">Use immediate and lasting bonuses</h3><p data-copy="bonusIntro">Trees improve your future rounds. Movement and corner spaces give extra actions now. Neither kind of bonus replaces a regular action.</p><div class="step-layout"><div><h3 data-copy="forestRules">Build your Forest</h3><ul class="component-list"><li data-copy="edgeOnly">A new tree must share an edge with an existing tree. Diagonal contact alone is not enough. Never cover another tree.</li><li data-copy="immediateTree">Every planted tree's printed effect is immediately available, including for bonus actions and your second regular action. The starting Tree has no element effect.</li><li data-copy="duplicatesAllowed">Identical trees are legal and all their element effects apply, but only one tree of each type counts for the tree victory condition.</li><li data-copy="elevenTree">The <strong>cost-11 tree</strong> lets you repeat the same regular action when your Help Line allows two regular actions. It does not turn one action into two.</li></ul></div><div><h3 data-copy="circleRules">Travel around the Circle</h3><ul class="component-list"><li data-copy="moveCounting">Count only unoccupied rocks and stop on an unoccupied rock. You may move fewer steps than your spiral total. With zero or a negative total, you cannot move.</li><li data-copy="jumpVictory">For each Spirit you jump, choose one <strong>Victory tile they currently hold</strong>, even if it originally belonged to someone else. You do not take collected Fire tiles or planted trees.</li><li data-copy="jumpTwice">Jumping the same Spirit twice can take two Victory tiles. If they have none, gain nothing from that jump.</li><li data-copy="arrivalBonus">Only your arrival rock grants its bonus action. You must actually move; staying on a rock never triggers its bonus again.</li></ul></div></div><details ><summary data-copy="forestBonuses">Forest rows, columns and corners</summary><p data-copy="lineBonuses">Complete the <strong>three marked central columns</strong> for the printed permanent bonuses: 1 water, 1 sun and 1 spiral respectively. Complete the <strong>middle row</strong> for 2 permanent Sacred Flowers. Merely leaving a printed reward uncovered does not activate it.</p><p data-copy="cornerBonuses">Planting in a corner grants the indicated <strong>one-time bonus action</strong>: attract with your normal sun total <strong>+3</strong>, extinguish with your normal water total <strong>+2</strong>, or take <strong>2 Fragment tiles</strong> at either of the two other corners. The +3 and +2 apply only to that bonus action, not to later actions or fire defence.</p></details><p data-copy="bonusReuse" class="note"><strong>A bonus action may repeat a regular action.</strong> Use the full relevant element total again; nothing was spent. Example: moving can trigger extinguishing as a bonus, and extinguishing can still be your second regular action.</p></article>
+<article id="learn-end" class="round-panel" data-round-panel="4" hidden><h3 data-copy="endHeading" tabindex="-1">Victory check, then upkeep</h3><p data-copy="endBefore" class="note"><strong>First, check victory after the complete Action phase.</strong> If anyone meets a target, stop here: do not defend against Fires, add Fires, or discard Help Lines. Otherwise carry out these five steps in order.</p><ol class="steps"><li><div data-copy="endDefend"><strong>Defend against the remaining Fires.</strong> Add their values. Each player compares that sum with their own full water total. Equal or higher: no penalty. Lower: add one Fire Varan to your personal discard for <em>each remaining Fire tile</em>, not for each point of fire strength. The Fires stay in the centre.</div></li><li><div data-copy="endAdd"><strong>Add new Fires.</strong> For each Guardian Animal attracted this round by anyone, add a Fire: Level 1 → value 2, Level 2 → value 3, Level 3 → value 4. Add value-2 Fires first, then 3, then 4. Stop as soon as the centre holds seven tiles, including old Fires. If the centre is still empty after this step, add one value-2 Fire.</div></li><li><div data-copy="endRefill"><strong>Refill the Guardian Animal reserve.</strong> Replace cards taken this round from their matching level decks, where possible. Do not count an old, permanently empty reserve space as a new purchase in later rounds.</div></li><li><div data-copy="endDiscard"><strong>Discard the Help Lines.</strong> Move each player's face-up line to their personal discard stack. The unspent draw stack stays as it is, with newly attracted animals still on top.</div></li><li><div data-copy="endPass"><strong>Pass the Sacred Tree clockwise.</strong> The next seated player becomes first player. Start the next Guardian Animals phase; do not reset the standees on the Circle of Spirits.</div></li></ol><details ><summary data-copy="fireExerciseTitle">Try the fire-defence check</summary><p data-copy="fireExampleIntro">Enter Fires that remain <strong>after everyone's actions</strong> and your current water total from Help Line + Forest. This checks defence only; it never extinguishes or removes a tile.</p><form id="fire-example" autocomplete="off"><fieldset><legend data-copy="fireInputs">Example values</legend><div class="station-grid"><label for="fire-two"><span data-copy="fireTwo">Number of value-2 Fires</span><input type="number" id="fire-two" name="fire-two" value="1" min="0" max="7" step="1" required aria-describedby="fire-result"></label><label for="fire-three"><span data-copy="fireThree">Number of value-3 Fires</span><input type="number" id="fire-three" name="fire-three" value="0" min="0" max="7" step="1" required aria-describedby="fire-result"></label><label for="fire-four"><span data-copy="fireFour">Number of value-4 Fires</span><input type="number" id="fire-four" name="fire-four" value="1" min="0" max="7" step="1" required aria-describedby="fire-result"></label><label for="fire-water"><span data-copy="fireWater">Your water total</span><input type="number" id="fire-water" name="fire-water" value="5" min="-99" max="999" step="1" required aria-describedby="fire-result"></label></div></fieldset></form><p id="fire-result" role="status" aria-live="polite" aria-atomic="true"></p><p data-copy="fireScarcityNote">The displayed penalty assumes enough Fire Varans remain in the supply. With a shortage, distribute the available cards one at a time in turn order among affected players.</p></details><p data-copy="newFireTiming" class="note">Newly added Fires do <strong>not</strong> attack in the same end-of-round sequence. Players get the next Action phase to extinguish them first. Defence uses your full current water total (Help Line + Forest) even if you already extinguished Fires this round.</p></article>
+</section>
+<section id="reference" class="reference-group" aria-labelledby="reference-title"><h2 data-copy="refTitle" id="reference-title">Rules reference</h2><p data-copy="refIntro">Open the rule needed at the table. Component-specific effects can change a default; this guide does not cover expansions, promos or the separate solo variant.</p>
+<h3 data-copy="refDrawing">Drawing and action timing</h3>
+<details ><summary data-copy="refElements">Which elements count, and are they spent?</summary><p data-copy="refElementCopy">Use the visible elements of the current Help Line, all planted tree effects and earned row/column bonuses. Subtract printed negative values. You may use a Forest-only total even when no card shows that element. Elements neither run out through use nor accumulate across rounds. Repeating an action through a bonus uses the full total again.</p><p data-copy="refElementLabels">Symbol descriptions used here: <strong>sun → attract</strong>, <strong>water drop → extinguish and defend</strong>, <strong>sprout → plant</strong>, <strong>spiral → move</strong>, <strong>flower → victory</strong>. A price printed on a card or tree is not an element it supplies.</p></details>
+<details ><summary data-copy="refFragments">Fragments, Fire Varans and reshuffling</summary><p data-copy="refFragmentsCopy">A Fragment can target only the card just revealed in the Guardian Animals phase. It can remove the card that would have caused your third uncancelled solitary symbol. You cannot remove an earlier card, a card in your discard stack or a Fire Varan received as a penalty before it is later revealed. A removed ordinary animal is discarded; a removed Fire Varan goes back to the shared supply. Return the used Fragment too.</p><p data-copy="refReshuffleCopy">Reshuffle your personal discard only when you need another card and your draw stack is empty. Your current Help Line stays out. You may inspect your discard during the Guardian Animals phase. If precise drawing order matters, use clockwise seating order from the Sacred Tree rather than simultaneous play.</p></details>
+<details ><summary data-copy="refRepeated">Regular actions versus bonus actions</summary><p data-copy="refRepeatedCopy">Below three uncancelled solitary symbols you may take two different regular actions; at three, only one. You resolve your whole turn before the next player acts. Bonus actions from arrival rocks or Forest corners are additional, immediate and may match a regular action. The cost-11 tree lifts the different-types restriction, but only when you already have two regular actions. Planting it as your first action makes its effect available immediately.</p></details>
+<h3 data-copy="refBoard">Forest and Circle of Spirits</h3>
+<details ><summary data-copy="refTreeTypes">Different trees, permanent bonuses and corners</summary><p data-copy="refTreeTypesCopy">Tree types are not identified by cost alone: costs 3, 4 and 5 each have two types. Duplicates give their effects separately but do not add more different types. The starting Tree and every Tree Victory tile each count as different from all others. Victory tiles do not fill Forest spaces. A planted tree occupies one free space with orthogonal tree adjacency.</p><p data-copy="refBonusTypesCopy">The marked central columns and middle row give permanent elements once filled. Corner bonuses trigger once when a tree is planted there. The corner's +3 suns or +2 water belong only to that immediate bonus action; they are not permanent additions. A new tree's own printed effect is permanent and already usable in its placement bonus.</p></details>
+<details ><summary data-copy="refMovement">Moving, jumping and taking Victory tiles</summary><p data-copy="refMovementCopy">Move clockwise, up to your spiral total, counting only unoccupied rocks. Passing an occupied rock takes no movement step. Each jump lets you take one currently held Victory tile from that player; jumping the same player again can take another. Stolen tiles can be stolen again. Collected Fire tiles and planted trees are never taken this way. Receive only the final rock's bonus, and only after moving at least one step.</p></details>
+<h3 data-copy="refEndings">Fire, supplies and winning</h3>
+<details ><summary data-copy="refFireCount">Fire strength is not the number of Fires</summary><p data-copy="refFireCountCopy">For extinguishing and defence, use the sum of printed Fire values. For the penalty, use the number of Fire tiles still in the centre. For victory, count Fire tiles you collected plus your Fire Victory tiles. Example: three value-2 Fires have strength 6, inflict three Fire Varans if your water is below 6, and would be worth three Fires if collected.</p><p data-copy="refFireRetention">Successful defence prevents the penalty but does not remove Fires. Old Fires remain when new Fires are added. Count actual animals taken <em>this round</em>, not all empty reserve spaces. The centre's limit is seven Fire tiles, not seven fire-strength points.</p></details>
+<details ><summary data-copy="refShortages">What happens when a supply is empty?</summary><ul class="component-list"><li data-copy="shortVarans"><strong>Fire Varans:</strong> if there are too few for all penalties, deal the available cards one at a time to affected players in clockwise turn order, starting from the Sacred Tree. Stop when the supply is empty.</li><li data-copy="shortFragments"><strong>Fragments:</strong> you cannot gain unavailable tiles. Fragments you use return to the supply.</li><li data-copy="shortAnimals"><strong>Guardian Animals:</strong> refill only as far as the matching deck allows. A purchase still causes its Fire this round; the empty space does not keep creating Fires later.</li><li data-copy="shortTwoFire"><strong>Required value-2 Fire:</strong> if the centre needs its single fallback Fire but the value-2 supply is empty, exchange a player's collected value-2 tile for an available value-3 or value-4 tile, then use the freed value-2 tile. The player's Fire count does not change.</li></ul></details>
+<details ><summary data-copy="refWinning">Winning and tied victory conditions</summary><p data-copy="winnerTiming">Make the check after every player has finished the Action phase, while all Help Lines are still present. If exactly one player has at least 12 different Trees, Fires or Sacred Flowers, that player wins. No upkeep follows.</p><p data-copy="winnerTies">If several players qualify, <strong>only those qualifying players</strong> add all three of their victory totals, without capping any at 12. The highest sum wins. A remaining tie is a shared victory. Include currently owned Victory tiles, and use Fire counts, not their printed values.</p><div class="table-container"><table><caption data-copy="tieExample">Original three-player example · totals already include Victory tiles</caption><thead><tr><th data-copy="tiePlayer" scope="col">Player</th><th data-copy="tieTrees" scope="col">Different Trees</th><th data-copy="tieFires" scope="col">Fires</th><th data-copy="tieFlowers" scope="col">Sacred Flowers</th><th data-copy="tieResult" scope="col">Result</th></tr></thead><tbody><tr><th scope="row">A</th><td>12</td><td>3</td><td>2</td><td data-copy="tieA">Qualifies · 17</td></tr><tr><th scope="row">B</th><td>5</td><td>12</td><td>4</td><td data-copy="tieB">Qualifies · 21 · wins</td></tr><tr><th scope="row">C</th><td>11</td><td>11</td><td>11</td><td data-copy="tieC">Does not qualify, despite a sum of 33</td></tr></tbody></table></div></details>
+<details ><summary data-copy="refQuick">The most useful reminders</summary><ul class="component-list"><li data-copy="quick1">Bought animals go on <strong>top of your draw stack</strong>, not into the discard. Refill the shared reserve only at round end.</li><li data-copy="quick2">The third uncancelled solitary symbol costs you an action, <strong>not the whole Help Line</strong>.</li><li data-copy="quick3">One planting action takes <strong>one tree</strong>. A bonus may give another planting action, but a large sprout total alone does not.</li><li data-copy="quick4">A bonus action may repeat a regular action. <strong>Reuse the full elements.</strong></li><li data-copy="quick5">Tree victory counts <strong>different types</strong>; Fire victory counts <strong>tiles</strong>; flower victory counts <strong>the current round</strong>.</li><li data-copy="quick6">Finish all players' actions, <strong>then check victory before upkeep</strong>.</li></ul></details>
+<details ><summary data-copy="glossaryTitle">English / German terminology</summary><div class="table-container"><table><caption data-copy="glossaryCaption">Component and rules terminology across editions</caption><thead><tr><th scope="col" lang="en">English</th><th scope="col" lang="de">Deutsch</th></tr></thead><tbody><tr><td lang="en">Spirit of Nature</td><td lang="de">Naturgeist</td></tr><tr><td lang="en">Guardian Animal</td><td lang="de">Tier</td></tr><tr><td lang="en">Help Line</td><td lang="de">Tier-Reihe</td></tr><tr><td lang="en">Forest board</td><td lang="de">Wald-Spielplan</td></tr><tr><td lang="en">Circle of Spirits</td><td lang="de">Steinkreis</td></tr><tr><td lang="en">Protective Tree</td><td lang="de">Baum</td></tr><tr><td lang="en">starting Protective Tree</td><td lang="de">Start-Baum</td></tr><tr><td lang="en">Fire tile</td><td lang="de">Flammen-Plättchen</td></tr><tr><td lang="en">Fire Varan</td><td lang="de">Feuer-Waran</td></tr><tr><td lang="en">Fragment tile</td><td lang="de">Magie-Fragment</td></tr><tr><td lang="en">Victory tile</td><td lang="de">Bonus-Plättchen</td></tr><tr><td lang="en">Sacred Tree</td><td lang="de">Geweihter Baum</td></tr><tr><td lang="en">Sacred Flower</td><td lang="de">Heilige Blume</td></tr><tr><td lang="en">solitary symbol</td><td lang="de">Einzelgänger-Symbol</td></tr><tr><td lang="en">gregarious symbol</td><td lang="de">Geselligkeitssymbol</td></tr></tbody></table></div></details>
+<details id="guide-scope"><summary data-copy="scopeTitle">Scope and editions</summary><p data-copy="scope"><strong>Scope:</strong> the standard English and German base-game editions for 2–4 players. No character catalogue, expansions, promotional cards or solo rules.</p><p data-copy="edition">The English rules do not specify an order for the simultaneous Guardian Animal phase or resolve a remaining tie. This guide uses the German edition's clockwise order from the Sacred Tree and shared victory for a final tie.</p><p data-copy="independence">Independent teaching aid, not a publisher product or an endorsed rules replacement. Explanations and teaching examples are newly written. No publisher illustrations, scans, logos or card text are reproduced. Use the physical game and its printed symbols alongside this guide. Game design: Aske Christiansen.</p></details>
+</section></main>
+<aside aria-labelledby="guide-options-title"><h2 data-copy="options" id="guide-options-title">Guide options</h2><form id="guide-options" autocomplete="off"><fieldset><legend data-copy="table">Table</legend><label for="player-count"><span data-copy="players">Players</span><select id="player-count" name="player-count">
+<option data-copy="players2" value="2">2 players</option>
+<option data-copy="players3" value="3" selected>3 players</option>
+<option data-copy="players4" value="4">4 players</option>
+</select></label><small data-copy="countHint">Changing the player count restarts setup so you can recheck the tree supply.</small></fieldset><fieldset><legend data-copy="progressLegend">Setup progress</legend><label data-copy="progressLabel" for="setup-progress">Completed steps</label><progress id="setup-progress" value="0" max="5"></progress><output id="setup-progress-text" for="setup-progress">0 of 5</output><button type="button" id="reset-guide"><span class="sym" aria-hidden="true">refresh</span><span data-copy="resetGuide">Start over</span></button></fieldset><fieldset><legend data-copy="interface">User interface</legend><label for="interface-language"><span data-copy="language">Language</span><select id="interface-language" name="interface-language"><option value="en" lang="en" selected>English</option><option value="de" lang="de">Deutsch</option></select></label></fieldset></form><p data-copy="localProgress"><small>Setup progress, selected lesson and language stay in this browser. Exercises reset when you reload.</small></p><p id="storage-message" role="status" aria-live="polite" hidden></p></aside>
+    <footer>
+        <p lang="en">This is an independent, unofficial rules guide. It is not affiliated with or endorsed by the game's publisher. All trademarks and copyrights in the original game remain the property of their respective owners.</p>
+        <p lang="de">Dies ist ein unabhängiger, inoffizieller Regelleitfaden. Er steht in keiner Verbindung zum Verlag des Spiels und wird von diesem nicht unterstützt. Alle Marken- und Urheberrechte am Originalspiel verbleiben bei ihren jeweiligen Rechteinhabern.</p>
+    </footer>
+
+<script src="../../one.js"></script>
+<script>
+"use strict";
+const COPY = {
+  "title": [
+    "Unofficial Guide - Living Forest",
+    "Unofficial Guide - Living Forest"
+  ],
+  "description": [
+    "An independent bilingual table guide to forest protection: setup, drawing cards, actions, bonuses and victory.",
+    "Ein unabhängiger zweisprachiger Tischleitfaden zum Schutz des Waldes: Aufbau, Kartenaufdecken, Aktionen, Boni und Sieg."
+  ],
+  "skip": [
+    "Skip to guide",
+    "Zum Leitfaden springen"
+  ],
+  "toggle": [
+    "Toggle guide options",
+    "Leitfadenoptionen ein- oder ausblenden"
+  ],
+  "subtitle": [
+    "Guided setup and rules, one step at a time",
+    "Geführter Aufbau und Regeln, Schritt für Schritt"
+  ],
+  "primary": [
+    "Primary",
+    "Hauptnavigation"
+  ],
+  "navSetup": [
+    "Setup",
+    "Spielvorbereitung"
+  ],
+  "navLearn": [
+    "Learn",
+    "Lernen"
+  ],
+  "navRef": [
+    "Reference",
+    "Nachschlagen"
+  ],
+  "setupTitle": [
+    "Set up the table",
+    "Spiel vorbereiten"
+  ],
+  "setupIntro": [
+    "Prepare the shared table, then each Forest. Choose 2, 3 or 4 players in Guide options to adjust the tree supply. This guide covers the base game only.",
+    "Bereitet zuerst den gemeinsamen Spielbereich und dann jeden Wald vor. Wählt unter Leitfadenoptionen 2, 3 oder 4 Spieler, um den Baum-Vorrat anzupassen. Dieser Leitfaden behandelt nur das Grundspiel."
+  ],
+  "sharedIntro": [
+    "Keep the centre and all shared supplies within everyone's reach.",
+    "Legt die Mitte und alle gemeinsamen Vorräte für alle erreichbar aus."
+  ],
+  "sharedCircle": [
+    "Place the <strong>Circle of Spirits<\/strong> in the middle. Put the <strong>Guardian Animal board<\/strong> and <strong>Fire Varan board<\/strong> beside it.",
+    "Legt den <strong>Steinkreis-Spielplan<\/strong> in die Mitte. Platziert den <strong>Tier-Spielplan<\/strong> und den <strong>Feuer-Waran-Spielplan<\/strong> daneben."
+  ],
+  "sharedFire": [
+    "Sort the Fire tiles into values 2, 3 and 4 on the Guardian Animal board. Place <strong>one value-2 Fire tile<\/strong> in the Circle of Spirits.",
+    "Sortiert die Flammen-Plättchen nach den Werten 2, 3 und 4 auf dem Tier-Spielplan. Legt <strong>ein 2er-Flammen-Plättchen<\/strong> in die Mitte des Steinkreises."
+  ],
+  "sharedOther": [
+    "Place all <strong>23 Fire Varan cards<\/strong> and <strong>20 Fragment tiles<\/strong> on their supply spaces. Nobody receives a Fragment tile at setup.",
+    "Legt alle <strong>23 Feuer-Warane<\/strong> und <strong>20 Magie-Fragmente<\/strong> auf ihre Vorratsfelder. Zu Beginn erhält niemand ein Magie-Fragment."
+  ],
+  "circleSupply": [
+    "Circle of Spirits",
+    "Steinkreis"
+  ],
+  "circleSupplyCopy": [
+    "One value-2 Fire in the centre",
+    "Eine 2er-Flamme in der Mitte"
+  ],
+  "animalsSupply": [
+    "Guardian Animal board",
+    "Tier-Spielplan"
+  ],
+  "animalsSupplyCopy": [
+    "Space for three decks and their rows",
+    "Platz für drei Stapel und ihre Reihen"
+  ],
+  "fireSupply": [
+    "Fire tiles",
+    "Flammen-Plättchen"
+  ],
+  "fireSupplyCopy": [
+    "58 in total, including the starting Fire",
+    "58 insgesamt, einschließlich der Start-Flamme"
+  ],
+  "fragmentSupply": [
+    "Fire Varan board",
+    "Feuer-Waran-Spielplan"
+  ],
+  "fragmentSupplyCopy": [
+    "23 Fire Varans · 20 Fragments",
+    "23 Feuer-Warane · 20 Magie-Fragmente"
+  ],
+  "shared": [
+    "Prepare the shared boards",
+    "Gemeinsame Spielpläne vorbereiten"
+  ],
+  "sharedCaption": [
+    "The centre's Fire is not owned by a player. Keep it separate from the supply.",
+    "Die Flamme in der Mitte gehört niemandem. Haltet sie vom Vorrat getrennt."
+  ],
+  "animalMarketIntro": [
+    "Separate the starting cards from the three shared levels before shuffling.",
+    "Trennt vor dem Mischen die Start-Tiere von den drei gemeinsamen Stufen."
+  ],
+  "animalDecks": [
+    "Make three face-down decks: <strong>23 Level 1<\/strong> cards with a white sun, <strong>16 Level 2<\/strong> with a yellow sun, and <strong>12 Level 3<\/strong> with a red sun. Shuffle each deck separately.",
+    "Bildet drei verdeckte Stapel: <strong>23 Tiere der Stufe 1<\/strong> mit weißer Sonne, <strong>16 der Stufe 2<\/strong> mit gelber Sonne und <strong>12 der Stufe 3<\/strong> mit roter Sonne. Mischt jeden Stapel getrennt."
+  ],
+  "animalRows": [
+    "Reveal <strong>four cards per level<\/strong> beside its deck: 12 face-up cards altogether, regardless of player count.",
+    "Deckt <strong>vier Tiere pro Stufe<\/strong> neben dem jeweiligen Stapel auf: insgesamt 12 offene Tiere, unabhängig von der Spielerzahl."
+  ],
+  "animalStarterSeparate": [
+    "Keep the 14-card starting sets separate for the players. Fire Varans do not enter the reserve.",
+    "Haltet die Start-Sets mit je 14 Tieren für die Spieler getrennt bereit. Feuer-Warane gehören nicht in den Tier-Vorrat."
+  ],
+  "levelOne": [
+    "Level 1 · white sun",
+    "Stufe 1 · weiße Sonne"
+  ],
+  "levelOneCopy": [
+    "23 cards → 4 face up + 19 in the deck",
+    "23 Tiere → 4 offen + 19 im Stapel"
+  ],
+  "levelTwo": [
+    "Level 2 · yellow sun",
+    "Stufe 2 · gelbe Sonne"
+  ],
+  "levelTwoCopy": [
+    "16 cards → 4 face up + 12 in the deck",
+    "16 Tiere → 4 offen + 12 im Stapel"
+  ],
+  "levelThree": [
+    "Level 3 · red sun",
+    "Stufe 3 · rote Sonne"
+  ],
+  "levelThreeCopy": [
+    "12 cards → 4 face up + 8 in the deck",
+    "12 Tiere → 4 offen + 8 im Stapel"
+  ],
+  "animalMarket": [
+    "Reveal the Guardian Animal reserve",
+    "Tier-Vorrat aufdecken"
+  ],
+  "animalMarketCaption": [
+    "Sun colour identifies the level. The printed number is that card's cost, not its level.",
+    "Die Sonnenfarbe zeigt die Stufe. Die aufgedruckte Zahl ist der Preis des Tiers, nicht seine Stufe."
+  ],
+  "treeSort": [
+    "Place the <strong>39 non-starting Protective Trees<\/strong> in the two dispensers, ordered by cost. Match both cost and effect to the dispenser slot.",
+    "Sortiert die <strong>39 Bäume des gemeinsamen Vorrats<\/strong> nach Kosten in die beiden Baum-Halter. Ordnet sie nach Kosten und Effekt dem passenden Platz zu; Start-Bäume gehören nicht hierher."
+  ],
+  "treeTypes": [
+    "Costs 3, 4 and 5 each have <strong>two different tree types<\/strong>. Apply removals to every type, not just once per price. Starting Trees are never part of these removals.",
+    "Bei den Kosten 3, 4 und 5 gibt es jeweils <strong>zwei unterschiedliche Baumarten<\/strong>. Entfernt die angegebene Zahl von jeder Art, nicht nur einmal pro Preis. Start-Bäume werden dabei nie mitgezählt."
+  ],
+  "selectedTable": [
+    "Player count",
+    "Spielerzahl"
+  ],
+  "selectedTableCopy": [
+    "<output data-player-count>3<\/output> players",
+    "<output data-player-count>3<\/output> Spieler"
+  ],
+  "sharedTrees": [
+    "Trees in the dispensers",
+    "Bäume in den Haltern"
+  ],
+  "sharedTreesCopy": [
+    "<output data-tree-total>33<\/output> shared Protective Trees",
+    "<output data-tree-total>33<\/output> Bäume im gemeinsamen Vorrat"
+  ],
+  "returnedTrees": [
+    "Return to the box",
+    "Zurück in die Schachtel"
+  ],
+  "returnedTreesCopy": [
+    "<output data-tree-removed>6<\/output> shared trees",
+    "<output data-tree-removed>6<\/output> Bäume aus dem Vorrat"
+  ],
+  "startingTrees": [
+    "Starting Trees",
+    "Start-Bäume"
+  ],
+  "startingTreesCopy": [
+    "One per player, kept separate",
+    "Einer pro Spieler, getrennt bereithalten"
+  ],
+  "treeSupply": [
+    "Adjust the Protective Tree supply",
+    "Baum-Vorrat anpassen"
+  ],
+  "treeSupplyCaption": [
+    "The player-count markings on the dispensers provide a physical cross-check.",
+    "Die Spielerzahl-Markierungen auf den Haltern dienen als Kontrolle."
+  ],
+  "playerKit": [
+    "Each player takes one matching set: a Forest board, Spirit of Nature standee, starting Protective Tree, 14 starting Guardian Animals, and three Victory tiles.",
+    "Jeder Spieler nimmt ein zusammengehöriges Set: Wald-Spielplan, Naturgeist-Figur, Start-Baum, 14 Start-Tiere und drei Bonus-Plättchen."
+  ],
+  "treeCentre": [
+    "Put the starting Protective Tree on the <strong>centre space<\/strong> of your Forest. It counts as its own tree type but supplies no elements.",
+    "Lege den Start-Baum auf das <strong>mittlere Feld<\/strong> deines Waldes. Er zählt als eigene Baumart, liefert aber keine Elemente."
+  ],
+  "victoryStarting": [
+    "Place the <strong>Fire, Protective Tree and Sacred Flower Victory tiles<\/strong> to the left of your Forest. Each adds 1 to its victory category while you own it.",
+    "Lege die <strong>Bonus-Plättchen Flamme, Baum und Heilige Blume<\/strong> links neben deinen Wald. Jedes zählt für seine Siegbedingung als 1, solange du es besitzt."
+  ],
+  "startingDeck": [
+    "Shuffle your 14 starting cards and place them face down to the right as your personal draw stack. Leave room for a personal discard stack and a face-up <strong>Help Line<\/strong>.",
+    "Mische deine 14 Start-Tiere und lege sie rechts verdeckt als persönlichen Nachziehstapel bereit. Lass Platz für einen persönlichen Ablagestapel und eine offene <strong>Tier-Reihe<\/strong>."
+  ],
+  "unusedKit": [
+    "Return unused player sets to the box. Do not deal a starting hand or reveal cards yet.",
+    "Legt ungenutzte Spieler-Sets in die Schachtel zurück. Teilt keine Starthand aus und deckt noch keine Tiere auf."
+  ],
+  "zoneDraw": [
+    "Personal draw",
+    "Nachziehstapel"
+  ],
+  "zoneDrawCopy": [
+    "14 shuffled starting cards · face down",
+    "14 gemischte Start-Tiere · verdeckt"
+  ],
+  "zoneLine": [
+    "Help Line",
+    "Tier-Reihe"
+  ],
+  "zoneLineCopy": [
+    "Empty now · reveal cards here in Phase A",
+    "Jetzt leer · hier deckst du in Phase A Tiere auf"
+  ],
+  "zoneDiscard": [
+    "Personal discard",
+    "Ablagestapel"
+  ],
+  "zoneDiscardCopy": [
+    "Empty now · kept separate from the draw stack",
+    "Jetzt leer · vom Nachziehstapel getrennt halten"
+  ],
+  "playerForest": [
+    "Prepare each Forest",
+    "Jeden Wald vorbereiten"
+  ],
+  "playerForestCaption": [
+    "Before anyone acts, your victory totals are 2 different Trees, 1 Fire and 1 Sacred Flower, including your Victory tiles.",
+    "Vor der ersten Aktion zählen deine Startausstattung und Bonus-Plättchen als 2 unterschiedliche Bäume, 1 Flamme und 1 Heilige Blume."
+  ],
+  "randomFirst": [
+    "Choose the first player at random and give them the <strong>Sacred Tree standee<\/strong>. This marks turn order; it is not another Protective Tree in their Forest.",
+    "Bestimmt den Startspieler zufällig und gebt ihm den <strong>Geweihten Baum<\/strong>. Er markiert die Zugreihenfolge und ist kein zusätzlicher Baum in dessen Wald."
+  ],
+  "circleMarkers": [
+    "On the Circle of Spirits, use the printed starting-position symbols for your player count. The first player uses the rock whose white figure is first in that group.",
+    "Verwendet auf dem Steinkreis die aufgedruckten Startpositions-Symbole für eure Spielerzahl. Der Startspieler nutzt den Stein, bei dessen Symbol die helle Figur an erster Stelle steht."
+  ],
+  "otherPlayers": [
+    "Continue in clockwise seating order: the next player uses the marking with the white figure second, then third and fourth when needed.",
+    "Geht in Sitzreihenfolge im Uhrzeigersinn weiter: Der nächste Spieler nutzt das Symbol mit der hellen Figur an zweiter Stelle, danach folgen gegebenenfalls die dritte und vierte Stelle."
+  ],
+  "phaseStart": [
+    "Begin with <strong>Phase A: Guardian Animals<\/strong>. Everyone reveals their own cards; there is no shared starting hand.",
+    "Beginnt mit <strong>Phase A: Tierphase<\/strong>. Alle decken ihre eigenen Tiere auf; es gibt keine gemeinsame Starthand."
+  ],
+  "firstPlayer": [
+    "Place the Spirits of Nature",
+    "Naturgeister platzieren"
+  ],
+  "firstPlayerCaption": [
+    "Clockwise seating order controls the Action phase. A standee's position on the Circle of Spirits does not change that order.",
+    "Die Sitzreihenfolge im Uhrzeigersinn bestimmt die Aktionsphase. Die Position einer Figur auf dem Steinkreis ändert diese Reihenfolge nicht."
+  ],
+  "startingOrder": [
+    "Starting player order",
+    "Startreihenfolge"
+  ],
+  "setupReady": [
+    "Table is ready",
+    "Das Spiel ist vorbereitet"
+  ],
+  "readyCounts": [
+    "<strong><output data-player-count>3<\/output> players · <output data-tree-total>33<\/output> shared Protective Trees · 12 face-up Guardian Animals.<\/strong>",
+    "<strong><output data-player-count>3<\/output> Spieler · <output data-tree-total>33<\/output> Bäume im Vorrat · 12 offene Tiere.<\/strong>"
+  ],
+  "readyCopy": [
+    "Start with the three ways to win, then reveal some cards and learn how the elements power your actions.",
+    "Beginnt mit den drei Siegbedingungen. Lernt dann das Aufdecken der Tiere und wie ihre Elemente eure Aktionen ermöglichen."
+  ],
+  "learnFirst": [
+    "Learn the first round",
+    "Die erste Runde kennenlernen"
+  ],
+  "setupControls": [
+    "Setup step controls",
+    "Steuerung der Aufbauschritte"
+  ],
+  "back": [
+    "Back",
+    "Zurück"
+  ],
+  "learnTitle": [
+    "Learn a round",
+    "Eine Runde kennenlernen"
+  ],
+  "learnIntro": [
+    "These five lessons explain a round with three phases. Open one lesson at a time, then use the reference during play.",
+    "Diese fünf Lektionen erklären eine Runde mit drei Phasen. Öffne eine Lektion nach der anderen und nutze während des Spiels die Regelübersicht."
+  ],
+  "lessons": [
+    "Rule lessons",
+    "Regellektionen"
+  ],
+  "lesson1": [
+    "Lesson 1",
+    "Lektion 1"
+  ],
+  "goalTab": [
+    "Goals & rhythm",
+    "Ziele & Ablauf"
+  ],
+  "lesson2": [
+    "Lesson 2",
+    "Lektion 2"
+  ],
+  "drawTab": [
+    "Draw & stop",
+    "Aufdecken & stoppen"
+  ],
+  "lesson3": [
+    "Lesson 3",
+    "Lektion 3"
+  ],
+  "actionTab": [
+    "Choose actions",
+    "Aktionen wählen"
+  ],
+  "lesson4": [
+    "Lesson 4",
+    "Lektion 4"
+  ],
+  "bonusTab": [
+    "Trees & movement",
+    "Bäume & Bewegung"
+  ],
+  "lesson5": [
+    "Lesson 5",
+    "Lektion 5"
+  ],
+  "endTab": [
+    "End the round",
+    "Rundenende"
+  ],
+  "goalIntro": [
+    "You are competing, not sharing a team score. At the victory check, reach <strong>at least 12 in any one category<\/strong>; you never need all three.",
+    "Ihr spielt gegeneinander, nicht für ein gemeinsames Ergebnis. Erreiche bei der Siegprüfung <strong>mindestens 12 in einer Kategorie<\/strong>; du brauchst niemals alle drei."
+  ],
+  "goalTrees": [
+    "12 different Protective Trees",
+    "12 unterschiedliche Bäume"
+  ],
+  "goalTreesCopy": [
+    "Count different planted tree types, including your starting Tree, plus every Tree Victory tile you currently own. Duplicate planted types count once.",
+    "Zähle unterschiedliche gepflanzte Baumarten einschließlich Start-Baum sowie jedes Baum-Bonus-Plättchen in deinem Besitz. Mehrfach gepflanzte gleiche Arten zählen nur einmal."
+  ],
+  "goalFires": [
+    "12 Fires",
+    "12 Flammen"
+  ],
+  "goalFiresCopy": [
+    "Count collected Fire tiles, not their printed values, plus every Fire Victory tile you currently own.",
+    "Zähle gesammelte Flammen-Plättchen, nicht ihre aufgedruckten Werte, sowie jedes Flammen-Bonus-Plättchen in deinem Besitz."
+  ],
+  "goalFlowers": [
+    "12 Sacred Flowers",
+    "12 Heilige Blumen"
+  ],
+  "goalFlowersCopy": [
+    "Count flower elements in this round's Help Line, permanent flowers in your Forest and your Flower Victory tiles. Flowers are not saved between rounds.",
+    "Zähle Blumenelemente deiner aktuellen Tier-Reihe, dauerhafte Blumen deines Waldes und deine Blumen-Bonus-Plättchen. Blumen werden nicht über Runden angespart."
+  ],
+  "goalTiming": [
+    "<strong>Finish everyone's actions first.<\/strong> Check victory before fire attacks or discarding Help Lines. A Victory tile can change hands before the check, so reaching 12 during your own turn is not an immediate win.",
+    "<strong>Beendet zuerst die Aktionen aller Spieler.<\/strong> Prüft den Sieg vor Flammenabwehr und dem Ablegen der Tier-Reihen. Ein Bonus-Plättchen kann bis dahin den Besitzer wechseln; 12 während deines Zugs bedeuten deshalb noch keinen sofortigen Sieg."
+  ],
+  "roundRhythm": [
+    "Three phases, in order",
+    "Drei Phasen, der Reihe nach"
+  ],
+  "phaseA": [
+    "A · Guardian Animals",
+    "A · Tierphase"
+  ],
+  "phaseACopy": [
+    "Simultaneously build your own Help Line, stopping voluntarily or at three uncancelled solitary symbols.",
+    "Gleichzeitig die eigene Tier-Reihe bilden; freiwillig oder bei drei nicht neutralisierten Einzelgängern stoppen."
+  ],
+  "phaseB": [
+    "B · Action",
+    "B · Aktionsphase"
+  ],
+  "phaseBCopy": [
+    "Starting with the Sacred Tree, each player completes all their regular and bonus actions, then the next seated player acts clockwise.",
+    "Beginnend beim Geweihten Baum führt jeder alle regulären Aktionen und Bonusaktionen aus; danach folgt der nächste Spieler im Uhrzeigersinn."
+  ],
+  "phaseC": [
+    "C · End of Game turn",
+    "C · Rundenende"
+  ],
+  "phaseCCopy": [
+    "Check victory. If nobody qualifies, defend against Fires, add Fires, refill the reserve, discard Help Lines and pass the Sacred Tree.",
+    "Sieg prüfen. Falls niemand gewinnt: Flammen abwehren, neue Flammen nachlegen, Tier-Vorrat auffüllen, Tier-Reihen ablegen und Geweihten Baum weitergeben."
+  ],
+  "goalHeading": [
+    "Reach one of three targets",
+    "Erreiche eines von drei Zielen"
+  ],
+  "exampleIntro": [
+    "A <strong>scripted symbol exercise<\/strong>, not a real deck. You start with two Fragment tiles earned in an earlier round. In the real setup you start with none. Reveal, decide, and watch the uncancelled solitary total.",
+    "Eine <strong>vorgegebene Symbolübung<\/strong>, kein echtes Kartenset. Du beginnst mit zwei Magie-Fragmenten aus einer früheren Runde. Beim echten Spielaufbau hast du keine. Decke auf, entscheide und beobachte die Zahl nicht neutralisierter Einzelgänger."
+  ],
+  "drawNext": [
+    "Reveal next card",
+    "Nächste Karte aufdecken"
+  ],
+  "useFragment": [
+    "Use 1 Fragment",
+    "1 Magie-Fragment einsetzen"
+  ],
+  "stopDraw": [
+    "End my drawing phase",
+    "Mein Aufdecken beenden"
+  ],
+  "resetExample": [
+    "Reset example",
+    "Beispiel zurücksetzen"
+  ],
+  "exampleRemoval": [
+    "",
+    ""
+  ],
+  "exampleLine": [
+    "Example Help Line",
+    "Beispiel-Tier-Reihe"
+  ],
+  "drawIntro": [
+    "Reveal the top card of your personal draw stack. Add it to your Help Line with the left-hand symbols visible. After each reveal, either continue or stop. You do not play cards from a hand.",
+    "Decke das oberste Tier deines Nachziehstapels auf. Lege es so in deine Tier-Reihe, dass die Symbole links sichtbar bleiben. Entscheide nach jedem Tier: weiter aufdecken oder stoppen. Du spielst keine Karten aus einer Hand aus."
+  ],
+  "solitaryRule": [
+    "A <strong>solitary<\/strong> symbol is the dark circle; a <strong>gregarious<\/strong> symbol is the light circle. Each gregarious symbol cancels one solitary symbol. Neutral cards have neither. Fire Varans count as solitary but provide no elements.",
+    "Ein <strong>Einzelgänger-Symbol<\/strong> ist der dunkle Kreis, ein <strong>Geselligkeitssymbol<\/strong> der helle Kreis. Jedes Geselligkeitssymbol neutralisiert einen Einzelgänger. Neutrale Tiere haben keines der beiden. Feuer-Warane zählen als Einzelgänger, bringen aber keine Elemente mit."
+  ],
+  "threeStop": [
+    "At <strong>three uncancelled solitary symbols<\/strong>, stop revealing. You cannot draw another card hoping it will be gregarious. The last card stays in the Help Line and its elements still count.",
+    "Bei <strong>drei nicht neutralisierten Einzelgängern<\/strong> musst du stoppen. Du darfst nicht auf ein rettendes geselliges Tier weiterziehen. Das zuletzt aufgedeckte Tier bleibt liegen; seine Elemente zählen weiterhin."
+  ],
+  "actionsFromLine": [
+    "If fewer than three solitary symbols remain after cancellation: <strong>two different regular actions<\/strong>. At exactly three: <strong>one regular action<\/strong>. Cancelling a solitary symbol never removes that animal's elements.",
+    "Bleiben weniger als drei Einzelgänger-Symbole unneutralisiert, darfst du <strong>zwei unterschiedliche reguläre Aktionen<\/strong> ausführen. Bei genau drei darfst du nur <strong>eine reguläre Aktion<\/strong> ausführen. Das Neutralisieren eines Einzelgängers entfernt keine Elemente des Tiers."
+  ],
+  "fragmentTiming": [
+    "Immediately after revealing a card, you may return <strong>one Fragment tile<\/strong> to the supply to remove <em>that just-revealed card<\/em>. A Fire Varan returns to the supply; any other Guardian Animal goes to your discard stack. Recheck the symbols, then continue or stop.",
+    "Direkt nach dem Aufdecken darfst du <strong>ein Magie-Fragment<\/strong> abgeben und damit <em>genau das soeben aufgedeckte Tier<\/em> entfernen. Ein Feuer-Waran kommt in den Vorrat, jedes andere Tier auf deinen Ablagestapel. Prüfe danach die Symbole neu und entscheide, ob du weiter aufdeckst oder stoppst."
+  ],
+  "emptyDraw": [
+    "Only when you need to draw from an empty personal draw stack, shuffle your personal discard to make a new draw stack. Do not shuffle the current Help Line. If both stacks are empty, there is no card left to reveal.",
+    "Erst wenn du von einem leeren Nachziehstapel ziehen möchtest, mischst du deinen Ablagestapel zum neuen Nachziehstapel. Mische die aktuelle Tier-Reihe nicht mit. Sind beide Stapel leer, kannst du kein weiteres Tier aufdecken."
+  ],
+  "exerciseTitle": [
+    "Try the reveal / stop decision",
+    "Aufdecken und Stoppen ausprobieren"
+  ],
+  "drawHeading": [
+    "Reveal one card, then decide",
+    "Ein Tier aufdecken, dann entscheiden"
+  ],
+  "oneTwoActions": [
+    "<strong>Complete your turn before the next player acts.<\/strong> With two regular actions, choose different types unless you own the cost-11 Protective Tree. Resolve each action and any triggered bonus actions fully.",
+    "<strong>Führe deine regulären Aktionen vor dem nächsten Spieler aus.<\/strong> Zwei reguläre Aktionen müssen unterschiedlich sein, sofern du nicht den Baum mit Kosten 11 besitzt. Führe jede Aktion und ausgelöste Bonusaktionen vollständig aus."
+  ],
+  "elementTotals": [
+    "For each action, total its matching elements in your Help Line and Forest, including completed-line bonuses and any printed negative values. <strong>Elements are not spent.<\/strong> Recalculate when a new tree or bonus changes your total.",
+    "Zähle für jede Aktion die passenden Elemente in Tier-Reihe und Wald zusammen, einschließlich Boni vollständiger Reihen oder Spalten und aufgedruckter Minuswerte. <strong>Elemente werden nicht verbraucht.<\/strong> Berechne neu, wenn ein Baum oder Bonus deinen Gesamtwert verändert."
+  ],
+  "actFragmentCopy": [
+    "Take <strong>one<\/strong> available Fragment tile. No elements are required. It can help in a later Guardian Animals phase, not retroactively in the phase that just ended.",
+    "Nimm <strong>ein<\/strong> verfügbares Magie-Fragment. Du brauchst dafür keine Elemente. Es hilft dir in einer späteren Tierphase, nicht rückwirkend in der gerade beendeten."
+  ],
+  "actFragment": [
+    "Take a Fragment tile",
+    "Magie-Fragment nehmen"
+  ],
+  "actAttractCopy": [
+    "Use the <strong>sun elements<\/strong>. Choose one or more face-up reserve cards whose combined costs fit your total. Put them face down <strong>on top of your personal draw stack<\/strong>, in your chosen order. Do not refill the reserve yet.",
+    "Nutze die <strong>Sonnenelemente<\/strong>. Wähle ein oder mehrere offene Tiere aus dem Tier-Vorrat, deren Gesamtkosten deinen Wert nicht überschreiten. Lege sie verdeckt <strong>oben auf deinen Nachziehstapel<\/strong>, in einer Reihenfolge deiner Wahl. Fülle den Vorrat noch nicht auf."
+  ],
+  "actAttractEx": [
+    "Example: with 8 suns, cards costing 3 and 5 fit together. They will be revealed before the cards that were already in your draw stack.",
+    "Beispiel: Mit 8 Sonnen kannst du Tiere mit Kosten 3 und 5 zusammen nehmen. Du deckst sie vor den bisherigen Tieren deines Nachziehstapels auf."
+  ],
+  "actAttract": [
+    "Attract one or more Guardian Animals",
+    "Neue Tiere anlocken"
+  ],
+  "actExtinguishCopy": [
+    "Use the <strong>water-drop elements<\/strong>. Take one or more Fire tiles from the centre whose combined values do not exceed your total. Keep them beside your Forest, value side down. Each tile counts as one Fire towards victory.",
+    "Nutze die <strong>Wasserelemente<\/strong>. Nimm ein oder mehrere Flammen-Plättchen aus der Mitte, deren Gesamtwert deinen Wert nicht überschreitet. Lege sie mit der Wertseite nach unten neben deinen Wald. Jedes Plättchen zählt als eine Flamme für den Sieg."
+  ],
+  "actExtinguishEx": [
+    "Example: with 6 water, two value-3 Fires earn two tiles. A single value-4 Fire earns only one. You cannot take a Fire from the supply or from another player.",
+    "Beispiel: Mit 6 Wasser bringen dir zwei 3er-Flammen zwei Plättchen. Eine einzelne 4er-Flamme bringt nur eines. Du darfst keine Flamme aus dem Vorrat oder von einem anderen Spieler nehmen."
+  ],
+  "actExtinguish": [
+    "Extinguish the Fire",
+    "Brände löschen"
+  ],
+  "actMoveCopy": [
+    "Use the <strong>spiral elements<\/strong>. Move clockwise up to that many unoccupied rocks. Jump occupied rocks without counting them; take one Victory tile per jump if available. After moving at least one rock, perform the arrival rock's bonus action.",
+    "Nutze die <strong>Spiralelemente<\/strong>. Ziehe im Uhrzeigersinn um bis zu so viele unbesetzte Steine. Überspringe besetzte Steine, ohne sie mitzuzählen, und nimm pro übersprungener Figur ein verfügbares Bonus-Plättchen. Nach mindestens einem Bewegungsschritt führst du die Bonusaktion des Zielsteins aus."
+  ],
+  "actMove": [
+    "Move forward on the Circle of Spirits",
+    "Auf dem Steinkreis bewegen"
+  ],
+  "actPlantCopy": [
+    "Use the <strong>sprout elements<\/strong>. Take exactly one affordable Protective Tree, not several with a shared budget. Plant it on a free space of your Forest, touching an existing tree along an edge. Its effect applies immediately.",
+    "Nutze die <strong>Pflanzenelemente<\/strong>. Nimm genau einen bezahlbaren Baum, nicht mehrere für denselben Gesamtwert. Pflanze ihn auf einem freien Feld deines Waldes, mit einer gemeinsamen Kante zu einem vorhandenen Baum. Sein Effekt gilt sofort."
+  ],
+  "actPlant": [
+    "Plant one and only one Protective Tree",
+    "Einen Baum pflanzen"
+  ],
+  "flowersNoAction": [
+    "<strong>Sacred Flowers are not an action.<\/strong> They contribute to a victory condition. Your Victory tiles also contribute only to victory totals; a Tree Victory tile is not a tree space and a Flower Victory tile is not an action resource.",
+    "<strong>Heilige Blumen sind keine Aktion.<\/strong> Sie zählen für eine Siegbedingung. Auch Bonus-Plättchen zählen nur zu den Siegwerten: Ein Baum-Bonus-Plättchen belegt kein Waldfeld, eine Blume darauf ist keine Aktionsressource."
+  ],
+  "actHeading": [
+    "Turn elements into actions",
+    "Mit Elementen Aktionen ausführen"
+  ],
+  "bonusIntro": [
+    "Trees improve your future rounds. Movement and corner spaces give extra actions now. Neither kind of bonus replaces a regular action.",
+    "Bäume verbessern auch spätere Runden. Bewegung und Eckfelder geben dir jetzt zusätzliche Aktionen. Diese Boni ersetzen keine reguläre Aktion."
+  ],
+  "forestRules": [
+    "Build your Forest",
+    "Deinen Wald ausbauen"
+  ],
+  "edgeOnly": [
+    "A new tree must share an edge with an existing tree. Diagonal contact alone is not enough. Never cover another tree.",
+    "Ein neuer Baum muss eine Kante mit einem vorhandenen Baum teilen. Nur diagonaler Kontakt reicht nicht. Überdecke keinen anderen Baum."
+  ],
+  "immediateTree": [
+    "Every planted tree's printed effect is immediately available, including for bonus actions and your second regular action. The starting Tree has no element effect.",
+    "Der aufgedruckte Effekt jedes gepflanzten Baums gilt sofort, auch für Bonusaktionen und deine zweite reguläre Aktion. Der Start-Baum hat keinen Elementeffekt."
+  ],
+  "duplicatesAllowed": [
+    "Identical trees are legal and all their element effects apply, but only one tree of each type counts for the tree victory condition.",
+    "Gleiche Bäume sind erlaubt; alle ihre Elementeffekte gelten. Für die Baum-Siegbedingung zählt aber jede Art nur einmal."
+  ],
+  "elevenTree": [
+    "The <strong>cost-11 tree<\/strong> lets you repeat the same regular action when your Help Line allows two regular actions. It does not turn one action into two.",
+    "Der <strong>Baum mit Kosten 11<\/strong> erlaubt zweimal dieselbe reguläre Aktion, wenn deine Tier-Reihe zwei reguläre Aktionen zulässt. Er macht aus einer Aktion nicht zwei."
+  ],
+  "circleRules": [
+    "Travel around the Circle",
+    "Auf dem Steinkreis ziehen"
+  ],
+  "moveCounting": [
+    "Count only unoccupied rocks and stop on an unoccupied rock. You may move fewer steps than your spiral total. With zero or a negative total, you cannot move.",
+    "Zähle nur unbesetzte Steine und ende auf einem unbesetzten Stein. Du darfst weniger Schritte als deine Spiralensumme ziehen. Mit null oder einem negativen Wert kannst du nicht ziehen."
+  ],
+  "jumpVictory": [
+    "For each Spirit you jump, choose one <strong>Victory tile they currently hold<\/strong>, even if it originally belonged to someone else. You do not take collected Fire tiles or planted trees.",
+    "Wähle pro übersprungenem Naturgeist ein <strong>Bonus-Plättchen aus dessen aktuellem Besitz<\/strong>, auch wenn es ursprünglich jemand anderem gehörte. Du nimmst keine gesammelten Flammen-Plättchen und keine gepflanzten Bäume."
+  ],
+  "jumpTwice": [
+    "Jumping the same Spirit twice can take two Victory tiles. If they have none, gain nothing from that jump.",
+    "Überspringst du denselben Naturgeist zweimal, kannst du zwei Bonus-Plättchen nehmen. Hat er keine mehr, erhältst du für diesen Sprung nichts."
+  ],
+  "arrivalBonus": [
+    "Only your arrival rock grants its bonus action. You must actually move; staying on a rock never triggers its bonus again.",
+    "Nur der Zielstein gewährt seine Bonusaktion. Du musst dich wirklich bewegen; Stehenbleiben löst den Bonus nicht erneut aus."
+  ],
+  "lineBonuses": [
+    "Complete the <strong>three marked central columns<\/strong> for the printed permanent bonuses: 1 water, 1 sun and 1 spiral respectively. Complete the <strong>middle row<\/strong> for 2 permanent Sacred Flowers. Merely leaving a printed reward uncovered does not activate it.",
+    "Vervollständige die <strong>drei markierten mittleren Spalten<\/strong> für die aufgedruckten dauerhaften Boni: 1 Wasser, 1 Sonne beziehungsweise 1 Spirale. Die <strong>mittlere Reihe<\/strong> gibt 2 dauerhafte Heilige Blumen. Ein noch sichtbarer, nicht erfüllter Belohnungsaufdruck ist nicht automatisch aktiv."
+  ],
+  "cornerBonuses": [
+    "Planting in a corner grants the indicated <strong>one-time bonus action<\/strong>: attract with your normal sun total <strong>+3<\/strong>, extinguish with your normal water total <strong>+2<\/strong>, or take <strong>2 Fragment tiles<\/strong> at either of the two other corners. The +3 and +2 apply only to that bonus action, not to later actions or fire defence.",
+    "Ein Baum in einer Ecke löst die angezeigte <strong>einmalige Bonusaktion<\/strong> aus: Tiere anlocken mit deiner normalen Sonnensumme <strong>+3<\/strong>, Brände löschen mit deiner normalen Wassersumme <strong>+2<\/strong> oder <strong>2 Magie-Fragmente<\/strong> an jeder der beiden anderen Ecken. Die +3 und +2 gelten nur für diese Bonusaktion, nicht für spätere Aktionen oder die Flammenabwehr."
+  ],
+  "forestBonuses": [
+    "Forest rows, columns and corners",
+    "Reihen, Spalten und Ecken im Wald"
+  ],
+  "bonusReuse": [
+    "<strong>A bonus action may repeat a regular action.<\/strong> Use the full relevant element total again; nothing was spent. Example: moving can trigger extinguishing as a bonus, and extinguishing can still be your second regular action.",
+    "<strong>Eine Bonusaktion darf einer regulären Aktion gleichen.<\/strong> Verwende erneut die volle passende Elementzahl; nichts wurde verbraucht. Beispiel: Bewegung kann Brände löschen als Bonus auslösen, und Brände löschen darf trotzdem deine zweite reguläre Aktion sein."
+  ],
+  "bonusHeading": [
+    "Use immediate and lasting bonuses",
+    "Sofortige und dauerhafte Boni nutzen"
+  ],
+  "fireExampleIntro": [
+    "Enter Fires that remain <strong>after everyone's actions<\/strong> and your current water total from Help Line + Forest. This checks defence only; it never extinguishes or removes a tile.",
+    "Trage die <strong>nach allen Aktionen<\/strong> verbliebenen Flammen und deine aktuelle Wassersumme aus Tier-Reihe und Wald ein. Die Übung prüft nur die Abwehr; sie löscht oder entfernt kein Plättchen."
+  ],
+  "fireInputs": [
+    "Example values",
+    "Beispielwerte"
+  ],
+  "fireTwo": [
+    "Number of value-2 Fires",
+    "Anzahl der 2er-Flammen"
+  ],
+  "fireThree": [
+    "Number of value-3 Fires",
+    "Anzahl der 3er-Flammen"
+  ],
+  "fireFour": [
+    "Number of value-4 Fires",
+    "Anzahl der 4er-Flammen"
+  ],
+  "fireWater": [
+    "Your water total",
+    "Deine Wassersumme"
+  ],
+  "fireScarcityNote": [
+    "The displayed penalty assumes enough Fire Varans remain in the supply. With a shortage, distribute the available cards one at a time in turn order among affected players.",
+    "Die angezeigte Strafe setzt genügend Feuer-Warane im Vorrat voraus. Bei einem Mangel verteilt ihr die vorhandenen Karten einzeln in Zugreihenfolge unter den betroffenen Spielern."
+  ],
+  "endBefore": [
+    "<strong>First, check victory after the complete Action phase.<\/strong> If anyone meets a target, stop here: do not defend against Fires, add Fires, or discard Help Lines. Otherwise carry out these five steps in order.",
+    "<strong>Prüft zuerst nach der vollständigen Aktionsphase den Sieg.<\/strong> Erfüllt jemand ein Ziel, endet das Spiel jetzt: keine Flammenabwehr, keine neuen Flammen und keine Tier-Reihen ablegen. Andernfalls folgen diese fünf Schritte in dieser Reihenfolge."
+  ],
+  "endDefend": [
+    "<strong>Defend against the remaining Fires.<\/strong> Add their values. Each player compares that sum with their own full water total. Equal or higher: no penalty. Lower: add one Fire Varan to your personal discard for <em>each remaining Fire tile<\/em>, not for each point of fire strength. The Fires stay in the centre.",
+    "<strong>Verbliebene Flammen abwehren.<\/strong> Addiert ihre Werte. Jeder vergleicht diese Summe mit seiner eigenen vollen Wassersumme. Gleich hoch oder höher: keine Strafe. Niedriger: Nimm pro <em>verbliebenem Flammen-Plättchen<\/em> einen Feuer-Waran auf deinen Ablagestapel, nicht pro Punkt Flammenwert. Die Flammen bleiben in der Mitte."
+  ],
+  "endAdd": [
+    "<strong>Add new Fires.<\/strong> For each Guardian Animal attracted this round by anyone, add a Fire: Level 1 → value 2, Level 2 → value 3, Level 3 → value 4. Add value-2 Fires first, then 3, then 4. Stop as soon as the centre holds seven tiles, including old Fires. If the centre is still empty after this step, add one value-2 Fire.",
+    "<strong>Neue Flammen nachlegen.<\/strong> Für jedes in dieser Runde von irgendjemandem angelockte Tier kommt eine Flamme hinzu: Stufe 1 → Wert 2, Stufe 2 → Wert 3, Stufe 3 → Wert 4. Legt zuerst 2er-, dann 3er- und dann 4er-Flammen nach. Stoppt bei sieben Plättchen in der Mitte, einschließlich alter Flammen. Ist die Mitte am Ende dieses Schritts noch leer, legt eine 2er-Flamme hinein."
+  ],
+  "endRefill": [
+    "<strong>Refill the Guardian Animal reserve.<\/strong> Replace cards taken this round from their matching level decks, where possible. Do not count an old, permanently empty reserve space as a new purchase in later rounds.",
+    "<strong>Tier-Vorrat auffüllen.<\/strong> Ersetzt die in dieser Runde genommenen Tiere aus den Stapeln der jeweiligen Stufe, soweit möglich. Ein schon länger dauerhaft leerer Platz zählt in späteren Runden nicht als neu angelocktes Tier."
+  ],
+  "endDiscard": [
+    "<strong>Discard the Help Lines.<\/strong> Move each player's face-up line to their personal discard stack. The unspent draw stack stays as it is, with newly attracted animals still on top.",
+    "<strong>Tier-Reihen ablegen.<\/strong> Legt jede offene Tier-Reihe auf den jeweiligen persönlichen Ablagestapel. Der übrige Nachziehstapel bleibt unverändert, mit neu angelockten Tieren weiterhin oben."
+  ],
+  "endPass": [
+    "<strong>Pass the Sacred Tree clockwise.<\/strong> The next seated player becomes first player. Start the next Guardian Animals phase; do not reset the standees on the Circle of Spirits.",
+    "<strong>Geweihten Baum im Uhrzeigersinn weitergeben.<\/strong> Der nächste Spieler wird Startspieler. Beginnt die nächste Tierphase; setzt die Figuren auf dem Steinkreis nicht zurück."
+  ],
+  "fireExerciseTitle": [
+    "Try the fire-defence check",
+    "Flammenabwehr ausprobieren"
+  ],
+  "newFireTiming": [
+    "Newly added Fires do <strong>not<\/strong> attack in the same end-of-round sequence. Players get the next Action phase to extinguish them first. Defence uses your full current water total (Help Line + Forest) even if you already extinguished Fires this round.",
+    "Neu nachgelegte Flammen greifen <strong>nicht<\/strong> noch in derselben Rundenende-Phase an. Ihr habt zuerst die nächste Aktionsphase, um sie zu löschen. Die Abwehr nutzt deine volle aktuelle Wassersumme aus Tier-Reihe und Wald auch dann, wenn du in dieser Runde schon Brände gelöscht hast."
+  ],
+  "endHeading": [
+    "Victory check, then upkeep",
+    "Siegprüfung, dann Rundenende"
+  ],
+  "refTitle": [
+    "Rules reference",
+    "Regeln zum Nachschlagen"
+  ],
+  "refIntro": [
+    "Open the rule needed at the table. Component-specific effects can change a default; this guide does not cover expansions, promos or the separate solo variant.",
+    "Öffne die Regel, die du am Tisch brauchst. Effekte auf Spielmaterial können Grundregeln verändern; Erweiterungen, Promos und die separate Solovariante werden hier nicht behandelt."
+  ],
+  "refDrawing": [
+    "Drawing and action timing",
+    "Aufdecken und Aktionszeitpunkte"
+  ],
+  "refElementCopy": [
+    "Use the visible elements of the current Help Line, all planted tree effects and earned row/column bonuses. Subtract printed negative values. You may use a Forest-only total even when no card shows that element. Elements neither run out through use nor accumulate across rounds. Repeating an action through a bonus uses the full total again.",
+    "Es zählen sichtbare Elemente der aktuellen Tier-Reihe, alle Effekte gepflanzter Bäume und freigeschaltete Reihen-/Spaltenboni. Ziehe aufgedruckte Minuswerte ab. Auch ein reiner Waldwert ist nutzbar, wenn kein Tier das Element zeigt. Elemente werden nicht verbraucht und nicht über Runden angespart. Bei einer durch Bonus erlaubten Wiederholung steht erneut der volle Wert bereit."
+  ],
+  "refElementLabels": [
+    "Symbol descriptions used here: <strong>sun → attract<\/strong>, <strong>water drop → extinguish and defend<\/strong>, <strong>sprout → plant<\/strong>, <strong>spiral → move<\/strong>, <strong>flower → victory<\/strong>. A price printed on a card or tree is not an element it supplies.",
+    "Die Symbolbeschreibungen hier bedeuten: <strong>Sonne → anlocken<\/strong>, <strong>Wassertropfen → löschen und abwehren<\/strong>, <strong>Pflanze → pflanzen<\/strong>, <strong>Spirale → bewegen<\/strong>, <strong>Blume → Sieg<\/strong>. Ein aufgedruckter Preis auf Tier oder Baum ist kein bereitgestelltes Element."
+  ],
+  "refElements": [
+    "Which elements count, and are they spent?",
+    "Welche Elemente zählen, und werden sie verbraucht?"
+  ],
+  "refFragmentsCopy": [
+    "A Fragment can target only the card just revealed in the Guardian Animals phase. It can remove the card that would have caused your third uncancelled solitary symbol. You cannot remove an earlier card, a card in your discard stack or a Fire Varan received as a penalty before it is later revealed. A removed ordinary animal is discarded; a removed Fire Varan goes back to the shared supply. Return the used Fragment too.",
+    "Ein Magie-Fragment betrifft nur das soeben in der Tierphase aufgedeckte Tier. Es kann auch das Tier entfernen, das deinen dritten nicht neutralisierten Einzelgänger auslösen würde. Frühere Tiere, Karten im Ablagestapel oder gerade als Strafe erhaltene Feuer-Warane sind keine Ziele, solange sie nicht später aufgedeckt werden. Ein entferntes normales Tier wird abgelegt; ein entfernter Feuer-Waran kommt in den Vorrat. Gib auch das Fragment zurück."
+  ],
+  "refReshuffleCopy": [
+    "Reshuffle your personal discard only when you need another card and your draw stack is empty. Your current Help Line stays out. You may inspect your discard during the Guardian Animals phase. Both rulebooks say this phase is simultaneous; the German edition adds clockwise order from the Sacred Tree holder if a sequence is needed.",
+    "Mische deinen Ablagestapel nur, wenn du ein weiteres Tier aufdecken möchtest und der Nachziehstapel leer ist. Deine aktuelle Tier-Reihe bleibt draußen. In der Tierphase darfst du deinen Ablagestapel ansehen. Grundsätzlich spielt ihr gleichzeitig. Nur wenn ihr eine Reihenfolge braucht, deckt ihr nacheinander im Uhrzeigersinn auf, beginnend beim Naturgeist mit dem Geweihten Baum."
+  ],
+  "refFragments": [
+    "Fragments, Fire Varans and reshuffling",
+    "Magie-Fragmente, Feuer-Warane und Mischen"
+  ],
+  "refRepeatedCopy": [
+    "Below three uncancelled solitary symbols you may take two different regular actions; at three, only one. You resolve your whole turn before the next player acts. Bonus actions from arrival rocks or Forest corners are additional, immediate and may match a regular action. The cost-11 tree lifts the different-types restriction, but only when you already have two regular actions. Planting it as your first action makes its effect available immediately.",
+    "Unter drei nicht neutralisierten Einzelgängern darfst du zwei unterschiedliche reguläre Aktionen ausführen, bei drei nur eine. Beende deinen ganzen Zug, bevor der nächste Spieler handelt. Bonusaktionen von Zielsteinen oder Waldecken kommen sofort zusätzlich hinzu und dürfen einer regulären Aktion gleichen. Der Baum mit Kosten 11 hebt die Pflicht zu unterschiedlichen Aktionen auf, aber nur, wenn du ohnehin zwei reguläre Aktionen hast. Pflanzt du ihn als erste Aktion, gilt sein Effekt sofort."
+  ],
+  "refRepeated": [
+    "Regular actions versus bonus actions",
+    "Reguläre Aktionen und Bonusaktionen"
+  ],
+  "refBoard": [
+    "Forest and Circle of Spirits",
+    "Wald und Steinkreis"
+  ],
+  "refTreeTypesCopy": [
+    "Tree types are not identified by cost alone: costs 3, 4 and 5 each have two types. Duplicates give their effects separately but do not add more different types. The starting Tree and every Tree Victory tile each count as different from all others. Victory tiles do not fill Forest spaces. A planted tree occupies one free space with orthogonal tree adjacency.",
+    "Baumarten erkennt man nicht nur am Preis: Bei Kosten 3, 4 und 5 gibt es jeweils zwei Arten. Gleiche Bäume liefern ihre Effekte einzeln, erhöhen aber nicht die Anzahl unterschiedlicher Arten. Der Start-Baum und jedes Baum-Bonus-Plättchen gelten jeweils als unterschiedlich zu allen anderen. Bonus-Plättchen belegen keine Waldfelder. Ein gepflanzter Baum belegt ein freies Feld mit waagerechtem oder senkrechtem Baum-Nachbarn."
+  ],
+  "refBonusTypesCopy": [
+    "The marked central columns and middle row give permanent elements once filled. Corner bonuses trigger once when a tree is planted there. The corner's +3 suns or +2 water belong only to that immediate bonus action; they are not permanent additions. A new tree's own printed effect is permanent and already usable in its placement bonus.",
+    "Markierte mittlere Spalten und die mittlere Reihe liefern nach dem Füllen dauerhafte Elemente. Eckboni lösen einmalig beim Pflanzen dort aus. Die +3 Sonnen beziehungsweise +2 Wasser einer Ecke gelten nur für deren sofortige Bonusaktion und sind nicht dauerhaft. Der aufgedruckte Effekt des neuen Baums ist dauerhaft und schon bei seinem Platzierungsbonus nutzbar."
+  ],
+  "refTreeTypes": [
+    "Different trees, permanent bonuses and corners",
+    "Unterschiedliche Bäume, Dauerboni und Ecken"
+  ],
+  "refMovementCopy": [
+    "Move clockwise, up to your spiral total, counting only unoccupied rocks. Passing an occupied rock takes no movement step. Each jump lets you take one currently held Victory tile from that player; jumping the same player again can take another. Stolen tiles can be stolen again. Collected Fire tiles and planted trees are never taken this way. Receive only the final rock's bonus, and only after moving at least one step.",
+    "Ziehe im Uhrzeigersinn bis zu deiner Spiralensumme und zähle nur unbesetzte Steine. Das Überspringen eines besetzten Steins kostet keinen Schritt. Pro Sprung darfst du ein aktuell dort besessenes Bonus-Plättchen nehmen; ein weiterer Sprung über dieselbe Person erlaubt ein weiteres. Gestohlene Plättchen können erneut gestohlen werden. Gesammelte Flammen-Plättchen und gepflanzte Bäume werden so nie genommen. Nur der Zielstein gibt seinen Bonus, und nur nach mindestens einem Schritt."
+  ],
+  "refMovement": [
+    "Moving, jumping and taking Victory tiles",
+    "Bewegen, Überspringen und Bonus-Plättchen nehmen"
+  ],
+  "refEndings": [
+    "Fire, supplies and winning",
+    "Flammen, Vorräte und Sieg"
+  ],
+  "refFireCountCopy": [
+    "For extinguishing and defence, use the sum of printed Fire values. For the penalty, use the number of Fire tiles still in the centre. For victory, count Fire tiles you collected plus your Fire Victory tiles. Example: three value-2 Fires have strength 6, inflict three Fire Varans if your water is below 6, and would be worth three Fires if collected.",
+    "Zum Löschen und Abwehren zählt die Summe aufgedruckter Flammenwerte. Für die Strafe zählt die Anzahl der Plättchen in der Mitte. Für den Sieg zählen deine gesammelten Flammen-Plättchen und deine Flammen-Bonus-Plättchen. Beispiel: Drei 2er-Flammen haben den Flammenwert 6, verursachen bei weniger als 6 Wasser drei Feuer-Warane und zählen gesammelt als drei Flammen."
+  ],
+  "refFireRetention": [
+    "Successful defence prevents the penalty but does not remove Fires. Old Fires remain when new Fires are added. Count actual animals taken <em>this round<\/em>, not all empty reserve spaces. The centre's limit is seven Fire tiles, not seven fire-strength points.",
+    "Erfolgreiche Abwehr verhindert die Strafe, entfernt aber keine Flammen. Alte Flammen bleiben beim Nachlegen liegen. Zählt wirklich <em>in dieser Runde<\/em> angelockte Tiere, nicht alle leeren Vorratsplätze. Die Mitte ist auf sieben Flammen-Plättchen begrenzt, nicht auf sieben Punkte Flammenwert."
+  ],
+  "refFireCount": [
+    "Fire strength is not the number of Fires",
+    "Flammenwert ist nicht Flammenanzahl"
+  ],
+  "shortVarans": [
+    "<strong>Fire Varans:<\/strong> if there are too few for all penalties, deal the available cards one at a time to affected players in clockwise turn order, starting from the Sacred Tree. Stop when the supply is empty.",
+    "<strong>Feuer-Warane:<\/strong> Reichen sie nicht für alle Strafen, verteilt die verfügbaren Karten einzeln an betroffene Spieler in Zugreihenfolge, beginnend beim Geweihten Baum. Stoppt, wenn der Vorrat leer ist."
+  ],
+  "shortFragments": [
+    "<strong>Fragments:<\/strong> you cannot gain unavailable tiles. Fragments you use return to the supply.",
+    "<strong>Magie-Fragmente:<\/strong> Nicht verfügbare Plättchen erhältst du nicht. Eingesetzte Fragmente kommen zurück in den Vorrat."
+  ],
+  "shortAnimals": [
+    "<strong>Guardian Animals:<\/strong> refill only as far as the matching deck allows. A purchase still causes its Fire this round; the empty space does not keep creating Fires later.",
+    "<strong>Tiere:<\/strong> Füllt nur so weit auf, wie der passende Stapel reicht. Ein angelocktes Tier verursacht diese Runde trotzdem seine Flamme; der leere Platz erzeugt später nicht weiterhin Flammen."
+  ],
+  "shortTwoFire": ["<strong>Required value-2 Fire:</strong> if the centre needs its single fallback Fire but the value-2 supply is empty, exchange a player's collected value-2 tile for an available value-3 or value-4 tile, then use the freed value-2 tile. The player's Fire count does not change.","<strong>Erforderliche 2er-Flamme:</strong> Benötigt die leere Mitte ihre einzelne Ersatz-Flamme, aber der 2er-Vorrat ist leer, tauscht ein Spieler ein gesammeltes 2er-Plättchen gegen ein verfügbares 3er- oder 4er-Plättchen und verwendet das frei gewordene 2er-Plättchen. Die Flammenanzahl des Spielers bleibt gleich."],
+  "refShortages": [
+    "What happens when a supply is empty?",
+    "Was gilt bei einem leeren Vorrat?"
+  ],
+  "winnerTiming": [
+    "Make the check after every player has finished the Action phase, while all Help Lines are still present. If exactly one player has at least 12 different Trees, Fires or Sacred Flowers, that player wins. No upkeep follows.",
+    "Prüft nach der Aktionsphase aller Spieler, solange alle Tier-Reihen noch ausliegen. Hat genau ein Spieler mindestens 12 unterschiedliche Bäume, Flammen oder Heilige Blumen, gewinnt er. Danach findet kein Rundenende mehr statt."
+  ],
+  "winnerTies": [
+    "If several players qualify, <strong>only those qualifying players<\/strong> add all three of their victory totals, without capping any at 12. The highest sum wins. The English rulebook does not settle a tie; the German edition says tied players share the victory. Include currently owned Victory tiles, and use Fire counts, not their printed values.",
+    "Erfüllen mehrere Spieler ein Ziel, addieren <strong>nur diese Spieler<\/strong> ihre drei Siegwerte, ohne Werte auf 12 zu begrenzen. Die höchste Summe gewinnt; bei weiterem Gleichstand wird der Sieg geteilt. Zählt aktuell besessene Bonus-Plättchen mit und verwendet die Flammenanzahl, nicht die aufgedruckten Werte."
+  ],
+  "tieExample": [
+    "Original three-player example · totals already include Victory tiles",
+    "Eigenes Beispiel mit drei Spielern · Bonus-Plättchen sind bereits eingerechnet"
+  ],
+  "tiePlayer": [
+    "Player",
+    "Spieler"
+  ],
+  "tieTrees": [
+    "Different Trees",
+    "Unterschiedliche Bäume"
+  ],
+  "tieFires": [
+    "Fires",
+    "Flammen"
+  ],
+  "tieFlowers": [
+    "Sacred Flowers",
+    "Heilige Blumen"
+  ],
+  "tieResult": [
+    "Result",
+    "Ergebnis"
+  ],
+  "tieA": [
+    "Qualifies · 17",
+    "Erfüllt ein Ziel · 17"
+  ],
+  "tieB": [
+    "Qualifies · 21 · wins",
+    "Erfüllt ein Ziel · 21 · gewinnt"
+  ],
+  "tieC": [
+    "Does not qualify, despite a sum of 33",
+    "Kein Ziel erfüllt, trotz Summe 33"
+  ],
+  "refWinning": [
+    "Winning and tied victory conditions",
+    "Sieg und mehrere erfüllte Siegbedingungen"
+  ],
+  "quick1": [
+    "Bought animals go on <strong>top of your draw stack<\/strong>, not into the discard. Refill the shared reserve only at round end.",
+    "Angelockte Tiere kommen <strong>oben auf den Nachziehstapel<\/strong>, nicht auf die Ablage. Füllt den Tier-Vorrat erst am Rundenende auf."
+  ],
+  "quick2": [
+    "The third uncancelled solitary symbol costs you an action, <strong>not the whole Help Line<\/strong>.",
+    "Der dritte nicht neutralisierte Einzelgänger kostet eine Aktion, <strong>nicht die ganze Tier-Reihe<\/strong>."
+  ],
+  "quick3": [
+    "One planting action takes <strong>one tree<\/strong>. A bonus may give another planting action, but a large sprout total alone does not.",
+    "Eine Pflanzaktion nimmt <strong>einen Baum<\/strong>. Ein Bonus kann eine weitere Pflanzaktion geben, eine große Pflanzenzahl allein nicht."
+  ],
+  "quick4": [
+    "A bonus action may repeat a regular action. <strong>Reuse the full elements.<\/strong>",
+    "Eine Bonusaktion darf einer regulären Aktion gleichen. <strong>Nutze erneut alle passenden Elemente.<\/strong>"
+  ],
+  "quick5": [
+    "Tree victory counts <strong>different types<\/strong>; Fire victory counts <strong>tiles<\/strong>; flower victory counts <strong>the current round<\/strong>.",
+    "Der Baumsieg zählt <strong>unterschiedliche Arten<\/strong>, der Flammensieg <strong>Plättchen<\/strong>, der Blumensieg <strong>die aktuelle Runde<\/strong>."
+  ],
+  "quick6": [
+    "Finish all players' actions, <strong>then check victory before upkeep<\/strong>.",
+    "Beendet alle Spieleraktionen und <strong>prüft dann den Sieg vor dem Rundenende<\/strong>."
+  ],
+  "refQuick": [
+    "The most useful reminders",
+    "Die wichtigsten Merksätze"
+  ],
+  "glossaryCaption": [
+    "Component and rules terminology across editions",
+    "Komponenten- und Regelbegriffe beider Ausgaben"
+  ],
+  "glossaryTitle": [
+    "English / German terminology",
+    "Englische und deutsche Begriffe"
+  ],
+  "scope": ["<strong>Scope:</strong> the standard English and German base-game editions for 2–4 players. No character catalogue, expansions, promotional cards or solo rules.","<strong>Umfang:</strong> die englische und deutsche Grundspielausgabe für 2–4 Spieler. Kein Figurenkatalog und keine Regeln für Erweiterungen, Promokarten oder Solospiel."],
+  "edition": ["The English rules do not specify an order for the simultaneous Guardian Animal phase or resolve a remaining tie. This guide uses the German edition's clockwise order from the Sacred Tree and shared victory for a final tie.","Die englische Anleitung legt keine Reihenfolge für die gleichzeitige Tierkartenphase fest und regelt einen verbleibenden Gleichstand nicht. Dieser Leitfaden nutzt die Reihenfolge im Uhrzeigersinn ab dem Geweihten Baum und den geteilten Sieg aus der deutschen Ausgabe."],
+  "independence": ["Independent teaching aid, not a publisher product or an endorsed rules replacement. Explanations and teaching examples are newly written. No publisher illustrations, scans, logos or card text are reproduced. Use the physical game and its printed symbols alongside this guide. Game design: Aske Christiansen.","Unabhängige Lernhilfe, kein Verlagsprodukt und kein autorisierter Regelersatz. Erklärungen und Lehrbeispiele sind neu formuliert. Keine Verlagsillustrationen, Scans, Logos oder Kartentexte werden wiedergegeben. Nutzt das physische Spiel und seine aufgedruckten Symbole neben diesem Leitfaden. Spieldesign: Aske Christiansen."],
+  "scopeTitle": [
+    "Sources and scope",
+    "Quellen und Umfang"
+  ],
+  "options": [
+    "Guide options",
+    "Leitfadenoptionen"
+  ],
+  "table": [
+    "Table",
+    "Tisch"
+  ],
+  "players": [
+    "Players",
+    "Spieler"
+  ],
+  "players2": [
+    "2 players",
+    "2 Spieler"
+  ],
+  "players3": [
+    "3 players",
+    "3 Spieler"
+  ],
+  "players4": [
+    "4 players",
+    "4 Spieler"
+  ],
+  "countHint": [
+    "Changing the player count restarts setup so you can recheck the tree supply.",
+    "Ein Wechsel der Spielerzahl startet den Aufbau neu, damit du den Baum-Vorrat erneut prüfen kannst."
+  ],
+  "progressLegend": [
+    "Setup progress",
+    "Aufbaufortschritt"
+  ],
+  "progressLabel": [
+    "Completed steps",
+    "Abgeschlossene Schritte"
+  ],
+  "resetGuide": [
+    "Start over",
+    "Neu beginnen"
+  ],
+  "interface": [
+    "User interface",
+    "Benutzeroberfläche"
+  ],
+  "language": [
+    "Language",
+    "Sprache"
+  ],
+  "localProgress": [
+    "<small>Setup progress, selected lesson and language stay in this browser. Exercises reset when you reload.<\/small>",
+    "<small>Aufbaufortschritt, gewählte Lektion und Sprache bleiben in diesem Browser. Übungen werden beim Neuladen zurückgesetzt.<\/small>"
+  ],
+  "continue": [
+    "Continue",
+    "Weiter"
+  ],
+  "finishSetup": [
+    "Finish setup",
+    "Aufbau abschließen"
+  ],
+  "setupComplete": [
+    "Setup complete",
+    "Aufbau abgeschlossen"
+  ],
+  "setupStep": [
+    "Step {n} of 5",
+    "Schritt {n} von 5"
+  ],
+  "progress": [
+    "{n} of 5",
+    "{n} von 5"
+  ],
+  "playerCount": [
+    "{n} players",
+    "{n} Spieler"
+  ],
+  "playerName": [
+    "Player {n}",
+    "Spieler {n}"
+  ],
+  "firstPlayerKit": [
+    "Sacred Tree holder · first-position marking for {n} players",
+    "Geweihter Baum · erste Markierung für {n} Spieler"
+  ],
+  "otherPlayerKit": [
+    "Use position {p} in the printed group for {n} players",
+    "Nutze Position {p} der aufgedruckten Gruppe für {n} Spieler"
+  ],
+  "removeFour": [
+    "Use all 39 shared Protective Trees. Remove none.",
+    "Verwendet alle 39 Bäume im gemeinsamen Vorrat. Entfernt keinen."
+  ],
+  "removeThree": [
+    "From each of the two types costing 3, 4 and 5, remove one tile: six tiles in total.",
+    "Entfernt von jeder der beiden Arten mit Kosten 3, 4 und 5 je ein Plättchen: insgesamt sechs."
+  ],
+  "removeTwoA": [
+    "From each of the two types costing 3, 4 and 5, remove two tiles: twelve tiles.",
+    "Entfernt von jeder der beiden Arten mit Kosten 3, 4 und 5 je zwei Plättchen: zwölf Plättchen."
+  ],
+  "removeTwoB": [
+    "Also remove one tile each at costs 6, 7 and 8: three more. Total removed: 15.",
+    "Entfernt außerdem je ein Plättchen mit Kosten 6, 7 und 8: drei weitere. Insgesamt entfernt: 15."
+  ],
+  "remainTrees": [
+    "Keep {n} shared Protective Trees in the dispensers.",
+    "Lasst {n} Bäume im gemeinsamen Vorrat in den Haltern."
+  ],
+  "storageError": [
+    "Progress could not be saved. The guide still works in this tab.",
+    "Der Fortschritt konnte nicht gespeichert werden. Der Leitfaden funktioniert in diesem Tab weiterhin."
+  ],
+  "confirmReset": [
+    "Reset setup progress, selected lesson and the teaching examples? The language and player count will stay selected.",
+    "Aufbaufortschritt, gewählte Lektion und Lehrbeispiele zurücksetzen? Sprache und Spielerzahl bleiben erhalten."
+  ],
+  "resetTitle": [
+    "Start over?",
+    "Neu beginnen?"
+  ],
+  "cancel": [
+    "Cancel",
+    "Abbrechen"
+  ],
+  "confirm": [
+    "Confirm",
+    "Bestätigen"
+  ],
+  "solitary": [
+    "Solitary",
+    "Einzelgänger"
+  ],
+  "gregarious": [
+    "Gregarious",
+    "Geselliges Tier"
+  ],
+  "neutral": [
+    "Neutral",
+    "Neutrales Tier"
+  ],
+  "varan": [
+    "Fire Varan · solitary",
+    "Feuer-Waran · Einzelgänger"
+  ],
+  "noCards": [
+    "No cards revealed yet.",
+    "Noch keine Tiere aufgedeckt."
+  ],
+  "exStatus": [
+    "Solitary: {s}; gregarious: {g}; uncancelled: {u}. Fragments: {f}.",
+    "Einzelgänger: {s}; gesellige Tiere: {g}; nicht neutralisiert: {u}. Magie-Fragmente: {f}."
+  ],
+  "exStatusExtra": [
+    " Excess gregarious symbols cancel future solitary symbols.",
+    " Überzählige Geselligkeitssymbole neutralisieren spätere Einzelgänger."
+  ],
+  "exClosedOne": [
+    " Drawing ended: one regular action. Keep every card still in the Help Line.",
+    " Aufdecken beendet: eine reguläre Aktion. Behalte alle noch ausliegenden Tiere in der Tier-Reihe."
+  ],
+  "exClosedTwo": [
+    " Drawing ended: two different regular actions.",
+    " Aufdecken beendet: zwei unterschiedliche reguläre Aktionen."
+  ],
+  "exForced": [
+    " Three uncancelled solitary symbols: no further reveal. Use a Fragment on this last card now, or end with one regular action.",
+    " Drei nicht neutralisierte Einzelgänger: nicht weiter aufdecken. Setze jetzt ein Fragment für das letzte Tier ein oder beende das Aufdecken mit einer regulären Aktion."
+  ],
+  "exForcedNoFragment": [
+    " Three uncancelled solitary symbols: stop; only one regular action. No Fragment remains to remove this card.",
+    " Drei nicht neutralisierte Einzelgänger: Stopp; nur eine reguläre Aktion. Du hast kein Fragment mehr für dieses Tier."
+  ],
+  "exCanContinue": [
+    " Continue or stop for two different regular actions.",
+    " Weiter aufdecken oder für zwei unterschiedliche reguläre Aktionen stoppen."
+  ],
+  "exEndOfScript": [
+    " The scripted sequence has ended. Finish drawing, or use a Fragment if its button is still available.",
+    " Die vorgegebene Folge ist zu Ende. Beende das Aufdecken oder nutze ein Fragment, sofern die Schaltfläche noch verfügbar ist."
+  ],
+  "exVaranRemoved": [
+    "Fire Varan returned to the shared supply; Fragment returned too. It no longer contributes a solitary symbol.",
+    "Feuer-Waran und Magie-Fragment zurück in den Vorrat gelegt. Der Einzelgänger zählt nicht mehr."
+  ],
+  "exAnimalRemoved": [
+    "The just-revealed Guardian Animal moved to your personal discard; Fragment returned to the supply. Its symbols no longer count in this Help Line.",
+    "Das soeben aufgedeckte Tier liegt jetzt auf deinem Ablagestapel; das Fragment ist zurück im Vorrat. Seine Symbole zählen nicht mehr in dieser Tier-Reihe."
+  ],
+  "exHint": [
+    "After each reveal, a Fragment can affect only that last card.",
+    "Nach jedem Aufdecken kann ein Fragment nur das letzte Tier betreffen."
+  ],
+  "fireInvalid": [
+    "Enter whole numbers. Fire counts must be from 0 to 7, and the centre may hold at most seven tiles in total. Water must be a whole number from −99 to 999.",
+    "Gib ganze Zahlen ein. Flammenanzahlen müssen zwischen 0 und 7 liegen; insgesamt passen höchstens sieben Plättchen in die Mitte. Wasser muss eine ganze Zahl von −99 bis 999 sein."
+  ],
+  "fireSafe": [
+    "{count} Fire tiles · fire strength {strength} · water {water}. Defence succeeds: no Fire Varans. The Fire tiles stay in the centre.",
+    "{count} Flammen-Plättchen · Flammenwert {strength} · Wasser {water}. Abwehr erfolgreich: keine Feuer-Warane. Die Flammen bleiben in der Mitte."
+  ],
+  "fireFail": [
+    "{count} Fire tiles · fire strength {strength} · water {water}. Defence fails: take {count} Fire Varan cards into your personal discard, not {strength}.",
+    "{count} Flammen-Plättchen · Flammenwert {strength} · Wasser {water}. Abwehr gescheitert: Nimm {count} Feuer-Warane auf deinen Ablagestapel, nicht {strength}."
+  ],
+  "fireNone": [
+    "No Fire tiles remain: no attack or Fire Varan penalty. If Fires are added later in this end-of-round sequence, defend against them after the next Action phase.",
+    "Keine Flammen-Plättchen mehr in der Mitte: kein Angriff und keine Feuer-Waran-Strafe. Werden in diesem Rundenende neue Flammen nachgelegt, wehrt ihr sie erst nach der nächsten Aktionsphase ab."
+  ]
+};
+/* global one */
+(() => {
+    "use strict";
+
+    const STORAGE_KEY = "forest-guardian-guide:state";
+    const STATE_VERSION = 1;
+    const SETUP_STEPS = 5;
+    const LESSONS = 5;
+    const DEFAULT_STATE = Object.freeze({
+        version: STATE_VERSION,
+        language: "en",
+        playerCount: 3,
+        setupStep: 0,
+        setupProgress: 0,
+        lesson: 0,
+    });
+    // The host helpers are optional. No host file is copied or replaced.
+    const host = typeof one === "undefined" ? null : one;
+    const hasHostStorage = !!host?.storage?.get && !!host?.storage?.set;
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => [...document.querySelectorAll(selector)];
+    const setupPanels = $$("[data-setup-panel]");
+    const lessonPanels = $$("[data-round-panel]");
+    const lessonButtons = $$("[data-round-button]");
+    const copyElements = $$("[data-copy]");
+    const ariaElements = $$("[data-aria]");
+    const languageSelect = $("#interface-language");
+    const playerSelect = $("#player-count");
+    const fireIds = ["fire-two", "fire-three", "fire-four", "fire-water"];
+    const fireFields = fireIds.map((id) => document.getElementById(id));
+
+    let state = { ...DEFAULT_STATE };
+    let stateWasEdited = false;
+    let storageFailed = false;
+    let saveTimer = null;
+    let writeQueue = Promise.resolve();
+    let resetPending = false;
+
+    /** Returns authored UI copy, substituting only our numeric or static values. */
+    function text(key, values = {}) {
+        const pair = COPY[key];
+        if (!pair) throw new Error(`Missing translation: ${key}`);
+        return pair[state.language === "de" ? 1 : 0].replace(
+            /\{(\w+)\}/g,
+            (match, name) => Object.hasOwn(values, name) ? String(values[name]) : match,
+        );
+    }
+
+    function integer(value, min, max, fallback) {
+        return Number.isInteger(value) ? Math.min(max, Math.max(min, value)) : fallback;
+    }
+
+    function normalizeState(value) {
+        if (!value || typeof value !== "object" || value.version !== STATE_VERSION) {
+            return { ...DEFAULT_STATE };
+        }
+        const step = integer(value.setupStep, 0, SETUP_STEPS, 0);
+        return {
+            version: STATE_VERSION,
+            language: value.language === "de" ? "de" : "en",
+            playerCount: integer(value.playerCount, 2, 4, DEFAULT_STATE.playerCount),
+            setupStep: step,
+            setupProgress: Math.max(step, integer(value.setupProgress, 0, SETUP_STEPS, step)),
+            lesson: integer(value.lesson, 0, LESSONS - 1, 0),
+        };
+    }
+
+    function showStorageError() {
+        storageFailed = true;
+        const message = $("#storage-message");
+        message.hidden = false;
+        message.textContent = text("storageError");
+    }
+
+    function saveNow() {
+        if (saveTimer !== null) clearTimeout(saveTimer);
+        saveTimer = null;
+        const snapshot = { ...state };
+        if (!hasHostStorage) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+            } catch {
+                showStorageError();
+            }
+            return;
+        }
+        // Serialize asynchronous host writes so an older save cannot win a race.
+        writeQueue = writeQueue.then(async () => {
+            try {
+                await host.storage.set(STORAGE_KEY, snapshot);
+            } catch {
+                showStorageError();
+            }
+        });
+    }
+
+    function queueSave() {
+        if (saveTimer !== null) clearTimeout(saveTimer);
+        saveTimer = setTimeout(saveNow, 150);
+    }
+
+    function changed() {
+        stateWasEdited = true;
+        queueSave();
+    }
+
+    function renderLanguage() {
+        document.documentElement.lang = state.language;
+        document.title = text("title");
+        $('meta[name="description"]').content = text("description");
+        // Only the fixed, locally authored dictionary is interpreted as HTML.
+        // Form values and stored data are never inserted as HTML.
+        copyElements.forEach((element) => {
+            element.innerHTML = text(element.dataset.copy);
+        });
+        ariaElements.forEach((element) => {
+            element.setAttribute("aria-label", text(element.dataset.aria));
+        });
+        languageSelect.value = state.language;
+        if (storageFailed) showStorageError();
+    }
+
+    function appendListItem(list, key, values = {}) {
+        const item = document.createElement("li");
+        item.textContent = text(key, values);
+        list.append(item);
+    }
+
+    function renderPlayers() {
+        const playerCount = state.playerCount;
+        const treeTotal = ({ 2: 24, 3: 33, 4: 39 })[playerCount];
+        playerSelect.value = String(playerCount);
+        $("#setup-player-summary").textContent = text("playerCount", { n: playerCount });
+        $$("[data-player-count]").forEach((el) => { el.textContent = String(playerCount); });
+        $$("[data-tree-total]").forEach((el) => { el.textContent = String(treeTotal); });
+        $$("[data-tree-removed]").forEach((el) => { el.textContent = String(39 - treeTotal); });
+
+        const adjustments = $("#tree-adjustments");
+        adjustments.replaceChildren();
+        if (playerCount === 4) appendListItem(adjustments, "removeFour");
+        else if (playerCount === 3) appendListItem(adjustments, "removeThree");
+        else {
+            appendListItem(adjustments, "removeTwoA");
+            appendListItem(adjustments, "removeTwoB");
+        }
+        if (playerCount !== 4) appendListItem(adjustments, "remainTrees", { n: treeTotal });
+
+        const stations = $("#station-grid");
+        stations.replaceChildren();
+        for (let number = 1; number <= playerCount; number += 1) {
+            const item = document.createElement("li");
+            const name = document.createElement("strong");
+            const copy = document.createElement("span");
+            name.textContent = text("playerName", { n: number });
+            copy.textContent = text(number === 1 ? "firstPlayerKit" : "otherPlayerKit", {
+                n: playerCount,
+                p: number,
+            });
+            item.append(name, copy);
+            stations.append(item);
+        }
+    }
+
+    function renderSetup(focus = false) {
+        setupPanels.forEach((panel, index) => { panel.hidden = index !== state.setupStep; });
+        const complete = state.setupStep === SETUP_STEPS;
+        $("#setup-step-label").textContent = complete
+            ? text("setupComplete") : text("setupStep", { n: state.setupStep + 1 });
+        $("#setup-progress").value = state.setupProgress;
+        $("#setup-progress-text").textContent = text("progress", { n: state.setupProgress });
+        $("#setup-back").hidden = state.setupStep === 0;
+        $("#setup-next").hidden = complete;
+        $("#setup-next-label").textContent = text(
+            state.setupStep === SETUP_STEPS - 1 ? "finishSetup" : "continue",
+        );
+        if (focus) setupPanels[state.setupStep].querySelector("h3").focus();
+    }
+
+    function renderLesson(focus = false) {
+        lessonPanels.forEach((panel, index) => { panel.hidden = index !== state.lesson; });
+        lessonButtons.forEach((button, index) => {
+            if (index === state.lesson) button.setAttribute("aria-current", "step");
+            else button.removeAttribute("aria-current");
+        });
+        if (focus) lessonPanels[state.lesson].querySelector("h3").focus();
+    }
+
+    // An original fixed teaching sequence, not a reproduction of any game deck.
+    const EXAMPLE_SEQUENCE = Object.freeze([
+        "gregarious", "neutral", "solitary", "solitary", "neutral",
+        "solitary", "varan", "gregarious", "solitary", "solitary",
+    ]);
+    function freshExample() {
+        return { index: 0, line: [], fragments: 2, lastAvailable: false, stopped: false, message: "exHint" };
+    }
+    let example = freshExample();
+
+    function exampleTotals() {
+        const solitary = example.line.filter((card) => card.type === "solitary" || card.type === "varan").length;
+        const gregarious = example.line.filter((card) => card.type === "gregarious").length;
+        return { s: solitary, g: gregarious, u: Math.max(0, solitary - gregarious), f: example.fragments };
+    }
+    function canUseFragment() {
+        return !example.stopped && example.lastAvailable && example.fragments > 0 && example.line.length > 0;
+    }
+    function canReveal() {
+        return !example.stopped && exampleTotals().u < 3 && example.index < EXAMPLE_SEQUENCE.length;
+    }
+
+    function renderExample() {
+        const totals = exampleTotals();
+        const list = $("#draw-example-line");
+        list.replaceChildren();
+        example.line.forEach((card) => {
+            const item = document.createElement("li");
+            // Preserve the reveal number when another card is removed.
+            item.textContent = `${card.number} · ${text(card.type)}`;
+            list.append(item);
+        });
+        let status = text("exStatus", totals);
+        if (!example.line.length) status = `${text("noCards")} ${status}`;
+        if (totals.g > totals.s) status += text("exStatusExtra");
+        if (example.stopped) status += text(totals.u >= 3 ? "exClosedOne" : "exClosedTwo");
+        else if (totals.u >= 3) status += text(canUseFragment() ? "exForced" : "exForcedNoFragment");
+        else if (example.index === EXAMPLE_SEQUENCE.length) status += text("exEndOfScript");
+        else if (example.index > 0) status += text("exCanContinue");
+        $("#draw-example-status").textContent = status;
+        $("#draw-next").disabled = !canReveal();
+        $("#use-fragment").disabled = !canUseFragment();
+        $("#stop-drawing").disabled = example.stopped || example.index === 0;
+        $("#draw-example-message").textContent = text(example.message);
+    }
+
+    $("#draw-next").addEventListener("click", () => {
+        if (!canReveal()) return;
+        example.line.push({ type: EXAMPLE_SEQUENCE[example.index], number: example.index + 1 });
+        example.index += 1;
+        example.lastAvailable = true;
+        example.message = "exHint";
+        renderExample();
+    });
+    $("#use-fragment").addEventListener("click", () => {
+        if (!canUseFragment()) return;
+        const card = example.line.pop();
+        example.fragments -= 1;
+        // Do not let the same button remove an earlier Help Line card.
+        example.lastAvailable = false;
+        example.message = card.type === "varan" ? "exVaranRemoved" : "exAnimalRemoved";
+        renderExample();
+    });
+    $("#stop-drawing").addEventListener("click", () => {
+        if (example.stopped || example.index === 0) return;
+        example.stopped = true;
+        example.lastAvailable = false;
+        renderExample();
+    });
+    $("#reset-example").addEventListener("click", () => {
+        example = freshExample();
+        renderExample();
+    });
+
+    function renderFireExample() {
+        const numbers = fireFields.map((input) => input.value.trim() === "" ? NaN : Number(input.value));
+        const valid = numbers.map((number, index) => Number.isInteger(number)
+            && number >= (index === 3 ? -99 : 0) && number <= (index === 3 ? 999 : 7));
+        const count = numbers[0] + numbers[1] + numbers[2];
+        const overCapacity = valid.slice(0, 3).every(Boolean) && count > 7;
+        fireFields.forEach((field, index) => {
+            const invalid = !valid[index] || (index < 3 && overCapacity);
+            if (invalid) field.setAttribute("aria-invalid", "true");
+            else field.removeAttribute("aria-invalid");
+        });
+        let result;
+        if (!valid.every(Boolean) || overCapacity) result = text("fireInvalid");
+        else if (count === 0) result = text("fireNone");
+        else {
+            const strength = 2 * numbers[0] + 3 * numbers[1] + 4 * numbers[2];
+            const water = numbers[3];
+            result = text(water >= strength ? "fireSafe" : "fireFail", { count, strength, water });
+        }
+        $("#fire-result").textContent = result;
+    }
+    fireFields.forEach((field) => field.addEventListener("input", renderFireExample));
+    $("#fire-example").addEventListener("submit", (event) => event.preventDefault());
+    $("#guide-options").addEventListener("submit", (event) => event.preventDefault());
+
+    function renderGuide() {
+        renderLanguage();
+        renderPlayers();
+        renderSetup();
+        renderLesson();
+        renderExample();
+        renderFireExample();
+    }
+
+    languageSelect.addEventListener("change", () => {
+        state.language = languageSelect.value === "de" ? "de" : "en";
+        changed();
+        renderGuide();
+    });
+    playerSelect.addEventListener("change", () => {
+        state.playerCount = integer(Number(playerSelect.value), 2, 4, DEFAULT_STATE.playerCount);
+        state.setupStep = 0;
+        state.setupProgress = 0;
+        changed();
+        renderPlayers();
+        renderSetup();
+    });
+    $("#setup-back").addEventListener("click", () => {
+        if (state.setupStep === 0) return;
+        state.setupStep -= 1;
+        changed();
+        renderSetup(true);
+    });
+    $("#setup-next").addEventListener("click", () => {
+        if (state.setupStep === SETUP_STEPS) return;
+        state.setupStep += 1;
+        state.setupProgress = Math.max(state.setupProgress, state.setupStep);
+        changed();
+        renderSetup(true);
+    });
+    lessonButtons.forEach((button, index) => {
+        button.addEventListener("click", () => {
+            state.lesson = index;
+            changed();
+            renderLesson(true);
+        });
+        button.addEventListener("keydown", (event) => {
+            let next = index;
+            if (event.key === "ArrowRight") next = (index + 1) % LESSONS;
+            else if (event.key === "ArrowLeft") next = (index + LESSONS - 1) % LESSONS;
+            else if (event.key === "Home") next = 0;
+            else if (event.key === "End") next = LESSONS - 1;
+            else return;
+            event.preventDefault();
+            state.lesson = next;
+            changed();
+            renderLesson();
+            lessonButtons[next].focus();
+        });
+    });
+
+    async function confirmReset() {
+        if (typeof host?.confirm !== "function") return window.confirm(text("confirmReset"));
+        try {
+            const answer = host.confirm(text("confirmReset"), text("resetTitle"));
+            // Keep host dialog styling while translating its action labels.
+            const dialog = document.querySelector("dialog:last-of-type");
+            const cancel = dialog?.querySelector('[data-action="cancel"]');
+            const confirm = dialog?.querySelector('[data-action="confirm"]');
+            if (cancel) cancel.textContent = text("cancel");
+            if (confirm) confirm.textContent = text("confirm");
+            return Boolean(await answer);
+        } catch {
+            return window.confirm(text("confirmReset"));
+        }
+    }
+    $("#reset-guide").addEventListener("click", async () => {
+        if (resetPending) return;
+        resetPending = true;
+        try {
+            if (!await confirmReset()) return;
+            state = { ...DEFAULT_STATE, language: state.language, playerCount: state.playerCount };
+            example = freshExample();
+            $("#fire-example").reset();
+            changed();
+            renderGuide();
+        } finally {
+            resetPending = false;
+        }
+    });
+
+    function revealAnchor(hash, focus = false) {
+        let id;
+        try { id = decodeURIComponent(hash.replace(/^#/, "")); } catch { return; }
+        if (!id) return;
+        const target = document.getElementById(id);
+        if (!target) return;
+        if (target.tagName === "DETAILS") target.open = true;
+        for (let parent = target.parentElement; parent; parent = parent.parentElement) {
+            if (parent.tagName === "DETAILS") parent.open = true;
+        }
+        const panel = target.closest("[data-round-panel]");
+        if (panel) {
+            state.lesson = integer(Number(panel.dataset.roundPanel), 0, LESSONS - 1, 0);
+            renderLesson(focus);
+        }
+    }
+    document.addEventListener("click", (event) => {
+        const link = event.target.closest?.('a[href^="#"]');
+        if (!link) return;
+        revealAnchor(link.getAttribute("href"));
+    });
+    window.addEventListener("hashchange", () => revealAnchor(location.hash));
+    window.addEventListener("pagehide", () => {
+        if (saveTimer !== null) saveNow();
+    });
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden" && saveTimer !== null) saveNow();
+    });
+
+    async function restoreState() {
+        try {
+            const stored = hasHostStorage
+                ? await host.storage.get(STORAGE_KEY)
+                : JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+            // A slow storage read must not undo a choice made while it was loading.
+            if (!stateWasEdited) state = normalizeState(stored);
+        } catch {
+            showStorageError();
+        }
+        renderGuide();
+        revealAnchor(location.hash);
+    }
+
+    renderGuide();
+    void restoreState();
+})();
+
+</script>
+</body>
+</html>

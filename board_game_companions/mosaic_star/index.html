@@ -1,0 +1,1635 @@
+<!doctype html>
+<html lang="en" class="theme-orange">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="A bilingual table companion for tile drafting, wild colors, placement, and scoring.">
+    <title>Unofficial Guide - Azul: Summer Pavilion / Azul: Sommerpavillon</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../../one.css">
+    <style>
+        :root {
+            --temperature-accent: light-dark(#a94b32, #f1a38e);
+            --oxygen-accent: light-dark(#477153, #8fc99e);
+            --ocean-accent: light-dark(#3f6f91, #8bc7ed);
+        }
+
+        main {
+            max-width: 80rem;
+        }
+
+        main > section > p:first-of-type {
+            max-width: 68ch;
+        }
+
+        .setup-status {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+            color: var(--on-surface-variant);
+        }
+
+        .setup-status output,
+        .setup-status strong {
+            font-weight: 600;
+            color: var(--on-surface);
+        }
+
+        .setup-panel {
+            min-height: 25rem;
+            padding-block: var(--spacing-md);
+        }
+
+        .step-heading {
+            margin-top: var(--spacing-sm);
+        }
+
+        .step-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.85fr);
+            gap: var(--spacing-xl);
+            align-items: start;
+        }
+
+        .step-layout > * {
+            min-width: 0;
+        }
+
+        .component-list {
+            padding-left: 1.25rem;
+        }
+
+        .component-list li {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .table-layout {
+            margin: 0;
+        }
+
+        .visual-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            border: var(--border-width) solid var(--outline-variant);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .visual-card {
+            min-height: 7rem;
+            padding: var(--spacing-md);
+            background: var(--surface-container-low);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .visual-card:nth-child(odd) {
+            border-right: var(--border-width) solid var(--outline-variant);
+        }
+
+        .visual-card:nth-last-child(-n + 2) {
+            border-bottom: 0;
+        }
+
+        .visual-card strong,
+        .visual-card span {
+            display: block;
+        }
+
+        .visual-card span {
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .visual-card.is-active {
+            background: color-mix(in srgb, var(--primary) 9%, var(--surface-container-low));
+            box-shadow: inset 0 3px var(--primary);
+        }
+
+        .track-stack,
+        .station-grid,
+        .turn-sequence {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        .track-stack li,
+        .station-grid li,
+        .turn-sequence li {
+            padding: var(--spacing-sm) 0;
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .track-stack strong,
+        .station-grid strong,
+        .turn-sequence strong {
+            display: block;
+        }
+
+        .track-stack span,
+        .station-grid span,
+        .turn-sequence span {
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .station-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0 var(--spacing-lg);
+        }
+
+        .setup-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            padding-top: var(--spacing-md);
+            border-top: var(--border-width) solid var(--outline-variant);
+        }
+
+        .setup-actions button:last-child {
+            margin-left: auto;
+        }
+
+        .ready-summary {
+            max-width: 44rem;
+            padding: var(--spacing-lg) 0;
+        }
+
+        .ready-summary strong {
+            color: var(--primary);
+        }
+
+        .learn-track {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(8.5rem, 1fr));
+            gap: var(--spacing-sm);
+            padding: 0 0 var(--spacing-sm);
+            margin: var(--spacing-lg) 0;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .learn-track button {
+            width: 100%;
+            min-height: 4.5rem;
+            padding: var(--spacing-sm);
+            text-align: left;
+            background: var(--surface-container-low);
+            color: var(--on-surface);
+            border-color: var(--outline-variant);
+        }
+
+        .learn-track button span {
+            display: block;
+            margin-bottom: 2px;
+            color: var(--on-surface-variant);
+            font-size: 0.75rem;
+        }
+
+        .learn-track button[aria-current="step"] {
+            background: var(--primary);
+            color: var(--on-primary);
+            border-color: var(--primary);
+        }
+
+        .learn-track button[aria-current="step"] span {
+            color: inherit;
+        }
+
+        .learn-panel {
+            min-height: 24rem;
+            padding-top: var(--spacing-sm);
+        }
+
+        .learn-panel > p,
+        .learn-panel > ul {
+            max-width: 68ch;
+        }
+
+        .phase-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(9rem, 1fr));
+            gap: var(--spacing-sm);
+            padding: 0 0 var(--spacing-sm);
+            margin: var(--spacing-lg) 0;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .phase-strip li {
+            padding: var(--spacing-md);
+            border-left: 4px solid var(--primary);
+            background: var(--surface-container-low);
+        }
+
+        .phase-strip strong,
+        .phase-strip span {
+            display: block;
+        }
+
+        .phase-strip span {
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .turn-rule {
+            max-width: 68ch;
+            padding: var(--spacing-md);
+            margin: var(--spacing-lg) 0;
+            border-left: 4px solid var(--primary);
+            background-color: var(--surface-container);
+        }
+
+        .turn-rule p {
+            margin: var(--spacing-xs) 0 0;
+        }
+
+        .action-list,
+        .scoring-list,
+        .card-type-list {
+            margin: var(--spacing-lg) 0;
+        }
+
+        .action-list div,
+        .scoring-list div,
+        .card-type-list div {
+            display: grid;
+            grid-template-columns: minmax(9rem, 0.35fr) minmax(0, 1fr);
+            gap: var(--spacing-md);
+            padding: var(--spacing-sm) 0;
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .action-list dt,
+        .action-list dd,
+        .scoring-list dt,
+        .scoring-list dd,
+        .card-type-list dt,
+        .card-type-list dd {
+            margin: 0;
+        }
+
+        .action-list dt,
+        .scoring-list dt,
+        .card-type-list dt {
+            font-weight: 700;
+        }
+
+        .card-anatomy {
+            display: grid;
+            grid-template-columns: minmax(15rem, 0.75fr) minmax(18rem, 1.25fr);
+            gap: var(--spacing-xl);
+            align-items: start;
+            margin: var(--spacing-lg) 0;
+        }
+
+        .sample-project {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            grid-template-rows: auto auto minmax(8rem, 1fr) auto;
+            gap: var(--spacing-sm);
+            min-height: 22rem;
+            padding: var(--spacing-md);
+            color: var(--on-surface);
+            background-color: var(--surface-container-low);
+            border: var(--border-width-lg) solid var(--primary);
+            border-radius: var(--radius);
+        }
+
+        .sample-cost,
+        .sample-points {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .sample-tags {
+            text-align: right;
+        }
+
+        .sample-requirement {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: var(--error);
+        }
+
+        .sample-effect {
+            grid-column: 1 / -1;
+            display: grid;
+            place-items: center;
+            padding: var(--spacing-lg);
+            text-align: center;
+            background-color: var(--surface-container-high);
+            border-radius: var(--radius-sm);
+        }
+
+        .sample-footer {
+            grid-column: 1 / 3;
+            color: var(--on-surface-variant);
+        }
+
+        .anatomy-key {
+            margin: 0;
+        }
+
+        .anatomy-key li {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .parameter-list {
+            margin: var(--spacing-lg) 0;
+            border-top: var(--border-width) solid var(--outline-variant);
+        }
+
+        .parameter-row {
+            display: grid;
+            grid-template-columns: minmax(11rem, 0.4fr) minmax(0, 1fr);
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+            border-left: 5px solid var(--temperature-accent);
+        }
+
+        .parameter-row p {
+            margin: 0;
+        }
+
+        .parameter-row[data-parameter="oxygen"] {
+            border-left-color: var(--oxygen-accent);
+        }
+
+        .parameter-row[data-parameter="ocean"] {
+            border-left-color: var(--ocean-accent);
+        }
+
+        .reference-group > details {
+            border-left: 4px solid var(--reference-accent, var(--outline-variant));
+        }
+
+        .reference-group h3 {
+            margin-top: var(--spacing-xl);
+        }
+
+        .reference-group .economy {
+            --reference-accent: var(--primary);
+        }
+
+        .reference-group .parameters {
+            --reference-accent: var(--ocean-accent);
+        }
+
+        .reference-group .timing {
+            --reference-accent: var(--oxygen-accent);
+        }
+
+        figcaption {
+            margin-top: var(--spacing-sm);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        aside progress {
+            width: 100%;
+        }
+
+        aside output {
+            display: block;
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+        }
+
+        aside small {
+            display: block;
+            margin-top: var(--spacing-sm);
+            color: var(--on-surface-variant);
+        }
+
+        @media (max-width: 760px) {
+            .step-layout,
+            .card-anatomy {
+                grid-template-columns: 1fr;
+            }
+
+            .setup-panel,
+            .learn-panel {
+                min-height: 0;
+            }
+
+            .action-list div,
+            .scoring-list div,
+            .card-type-list div,
+            .parameter-row {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-xs);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .visual-grid,
+            .station-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .visual-card:nth-child(odd) {
+                border-right: 0;
+            }
+
+            .visual-card:nth-last-child(2) {
+                border-bottom: var(--border-width) solid var(--outline-variant);
+            }
+
+            .setup-actions button {
+                flex: 1;
+            }
+        }
+
+        html[lang="de"] body > footer [lang="en"],
+        html:not([lang="de"]) body > footer [lang="de"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<a data-i18n="skip" href="#content" class="skip-link">Skip to guide</a>
+<input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle guide options" data-i18n-aria-label="aria.options">
+<header><label for="aside-state" class="aside-toggle-btn"></label><hgroup><h1 data-i18n="title">Unofficial Guide - Azul: Summer Pavilion / Azul: Sommerpavillon</h1><p data-i18n="subtitle">Guided setup and rules, one decision at a time</p></hgroup><nav aria-label="Primary" data-i18n-aria-label="aria.primary"><ul><li><a data-i18n="setup" href="#setup">Setup</a></li><li><a data-i18n="learn" href="#learn">Learn</a></li><li><a data-i18n="reference" href="#reference">Reference</a></li></ul></nav></header>
+<main id="content"><noscript><p class="note">Interactive navigation and language switching require JavaScript. The rules reference below remains readable. / Navigation und Sprachwechsel benötigen JavaScript. Die Regelübersicht unten bleibt lesbar.</p></noscript>
+<section id="setup" aria-labelledby="setup-title"><h2 data-i18n="setup.title" id="setup-title">Set up the table</h2><p data-i18n="setup.intro">Use the colored-star side of the player boards. Choose 2–4 players in Guide options; the quantities below adjust automatically.</p>
+<div class="setup-status"><output id="setup-step-label" aria-live="polite">Step 1 of 5</output><span><strong id="setup-player-summary">3 players</strong> · <span data-i18n="setup.side">Colored stars</span></span></div>
+<article class="setup-panel" data-setup-panel="0"><div class="step-heading"><h3 data-i18n="setup.shared" tabindex="-1">Arrange the shared table</h3></div><div class="step-layout"><div><ul class="component-list"><li data-i18n="setup.shared.board">Put the <strong>scoring board</strong> where everyone can reach it.</li><li data-i18n="setup.shared.factories">Arrange <strong><output data-factories>7</output> Factory displays</strong> in a circle. Leave the center of the table clear.</li><li data-i18n="setup.shared.tower">Place the <strong>tower</strong> nearby for discarded tiles. Keep the point tokens beside the scoring board.</li><li data-i18n="setup.shared.unused">Return unused Factory displays to the box.</li></ul><p data-i18n="setup.shared.note" class="note">The <strong>center of the table</strong> and the <strong>supply spaces on the scoring board</strong> are different places. You draft from the first, not the second.</p></div><figure class="table-layout"><div class="visual-grid"><div class="visual-card"><strong data-i18n="zone.factories.title">Factory displays</strong><span data-i18n="zone.factories.body">2 players: 5 · 3 players: 7 · 4 players: 9</span></div><div class="visual-card"><strong data-i18n="zone.center.title">Center of the table</strong><span data-i18n="zone.center.body">Leftover tiles collect here during drafting</span></div><div class="visual-card"><strong data-i18n="zone.supply.title">Supply spaces</strong><span data-i18n="zone.supply.body">On the scoring board · reserved for bonuses</span></div><div class="visual-card"><strong data-i18n="zone.tower.title">Tower</strong><span data-i18n="zone.tower.body">Discarded payments and unused tiles</span></div></div><figcaption data-i18n="setup.shared.caption">Keep these four areas distinct throughout the game.</figcaption></figure></div></article>
+<article class="setup-panel" data-setup-panel="1" hidden><div class="step-heading"><h3 data-i18n="setup.players" tabindex="-1">Prepare player boards and scores</h3></div><div class="step-layout"><div><ul class="component-list"><li data-i18n="setup.players.board">Give each player one <strong>player board</strong>, colored-star side up.</li><li data-i18n="setup.players.marker">Take the matching <strong>scoring marker</strong> and put it on <strong>5</strong> on the scoring track.</li><li data-i18n="setup.players.corners">Leave all star spaces and the four corner storage spaces empty.</li><li data-i18n="setup.players.room">Leave room beside each player board for collected tiles. There are no starting tiles in your personal area.</li><li data-i18n="setup.players.unused">Return unused player boards and scoring markers to the box.</li></ul></div><figure class="table-layout"><div class="visual-grid"><div class="visual-card"><strong data-i18n="board.outer.title">Six outer stars</strong><span data-i18n="board.outer.body">Each accepts its printed tile color</span></div><div class="visual-card"><strong data-i18n="board.center.title">Center star</strong><span data-i18n="board.center.body">Up to six different colors · no repeats</span></div><div class="visual-card"><strong data-i18n="board.beside.title">Beside the player board</strong><span data-i18n="board.beside.body">Collected tiles wait here before placement</span></div><div class="visual-card"><strong data-i18n="board.corners.title">Four corner spaces</strong><span data-i18n="board.corners.body">Storage for up to four tiles after passing</span></div></div><figcaption data-i18n="setup.players.caption">Scoring starts at 5, not at 0.</figcaption></figure></div></article>
+<article class="setup-panel" data-setup-panel="2" hidden><div class="step-heading"><h3 data-i18n="setup.tiles" tabindex="-1">Fill the bag, supply, and displays</h3></div><div class="step-layout"><div><ul class="component-list"><li data-i18n="setup.tiles.bag">Put all <strong>132 tiles</strong> in the bag and mix them.</li><li data-i18n="setup.tiles.supply">Draw <strong>10 random tiles</strong> and put them on the supply spaces in the middle of the scoring board.</li><li data-i18n="setup.tiles.factories">Draw <strong>4 random tiles for each Factory display</strong>: <output data-draft-total>28</output> tiles across <output data-factories>7</output> displays.</li><li data-i18n="setup.tiles.beside">Keep the remaining tiles in the bag. Do not deal tiles to players.</li></ul><p data-i18n="setup.tiles.note" class="note">The 10 supply tiles are <strong>not</strong> available for ordinary drafting. You earn them by completing the spaces around features on your player board.</p></div><figure class="table-layout"><ol class="station-grid" id="factory-grid"></ol><figcaption data-i18n="setup.tiles.caption">Every Factory display begins with four tiles; their colors may repeat.</figcaption></figure></div></article>
+<article class="setup-panel" data-setup-panel="3" hidden><div class="step-heading"><h3 data-i18n="setup.track" tabindex="-1">Set round 1 and its wild color</h3></div><div class="step-layout"><div><ul class="component-list"><li data-i18n="setup.track.counter">Place the <strong>round counter</strong> on round <strong>1</strong>.</li><li data-i18n="setup.track.purple"><strong>Purple</strong> is the wild color in round 1. The round track determines the wild color; players do not choose it.</li><li data-i18n="setup.track.six">Play exactly <strong>six rounds</strong>, with a different wild color in each one.</li></ul><p data-i18n="setup.track.note" class="note">A tile keeps its physical color. Being wild only changes how it is collected and how it can help pay for placement <strong>this round</strong>.</p></div><figure class="table-layout"><ol class="station-grid"><li><strong data-i18n="setup.track.r1">Round 1</strong><span data-i18n="color.purple">Purple</span></li><li><strong data-i18n="setup.track.r2">Round 2</strong><span data-i18n="color.green">Green</span></li><li><strong data-i18n="setup.track.r3">Round 3</strong><span data-i18n="color.orange">Orange</span></li><li><strong data-i18n="setup.track.r4">Round 4</strong><span data-i18n="color.yellow">Yellow</span></li><li><strong data-i18n="setup.track.r5">Round 5</strong><span data-i18n="color.blue">Blue</span></li><li><strong data-i18n="setup.track.r6">Round 6</strong><span data-i18n="color.red">Red</span></li></ol><figcaption data-i18n="setup.track.caption">Teaching-round options change the examples only. A new game always starts in round 1.</figcaption></figure></div></article>
+<article class="setup-panel" data-setup-panel="4" hidden><div class="step-heading"><h3 data-i18n="setup.begin" tabindex="-1">Choose the first player and begin</h3></div><div class="step-layout"><div><ul class="component-list"><li data-i18n="setup.begin.youngest">The <strong>youngest player</strong> takes the first drafting turn. Play continues clockwise.</li><li data-i18n="setup.begin.token">Put the <strong>start player token in the center of the table</strong>, not in front of the youngest player.</li><li data-i18n="setup.begin.phase">Begin <strong>Phase 1: Acquire tiles</strong>. Everyone collects tiles before anyone places them on a star.</li></ul><p data-i18n="setup.begin.note" class="note">The first player to take tiles from the center claims the token. Its holder starts placement in the same round <strong>and</strong> drafting in the next round.</p></div><figure class="table-layout"><div class="visual-grid"><div class="visual-card"><strong data-i18n="ready.first.title">First drafting turn</strong><span data-i18n="ready.first.body">Youngest player</span></div><div class="visual-card"><strong data-i18n="ready.token.title">Start player token</strong><span data-i18n="ready.token.body">Waiting in the center of the table</span></div><div class="visual-card"><strong data-i18n="ready.wild.title">Round 1 wild color</strong><span data-i18n="ready.wild.body">Purple</span></div><div class="visual-card"><strong data-i18n="ready.score.title">Starting score</strong><span data-i18n="ready.score.body">5 points each</span></div></div><figcaption data-i18n="setup.begin.caption">Choosing first does not automatically make you first to place.</figcaption></figure></div></article>
+<article class="setup-panel" data-setup-panel="5" hidden><div class="step-heading"><h3 data-i18n="setup.ready" tabindex="-1">Table is ready</h3></div><div class="ready-summary" role="status"><p data-i18n="setup.ready.count"><strong><output data-player-count>3</output> players</strong> · <strong><output data-factories>7</output> Factory displays</strong> · 10 bonus tiles on the scoring board.</p><p data-i18n="setup.ready.goal">Collect first, place later. Build connected groups, claim bonus tiles, and score completed stars and numbers after round 6.</p><a data-i18n="setup.ready.learn" href="#learn-rhythm" class="btn btn-primary">Learn the first round</a></div></article>
+<nav class="setup-actions" aria-label="Setup step controls" data-i18n-aria-label="aria.setupControls"><button type="button" id="setup-back"><span class="sym" aria-hidden="true">arrow_back</span><span data-i18n="back">Back</span></button><button type="button" id="setup-next" class="btn-primary"><span id="setup-next-label">Continue</span><span class="sym" aria-hidden="true">arrow_forward</span></button></nav></section>
+<section id="learn" aria-labelledby="learn-title"><h2 data-i18n="learn.title" id="learn-title">Learn a round</h2><p data-i18n="learn.intro">Learn the rhythm, then drafting, payment, scoring, and passing. Examples are independent practice situations, not a live game.</p>
+<ol class="learn-track" aria-label="Rule lessons" data-i18n-aria-label="aria.lessons"><li><button type="button" data-learn-button="0" aria-controls="learn-rhythm" aria-current="step"><span data-i18n="lesson.0">Lesson 1</span><b data-i18n="lesson.rhythm">Round rhythm</b></button></li><li><button type="button" data-learn-button="1" aria-controls="learn-draft"><span data-i18n="lesson.1">Lesson 2</span><b data-i18n="lesson.draft">Acquire tiles</b></button></li><li><button type="button" data-learn-button="2" aria-controls="learn-place"><span data-i18n="lesson.2">Lesson 3</span><b data-i18n="lesson.place">Play and pay</b></button></li><li><button type="button" data-learn-button="3" aria-controls="learn-score"><span data-i18n="lesson.3">Lesson 4</span><b data-i18n="lesson.score">Score and bonuses</b></button></li><li><button type="button" data-learn-button="4" aria-controls="learn-finish"><span data-i18n="lesson.4">Lesson 5</span><b data-i18n="lesson.finish">Pass and finish</b></button></li></ol>
+<article id="learn-rhythm" class="learn-panel" data-learn-panel="0"><h3 data-i18n="learn.rhythm.title" tabindex="-1">One round, three separate phases</h3><p data-i18n="learn.rhythm.goal">Your goal is the highest score after <strong>six rounds</strong> and final scoring. Points come from placing tiles and completing end-game goals; unused tiles can cost points.</p><ol class="turn-sequence"><li><strong data-i18n="phase.acquire.title">1 · Acquire tiles</strong><span data-i18n="phase.acquire.body">Take turns until all Factory displays AND the center of the table are empty. Collect tiles beside your player board.</span></li><li><strong data-i18n="phase.place.title">2 · Play tiles and score points</strong><span data-i18n="phase.place.body">Take turns placing exactly one tile and paying for it, or pass. Continue until everyone has passed.</span></li><li><strong data-i18n="phase.prepare.title">3 · Prepare the next round</strong><span data-i18n="phase.prepare.body">Advance the round counter and refill the displays. After round 6, skip this phase and finish scoring instead.</span></li></ol><div class="turn-rule"><strong data-round-heading>Round 1 · Wild color: Purple</strong><p data-round-explanation></p></div><p data-i18n="learn.rhythm.order" class="note">Both drafting and placement use clockwise turns. <strong>Finish each phase for everyone before starting the next.</strong> This is not simultaneous play.</p></article>
+<article id="learn-draft" class="learn-panel" data-learn-panel="1" hidden><h3 data-i18n="learn.draft.title" tabindex="-1">Choose one source, then one non-wild color</h3><p data-i18n="learn.draft.intro">On each turn, choose <strong>one Factory display OR the center of the table</strong>. Take all tiles of one color that is not wild this round. If that source contains wild tiles, you <strong>must also take exactly one</strong>.</p><dl class="action-list"><div><dt data-i18n="draft.factory.term">From a Factory display</dt><dd data-i18n="draft.factory.definition">Put your selected tiles beside your player board. Move every remaining tile from that display into the center of the table.</dd></div><div><dt data-i18n="draft.center.term">From the center</dt><dd data-i18n="draft.center.definition">Put your selected tiles beside your player board. Leave all other tiles in the center.</dd></div></dl><p data-i18n="learn.draft.only" class="note"><strong>Only wild tiles at your chosen source?</strong> Take just one. From a Factory display, move the rest into the center; from the center, leave the rest there. You cannot take only a wild tile from a source that still has non-wild tiles.</p><h4 data-i18n="learn.draft.token">The first center visit costs points</h4><p data-i18n="learn.draft.penalty">If the start player token is still in the center, take it with your tiles. Lose <strong>1 point per tile taken this turn</strong>, including the wild tile, but do not go below 1. The token itself is not an extra tile penalty. Later visits to the center have no such penalty.</p><p data-i18n="learn.draft.noPass">Drafting is mandatory while tiles remain. There is no four-tile limit during this phase, and you do not place tiles on stars yet. The token holder will start Phase 2 and the next round.</p><form id="draft-example" autocomplete="off"><fieldset><legend data-i18n="draft.example">Try a drafting example</legend><label for="draft-case"><span data-i18n="draft.case">Situation</span><select id="draft-case" name="draft-case"><option data-i18n="draft.case.factory" value="factory">Factory display with two colors</option><option data-i18n="draft.case.wild-only" value="wild-only">Factory display with only wild tiles</option><option data-i18n="draft.case.first-center" value="first-center">First visit to the center</option><option data-i18n="draft.case.later-center" value="later-center">Center after the token was taken</option></select></label></fieldset></form><div id="draft-result" aria-live="polite" aria-atomic="true"></div></article>
+<article id="learn-place" class="learn-panel" data-learn-panel="2" hidden><h3 data-i18n="learn.place.title" tabindex="-1">Pay the printed number; place only one tile</h3><p data-i18n="learn.place.intro">The start player token holder begins. On your turn, choose an empty diamond-shaped space and pay its printed number using tiles beside your player board. <strong>One paid tile stays on that space; all other paid tiles go into the tower.</strong> Then the next player takes a turn.</p><dl class="action-list"><div><dt data-i18n="place.outer.term">Outer stars</dt><dd data-i18n="place.outer.definition">The tile placed must match the star's printed color. Pick any empty space you can pay for; you need not start at 1 or place beside another tile.</dd></div><div><dt data-i18n="place.center.term">Center star</dt><dd data-i18n="place.center.definition">Choose any tile color not already placed in this star. Every placed tile here must have a different physical color.</dd></div><div><dt data-i18n="place.wild.term">Using wild tiles</dt><dd data-i18n="place.wild.definition">Pay with the needed color plus any number of current wild tiles, but keep at least one real tile of the color being placed. Wild substitutes go into the tower; they do not occupy a differently colored space.</dd></div></dl><p data-i18n="learn.place.same">You may spend wild tiles even when you have enough matching tiles. A wild-color tile may also be placed <strong>as its own color</strong> on its matching star, or in the center if that color is absent. In that case, pay entirely in that physical color.</p><p data-i18n="learn.place.costNotScore" class="note"><strong>Cost is not score.</strong> Paying 4 places one tile, not four, and does not automatically score 4 points. Paid discards have no penalty. Other tiles stay beside your player board for later turns.</p><form id="payment-example" autocomplete="off"><fieldset><legend data-i18n="pay.example">Try a payment</legend><p data-i18n="pay.scope">Assume an empty space that accepts the chosen color. This checks payment only, not whether that color is already in your center star.</p><div class="step-layout"><div><label for="tile-color"><span data-i18n="pay.color">Tile color to place</span><select id="tile-color" name="tile-color"><option data-i18n="color.purple" value="purple">Purple</option><option data-i18n="color.green" value="green">Green</option><option data-i18n="color.orange" value="orange">Orange</option><option data-i18n="color.yellow" value="yellow">Yellow</option><option data-i18n="color.blue" value="blue" selected>Blue</option><option data-i18n="color.red" value="red">Red</option></select></label><label for="tile-cost"><span data-i18n="pay.cost">Printed number on the space</span><select id="tile-cost" name="tile-cost"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option><option value="6">6</option></select></label></div><div><label for="matching-count"><span id="matching-label">Matching tiles available · Blue</span><input type="number" id="matching-count" name="matching-count" min="0" max="132" step="1" value="2" inputmode="numeric" required></label><label for="wild-count"><span id="wild-label">Wild tiles available · Purple</span><input type="number" id="wild-count" name="wild-count" min="0" max="132" step="1" value="2" inputmode="numeric" required aria-describedby="wild-count-help"></label><small data-i18n="pay.wildHelp" id="wild-count-help">When the chosen color is itself wild, count those tiles only once, in the matching-color field.</small></div></div></fieldset></form><div class="turn-rule" role="status" aria-live="polite" aria-atomic="true"><strong id="payment-heading"></strong><p id="payment-result"></p><p id="payment-options"></p></div></article>
+<article id="learn-score" class="learn-panel" data-learn-panel="3" hidden><h3 data-i18n="learn.score.title" tabindex="-1">Score the connected group, then claim bonuses</h3><p data-i18n="learn.score.points">Immediately gain <strong>1 point for the new tile</strong>, plus 1 for every existing tile connected to it through an unbroken chain of neighboring spaces <strong>on the same star</strong>. Count the group that contains the new tile, including tiles reached in both directions.</p><p data-i18n="learn.score.adjacency">Neighboring spaces share a side around the star. Merely meeting at its central point does not join separate groups. An empty gap breaks the chain; tiles on another star never join it. A completed six-tile star scores 6 for its final placement.</p><figure class="table-layout"><div class="visual-grid"><div class="visual-card"><strong data-i18n="score.isolated.title">Isolated placement</strong><span data-i18n="score.isolated.body">No connected neighbor → 1 point</span></div><div class="visual-card"><strong data-i18n="score.extend.title">Extend a group</strong><span data-i18n="score.extend.body">New tile + two connected tiles → 3 points</span></div><div class="visual-card"><strong data-i18n="score.join.title">Join two groups</strong><span data-i18n="score.join.body">New tile joins groups of two and two → 5 points</span></div><div class="visual-card"><strong data-i18n="score.complete.title">Complete a star</strong><span data-i18n="score.complete.body">All six spaces now connected → 6 points</span></div></div><figcaption data-i18n="score.caption">These are placement scores. Completed-star bonuses are added only at game end.</figcaption></figure><h4 data-i18n="learn.score.bonuses">Surround a feature to gain tiles</h4><div class="table-container"><table><caption data-i18n="learn.bonus.caption">Bonus tiles from the supply spaces on the scoring board</caption><thead><tr><th data-i18n="learn.bonus.feature" scope="col">Feature</th><th data-i18n="learn.bonus.spaces" scope="col">Surrounding spaces to cover</th><th data-i18n="learn.bonus.reward" scope="col">Tiles to take</th></tr></thead><tbody><tr><th data-i18n="learn.bonus.pillar" scope="row">Pillar</th><td>4</td><td>1</td></tr><tr><th data-i18n="learn.bonus.statue" scope="row">Statue</th><td>4</td><td>2</td></tr><tr><th data-i18n="learn.bonus.window" scope="row">Window</th><td>2</td><td>3</td></tr></tbody></table></div><p data-i18n="learn.score.features">Cover every indicated space around the feature on your player board, not the feature itself. When the last required space is covered, take that feature's bonus immediately. Each completed feature pays once; one placement can complete more than one feature.</p><p data-i18n="learn.score.choose">Choose freely from the supply spaces, <strong>including multiple wild tiles</strong>. Put bonus tiles beside your player board for later placement turns in this same phase. Resolve your bonuses, then refill empty supply spaces from the bag before the next player's turn.</p><p data-i18n="learn.score.lap">The scoring track is continuous. After passing 80 points, use a point token to record the completed lap.</p></article>
+<article id="learn-finish" class="learn-panel" data-learn-panel="4" hidden><h3 data-i18n="learn.finish.title" tabindex="-1">Pass for the round; score after round 6</h3><h4 data-i18n="learn.finish.pass">Passing in Phase 2</h4><p data-i18n="learn.finish.passRule">When you cannot or do not wish to place a tile, pass. <strong>You cannot rejoin this round.</strong> Choose up to four remaining tiles to store in the four corner spaces, one per corner. Discard all other remaining tiles into the tower and lose 1 point for each. Other players keep taking turns until they also pass.</p><p data-i18n="learn.finish.storage" class="note">Four is the total storage limit, not four per color. Stored tiles score nothing and return beside your player board only for the next round. Their wild status follows the <strong>new</strong> round color.</p><h4 data-i18n="learn.finish.prepare">After rounds 1–5: prepare the next round</h4><ul class="component-list"><li data-i18n="finish.advance">The token holder advances the round counter and will take the first drafting turn of the new round.</li><li data-i18n="finish.refill">Refill each Factory display with 4 random tiles. If the bag runs out, put all tiles from the tower into the bag and continue drawing.</li><li data-i18n="finish.returnToken">Return the start player token to the center of the table. Its previous holder still starts this round.</li><li data-i18n="finish.release">Everyone moves stored corner tiles beside their player board. Tiles already placed on stars stay there.</li></ul><h4 data-i18n="learn.finish.end">After round 6: final scoring</h4><p data-i18n="learn.finish.noNext">There is no seventh round. After everyone passes, skip preparation and add all completed-star and number bonuses below to the points already earned.</p><div class="step-layout"><div class="table-container"><table><caption data-i18n="learn.stars.caption">Completed stars · all six spaces covered</caption><thead><tr><th data-i18n="learn.stars.star" scope="col">Star</th><th data-i18n="learn.stars.points" scope="col">Points</th></tr></thead><tbody><tr><th data-i18n="learn.stars.center" scope="row">Multicolored center star</th><td>12</td></tr><tr><th data-i18n="learn.stars.red" scope="row">Red star</th><td>14</td></tr><tr><th data-i18n="learn.stars.blue" scope="row">Blue star</th><td>15</td></tr><tr><th data-i18n="learn.stars.yellow" scope="row">Yellow star</th><td>16</td></tr><tr><th data-i18n="learn.stars.orange" scope="row">Orange star</th><td>17</td></tr><tr><th data-i18n="learn.stars.green" scope="row">Green star</th><td>18</td></tr><tr><th data-i18n="learn.stars.purple" scope="row">Purple star</th><td>20</td></tr></tbody></table></div><div><div class="table-container"><table><caption data-i18n="learn.numbers.caption">Number bonuses · check all seven stars, including the center</caption><thead><tr><th data-i18n="learn.numbers.condition" scope="col">Every space with this number covered</th><th data-i18n="learn.numbers.points" scope="col">Points</th></tr></thead><tbody><tr><th scope="row">1</th><td>4</td></tr><tr><th scope="row">2</th><td>8</td></tr><tr><th scope="row">3</th><td>12</td></tr><tr><th scope="row">4</th><td>16</td></tr></tbody></table></div><p data-i18n="learn.finish.cumulative">The number goals are <strong>independent and cumulative</strong>. You may earn a number bonus without completing a star, and the same tile may help with both. There is no number bonus for 5s or 6s.</p></div></div><p data-i18n="learn.finish.leftovers" class="note">Then discard any tiles still in your corner spaces and lose <strong>1 point per tile</strong>. Storage does not protect tiles at game end. Do not penalize again tiles already discarded when passing. Incomplete stars keep their placement points but earn no completed-star bonus.</p><p data-i18n="learn.finish.winner"><strong>The highest final score wins. Tied players share the victory.</strong></p></article>
+<nav class="setup-actions" aria-label="Lesson controls" data-i18n-aria-label="aria.lessonControls"><button type="button" id="learn-back"><span class="sym" aria-hidden="true">arrow_back</span><span data-i18n="back">Back</span></button><button type="button" id="learn-next" class="btn-primary"><span id="learn-next-label">Next lesson</span><span class="sym" aria-hidden="true">arrow_forward</span></button></nav></section>
+<section id="reference" class="reference-group" aria-labelledby="reference-title"><h2 data-i18n="reference.title" id="reference-title">Rules reference</h2><p data-i18n="reference.intro">Open the rule needed at the table. These are the standard rules for the colored-star side.</p>
+<h3 data-i18n="reference.acquire">Drafting and turn order</h3>
+<details><summary data-i18n="reference.wild">Wild colors and the one-wild drafting rule</summary><ol class="station-grid"><li><strong data-i18n="ref.round.1">Round 1</strong><span data-i18n="color.purple">Purple</span></li><li><strong data-i18n="ref.round.2">Round 2</strong><span data-i18n="color.green">Green</span></li><li><strong data-i18n="ref.round.3">Round 3</strong><span data-i18n="color.orange">Orange</span></li><li><strong data-i18n="ref.round.4">Round 4</strong><span data-i18n="color.yellow">Yellow</span></li><li><strong data-i18n="ref.round.5">Round 5</strong><span data-i18n="color.blue">Blue</span></li><li><strong data-i18n="ref.round.6">Round 6</strong><span data-i18n="color.red">Red</span></li></ol><p data-i18n="ref.wild.rule">At one chosen source, take every tile of one non-wild color and exactly one wild tile if any are there. If that source contains only wild tiles, take one. Factory leftovers move to the center; center leftovers remain there. The rule is per source, not across the whole table.</p><p data-i18n="ref.wild.bonus">The one-wild restriction does not apply to bonus tiles: you may choose several wild tiles from the scoring-board supply.</p></details>
+<details><summary data-i18n="reference.token">Start player token and the center penalty</summary><ul class="component-list"><li data-i18n="ref.token.start">Round 1 starts with the youngest player; the token begins in the center.</li><li data-i18n="ref.token.penalty">The first player taking tiles from the center takes the token and loses one point per tile taken, including wild tiles, stopping at a total of 1. The token itself adds no penalty.</li><li data-i18n="ref.token.order">Its holder starts placement this round and drafting next round. Return the token to the center during preparation, without changing who starts.</li><li data-i18n="ref.token.other">Later center visits have no token penalty. You may not pass during drafting.</li></ul></details>
+<h3 data-i18n="reference.placement">Placement, points, and bonuses</h3>
+<details><summary data-i18n="reference.pay">What can pay for a placement?</summary><p data-i18n="ref.pay.rule">A space numbered N costs N tiles in total. Place one physically matching tile and discard the other N−1 paid tiles into the tower with no point penalty. Current wild tiles can replace any of those discarded tiles, but never the real tile placed in another color.</p><p data-i18n="ref.pay.any">Choose any empty diamond space you can legally pay for. There is no ascending-number requirement or mandatory adjacency. Never place on a pillar, statue, or window. The center star cannot repeat a physical color.</p><p data-i18n="ref.pay.own">To place a tile of the wild color as itself, pay entirely with tiles of that color. A center-star space follows the same payment rule, with the additional no-repeat restriction.</p></details>
+<details><summary data-i18n="reference.scoring">Which tiles score together?</summary><p data-i18n="ref.scoring.group">Count the newly placed tile and the uninterrupted group it now belongs to on that one star. Follow neighboring spaces in both directions, counting each tile once. Gaps, other stars, and a mere meeting at the star's center do not connect groups. A final placement in a full star scores 6.</p><p data-i18n="ref.scoring.cost">The printed number is a tile cost, not a point value. Completed-star and number bonuses are added only in final scoring.</p></details>
+<details><summary data-i18n="reference.bonus">Pillars, statues, and windows</summary><div class="table-container"><table><caption data-i18n="ref.bonus.caption">Bonus tiles from the supply spaces on the scoring board</caption><thead><tr><th data-i18n="ref.bonus.feature" scope="col">Feature</th><th data-i18n="ref.bonus.spaces" scope="col">Surrounding spaces to cover</th><th data-i18n="ref.bonus.reward" scope="col">Tiles to take</th></tr></thead><tbody><tr><th data-i18n="ref.bonus.pillar" scope="row">Pillar</th><td>4</td><td>1</td></tr><tr><th data-i18n="ref.bonus.statue" scope="row">Statue</th><td>4</td><td>2</td></tr><tr><th data-i18n="ref.bonus.window" scope="row">Window</th><td>2</td><td>3</td></tr></tbody></table></div><p data-i18n="ref.bonus.rule">Complete all indicated surrounding spaces to receive the bonus once. Choose from the current supply on the scoring board, with no color restriction. Several wild tiles are allowed. Take all earned bonuses, put them beside your player board, and refill the supply before the next player's turn.</p><p data-i18n="ref.bonus.turn">Bonus tiles do not give an extra placement immediately. They become available for your later turns in the same placement phase.</p></details>
+<h3 data-i18n="reference.ending">Passing and game end</h3>
+<details><summary data-i18n="reference.passing">Passing, four-tile storage, and the last round</summary><p data-i18n="ref.pass.rule">Passing is optional when you could place, and required when you cannot. It ends your placement turns for the round. Keep at most four tiles in the corners; discard all other remaining tiles for −1 point each. The stored tiles return beside your board during next-round preparation, with the new round's wild color.</p><p data-i18n="ref.pass.last">In round 6, finish the placement phase and add final bonuses. Then discard any tiles still stored in the corners for −1 point each. Every unused tile is penalized once, whether discarded when passing or after final bonuses.</p></details>
+<details><summary data-i18n="reference.bag">Empty bag and refilling displays</summary><p data-i18n="ref.bag.rule">When the bag runs out during a refill, move all tiles from the tower into it and continue. Do not clear unused bonus-supply tiles between rounds. After rounds 1–5, refill Factory displays to four tiles each. If both the bag and tower are empty, begin the next round with any displays still short of tiles.</p></details>
+<details><summary data-i18n="reference.final">Final scoring values</summary><div class="step-layout"><div class="table-container"><table><caption data-i18n="ref.stars.caption">Completed stars · all six spaces covered</caption><thead><tr><th data-i18n="ref.stars.star" scope="col">Star</th><th data-i18n="ref.stars.points" scope="col">Points</th></tr></thead><tbody><tr><th data-i18n="ref.stars.center" scope="row">Multicolored center star</th><td>12</td></tr><tr><th data-i18n="ref.stars.red" scope="row">Red star</th><td>14</td></tr><tr><th data-i18n="ref.stars.blue" scope="row">Blue star</th><td>15</td></tr><tr><th data-i18n="ref.stars.yellow" scope="row">Yellow star</th><td>16</td></tr><tr><th data-i18n="ref.stars.orange" scope="row">Orange star</th><td>17</td></tr><tr><th data-i18n="ref.stars.green" scope="row">Green star</th><td>18</td></tr><tr><th data-i18n="ref.stars.purple" scope="row">Purple star</th><td>20</td></tr></tbody></table></div><div class="table-container"><table><caption data-i18n="ref.numbers.caption">Number bonuses · check all seven stars, including the center</caption><thead><tr><th data-i18n="ref.numbers.condition" scope="col">Every space with this number covered</th><th data-i18n="ref.numbers.points" scope="col">Points</th></tr></thead><tbody><tr><th scope="row">1</th><td>4</td></tr><tr><th scope="row">2</th><td>8</td></tr><tr><th scope="row">3</th><td>12</td></tr><tr><th scope="row">4</th><td>16</td></tr></tbody></table></div></div><p data-i18n="ref.final.rule">Check all seven stars, including the center, for each number goal. Add every qualifying bonus independently. Incomplete stars earn no completion bonus. Discard any remaining corner tiles for −1 each. Highest total wins; a tie is shared.</p></details>
+<details><summary data-i18n="reference.sources">Scope and independence</summary><p data-i18n="sources.scope">This guide teaches the standard colored-star game for 2–4 players. It does not cover the reverse-side variant, expansions, or optional modules.</p><p data-i18n="sources.original">Independent learning aid, not affiliated with or endorsed by the publisher. Explanations and practice examples are newly written. No official artwork, board images, logos, or rulebook pages are reproduced. Component and rules terminology is retained for use with the physical game.</p></details>
+</section></main>
+<aside aria-labelledby="guide-options-title"><h2 data-i18n="options.title" id="guide-options-title">Guide options</h2><form id="guide-options" autocomplete="off"><fieldset><legend data-i18n="options.table">Table</legend><label for="player-count"><span data-i18n="options.players">Players</span><select id="player-count" name="player-count"><option data-i18n="players.2" value="2">2 players</option><option data-i18n="players.3" value="3" selected>3 players</option><option data-i18n="players.4" value="4">4 players</option></select></label><small data-i18n="options.scope">Standard game · colored-star side</small></fieldset><fieldset><legend data-i18n="options.round">Teaching round</legend><label for="round-number"><span data-i18n="options.roundNumber">Round</span><select id="round-number" name="round-number" aria-describedby="round-help"><option data-i18n="option.round.1" value="1">1 · Purple</option><option data-i18n="option.round.2" value="2">2 · Green</option><option data-i18n="option.round.3" value="3">3 · Orange</option><option data-i18n="option.round.4" value="4">4 · Yellow</option><option data-i18n="option.round.5" value="5">5 · Blue</option><option data-i18n="option.round.6" value="6">6 · Red</option></select></label><output id="wild-color-output" aria-live="polite">Wild color: Purple</output><small data-i18n="options.roundHelp" id="round-help">Changes the wild color in the teaching examples only. It does not advance your physical game or alter round-1 setup.</small></fieldset><fieldset><legend data-i18n="options.progress">Setup progress</legend><label data-i18n="options.completed" for="setup-progress">Completed steps</label><progress id="setup-progress" value="0" max="5"></progress><output id="setup-progress-text" for="setup-progress">0 of 5</output><button type="button" id="reset-guide"><span class="sym" aria-hidden="true">refresh</span><span data-i18n="options.reset">Start over</span></button></fieldset><fieldset><legend data-i18n="options.interface">User interface</legend><label for="interface-language"><span data-i18n="options.language">Language</span><select id="interface-language" name="interface-language"><option value="en" lang="en" selected>English</option><option value="de" lang="de">Deutsch</option></select></label></fieldset></form><p><small data-i18n="options.local">Progress and example settings stay in this browser.</small></p><p id="storage-status" role="status" hidden></p></aside>
+    <footer>
+        <p lang="en">This is an independent, unofficial rules guide. It is not affiliated with or endorsed by the game's publisher. All trademarks and copyrights in the original game remain the property of their respective owners.</p>
+        <p lang="de">Dies ist ein unabhängiger, inoffizieller Regelleitfaden. Er steht in keiner Verbindung zum Verlag des Spiels und wird von diesem nicht unterstützt. Alle Marken- und Urheberrechte am Originalspiel verbleiben bei ihren jeweiligen Rechteinhabern.</p>
+    </footer>
+
+<script src="../../one.js"></script>
+<script>
+/* global one */
+(() => {
+"use strict";
+
+const COPY = {
+  "en": {
+    "color.purple": "Purple",
+    "color.green": "Green",
+    "color.orange": "Orange",
+    "color.yellow": "Yellow",
+    "color.blue": "Blue",
+    "color.red": "Red",
+    "title": "Unofficial Guide - Azul: Summer Pavilion / Azul: Sommerpavillon",
+    "meta": "A bilingual table companion for tile drafting, wild colors, placement, and scoring.",
+    "aria.options": "Toggle guide options",
+    "aria.primary": "Primary",
+    "aria.setupControls": "Setup step controls",
+    "aria.lessons": "Rule lessons",
+    "aria.lessonControls": "Lesson controls",
+    "skip": "Skip to guide",
+    "subtitle": "Guided setup and rules, one decision at a time",
+    "setup": "Setup",
+    "learn": "Learn",
+    "reference": "Reference",
+    "setup.title": "Set up the table",
+    "setup.intro": "Use the colored-star side of the player boards. Choose 2–4 players in Guide options; the quantities below adjust automatically.",
+    "setup.side": "Colored stars",
+    "setup.shared.board": "Put the \u003cstrong\u003escoring board\u003c/strong\u003e where everyone can reach it.",
+    "setup.shared.factories": "Arrange \u003cstrong\u003e\u003coutput data-factories\u003e7\u003c/output\u003e Factory displays\u003c/strong\u003e in a circle. Leave the center of the table clear.",
+    "setup.shared.tower": "Place the \u003cstrong\u003etower\u003c/strong\u003e nearby for discarded tiles. Keep the point tokens beside the scoring board.",
+    "setup.shared.unused": "Return unused Factory displays to the box.",
+    "setup.shared.note": "The \u003cstrong\u003ecenter of the table\u003c/strong\u003e and the \u003cstrong\u003esupply spaces on the scoring board\u003c/strong\u003e are different places. You draft from the first, not the second.",
+    "zone.factories.title": "Factory displays",
+    "zone.factories.body": "2 players: 5 · 3 players: 7 · 4 players: 9",
+    "zone.center.title": "Center of the table",
+    "zone.center.body": "Leftover tiles collect here during drafting",
+    "zone.supply.title": "Supply spaces",
+    "zone.supply.body": "On the scoring board · reserved for bonuses",
+    "zone.tower.title": "Tower",
+    "zone.tower.body": "Discarded payments and unused tiles",
+    "setup.shared.caption": "Keep these four areas distinct throughout the game.",
+    "setup.shared": "Arrange the shared table",
+    "setup.players.board": "Give each player one \u003cstrong\u003eplayer board\u003c/strong\u003e, colored-star side up.",
+    "setup.players.marker": "Take the matching \u003cstrong\u003escoring marker\u003c/strong\u003e and put it on \u003cstrong\u003e5\u003c/strong\u003e on the scoring track.",
+    "setup.players.corners": "Leave all star spaces and the four corner storage spaces empty.",
+    "setup.players.room": "Leave room beside each player board for collected tiles. There are no starting tiles in your personal area.",
+    "setup.players.unused": "Return unused player boards and scoring markers to the box.",
+    "board.outer.title": "Six outer stars",
+    "board.outer.body": "Each accepts its printed tile color",
+    "board.center.title": "Center star",
+    "board.center.body": "Up to six different colors · no repeats",
+    "board.beside.title": "Beside the player board",
+    "board.beside.body": "Collected tiles wait here before placement",
+    "board.corners.title": "Four corner spaces",
+    "board.corners.body": "Storage for up to four tiles after passing",
+    "setup.players.caption": "Scoring starts at 5, not at 0.",
+    "setup.players": "Prepare player boards and scores",
+    "setup.tiles.bag": "Put all \u003cstrong\u003e132 tiles\u003c/strong\u003e in the bag and mix them.",
+    "setup.tiles.supply": "Draw \u003cstrong\u003e10 random tiles\u003c/strong\u003e and put them on the supply spaces in the middle of the scoring board.",
+    "setup.tiles.factories": "Draw \u003cstrong\u003e4 random tiles for each Factory display\u003c/strong\u003e: \u003coutput data-draft-total\u003e28\u003c/output\u003e tiles across \u003coutput data-factories\u003e7\u003c/output\u003e displays.",
+    "setup.tiles.beside": "Keep the remaining tiles in the bag. Do not deal tiles to players.",
+    "setup.tiles.note": "The 10 supply tiles are \u003cstrong\u003enot\u003c/strong\u003e available for ordinary drafting. You earn them by completing the spaces around features on your player board.",
+    "setup.tiles.caption": "Every Factory display begins with four tiles; their colors may repeat.",
+    "setup.tiles": "Fill the bag, supply, and displays",
+    "setup.track.counter": "Place the \u003cstrong\u003eround counter\u003c/strong\u003e on round \u003cstrong\u003e1\u003c/strong\u003e.",
+    "setup.track.purple": "\u003cstrong\u003ePurple\u003c/strong\u003e is the wild color in round 1. The round track determines the wild color; players do not choose it.",
+    "setup.track.six": "Play exactly \u003cstrong\u003esix rounds\u003c/strong\u003e, with a different wild color in each one.",
+    "setup.track.note": "A tile keeps its physical color. Being wild only changes how it is collected and how it can help pay for placement \u003cstrong\u003ethis round\u003c/strong\u003e.",
+    "setup.track.r1": "Round 1",
+    "setup.track.r2": "Round 2",
+    "setup.track.r3": "Round 3",
+    "setup.track.r4": "Round 4",
+    "setup.track.r5": "Round 5",
+    "setup.track.r6": "Round 6",
+    "setup.track.caption": "Teaching-round options change the examples only. A new game always starts in round 1.",
+    "setup.track": "Set round 1 and its wild color",
+    "setup.begin.youngest": "The \u003cstrong\u003eyoungest player\u003c/strong\u003e takes the first drafting turn. Play continues clockwise.",
+    "setup.begin.token": "Put the \u003cstrong\u003estart player token in the center of the table\u003c/strong\u003e, not in front of the youngest player.",
+    "setup.begin.phase": "Begin \u003cstrong\u003ePhase 1: Acquire tiles\u003c/strong\u003e. Everyone collects tiles before anyone places them on a star.",
+    "setup.begin.note": "The first player to take tiles from the center claims the token. Its holder starts placement in the same round \u003cstrong\u003eand\u003c/strong\u003e drafting in the next round.",
+    
+    "ready.first.title": "First drafting turn",
+    "ready.first.body": "Youngest player",
+    "ready.token.title": "Start player token",
+    "ready.token.body": "Waiting in the center of the table",
+    "ready.wild.title": "Round 1 wild color",
+    "ready.wild.body": "Purple",
+    "ready.score.title": "Starting score",
+    "ready.score.body": "5 points each",
+    "setup.begin.caption": "Choosing first does not automatically make you first to place.",
+    "setup.begin": "Choose the first player and begin",
+    "setup.ready": "Table is ready",
+    "setup.ready.count": "\u003cstrong\u003e\u003coutput data-player-count\u003e3\u003c/output\u003e players\u003c/strong\u003e · \u003cstrong\u003e\u003coutput data-factories\u003e7\u003c/output\u003e Factory displays\u003c/strong\u003e · 10 bonus tiles on the scoring board.",
+    "setup.ready.goal": "Collect first, place later. Build connected groups, claim bonus tiles, and score completed stars and numbers after round 6.",
+    "setup.ready.learn": "Learn the first round",
+    "back": "Back",
+    "learn.title": "Learn a round",
+    "learn.intro": "Learn the rhythm, then drafting, payment, scoring, and passing. Examples are independent practice situations, not a live game.",
+    "lesson.0": "Lesson 1",
+    "lesson.rhythm": "Round rhythm",
+    "lesson.1": "Lesson 2",
+    "lesson.draft": "Acquire tiles",
+    "lesson.2": "Lesson 3",
+    "lesson.place": "Play and pay",
+    "lesson.3": "Lesson 4",
+    "lesson.score": "Score and bonuses",
+    "lesson.4": "Lesson 5",
+    "lesson.finish": "Pass and finish",
+    "learn.rhythm.goal": "Your goal is the highest score after \u003cstrong\u003esix rounds\u003c/strong\u003e and final scoring. Points come from placing tiles and completing end-game goals; unused tiles can cost points.",
+    "phase.acquire.title": "1 · Acquire tiles",
+    "phase.acquire.body": "Take turns until all Factory displays AND the center of the table are empty. Collect tiles beside your player board.",
+    "phase.place.title": "2 · Play tiles and score points",
+    "phase.place.body": "Take turns placing exactly one tile and paying for it, or pass. Continue until everyone has passed.",
+    "phase.prepare.title": "3 · Prepare the next round",
+    "phase.prepare.body": "Advance the round counter and refill the displays. After round 6, skip this phase and finish scoring instead.",
+    "learn.rhythm.order": "Both drafting and placement use clockwise turns. \u003cstrong\u003eFinish each phase for everyone before starting the next.\u003c/strong\u003e This is not simultaneous play.",
+    
+    "learn.rhythm.title": "One round, three separate phases",
+    "draft.example": "Try a drafting example",
+    "draft.case": "Situation",
+    "draft.case.factory": "Factory display with two colors",
+    "draft.case.wild-only": "Factory display with only wild tiles",
+    "draft.case.first-center": "First visit to the center",
+    "draft.case.later-center": "Center after the token was taken",
+    "learn.draft.intro": "On each turn, choose \u003cstrong\u003eone Factory display OR the center of the table\u003c/strong\u003e. Take all tiles of one color that is not wild this round. If that source contains wild tiles, you \u003cstrong\u003emust also take exactly one\u003c/strong\u003e.",
+    "draft.factory.term": "From a Factory display",
+    "draft.factory.definition": "Put your selected tiles beside your player board. Move every remaining tile from that display into the center of the table.",
+    "draft.center.term": "From the center",
+    "draft.center.definition": "Put your selected tiles beside your player board. Leave all other tiles in the center.",
+    "learn.draft.only": "\u003cstrong\u003eOnly wild tiles at your chosen source?\u003c/strong\u003e Take just one. From a Factory display, move the rest into the center; from the center, leave the rest there. You cannot take only a wild tile from a source that still has non-wild tiles.",
+    "learn.draft.token": "The first center visit costs points",
+    "learn.draft.penalty": "If the start player token is still in the center, take it with your tiles. Lose \u003cstrong\u003e1 point per tile taken this turn\u003c/strong\u003e, including the wild tile, but do not go below 1. The token itself is not an extra tile penalty. Later visits to the center have no such penalty.",
+    "learn.draft.noPass": "Drafting is mandatory while tiles remain. There is no four-tile limit during this phase, and you do not place tiles on stars yet. The token holder will start Phase 2 and the next round.",
+    
+    "learn.draft.title": "Choose one source, then one non-wild color",
+    "pay.example": "Try a payment",
+    "pay.scope": "Assume an empty space that accepts the chosen color. This checks payment only, not whether that color is already in your center star.",
+    "pay.color": "Tile color to place",
+    "pay.cost": "Printed number on the space",
+    "pay.wildHelp": "When the chosen color is itself wild, count those tiles only once, in the matching-color field.",
+    "learn.place.intro": "The start player token holder begins. On your turn, choose an empty diamond-shaped space and pay its printed number using tiles beside your player board. \u003cstrong\u003eOne paid tile stays on that space; all other paid tiles go into the tower.\u003c/strong\u003e Then the next player takes a turn.",
+    "place.outer.term": "Outer stars",
+    "place.outer.definition": "The tile placed must match the star's printed color. Pick any empty space you can pay for; you need not start at 1 or place beside another tile.",
+    "place.center.term": "Center star",
+    "place.center.definition": "Choose any tile color not already placed in this star. Every placed tile here must have a different physical color.",
+    "place.wild.term": "Using wild tiles",
+    "place.wild.definition": "Pay with the needed color plus any number of current wild tiles, but keep at least one real tile of the color being placed. Wild substitutes go into the tower; they do not occupy a differently colored space.",
+    "learn.place.same": "You may spend wild tiles even when you have enough matching tiles. A wild-color tile may also be placed \u003cstrong\u003eas its own color\u003c/strong\u003e on its matching star, or in the center if that color is absent. In that case, pay entirely in that physical color.",
+    "learn.place.costNotScore": "\u003cstrong\u003eCost is not score.\u003c/strong\u003e Paying 4 places one tile, not four, and does not automatically score 4 points. Paid discards have no penalty. Other tiles stay beside your player board for later turns.",
+    
+    "learn.place.title": "Pay the printed number; place only one tile",
+    "learn.score.points": "Immediately gain \u003cstrong\u003e1 point for the new tile\u003c/strong\u003e, plus 1 for every existing tile connected to it through an unbroken chain of neighboring spaces \u003cstrong\u003eon the same star\u003c/strong\u003e. Count the group that contains the new tile, including tiles reached in both directions.",
+    "learn.score.adjacency": "Neighboring spaces share a side around the star. Merely meeting at its central point does not join separate groups. An empty gap breaks the chain; tiles on another star never join it. A completed six-tile star scores 6 for its final placement.",
+    "score.isolated.title": "Isolated placement",
+    "score.isolated.body": "No connected neighbor → 1 point",
+    "score.extend.title": "Extend a group",
+    "score.extend.body": "New tile + two connected tiles → 3 points",
+    "score.join.title": "Join two groups",
+    "score.join.body": "New tile joins groups of two and two → 5 points",
+    "score.complete.title": "Complete a star",
+    "score.complete.body": "All six spaces now connected → 6 points",
+    "score.caption": "These are placement scores. Completed-star bonuses are added only at game end.",
+    "learn.score.bonuses": "Surround a feature to gain tiles",
+    "learn.bonus.caption": "Bonus tiles from the supply spaces on the scoring board",
+    "learn.bonus.feature": "Feature",
+    "learn.bonus.spaces": "Surrounding spaces to cover",
+    "learn.bonus.reward": "Tiles to take",
+    "learn.bonus.pillar": "Pillar",
+    "learn.bonus.statue": "Statue",
+    "learn.bonus.window": "Window",
+    "learn.score.features": "Cover every indicated space around the feature on your player board, not the feature itself. When the last required space is covered, take that feature's bonus immediately. Each completed feature pays once; one placement can complete more than one feature.",
+    "learn.score.choose": "Choose freely from the supply spaces, \u003cstrong\u003eincluding multiple wild tiles\u003c/strong\u003e. Put bonus tiles beside your player board for later placement turns in this same phase. Resolve your bonuses, then refill empty supply spaces from the bag before the next player's turn.",
+    "learn.score.lap": "The scoring track is continuous. After passing 80 points, use a point token to record the completed lap.",
+    
+    "learn.score.title": "Score the connected group, then claim bonuses",
+    "learn.finish.pass": "Passing in Phase 2",
+    "learn.finish.passRule": "When you cannot or do not wish to place a tile, pass. \u003cstrong\u003eYou cannot rejoin this round.\u003c/strong\u003e Choose up to four remaining tiles to store in the four corner spaces, one per corner. Discard all other remaining tiles into the tower and lose 1 point for each. Other players keep taking turns until they also pass.",
+    "learn.finish.storage": "Four is the total storage limit, not four per color. Stored tiles score nothing and return beside your player board only for the next round. Their wild status follows the \u003cstrong\u003enew\u003c/strong\u003e round color.",
+    "learn.finish.prepare": "After rounds 1–5: prepare the next round",
+    "finish.advance": "The token holder advances the round counter and will take the first drafting turn of the new round.",
+    "finish.refill": "Refill each Factory display with 4 random tiles. If the bag runs out, put all tiles from the tower into the bag and continue drawing.",
+    "finish.returnToken": "Return the start player token to the center of the table. Its previous holder still starts this round.",
+    "finish.release": "Everyone moves stored corner tiles beside their player board. Tiles already placed on stars stay there.",
+    "learn.finish.end": "After round 6: final scoring",
+    "learn.finish.noNext": "There is no seventh round. After everyone passes, skip preparation and add all completed-star and number bonuses below to the points already earned.",
+    "learn.stars.caption": "Completed stars · all six spaces covered",
+    "learn.stars.star": "Star",
+    "learn.stars.points": "Points",
+    "learn.stars.center": "Multicolored center star",
+    "learn.stars.red": "Red star",
+    "learn.stars.blue": "Blue star",
+    "learn.stars.yellow": "Yellow star",
+    "learn.stars.orange": "Orange star",
+    "learn.stars.green": "Green star",
+    "learn.stars.purple": "Purple star",
+    "learn.numbers.caption": "Number bonuses · check all seven stars, including the center",
+    "learn.numbers.condition": "Every space with this number covered",
+    "learn.numbers.points": "Points",
+    "learn.finish.cumulative": "The number goals are \u003cstrong\u003eindependent and cumulative\u003c/strong\u003e. You may earn a number bonus without completing a star, and the same tile may help with both. There is no number bonus for 5s or 6s.",
+    "learn.finish.leftovers": "Then discard any tiles still in your corner spaces and lose \u003cstrong\u003e1 point per tile\u003c/strong\u003e. Storage does not protect tiles at game end. Do not penalize again tiles already discarded when passing. Incomplete stars keep their placement points but earn no completed-star bonus.",
+    "learn.finish.winner": "\u003cstrong\u003eThe highest final score wins. Tied players share the victory.\u003c/strong\u003e",
+    
+    "learn.finish.title": "Pass for the round; score after round 6",
+    "reference.title": "Rules reference",
+    "reference.intro": "Open the rule needed at the table. These are the standard rules for the colored-star side.",
+    "reference.acquire": "Drafting and turn order",
+    "ref.round.1": "Round 1",
+    "ref.round.2": "Round 2",
+    "ref.round.3": "Round 3",
+    "ref.round.4": "Round 4",
+    "ref.round.5": "Round 5",
+    "ref.round.6": "Round 6",
+    "ref.wild.rule": "At one chosen source, take every tile of one non-wild color and exactly one wild tile if any are there. If that source contains only wild tiles, take one. Factory leftovers move to the center; center leftovers remain there. The rule is per source, not across the whole table.",
+    "ref.wild.bonus": "The one-wild restriction does not apply to bonus tiles: you may choose several wild tiles from the scoring-board supply.",
+    
+    "reference.wild": "Wild colors and the one-wild drafting rule",
+    "ref.token.start": "Round 1 starts with the youngest player; the token begins in the center.",
+    "ref.token.penalty": "The first player taking tiles from the center takes the token and loses one point per tile taken, including wild tiles, stopping at a total of 1. The token itself adds no penalty.",
+    "ref.token.order": "Its holder starts placement this round and drafting next round. Return the token to the center during preparation, without changing who starts.",
+    "ref.token.other": "Later center visits have no token penalty. You may not pass during drafting.",
+    
+    "reference.token": "Start player token and the center penalty",
+    "reference.placement": "Placement, points, and bonuses",
+    "ref.pay.rule": "A space numbered N costs N tiles in total. Place one physically matching tile and discard the other N−1 paid tiles into the tower with no point penalty. Current wild tiles can replace any of those discarded tiles, but never the real tile placed in another color.",
+    "ref.pay.any": "Choose any empty diamond space you can legally pay for. There is no ascending-number requirement or mandatory adjacency. Never place on a pillar, statue, or window. The center star cannot repeat a physical color.",
+    "ref.pay.own": "To place a tile of the wild color as itself, pay entirely with tiles of that color. A center-star space follows the same payment rule, with the additional no-repeat restriction.",
+    
+    "reference.pay": "What can pay for a placement?",
+    "ref.scoring.group": "Count the newly placed tile and the uninterrupted group it now belongs to on that one star. Follow neighboring spaces in both directions, counting each tile once. Gaps, other stars, and a mere meeting at the star's center do not connect groups. A final placement in a full star scores 6.",
+    "ref.scoring.cost": "The printed number is a tile cost, not a point value. Completed-star and number bonuses are added only in final scoring.",
+    
+    "reference.scoring": "Which tiles score together?",
+    "ref.bonus.caption": "Bonus tiles from the supply spaces on the scoring board",
+    "ref.bonus.feature": "Feature",
+    "ref.bonus.spaces": "Surrounding spaces to cover",
+    "ref.bonus.reward": "Tiles to take",
+    "ref.bonus.pillar": "Pillar",
+    "ref.bonus.statue": "Statue",
+    "ref.bonus.window": "Window",
+    "ref.bonus.rule": "Complete all indicated surrounding spaces to receive the bonus once. Choose from the current supply on the scoring board, with no color restriction. Several wild tiles are allowed. Take all earned bonuses, put them beside your player board, and refill the supply before the next player's turn.",
+    "ref.bonus.turn": "Bonus tiles do not give an extra placement immediately. They become available for your later turns in the same placement phase.",
+    
+    "reference.bonus": "Pillars, statues, and windows",
+    "reference.ending": "Passing and game end",
+    "ref.pass.rule": "Passing is optional when you could place, and required when you cannot. It ends your placement turns for the round. Keep at most four tiles in the corners; discard all other remaining tiles for −1 point each. The stored tiles return beside your board during next-round preparation, with the new round's wild color.",
+    "ref.pass.last": "In round 6, finish the placement phase and add final bonuses. Then discard any tiles still stored in the corners for −1 point each. Every unused tile is penalized once, whether discarded when passing or after final bonuses.",
+    
+    "reference.passing": "Passing, four-tile storage, and the last round",
+    "ref.bag.rule": "When the bag runs out during a refill, move all tiles from the tower into it and continue. Do not clear unused bonus-supply tiles between rounds. After rounds 1–5, refill Factory displays to four tiles each. If both the bag and tower are empty, begin the next round with any displays still short of tiles.",
+    
+    "reference.bag": "Empty bag and refilling displays",
+    "ref.stars.caption": "Completed stars · all six spaces covered",
+    "ref.stars.star": "Star",
+    "ref.stars.points": "Points",
+    "ref.stars.center": "Multicolored center star",
+    "ref.stars.red": "Red star",
+    "ref.stars.blue": "Blue star",
+    "ref.stars.yellow": "Yellow star",
+    "ref.stars.orange": "Orange star",
+    "ref.stars.green": "Green star",
+    "ref.stars.purple": "Purple star",
+    "ref.numbers.caption": "Number bonuses · check all seven stars, including the center",
+    "ref.numbers.condition": "Every space with this number covered",
+    "ref.numbers.points": "Points",
+    "ref.final.rule": "Check all seven stars, including the center, for each number goal. Add every qualifying bonus independently. Incomplete stars earn no completion bonus. Discard any remaining corner tiles for −1 each. Highest total wins; a tie is shared.",
+    
+    "reference.final": "Final scoring values",
+    "sources.scope": "This guide teaches the standard colored-star game for 2–4 players. It does not cover the reverse-side variant, expansions, or optional modules.",
+    "sources.original": "Independent learning aid, not affiliated with or endorsed by the publisher. Explanations and practice examples are newly written. No official artwork, board images, logos, or rulebook pages are reproduced. Component and rules terminology is retained for use with the physical game.",
+    
+    
+    
+    
+    "reference.sources":"Scope and independence",
+    "options.title": "Guide options",
+    "options.table": "Table",
+    "options.players": "Players",
+    "players.2": "2 players",
+    "players.3": "3 players",
+    "players.4": "4 players",
+    "options.scope": "Standard game · colored-star side",
+    "options.round": "Teaching round",
+    "options.roundNumber": "Round",
+    "option.round.1": "1 · Purple",
+    "option.round.2": "2 · Green",
+    "option.round.3": "3 · Orange",
+    "option.round.4": "4 · Yellow",
+    "option.round.5": "5 · Blue",
+    "option.round.6": "6 · Red",
+    "options.roundHelp": "Changes the wild color in the teaching examples only. It does not advance your physical game or alter round-1 setup.",
+    "options.progress": "Setup progress",
+    "options.completed": "Completed steps",
+    "options.reset": "Start over",
+    "options.interface": "User interface",
+    "options.language": "Language",
+    "options.local": "Progress and example settings stay in this browser.",
+    "dynamic.step": "Step {step} of {total}",
+    "dynamic.progress": "{done} of {total}",
+    "dynamic.setupDone": "Setup complete",
+    "dynamic.finishSetup": "Finish setup",
+    "dynamic.continue": "Continue",
+    "dynamic.nextLesson": "Next lesson",
+    "dynamic.openReference": "Open reference",
+    "dynamic.factory": "Factory display {number}",
+    "dynamic.fourTiles": "4 random tiles",
+    "dynamic.wild": "Wild color: {color}",
+    "dynamic.roundHeading": "Round {round} · Wild color: {color}",
+    "dynamic.roundExplain": "{color} tiles are wild in this round only. Complete all drafting before the token holder starts placement.",
+    "dynamic.roundLast": "This is the last round. {color} tiles are wild; after placement and passing, go directly to final scoring. No tiles can be kept for another round.",
+    "dynamic.countColor": "{count} × {color}",
+    "dynamic.exampleSource": "At the chosen source",
+    "dynamic.exampleTake": "Take",
+    "dynamic.exampleLeave": "What happens to the rest?",
+    "dynamic.examplePenalty": "Points and token",
+    "dynamic.toCenter": "Move to the center: {tiles}.",
+    "dynamic.stayCenter": "Leave in the center: {tiles}.",
+    "dynamic.noPenalty": "No point penalty. The token stays where it is.",
+    "dynamic.firstPenalty": "3 tiles taken = −3 points. A score of 5 becomes 2. Take the token: you begin placement and next round's drafting.",
+    "dynamic.laterPenalty": "No new token penalty. The token was taken on an earlier turn.",
+    "dynamic.matchingLabel": "Matching tiles available · {color}",
+    "dynamic.wildLabel": "Wild tiles available · {color}",
+    "dynamic.legal": "Payment is legal",
+    "dynamic.illegal": "Payment is not possible",
+    "dynamic.invalid": "Enter whole tile counts",
+    "dynamic.invalidDetail": "Use whole numbers from 0 to 132 in the enabled count fields.",
+    "dynamic.needReal": "You need at least one real {color} tile to place. Wild tiles cannot replace the physical tile on a differently colored space.",
+    "dynamic.needMore": "This space costs {cost} tiles in total, but you have only {have} usable tiles.",
+    "dynamic.payOwn": "Pay {cost} × {color}. Place 1 × {color}; discard {discard} other tiles of that color into the tower. These paid discards cost no points.",
+    "dynamic.payMixed": "One legal payment: {matching} × {color} + {wild} × {wildColor} (wild). Place 1 × {color}; discard the other {discard} paid tiles into the tower without a point penalty.",
+    "dynamic.payRange": "You may use from {min} to {max} wild tiles for this payment. Keep at least one real matching tile; pay exactly {cost} tiles altogether.",
+    "dynamic.payFixed": "This payment uses {wild} wild tiles. Pay exactly {cost} tiles altogether.",
+    "dynamic.payOwnNote": "Matching and wild refer to the same physical color here. Do not count those tiles twice.",
+    "dynamic.storageError": "Progress could not be saved. The guide will keep working in this tab.",
+    "dynamic.resetQuestion": "Reset setup progress and example settings? Keep the current language.",
+    "dynamic.resetTitle": "Start over?",
+    "dynamic.cancel": "Cancel",
+    "dynamic.confirm": "Confirm",
+    "dynamic.resetDone": "Guide reset"
+  },
+  "de": {
+    "color.purple": "Lila",
+    "color.green": "Grün",
+    "color.orange": "Orange",
+    "color.yellow": "Gelb",
+    "color.blue": "Blau",
+    "color.red": "Rot",
+    "title": "Unofficial Guide - Azul: Summer Pavilion / Azul: Sommerpavillon",
+    "meta": "Ein zweisprachiger Tischbegleiter für Fliesenauswahl, Jokerfarben, Platzierung und Wertung.",
+    "aria.options": "Leitfadenoptionen ein- oder ausblenden",
+    "aria.primary": "Hauptnavigation",
+    "aria.setupControls": "Steuerung der Vorbereitungsschritte",
+    "aria.lessons": "Regellektionen",
+    "aria.lessonControls": "Steuerung der Lektionen",
+    "skip": "Zum Leitfaden springen",
+    "subtitle": "Geführter Spielaufbau und Regeln – eine Entscheidung nach der anderen",
+    "setup": "Spielvorbereitung",
+    "learn": "Lernen",
+    "reference": "Nachschlagen",
+    "setup.title": "Spiel vorbereiten",
+    "setup.intro": "Verwendet die Seite mit den farbigen Sternen. Wählt in den Leitfadenoptionen 2–4 Spieler; die Mengen unten werden automatisch angepasst.",
+    "setup.side": "Farbige Sterne",
+    "setup.shared.board": "Legt den \u003cstrong\u003eSpielplan\u003c/strong\u003e so aus, dass alle ihn erreichen können.",
+    "setup.shared.factories": "Legt \u003cstrong\u003e\u003coutput data-factories\u003e7\u003c/output\u003e Manufakturplättchen\u003c/strong\u003e im Kreis aus. Lasst die Tischmitte frei.",
+    "setup.shared.tower": "Stellt den \u003cstrong\u003eTurm\u003c/strong\u003e für abgelegte Fliesen bereit. Legt die Punktechips neben den Spielplan.",
+    "setup.shared.unused": "Legt nicht benötigte Manufakturplättchen zurück in die Schachtel.",
+    "setup.shared.note": "Die \u003cstrong\u003eTischmitte\u003c/strong\u003e und die \u003cstrong\u003eVorrats-Felder auf dem Spielplan\u003c/strong\u003e sind verschiedene Bereiche. In Phase 1 nehmt ihr Fliesen aus der Tischmitte, nicht von den Vorrats-Feldern.",
+    "zone.factories.title": "Manufakturplättchen",
+    "zone.factories.body": "2 Spieler: 5 · 3 Spieler: 7 · 4 Spieler: 9",
+    "zone.center.title": "Tischmitte",
+    "zone.center.body": "Hier sammeln sich beim Erwerb die übrigen Fliesen",
+    "zone.supply.title": "Vorrats-Felder",
+    "zone.supply.body": "Auf dem Spielplan · für Bonus-Fliesen",
+    "zone.tower.title": "Turm",
+    "zone.tower.body": "Abgelegte Fliesen aus Zahlungen und Restbeständen",
+    "setup.shared.caption": "Haltet diese vier Bereiche während des Spiels auseinander.",
+    "setup.shared": "Gemeinsamen Spielbereich vorbereiten",
+    "setup.players.board": "Gebt jedem Spieler eine \u003cstrong\u003eSpielerablage\u003c/strong\u003e mit den farbigen Sternen nach oben.",
+    "setup.players.marker": "Nehmt den passenden \u003cstrong\u003ePunktemarker\u003c/strong\u003e und stellt ihn auf \u003cstrong\u003eFeld 5\u003c/strong\u003e der Punkteleiste.",
+    "setup.players.corners": "Lasst alle Sternfelder und die vier Ablagefelder in den Ecken frei.",
+    "setup.players.room": "Lasst neben jeder Spielerablage Platz für erworbene Fliesen. Ihr beginnt ohne eigene Fliesen.",
+    "setup.players.unused": "Legt übrige Spielerablagen und Punktemarker zurück in die Schachtel.",
+    "board.outer.title": "Sechs äußere Sterne",
+    "board.outer.body": "Jeder verlangt die aufgedruckte Fliesenfarbe",
+    "board.center.title": "Mittelstern",
+    "board.center.body": "Bis zu sechs verschiedene Farben · keine doppelt",
+    "board.beside.title": "Neben der Spielerablage",
+    "board.beside.body": "Hier warten erworbene Fliesen auf das Verlegen",
+    "board.corners.title": "Vier Eckfelder",
+    "board.corners.body": "Platz für bis zu vier Fliesen nach dem Passen",
+    "setup.players.caption": "Der Punktestand beginnt bei 5, nicht bei 0.",
+    "setup.players": "Spielerablagen und Punktestände vorbereiten",
+    "setup.tiles.bag": "Gebt alle \u003cstrong\u003e132 Fliesen\u003c/strong\u003e in den Beutel und mischt sie.",
+    "setup.tiles.supply": "Zieht \u003cstrong\u003e10 zufällige Fliesen\u003c/strong\u003e und legt sie auf die Vorrats-Felder in der Mitte des Spielplans.",
+    "setup.tiles.factories": "Zieht \u003cstrong\u003e4 zufällige Fliesen für jedes Manufakturplättchen\u003c/strong\u003e: insgesamt \u003coutput data-draft-total\u003e28\u003c/output\u003e Fliesen auf \u003coutput data-factories\u003e7\u003c/output\u003e Plättchen.",
+    "setup.tiles.beside": "Lasst die übrigen Fliesen im Beutel. Verteilt noch keine Fliesen an die Spieler.",
+    "setup.tiles.note": "Die 10 Vorrats-Fliesen könnt ihr \u003cstrong\u003enicht\u003c/strong\u003e beim normalen Erwerb nehmen. Ihr erhaltet sie, indem ihr die Felder um Motive auf eurer Spielerablage vollständig belegt.",
+    "setup.tiles.caption": "Jedes Manufakturplättchen beginnt mit vier Fliesen; Farben dürfen mehrfach vorkommen.",
+    "setup.tiles": "Beutel, Vorrat und Manufakturen bestücken",
+    "setup.track.counter": "Stellt den \u003cstrong\u003eRundenzähler\u003c/strong\u003e auf Runde \u003cstrong\u003e1\u003c/strong\u003e.",
+    "setup.track.purple": "In Runde 1 ist \u003cstrong\u003eLila\u003c/strong\u003e die Jokerfarbe. Die Rundenleiste legt sie fest; ihr wählt sie nicht selbst.",
+    "setup.track.six": "Ihr spielt genau \u003cstrong\u003esechs Runden\u003c/strong\u003e, jede mit einer anderen Jokerfarbe.",
+    "setup.track.note": "Eine Fliese behält ihre tatsächliche Farbe. Der Jokerstatus verändert nur ihren Erwerb und ihre Verwendung beim Bezahlen \u003cstrong\u003ein dieser Runde\u003c/strong\u003e.",
+    "setup.track.r1": "Runde 1",
+    "setup.track.r2": "Runde 2",
+    "setup.track.r3": "Runde 3",
+    "setup.track.r4": "Runde 4",
+    "setup.track.r5": "Runde 5",
+    "setup.track.r6": "Runde 6",
+    "setup.track.caption": "Die gewählte Lernrunde verändert nur die Beispiele. Eine neue Partie beginnt immer mit Runde 1.",
+    "setup.track": "Runde 1 und ihre Jokerfarbe einstellen",
+    "setup.begin.youngest": "Der \u003cstrong\u003ejüngste Spieler\u003c/strong\u003e beginnt mit dem Erwerb von Fliesen. Danach geht es im Uhrzeigersinn weiter.",
+    "setup.begin.token": "Legt den \u003cstrong\u003eStartspieler-Stein in die Tischmitte\u003c/strong\u003e, nicht vor den jüngsten Spieler.",
+    "setup.begin.phase": "Beginnt mit \u003cstrong\u003ePhase 1: Fliesen erwerben\u003c/strong\u003e. Alle sammeln zuerst Fliesen; noch niemand legt sie auf einen Stern.",
+    "setup.begin.note": "Wer zuerst Fliesen aus der Tischmitte nimmt, erhält den Stein. Sein Besitzer beginnt das Verlegen in derselben Runde \u003cstrong\u003eund\u003c/strong\u003e den Erwerb in der nächsten Runde.",
+    
+    "ready.first.title": "Erster Erwerbszug",
+    "ready.first.body": "Jüngster Spieler",
+    "ready.token.title": "Startspieler-Stein",
+    "ready.token.body": "Wartet in der Tischmitte",
+    "ready.wild.title": "Jokerfarbe in Runde 1",
+    "ready.wild.body": "Lila",
+    "ready.score.title": "Startpunktestand",
+    "ready.score.body": "Jeweils 5 Punkte",
+    "setup.begin.caption": "Wer zuerst Fliesen auswählt, legt nicht automatisch zuerst.",
+    "setup.begin": "Startspieler bestimmen und beginnen",
+    "setup.ready": "Das Spiel ist vorbereitet",
+    "setup.ready.count": "\u003cstrong\u003e\u003coutput data-player-count\u003e3\u003c/output\u003e Spieler\u003c/strong\u003e · \u003cstrong\u003e\u003coutput data-factories\u003e7\u003c/output\u003e Manufakturplättchen\u003c/strong\u003e · 10 Bonus-Fliesen auf dem Spielplan.",
+    "setup.ready.goal": "Zuerst sammeln, dann legen. Bildet verbundene Gruppen, erhaltet Bonus-Fliesen und wertet nach Runde 6 vollständige Sterne und Zahlen.",
+    "setup.ready.learn": "Die erste Runde kennenlernen",
+    "back": "Zurück",
+    "learn.title": "Eine Runde kennenlernen",
+    "learn.intro": "Lernt zuerst den Ablauf, danach Erwerb, Bezahlung, Wertung und Passen. Die Beispiele sind einzelne Übungssituationen und keine laufende Partie.",
+    "lesson.0": "Lektion 1",
+    "lesson.rhythm": "Rundenablauf",
+    "lesson.1": "Lektion 2",
+    "lesson.draft": "Fliesen erwerben",
+    "lesson.2": "Lektion 3",
+    "lesson.place": "Legen und bezahlen",
+    "lesson.3": "Lektion 4",
+    "lesson.score": "Wertung und Boni",
+    "lesson.4": "Lektion 5",
+    "lesson.finish": "Passen und Spielende",
+    "learn.rhythm.goal": "Euer Ziel ist der höchste Punktestand nach \u003cstrong\u003esechs Runden\u003c/strong\u003e und der Schlusswertung. Punkte gibt es für verlegte Fliesen und erfüllte Schlusswertungsziele; ungenutzte Fliesen können Punkte kosten.",
+    "phase.acquire.title": "1 · Fliesen erwerben",
+    "phase.acquire.body": "Nehmt reihum Fliesen, bis alle Manufakturplättchen UND die Tischmitte leer sind. Sammelt sie neben eurer Spielerablage.",
+    "phase.place.title": "2 · Fliesen legen und Punkte erhalten",
+    "phase.place.body": "Legt reihum jeweils genau eine Fliese und bezahlt sie, oder passt. Spielt weiter, bis alle gepasst haben.",
+    "phase.prepare.title": "3 · Vorbereiten der nächsten Runde",
+    "phase.prepare.body": "Rückt den Rundenzähler vor und bestückt die Manufakturplättchen neu. Nach Runde 6 entfällt diese Phase; stattdessen folgt die Schlusswertung.",
+    "learn.rhythm.order": "Sowohl beim Erwerb als auch beim Legen seid ihr im Uhrzeigersinn am Zug. \u003cstrong\u003eEine Phase muss für alle beendet sein, bevor die nächste beginnt.\u003c/strong\u003e Ihr spielt nicht gleichzeitig.",
+    
+    "learn.rhythm.title": "Eine Runde, drei getrennte Phasen",
+    "draft.example": "Ein Erwerbsbeispiel ausprobieren",
+    "draft.case": "Situation",
+    "draft.case.factory": "Manufakturplättchen mit zwei Farben",
+    "draft.case.wild-only": "Manufakturplättchen nur mit Joker-Fliesen",
+    "draft.case.first-center": "Erster Zugriff auf die Tischmitte",
+    "draft.case.later-center": "Tischmitte nach Vergabe des Startspieler-Steins",
+    "learn.draft.intro": "Wähle in deinem Zug \u003cstrong\u003eein Manufakturplättchen ODER die Tischmitte\u003c/strong\u003e. Nimm dort alle Fliesen einer Farbe, die diese Runde keine Jokerfarbe ist. Liegen dort Joker-Fliesen, \u003cstrong\u003emusst du genau eine zusätzlich nehmen\u003c/strong\u003e.",
+    "draft.factory.term": "Vom Manufakturplättchen",
+    "draft.factory.definition": "Lege die gewählten Fliesen neben deine Spielerablage. Schiebe alle übrigen Fliesen dieses Plättchens in die Tischmitte.",
+    "draft.center.term": "Aus der Tischmitte",
+    "draft.center.definition": "Lege die gewählten Fliesen neben deine Spielerablage. Alle anderen Fliesen bleiben in der Tischmitte.",
+    "learn.draft.only": "\u003cstrong\u003eIn deinem gewählten Bereich liegen nur Joker-Fliesen?\u003c/strong\u003e Nimm genau eine. Bei einem Manufakturplättchen schiebst du den Rest in die Tischmitte; in der Tischmitte bleibt der Rest liegen. Solange im gewählten Bereich Nicht-Jokerfarben liegen, darfst du nicht nur eine Joker-Fliese nehmen.",
+    "learn.draft.token": "Der erste Zugriff auf die Tischmitte kostet Punkte",
+    "learn.draft.penalty": "Liegt der Startspieler-Stein noch in der Tischmitte, nimm ihn zusammen mit deinen Fliesen. Verliere \u003cstrong\u003e1 Punkt pro in diesem Zug genommener Fliese\u003c/strong\u003e, einschließlich Joker-Fliese, aber falle nicht unter 1. Der Startspieler-Stein kostet keinen zusätzlichen Punkt. Spätere Zugriffe auf die Tischmitte verursachen diesen Abzug nicht.",
+    "learn.draft.noPass": "Solange noch Fliesen ausliegen, musst du welche nehmen. In dieser Phase gibt es kein Vier-Fliesen-Limit, und ihr legt noch nichts auf die Sterne. Der Besitzer des Startspieler-Steins beginnt Phase 2 und die nächste Runde.",
+    
+    "learn.draft.title": "Wähle einen Bereich und eine Nicht-Jokerfarbe",
+    "pay.example": "Eine Bezahlung ausprobieren",
+    "pay.scope": "Gehe von einem freien Feld aus, auf dem die gewählte Farbe erlaubt ist. Geprüft wird nur die Bezahlung, nicht ob die Farbe im Mittelstern schon vorkommt.",
+    "pay.color": "Farbe der zu legenden Fliese",
+    "pay.cost": "Aufgedruckte Zahl auf dem Feld",
+    "pay.wildHelp": "Ist die gewählte Farbe selbst Jokerfarbe, zähle diese Fliesen nur einmal: im Feld für die passende Farbe.",
+    "learn.place.intro": "Der Besitzer des Startspieler-Steins beginnt. Wähle in deinem Zug ein freies Rautenfeld und bezahle seine aufgedruckte Zahl mit Fliesen neben deiner Spielerablage. \u003cstrong\u003eEine bezahlte Fliese bleibt auf dem Feld; alle anderen bezahlten Fliesen kommen in den Turm.\u003c/strong\u003e Danach ist der nächste Spieler am Zug.",
+    "place.outer.term": "Äußere Sterne",
+    "place.outer.definition": "Die gelegte Fliese muss zur aufgedruckten Sternfarbe passen. Du darfst jedes freie Feld wählen, das du bezahlen kannst; du musst weder bei 1 beginnen noch an eine Fliese anlegen.",
+    "place.center.term": "Mittelstern",
+    "place.center.definition": "Wähle eine Fliesenfarbe, die in diesem Stern noch nicht liegt. Jede hier gelegte Fliese muss eine andere tatsächliche Farbe haben.",
+    "place.wild.term": "Joker-Fliesen nutzen",
+    "place.wild.definition": "Bezahle mit der benötigten Farbe und beliebig vielen aktuellen Joker-Fliesen, aber verwende mindestens eine echte Fliese der Farbe, die du legst. Ersetzende Joker-Fliesen kommen in den Turm; sie werden nicht auf ein andersfarbiges Feld gelegt.",
+    "learn.place.same": "Du darfst Joker-Fliesen einsetzen, auch wenn du genug passende Fliesen hast. Eine Fliese der Jokerfarbe darf auch \u003cstrong\u003eals ihre eigene Farbe\u003c/strong\u003e auf den passenden Stern oder auf den Mittelstern, falls die Farbe dort fehlt. Dann bezahlst du vollständig mit dieser tatsächlichen Farbe.",
+    "learn.place.costNotScore": "\u003cstrong\u003eKosten sind nicht Punkte.\u003c/strong\u003e Für ein Feld mit der Zahl 4 legst du eine Fliese, nicht vier, und erhältst nicht automatisch 4 Punkte. Für bezahlte und abgelegte Fliesen gibt es keinen Punktabzug. Übrige Fliesen bleiben für spätere Züge neben deiner Spielerablage.",
+    
+    "learn.place.title": "Bezahle die aufgedruckte Zahl; lege nur eine Fliese",
+    "learn.score.points": "Erhalte sofort \u003cstrong\u003e1 Punkt für die neue Fliese\u003c/strong\u003e und je 1 Punkt für jede vorhandene Fliese, die über eine ununterbrochene Kette benachbarter Felder \u003cstrong\u003eauf demselben Stern\u003c/strong\u003e mit ihr verbunden ist. Zähle die ganze Gruppe mit der neuen Fliese, in beide Richtungen.",
+    "learn.score.adjacency": "Benachbarte Felder teilen eine Kante im Stern. Nur die Berührung am Mittelpunkt verbindet getrennte Gruppen nicht. Eine Lücke unterbricht die Kette; Fliesen eines anderen Sterns zählen nie dazu. Beim Legen der letzten Fliese eines vollständigen Sterns erhältst du 6 Punkte.",
+    "score.isolated.title": "Einzelne Fliese",
+    "score.isolated.body": "Keine verbundene Nachbarfliese → 1 Punkt",
+    "score.extend.title": "Eine Gruppe erweitern",
+    "score.extend.body": "Neue Fliese + zwei verbundene Fliesen → 3 Punkte",
+    "score.join.title": "Zwei Gruppen verbinden",
+    "score.join.body": "Neue Fliese verbindet zwei Zweiergruppen → 5 Punkte",
+    "score.complete.title": "Einen Stern vollenden",
+    "score.complete.body": "Alle sechs Felder jetzt verbunden → 6 Punkte",
+    "score.caption": "Dies sind Punkte fürs Verlegen. Boni für vollständige Sterne gibt es erst am Spielende.",
+    "learn.score.bonuses": "Umschließe ein Motiv und erhalte Fliesen",
+    "learn.bonus.caption": "Bonus-Fliesen von den Vorrats-Feldern auf dem Spielplan",
+    "learn.bonus.feature": "Motiv",
+    "learn.bonus.spaces": "Zu belegende angrenzende Felder",
+    "learn.bonus.reward": "Fliesen nehmen",
+    "learn.bonus.pillar": "Säule",
+    "learn.bonus.statue": "Statue",
+    "learn.bonus.window": "Fenster",
+    "learn.score.features": "Belege alle vorgesehenen Felder um das Motiv auf deiner Spielerablage, nicht das Motiv selbst. Sobald das letzte benötigte Feld belegt ist, nimmst du den Bonus sofort. Jedes vollendete Motiv bringt seinen Bonus einmal; eine Platzierung kann mehrere Motive vollenden.",
+    "learn.score.choose": "Wähle frei von den Vorrats-Feldern, \u003cstrong\u003eauch mehrere Joker-Fliesen\u003c/strong\u003e. Lege Bonus-Fliesen neben deine Spielerablage; du kannst sie in späteren Legezügen derselben Phase nutzen. Erledige deine Boni und fülle dann die leeren Vorrats-Felder vor dem nächsten Spielerzug aus dem Beutel auf.",
+    "learn.score.lap": "Die Punkteleiste ist ein Rundkurs. Wenn du 80 Punkte überschreitest, hältst du die volle Umrundung mit einem Punktechip fest.",
+    
+    "learn.score.title": "Werte die verbundene Gruppe und erhalte Boni",
+    "learn.finish.pass": "Passen in Phase 2",
+    "learn.finish.passRule": "Wenn du keine Fliese legen kannst oder möchtest, passt du. \u003cstrong\u003eDu kannst in dieser Runde nicht wieder einsteigen.\u003c/strong\u003e Lege bis zu vier übrige Fliesen in die vier Eckfelder, eine pro Ecke. Wirf alle anderen übrigen Fliesen in den Turm und verliere dafür je 1 Punkt. Die anderen Spieler sind weiter am Zug, bis auch sie passen.",
+    "learn.finish.storage": "Vier ist das gesamte Aufbewahrungslimit, nicht vier pro Farbe. Aufbewahrte Fliesen bringen keine Punkte und kommen erst für die nächste Runde wieder neben deine Spielerablage. Ihr Jokerstatus richtet sich nach der \u003cstrong\u003eneuen\u003c/strong\u003e Jokerfarbe.",
+    "learn.finish.prepare": "Nach Runde 1–5: nächste Runde vorbereiten",
+    "finish.advance": "Der Besitzer des Startspieler-Steins rückt den Rundenzähler vor und beginnt den Erwerb in der neuen Runde.",
+    "finish.refill": "Bestückt jedes Manufakturplättchen mit 4 zufälligen Fliesen. Wird der Beutel leer, gebt alle Fliesen aus dem Turm hinein und zieht weiter.",
+    "finish.returnToken": "Legt den Startspieler-Stein zurück in die Tischmitte. Sein bisheriger Besitzer beginnt trotzdem diese Runde.",
+    "finish.release": "Alle legen die aufbewahrten Fliesen aus den Ecken neben ihre Spielerablage. Bereits auf Sternen verlegte Fliesen bleiben liegen.",
+    "learn.finish.end": "Nach Runde 6: Schlusswertung",
+    "learn.finish.noNext": "Es gibt keine siebte Runde. Sobald alle gepasst haben, entfällt die Vorbereitung. Addiert die folgenden Boni für vollständige Sterne und Zahlen zu euren bisher erreichten Punkten.",
+    "learn.stars.caption": "Vollständige Sterne · alle sechs Felder belegt",
+    "learn.stars.star": "Stern",
+    "learn.stars.points": "Punkte",
+    "learn.stars.center": "Mehrfarbiger Mittelstern",
+    "learn.stars.red": "Roter Stern",
+    "learn.stars.blue": "Blauer Stern",
+    "learn.stars.yellow": "Gelber Stern",
+    "learn.stars.orange": "Orangefarbener Stern",
+    "learn.stars.green": "Grüner Stern",
+    "learn.stars.purple": "Lilafarbener Stern",
+    "learn.numbers.caption": "Zahlenboni · alle sieben Sterne einschließlich Mittelstern prüfen",
+    "learn.numbers.condition": "Alle Felder mit dieser Zahl belegt",
+    "learn.numbers.points": "Punkte",
+    "learn.finish.cumulative": "Die Zahlenziele gelten \u003cstrong\u003eunabhängig voneinander und werden addiert\u003c/strong\u003e. Du kannst einen Zahlenbonus ohne vollständigen Stern erhalten; dieselbe Fliese darf für beides zählen. Für Fünfen und Sechsen gibt es keinen Zahlenbonus.",
+    "learn.finish.leftovers": "Wirf danach alle Fliesen, die noch in deinen Eckfeldern liegen, in den Turm und verliere \u003cstrong\u003e1 Punkt pro Fliese\u003c/strong\u003e. Aufbewahren schützt am Spielende nicht vor Minuspunkten. Bereits beim Passen abgeworfene Fliesen werden nicht erneut bestraft. Unvollständige Sterne behalten ihre Legepunkte, erhalten aber keinen Vollständigkeitsbonus.",
+    "learn.finish.winner": "\u003cstrong\u003eDer höchste Endpunktestand gewinnt. Bei Gleichstand teilen sich die beteiligten Spieler den Sieg.\u003c/strong\u003e",
+    
+    "learn.finish.title": "Passe für diese Runde; werte nach Runde 6",
+    "reference.title": "Regeln zum Nachschlagen",
+    "reference.intro": "Öffnet die am Tisch benötigte Regel. Hier gelten die Standardregeln für die Seite mit den farbigen Sternen.",
+    "reference.acquire": "Erwerb und Zugreihenfolge",
+    "ref.round.1": "Runde 1",
+    "ref.round.2": "Runde 2",
+    "ref.round.3": "Runde 3",
+    "ref.round.4": "Runde 4",
+    "ref.round.5": "Runde 5",
+    "ref.round.6": "Runde 6",
+    "ref.wild.rule": "Nimm aus einem gewählten Bereich alle Fliesen einer Nicht-Jokerfarbe und genau eine Joker-Fliese, falls vorhanden. Liegen dort ausschließlich Joker-Fliesen, nimm eine. Manufakturreste kommen in die Tischmitte; Reste aus der Tischmitte bleiben dort. Entscheidend ist der gewählte Bereich, nicht der gesamte Tisch.",
+    "ref.wild.bonus": "Die Ein-Joker-Beschränkung gilt nicht für Bonus-Fliesen: Du darfst mehrere Joker-Fliesen aus dem Vorrat auf dem Spielplan wählen.",
+    
+    "reference.wild": "Jokerfarben und die Ein-Joker-Regel beim Erwerb",
+    "ref.token.start": "Runde 1 beginnt mit dem jüngsten Spieler; der Startspieler-Stein liegt zunächst in der Tischmitte.",
+    "ref.token.penalty": "Wer zuerst Fliesen aus der Tischmitte nimmt, nimmt den Stein und verliert je einen Punkt pro genommener Fliese, einschließlich Joker-Fliesen, höchstens bis zum Punktestand 1. Der Stein selbst verursacht keinen weiteren Abzug.",
+    "ref.token.order": "Sein Besitzer beginnt das Legen in dieser Runde und den Erwerb in der nächsten. Legt den Stein bei der Vorbereitung in die Tischmitte zurück; dadurch ändert sich der Startspieler nicht.",
+    "ref.token.other": "Spätere Zugriffe auf die Tischmitte verursachen keinen Startspieler-Abzug. Beim Erwerb darfst du nicht passen.",
+    
+    "reference.token": "Startspieler-Stein und Punktabzug in der Tischmitte",
+    "reference.placement": "Legen, Punkte und Boni",
+    "ref.pay.rule": "Ein Feld mit der Zahl N kostet insgesamt N Fliesen. Lege eine tatsächlich passende Fliese und wirf die anderen N−1 bezahlten Fliesen ohne Punktabzug in den Turm. Aktuelle Joker-Fliesen dürfen die abgelegten Fliesen ersetzen, aber niemals die echte Fliese, die du in einer anderen Farbe verlegst.",
+    "ref.pay.any": "Wähle jedes freie Rautenfeld, das du regelgerecht bezahlen kannst. Du musst weder in aufsteigender Zahlenfolge legen noch an vorhandene Fliesen anlegen. Lege nie auf eine Säule, Statue oder ein Fenster. Im Mittelstern darf keine tatsächliche Farbe doppelt liegen.",
+    "ref.pay.own": "Um eine Fliese der Jokerfarbe als sie selbst zu verlegen, bezahlst du ausschließlich mit Fliesen dieser Farbe. Im Mittelstern gilt dieselbe Bezahlregel, zusätzlich darf die Farbe dort noch nicht liegen.",
+    
+    "reference.pay": "Womit darf ich eine Platzierung bezahlen?",
+    "ref.scoring.group": "Zähle die neu gelegte Fliese und die lückenlose Gruppe, zu der sie jetzt auf diesem Stern gehört. Folge benachbarten Feldern in beide Richtungen und zähle jede Fliese einmal. Lücken, andere Sterne und eine bloße Berührung im Sternmittelpunkt verbinden keine Gruppen. Die letzte Fliese eines vollen Sterns bringt 6 Punkte.",
+    "ref.scoring.cost": "Die aufgedruckte Zahl sind Fliesenkosten, keine Punkte. Boni für vollständige Sterne und Zahlen werden erst bei der Schlusswertung addiert.",
+    
+    "reference.scoring": "Welche Fliesen werden gemeinsam gewertet?",
+    "ref.bonus.caption": "Bonus-Fliesen von den Vorrats-Feldern auf dem Spielplan",
+    "ref.bonus.feature": "Motiv",
+    "ref.bonus.spaces": "Zu belegende angrenzende Felder",
+    "ref.bonus.reward": "Fliesen nehmen",
+    "ref.bonus.pillar": "Säule",
+    "ref.bonus.statue": "Statue",
+    "ref.bonus.window": "Fenster",
+    "ref.bonus.rule": "Belege alle vorgesehenen angrenzenden Felder, um den Bonus einmal zu erhalten. Wähle ohne Farbbeschränkung aus dem aktuellen Vorrat auf dem Spielplan. Mehrere Joker-Fliesen sind erlaubt. Nimm alle erhaltenen Boni, lege sie neben deine Spielerablage und fülle den Vorrat vor dem nächsten Spielerzug wieder auf.",
+    "ref.bonus.turn": "Bonus-Fliesen erlauben keine zusätzliche sofortige Platzierung. Sie stehen dir in deinen späteren Zügen derselben Legephase zur Verfügung.",
+    
+    "reference.bonus": "Säulen, Statuen und Fenster",
+    "reference.ending": "Passen und Spielende",
+    "ref.pass.rule": "Du darfst passen, obwohl du noch legen könntest, und musst passen, wenn du nicht mehr legen kannst. Damit enden deine Legezüge für diese Runde. Bewahre höchstens vier Fliesen in den Ecken auf; wirf alle anderen übrigen Fliesen für je −1 Punkt ab. Bei der Vorbereitung der nächsten Runde kommen die aufbewahrten Fliesen neben deine Ablage; es gilt die neue Jokerfarbe.",
+    "ref.pass.last": "Beendet in Runde 6 die Legephase und addiert die Schlusswertungsboni. Werft danach alle noch in den Ecken aufbewahrten Fliesen für je −1 Punkt ab. Jede ungenutzte Fliese wird einmal bestraft: entweder beim Passen oder nach den Schlusswertungsboni.",
+    
+    "reference.passing": "Passen, vier Fliesen aufbewahren und die letzte Runde",
+    "ref.bag.rule": "Wird der Beutel beim Nachfüllen leer, gebt alle Fliesen aus dem Turm hinein und fahrt fort. Entfernt keine ungewählten Bonus-Fliesen zwischen den Runden. Nach Runde 1–5 werden Manufakturplättchen auf je vier Fliesen aufgefüllt. Sind Beutel und Turm leer, beginnt die nächste Runde auch mit unvollständig bestückten Plättchen.",
+    
+    "reference.bag": "Leerer Beutel und Nachfüllen",
+    "ref.stars.caption": "Vollständige Sterne · alle sechs Felder belegt",
+    "ref.stars.star": "Stern",
+    "ref.stars.points": "Punkte",
+    "ref.stars.center": "Mehrfarbiger Mittelstern",
+    "ref.stars.red": "Roter Stern",
+    "ref.stars.blue": "Blauer Stern",
+    "ref.stars.yellow": "Gelber Stern",
+    "ref.stars.orange": "Orangefarbener Stern",
+    "ref.stars.green": "Grüner Stern",
+    "ref.stars.purple": "Lilafarbener Stern",
+    "ref.numbers.caption": "Zahlenboni · alle sieben Sterne einschließlich Mittelstern prüfen",
+    "ref.numbers.condition": "Alle Felder mit dieser Zahl belegt",
+    "ref.numbers.points": "Punkte",
+    "ref.final.rule": "Prüft für jedes Zahlenziel alle sieben Sterne einschließlich Mittelstern. Addiert jeden erfüllten Bonus unabhängig von den anderen. Unvollständige Sterne erhalten keinen Vollständigkeitsbonus. Werft noch vorhandene Eckfliesen für je −1 Punkt ab. Der höchste Gesamtwert gewinnt; bei Gleichstand wird der Sieg geteilt.",
+    
+    "reference.final": "Werte der Schlusswertung",
+    "sources.scope": "Dieser Leitfaden erklärt das Standardspiel mit den farbigen Sternen für 2–4 Spieler. Rückseitenvariante, Erweiterungen und optionale Module sind nicht enthalten.",
+    "sources.original": "Unabhängige Lernhilfe, nicht mit dem Verlag verbunden oder von ihm autorisiert. Erklärungen und Übungsbeispiele sind neu formuliert. Offizielle Illustrationen, Spielplanbilder, Logos und Anleitungsseiten werden nicht wiedergegeben. Begriffe für Komponenten und Regeln bleiben für die Nutzung mit dem vorhandenen Spiel erhalten.",
+    
+    
+    
+    
+    "reference.sources":"Umfang und Unabhängigkeit",
+    "options.title": "Leitfadenoptionen",
+    "options.table": "Spieltisch",
+    "options.players": "Spieler",
+    "players.2": "2 Spieler",
+    "players.3": "3 Spieler",
+    "players.4": "4 Spieler",
+    "options.scope": "Standardspiel · Seite mit farbigen Sternen",
+    "options.round": "Lernrunde",
+    "options.roundNumber": "Runde",
+    "option.round.1": "1 · Lila",
+    "option.round.2": "2 · Grün",
+    "option.round.3": "3 · Orange",
+    "option.round.4": "4 · Gelb",
+    "option.round.5": "5 · Blau",
+    "option.round.6": "6 · Rot",
+    "options.roundHelp": "Ändert nur die Jokerfarbe in den Lernbeispielen. Die laufende Partie und der Aufbau für Runde 1 werden dadurch nicht verändert.",
+    "options.progress": "Fortschritt der Spielvorbereitung",
+    "options.completed": "Abgeschlossene Schritte",
+    "options.reset": "Neu beginnen",
+    "options.interface": "Benutzeroberfläche",
+    "options.language": "Sprache",
+    "options.local": "Fortschritt und Beispieleinstellungen bleiben in diesem Browser gespeichert.",
+    "dynamic.step": "Schritt {step} von {total}",
+    "dynamic.progress": "{done} von {total}",
+    "dynamic.setupDone": "Spielvorbereitung abgeschlossen",
+    "dynamic.finishSetup": "Vorbereitung abschließen",
+    "dynamic.continue": "Weiter",
+    "dynamic.nextLesson": "Nächste Lektion",
+    "dynamic.openReference": "Regelübersicht öffnen",
+    "dynamic.factory": "Manufakturplättchen {number}",
+    "dynamic.fourTiles": "4 zufällige Fliesen",
+    "dynamic.wild": "Jokerfarbe: {color}",
+    "dynamic.roundHeading": "Runde {round} · Jokerfarbe: {color}",
+    "dynamic.roundExplain": "Fliesen in {color} sind nur in dieser Runde Joker. Beendet zuerst den gesamten Erwerb, bevor der Besitzer des Startspieler-Steins mit dem Legen beginnt.",
+    "dynamic.roundLast": "Dies ist die letzte Runde. Fliesen in {color} sind Joker; nach Legen und Passen folgt direkt die Schlusswertung. Es können keine Fliesen für eine weitere Runde behalten werden.",
+    "dynamic.countColor": "{count} × {color}",
+    "dynamic.exampleSource": "Im gewählten Bereich",
+    "dynamic.exampleTake": "Nehmen",
+    "dynamic.exampleLeave": "Was passiert mit dem Rest?",
+    "dynamic.examplePenalty": "Punkte und Startspieler-Stein",
+    "dynamic.toCenter": "In die Tischmitte schieben: {tiles}.",
+    "dynamic.stayCenter": "In der Tischmitte lassen: {tiles}.",
+    "dynamic.noPenalty": "Kein Punktabzug. Der Startspieler-Stein bleibt, wo er ist.",
+    "dynamic.firstPenalty": "3 genommene Fliesen = −3 Punkte. Aus 5 Punkten werden 2. Nimm den Startspieler-Stein: Du beginnst das Legen und den Erwerb der nächsten Runde.",
+    "dynamic.laterPenalty": "Kein neuer Startspieler-Abzug. Der Startspieler-Stein wurde bereits in einem früheren Zug genommen.",
+    "dynamic.matchingLabel": "Vorhandene passende Fliesen · {color}",
+    "dynamic.wildLabel": "Vorhandene Joker-Fliesen · {color}",
+    "dynamic.legal": "Bezahlung ist erlaubt",
+    "dynamic.illegal": "Bezahlung ist nicht möglich",
+    "dynamic.invalid": "Gib ganze Fliesenanzahlen ein",
+    "dynamic.invalidDetail": "Verwende in den aktiven Mengenfeldern ganze Zahlen von 0 bis 132.",
+    "dynamic.needReal": "Du brauchst mindestens eine echte Fliese in {color} zum Verlegen. Joker-Fliesen ersetzen nicht die tatsächliche Fliese auf einem andersfarbigen Feld.",
+    "dynamic.needMore": "Dieses Feld kostet insgesamt {cost} Fliesen, du hast aber nur {have} verwendbare Fliesen.",
+    "dynamic.payOwn": "Bezahle {cost} × {color}. Lege 1 × {color}; wirf {discard} weitere Fliesen dieser Farbe in den Turm. Diese bezahlten Fliesen kosten keine Punkte.",
+    "dynamic.payMixed": "Eine erlaubte Bezahlung: {matching} × {color} + {wild} × {wildColor} (Joker). Lege 1 × {color}; wirf die anderen {discard} bezahlten Fliesen ohne Punktabzug in den Turm.",
+    "dynamic.payRange": "Du darfst für diese Bezahlung {min} bis {max} Joker-Fliesen verwenden. Mindestens eine echte passende Fliese bleibt nötig; bezahle insgesamt genau {cost} Fliesen.",
+    "dynamic.payFixed": "Diese Bezahlung verwendet {wild} Joker-Fliesen. Bezahle insgesamt genau {cost} Fliesen.",
+    "dynamic.payOwnNote": "Passende Farbe und Jokerfarbe sind hier dieselbe tatsächliche Farbe. Zähle diese Fliesen nicht doppelt.",
+    "dynamic.storageError": "Der Fortschritt konnte nicht gespeichert werden. Der Leitfaden funktioniert in diesem Tab weiter.",
+    "dynamic.resetQuestion": "Vorbereitungsfortschritt und Beispieleinstellungen zurücksetzen? Die aktuelle Sprache bleibt erhalten.",
+    "dynamic.resetTitle": "Neu beginnen?",
+    "dynamic.cancel": "Abbrechen",
+    "dynamic.confirm": "Bestätigen",
+    "dynamic.resetDone": "Leitfaden zurückgesetzt"
+  }
+};
+
+// The shared stylesheet and script are intentionally external, as in the supplied templates.
+// The guide remains usable without one.js; storage and confirmation then use browser APIs.
+const shared = typeof one !== "undefined" ? one : null;
+const STORAGE_KEY = "mosaic-star-guide:state";
+const VERSION = 1;
+const SETUP_STEPS = 5;
+const LESSON_NAMES = ["rhythm", "draft", "place", "score", "finish"];
+const WILD_COLORS = ["purple", "green", "orange", "yellow", "blue", "red"];
+const DRAFT_CASES = new Set(["factory", "wild-only", "first-center", "later-center"]);
+const DEFAULTS = Object.freeze({
+    version: VERSION,
+    language: "en",
+    playerCount: 3,
+    roundNumber: 1,
+    setupStep: 0,
+    setupProgress: 0,
+    learnStep: 0,
+    draftCase: "factory",
+    tileColor: "blue",
+    tileCost: 4,
+    matchingCount: 2,
+    wildCount: 2,
+});
+const byId = (id) => document.getElementById(id);
+const setupPanels = [...document.querySelectorAll("[data-setup-panel]")];
+const learnPanels = [...document.querySelectorAll("[data-learn-panel]")];
+const learnButtons = [...document.querySelectorAll("[data-learn-button]")];
+const preferredLanguage = new URLSearchParams(location.search).get("lang");
+let state = { ...DEFAULTS };
+if (preferredLanguage === "de") state.language = "de";
+let edited = false;
+let saveTimer = null;
+let saveQueue = Promise.resolve();
+let storageFailed = false;
+
+function tr(key, values = {}) {
+    const source = COPY[state.language][key] ?? COPY.en[key] ?? key;
+    return source.replace(/\{(\w+)\}/g, (match, name) =>
+        Object.hasOwn(values, name) ? String(values[name]) : match);
+}
+function colorName(color) { return tr(`color.${color}`); }
+function currentWild() { return WILD_COLORS[state.roundNumber - 1]; }
+function bounded(value, min, max, fallback) {
+    return Number.isInteger(value) ? Math.max(min, Math.min(max, value)) : fallback;
+}
+function normalize(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value) || value.version !== VERSION) {
+        return { ...DEFAULTS };
+    }
+    const step = bounded(value.setupStep, 0, SETUP_STEPS, 0);
+    return {
+        version: VERSION,
+        language: value.language === "de" ? "de" : "en",
+        playerCount: bounded(value.playerCount, 2, 4, DEFAULTS.playerCount),
+        roundNumber: bounded(value.roundNumber, 1, 6, DEFAULTS.roundNumber),
+        setupStep: step,
+        setupProgress: Math.max(step, bounded(value.setupProgress, 0, SETUP_STEPS, step)),
+        learnStep: bounded(value.learnStep, 0, LESSON_NAMES.length - 1, 0),
+        draftCase: DRAFT_CASES.has(value.draftCase) ? value.draftCase : DEFAULTS.draftCase,
+        tileColor: WILD_COLORS.includes(value.tileColor) ? value.tileColor : DEFAULTS.tileColor,
+        tileCost: bounded(value.tileCost, 1, 6, DEFAULTS.tileCost),
+        matchingCount: bounded(value.matchingCount, 0, 132, DEFAULTS.matchingCount),
+        wildCount: bounded(value.wildCount, 0, 132, DEFAULTS.wildCount),
+    };
+}
+function showStorageError() {
+    storageFailed = true;
+    byId("storage-status").hidden = false;
+    byId("storage-status").textContent = tr("dynamic.storageError");
+}
+async function readState() {
+    // Fall back if the shared storage implementation is missing or unavailable.
+    if (typeof shared?.storage?.get === "function") {
+        try {
+            const value = await shared.storage.get(STORAGE_KEY);
+            if (value !== undefined && value !== null) return value;
+        } catch { /* Try browser-local storage below. */ }
+    }
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch { return null; }
+}
+async function writeState(snapshot) {
+    if (typeof shared?.storage?.set === "function") {
+        try {
+            await shared.storage.set(STORAGE_KEY, snapshot);
+            return;
+        } catch { /* Try browser-local storage below. */ }
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+}
+function saveNow() {
+    if (saveTimer !== null) clearTimeout(saveTimer);
+    saveTimer = null;
+    const snapshot = { ...state };
+    // Mirror synchronously when allowed so an immediate local-file reload retains progress.
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)); } catch { /* Shared storage may work. */ }
+    saveQueue = saveQueue.then(() => writeState(snapshot)).catch(showStorageError);
+}
+function saveSoon() {
+    if (saveTimer !== null) clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveNow, 120);
+}
+function markEdited() {
+    edited = true;
+    saveSoon();
+}
+function applyLanguage() {
+    document.documentElement.lang = state.language;
+    document.title = tr("title");
+    document.querySelector('meta[name="description"]').content = tr("meta");
+    document.querySelectorAll("[data-i18n]").forEach((node) => {
+        // Only authored translation strings enter innerHTML; state and inputs use textContent.
+        const content = COPY[state.language][node.dataset.i18n];
+        if (content !== undefined) node.innerHTML = content;
+    });
+    document.querySelectorAll("[data-i18n-aria-label]").forEach((node) => {
+        node.setAttribute("aria-label", tr(node.dataset.i18nAriaLabel));
+    });
+    
+    if (storageFailed) showStorageError();
+}
+function syncControls() {
+    byId("interface-language").value = state.language;
+    byId("player-count").value = String(state.playerCount);
+    byId("round-number").value = String(state.roundNumber);
+    byId("draft-case").value = state.draftCase;
+    byId("tile-color").value = state.tileColor;
+    byId("tile-cost").value = String(state.tileCost);
+    byId("matching-count").value = String(state.matchingCount);
+    byId("wild-count").value = String(state.wildCount);
+}
+function renderQuantities() {
+    const factories = 2 * state.playerCount + 1;
+    byId("setup-player-summary").textContent = tr(`players.${state.playerCount}`);
+    for (const [selector, value] of [
+        ["[data-factories]", factories],
+        ["[data-draft-total]", factories * 4],
+        ["[data-player-count]", state.playerCount],
+    ]) {
+        document.querySelectorAll(selector).forEach((node) => { node.textContent = String(value); });
+    }
+    const fragment = document.createDocumentFragment();
+    for (let number = 1; number <= factories; number++) {
+        const item = document.createElement("li");
+        const heading = document.createElement("strong");
+        const copy = document.createElement("span");
+        heading.textContent = tr("dynamic.factory", { number });
+        copy.textContent = tr("dynamic.fourTiles");
+        item.append(heading, copy);
+        fragment.append(item);
+    }
+    byId("factory-grid").replaceChildren(fragment);
+}
+function renderSetup(focus = false) {
+    setupPanels.forEach((panel, index) => { panel.hidden = index !== state.setupStep; });
+    const complete = state.setupStep === SETUP_STEPS;
+    byId("setup-step-label").textContent = complete
+        ? tr("dynamic.setupDone")
+        : tr("dynamic.step", { step: state.setupStep + 1, total: SETUP_STEPS });
+    byId("setup-progress").value = state.setupProgress;
+    byId("setup-progress-text").textContent = tr("dynamic.progress", { done: state.setupProgress, total: SETUP_STEPS });
+    byId("setup-back").hidden = state.setupStep === 0;
+    byId("setup-next").hidden = complete;
+    byId("setup-next-label").textContent = tr(state.setupStep === SETUP_STEPS - 1 ? "dynamic.finishSetup" : "dynamic.continue");
+    if (focus) setupPanels[state.setupStep].querySelector("h3").focus();
+}
+function renderLearn(focus = false) {
+    learnPanels.forEach((panel, index) => { panel.hidden = index !== state.learnStep; });
+    learnButtons.forEach((button, index) => {
+        if (index === state.learnStep) button.setAttribute("aria-current", "step");
+        else button.removeAttribute("aria-current");
+    });
+    byId("learn-back").hidden = state.learnStep === 0;
+    byId("learn-next-label").textContent = tr(state.learnStep === LESSON_NAMES.length - 1 ? "dynamic.openReference" : "dynamic.nextLesson");
+    if (focus) learnPanels[state.learnStep].querySelector("h3").focus();
+}
+function renderRound() {
+    const color = colorName(currentWild());
+    const heading = tr("dynamic.roundHeading", { round: state.roundNumber, color });
+    byId("wild-color-output").textContent = tr("dynamic.wild", { color });
+    document.querySelectorAll("[data-round-heading]").forEach((node) => { node.textContent = heading; });
+    document.querySelectorAll("[data-round-explanation]").forEach((node) => {
+        node.textContent = tr(state.roundNumber === 6 ? "dynamic.roundLast" : "dynamic.roundExplain", { color });
+    });
+}
+function describeTiles(pairs) {
+    return pairs.filter(([count]) => count > 0)
+        .map(([count, color]) => tr("dynamic.countColor", { count, color: colorName(color) })).join(" + ");
+}
+function makeCard(heading, copy) {
+    const card = document.createElement("div");
+    const label = document.createElement("strong");
+    const description = document.createElement("span");
+    card.className = "visual-card";
+    label.textContent = heading;
+    description.textContent = copy;
+    card.append(label, description);
+    return card;
+}
+function renderDraft() {
+    const wild = currentWild();
+    // These are hypothetical examples. Keep non-wild colors distinct in every teaching round.
+    const primary = wild === "blue" ? "orange" : "blue";
+    const other = ["red", "green", "yellow"].find((color) => color !== wild && color !== primary);
+    let atSource, taken, remaining, remainderText, penalty;
+    if (state.draftCase === "wild-only") {
+        atSource = [[4, wild]];
+        taken = [[1, wild]];
+        remaining = [[3, wild]];
+        remainderText = "dynamic.toCenter";
+        penalty = "dynamic.noPenalty";
+    } else if (state.draftCase === "factory") {
+        atSource = [[2, primary], [2, wild]];
+        taken = [[2, primary], [1, wild]];
+        remaining = [[1, wild]];
+        remainderText = "dynamic.toCenter";
+        penalty = "dynamic.noPenalty";
+    } else {
+        atSource = [[2, primary], [2, wild], [1, other]];
+        taken = [[2, primary], [1, wild]];
+        remaining = [[1, wild], [1, other]];
+        remainderText = "dynamic.stayCenter";
+        penalty = state.draftCase === "first-center" ? "dynamic.firstPenalty" : "dynamic.laterPenalty";
+    }
+    const grid = document.createElement("div");
+    grid.className = "visual-grid";
+    grid.append(
+        makeCard(tr("dynamic.exampleSource"), describeTiles(atSource)),
+        makeCard(tr("dynamic.exampleTake"), describeTiles(taken)),
+        makeCard(tr("dynamic.exampleLeave"), tr(remainderText, { tiles: describeTiles(remaining) })),
+        makeCard(tr("dynamic.examplePenalty"), tr(penalty)),
+    );
+    byId("draft-result").replaceChildren(grid);
+}
+function validCount(input) {
+    return input.value.trim() !== "" && Number.isInteger(input.valueAsNumber)
+        && input.valueAsNumber >= 0 && input.valueAsNumber <= 132;
+}
+function renderPayment() {
+    const wild = currentWild();
+    const ownWild = state.tileColor === wild;
+    const color = colorName(state.tileColor);
+    const wildColor = colorName(wild);
+    const matchingInput = byId("matching-count");
+    const wildInput = byId("wild-count");
+    byId("matching-label").textContent = tr("dynamic.matchingLabel", { color });
+    byId("wild-label").textContent = tr("dynamic.wildLabel", { color: wildColor });
+    wildInput.disabled = ownWild;
+    const invalidMatching = !validCount(matchingInput);
+    const invalidWild = !ownWild && !validCount(wildInput);
+    matchingInput.setAttribute("aria-invalid", String(invalidMatching));
+    wildInput.setAttribute("aria-invalid", String(invalidWild));
+    const title = byId("payment-heading");
+    const result = byId("payment-result");
+    const options = byId("payment-options");
+    options.textContent = "";
+    if (invalidMatching || invalidWild) {
+        title.textContent = tr("dynamic.invalid");
+        result.textContent = tr("dynamic.invalidDetail");
+        return;
+    }
+    const matching = matchingInput.valueAsNumber;
+    const wildAvailable = ownWild ? 0 : wildInput.valueAsNumber;
+    const cost = state.tileCost;
+    title.textContent = tr("dynamic.illegal");
+    if (matching === 0) {
+        result.textContent = tr("dynamic.needReal", { color });
+        return;
+    }
+    if (matching + wildAvailable < cost) {
+        result.textContent = tr("dynamic.needMore", { cost, have: matching + wildAvailable });
+        return;
+    }
+    title.textContent = tr("dynamic.legal");
+    if (ownWild) {
+        result.textContent = tr("dynamic.payOwn", { cost, color, discard: cost - 1 });
+        options.textContent = tr("dynamic.payOwnNote");
+        return;
+    }
+    // Spend as few wild tiles as possible for the example; explain all legal alternatives.
+    const minimumWild = Math.max(0, cost - matching);
+    const maximumWild = Math.min(wildAvailable, cost - 1);
+    result.textContent = tr("dynamic.payMixed", {
+        matching: cost - minimumWild, color, wild: minimumWild,
+        wildColor, discard: cost - 1,
+    });
+    options.textContent = minimumWild === maximumWild
+        ? tr("dynamic.payFixed", { wild: minimumWild, cost })
+        : tr("dynamic.payRange", { min: minimumWild, max: maximumWild, cost });
+}
+function renderGuide() {
+    applyLanguage();
+    syncControls();
+    renderQuantities();
+    renderSetup();
+    renderLearn();
+    renderRound();
+    renderDraft();
+    renderPayment();
+}
+function setLesson(index, focus = true, updateHash = true) {
+    state.learnStep = bounded(index, 0, LESSON_NAMES.length - 1, 0);
+    renderLearn(focus);
+    if (updateHash) {
+        try { history.replaceState(null, "", `#learn-${LESSON_NAMES[state.learnStep]}`); } catch { /* Optional on restricted file origins. */ }
+    }
+    markEdited();
+}
+function followLessonHash(focus = false) {
+    const match = LESSON_NAMES.findIndex((name) => location.hash === `#learn-${name}`);
+    if (match < 0) return;
+    state.learnStep = match;
+    renderLearn(focus);
+    if (focus) learnPanels[match].scrollIntoView({ block: "start" });
+}
+
+byId("interface-language").addEventListener("change", (event) => {
+    state.language = event.target.value === "de" ? "de" : "en";
+    markEdited();
+    renderGuide();
+});
+byId("player-count").addEventListener("change", (event) => {
+    state.playerCount = bounded(Number(event.target.value), 2, 4, DEFAULTS.playerCount);
+    // A changed table size invalidates quantities in the previously completed setup.
+    state.setupStep = 0;
+    state.setupProgress = 0;
+    markEdited();
+    renderQuantities();
+    renderSetup();
+});
+byId("round-number").addEventListener("change", (event) => {
+    state.roundNumber = bounded(Number(event.target.value), 1, 6, 1);
+    markEdited();
+    renderRound();
+    renderDraft();
+    renderPayment();
+});
+byId("draft-case").addEventListener("change", (event) => {
+    state.draftCase = DRAFT_CASES.has(event.target.value) ? event.target.value : "factory";
+    markEdited();
+    renderDraft();
+});
+byId("tile-color").addEventListener("change", (event) => {
+    state.tileColor = WILD_COLORS.includes(event.target.value) ? event.target.value : "blue";
+    markEdited();
+    renderPayment();
+});
+byId("tile-cost").addEventListener("change", (event) => {
+    state.tileCost = bounded(Number(event.target.value), 1, 6, 4);
+    markEdited();
+    renderPayment();
+});
+for (const [id, key] of [["matching-count", "matchingCount"], ["wild-count", "wildCount"]]) {
+    byId(id).addEventListener("input", (event) => {
+        if (validCount(event.target)) {
+            state[key] = event.target.valueAsNumber;
+            markEdited();
+        }
+        renderPayment();
+    });
+}
+byId("setup-back").addEventListener("click", () => {
+    state.setupStep = Math.max(0, state.setupStep - 1);
+    markEdited();
+    renderSetup(true);
+});
+byId("setup-next").addEventListener("click", () => {
+    state.setupStep = Math.min(SETUP_STEPS, state.setupStep + 1);
+    state.setupProgress = Math.max(state.setupProgress, state.setupStep);
+    markEdited();
+    renderSetup(true);
+});
+learnButtons.forEach((button) => {
+    button.addEventListener("click", () => setLesson(Number(button.dataset.learnButton)));
+});
+byId("learn-back").addEventListener("click", () => setLesson(state.learnStep - 1));
+byId("learn-next").addEventListener("click", () => {
+    if (state.learnStep < LESSON_NAMES.length - 1) {
+        setLesson(state.learnStep + 1);
+        return;
+    }
+    location.hash = "reference";
+    const heading = byId("reference-title");
+    heading.setAttribute("tabindex", "-1");
+    heading.focus();
+});
+window.addEventListener("hashchange", () => {
+    followLessonHash(true);
+    markEdited();
+});
+// A repeated click on the same deep link must still reveal its lesson.
+document.querySelectorAll('a[href^="#learn-"]').forEach((link) => {
+    link.addEventListener("click", (event) => {
+        const name = link.getAttribute("href").slice("#learn-".length);
+        const index = LESSON_NAMES.indexOf(name);
+        if (index < 0) return;
+        event.preventDefault();
+        setLesson(index);
+        learnPanels[index].scrollIntoView({ block: "start" });
+    });
+});
+for (const id of ["guide-options", "draft-example", "payment-example"]) {
+    byId(id).addEventListener("submit", (event) => event.preventDefault());
+}
+byId("reset-guide").addEventListener("click", async () => {
+    let confirmed = false;
+    if (typeof shared?.confirm === "function") {
+        try {
+            const confirmation = shared.confirm(tr("dynamic.resetQuestion"), tr("dynamic.resetTitle"));
+            const dialog = document.querySelector("dialog:last-of-type");
+            if (dialog) {
+                const cancel = dialog.querySelector('[data-action="cancel"]');
+                const confirm = dialog.querySelector('[data-action="confirm"]');
+                if (cancel) cancel.textContent = tr("dynamic.cancel");
+                if (confirm) confirm.textContent = tr("dynamic.confirm");
+            }
+            confirmed = await confirmation;
+        } catch { confirmed = window.confirm(tr("dynamic.resetQuestion")); }
+    } else {
+        confirmed = window.confirm(tr("dynamic.resetQuestion"));
+    }
+    if (!confirmed) return;
+    state = { ...DEFAULTS, language: state.language };
+    edited = true;
+    try { history.replaceState(null, "", "#setup"); } catch { /* Optional. */ }
+    renderGuide();
+    saveNow();
+    setupPanels[0].querySelector("h3").focus();
+    if (typeof shared?.alert === "function") {
+        try { shared.alert(tr("dynamic.resetDone")); } catch { /* Guide is already reset. */ }
+    }
+});
+window.addEventListener("pagehide", () => { if (edited) saveNow(); });
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && edited) saveNow();
+});
+
+renderGuide();
+followLessonHash();
+(async () => {
+    try {
+        const saved = normalize(await readState());
+        if (!edited) {
+            state = saved;
+            if (preferredLanguage === "de" || preferredLanguage === "en") state.language = preferredLanguage;
+        }
+    } catch { showStorageError(); }
+    renderGuide();
+    followLessonHash();
+})();
+
+
+})();
+</script>
+</body>
+</html>

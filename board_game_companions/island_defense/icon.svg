@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="60 -900 840 840">
+  <style id="dark-mode-inversion-style">
+    @media (prefers-color-scheme: dark) {
+      path, rect, circle, polygon, ellipse, line, polyline {
+        filter: invert(100%) hue-rotate(180deg) !important;
+      }
+    }
+  </style>
+<!--
+Material Symbols Rounded "shield" by Google.
+Source: https://github.com/google/material-design-icons/blob/master/symbols/web/shield/materialsymbolsrounded/shield_fill1_24px.svg
+Downloaded from: https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/shield/materialsymbolsrounded/shield_fill1_24px.svg
+Material Symbols Rounded "nature" by Google.
+Source: https://github.com/google/material-design-icons/blob/master/symbols/web/nature/materialsymbolsrounded/nature_fill1_24px.svg
+Downloaded from: https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/nature/materialsymbolsrounded/nature_fill1_24px.svg
+Licensed under the Apache License, Version 2.0: https://www.apache.org/licenses/LICENSE-2.0
+Local license: ../../LICENSE
+Modifications by Joschua Gandert: combined and recolored the symbols as a protected tree, scaled and centered the tree inside a slightly widened shield, and tightly cropped the square favicon canvas.
+Copyright 2026 Joschua Gandert.
+-->
+<path fill="#178e98" transform="translate(480 0) scale(1.12 1) translate(-480 0)" d="M480-84q-7 0-13-1t-12-3q-135-45-215-166.5T160-516v-189q0-25 14.5-45t37.5-29l240-90q14-5 28-5t28 5l240 90q23 9 37.5 29t14.5 45v189q0 140-80 261.5T505-88q-6 2-12 3t-13 1Z"/>
+<path fill="#ddf2c4" transform="translate(480 -500) scale(.7) translate(-480 480)" d="M440-160v-160h-80q-83 0-141.5-58.5T160-520q0-60 33-110.5t89-73.5q9-75 65.5-125.5T480-880q76 0 132.5 50.5T678-704q56 23 89 73.5T800-520q0 83-58.5 141.5T600-320h-80v160h200q17 0 28.5 11.5T760-120q0 17-11.5 28.5T720-80H240q-17 0-28.5-11.5T200-120q0-17 11.5-28.5T240-160h200Z"/>
+</svg>

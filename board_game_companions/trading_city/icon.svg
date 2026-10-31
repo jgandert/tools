@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="102 -864 756 756">
+  <style id="dark-mode-inversion-style">
+    @media (prefers-color-scheme: dark) {
+      path, rect, circle, polygon, ellipse, line, polyline {
+        filter: invert(100%) hue-rotate(180deg) !important;
+      }
+    }
+  </style>
+    <!--
+    Material Symbols Rounded "location_city" by Google LLC.
+    Source: https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/location_city/materialsymbolsrounded/location_city_fill1_24px.svg
+    Copyright Google LLC. Licensed under Apache License 2.0; see ../../LICENSE.
+    Modifications: Tight square crop and gold, terracotta, and brick-red fills.
+    -->
+    <title>Unofficial Guide - San Juan</title>
+    <defs>
+        <path id="city" d="M120-200v-400q0-33 23.5-56.5T200-680h160v-47q0-16 6-30.5t17-25.5l40-40q23-23 57-23t57 23l40 40q11 11 17 25.5t6 30.5v207h160q33 0 56.5 23.5T840-440v240q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200Zm80 0h80v-80h-80v80Zm0-160h80v-80h-80v80Zm0-160h80v-80h-80v80Zm240 320h80v-80h-80v80Zm0-160h80v-80h-80v80Zm0-160h80v-80h-80v80Zm0-160h80v-80h-80v80Zm240 480h80v-80h-80v80Zm0-160h80v-80h-80v80Z"/>
+        <clipPath id="city-clip"><use href="#city"/></clipPath>
+    </defs>
+    <use href="#city" fill="#c88b26"/>
+    <g clip-path="url(#city-clip)">
+        <path d="M120-680h240v560H120Z" fill="#cb6240"/>
+        <path d="M600-520h240v400H600Z" fill="#a34039"/>
+    </g>
+</svg>

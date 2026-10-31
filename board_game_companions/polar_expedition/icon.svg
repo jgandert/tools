@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="64 -896 832 832" width="64" height="64">
+  <style id="dark-mode-inversion-style">
+    @media (prefers-color-scheme: dark) {
+      path, rect, circle, polygon, ellipse, line, polyline {
+        filter: invert(100%) hue-rotate(180deg) !important;
+      }
+    }
+  </style>
+    <!--
+    Material Symbols Rounded "mountain_flag" by Google LLC, licensed under Apache 2.0.
+    Source: https://github.com/google/material-design-icons/blob/master/symbols/web/mountain_flag/materialsymbolsrounded/mountain_flag_fill1_24px.svg
+    Download: https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/mountain_flag/materialsymbolsrounded/mountain_flag_fill1_24px.svg
+    Catalog: https://fonts.google.com/icons?icon.style=Rounded
+    License: ../../LICENSE
+    Modifications: split the original geometry into mountain, snowy summit/pole, and flag;
+    recolored with solid blue, cyan, and orange fills; centered in a tight square canvas.
+    Adaptation copyright 2026 Joschua Gandert. License: Apache 2.0.
+    -->
+    <path fill="#287eab" d="M209-80q-45 0-68.5-37.5T137-195l108-220 152 101 83-41 83 41 150-99 109 217q20 40-3.5 78T750-80H209Z"/>
+    <path fill="#51a6bd" d="m281-487 33-68q10-21 29.5-33t42.5-12h54v-240q0-17 11.5-28.5T480-880h40v280h51q23 0 41.5 12t29.5 32l35 70-120 80-77-39-77 39-122-81Z"/>
+    <path fill="#ed8a3b" d="M520-880h168q11 0 17 9.5t1 19.5l-22 42q-2 5-2 9t2 9l22 42q5 10-1 19.5t-17 9.5H520Z"/>
+</svg>

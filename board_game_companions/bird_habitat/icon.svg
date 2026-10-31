@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 -900 880 880">
+  <style id="dark-mode-inversion-style">
+    @media (prefers-color-scheme: dark) {
+      path, rect, circle, polygon, ellipse, line, polyline {
+        filter: invert(100%) hue-rotate(180deg) !important;
+      }
+    }
+  </style>
+    <!--
+    Adapted from Material Symbols Rounded "owl" (filled), by Google.
+    Source: https://github.com/google/material-design-icons/blob/master/symbols/web/owl/materialsymbolsrounded/owl_fill1_24px.svg
+    Apache License 2.0: https://github.com/google/material-design-icons/blob/master/LICENSE
+    Local license: ../../LICENSE
+    Modifications: simplified the lower body contour, reused the eye circles as feet,
+    separated and recolored the face and eyes, widened the silhouette, and cropped the viewBox for favicon use.
+    Copyright 2026 Joschua Gandert for modifications; Apache License 2.0.
+    -->
+    <g transform="translate(-96 0) scale(1.2 1)">
+        <g fill="#e5a135">
+            <path transform="translate(40 508)" d="M340-560q-17 0-28.5-11.5T300-600q0-17 11.5-28.5T340-640q17 0 28.5 11.5T380-600q0 17-11.5 28.5T340-560Z"/>
+            <path transform="translate(-40 508)" d="M620-560q-17 0-28.5-11.5T580-600q0-17 11.5-28.5T620-640q17 0 28.5 11.5T660-600q0 17-11.5 28.5T620-560Z"/>
+        </g>
+        <path fill="#348aad" d="M480-80q-134 0-227-93t-93-227v-200q0-122 96-201t224-79q128 0 224 79t96 201v200q0 134-93 227T480-80Z"/>
+        <path fill="#fff0c8" d="M480-400q95 0 167.5-55.5T720-600q0-35-12-65.5T674-720q-64 2-109 48t-45 112q0 17-11.5 28.5T480-520q-17 0-28.5-11.5T440-560q0-66-45-111t-109-48q-22 24-34 54t-12 65q0 89 72.5 144.5T480-400Z"/>
+        <path fill="#273c50" d="M340-560q-17 0-28.5-11.5T300-600q0-17 11.5-28.5T340-640q17 0 28.5 11.5T380-600q0 17-11.5 28.5T340-560ZM620-560q-17 0-28.5-11.5T580-600q0-17 11.5-28.5T620-640q17 0 28.5 11.5T660-600q0 17-11.5 28.5T620-560Z"/>
+    </g>
+</svg>

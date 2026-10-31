@@ -1,0 +1,1689 @@
+<!doctype html>
+<html lang="en" class="theme-blue">
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="color-scheme" content="light dark">
+        <meta name="description"
+            content="A private table companion for setting up and learning a space-faring dice game.">
+        <title>Unofficial Guide - Roll for the Galaxy</title>
+        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+        <link rel="stylesheet" type="text/css" href="../../one.css">
+        <style>
+        :root {
+            --phase-one: light-dark(#3f6f9f, #9ac7f5);
+            --phase-two: light-dark(#76558f, #d3afe8);
+            --phase-three: light-dark(#96652f, #e9bd82);
+            --phase-four: light-dark(#26776f, #8ed4c9);
+            --phase-five: light-dark(#98534c, #efaaa2);
+        }
+
+        main > section > p:first-of-type {
+            max-width: 68ch;
+        }
+
+        main {
+            max-width: 80rem;
+        }
+
+        .setup-status {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+            color: var(--on-surface-variant);
+        }
+
+        .setup-status output {
+            font-weight: 600;
+            color: var(--on-surface);
+        }
+
+        .setup-panel {
+            min-height: 25rem;
+            padding-block: var(--spacing-md);
+        }
+
+        .step-heading {
+            margin-top: var(--spacing-sm);
+        }
+
+        .step-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.85fr);
+            gap: var(--spacing-xl);
+            align-items: start;
+        }
+
+        .step-layout > * {
+            min-width: 0;
+        }
+
+        .component-list {
+            padding-left: 1.25rem;
+        }
+
+        .component-list li {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .table-layout {
+            margin: 0;
+        }
+
+        .supply-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            border: var(--border-width) solid var(--outline-variant);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .supply-zone {
+            min-height: 7rem;
+            padding: var(--spacing-md);
+            background: var(--surface-container-low);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .supply-zone:nth-child(odd) {
+            border-right: var(--border-width) solid var(--outline-variant);
+        }
+
+        .supply-zone:nth-last-child(-n + 2) {
+            border-bottom: 0;
+        }
+
+        .supply-zone strong,
+        .project-stack strong,
+        .zone-line strong {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .supply-zone span,
+        .project-stack span,
+        .zone-line span {
+            color: var(--on-surface-variant);
+        }
+
+        figcaption {
+            margin-top: var(--spacing-sm);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .station-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--spacing-sm) var(--spacing-lg);
+            padding: 0;
+            list-style: none;
+        }
+
+        .station-grid li {
+            padding: var(--spacing-sm) 0;
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .station-grid strong {
+            display: block;
+        }
+
+        .station-grid span {
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .tile-pair,
+        .construction-zone,
+        .zone-flow {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .tile-shape,
+        .project-stack,
+        .zone-line {
+            padding: var(--spacing-md);
+            border: var(--border-width) solid var(--outline-variant);
+            border-radius: var(--radius-sm);
+            background: var(--surface-container-low);
+        }
+
+        .tile-shape {
+            display: grid;
+            place-items: center;
+            min-height: 8rem;
+            text-align: center;
+        }
+
+        .tile-shape:first-child {
+            grid-column: span 2;
+            min-height: 6rem;
+        }
+
+        .tile-shape strong {
+            display: block;
+        }
+
+        .tile-shape span {
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .project-stack {
+            min-height: 10rem;
+        }
+
+        .zone-flow {
+            grid-template-columns: 1fr;
+        }
+
+        .zone-line {
+            display: grid;
+            grid-template-columns: minmax(7rem, 0.35fr) 1fr;
+            align-items: baseline;
+            gap: var(--spacing-md);
+        }
+
+        .setup-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            padding-top: var(--spacing-md);
+            border-top: var(--border-width) solid var(--outline-variant);
+        }
+
+        .setup-actions button:last-child {
+            margin-left: auto;
+        }
+
+        .ready-summary {
+            max-width: 44rem;
+            padding: var(--spacing-lg) 0;
+        }
+
+        .ready-summary strong {
+            color: var(--primary);
+        }
+
+        .round-track {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(8.5rem, 1fr));
+            gap: var(--spacing-sm);
+            padding: 0 0 var(--spacing-sm);
+            margin: var(--spacing-lg) 0;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .round-track button {
+            width: 100%;
+            min-height: 4.5rem;
+            padding: var(--spacing-sm);
+            text-align: left;
+            background: var(--surface-container-low);
+            color: var(--on-surface);
+            border-color: var(--outline-variant);
+        }
+
+        .round-track button span {
+            display: block;
+            margin-bottom: 2px;
+            color: var(--on-surface-variant);
+            font-size: 0.75rem;
+        }
+
+        .round-track button[aria-current="step"] {
+            background: var(--primary);
+            color: var(--on-primary);
+            border-color: var(--primary);
+        }
+
+        .round-track button[aria-current="step"] span {
+            color: inherit;
+        }
+
+        .round-panel {
+            min-height: 19rem;
+            padding-top: var(--spacing-sm);
+        }
+
+        .round-panel > p,
+        .round-panel > ul {
+            max-width: 68ch;
+        }
+
+        .assignment-strip,
+        .phase-strip,
+        .worker-cycle {
+            display: grid;
+            gap: var(--spacing-sm);
+            margin: var(--spacing-lg) 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .assignment-strip {
+            grid-template-columns: repeat(5, minmax(7rem, 1fr));
+            padding-bottom: var(--spacing-sm);
+            overflow-x: auto;
+        }
+
+        .assignment-strip li {
+            padding: var(--spacing-sm);
+            text-align: center;
+            border-bottom: 3px solid var(--outline);
+            background: var(--surface-container-low);
+        }
+
+        .phase-strip {
+            grid-template-columns: repeat(5, minmax(8rem, 1fr));
+            overflow-x: auto;
+        }
+
+        .phase-strip li {
+            padding: var(--spacing-md);
+            border-left: 4px solid var(--phase-accent);
+            background: var(--surface-container-low);
+        }
+
+        .phase-strip strong,
+        .phase-strip span {
+            display: block;
+        }
+
+        .phase-strip span {
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .phase-one {
+            --phase-accent: var(--phase-one);
+        }
+
+        .phase-two {
+            --phase-accent: var(--phase-two);
+        }
+
+        .phase-three {
+            --phase-accent: var(--phase-three);
+        }
+
+        .phase-four {
+            --phase-accent: var(--phase-four);
+        }
+
+        .phase-five {
+            --phase-accent: var(--phase-five);
+        }
+
+        .worker-cycle {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            counter-reset: worker-cycle;
+        }
+
+        .worker-cycle li {
+            counter-increment: worker-cycle;
+            position: relative;
+            padding: var(--spacing-md);
+            border-top: 3px solid var(--primary);
+            background: var(--surface-container-low);
+        }
+
+        .worker-cycle li::before {
+            content: counter(worker-cycle);
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .reference-group > details {
+            border-left: 4px solid var(--phase-accent, var(--outline-variant));
+        }
+
+        .reference-group h3 {
+            margin-top: var(--spacing-xl);
+        }
+
+        .trade-table td:first-child {
+            font-weight: 600;
+        }
+
+        aside progress {
+            width: 100%;
+        }
+
+        aside output {
+            display: block;
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+        }
+
+        aside small {
+            display: block;
+            margin-top: var(--spacing-sm);
+            color: var(--on-surface-variant);
+        }
+
+        @media (max-width: 760px) {
+            .step-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .setup-panel,
+            .round-panel {
+                min-height: 0;
+            }
+
+            .worker-cycle {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .supply-grid,
+            .station-grid,
+            .tile-pair,
+            .construction-zone,
+            .worker-cycle {
+                grid-template-columns: 1fr;
+            }
+
+            .supply-zone:nth-child(odd) {
+                border-right: 0;
+            }
+
+            .supply-zone:nth-last-child(2) {
+                border-bottom: var(--border-width) solid var(--outline-variant);
+            }
+
+            .tile-shape:first-child {
+                grid-column: auto;
+            }
+
+            .zone-line {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-xs);
+            }
+
+            .setup-actions button {
+                flex: 1;
+            }
+        }
+
+        html[lang="de"] body > footer [lang="en"],
+        html:not([lang="de"]) body > footer [lang="de"] {
+            display: none;
+        }
+    </style>
+    </head>
+
+    <body>
+        <a href="#content" class="skip-link">Skip to guide</a>
+        <input type="checkbox" id="aside-state" class="aside-state-toggle"
+            aria-label="Toggle guide options">
+
+        <header>
+            <label for="aside-state" class="aside-toggle-btn"></label>
+            <hgroup>
+                <h1>Unofficial Guide - Roll for the Galaxy</h1>
+                <p>Setup and round companion</p>
+            </hgroup>
+
+            <nav aria-label="Primary">
+                <ul>
+                    <li>
+                        <a href="#setup">Setup</a>
+                    </li>
+                    <li>
+                        <a href="#round">Round</a>
+                    </li>
+                    <li>
+                        <a href="#reference">Reference</a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <main id="content">
+            <section id="setup" aria-labelledby="setup-title">
+                <h2 id="setup-title">Set up the table</h2>
+                <p>Build the shared supply first, then prepare each player area. Guide adjusts quantities
+                    and two-player rules automatically.</p>
+
+                <div class="setup-status">
+                    <output id="setup-step-label" aria-live="polite">Step 1 of 5</output>
+                    <span>
+                        <strong id="setup-player-summary">4</strong> players
+                    </span>
+                </div>
+
+                <article class="setup-panel" data-setup-panel="0">
+                    <div class="step-heading">
+                        <h3 tabindex="-1">Build shared supply</h3>
+                    </div>
+                    <div class="step-layout">
+                        <div>
+                            <p>Place four shared groups within everyone's reach.</p>
+                            <ul class="component-list">
+                                <li>
+                                    Put all <strong>55 double-sided game tiles</strong> in the bag.
+                                </li>
+                                <li>Place all unclaimed dice nearby as dice supply.</li>
+                                <li>Lay out five phase tiles in numeric order, inactive side up.</li>
+                                <li>
+                                    Prepare <strong>
+                                        <output data-vp-total>48</output> VP
+                                    </strong> in 1- and
+                                    5-point chips: 12 per player.</li>
+                                <li>Set every 10-point chip aside. Return unused 1- and 5-point chips
+                                    to the box.</li>
+                            </ul>
+                            <p class="note">
+                                Set-aside 10-point chips only record points after the initial VP chip pool
+                                runs out. Emptying that initial pool still triggers game end.
+                            </p>
+                        </div>
+
+                        <figure class="table-layout">
+                            <div class="supply-grid">
+                                <div class="supply-zone">
+                                    <strong>Game tile bag</strong>
+                                    <span>55 tiles</span>
+                                </div>
+                                <div class="supply-zone">
+                                    <strong>Dice supply</strong>
+                                    <span>Grouped by color</span>
+                                </div>
+                                <div class="supply-zone">
+                                    <strong>Phase tiles</strong>
+                                    <span>I · II · III · IV · V</span>
+                                </div>
+                                <div class="supply-zone">
+                                    <strong>VP chip pool</strong>
+                                    <span>
+                                        <output data-vp-total>48</output> points
+                                    </span>
+                                </div>
+                            </div>
+                            <figcaption>Keep the active VP chip pool separate from the 10-point
+                                reserve.</figcaption>
+                        </figure>
+                    </div>
+                </article>
+
+                <article class="setup-panel" data-setup-panel="1" hidden>
+                    <div class="step-heading">
+                        <h3 tabindex="-1">Prepare player stations</h3>
+                    </div>
+                    <div class="step-layout">
+                        <div>
+                            <p>Give every player the same five-part kit.</p>
+                            <ul class="component-list">
+                                <li>One dice cup</li>
+                                <li>One player mat</li>
+                                <li>
+                                    One Galactic Credit marker, placed at <strong>$1</strong>
+                                </li>
+                                <li>One player screen</li>
+                                <li>One phase strip, kept behind the player screen</li>
+                            </ul>
+                            <p>Return unused player components to the box.</p>
+                        </div>
+
+                        <figure class="table-layout">
+                            <ol id="station-grid" class="station-grid" aria-label="Player stations"></ol>
+                            <figcaption>The screen hides rolled dice and assignments. The tableau and top
+                                tile of each construction stack are visible; tiles beneath the top and
+                                tiles abandoned during Explore are secret. Players must name a stack's
+                                size when asked.</figcaption>
+                        </figure>
+                    </div>
+                </article>
+
+                <article class="setup-panel" data-setup-panel="2" hidden>
+                    <div class="step-heading">
+                        <h3 tabindex="-1">Create starting empires</h3>
+                    </div>
+                    <div class="step-layout">
+                        <div>
+                            <p>Give each player one random faction tile and one random home world. Return
+                                unused starting tiles to the box.</p>
+                            <ul class="component-list">
+                                <li>Place both face up beside the player mat; together they form the starting
+                                    tableau.</li>
+                                <li>The wide faction tile counts as 2 tile squares.</li>
+                                <li>The home world tile counts as 1 tile square.</li>
+                            </ul>
+                            <p class="note">
+                                Every player begins at <strong>3 of 12 tableau squares</strong> needed to
+                                trigger game end.
+                            </p>
+                        </div>
+
+                        <figure class="table-layout">
+                            <div class="tile-pair">
+                                <div class="tile-shape">
+                                    <div>
+                                        <strong>Faction tile</strong>
+                                        <span>2 squares</span>
+                                    </div>
+                                </div>
+                                <div class="tile-shape">
+                                    <div>
+                                        <strong>Home world tile</strong>
+                                        <span>1 square</span>
+                                    </div>
+                                </div>
+                                <div class="tile-shape">
+                                    <div>
+                                        <strong>Starting tableau</strong>
+                                        <span>Keep face up and visible</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <figcaption>Tableau is built empire; construction zone is separate.</figcaption>
+                        </figure>
+                    </div>
+                </article>
+
+                <article class="setup-panel" data-setup-panel="3" hidden>
+                    <div class="step-heading">
+                        <h3 tabindex="-1">Seed construction zones</h3>
+                    </div>
+                    <div class="step-layout">
+                        <div>
+                            <p>Each player draws two tiles from the bag. Every tile has a development on
+                                one side and a world on the other.</p>
+                            <ul class="component-list">
+                                <li>Place one tile development-side up on left stack.</li>
+                                <li>Place other tile world-side up on right stack.</li>
+                                <li data-first-game-only>For the first game, place the lowest-cost
+                                    development on the left and the lowest-cost world on the right.</li>
+                                <li data-experienced-game-only hidden>Choose either side of each tile, then
+                                    place one in each stack.</li>
+                            </ul>
+                            <p>Do not put both tiles in the same stack.</p>
+                        </div>
+
+                        <figure class="table-layout">
+                            <div class="construction-zone">
+                                <div class="project-stack">
+                                    <strong>Development stack</strong>
+                                    <span>Left side · top tile receives workers</span>
+                                </div>
+                                <div class="project-stack">
+                                    <strong>World stack</strong>
+                                    <span>Right side · top tile receives workers</span>
+                                </div>
+                            </div>
+                            <figcaption>Future tiles go under a stack. Only top project can be built.</figcaption>
+                        </figure>
+                    </div>
+                </article>
+
+                <article class="setup-panel" data-setup-panel="4" hidden>
+                    <div class="step-heading">
+                        <h3 tabindex="-1">Place starting dice</h3>
+                    </div>
+                    <div class="step-layout">
+                        <div>
+                            <p>The fixed baseline uses five Home (white) dice per player. Starting tiles
+                                can grant more dice in different locations.</p>
+                            <ul class="component-list">
+                                <li>
+                                    Put <strong>3 Home dice</strong> in the dice cup.
+                                </li>
+                                <li>
+                                    Put <strong>2 Home dice</strong> in the Citizenry.
+                                </li>
+                                <li>Take every die granted by worlds in the starting tableau. Follow each
+                                    icon: dice cup, Citizenry, or good on a world.</li>
+                                <li>Take nothing from the unbuilt world in the construction zone.</li>
+                            </ul>
+                            <details>
+                                <summary>Starting tile exceptions</summary>
+                                <p>The Doomed World home world grants no starting die; set its owner's
+                                    marker to $8. The Destroyed Colony faction tile shows two worlds; take
+                                    the listed starting dice from both.</p>
+                            </details>
+                        </div>
+
+                        <figure class="table-layout">
+                            <div class="zone-flow">
+                                <div class="zone-line">
+                                    <strong>Dice cup</strong>
+                                    <span>3 Home dice + dice granted directly to the dice cup</span>
+                                </div>
+                                <div class="zone-line">
+                                    <strong>Citizenry</strong>
+                                    <span>2 Home dice + dice granted directly to Citizenry</span>
+                                </div>
+                                <div class="zone-line">
+                                    <strong>Starting worlds</strong>
+                                    <span>Place any granted starting goods on the indicated world</span>
+                                </div>
+                            </div>
+                            <figcaption>Icons on starting tableau override generic placement.</figcaption>
+                        </figure>
+                    </div>
+                </article>
+
+                <article class="setup-panel" data-setup-panel="5" hidden>
+                    <div class="step-heading">
+                        <h3 tabindex="-1">Table is ready</h3>
+                    </div>
+                    <div class="ready-summary" role="status">
+                        <p>
+                            <strong>
+                                <output data-player-count>4</output> players
+                            </strong> can begin with
+                            <strong>
+                                <output data-vp-total>48</output> VP
+                            </strong> in the initial pool.
+                        </p>
+                        <p>Keep screens up during Roll and Assign. Play simultaneously; if a phase needs
+                            strict timing, resolve it clockwise, starting with the player whose faction
+                            tile has the lowest number.</p>
+                        <a href="#round" class="btn btn-primary">Learn first round</a>
+                    </div>
+                </article>
+
+                <nav class="setup-actions" aria-label="Setup step controls">
+                    <button type="button" id="setup-back">
+                        <span class="sym" aria-hidden="true">arrow_back</span>
+                        Back
+                    </button>
+                    <button type="button" id="setup-next" class="btn-primary">
+                        <span id="setup-next-label">Continue</span>
+                        <span class="sym" aria-hidden="true">arrow_forward</span>
+                    </button>
+                </nav>
+            </section>
+
+            <section id="round" aria-labelledby="round-title">
+                <h2 id="round-title">Learn a round</h2>
+                <p>All players perform each step together. Only phases selected this round occur.</p>
+
+                <ol class="round-track" aria-label="Round steps">
+                    <li>
+                        <button type="button" data-round-button="0" aria-current="step"
+                            aria-controls="round-roll">
+                            <span>Step 1</span>
+                            Roll
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" data-round-button="1" aria-controls="round-assign">
+                            <span>Step 2</span>
+                            Assign
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" data-round-button="2" aria-controls="round-reveal">
+                            <span>Step 3</span>
+                            Reveal
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" data-round-button="3" aria-controls="round-phases">
+                            <span>Step 4</span>
+                            Do phases
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" data-round-button="4" aria-controls="round-manage">
+                            <span>Step 5</span>
+                            Manage
+                        </button>
+                    </li>
+                </ol>
+
+                <article id="round-roll" class="round-panel" data-round-panel="0">
+                    <h3 tabindex="-1">Roll behind screens</h3>
+                    <p>Every die in the dice cup is a worker for this round. Roll all of them behind the
+                        player screen and keep results hidden.</p>
+                    <ol class="worker-cycle" aria-label="Worker cycle">
+                        <li>
+                            <strong>Dice cup</strong>
+                            <br>Available dice
+                        </li>
+                        <li>
+                            <strong>Roll</strong>
+                            <br>Hidden workers
+                        </li>
+                        <li>
+                            <strong>Task</strong>
+                            <br>Selected phases
+                        </li>
+                        <li>
+                            <strong>Citizenry</strong>
+                            <br>Await recruitment
+                        </li>
+                    </ol>
+                    <p class="note">Dice outside the dice cup are not rolled: Citizenry, goods, and workers
+                        in the construction zone stay where they are.</p>
+                </article>
+
+                <article id="round-assign" class="round-panel" data-round-panel="1" hidden>
+                    <h3 tabindex="-1">Assign and choose one phase</h3>
+                    <ol class="component-list">
+                        <li>Place each worker below the column matching its rolled face. Wild faces may
+                            enter any column.</li>
+                        <li>Move exactly one worker onto the phase strip to select a phase. Ignore its
+                            face; this die still works in the selected phase.</li>
+                        <li>After selecting a phase, apply Reassign powers. Each can be used at most once
+                            per round; a power is optional only when its text says "may."</li>
+                    </ol>
+                    <ol class="assignment-strip" aria-label="Phase assignment columns">
+                        <li>
+                            I<br>Explore
+                        </li>
+                        <li>
+                            II<br>Develop
+                        </li>
+                        <li>
+                            III<br>Settle
+                        </li>
+                        <li>
+                            IV<br>Produce
+                        </li>
+                        <li>
+                            V<br>Ship
+                        </li>
+                    </ol>
+                    <p class="note">
+                        <strong>Dictate:</strong> park any worker in the Dictate area to move a
+                        different worker to another column. The parked die returns to the dice cup after
+                        reveal.</p>
+                </article>
+
+                <article id="round-reveal" class="round-panel" data-round-panel="2" hidden>
+                    <h3 tabindex="-1">Reveal selected phases</h3>
+                    <p>Lift player screens together and announce selected phases. Flip matching phase
+                        tiles to the active side.</p>
+                    <ul class="component-list">
+                        <li>Return every Dictate die to its owner's dice cup.</li>
+                        <li>Return workers assigned beneath inactive phases to the dice cup.</li>
+                        <li>Leave workers under active phases for task resolution.</li>
+                    </ul>
+                    <p class="note" id="two-player-reveal" hidden>
+                        <strong>Two players:</strong> roll one spare Home (white) die. If its face names a
+                        phase neither player selected, activate that phase too. A wild face changes nothing;
+                        return the die to the shared supply.
+                    </p>
+                </article>
+
+                <article id="round-phases" class="round-panel" data-round-panel="3" hidden>
+                    <h3 tabindex="-1">Resolve active phases in order</h3>
+                    <p>Everyone acts simultaneously in phase I through V. Skip inactive phases. Use every
+                        assigned worker if a task is possible, one at a time.</p>
+                    <ol class="phase-strip" aria-label="Phases in resolution order">
+                        <li class="phase-one">
+                            <strong>I · Explore</strong>
+                            <span>Scout or gain Galactic Credits</span>
+                        </li>
+                        <li class="phase-two">
+                            <strong>II · Develop</strong>
+                            <span>Build technology</span>
+                        </li>
+                        <li class="phase-three">
+                            <strong>III · Settle</strong>
+                            <span>Complete worlds</span>
+                        </li>
+                        <li class="phase-four">
+                            <strong>IV · Produce</strong>
+                            <span>Place goods</span>
+                        </li>
+                        <li class="phase-five">
+                            <strong>V · Ship</strong>
+                            <span>Trade or consume</span>
+                        </li>
+                    </ol>
+                    <p>Dice completing tasks go to Citizenry. Dice left without a possible task return to
+                        the dice cup. Choosing a phase grants no separate bonus.</p>
+                </article>
+
+                <article id="round-manage" class="round-panel" data-round-panel="4" hidden>
+                    <h3 tabindex="-1">Manage empire</h3>
+                    <ol class="steps">
+                        <li>
+                            <span>
+                                <strong>Recruit.</strong> Spend 1 Galactic Credit per die to move as many
+                                dice as affordable from Citizenry to the dice cup. If Galactic Credits reach
+                                0, move the marker back to $1 after recruiting.</span></li>
+                        <li>
+                            <span>
+                                <strong>Recall.</strong> Optionally return developers, settlers, and goods
+                                directly to the dice cup for free. If the dice cup is empty after recruiting,
+                                recall at least one die.</span></li>
+                        <li>
+                            <span>
+                                <strong>Reset.</strong> Turn all phase tiles inactive.
+                            </span>
+                        </li>
+                        <li>
+                            <span>
+                                <strong>Check end.</strong> Finish the game if the initial VP chip pool
+                                emptied or any tableau reached 12 tile squares.</span></li>
+                    </ol>
+                    <p class="note">Galactic Credits never exceed $10. If you cannot afford every die in
+                        Citizenry, choose which dice to recruit.</p>
+                </article>
+            </section>
+
+            <section id="reference" class="reference-group" aria-labelledby="reference-title">
+                <h2 id="reference-title">Rules reference</h2>
+                <p>Open the rule you need. Development powers can change these defaults. Powers for an
+                    active phase can take effect even if you assigned no workers to it, and are mandatory
+                    unless their text says "may."</p>
+
+                <h3>Assign and resolve</h3>
+                <details>
+                    <summary>Workers, phase selection, and Reassign</summary>
+                    <ul>
+                        <li>Worker's column determines task; printed face only guides initial assignment.</li>
+                        <li>Each player selects exactly one phase before using any Reassign power.</li>
+                        <li>Selected die remains worker in chosen phase.</li>
+                        <li>Each Reassign power can be used at most once per round. A power is optional
+                            only when its text says "may." Moved die need not show target phase.</li>
+                        <li>Dictate spends one worker to reassign a different worker. The spent die returns to the dice cup at Reveal. Reassign powers cannot move dice already spent on Dictate.</li>
+                    </ul>
+                </details>
+
+                <details class="phase-one">
+                    <summary>I · Explore</summary>
+                    <p>For each explorer, choose one task when used:</p>
+                    <dl>
+                        <dt>Stock</dt>
+                        <dd>Gain 2 Galactic Credits.</dd>
+                        <dt>Scout</dt>
+                        <dd>Optionally abandon any tiles from either construction zone stack, then draw one
+                            more tile than number abandoned. Choose a side for each drawn tile and place it
+                            under the matching stack. Return abandoned tiles to the bag after the phase.</dd>
+                    </dl>
+                    <p>Abandoning no tiles means drawing one. Workers already in the construction zone
+                        remain even if a stack becomes empty. If the bag runs out while drawing, return
+                        abandoned tiles to it and continue. If there still are not enough, choose sides for
+                        the tiles drawn so far and place them in your construction zone. Any player whose
+                        zone then holds at least 3 tiles, Scout included, must put 1 tile back in the bag.
+                        The Scout then finishes the draw.</p>
+                </details>
+
+                <details class="phase-two">
+                    <summary>II · Develop</summary>
+                    <p>Place developers one at a time on the top development. Apply every applicable cost
+                        reduction; these are mandatory. Even after reductions, at least 1 developer is
+                        needed to complete a tile. Once enough developers are on the tile to meet its
+                        cost, move it into the tableau and return the completing developers to Citizenry.
+                        Use any remaining developers on the next tile; several developments may finish in
+                        one phase.</p>
+                    <p>Incomplete developers stay on their tile between rounds. If the stack is empty,
+                        excess developers return to the dice cup. If scouting or an Explore power completes
+                        a tile early, leave it on the stack until the next Develop phase is played. Then
+                        move it into the tableau, return the required developers to Citizenry, choosing which ones if there are
+                        extras, and put any extras on the next tile. Resolve a development's immediate
+                        effect when it enters the tableau. Follow the timing stated for each development power;
+                        Reassign powers are used during Assign.</p>
+                </details>
+
+                <details class="phase-three">
+                    <summary>III · Settle</summary>
+                    <p>Place settlers one at a time on the top world. Apply every applicable cost reduction;
+                        these are mandatory. Even after reductions, at least 1 settler is needed to finish
+                        a world. Once enough settlers are on the world to meet its cost, move it
+                        into the tableau, return the completing settlers to Citizenry, and apply its immediate
+                        effect once. Use any remaining settlers on the next world; several worlds may finish
+                        in one phase.</p>
+                    <p>If scouting or an Explore power completes a world early, leave it on the stack until
+                        the next Settle phase is played. Then move it into the tableau, return the required
+                        settlers to Citizenry, choosing which ones if there are extras, and put any extras
+                        on the next world. If no world remains, excess settlers return to the dice cup. The
+                        tile's icons show its dice and any extra credits or starting good. If an effect
+                        removes a die, return any of your dice from any location to the shared supply; if
+                        it removes the die that selected a phase, that phase still occurs.</p>
+                </details>
+
+                <details class="phase-four">
+                    <summary>IV · Produce</summary>
+                    <p>Each producer becomes a good on one non-gray tableau world. Any die color can
+                        produce on any such world. Normally a world holds one good; Galactic Reserves
+                        raises this to two. Unused producers return to the dice cup.</p>
+                </details>
+
+                <details class="phase-five">
+                    <summary>V · Ship</summary>
+                    <p>Pair each shipper with one good, then choose Trade or Consume. Both dice go to their
+                        owner's Citizenry.</p>
+                    <div class="table-container">
+                        <table class="trade-table">
+                            <caption>Trade value follows world color, not dice color</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">World</th>
+                                    <th scope="col">Galactic Credits</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Novelty</td>
+                                    <td>3</td>
+                                </tr>
+                                <tr>
+                                    <td>Rare Elements</td>
+                                    <td>4</td>
+                                </tr>
+                                <tr>
+                                    <td>Genes</td>
+                                    <td>5</td>
+                                </tr>
+                                <tr>
+                                    <td>Alien Technology</td>
+                                    <td>6</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p>
+                        <strong>Consume:</strong> gain 1 VP, +1 if good die color matches world, and +1 if
+                        shipper die color matches world. Purple Consumption dice match every color for
+                        these bonuses only.</p>
+                </details>
+
+                <h3>Economy and ending</h3>
+                <details>
+                    <summary>Recruit, Recall, and Galactic Credit limits</summary>
+                    <ul>
+                        <li>Recruit as many Citizenry dice as affordable, at 1 Galactic Credit each.</li>
+                        <li>If recruitment leaves 0 Galactic Credits, reset the marker to $1 afterward.</li>
+                        <li>Recall construction zone workers or goods to the dice cup for free only during Manage Empire. Starting goods cannot be recalled before the first Roll.</li>
+                        <li>If the dice cup is empty after recruiting, recall at least one die.</li>
+                        <li>Galactic Credits cap at $10; excess is lost.</li>
+                    </ul>
+                </details>
+
+                <details>
+                    <summary>Game end and scoring</summary>
+                    <p>Finish the current round when the initial VP chip pool has emptied or any player
+                        reaches at least 12 tableau squares. Players may finish above 12.</p>
+                    <p>Score VP chips, the printed cost of every tableau tile (both values on the faction tile), and bonuses from 6-cost developments. For group-based bonuses, round the number of groups up before multiplying by the bonus: 7 qualifying dice at 2 VP per 3 dice score 6 VP. Construction-zone tiles do not score.</p>
+                    <p>Tied players add dice in the dice cup and current Galactic Credits. The highest
+                        combined total wins; a remaining tie is shared.</p>
+                </details>
+
+                <details>
+                    <summary>Frequently missed rules</summary>
+                    <ul>
+                        <li>Play is simultaneous; everyone participates in every active phase.</li>
+                        <li>Tasks resolve one worker at a time. No advance declaration for Scout, Stock,
+                            Trade, or Consume.</li>
+                        <li>Completed-task dice go to Citizenry. Inactive-phase and unusable dice go to
+                            dice cup.</li>
+                        <li>Develop and Settle can each complete multiple tiles in one phase.</li>
+                        <li>Produce comes before Ship.</li>
+                        <li>Trade uses world color. Consume bonuses use dice colors; wild face adds nothing.</li>
+                        <li>The starting faction tile plus home world tile already count as 3 tableau
+                            squares.</li>
+                        <li>Construction-zone tiles do not score.</li>
+                    </ul>
+                </details>
+            </section>
+        </main>
+
+        <aside aria-labelledby="guide-options-title">
+            <h2 id="guide-options-title">Guide options</h2>
+
+            <form id="guide-options" autocomplete="off">
+                <fieldset>
+                    <legend>Table</legend>
+                    <label for="player-count">
+                        Players
+                        <select id="player-count" name="player-count">
+                            <option value="2">2 players</option>
+                            <option value="3">3 players</option>
+                            <option value="4" selected>4 players</option>
+                            <option value="5">5 players</option>
+                        </select>
+                    </label>
+
+                    <label for="first-game">
+                        <input type="checkbox" id="first-game" name="first-game" role="switch" checked
+                            aria-describedby="first-game-help">
+                        First play
+                    </label>
+                    <small id="first-game-help">Uses the lowest-cost development and world among the two
+                        starting game tiles.</small>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Setup progress</legend>
+                    <label for="setup-progress">Completed steps</label>
+                    <progress id="setup-progress" value="0" max="5"></progress>
+                    <output id="setup-progress-text">0 of 5</output>
+                    <button type="button" id="reset-guide">
+                        <span class="sym" aria-hidden="true">refresh</span>
+                        Start over
+                    </button>
+                </fieldset>
+
+                <fieldset>
+                    <legend>User interface</legend>
+                    <label for="interface-language">
+                        Language
+                        <select id="interface-language" name="interface-language">
+                            <option value="en" selected>English</option>
+                            <option value="de">Deutsch</option>
+                        </select>
+                    </label>
+                </fieldset>
+            </form>
+
+            <p>
+                <small>Progress stays in this browser.</small>
+            </p>
+        </aside>
+
+    <footer>
+        <p lang="en">This is an independent, unofficial rules guide. It is not affiliated with or endorsed by the game's publisher. All trademarks and copyrights in the original game remain the property of their respective owners.</p>
+        <p lang="de">Dies ist ein unabhängiger, inoffizieller Regelleitfaden. Er steht in keiner Verbindung zum Verlag des Spiels und wird von diesem nicht unterstützt. Alle Marken- und Urheberrechte am Originalspiel verbleiben bei ihren jeweiligen Rechteinhabern.</p>
+    </footer>
+
+        <script src="../../one.js"></script>
+        <script>
+    /* global one */
+
+    const STORAGE_KEY = "galactic-dice-guide:state";
+    const STATE_VERSION = 1;
+    const SETUP_STEP_COUNT = 5;
+    const ROUND_STEP_COUNT = 5;
+    const PLAYER_MIN = 2;
+    const PLAYER_MAX = 5;
+
+    const defaultState = {
+        version: STATE_VERSION,
+        language: "en",
+        playerCount: 4,
+        firstGame: true,
+        setupStep: 0,
+        setupProgress: 0,
+        roundStep: 0,
+    };
+
+    const interfaceLanguageSelect = document.getElementById("interface-language");
+    const playerCountSelect = document.getElementById("player-count");
+    const firstGameInput = document.getElementById("first-game");
+    const setupPanels = [...document.querySelectorAll("[data-setup-panel]")];
+    const setupBackButton = document.getElementById("setup-back");
+    const setupNextButton = document.getElementById("setup-next");
+    const setupNextLabel = document.getElementById("setup-next-label");
+    const setupStepLabel = document.getElementById("setup-step-label");
+    const setupProgress = document.getElementById("setup-progress");
+    const setupProgressText = document.getElementById("setup-progress-text");
+    const setupPlayerSummary = document.getElementById("setup-player-summary");
+    const stationGrid = document.getElementById("station-grid");
+    const resetGuideButton = document.getElementById("reset-guide");
+    const roundButtons = [...document.querySelectorAll("[data-round-button]")];
+    const roundPanels = [...document.querySelectorAll("[data-round-panel]")];
+    const twoPlayerReveal = document.getElementById("two-player-reveal");
+
+    const german = {
+        "A private table companion for setting up and learning a space-faring dice game.": "Ein privater Begleiter für Spielvorbereitung und Einstieg in ein Weltraum-Würfelspiel.",
+        "Unofficial Guide - Roll for the Galaxy": "Unofficial Guide - Roll for the Galaxy",
+        "Skip to guide": "Zum Leitfaden springen",
+        "Toggle guide options": "Leitfaden-Optionen ein- oder ausblenden",
+        "Setup and round companion": "Begleiter für Spielvorbereitung und Rundenablauf",
+        "Primary": "Hauptnavigation",
+        "Setup": "Spielvorbereitung",
+        "Round": "Runde",
+        "Reference": "Nachschlagen",
+        "Set up the table": "Spiel vorbereiten",
+        "Build the shared supply first, then prepare each player area. Guide adjusts quantities and two-player rules automatically.": "Bereitet zuerst den Allgemeinen Vorrat und danach jeden Spielerbereich vor. Der Leitfaden passt Mengen und Regeln für 2 Spieler automatisch an.",
+        "players": "Spieler",
+        "VP": "SP",
+        "Build shared supply": "Allgemeinen Vorrat vorbereiten",
+        "Place four shared groups within everyone's reach.": "Legt vier gemeinsame Gruppen für alle erreichbar bereit.",
+        "Put all": "Legt alle",
+        "55 double-sided game tiles": "55 doppelseitigen Spiel-Plättchen",
+        "in the bag.": "in den Stoffbeutel.",
+        "Place all unclaimed dice nearby as dice supply.": "Legt alle nicht verteilten Würfel als Allgemeinen Vorrat daneben.",
+        "Lay out five phase tiles in numeric order, inactive side up.": "Legt die fünf Phasenanzeiger in numerischer Reihenfolge mit der inaktiven Seite nach oben aus.",
+        "Prepare": "Legt",
+        "in 1- and 5-point chips: 12 per player.": "in 1er- und 5er-SP-Chips bereit: 12 pro Spieler.",
+        "Set every 10-point chip aside. Return unused 1- and 5-point chips to the box.": "Legt alle 10er-SP-Chips beiseite. Legt nicht benötigte 1er- und 5er-SP-Chips zurück in die Schachtel.",
+        "Set-aside 10-point chips only record points after the initial VP chip pool runs out. Emptying that initial pool still triggers game end.": "Die beiseitegelegten 10er-SP-Chips werden erst benötigt, wenn der anfängliche SP-Chip-Vorrat aufgebraucht ist. Das Leeren dieses Vorrats löst weiterhin das Spielende aus.",
+        "Game tile bag": "Stoffbeutel mit Spiel-Plättchen",
+        "55 tiles": "55 Plättchen",
+        "Dice supply": "Allgemeiner Würfelvorrat",
+        "Grouped by color": "Nach Farben gruppiert",
+        "Phase tiles": "Phasenanzeiger",
+        "VP chip pool": "SP-Chip-Vorrat",
+        "points": "Punkte",
+        "Keep the active VP chip pool separate from the 10-point reserve.": "Haltet den aktiven SP-Chip-Vorrat von den beiseitegelegten 10er-SP-Chips getrennt.",
+        "Prepare player stations": "Spielerbereiche vorbereiten",
+        "Give every player the same five-part kit.": "Gebt jedem Spieler die gleiche fünfteilige Ausstattung.",
+        "One dice cup": "1 Würfelbecher",
+        "One player mat": "1 Ablagetafel",
+        "One Galactic Credit marker, placed at": "1 Krediteinheiten-Marker auf",
+        "One player screen": "1 Sichtschirm",
+        "One phase strip, kept behind the player screen": "1 Phasenstreifen hinter dem Sichtschirm",
+        "Return unused player components to the box.": "Legt nicht benötigtes Spielmaterial zurück in die Schachtel.",
+        "Player stations": "Spielerbereiche",
+        "The screen hides rolled dice and assignments. The tableau and top tile of each construction stack are visible; tiles beneath the top and tiles abandoned during Explore are secret. Players must name a stack's size when asked.": "Der Sichtschirm verdeckt Würfelergebnisse und Zuordnungen. Auslage und oberstes Plättchen jedes Konstruktionsstapels sind sichtbar; darunterliegende und während Erkunden abgegebene Plättchen bleiben geheim. Auf Nachfrage müssen Spieler die Stapelgröße nennen.",
+        "Create starting empires": "Startimperien bilden",
+        "Give each player one random faction tile and one random home world. Return unused starting tiles to the box.": "Gebt jedem Spieler 1 zufälliges Fraktions-Plättchen und 1 zufällige Heimatwelt. Legt übrige Startplättchen zurück in die Schachtel.",
+        "Place both face up beside the player mat; together they form the starting tableau.": "Legt beide offen neben die Ablagetafel; zusammen bilden sie die Startauslage.",
+        "The wide faction tile counts as 2 tile squares.": "Das doppelt breite Fraktions-Plättchen zählt als 2 Plättchenfelder.",
+        "The home world tile counts as 1 tile square.": "Die Heimatwelt zählt als 1 Plättchenfeld.",
+        "Every player begins at": "Jeder Spieler beginnt mit",
+        "3 of 12 tableau squares": "3 von 12 Plättchenfeldern in seiner Auslage",
+        "needed to trigger game end.": "die das Spielende auslösen.",
+        "Faction tile": "Fraktions-Plättchen",
+        "2 squares": "2 Felder",
+        "Home world tile": "Heimatwelt",
+        "1 square": "1 Feld",
+        "Starting tableau": "Startauslage",
+        "Keep face up and visible": "Offen und sichtbar auslegen",
+        "Tableau is built empire; construction zone is separate.": "Die Auslage ist das errichtete Imperium; die Konstruktionszone bleibt getrennt.",
+        "Seed construction zones": "Konstruktionszonen bestücken",
+        "Each player draws two tiles from the bag. Every tile has a development on one side and a world on the other.": "Jeder Spieler zieht 2 Plättchen aus dem Beutel. Jedes zeigt auf einer Seite eine Entwicklung und auf der anderen eine Welt.",
+        "Place one tile development-side up on left stack.": "Legt 1 Plättchen mit der Entwicklung-Seite nach oben auf den linken Stapel.",
+        "Place other tile world-side up on right stack.": "Legt das andere mit der Welt-Seite nach oben auf den rechten Stapel.",
+        "For the first game, place the lowest-cost development on the left and the lowest-cost world on the right.": "Bei der ersten Partie legt links die Entwicklung und rechts die Welt mit den jeweils geringsten Kosten aus.",
+        "Choose either side of each tile, then place one in each stack.": "Wählt bei jedem Plättchen eine Seite und legt je 1 auf jeden Stapel.",
+        "Do not put both tiles in the same stack.": "Legt nicht beide Plättchen auf denselben Stapel.",
+        "Development stack": "Entwicklungsstapel",
+        "Left side · top tile receives workers": "Links · Arbeiter kommen auf das oberste Plättchen",
+        "World stack": "Weltenstapel",
+        "Right side · top tile receives workers": "Rechts · Arbeiter kommen auf das oberste Plättchen",
+        "Future tiles go under a stack. Only top project can be built.": "Neue Plättchen kommen unter einen Stapel. Nur das oberste Projekt kann fertiggestellt werden.",
+        "Place starting dice": "Startwürfel verteilen",
+        "The fixed baseline uses five Home (white) dice per player. Starting tiles can grant more dice in different locations.": "Jeder Spieler beginnt grundsätzlich mit 5 Heimatwürfeln (weiß). Startplättchen können zusätzliche Würfel an verschiedenen Orten gewähren.",
+        "Put": "Legt",
+        "3 Home dice": "3 Heimatwürfel",
+        "in the dice cup.": "in den Würfelbecher.",
+        "2 Home dice": "2 Heimatwürfel",
+        "in the Citizenry.": "in die Bevölkerung.",
+        "Take every die granted by worlds in the starting tableau. Follow each icon: dice cup, Citizenry, or good on a world.": "Nehmt alle Würfel, die Welten in der Startauslage gewähren. Beachtet das jeweilige Symbol: Würfelbecher, Bevölkerung oder Gut auf einer Welt.",
+        "Take nothing from the unbuilt world in the construction zone.": "Nehmt keine Würfel für die noch nicht besiedelte Welt in der Konstruktionszone.",
+        "Starting tile exceptions": "Ausnahmen bei Startplättchen",
+        "The Doomed World home world grants no starting die; set its owner's marker to $8. The Destroyed Colony faction tile shows two worlds; take the listed starting dice from both.": "Die Heimatwelt Sterbende Welt gewährt bei der Spielvorbereitung keinen Würfel; stellt den Krediteinheiten-Marker ihres Besitzers auf 8$. Die Fraktion Zerstörte Kolonie zeigt 2 Welten; nehmt die angegebenen Startwürfel von beiden.",
+        "Dice cup": "Würfelbecher",
+        "3 Home dice + dice granted directly to the dice cup": "3 Heimatwürfel + direkt für den Würfelbecher gewährte Würfel",
+        "Citizenry": "Bevölkerung",
+        "2 Home dice + dice granted directly to Citizenry": "2 Heimatwürfel + direkt für die Bevölkerung gewährte Würfel",
+        "Starting worlds": "Startwelten",
+        "Place any granted starting goods on the indicated world": "Gewährte Startgüter auf die angegebene Welt legen",
+        "Icons on starting tableau override generic placement.": "Symbole in der Startauslage bestimmen den Ort der Würfel.",
+        "Table is ready": "Spiel ist vorbereitet",
+        "can begin with": "können mit",
+        "in the initial pool.": "im anfänglichen Vorrat beginnen.",
+        "Keep screens up during Roll and Assign. Play simultaneously; if a phase needs strict timing, resolve it clockwise, starting with the player whose faction tile has the lowest number.": "Lasst die Sichtschirme beim Würfeln und Zuordnen stehen. Spielt gleichzeitig; wenn eine Phase eine genaue Reihenfolge erfordert, spielt sie im Uhrzeigersinn ab dem Spieler mit dem Fraktions-Plättchen mit der niedrigsten Nummer.",
+        "Learn first round": "Erste Runde kennenlernen",
+        "Setup step controls": "Steuerung der Vorbereitungsschritte",
+        "Back": "Zurück",
+        "Continue": "Weiter",
+        "Step 1 of 5": "Schritt 1 von 5",
+        "Step 1": "Schritt 1",
+        "Step 2": "Schritt 2",
+        "Step 3": "Schritt 3",
+        "Step 4": "Schritt 4",
+        "Step 5": "Schritt 5",
+        "Learn a round": "Rundenablauf kennenlernen",
+        "All players perform each step together. Only phases selected this round occur.": "Alle Spieler führen jeden Schritt gleichzeitig aus. Nur die in dieser Runde gewählten Phasen werden gespielt.",
+        "Round steps": "Rundenschritte",
+        "Roll": "Würfeln",
+        "Assign": "Zuordnen",
+        "Reveal": "Aufdecken",
+        "Do phases": "Phasen spielen",
+        "Manage": "Imperium verwalten",
+        "Roll behind screens": "Hinter den Sichtschirmen würfeln",
+        "Every die in the dice cup is a worker for this round. Roll all of them behind the player screen and keep results hidden.": "Jeder Würfel im Würfelbecher ist in dieser Runde ein Arbeiter. Würfelt alle hinter dem Sichtschirm und haltet die Ergebnisse geheim.",
+        "Worker cycle": "Würfelkreislauf",
+        "Available dice": "Verfügbare Würfel",
+        "Hidden workers": "Geheime Arbeiter",
+        "Task": "Aufgabe",
+        "Selected phases": "Gewählte Phasen",
+        "Await recruitment": "Warten auf Anwerben",
+        "Dice outside the dice cup are not rolled: Citizenry, goods, and workers in the construction zone stay where they are.": "Würfel außerhalb des Würfelbechers werden nicht gewürfelt: Bevölkerung, Güter und Arbeiter in der Konstruktionszone bleiben liegen.",
+        "Assign and choose one phase": "Zuordnen und 1 Phase auswählen",
+        "Place each worker below the column matching its rolled face. Wild faces may enter any column.": "Legt jeden Arbeiter unter die Spalte seines gewürfelten Symbols. Joker dürfen jeder Spalte zugeordnet werden.",
+        "Move exactly one worker onto the phase strip to select a phase. Ignore its face; this die still works in the selected phase.": "Setzt genau 1 Arbeiter auf den Phasenstreifen, um 1 Phase auszuwählen. Sein Symbol ist dabei unwichtig; der Würfel arbeitet in der gewählten Phase.",
+        "After selecting a phase, apply Reassign powers. Each can be used at most once per round; a power is optional only when its text says \"may.\"": "Nutzt nach der Phasenwahl Versetzen-Fähigkeiten. Jede darf höchstens 1× pro Runde genutzt werden; sie ist nur freiwillig, wenn ihr Text \"darfst\" sagt.",
+        "Phase assignment columns": "Spalten für Phasenzuordnung",
+        "Explore": "Erkunden",
+        "Develop": "Entwickeln",
+        "Settle": "Siedeln",
+        "Produce": "Produzieren",
+        "Ship": "Verladen",
+        "Dictate:": "Befehlen:",
+        "park any worker in the Dictate area to move a different worker to another column. The parked die returns to the dice cup after reveal.": "Legt 1 beliebigen Arbeiter in die Befehlszone, um einen anderen Arbeiter in eine andere Spalte zu versetzen. Der abgelegte Würfel kehrt nach dem Aufdecken in den Würfelbecher zurück.",
+        "Reveal selected phases": "Gewählte Phasen aufdecken",
+        "Lift player screens together and announce selected phases. Flip matching phase tiles to the active side.": "Nehmt gleichzeitig die Sichtschirme beiseite und nennt die gewählten Phasen. Dreht deren Phasenanzeiger auf die aktive Seite.",
+        "Return every Dictate die to its owner's dice cup.": "Legt jeden Würfel aus einer Befehlszone zurück in den Würfelbecher seines Besitzers.",
+        "Return workers assigned beneath inactive phases to the dice cup.": "Legt Arbeiter unter nicht gewählten Phasen zurück in den Würfelbecher.",
+        "Leave workers under active phases for task resolution.": "Lasst Arbeiter unter aktiven Phasen für ihre Aufgaben liegen.",
+        "Two players:": "2-Spieler-Spiel:",
+        "roll one spare Home (white) die. If its face names a phase neither player selected, activate that phase too. A wild face changes nothing; return the die to the shared supply.": "Würfelt 1 Heimatwürfel (weiß) aus dem Allgemeinen Vorrat. Zeigt er eine Phase, die keiner gewählt hat, aktiviert auch diese Phase. Ein Joker ändert nichts; legt den Würfel danach zurück in den Allgemeinen Vorrat.",
+        "Resolve active phases in order": "Aktive Phasen der Reihe nach spielen",
+        "Everyone acts simultaneously in phase I through V. Skip inactive phases. Use every assigned worker if a task is possible, one at a time.": "Alle handeln gleichzeitig in den Phasen I bis V. Überspringt inaktive Phasen. Setzt jeden zugeordneten Arbeiter einzeln ein, sofern eine Aufgabe möglich ist.",
+        "Phases in resolution order": "Phasen in Spielreihenfolge",
+        "I · Explore": "I · Erkunden",
+        "Scout or gain Galactic Credits": "Aufklären oder Galaktische Krediteinheiten erhalten",
+        "II · Develop": "II · Entwickeln",
+        "Build technology": "Technologien entwickeln",
+        "III · Settle": "III · Siedeln",
+        "Complete worlds": "Welten besiedeln",
+        "IV · Produce": "IV · Produzieren",
+        "Place goods": "Güter produzieren",
+        "V · Ship": "V · Verladen",
+        "Trade or consume": "Handeln oder Verbrauchen",
+        "Dice completing tasks go to Citizenry. Dice left without a possible task return to the dice cup. Choosing a phase grants no separate bonus.": "Würfel nach erfüllter Aufgabe kommen in die Bevölkerung. Würfel ohne mögliche Aufgabe kehren in den Würfelbecher zurück. Die Phasenwahl gewährt keinen eigenen Bonus.",
+        "Manage empire": "Imperium verwalten",
+        "Recruit.": "Anwerben.",
+        "Spend 1 Galactic Credit per die to move as many dice as affordable from Citizenry to the dice cup. If Galactic Credits reach 0, move the marker back to $1 after recruiting.": "Gebt 1 Galaktische Krediteinheit pro Würfel aus, um beliebig viele bezahlbare Würfel aus der Bevölkerung anzuwerben. Erreicht ihr 0$, stellt den Marker nach dem Anwerben zurück auf 1$.",
+        "Recall.": "Abziehen.",
+        "Optionally return developers, settlers, and goods directly to the dice cup for free. If the dice cup is empty after recruiting, recall at least one die.": "Ihr dürft Entwickler, Siedler und Güter kostenlos direkt in den Würfelbecher zurücklegen. Ist der Würfelbecher nach dem Anwerben leer, müsst ihr mindestens 1 Würfel abziehen.",
+        "Reset.": "Zurücksetzen.",
+        "Turn all phase tiles inactive.": "Dreht alle Phasenanzeiger auf die inaktive Seite.",
+        "Check end.": "Spielende prüfen.",
+        "Finish the game if the initial VP chip pool emptied or any tableau reached 12 tile squares.": "Beendet das Spiel, wenn der anfängliche SP-Chip-Vorrat leer ist oder eine Auslage 12 Plättchenfelder erreicht.",
+        "Galactic Credits never exceed $10. If you cannot afford every die in Citizenry, choose which dice to recruit.": "Galaktische Krediteinheiten können nie 10$ übersteigen. Reicht euer Guthaben nicht für alle Würfel in der Bevölkerung, wählt ihr aus, welche Würfel ihr anwerbt.",
+        "Rules reference": "Regeln zum Nachschlagen",
+        "Open the rule you need. Development powers can change these defaults. Powers for an active phase can take effect even if you assigned no workers to it, and are mandatory unless their text says \"may.\"": "Schlagt nur die gerade benötigte Regel nach. Entwicklungsfähigkeiten können diese Grundregeln ändern. Fähigkeiten einer aktiven Phase können auch ohne zugeordnete Arbeiter wirken; sie sind verpflichtend, sofern ihr Text sie nicht mit \"du darfst\" als freiwillig kennzeichnet.",
+        "Assign and resolve": "Zuordnen und ausführen",
+        "Workers, phase selection, and Reassign": "Arbeiter, Phasenwahl und Versetzen",
+        "Worker's column determines task; printed face only guides initial assignment.": "Die Spalte eines Arbeiters bestimmt seine Aufgabe; sein Würfelsymbol bestimmt nur die erste Zuordnung.",
+        "Each player selects exactly one phase before using any Reassign power.": "Jeder Spieler wählt genau 1 Phase, bevor er Versetzen-Fähigkeiten nutzt.",
+        "Selected die remains worker in chosen phase.": "Der zur Phasenwahl eingesetzte Würfel bleibt Arbeiter der gewählten Phase.",
+        "Each Reassign power can be used at most once per round. A power is optional only when its text says \"may.\" Moved die need not show target phase.": "Jede Versetzen-Fähigkeit darf höchstens 1× pro Runde genutzt werden. Sie ist nur freiwillig, wenn ihr Text \"darfst\" sagt. Der versetzte Würfel muss nicht das Symbol der Zielphase zeigen.",
+        "Dictate spends one worker to reassign a different worker. The spent die returns to the dice cup at Reveal. Reassign powers cannot move dice already spent on Dictate.": "Befehlen setzt 1 Arbeiter ein, um einen anderen zu versetzen. Der eingesetzte Würfel kehrt beim Aufdecken in den Würfelbecher zurück. Versetzen-Fähigkeiten können keine bereits für Befehlen eingesetzten Würfel bewegen.",
+        "For each explorer, choose one task when used:": "Wählt für jeden Kundschafter beim Einsatz 1 Aufgabe:",
+        "Stock": "Sammeln",
+        "Gain 2 Galactic Credits.": "Erhaltet 2 Galaktische Krediteinheiten.",
+        "Scout": "Aufklären",
+        "Optionally abandon any tiles from either construction zone stack, then draw one more tile than number abandoned. Choose a side for each drawn tile and place it under the matching stack. Return abandoned tiles to the bag after the phase.": "Ihr dürft beliebig viele Plättchen aus beiden Stapeln der Konstruktionszone abgeben. Zieht danach 1 Plättchen mehr, als ihr abgegeben habt. Wählt bei jedem gezogenen Plättchen eine Seite und legt es unter den passenden Stapel. Gebt abgelegte Plättchen nach der Phase in den Beutel zurück.",
+        "Abandoning no tiles means drawing one. Workers already in the construction zone remain even if a stack becomes empty. If the bag runs out while drawing, return abandoned tiles to it and continue. If there still are not enough, choose sides for the tiles drawn so far and place them in your construction zone. Any player whose zone then holds at least 3 tiles, Scout included, must put 1 tile back in the bag. The Scout then finishes the draw.": "Ohne Abgabe zieht ihr 1 Plättchen. Arbeiter in der Konstruktionszone bleiben liegen, auch wenn ein Stapel leer wird. Wird der Beutel beim Ziehen leer, legt abgegebene Plättchen zurück hinein und zieht weiter. Reicht es auch danach nicht, wählt für die bereits gezogenen Plättchen je eine Seite und legt sie in eure Konstruktionszone. Hat eine Konstruktionszone nach dem Ablegen mindestens 3 Plättchen, muss ihr Besitzer, auch der Kundschafter, 1 Plättchen in den Beutel zurücklegen. Danach zieht der Kundschafter die fehlenden Plättchen.",
+        "Place developers one at a time on the top development. Apply every applicable cost reduction; these are mandatory. Even after reductions, at least 1 developer is needed to complete a tile. Once enough developers are on the tile to meet its cost, move it into the tableau and return the completing developers to Citizenry. Use any remaining developers on the next tile; several developments may finish in one phase.": "Legt Entwickler einzeln auf die oberste Entwicklung. Alle anwendbaren Kostenreduktionen müsst ihr nutzen. Auch nach Reduktionen ist mindestens 1 Entwickler nötig, um eine Entwicklung fertigzustellen. Sobald die nötige Zahl an Entwicklern auf dem Plättchen erreicht ist, legt ihr es in die Auslage und die dafür nötigen Entwickler in die Bevölkerung. Übrige Entwickler kommen auf das nächste Plättchen; mehrere Entwicklungen können in 1 Phase fertig werden.",
+        "Incomplete developers stay on their tile between rounds. If the stack is empty, excess developers return to the dice cup. If scouting or an Explore power completes a tile early, leave it on the stack until the next Develop phase is played. Then move it into the tableau, return the required developers to Citizenry, choosing which ones if there are extras, and put any extras on the next tile. Resolve a development's immediate effect when it enters the tableau. Follow the timing stated for each development power; Reassign powers are used during Assign.": "Entwickler auf unfertigen Plättchen bleiben zwischen Runden liegen. Ist der Stapel leer, kehren überzählige Entwickler in den Würfelbecher zurück. Wird eine Entwicklung durch Aufklären oder eine Erkunden-Fähigkeit schon vorher fertig, bleibt sie bis zur nächsten Entwickeln-Phase auf dem Stapel. Dann legt ihr die Entwicklung in die Auslage. Die benötigten Entwickler kommen in die Bevölkerung; bei überschüssigen wählt ihr, welche zurückkehren, und legt die übrigen auf das nächste Plättchen. Führt einen Soforteffekt aus, sobald eine Entwicklung in die Auslage kommt. Die jeweilige Entwicklungsfähigkeit legt fest, wann sie gilt; Versetzen-Fähigkeiten nutzt ihr beim Zuordnen.",
+        "Place settlers one at a time on the top world. Apply every applicable cost reduction; these are mandatory. Even after reductions, at least 1 settler is needed to finish a world. Once enough settlers are on the world to meet its cost, move it into the tableau, return the completing settlers to Citizenry, and apply its immediate effect once. Use any remaining settlers on the next world; several worlds may finish in one phase.": "Legt Siedler einzeln auf die oberste Welt. Alle anwendbaren Kostenreduktionen müsst ihr nutzen. Auch nach Reduktionen ist mindestens 1 Siedler nötig, um eine Welt fertigzustellen. Sobald die nötige Zahl an Siedlern auf der Welt liegt, legt ihr sie in die Auslage, die dafür nötigen Siedler in die Bevölkerung und führt den Soforteffekt einmal aus. Übrige Siedler kommen auf die nächste Welt; mehrere Welten können in 1 Phase fertig werden.",
+        "If scouting or an Explore power completes a world early, leave it on the stack until the next Settle phase is played. Then move it into the tableau, return the required settlers to Citizenry, choosing which ones if there are extras, and put any extras on the next world. If no world remains, excess settlers return to the dice cup. The tile's icons show its dice and any extra credits or starting good. If an effect removes a die, return any of your dice from any location to the shared supply; if it removes the die that selected a phase, that phase still occurs.": "Wird eine Welt durch Aufklären oder eine Erkunden-Fähigkeit schon vorher fertig, bleibt sie bis zur nächsten Siedeln-Phase auf dem Stapel. Dann kommt sie in die Auslage. Wählt bei überschüssigen Siedlern, welche in die Bevölkerung zurückkehren, und legt die übrigen auf die nächste Welt. Ist keine vorhanden, gehen überzählige Siedler in den Würfelbecher. Die Symbole zeigen die gewährten Würfel und mögliche zusätzliche Krediteinheiten oder ein Startgut. Verlangt ein Effekt, einen Würfel abzugeben, könnt ihr einen beliebigen eigenen Würfel von jedem Ort in den Allgemeinen Vorrat zurücklegen. Entfernt ihr damit den Würfel, der eine Phase ausgewählt hat, findet diese Phase trotzdem statt.",
+        "Each producer becomes a good on one non-gray tableau world. Any die color can produce on any such world. Normally a world holds one good; Galactic Reserves raises this to two. Unused producers return to the dice cup.": "Jeder Produktionsarbeiter wird zum Gut auf 1 nicht-grauen Welt in der Auslage. Jede Würfelfarbe kann auf jeder solchen Welt produzieren. Normalerweise kann 1 Welt 1 Gut aufnehmen; Galaktische Reserven erhöht die Zahl auf 2. Nicht eingesetzte Produktionsarbeiter kommen in den Würfelbecher.",
+        "Pair each shipper with one good, then choose Trade or Consume. Both dice go to their owner's Citizenry.": "Paart jeden Verladearbeiter mit 1 Gut und wählt dann Handeln oder Verbrauchen. Beide Würfel kommen in die Bevölkerung ihres Besitzers.",
+        "Trade value follows world color, not dice color": "Handelswert nach Farbe der Welt, nicht des Würfels",
+        "World": "Welt",
+        "Galactic Credits": "Galaktische Krediteinheiten",
+        "Novelty": "Luxusartikel",
+        "Rare Elements": "Seltene Elemente",
+        "Genes": "Gene",
+        "Alien Technology": "Alien-Technologie",
+        "Consume:": "Verbrauchen:",
+        "gain 1 VP, +1 if good die color matches world, and +1 if shipper die color matches world. Purple Consumption dice match every color for these bonuses only.": "Erhaltet 1 SP, +1 bei passender Farbe des Gut-Würfels und der Welt sowie +1 bei passender Farbe von Verladearbeiter und Welt. Lila Konsumwürfel gelten nur für diese Boni als jede Farbe.",
+        "Economy and ending": "Wirtschaft und Spielende",
+        "Recruit, Recall, and Galactic Credit limits": "Anwerben, Abziehen und Krediteinheiten-Limit",
+        "Recruit as many Citizenry dice as affordable, at 1 Galactic Credit each.": "Werbt für je 1 Galaktische Krediteinheit so viele Würfel aus der Bevölkerung an, wie ihr bezahlen könnt.",
+        "If recruitment leaves 0 Galactic Credits, reset the marker to $1 afterward.": "Bleiben nach dem Anwerben 0$, stellt den Marker danach auf 1$.",
+        "Recall construction zone workers or goods to the dice cup for free only during Manage Empire. Starting goods cannot be recalled before the first Roll.": "Nur beim Verwalten des Imperiums dürft ihr Arbeiter aus der Konstruktionszone oder Güter kostenlos in den Würfelbecher zurückholen. Startgüter dürft ihr nicht vor dem ersten Würfeln zurückholen.",
+        "If the dice cup is empty after recruiting, recall at least one die.": "Ist der Würfelbecher nach dem Anwerben leer, zieht mindestens 1 Würfel ab.",
+        "Galactic Credits cap at $10; excess is lost.": "Galaktische Krediteinheiten sind auf 10$ begrenzt; Überschüsse verfallen.",
+        "Game end and scoring": "Spielende und Wertung",
+        "Finish the current round when the initial VP chip pool has emptied or any player reaches at least 12 tableau squares. Players may finish above 12.": "Beendet die laufende Runde, wenn der anfängliche SP-Chip-Vorrat leer ist oder ein Spieler mindestens 12 Plättchenfelder in seiner Auslage hat. Mehr als 12 sind erlaubt.",
+        "Score VP chips, the printed cost of every tableau tile (both values on the faction tile), and bonuses from 6-cost developments. For group-based bonuses, round the number of groups up before multiplying by the bonus: 7 qualifying dice at 2 VP per 3 dice score 6 VP. Construction-zone tiles do not score.": "Wertet SP-Chips, die aufgedruckten Kosten aller Plättchen in der Auslage (beide Werte des Fraktions-Plättchens) und Boni von Entwicklungen mit Kosten 6. Bei Gruppenboni rundet ihr zuerst die Anzahl der Gruppen auf und multipliziert dann mit dem Bonus: 7 passende Würfel ergeben bei 2 SP je 3 Würfel insgesamt 6 SP. Plättchen in der Konstruktionszone zählen nicht.",
+        "Tied players add dice in the dice cup and current Galactic Credits. The highest combined total wins; a remaining tie is shared.": "Bei Gleichstand addieren beteiligte Spieler Würfel im Würfelbecher und aktuelle Galaktische Krediteinheiten. Der höchste Gesamtwert gewinnt; bleibt der Gleichstand, teilen sie sich den Sieg.",
+        "Frequently missed rules": "Häufig übersehene Regeln",
+        "Play is simultaneous; everyone participates in every active phase.": "Alle spielen gleichzeitig und nehmen an jeder aktiven Phase teil.",
+        "Tasks resolve one worker at a time. No advance declaration for Scout, Stock, Trade, or Consume.": "Aufgaben werden Arbeiter für Arbeiter ausgeführt. Aufklären, Sammeln, Handeln und Verbrauchen müssen nicht vorab festgelegt werden.",
+        "Completed-task dice go to Citizenry. Inactive-phase and unusable dice go to dice cup.": "Würfel nach erfüllten Aufgaben kommen in die Bevölkerung. Würfel aus inaktiven Phasen und nicht einsetzbare Würfel kommen in den Würfelbecher.",
+        "Develop and Settle can each complete multiple tiles in one phase.": "Entwickeln und Siedeln können jeweils mehrere Plättchen in 1 Phase fertigstellen.",
+        "Produce comes before Ship.": "Produzieren kommt vor Verladen.",
+        "Trade uses world color. Consume bonuses use dice colors; wild face adds nothing.": "Handeln nutzt die Farbe der Welt. Boni beim Verbrauchen nutzen Würfelfarben; ein Joker gewährt nichts.",
+        "The starting faction tile plus home world tile already count as 3 tableau squares.": "Fraktions-Plättchen und Heimatwelt zählen bereits als 3 Plättchenfelder in der Auslage.",
+        "Construction-zone tiles do not score.": "Plättchen in der Konstruktionszone zählen keine Punkte.",
+        "Guide options": "Leitfaden-Optionen",
+        "Table": "Spieltisch",
+        "Players": "Spieler",
+        "2 players": "2 Spieler",
+        "3 players": "3 Spieler",
+        "4 players": "4 Spieler",
+        "5 players": "5 Spieler",
+        "First play": "Erste Partie",
+        "Uses the lowest-cost development and world among the two starting game tiles.": "Verwendet von den 2 Startplättchen die Entwicklung und Welt mit den geringsten Kosten.",
+        "Setup progress": "Fortschritt der Spielvorbereitung",
+        "Completed steps": "Abgeschlossene Schritte",
+        "0 of 5": "0 von 5",
+        "Start over": "Neu beginnen",
+        "User interface": "Benutzeroberfläche",
+        "Language": "Sprache",
+        "English": "Englisch",
+        "Progress stays in this browser.": "Der Fortschritt bleibt in diesem Browser gespeichert.",
+    };
+
+    const translatedTextNodes = [];
+    const translatedAttributes = [];
+
+    let state = { ...defaultState };
+    let saveTimer = null;
+    let storageErrorShown = false;
+    let stateWasEdited = false;
+
+    function translateText(text, language = state.language) {
+        if (language !== "de") return text;
+        return german[text] ?? text;
+    }
+
+    function cacheTranslatableContent() {
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let node = walker.nextNode();
+
+        while (node) {
+            const parent = node.parentElement;
+            const source = node.nodeValue;
+            const text = source.replace(/\s+/g, " ").trim();
+
+            if (text && parent?.tagName !== "SCRIPT" && parent?.tagName !== "STYLE") {
+                translatedTextNodes.push({
+                    node,
+                    source,
+                    text,
+                    leadingWhitespace: source.match(/^\s*/)[0],
+                    trailingWhitespace: source.match(/\s*$/)[0],
+                });
+            }
+            node = walker.nextNode();
+        }
+
+        document.querySelectorAll("[aria-label]").forEach((element) => {
+            translatedAttributes.push({
+                element,
+                name: "aria-label",
+                source: element.getAttribute("aria-label"),
+            });
+        });
+    }
+
+    function renderLanguage() {
+        document.documentElement.lang = state.language;
+        document.title = translateText("Unofficial Guide - Roll for the Galaxy");
+        document.querySelector('meta[name="description"]').content = translateText(
+            "A private table companion for setting up and learning a space-faring dice game.",
+        );
+        interfaceLanguageSelect.value = state.language;
+
+        translatedTextNodes.forEach(({ node, source, text, leadingWhitespace, trailingWhitespace }) => {
+            const translation = state.language === "de" ? german[text] : undefined;
+            node.nodeValue = translation === undefined
+                ? source
+                : `${leadingWhitespace}${translation}${trailingWhitespace}`;
+        });
+        translatedAttributes.forEach(({ element, name, source }) => {
+            element.setAttribute(name, translateText(source));
+        });
+    }
+
+    function clampInteger(value, minimum, maximum, fallback) {
+        if (!Number.isInteger(value)) return fallback;
+        return Math.min(maximum, Math.max(minimum, value));
+    }
+
+    function normalizeState(value) {
+        if (!value || value.version !== STATE_VERSION) return { ...defaultState };
+
+        const setupStep = clampInteger(
+            value.setupStep,
+            0,
+            SETUP_STEP_COUNT,
+            defaultState.setupStep,
+        );
+        const setupProgress = clampInteger(
+            value.setupProgress,
+            0,
+            SETUP_STEP_COUNT,
+            setupStep,
+        );
+
+        return {
+            version: STATE_VERSION,
+            language: value.language === "de" ? "de" : defaultState.language,
+            playerCount: clampInteger(
+                value.playerCount,
+                PLAYER_MIN,
+                PLAYER_MAX,
+                defaultState.playerCount,
+            ),
+            firstGame: typeof value.firstGame === "boolean"
+                ? value.firstGame
+                : defaultState.firstGame,
+            setupStep,
+            setupProgress: Math.max(setupStep, setupProgress),
+            roundStep: clampInteger(
+                value.roundStep,
+                0,
+                ROUND_STEP_COUNT - 1,
+                defaultState.roundStep,
+            ),
+        };
+    }
+
+    function showStorageError() {
+        if (storageErrorShown) return;
+        storageErrorShown = true;
+        one.alert(
+            state.language === "de"
+                ? "Fortschritt konnte nicht gespeichert werden. Der Leitfaden funktioniert in diesem Tab weiter."
+                : "Progress could not be saved. Guide will keep working in this tab.",
+            "error",
+        );
+    }
+
+    function queueSave() {
+        if (saveTimer !== null) clearTimeout(saveTimer);
+
+        saveTimer = setTimeout(async () => {
+            saveTimer = null;
+            try {
+                await one.storage.set(STORAGE_KEY, state);
+            } catch {
+                showStorageError();
+            }
+        }, 150);
+    }
+
+    function renderPlayerStations() {
+        const fragment = document.createDocumentFragment();
+
+        for (let player = 1; player <= state.playerCount; player++) {
+            const item = document.createElement("li");
+            const name = document.createElement("strong");
+            const kit = document.createElement("span");
+
+            name.textContent = state.language === "de" ? `Spieler ${player}` : `Player ${player}`;
+            kit.textContent = state.language === "de"
+                ? "Würfelbecher · Ablagetafel · Krediteinheiten-Marker · Sichtschirm · Phasenstreifen"
+                : "Dice cup · player mat · Galactic Credit marker · player screen · phase strip";
+            item.append(name, kit);
+            fragment.append(item);
+        }
+
+        stationGrid.replaceChildren(fragment);
+    }
+
+    function renderPlayerCount() {
+        const victoryPoints = state.playerCount * 12;
+
+        playerCountSelect.value = String(state.playerCount);
+        setupPlayerSummary.textContent = String(state.playerCount);
+        twoPlayerReveal.hidden = state.playerCount !== 2;
+
+        document.querySelectorAll("[data-player-count]").forEach((output) => {
+            output.textContent = String(state.playerCount);
+        });
+
+        document.querySelectorAll("[data-vp-total]").forEach((output) => {
+            output.textContent = String(victoryPoints);
+        });
+
+        renderPlayerStations();
+    }
+
+    function renderFirstGame() {
+        firstGameInput.checked = state.firstGame;
+
+        document.querySelectorAll("[data-first-game-only]").forEach((element) => {
+            element.hidden = !state.firstGame;
+        });
+
+        document.querySelectorAll("[data-experienced-game-only]").forEach((element) => {
+            element.hidden = state.firstGame;
+        });
+    }
+
+    function renderSetup(focusHeading = false) {
+        setupPanels.forEach((panel, index) => {
+            panel.hidden = index !== state.setupStep;
+        });
+
+        const isComplete = state.setupStep === SETUP_STEP_COUNT;
+
+        setupProgress.value = state.setupProgress;
+        setupProgressText.textContent = state.language === "de"
+            ? `${state.setupProgress} von ${SETUP_STEP_COUNT}`
+            : `${state.setupProgress} of ${SETUP_STEP_COUNT}`;
+        setupStepLabel.textContent = isComplete
+            ? (state.language === "de" ? "Spielvorbereitung abgeschlossen" : "Setup complete")
+            : (state.language === "de"
+                ? `Schritt ${state.setupStep + 1} von ${SETUP_STEP_COUNT}`
+                : `Step ${state.setupStep + 1} of ${SETUP_STEP_COUNT}`);
+        setupBackButton.hidden = state.setupStep === 0;
+        setupNextButton.hidden = isComplete;
+        setupNextLabel.textContent = state.setupStep === SETUP_STEP_COUNT - 1
+            ? (state.language === "de" ? "Vorbereitung abschließen" : "Finish setup")
+            : (state.language === "de" ? "Weiter" : "Continue");
+
+        if (!focusHeading) return;
+        setupPanels[state.setupStep].querySelector("h3").focus();
+    }
+
+    function renderRound(focusHeading = false) {
+        roundButtons.forEach((button, index) => {
+            if (index === state.roundStep) {
+                button.setAttribute("aria-current", "step");
+            } else {
+                button.removeAttribute("aria-current");
+            }
+        });
+
+        roundPanels.forEach((panel, index) => {
+            panel.hidden = index !== state.roundStep;
+        });
+
+        if (!focusHeading) return;
+        roundPanels[state.roundStep].querySelector("h3").focus();
+    }
+
+    function renderGuide() {
+        renderLanguage();
+        renderPlayerCount();
+        renderFirstGame();
+        renderSetup();
+        renderRound();
+    }
+
+    interfaceLanguageSelect.addEventListener("change", () => {
+        state.language = interfaceLanguageSelect.value === "de" ? "de" : "en";
+        stateWasEdited = true;
+        renderGuide();
+        queueSave();
+    });
+
+    playerCountSelect.addEventListener("change", () => {
+        state.playerCount = clampInteger(
+            Number(playerCountSelect.value),
+            PLAYER_MIN,
+            PLAYER_MAX,
+            defaultState.playerCount,
+        );
+        stateWasEdited = true;
+        renderPlayerCount();
+        queueSave();
+    });
+
+    firstGameInput.addEventListener("change", () => {
+        state.firstGame = firstGameInput.checked;
+        stateWasEdited = true;
+        renderFirstGame();
+        queueSave();
+    });
+
+    setupBackButton.addEventListener("click", () => {
+        state.setupStep = Math.max(0, state.setupStep - 1);
+        stateWasEdited = true;
+        renderSetup(true);
+        queueSave();
+    });
+
+    setupNextButton.addEventListener("click", () => {
+        state.setupStep = Math.min(SETUP_STEP_COUNT, state.setupStep + 1);
+        state.setupProgress = Math.max(state.setupProgress, state.setupStep);
+        stateWasEdited = true;
+        renderSetup(true);
+        queueSave();
+    });
+
+    roundButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            state.roundStep = Number(button.dataset.roundButton);
+            stateWasEdited = true;
+            renderRound(true);
+            queueSave();
+        });
+    });
+
+    resetGuideButton.addEventListener("click", async () => {
+        const confirmation = one.confirm(
+            state.language === "de"
+                ? "Fortschritt der Spielvorbereitung und Leitfaden-Optionen zurücksetzen?"
+                : "Reset setup progress and guide options?",
+            state.language === "de" ? "Neu beginnen?" : "Start over?",
+        );
+        const dialog = document.querySelector("dialog:last-of-type");
+
+        if (state.language === "de" && dialog) {
+            dialog.querySelector('[data-action="cancel"]').textContent = "Abbrechen";
+            dialog.querySelector('[data-action="confirm"]').textContent = "Bestätigen";
+        }
+
+        const confirmed = await confirmation;
+        if (!confirmed) return;
+
+        state = { ...defaultState, language: state.language };
+        stateWasEdited = true;
+        renderGuide();
+        queueSave();
+        one.alert(state.language === "de" ? "Leitfaden zurückgesetzt" : "Guide reset");
+    });
+
+    async function restoreState() {
+        try {
+            const storedState = normalizeState(await one.storage.get(STORAGE_KEY));
+            if (!stateWasEdited) state = storedState;
+        } catch {
+            showStorageError();
+        }
+        renderGuide();
+    }
+
+    cacheTranslatableContent();
+    renderGuide();
+    void restoreState();
+</script>
+    </body>
+
+</html>

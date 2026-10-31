@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en" class="layout-centered theme-purple">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description"
+        content="Offline table companions for learning, setup, play, scoring, and custom board generation.">
+    <title>Board Game Companions</title>
+    <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+    <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+    <link rel="stylesheet" type="text/css" href="../one.css">
+    <style>
+        .layout-centered main {
+            max-width: none;
+        }
+
+        .overview {
+            margin-bottom: 0;
+        }
+
+        .overview-header {
+            max-width: 42rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .overview-header h1 {
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .overview-header p {
+            margin: 0;
+            color: var(--on-surface-variant);
+        }
+
+        .guide-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .guide-card {
+            --guide-accent: var(--primary);
+            position: relative;
+            display: flex;
+            min-width: 0;
+            min-height: 18rem;
+            flex-direction: column;
+            padding: var(--spacing-lg);
+            overflow: hidden;
+            background: var(--surface-container-low);
+            border: var(--border-width) solid var(--outline-variant);
+            border-top: 4px solid var(--guide-accent);
+            border-radius: var(--radius);
+        }
+
+        .guide-card--planet {
+            --guide-accent: light-dark(#a94b32, #f1a38e);
+            --bg-icon: url("./red_planet_field/icon.svg");
+        }
+
+        .guide-card--galaxy {
+            --guide-accent: light-dark(#3f6f9f, #9ac7f5);
+            --bg-icon: url("./galactic_dice/icon.svg");
+        }
+
+        .guide-card--hex {
+            --guide-accent: light-dark(#47733c, #9ed491);
+            --bg-icon: url("./fair_hex_collector/icon.svg");
+        }
+
+        .guide-card--bird {
+            --guide-accent: light-dark(#227a8c, #8cd5df);
+            --bg-icon: url("./bird_habitat/icon.svg");
+        }
+
+        .guide-card--forest {
+            --guide-accent: light-dark(#47733c, #9ed491);
+            --bg-icon: url("./forest_guardian/icon.svg");
+        }
+
+        .guide-card--interstellar {
+            --guide-accent: light-dark(#76558f, #d3afe8);
+            --bg-icon: url("./interstellar_table/icon.svg");
+        }
+
+        .guide-card--island {
+            --guide-accent: light-dark(#26776f, #8ed4c9);
+            --bg-icon: url("./island_defense/icon.svg");
+        }
+
+        .guide-card--mosaic {
+            --guide-accent: light-dark(#96652f, #e9bd82);
+            --bg-icon: url("./mosaic_star/icon.svg");
+        }
+
+        .guide-card--polar {
+            --guide-accent: light-dark(#3f6f9f, #9ac7f5);
+            --bg-icon: url("./polar_expedition/icon.svg");
+        }
+
+        .guide-card--river {
+            --guide-accent: light-dark(#227a8c, #8cd5df);
+            --bg-icon: url("./river_trade/icon.svg");
+        }
+
+        .guide-card--city {
+            --guide-accent: light-dark(#a94b32, #f1a38e);
+            --bg-icon: url("./trading_city/icon.svg");
+        }
+
+        .guide-card::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            background-image: var(--bg-icon);
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.1;
+            filter: grayscale(100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .guide-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .guide-card h2 {
+            margin: 0 0 var(--spacing-sm);
+        }
+
+        .guide-card p {
+            margin: 0 0 var(--spacing-md);
+            color: var(--on-surface-variant);
+        }
+
+        .guide-card .tag-list {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .guide-card .btn {
+            align-self: flex-start;
+            margin-top: auto;
+        }
+
+        @media (max-width: 700px) {
+            .guide-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .guide-card {
+                min-height: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<main>
+    <section class="overview" aria-labelledby="page-title">
+        <header class="overview-header">
+            <h1 id="page-title">Board Game Companions</h1>
+            <p>Choose a table companion for guided setup, clear turn walkthroughs, scoring help, and custom board layouts.</p>
+        </header>
+
+        <div class="guide-grid">
+            <article class="guide-card guide-card--planet">
+                <h2>Unofficial Guide - Terraforming Mars</h2>
+                <p>Build your corporation, raise global parameters, and keep each generation moving from research to production.</p>
+                <div class="tag-list" aria-label="Guide features">
+                    <span class="tag">Guided setup</span>
+                    <span class="tag">Generations</span>
+                    <span class="tag">Scoring</span>
+                </div>
+                <a class="btn" href="red_planet_field/index.html">
+                    Open guide
+                </a>
+            </article>
+
+            <article class="guide-card guide-card--galaxy">
+                <h2>Unofficial Guide - Roll for the Galaxy</h2>
+                <p>Prepare your stations, follow every round phase, and resolve dice, projects, construction, and final scoring.</p>
+                <div class="tag-list" aria-label="Guide features">
+                    <span class="tag">Guided setup</span>
+                    <span class="tag">Round phases</span>
+                    <span class="tag">Scoring</span>
+                </div>
+                <a class="btn" href="galactic_dice/index.html">
+                    Open guide
+                </a>
+            </article>
+
+            <article class="guide-card guide-card--hex">
+                <h2>Unofficial Companion - Catan / Die Siedler von Catan</h2>
+                <p>Generate a custom board layout and try an optional dice-total deck.</p>
+                <div class="tag-list" aria-label="Companion features">
+                    <span class="tag">Board generator</span>
+                    <span class="tag">Yield engine</span>
+                    <span class="tag">Variant rules</span>
+                </div>
+                <a class="btn" href="fair_hex_collector/index.html">
+                    Open companion
+                </a>
+            </article>
+
+            <article class="guide-card guide-card--bird">
+                <h2>Unofficial Guide - Wingspan / Flügelschlag</h2>
+                <p>Prepare your habitats, learn bird powers and actions, and follow round goals through final scoring.</p>
+                <div class="tag-list" aria-label="Guide features">
+                    <span class="tag">Guided setup</span>
+                    <span class="tag">Bird powers</span>
+                    <span class="tag">Scoring</span>
+                </div>
+                <a class="btn" href="bird_habitat/index.html">
+                    Open guide
+                </a>
+            </article>
+
+            <article class="guide-card guide-card--forest">
+                <h2>Unofficial Guide - Living Forest</h2>
+                <p>Protect your forest with clear steps for drawing cards, choosing actions, using bonuses, and reaching victory.</p>
+                <div class="tag-list" aria-label="Guide features">
+                    <span class="tag">Guided setup</span>
+                    <span class="tag">Round phases</span>
+                    <span class="tag">Rules reference</span>
+                </div>
+                <a class="btn" href="forest_guardian/index.html">
+                    Open guide
+                </a>
+            </article>
+
+            <article class="guide-card guide-card--interstellar">
+                <h2>Unofficial Guide - Cosmic Encounter / König der Sterne</h2>
+                <p>Learn alien encounters, negotiate alliances, and practice the choices that lead to foreign colonies.</p>
+                <div class="tag-list" aria-label="Guide features">
+                    <span class="tag">Guided setup</span>
+                    <span class="tag">Alliances</span>
+                    <span class="tag">Practice encounters</span>
+                </div>
+                <a class="btn" href="interstellar_table/index.html">
+                    Open guide
+                </a>
+            </article>
+
+            <article class="guide-card guide-card--island">
+                <h2>Unofficial Guide - Spirit Island</h2>
+                <p>Coordinate cooperative island defense with guided setup, turn order, Powers, and Invader rules.</p>
+                <div class="tag-list" aria-label="Guide features">
+                    <span class="tag">Guided setup</span>
+                    <span class="tag">Turn walkthrough</span>
+                    <span class="tag">Practice</span>
+                </div>
+                <a class="btn" href="island_defense/index.html">
+                    Open guide
+                </a>
+            </article>
+
+            <article class="guide-card guide-card--mosaic">
+                <h2>Unofficial Guide - Azul: Summer Pavilion / Azul: Sommerpavillon</h2>
+                <p>Draft tiles, use wild colors, and work through placement costs, bonuses, and scoring.</p>
+                <div class="tag-list" aria-label="Guide features">
+                    <span class="tag">Guided setup</span>
+                    <span class="tag">Tile drafting</span>
+                    <span class="tag">Scoring</span>
+                </div>
+                <a class="btn" href="mosaic_star/index.html">
+                    Open guide
+                </a>
+            </article>
+
+            <article class="guide-card guide-card--polar">
+                <h2>Unofficial Guide - Mountains of Madness / Berge des Wahnsinns</h2>
+                <p>Prepare a cooperative polar expedition and keep the team moving through all five round phases.</p>
+                <div class="tag-list" aria-label="Guide features">
+                    <span class="tag">Guided setup</span>
+                    <span class="tag">Round phases</span>
+                    <span class="tag">Rules reference</span>
+                </div>
+                <a class="btn" href="polar_expedition/index.html">
+                    Open guide
+                </a>
+            </article>
+
+            <article class="guide-card guide-card--river">
+                <h2>Unofficial Guide - River of Gold / Am goldenen Fluss</h2>
+                <p>Set up a river trading game, learn the core rules, and explore decisions with interactive examples.</p>
+                <div class="tag-list" aria-label="Guide features">
+                    <span class="tag">Guided setup</span>
+                    <span class="tag">Trading</span>
+                    <span class="tag">Interactive examples</span>
+                </div>
+                <a class="btn" href="river_trade/index.html">
+                    Open guide
+                </a>
+            </article>
+
+            <article class="guide-card guide-card--city">
+                <h2>Unofficial Guide - San Juan</h2>
+                <p>Build a city with cards, follow role selection, manage goods, and learn how the final score is counted.</p>
+                <div class="tag-list" aria-label="Guide features">
+                    <span class="tag">Guided setup</span>
+                    <span class="tag">Role phases</span>
+                    <span class="tag">Scoring</span>
+                </div>
+                <a class="btn" href="trading_city/index.html">
+                    Open guide
+                </a>
+            </article>
+        </div>
+    </section>
+</main>
+    <footer>
+        <p lang="en">These are independent, unofficial board game companions. They are not affiliated with or endorsed by the games' publishers. All trademarks and copyrights in the original games remain the property of their respective owners.</p>
+    </footer>
+
+</body>
+
+</html>

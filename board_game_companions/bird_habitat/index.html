@@ -1,0 +1,2339 @@
+<!doctype html>
+<html lang="en" class="theme-orange">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="color-scheme" content="light dark">
+        <meta name="description" content="A bilingual, step-by-step bird-game table guide for standard setup, actions, powers, round goals and scoring.">
+        <title>Unofficial Guide - Wingspan / Flügelschlag</title>
+        <link rel="icon" href="icon.svg" sizes="any" type="image/svg+xml">
+        <!-- © 2026 Joschua Gandert - License: Apache 2.0 -->
+        <link rel="stylesheet" type="text/css" href="../../one.css">
+        <style>
+        :root {
+            --temperature-accent: light-dark(#a94b32, #f1a38e);
+            --oxygen-accent: light-dark(#477153, #8fc99e);
+            --ocean-accent: light-dark(#3f6f91, #8bc7ed);
+        }
+
+        main {
+            max-width: 80rem;
+        }
+
+        main > section > p:first-of-type {
+            max-width: 68ch;
+        }
+
+        .setup-status {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+            color: var(--on-surface-variant);
+        }
+
+        .setup-status output,
+        .setup-status strong {
+            font-weight: 600;
+            color: var(--on-surface);
+        }
+
+        .setup-panel {
+            min-height: 25rem;
+            padding-block: var(--spacing-md);
+        }
+
+        .step-heading {
+            margin-top: var(--spacing-sm);
+        }
+
+        .step-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.85fr);
+            gap: var(--spacing-xl);
+            align-items: start;
+        }
+
+        .step-layout > * {
+            min-width: 0;
+        }
+
+        .component-list {
+            padding-left: 1.25rem;
+        }
+
+        .component-list li {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .table-layout {
+            margin: 0;
+        }
+
+        .visual-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            border: var(--border-width) solid var(--outline-variant);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .visual-card {
+            min-height: 7rem;
+            padding: var(--spacing-md);
+            background: var(--surface-container-low);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .visual-card:nth-child(odd) {
+            border-right: var(--border-width) solid var(--outline-variant);
+        }
+
+        .visual-card:nth-last-child(-n + 2) {
+            border-bottom: 0;
+        }
+
+        .visual-card strong,
+        .visual-card span {
+            display: block;
+        }
+
+        .visual-card span {
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .visual-card.is-active {
+            background: color-mix(in srgb, var(--primary) 9%, var(--surface-container-low));
+            box-shadow: inset 0 3px var(--primary);
+        }
+
+        .track-stack,
+        .station-grid,
+        .turn-sequence {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        .track-stack li,
+        .station-grid li,
+        .turn-sequence li {
+            padding: var(--spacing-sm) 0;
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .track-stack strong,
+        .station-grid strong,
+        .turn-sequence strong {
+            display: block;
+        }
+
+        .track-stack span,
+        .station-grid span,
+        .turn-sequence span {
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .station-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0 var(--spacing-lg);
+        }
+
+        .setup-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            padding-top: var(--spacing-md);
+            border-top: var(--border-width) solid var(--outline-variant);
+        }
+
+        .setup-actions button:last-child {
+            margin-left: auto;
+        }
+
+        .ready-summary {
+            max-width: 44rem;
+            padding: var(--spacing-lg) 0;
+        }
+
+        .ready-summary strong {
+            color: var(--primary);
+        }
+
+        .learn-track {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(8.5rem, 1fr));
+            gap: var(--spacing-sm);
+            padding: 0 0 var(--spacing-sm);
+            margin: var(--spacing-lg) 0;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .learn-track button {
+            width: 100%;
+            min-height: 4.5rem;
+            padding: var(--spacing-sm);
+            text-align: left;
+            background: var(--surface-container-low);
+            color: var(--on-surface);
+            border-color: var(--outline-variant);
+        }
+
+        .learn-track button span {
+            display: block;
+            margin-bottom: 2px;
+            color: var(--on-surface-variant);
+            font-size: 0.75rem;
+        }
+
+        .learn-track button[aria-current="step"] {
+            background: var(--primary);
+            color: var(--on-primary);
+            border-color: var(--primary);
+        }
+
+        .learn-track button[aria-current="step"] span {
+            color: inherit;
+        }
+
+        .learn-panel {
+            min-height: 24rem;
+            padding-top: var(--spacing-sm);
+        }
+
+        .learn-panel > p,
+        .learn-panel > ul {
+            max-width: 68ch;
+        }
+
+        .phase-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(9rem, 1fr));
+            gap: var(--spacing-sm);
+            padding: 0 0 var(--spacing-sm);
+            margin: var(--spacing-lg) 0;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .phase-strip li {
+            padding: var(--spacing-md);
+            border-left: 4px solid var(--primary);
+            background: var(--surface-container-low);
+        }
+
+        .phase-strip strong,
+        .phase-strip span {
+            display: block;
+        }
+
+        .phase-strip span {
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        .turn-rule {
+            max-width: 68ch;
+            padding: var(--spacing-md);
+            margin: var(--spacing-lg) 0;
+            border-left: 4px solid var(--primary);
+            background-color: var(--surface-container);
+        }
+
+        .turn-rule p {
+            margin: var(--spacing-xs) 0 0;
+        }
+
+        .action-list,
+        .scoring-list,
+        .card-type-list {
+            margin: var(--spacing-lg) 0;
+        }
+
+        .action-list div,
+        .scoring-list div,
+        .card-type-list div {
+            display: grid;
+            grid-template-columns: minmax(9rem, 0.35fr) minmax(0, 1fr);
+            gap: var(--spacing-md);
+            padding: var(--spacing-sm) 0;
+            border-bottom: var(--border-width) solid var(--outline-variant);
+        }
+
+        .action-list dt,
+        .action-list dd,
+        .scoring-list dt,
+        .scoring-list dd,
+        .card-type-list dt,
+        .card-type-list dd {
+            margin: 0;
+        }
+
+        .action-list dt,
+        .scoring-list dt,
+        .card-type-list dt {
+            font-weight: 700;
+        }
+
+        .card-anatomy {
+            display: grid;
+            grid-template-columns: minmax(15rem, 0.75fr) minmax(18rem, 1.25fr);
+            gap: var(--spacing-xl);
+            align-items: start;
+            margin: var(--spacing-lg) 0;
+        }
+
+        .sample-project {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            grid-template-rows: auto auto minmax(8rem, 1fr) auto;
+            gap: var(--spacing-sm);
+            min-height: 22rem;
+            padding: var(--spacing-md);
+            color: var(--on-surface);
+            background-color: var(--surface-container-low);
+            border: var(--border-width-lg) solid var(--primary);
+            border-radius: var(--radius);
+        }
+
+        .sample-cost,
+        .sample-points {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .sample-tags {
+            text-align: right;
+        }
+
+        .sample-requirement {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: var(--error);
+        }
+
+        .sample-effect {
+            grid-column: 1 / -1;
+            display: grid;
+            place-items: center;
+            padding: var(--spacing-lg);
+            text-align: center;
+            background-color: var(--surface-container-high);
+            border-radius: var(--radius-sm);
+        }
+
+        .sample-footer {
+            grid-column: 1 / 3;
+            color: var(--on-surface-variant);
+        }
+
+        .anatomy-key {
+            margin: 0;
+        }
+
+        .anatomy-key li {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .parameter-list {
+            margin: var(--spacing-lg) 0;
+            border-top: var(--border-width) solid var(--outline-variant);
+        }
+
+        .parameter-row {
+            display: grid;
+            grid-template-columns: minmax(11rem, 0.4fr) minmax(0, 1fr);
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            border-bottom: var(--border-width) solid var(--outline-variant);
+            border-left: 5px solid var(--temperature-accent);
+        }
+
+        .parameter-row p {
+            margin: 0;
+        }
+
+        .parameter-row[data-parameter="oxygen"] {
+            border-left-color: var(--oxygen-accent);
+        }
+
+        .parameter-row[data-parameter="ocean"] {
+            border-left-color: var(--ocean-accent);
+        }
+
+        .reference-group > details {
+            border-left: 4px solid var(--reference-accent, var(--outline-variant));
+        }
+
+        .reference-group h3 {
+            margin-top: var(--spacing-xl);
+        }
+
+        .reference-group .economy {
+            --reference-accent: var(--primary);
+        }
+
+        .reference-group .parameters {
+            --reference-accent: var(--ocean-accent);
+        }
+
+        .reference-group .timing {
+            --reference-accent: var(--oxygen-accent);
+        }
+
+        figcaption {
+            margin-top: var(--spacing-sm);
+            color: var(--on-surface-variant);
+            font-size: 0.875rem;
+        }
+
+        aside progress {
+            width: 100%;
+        }
+
+        aside output {
+            display: block;
+            margin-top: var(--spacing-xs);
+            color: var(--on-surface-variant);
+        }
+
+        aside small {
+            display: block;
+            margin-top: var(--spacing-sm);
+            color: var(--on-surface-variant);
+        }
+
+        @media (max-width: 760px) {
+            .step-layout,
+            .card-anatomy {
+                grid-template-columns: 1fr;
+            }
+
+            .setup-panel,
+            .learn-panel {
+                min-height: 0;
+            }
+
+            .action-list div,
+            .scoring-list div,
+            .card-type-list div,
+            .parameter-row {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-xs);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .visual-grid,
+            .station-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .visual-card:nth-child(odd) {
+                border-right: 0;
+            }
+
+            .visual-card:nth-last-child(2) {
+                border-bottom: var(--border-width) solid var(--outline-variant);
+            }
+
+            .setup-actions button {
+                flex: 1;
+            }
+        }
+
+        html[lang="de"] body > footer [lang="en"],
+        html:not([lang="de"]) body > footer [lang="de"] {
+            display: none;
+        }
+    </style>
+    </head>
+    <body>
+        <a data-i18n="t254" href="#content" class="skip-link">Skip to guide</a><input type="checkbox" id="aside-state" class="aside-state-toggle" aria-label="Toggle guide options" data-i18n-aria="t255">
+        <header><label for="aside-state" class="aside-toggle-btn"></label><hgroup>
+        <h1 data-i18n="t252">Unofficial Guide - Wingspan / Flügelschlag</h1>
+        <p data-i18n="t256">Guided setup and rules, one decision at a time</p></hgroup>
+        <nav aria-label="Primary" data-i18n-aria="t257">
+        <ul><li><a data-i18n="t258" href="#setup">Setup</a></li><li><a data-i18n="t259" href="#learn">Learn</a></li><li><a data-i18n="t260" href="#reference">Reference</a></li>
+        </ul>
+        </nav>
+        </header>
+        <main id="content"><noscript>
+        <p class="note">JavaScript is disabled. All English lessons remain readable below; interactive examples, saved progress and German switching need JavaScript. / JavaScript ist deaktiviert. Alle englischen Lektionen sind unten lesbar; interaktive Beispiele, Speicherung und Deutschumschaltung benötigen JavaScript.</p></noscript>
+        <section id="setup" aria-labelledby="setup-title">
+        <h2 data-i18n="t261" id="setup-title">Set up the table</h2>
+        <p data-i18n="t262">Base game · 2–5 players · original player mats. Prepare one part of the table at a time, then learn the shared rules without studying every bird.</p>
+        <div class="setup-status"><output id="setup-step-label" aria-live="polite">Step 1 of 5</output><span><strong id="setup-player-summary">3 players</strong> · <span id="setup-style-summary">Blue · points per item</span></span>
+        </div>
+        <article class="setup-panel" data-setup-panel="0">
+        <div class="step-heading">
+        <h3 data-i18n="t015" tabindex="-1">Prepare the shared supply</h3>
+        </div>
+        <div class="step-layout">
+        <div>
+        <p data-i18n="t001">Use the base-game components and the original player mats. This guide uses normal random setup, not a pre-arranged quick-start tutorial.</p>
+        <ul class="component-list"><li data-i18n="t002">Shuffle the bird cards. Put 3 face up on the bird tray; keep the remaining deck face down beside it.</li><li data-i18n="t003">Shuffle the bonus cards into a separate face-down deck. Leave space for both discard piles.</li><li data-i18n="t004">Put the food tokens and egg miniatures within reach. Egg colors have no rules meaning.</li><li data-i18n="t005">Roll all 5 food dice into the birdfeeder. Leave the scorepad nearby for the end of the game.</li>
+        </ul>
+        </div>
+        <figure class="table-layout">
+        <div class="visual-grid">
+        <div class="visual-card is-active"><strong data-i18n="t006">Bird tray</strong><span data-i18n="t007">3 face-up bird cards</span>
+        </div>
+        <div class="visual-card"><strong data-i18n="t008">Birdfeeder</strong><span data-i18n="t009">5 shared food dice</span>
+        </div>
+        <div class="visual-card"><strong data-i18n="t010">Food and eggs</strong><span data-i18n="t011">Shared supply, not yet owned</span>
+        </div>
+        <div class="visual-card"><strong data-i18n="t012">Bonus cards</strong><span data-i18n="t013">Separate shuffled deck</span>
+        </div>
+        </div><figcaption data-i18n="t014">Keep the bird tray and birdfeeder accessible to everyone.</figcaption>
+        </figure>
+        </div>
+        </article>
+        <article class="setup-panel" data-setup-panel="1">
+        <div class="step-heading">
+        <h3 data-i18n="t031" tabindex="-1">Choose the round goals</h3>
+        </div>
+        <div class="step-layout">
+        <div>
+        <p data-i18n="t016">Choose one side of the goal board for the whole game. The guide option must match the physical board on your table.</p>
+        <p data-i18n="t017">The blue side awards points for your own result. The green side compares everyone's results and awards points by rank.</p>
+        <ul class="component-list"><li data-i18n="t018">Mix the goal tiles without choosing their faces. Place 1 random tile, random side up, in each of the 4 round spaces.</li><li data-i18n="t019">Return unused goal tiles to the box. Read the four visible goals together before choosing your starting cards.</li><li data-i18n="t020">Do not place an action cube on the goal board yet. You will use one after each round, even for a score of zero.</li>
+        </ul>
+        <p id="setup-goal-copy" data-dynamic>
+        </p>
+        </div>
+        <figure class="table-layout">
+        <div class="visual-grid">
+        <div class="visual-card is-active"><strong data-i18n="t022">Selected side</strong><span><output id="goal-side-visual"></output></span>
+        </div>
+        <div class="visual-card"><strong data-i18n="t024">4 goal tiles</strong><span data-i18n="t025">One visible goal per round</span>
+        </div>
+        <div class="visual-card"><strong data-i18n="t026">Blue side</strong><span data-i18n="t027">1 point per item or set; maximum 5</span>
+        </div>
+        <div class="visual-card"><strong data-i18n="t028">Green side</strong><span data-i18n="t029">Rank results; share tied-place points</span>
+        </div>
+        </div><figcaption data-i18n="t030">Goals are checked at round end. Do not spend the birds or eggs being counted.</figcaption>
+        </figure>
+        </div>
+        </article>
+        <article class="setup-panel" data-setup-panel="2">
+        <div class="step-heading">
+        <h3 data-i18n="t039" tabindex="-1">Give everyone a player kit</h3>
+        </div>
+        <div class="step-layout">
+        <div>
+        <p data-i18n="t032">Every player starts with the same quantities, but different random cards.</p>
+        <ul class="component-list"><li data-i18n="t033">Give each player 1 player mat and 8 action cubes of one color. Leave all habitat spaces empty.</li><li data-i18n="t034">Deal 5 bird cards and 2 bonus cards to each player. These are choices, not the final starting hand.</li><li data-i18n="t035">Give each player 5 food tokens: 1 invertebrate, 1 seed, 1 fish, 1 fruit and 1 rodent.</li><li data-i18n="t036">Do not take any eggs. Keep food beside the mat, not on bird cards.</li>
+        </ul>
+        <p id="deal-totals" data-dynamic>
+        </p>
+        </div>
+        <figure class="table-layout">
+        <ol id="station-grid" class="station-grid" aria-label="Player stations" data-i18n-aria="t037">
+        </ol><figcaption data-i18n="t038">Leave all 8 action cubes beside the mat, ready for round 1.</figcaption>
+        </figure>
+        </div>
+        </article>
+        <article class="setup-panel" data-setup-panel="3">
+        <div class="step-heading">
+        <h3 data-i18n="t048" tabindex="-1">Choose birds, food and one bonus</h3>
+        </div>
+        <div class="step-layout">
+        <div>
+        <ul class="component-list"><li data-i18n="t043">Keep any 0–5 of your dealt bird cards. Discard the others.</li><li data-i18n="t044">For every bird card you keep, return 1 of your starting food tokens to the supply. You choose which food to return.</li><li data-i18n="t045">Keep all remaining food. Your kept bird cards plus remaining food tokens total 5.</li><li data-i18n="t046">Choose 1 of your 2 bonus cards; discard the other. This choice does not cost food.</li>
+        </ul>
+        <p data-i18n="t047" class="note"><strong>Keeping is not playing.</strong> These bird cards stay in your hand. Their printed food cost and any column egg cost are paid later, when you play them.</p>
+        </div>
+        <form id="opening-example" autocomplete="off">
+        <fieldset><legend data-i18n="t040">Try the starting-card trade-off</legend><label for="opening-birds"><span data-i18n="t041">Bird cards you keep</span><select id="opening-birds" aria-describedby="opening-note"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label><output id="opening-result" for="opening-birds" aria-live="polite"></output>
+        <p data-i18n="t042" id="opening-note">This is a rules example, not a record of each player's hand.</p>
+        </fieldset>
+        </form>
+        </div>
+        </article>
+        <article class="setup-panel" data-setup-panel="4">
+        <div class="step-heading">
+        <h3 data-i18n="t062" tabindex="-1">Choose a first player and begin</h3>
+        </div>
+        <div class="step-layout">
+        <div>
+        <p data-i18n="t049">Randomly choose a first player and give them the first-player token. Turns proceed clockwise.</p>
+        <ul class="component-list"><li data-i18n="t050">The first player spends 1 action cube to choose exactly 1 of the four actions. Each other player then does the same on their turn.</li><li data-i18n="t051">A turn is one player's action. A round ends only after everyone has spent all available action cubes.</li><li data-i18n="t052">In round 1, each player has 8 turns. Later rounds give each player 7, then 6, then 5 turns.</li><li data-i18n="t053">Do not roll the food dice before every turn. Follow the birdfeeder refill and reroll rules instead.</li>
+        </ul>
+        </div>
+        <ol class="turn-sequence"><li><strong data-i18n="t054">1 cube</strong><span data-i18n="t055">Choose one action</span></li><li><strong data-i18n="t056">Resolve it fully</strong><span data-i18n="t057">Include applicable bird powers</span></li><li><strong data-i18n="t058">Next player</strong><span data-i18n="t059">Continue clockwise</span></li><li><strong data-i18n="t060">Round end</strong><span data-i18n="t061">After everyone has used all cubes</span></li>
+        </ol>
+        </div>
+        </article>
+        <article class="setup-panel" data-setup-panel="5">
+        <div class="step-heading">
+        <h3 data-i18n="t063" tabindex="-1">Table is ready</h3>
+        </div>
+        <div class="ready-summary" role="status">
+        <p><strong id="ready-session-copy"></strong>
+        </p>
+        <p data-i18n="t064">Everyone has 8 unused action cubes, an empty mat, one bonus card, and a starting mix of 5 bird cards and food tokens combined. Nobody starts with eggs.</p><a data-i18n="t065" href="#learn-turn" class="btn btn-primary">Learn the first turn</a>
+        </div>
+        </article>
+        <nav class="setup-actions" aria-label="Setup step controls" data-i18n-aria="t263"><button type="button" id="setup-back"><span class="sym" aria-hidden="true">arrow_back</span><span data-i18n="t264">Back</span></button><button type="button" id="setup-next" class="btn-primary"><span id="setup-next-label">Continue</span><span class="sym" aria-hidden="true">arrow_forward</span></button>
+        </nav>
+        
+        </section>
+        <section id="learn" aria-labelledby="learn-title">
+        <h2 data-i18n="t266" id="learn-title">Learn the game</h2>
+        <p data-i18n="t267">Start with the turn, then learn playing birds, habitat actions, power timing and scoring. Each lesson can be opened independently at the table.</p>
+        <ol class="learn-track" aria-label="Rule lessons" data-i18n-aria="t246"><li><button data-i18n="t247" type="button" data-learn-button="0" aria-controls="learn-turn"><span>Lesson 1</span>Turn</button></li><li><button data-i18n="t248" type="button" data-learn-button="1" aria-controls="learn-birds"><span>Lesson 2</span>Play a Bird</button></li><li><button data-i18n="t249" type="button" data-learn-button="2" aria-controls="learn-habitats"><span>Lesson 3</span>Habitats</button></li><li><button data-i18n="t250" type="button" data-learn-button="3" aria-controls="learn-powers"><span>Lesson 4</span>Powers</button></li><li><button data-i18n="t251" type="button" data-learn-button="4" aria-controls="learn-scoring"><span>Lesson 5</span>Round & score</button></li>
+        </ol>
+        <article id="learn-turn" class="learn-panel" data-learn-panel="0">
+        <h3 data-i18n="t203" tabindex="-1">Choose one action, then finish the turn</h3>
+        <p data-i18n="t066">Build your bird collection over four rounds and finish with the most points. Birds can improve a habitat's basic action and add powers when that habitat is used.</p>
+        <div class="turn-rule"><strong data-i18n="t067">One turn = one action cube = one chosen action.</strong>
+        <p data-i18n="t068">The four choices are alternatives, not four steps you must perform in order. You may choose the same action again on a later turn.</p>
+        </div>
+        <dl class="action-list">
+        <div><dt data-i18n="t069">Play a Bird</dt><dd data-i18n="t070">Add a bird from your hand, pay its costs and use its "When Played" power, if it has one. This does not activate the habitat.</dd>
+        </div>
+        <div><dt data-i18n="t071">Gain Food · forest</dt><dd data-i18n="t072">Take food using birdfeeder dice, then activate brown powers in your forest from right to left.</dd>
+        </div>
+        <div><dt data-i18n="t073">Lay Eggs · grassland</dt><dd data-i18n="t074">Place eggs on your birds, then activate brown powers in your grassland from right to left.</dd>
+        </div>
+        <div><dt data-i18n="t075">Draw Bird Cards · wetland</dt><dd data-i18n="t076">Take cards into your hand, then activate brown powers in your wetland from right to left.</dd>
+        </div>
+        </dl>
+        <h4 data-i18n="t077">The shared pattern for habitat actions</h4>
+        <ol class="turn-sequence"><li><strong data-i18n="t078">Choose a row</strong><span data-i18n="t079">Put 1 unused cube on its leftmost uncovered action space. With 5 birds, use the printed space at the far right.</span></li><li><strong data-i18n="t080">Take the basic benefit</strong><span data-i18n="t081">Use only that space. Its printed extra exchange is optional and may be used once.</span></li><li><strong data-i18n="t082">Move right to left</strong><span data-i18n="t083">Pass each bird in that row. You may activate each brown power when you reach it; skip other colors.</span></li><li><strong data-i18n="t084">Leave the cube on the left</strong><span data-i18n="t085">Refill empty bird-tray spaces only after the whole turn. The cube remains used until round end.</span></li>
+        </ol>
+        <details><summary data-i18n="t087">Check: can I gain food and also play a bird with my one action cube?</summary>
+        <p data-i18n="t086">Not as two normal actions. Choose one. A bird power can grant an extra effect, but only when its text says so.</p>
+        </details>
+        
+        </article>
+        <article id="learn-birds" class="learn-panel" data-learn-panel="1">
+        <h3 data-i18n="t204" tabindex="-1">Play a bird and pay the right costs</h3>
+        <p data-i18n="t092">A bird must be in your hand before you play it. Check its permitted habitats, the next empty space in that row, and whether you can pay the full food and egg costs.</p>
+        <ol class="component-list"><li data-i18n="t093">Choose one habitat printed on the bird card. It must have room, and the bird goes in that row's leftmost empty slot.</li><li data-i18n="t094">Place an unused action cube above the column you will use. Return the required eggs from any of your birds to the supply.</li><li data-i18n="t095">Pay the bird's food cost using tokens beside your mat. Put the bird in its chosen slot and move the cube to the left of the Play a Bird row.</li><li data-i18n="t096">You may use its white "When Played" power now. Do not activate brown powers just because a bird was played.</li>
+        </ol>
+        <div class="table-container">
+        <table><caption data-i18n="t089">Egg cost for the next bird in this habitat</caption><thead><tr><th data-i18n="t090" scope="col">Column</th><th scope="col">1</th><th scope="col">2</th><th scope="col">3</th><th scope="col">4</th><th scope="col">5</th></tr></thead><tbody><tr><th data-i18n="t091" scope="row">Eggs to pay</th><td>0</td><td>1</td><td>1</td><td>2</td><td>2</td></tr></tbody>
+        </table>
+        </div>
+        <p data-i18n="t097">The egg cost depends on the column in the chosen habitat, not on your total number of birds. Eggs can come from different birds in different habitats.</p>
+        <details><summary data-i18n="t101">Food costs: wild, "or", no food and the 2-for-1 substitution</summary>
+        <ul class="component-list"><li data-i18n="t098">A wild food symbol accepts any 1 food token. A slash means choose one of the shown types, not both. A crossed-out circle means no food is required; the column's egg cost still applies.</li><li data-i18n="t099">Only when paying to play a bird, any 2 food tokens can replace 1 required food token. The two tokens may be the same type or different types. Repeat for other missing food if needed.</li><li data-i18n="t100">This is a payment substitution, not a general trading action. It cannot replace eggs or a specific food cost on a bird power.</li>
+        </ul>
+        </details>
+        <h4 data-i18n="t102">Read your physical bird card</h4>
+        <dl class="card-type-list">
+        <div><dt data-i18n="t103">Habitat and food cost</dt><dd data-i18n="t104">Where the bird can be played, and what food you pay. Multiple habitats give a choice, not multiple placements.</dd>
+        </div>
+        <div><dt data-i18n="t105">Point value</dt><dd data-i18n="t106">Printed points count at game end only for birds played on your mat.</dd>
+        </div>
+        <div><dt data-i18n="t107">Nest type and egg limit</dt><dd data-i18n="t108">The nest matters for some powers and goals. The egg limit is the maximum number of eggs that bird can hold.</dd>
+        </div>
+        <div><dt data-i18n="t109">wingspan (cm)</dt><dd data-i18n="t110">Used by some powers and bonus conditions; it is not an extra point value.</dd>
+        </div>
+        <div><dt data-i18n="t111">Power and timing</dt><dd data-i18n="t112">Read the timing label and the text. You do not need to learn every bird before starting.</dd>
+        </div>
+        </dl>
+        <details><summary data-i18n="t114">Check: my third bird goes in the first column of an empty habitat. How many eggs?</summary>
+        <p data-i18n="t113">Zero eggs. This is column 1 in that habitat, even though it is your third bird overall. Pay the printed food cost as usual.</p>
+        </details>
+        
+        </article>
+        <article id="learn-habitats" class="learn-panel" data-learn-panel="2">
+        <h3 data-i18n="t205" tabindex="-1">Food, eggs and bird cards</h3>
+        <p data-i18n="t116">For these three actions, the basic benefit comes first, then the brown powers in that habitat. The number of birds in other habitats does not change the chosen row's basic benefit.</p>
+        <h4 data-i18n="t071">Gain Food · forest</h4>
+        <p data-i18n="t117">For each food die shown on your action space, remove 1 die from the birdfeeder and take 1 matching food token from the supply. Choose dice one at a time. The invertebrate/seed face gives either 1 invertebrate or 1 seed, never both.</p>
+        <p data-i18n="t118">On a space with a card-to-food exchange, you may discard 1 bird card from your hand to take 1 additional die and its matching food token. Then resolve the forest's brown powers.</p>
+        <details><summary data-i18n="t121">When do we reroll the birdfeeder?</summary>
+        <p data-i18n="t119"><strong>Empty:</strong> immediately roll all 5 dice back in. <strong>All remaining dice show exactly the same face:</strong> when you are about to gain food, you may first reroll all 5 dice. A single remaining die qualifies.</p>
+        <p data-i18n="t120">The split invertebrate/seed face is its own face. A seed face plus an invertebrate/seed face are not "all the same". Recheck between taking individual dice. A new turn or round is not, by itself, a reason to reroll.</p>
+        </details>
+        <h4 data-i18n="t073">Lay Eggs · grassland</h4>
+        <p data-i18n="t122">Take the number of eggs shown on the action space and distribute them among any of your birds, in any habitats. Never exceed a bird's egg limit. Eggs with no available space are lost; they cannot wait beside your mat.</p>
+        <p data-i18n="t123">On a space with a food-to-egg exchange, you may return 1 food token from beside your mat for 1 additional egg. Then resolve the grassland's brown powers. Egg colors do not matter.</p>
+        <h4 data-i18n="t075">Draw Bird Cards · wetland</h4>
+        <p data-i18n="t124">Draw the number of bird cards shown. For each card, choose a face-up card from the bird tray or the top card of the deck. On a space with an egg-to-card exchange, you may discard 1 egg from any of your birds to draw 1 extra card.</p>
+        <p data-i18n="t125" class="note"><strong>Wait to refill the bird tray until your entire turn ends, including all brown powers.</strong> There is no hand limit. If the deck runs out, shuffle the discarded bird cards into a new deck.</p>
+        <details><summary data-i18n="t139">Try a habitat action</summary>
+        <p data-i18n="t126">This example uses the original mat and does not simulate individual bird powers. Change the bird count to see which basic benefit and optional exchange are uncovered.</p>
+        <form id="habitat-example" autocomplete="off">
+        <fieldset><legend data-i18n="t127">Example position</legend><label for="demo-habitat"><span data-i18n="t128">Habitat</span><select id="demo-habitat"><option data-i18n="t129" value="forest">Forest · Gain Food</option><option data-i18n="t130" value="grassland">Grassland · Lay Eggs</option><option data-i18n="t131" value="wetland">Wetland · Draw Bird Cards</option></select></label><label for="demo-birds"><span data-i18n="t132">Birds already in this habitat</span><select id="demo-birds"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label><label for="demo-exchange"><input type="checkbox" id="demo-exchange" aria-describedby="demo-exchange-help"><span data-i18n="t133">Use the optional exchange, if available</span></label>
+        <p id="demo-exchange-help" data-dynamic>
+        </p>
+        </fieldset>
+        </form>
+        <div class="visual-grid" aria-live="polite">
+        <div class="visual-card is-active"><strong data-i18n="t134">Basic benefit</strong><span id="demo-base"></span>
+        </div>
+        <div class="visual-card"><strong data-i18n="t135">Optional exchange</strong><span id="demo-extra"></span>
+        </div>
+        <div class="visual-card"><strong data-i18n="t136">Activation order</strong><span id="demo-order"></span>
+        </div>
+        <div class="visual-card"><strong data-i18n="t137">Next bird in this habitat</strong><span id="demo-next-bird"></span>
+        </div>
+        </div>
+        <p data-i18n="t138">The result shows the basic action only. Eggs still require space on your birds; bird powers may add further benefits. One printed exchange is at most one extra benefit, not a repeatable trade.</p>
+        </details>
+        
+        </article>
+        <article id="learn-powers" class="learn-panel" data-learn-panel="3">
+        <h3 data-i18n="t206" tabindex="-1">Read timing, not a catalogue of birds</h3>
+        <p data-i18n="t141">Learn the three timing categories, then read the birds you actually play. Powers are optional, but a stated cost must be paid to receive the benefit linked to that cost.</p>
+        <dl class="card-type-list">
+        <div><dt data-i18n="t142">When Played · white</dt><dd data-i18n="t143">Use once, as that bird enters your mat. It does not repeat on later habitat activations.</dd>
+        </div>
+        <div><dt data-i18n="t144">When Activated · brown</dt><dd data-i18n="t145">When you take the matching habitat action, resolve brown powers from the rightmost bird toward the left. You may skip a power; do not rearrange their order.</dd>
+        </div>
+        <div><dt data-i18n="t146">Once Between Turns · pink</dt><dd data-i18n="t147">Use on an opponent's turn when the stated trigger happens. Each pink power can be used at most once between your own turns, not once per opponent. It can also trigger once after your final turn, before the game ends.</dd>
+        </div>
+        </dl>
+        <p data-i18n="t148" class="note">Read where a power gains food or cards: "from the supply", "from the birdfeeder", "from the deck" and "from your hand" are different instructions. Taking a benefit is not automatically taking the corresponding action.</p>
+        <h4 data-i18n="t149">Food and cards can become points</h4>
+        <dl class="action-list">
+        <div><dt data-i18n="t150">Food beside your mat</dt><dd data-i18n="t151">Available to spend. You cannot freely move it onto a bird for points.</dd>
+        </div>
+        <div><dt data-i18n="t152">Cached food</dt><dd data-i18n="t153">Food placed on a bird by a power. Each token is worth 1 point at game end and is not normally available to spend.</dd>
+        </div>
+        <div><dt data-i18n="t154">Tucked cards</dt><dd data-i18n="t155">Cards placed face down under a bird by a power. Each counts as 1 point, not as another played bird. Ignore its printed points, habitat and power.</dd>
+        </div>
+        </dl>
+        <p data-i18n="t156">Cached food and tucked cards have no general quantity limit. They stay with their bird; you cannot take them back into your supply or hand unless a card explicitly allows it.</p>
+        <details><summary data-i18n="t158">Check: two opponents trigger my pink power before my next turn. Can I use it twice?</summary>
+        <p data-i18n="t157">No. That bird's pink power can be used only once in that interval. Other pink birds track their own limit separately. Tell the table what triggers your pink powers.</p>
+        </details>
+        <details><summary data-i18n="t160">Nests and eggs: the star is wild, the egg limit is not</summary>
+        <p data-i18n="t159">A star nest can match any nest type for a power, goal or bonus card. It does not increase the bird's egg limit. Egg-laying powers still respect capacity and any restrictions about which bird or nest receives the egg.</p>
+        </details>
+        
+        </article>
+        <article id="learn-scoring" class="learn-panel" data-learn-panel="4">
+        <h3 data-i18n="t207" tabindex="-1">End a round, then score the game</h3>
+        <p data-i18n="t170">After everyone has used their last action cube, finish the round together. The round goal checks what you have now, not everything you earned earlier in the round.</p>
+        <ol class="component-list"><li data-i18n="t171">Take the used action cubes off your mat. Use 1 to mark your result for the current round on the goal board, even if you scored 0.</li><li data-i18n="t172">Leave all earlier goal cubes in place. The remaining cubes are available next round.</li><li data-i18n="t173">Discard the face-up bird cards remaining in the bird tray and reveal 3 new ones. Keep your own birds, eggs, food and hand cards.</li><li data-i18n="t174">After rounds 1–3, pass the first-player token clockwise. After round 4, score the game; there is no fifth round.</li>
+        </ol>
+        <ol class="phase-strip"><li><strong data-i18n="t175">Round 1</strong><span data-i18n="t176">8 turns per player</span></li><li><strong data-i18n="t177">Round 2</strong><span data-i18n="t178">7 turns per player</span></li><li><strong data-i18n="t179">Round 3</strong><span data-i18n="t180">6 turns per player</span></li><li><strong data-i18n="t181">Round 4</strong><span data-i18n="t182">5 turns per player</span></li>
+        </ol>
+        <h4 data-i18n="t183">Score the current round goal</h4>
+        <p id="learn-goal-copy" data-dynamic>
+        </p>
+        <details><summary data-i18n="t188">Both goal-board sides and ties</summary>
+        <p data-i18n="t184"><strong>Blue:</strong> score 1 point per qualifying item or complete set, up to 5 points. Other players' quantities do not reduce your score.</p>
+        <p data-i18n="t185"><strong>Green:</strong> rank positive quantities from highest to lowest. Use the printed points for the current round. A tie occupies consecutive places: total those points, divide by the number tied, then round down. Skip the places already occupied by the tie. Fourth and fifth place are worth 0.</p>
+        <p data-i18n="t186">Example: in round 3, the first three places are worth 6, 3 and 2 points. Two players tied for first receive 4 each: (6 + 3) ÷ 2, rounded down. The next player is third and receives 2, provided they have at least one qualifying item.</p>
+        <p data-i18n="t187">On either side, a result of zero still uses an action cube. Counting a bird or egg for a goal does not remove it from your mat.</p>
+        </details>
+        <details><summary data-i18n="t189">Try round-goal scoring</summary>
+        <p data-i18n="t162">Enter how many of the goal's items or complete sets each player has. These are practice values, not a saved game score. The scoring side follows Guide options.</p>
+        <form id="goal-example" autocomplete="off">
+        <fieldset><legend data-i18n="t163">Round-goal example</legend><label for="goal-round"><span data-i18n="t164">Round</span><select id="goal-round"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+        <p><strong id="goal-practice-side"></strong>
+        </p>
+        <div class="table-container">
+        <table><caption data-i18n="t165">Items or sets → goal points</caption><thead><tr><th data-i18n="t166" scope="col">Player</th><th data-i18n="t167" scope="col">Items / sets</th><th data-i18n="t168" scope="col">Points</th></tr></thead><tbody id="goal-rows"></tbody>
+        </table>
+        </div>
+        <p id="goal-calculation" role="status">
+        </p>
+        </fieldset>
+        </form>
+        <p data-i18n="t169">The blue side scores your own quantity, up to 5. The green side pools the occupied place values for a tie, divides them equally and rounds down. A quantity of 0 always scores 0.</p>
+        </details>
+        <h4 data-i18n="t190">After round 4: add six scoring categories</h4>
+        <dl class="scoring-list">
+        <div><dt data-i18n="t191">Birds</dt><dd data-i18n="t192">Add the printed point values of birds on your mat.</dd>
+        </div>
+        <div><dt data-i18n="t012">Bonus cards</dt><dd data-i18n="t193">Score each bonus card you hold according to its own condition. A bird can qualify for more than one bonus.</dd>
+        </div>
+        <div><dt data-i18n="t194">Round goals</dt><dd data-i18n="t195">Add the points marked on the goal board, including tie adjustments.</dd>
+        </div>
+        <div><dt data-i18n="t196">Eggs</dt><dd data-i18n="t197">1 point for every egg remaining on your birds.</dd>
+        </div>
+        <div><dt data-i18n="t152">Cached food</dt><dd data-i18n="t198">1 point for every food token cached on your birds.</dd>
+        </div>
+        <div><dt data-i18n="t154">Tucked cards</dt><dd data-i18n="t199">1 point for every card tucked under your birds.</dd>
+        </div>
+        </dl>
+        <p data-i18n="t200" class="note"><strong>Highest total wins.</strong> A tie is broken by the most unspent food tokens beside the mat, not cached food. If still tied, share the win.</p>
+        <p data-i18n="t201">Hand cards and unused food do not score by themselves. Apply any bonus card that specifically rewards your hand. You do not get a final action to spend leftover resources.</p>
+        
+        </article>
+        </section>
+        <section id="reference" class="reference-group" aria-labelledby="reference-title">
+        <h2 data-i18n="t268" id="reference-title">Rules reference</h2>
+        <p data-i18n="t269">Open the rule you need. The defaults below assume the base game; follow the text of a card when it explicitly changes a rule.</p>
+        <h3 data-i18n="t208">At the table</h3>
+        <details><summary data-i18n="t210">Which action do I need?</summary>
+        <p data-i18n="t209"><strong>New bird on the mat:</strong> Play a Bird. <strong>Food tokens:</strong> Gain Food in the forest. <strong>Eggs:</strong> Lay Eggs in the grassland. <strong>More hand cards:</strong> Draw Bird Cards in the wetland. The last three also activate that row's brown powers from right to left.</p>
+        </details>
+        <details><summary data-i18n="t212">Empty rows, full rows and repeating actions</summary>
+        <p data-i18n="t211">You may use a habitat with no birds: take its first printed benefit. With 5 birds, use its far-right action space and then the brown powers. You cannot normally add a sixth bird to that habitat. Played birds stay on your mat unless another bird's power removes one; there is no regular discard action. Used action cubes do not block spaces or stop you choosing that action on another turn.</p>
+        </details>
+        <details><summary data-i18n="t214">What must I pay to play a bird?</summary>
+        <p data-i18n="t213">Pay its printed food plus the column's egg cost: 0 / 1 / 1 / 2 / 2 in columns 1–5. The habitat must be permitted and the slot must be the leftmost empty one in that row. Two food tokens can replace one required food only for playing a bird. No substitute replaces an egg.</p>
+        </details>
+        <details><summary data-i18n="t216">Birdfeeder: empty or identical dice</summary>
+        <p data-i18n="t215">Empty: roll all 5 dice back in immediately. Identical remaining faces, including a lone die: you may reroll all 5 before gaining food. Check again between individual selections. The invertebrate/seed face is different from either single-food face. The same rules apply when a power lets you gain food from the birdfeeder.</p>
+        </details>
+        <details><summary data-i18n="t218">When do the bird tray and deck refill?</summary>
+        <p data-i18n="t217">Empty tray spaces refill at the end of the entire turn, not after each card or each bird power. Round end replaces all remaining face-up birds. An exhausted deck is rebuilt by shuffling discarded bird cards. There is no hand limit; cards you kept stay in hand between rounds.</p>
+        </details>
+        <details><summary data-i18n="t220">Egg capacity, placement and spending</summary>
+        <p data-i18n="t219">The grassland action can place eggs on your birds in any habitat. Never exceed an egg limit, even through a power. Egg colors are interchangeable. Eggs already placed cannot be freely moved between birds. When paying eggs, choose which of your birds lose them; return them to the shared supply.</p>
+        </details>
+        <details><summary data-i18n="t222">Optional benefits are not optional costs</summary>
+        <p data-i18n="t221">You may decline a benefit or skip a bird power. You may not claim a linked benefit without paying its required cost. Skipping a habitat's basic benefit does not prevent using its brown powers. An action still uses a cube even if you take fewer benefits or none.</p>
+        </details>
+        <h3 data-i18n="t223">Powers and points</h3>
+        <details><summary data-i18n="t225">Timing reminder</summary>
+        <p data-i18n="t224">White: when that bird is played. Brown: when you use its habitat, in right-to-left order. Pink: on an opponent's triggering turn, at most once between your own turns for each such power, including once after your final turn before the game ends. Playing a bird does not run a habitat chain. Additional colored timing categories belong to expansions and are outside this guide.</p>
+        </details>
+        <details><summary data-i18n="t227">Cached food is not your spendable food</summary>
+        <p data-i18n="t226">Food beside your mat is spendable. Food cached on a bird is normally locked in for 1 point per token. Cards tucked under a bird are each 1 point, not extra birds or their printed values. You may cache food or tuck cards only when an effect permits it.</p>
+        </details>
+        <details><summary data-i18n="t229">Read the goal's unit: birds, eggs or sets</summary>
+        <p data-i18n="t228">A goal for birds with eggs counts each qualifying bird once, however many eggs it holds. An egg goal counts every qualifying egg. One set across habitats needs an egg in each of forest, grassland and wetland; the number of complete sets is the smallest of those three egg totals. A star nest can satisfy a required nest type.</p>
+        </details>
+        <details><summary data-i18n="t231">Green ties, blue limits and zero results</summary>
+        <p data-i18n="t230">Green: share the point values of all places occupied by tied players and round each share down; the next player skips those places. Blue: 1 point per qualifying item or set, maximum 5. With zero qualifying items you score zero on either side, but still leave an action cube on the goal board.</p>
+        </details>
+        <details><summary data-i18n="t233">What survives round end?</summary>
+        <p data-i18n="t232">Keep birds, eggs, hand cards, bonus cards, cached food, tucked cards and unused food. Return the used cubes from your mat, then leave one on the current goal. Keep earlier goal cubes there too. Replace the tray's birds and pass first player. Do not automatically reroll the birdfeeder or feed your birds.</p>
+        </details>
+        <details><summary data-i18n="t235">Final scoring and the tie-break</summary>
+        <p data-i18n="t234">After round 4, add bird points, bonus-card points, round-goal points, eggs, cached food and tucked cards. Each of the last three is worth 1 point per item. Unused food beside the mat breaks a tied total; it is not otherwise worth points. A remaining tie is a shared win.</p>
+        </details>
+        <h3 data-i18n="t236">Scope and independence</h3>
+        <details id="guide-scope"><summary data-i18n="t245">About this independent guide</summary><p data-i18n="t237">This is an independent teaching companion for the base game designed by Elizabeth Hargrave, for 2–5 players using the original player mats. It is not affiliated with or endorsed by Stonemaier Games or Feuerland Spiele. You need your own game components.</p><p data-i18n="t238">The explanations and practice examples are newly written. No publisher artwork, logos, card images, card catalogue or full card texts are included. Rules terminology is retained so the guide matches the physical game.</p><p data-i18n="t239">Standard random setup, basic actions, the three base-game power timings, round goals and final scoring are covered. Automa, expansions, changed player mats and the pre-arranged quick-start tutorial are not included. Card-specific exceptions are outside this guide; follow the text on your cards.</p></details>
+        </section>
+        </main>
+        <aside aria-labelledby="guide-options-title">
+        <h2 data-i18n="t270" id="guide-options-title">Guide options</h2>
+        <form id="guide-options" autocomplete="off">
+        <fieldset><legend data-i18n="t271">Table</legend><label for="player-count"><span data-i18n="t272">Players</span><select id="player-count" name="player-count"><option data-i18n="t273" value="2">2 players</option><option data-i18n="t274" value="3" selected>3 players</option><option data-i18n="t275" value="4">4 players</option><option data-i18n="t276" value="5">5 players</option></select></label><label for="goal-board"><span data-i18n="t277">Goal-board side</span><select id="goal-board" name="goal-board" aria-describedby="goal-board-help"><option data-i18n="t278" value="blue" selected>Blue · points per item</option><option data-i18n="t279" value="green">Green · majority</option></select></label><small data-i18n="t280" id="goal-board-help">Use the same side on the table. Blue is a gentler first introduction; green is the standard competitive scoring. Changing players or this side restarts setup progress.</small>
+        </fieldset>
+        <fieldset><legend data-i18n="t281">Setup progress</legend><label data-i18n="t282" for="setup-progress">Completed steps</label><progress id="setup-progress" value="0" max="5"></progress><output id="setup-progress-text" for="setup-progress">0 of 5</output><button type="button" id="reset-guide"><span class="sym" aria-hidden="true">refresh</span><span data-i18n="t283">Start over</span></button>
+        </fieldset>
+        <fieldset><legend data-i18n="t284">User interface</legend><label for="language"><span data-i18n="t285">Language</span><select id="language" name="language"><option value="en" lang="en">English</option><option value="de" lang="de">Deutsch</option></select></label>
+        </fieldset>
+        </form>
+        <p data-i18n="t286"><small>Progress and practice settings stay in this browser.</small>
+        </p>
+        <p id="storage-warning" role="status" hidden>
+        </p>
+        </aside>
+    <footer>
+        <p lang="en">This is an independent, unofficial rules guide. It is not affiliated with or endorsed by the game's publisher. All trademarks and copyrights in the original game remain the property of their respective owners.</p>
+        <p lang="de">Dies ist ein unabhängiger, inoffizieller Regelleitfaden. Er steht in keiner Verbindung zum Verlag des Spiels und wird von diesem nicht unterstützt. Alle Marken- und Urheberrechte am Originalspiel verbleiben bei ihren jeweiligen Rechteinhabern.</p>
+    </footer>
+
+        <script src="../../one.js"></script>
+        <script>
+
+    /* global one */
+    (() => {
+        "use strict";
+        const STRINGS = {
+  "t001": {
+    "en": "Use the base-game components and the original player mats. This guide uses normal random setup, not a pre-arranged quick-start tutorial.",
+    "de": "Verwendet das Material des Grundspiels und die ursprünglichen Spielertableaus. Dieser Leitfaden nutzt den normalen zufälligen Aufbau, keine vorgegebene Schnellstartpartie."
+  },
+  "t002": {
+    "en": "Shuffle the bird cards. Put 3 face up on the bird tray; keep the remaining deck face down beside it.",
+    "de": "Mischt die Vogelkarten. Legt 3 offen auf die Vogeltränke und den restlichen Nachziehstapel verdeckt daneben."
+  },
+  "t003": {
+    "en": "Shuffle the bonus cards into a separate face-down deck. Leave space for both discard piles.",
+    "de": "Mischt die Bonuskarten zu einem eigenen verdeckten Stapel. Lasst Platz für beide Ablagestapel."
+  },
+  "t004": {
+    "en": "Put the food tokens and egg miniatures within reach. Egg colors have no rules meaning.",
+    "de": "Legt Futtermarker und Miniatureier für alle erreichbar bereit. Die Eierfarben haben keine Bedeutung für die Regeln."
+  },
+  "t005": {
+    "en": "Roll all 5 food dice into the birdfeeder. Leave the scorepad nearby for the end of the game.",
+    "de": "Werft alle 5 Futterwürfel in das Vogelhäuschen. Legt den Wertungsblock für das Spielende bereit."
+  },
+  "t006": {
+    "en": "Bird tray",
+    "de": "Vogeltränke"
+  },
+  "t007": {
+    "en": "3 face-up bird cards",
+    "de": "3 offene Vogelkarten"
+  },
+  "t008": {
+    "en": "Birdfeeder",
+    "de": "Vogelhäuschen"
+  },
+  "t009": {
+    "en": "5 shared food dice",
+    "de": "5 gemeinsame Futterwürfel"
+  },
+  "t010": {
+    "en": "Food and eggs",
+    "de": "Futter und Eier"
+  },
+  "t011": {
+    "en": "Shared supply, not yet owned",
+    "de": "Gemeinsamer Vorrat, noch ohne Besitzer"
+  },
+  "t012": {
+    "en": "Bonus cards",
+    "de": "Bonuskarten"
+  },
+  "t013": {
+    "en": "Separate shuffled deck",
+    "de": "Eigener gemischter Stapel"
+  },
+  "t014": {
+    "en": "Keep the bird tray and birdfeeder accessible to everyone.",
+    "de": "Alle müssen Vogeltränke und Vogelhäuschen erreichen können."
+  },
+  "t015": {
+    "en": "Prepare the shared supply",
+    "de": "Gemeinsamen Vorrat vorbereiten"
+  },
+  "t016": {
+    "en": "Choose one side of the goal board for the whole game. The guide option must match the physical board on your table.",
+    "de": "Wählt eine Seite der Zieltafel für die gesamte Partie. Die Leitfadenoption muss zur ausliegenden Seite passen."
+  },
+  "t017": {
+    "en": "The blue side awards points for your own result. The green side compares everyone's results and awards points by rank.",
+    "de": "Auf der blauen Seite zählt euer eigenes Ergebnis. Auf der grünen Seite vergleicht ihr eure Ergebnisse und erhaltet Punkte nach Platzierung."
+  },
+  "t018": {
+    "en": "Mix the goal tiles without choosing their faces. Place 1 random tile, random side up, in each of the 4 round spaces.",
+    "de": "Mischt die Zielplättchen, ohne ihre Seiten auszusuchen. Legt auf jedes der 4 Rundenfelder 1 zufälliges Plättchen mit zufälliger Seite nach oben."
+  },
+  "t019": {
+    "en": "Return unused goal tiles to the box. Read the four visible goals together before choosing your starting cards.",
+    "de": "Legt übrige Zielplättchen zurück in die Schachtel. Schaut euch die vier Ziele gemeinsam an, bevor ihr eure Startkarten auswählt."
+  },
+  "t020": {
+    "en": "Do not place an action cube on the goal board yet. You will use one after each round, even for a score of zero.",
+    "de": "Legt noch keinen Aktionswürfel auf die Zieltafel. Nach jeder Runde legt ihr einen dorthin, auch bei null Punkten."
+  },
+  "t021": {
+    "en": "",
+    "de": ""
+  },
+  "t022": {
+    "en": "Selected side",
+    "de": "Gewählte Seite"
+  },
+  "t023": {
+    "en": "<output id=\"goal-side-visual\">Blue · points per item<\/output>",
+    "de": "<output id=\"goal-side-visual\">Blau · Punkte pro Zielobjekt<\/output>"
+  },
+  "t024": {
+    "en": "4 goal tiles",
+    "de": "4 Zielplättchen"
+  },
+  "t025": {
+    "en": "One visible goal per round",
+    "de": "Ein sichtbares Ziel je Runde"
+  },
+  "t026": {
+    "en": "Blue side",
+    "de": "Blaue Seite"
+  },
+  "t027": {
+    "en": "1 point per item or set; maximum 5",
+    "de": "1 Punkt je Objekt oder Set; höchstens 5"
+  },
+  "t028": {
+    "en": "Green side",
+    "de": "Grüne Seite"
+  },
+  "t029": {
+    "en": "Rank results; share tied-place points",
+    "de": "Platzierungen vergleichen; Punkte bei Gleichstand teilen"
+  },
+  "t030": {
+    "en": "Goals are checked at round end. Do not spend the birds or eggs being counted.",
+    "de": "Rundenziele zählen den Stand am Rundenende. Die gezählten Vögel oder Eier werden nicht abgegeben."
+  },
+  "t031": {
+    "en": "Choose the round goals",
+    "de": "Rundenziele vorbereiten"
+  },
+  "t032": {
+    "en": "Every player starts with the same quantities, but different random cards.",
+    "de": "Alle starten mit denselben Mengen, aber unterschiedlichen zufälligen Karten."
+  },
+  "t033": {
+    "en": "Give each player 1 player mat and 8 action cubes of one color. Leave all habitat spaces empty.",
+    "de": "Gebt jedem Spieler 1 Spielertableau und 8 Aktionswürfel einer Farbe. Alle Lebensraumplätze bleiben leer."
+  },
+  "t034": {
+    "en": "Deal 5 bird cards and 2 bonus cards to each player. These are choices, not the final starting hand.",
+    "de": "Teilt jedem Spieler 5 Vogelkarten und 2 Bonuskarten aus. Daraus wird die endgültige Starthand erst ausgewählt."
+  },
+  "t035": {
+    "en": "Give each player 5 food tokens: 1 invertebrate, 1 seed, 1 fish, 1 fruit and 1 rodent.",
+    "de": "Gebt jedem Spieler 5 Futtermarker: je 1 Marker für Wirbellose, Samen, Fisch, Frucht und Nager."
+  },
+  "t036": {
+    "en": "Do not take any eggs. Keep food beside the mat, not on bird cards.",
+    "de": "Nehmt keine Eier. Futter liegt neben dem Tableau, nicht auf Vogelkarten."
+  },
+  "t037": {
+    "en": "Player stations",
+    "de": "Spielerbereiche"
+  },
+  "t038": {
+    "en": "Leave all 8 action cubes beside the mat, ready for round 1.",
+    "de": "Legt alle 8 Aktionswürfel neben das Tableau; sie stehen in Runde 1 zur Verfügung."
+  },
+  "t039": {
+    "en": "Give everyone a player kit",
+    "de": "Spielerbereiche ausstatten"
+  },
+  "t040": {
+    "en": "Try the starting-card trade-off",
+    "de": "Startauswahl ausprobieren"
+  },
+  "t041": {
+    "en": "Bird cards you keep",
+    "de": "Vogelkarten, die du behältst"
+  },
+  "t042": {
+    "en": "This is a rules example, not a record of each player's hand.",
+    "de": "Dies ist ein Regelbeispiel, keine Erfassung der einzelnen Starthände."
+  },
+  "t043": {
+    "en": "Keep any 0–5 of your dealt bird cards. Discard the others.",
+    "de": "Behalte beliebige 0–5 deiner ausgeteilten Vogelkarten. Wirf die anderen ab."
+  },
+  "t044": {
+    "en": "For every bird card you keep, return 1 of your starting food tokens to the supply. You choose which food to return.",
+    "de": "Gib für jede behaltene Vogelkarte 1 deiner Start-Futtermarker in den Vorrat zurück. Du wählst, welches Futter du abgibst."
+  },
+  "t045": {
+    "en": "Keep all remaining food. Your kept bird cards plus remaining food tokens total 5.",
+    "de": "Behalte das übrige Futter. Behaltene Vogelkarten und verbleibende Futtermarker ergeben zusammen 5."
+  },
+  "t046": {
+    "en": "Choose 1 of your 2 bonus cards; discard the other. This choice does not cost food.",
+    "de": "Wähle 1 deiner 2 Bonuskarten und wirf die andere ab. Diese Auswahl kostet kein Futter."
+  },
+  "t047": {
+    "en": "<strong>Keeping is not playing.<\/strong> These bird cards stay in your hand. Their printed food cost and any column egg cost are paid later, when you play them.",
+    "de": "<strong>Behalten ist nicht Ausspielen.<\/strong> Diese Vogelkarten bleiben auf deiner Hand. Ihre aufgedruckten Futterkosten und etwaige Ei-Kosten der Spalte bezahlst du erst beim späteren Ausspielen."
+  },
+  "t048": {
+    "en": "Choose birds, food and one bonus",
+    "de": "Vögel, Futter und einen Bonus wählen"
+  },
+  "t049": {
+    "en": "Randomly choose a first player and give them the first-player token. Turns proceed clockwise.",
+    "de": "Bestimmt zufällig einen Startspieler und gebt ihm den Startspielermarker. Gespielt wird im Uhrzeigersinn."
+  },
+  "t050": {
+    "en": "The first player spends 1 action cube to choose exactly 1 of the four actions. Each other player then does the same on their turn.",
+    "de": "Der Startspieler setzt 1 Aktionswürfel für genau 1 der vier Aktionen ein. Danach wählen die anderen Spieler in ihrem Zug ebenfalls je eine Aktion."
+  },
+  "t051": {
+    "en": "A turn is one player's action. A round ends only after everyone has spent all available action cubes.",
+    "de": "Ein Zug ist die Aktion eines Spielers. Eine Runde endet erst, wenn alle ihre verfügbaren Aktionswürfel eingesetzt haben."
+  },
+  "t052": {
+    "en": "In round 1, each player has 8 turns. Later rounds give each player 7, then 6, then 5 turns.",
+    "de": "In Runde 1 hat jeder Spieler 8 Züge. In den folgenden Runden sind es 7, dann 6 und schließlich 5."
+  },
+  "t053": {
+    "en": "Do not roll the food dice before every turn. Follow the birdfeeder refill and reroll rules instead.",
+    "de": "Würfelt nicht vor jedem Zug das Futter neu. Beachtet stattdessen die Regeln zum Auffüllen und Neuwürfeln des Vogelhäuschens."
+  },
+  "t054": {
+    "en": "1 cube",
+    "de": "1 Würfel"
+  },
+  "t055": {
+    "en": "Choose one action",
+    "de": "Wähle eine Aktion"
+  },
+  "t056": {
+    "en": "Resolve it fully",
+    "de": "Vollständig ausführen"
+  },
+  "t057": {
+    "en": "Include applicable bird powers",
+    "de": "Passende Vogelfähigkeiten einschließen"
+  },
+  "t058": {
+    "en": "Next player",
+    "de": "Nächster Spieler"
+  },
+  "t059": {
+    "en": "Continue clockwise",
+    "de": "Im Uhrzeigersinn weiterspielen"
+  },
+  "t060": {
+    "en": "Round end",
+    "de": "Rundenende"
+  },
+  "t061": {
+    "en": "After everyone has used all cubes",
+    "de": "Wenn alle sämtliche Würfel eingesetzt haben"
+  },
+  "t062": {
+    "en": "Choose a first player and begin",
+    "de": "Startspieler bestimmen und beginnen"
+  },
+  "t063": {
+    "en": "Table is ready",
+    "de": "Der Spielaufbau ist fertig"
+  },
+  "t064": {
+    "en": "Everyone has 8 unused action cubes, an empty mat, one bonus card, and a starting mix of 5 bird cards and food tokens combined. Nobody starts with eggs.",
+    "de": "Alle haben 8 ungenutzte Aktionswürfel, ein leeres Tableau, eine Bonuskarte sowie Vogelkarten und Futtermarker, die zusammen 5 ergeben. Niemand startet mit Eiern."
+  },
+  "t065": {
+    "en": "Learn the first turn",
+    "de": "Den ersten Zug kennenlernen"
+  },
+  "t066": {
+    "en": "Build your bird collection over four rounds and finish with the most points. Birds can improve a habitat's basic action and add powers when that habitat is used.",
+    "de": "Baue deine Vogelsammlung über vier Runden aus und erreiche die meisten Punkte. Vögel verbessern die Grundaktion ihres Lebensraums und können dort zusätzliche Fähigkeiten auslösen."
+  },
+  "t067": {
+    "en": "One turn = one action cube = one chosen action.",
+    "de": "Ein Zug = ein Aktionswürfel = eine gewählte Aktion."
+  },
+  "t068": {
+    "en": "The four choices are alternatives, not four steps you must perform in order. You may choose the same action again on a later turn.",
+    "de": "Die vier Möglichkeiten sind Alternativen, keine feste Abfolge. Du darfst in einem späteren Zug dieselbe Aktion erneut wählen."
+  },
+  "t069": {
+    "en": "Play a Bird",
+    "de": "Vogel spielen"
+  },
+  "t070": {
+    "en": "Add a bird from your hand, pay its costs and use its \"When Played\" power, if it has one. This does not activate the habitat.",
+    "de": "Spiele einen Vogel aus deiner Hand, bezahle seine Kosten und nutze gegebenenfalls seine \"Beim Ausspielen\"-Fähigkeit. Der Lebensraum wird dadurch nicht aktiviert."
+  },
+  "t071": {
+    "en": "Gain Food · forest",
+    "de": "Futter erhalten · Wald"
+  },
+  "t072": {
+    "en": "Take food using birdfeeder dice, then activate brown powers in your forest from right to left.",
+    "de": "Erhalte Futter über Würfel aus dem Vogelhäuschen und aktiviere danach braune Fähigkeiten im Wald von rechts nach links."
+  },
+  "t073": {
+    "en": "Lay Eggs · grassland",
+    "de": "Eier legen · Grasland"
+  },
+  "t074": {
+    "en": "Place eggs on your birds, then activate brown powers in your grassland from right to left.",
+    "de": "Lege Eier auf deine Vögel und aktiviere danach braune Fähigkeiten im Grasland von rechts nach links."
+  },
+  "t075": {
+    "en": "Draw Bird Cards · wetland",
+    "de": "Vogelkarten ziehen · Wasser"
+  },
+  "t076": {
+    "en": "Take cards into your hand, then activate brown powers in your wetland from right to left.",
+    "de": "Nimm Karten auf deine Hand und aktiviere danach braune Fähigkeiten im Wasserlebensraum von rechts nach links."
+  },
+  "t077": {
+    "en": "The shared pattern for habitat actions",
+    "de": "Der gemeinsame Ablauf der Lebensraumaktionen"
+  },
+  "t078": {
+    "en": "Choose a row",
+    "de": "Eine Reihe wählen"
+  },
+  "t079": {
+    "en": "Put 1 unused cube on its leftmost uncovered action space. With 5 birds, use the printed space at the far right.",
+    "de": "Setze 1 ungenutzten Würfel auf das am weitesten links liegende freie Aktionsfeld. Bei 5 Vögeln nutzt du das aufgedruckte Feld ganz rechts."
+  },
+  "t080": {
+    "en": "Take the basic benefit",
+    "de": "Grundertrag erhalten"
+  },
+  "t081": {
+    "en": "Use only that space. Its printed extra exchange is optional and may be used once.",
+    "de": "Nutze nur dieses Feld. Sein aufgedruckter Zusatztausch ist freiwillig und einmal nutzbar."
+  },
+  "t082": {
+    "en": "Move right to left",
+    "de": "Von rechts nach links ziehen"
+  },
+  "t083": {
+    "en": "Pass each bird in that row. You may activate each brown power when you reach it; skip other colors.",
+    "de": "Gehe an jedem Vogel dieser Reihe vorbei. Du darfst die jeweilige braune Fähigkeit nutzen; andere Farben überspringst du."
+  },
+  "t084": {
+    "en": "Leave the cube on the left",
+    "de": "Würfel links liegen lassen"
+  },
+  "t085": {
+    "en": "Refill empty bird-tray spaces only after the whole turn. The cube remains used until round end.",
+    "de": "Fülle leere Plätze der Vogeltränke erst nach dem gesamten Zug auf. Der Würfel bleibt bis zum Rundenende verbraucht."
+  },
+  "t086": {
+    "en": "Not as two normal actions. Choose one. A bird power can grant an extra effect, but only when its text says so.",
+    "de": "Nicht als zwei normale Aktionen. Wähle eine davon. Eine Vogelfähigkeit kann einen zusätzlichen Effekt erlauben, aber nur gemäß ihrem Text."
+  },
+  "t087": {
+    "en": "Check: can I gain food and also play a bird with my one action cube?",
+    "de": "Regelcheck: Darf ich mit einem Aktionswürfel Futter erhalten und einen Vogel spielen?"
+  },
+  "t089": {
+    "en": "Egg cost for the next bird in this habitat",
+    "de": "Ei-Kosten für den nächsten Vogel in diesem Lebensraum"
+  },
+  "t090": {
+    "en": "Column",
+    "de": "Spalte"
+  },
+  "t091": {
+    "en": "Eggs to pay",
+    "de": "Abzugebende Eier"
+  },
+  "t092": {
+    "en": "A bird must be in your hand before you play it. Check its permitted habitats, the next empty space in that row, and whether you can pay the full food and egg costs.",
+    "de": "Ein Vogel muss auf deiner Hand sein, bevor du ihn spielst. Prüfe seine erlaubten Lebensräume, den nächsten freien Platz der Reihe und ob du alle Futter- und Ei-Kosten bezahlen kannst."
+  },
+  "t093": {
+    "en": "Choose one habitat printed on the bird card. It must have room, and the bird goes in that row's leftmost empty slot.",
+    "de": "Wähle einen auf der Vogelkarte gezeigten Lebensraum mit freiem Platz. Der Vogel kommt auf den am weitesten links liegenden freien Platz dieser Reihe."
+  },
+  "t094": {
+    "en": "Place an unused action cube above the column you will use. Return the required eggs from any of your birds to the supply.",
+    "de": "Setze einen ungenutzten Aktionswürfel oberhalb der gewählten Spalte. Gib die verlangten Eier von beliebigen eigenen Vögeln in den Vorrat zurück."
+  },
+  "t095": {
+    "en": "Pay the bird's food cost using tokens beside your mat. Put the bird in its chosen slot and move the cube to the left of the Play a Bird row.",
+    "de": "Bezahle die Futterkosten mit Markern neben deinem Tableau. Lege den Vogel auf den gewählten Platz und bewege den Würfel nach links in den Bereich \"Vogel spielen\"."
+  },
+  "t096": {
+    "en": "You may use its white \"When Played\" power now. Do not activate brown powers just because a bird was played.",
+    "de": "Du darfst jetzt seine weiße \"Beim Ausspielen\"-Fähigkeit nutzen. Braune Fähigkeiten werden nicht allein durch das Ausspielen eines Vogels aktiviert."
+  },
+  "t097": {
+    "en": "The egg cost depends on the column in the chosen habitat, not on your total number of birds. Eggs can come from different birds in different habitats.",
+    "de": "Die Ei-Kosten richten sich nach der Spalte im gewählten Lebensraum, nicht nach deiner gesamten Vogelzahl. Eier dürfen von verschiedenen Vögeln aus verschiedenen Lebensräumen stammen."
+  },
+  "t098": {
+    "en": "A wild food symbol accepts any 1 food token. A slash means choose one of the shown types, not both. A crossed-out circle means no food is required; the column's egg cost still applies.",
+    "de": "Ein Futterjoker akzeptiert 1 beliebigen Futtermarker. Ein Schrägstrich bedeutet eine der gezeigten Arten, nicht beide. Ein durchgestrichener Kreis bedeutet keine Futterkosten; die Ei-Kosten der Spalte gelten weiterhin."
+  },
+  "t099": {
+    "en": "Only when paying to play a bird, any 2 food tokens can replace 1 required food token. The two tokens may be the same type or different types. Repeat for other missing food if needed.",
+    "de": "Nur beim Bezahlen eines Vogels können 2 beliebige Futtermarker 1 verlangten Futtermarker ersetzen. Die beiden Marker dürfen gleich oder verschieden sein. Bei Bedarf gilt das auch für weitere fehlende Futtermarker."
+  },
+  "t100": {
+    "en": "This is a payment substitution, not a general trading action. It cannot replace eggs or a specific food cost on a bird power.",
+    "de": "Das ist ein Ersatz beim Bezahlen, keine allgemeine Tauschaktion. Er ersetzt weder Eier noch bestimmte Futterkosten einer Vogelfähigkeit."
+  },
+  "t101": {
+    "en": "Food costs: wild, \"or\", no food and the 2-for-1 substitution",
+    "de": "Futterkosten: Joker, \"oder\", kein Futter und der 2:1-Ersatz"
+  },
+  "t102": {
+    "en": "Read your physical bird card",
+    "de": "Deine Vogelkarte lesen"
+  },
+  "t103": {
+    "en": "Habitat and food cost",
+    "de": "Lebensraum und Futterkosten"
+  },
+  "t104": {
+    "en": "Where the bird can be played, and what food you pay. Multiple habitats give a choice, not multiple placements.",
+    "de": "Wo der Vogel gespielt werden darf und welches Futter du bezahlst. Mehrere Lebensräume bieten eine Auswahl, keine mehrfache Platzierung."
+  },
+  "t105": {
+    "en": "Point value",
+    "de": "Punktwert"
+  },
+  "t106": {
+    "en": "Printed points count at game end only for birds played on your mat.",
+    "de": "Aufgedruckte Punkte zählen am Spielende für Vögel, die auf deinem Tableau liegen."
+  },
+  "t107": {
+    "en": "Nest type and egg limit",
+    "de": "Nesttyp und Ei-Limit"
+  },
+  "t108": {
+    "en": "The nest matters for some powers and goals. The egg limit is the maximum number of eggs that bird can hold.",
+    "de": "Der Nesttyp ist für manche Fähigkeiten und Ziele wichtig. Das Ei-Limit begrenzt die Eier, die auf diesem Vogel liegen dürfen."
+  },
+  "t109": {
+    "en": "wingspan (cm)",
+    "de": "Flügelspannweite (cm)"
+  },
+  "t110": {
+    "en": "Used by some powers and bonus conditions; it is not an extra point value.",
+    "de": "Wird von manchen Fähigkeiten und Bonusbedingungen genutzt; sie ist kein zusätzlicher Punktwert."
+  },
+  "t111": {
+    "en": "Power and timing",
+    "de": "Fähigkeit und Zeitpunkt"
+  },
+  "t112": {
+    "en": "Read the timing label and the text. You do not need to learn every bird before starting.",
+    "de": "Lies den Zeitpunkt und den Text. Du musst nicht vor Spielbeginn jeden Vogel kennen."
+  },
+  "t113": {
+    "en": "Zero eggs. This is column 1 in that habitat, even though it is your third bird overall. Pay the printed food cost as usual.",
+    "de": "Null Eier. Es ist Spalte 1 dieses Lebensraums, auch wenn es insgesamt dein dritter Vogel ist. Bezahle wie üblich die aufgedruckten Futterkosten."
+  },
+  "t114": {
+    "en": "Check: my third bird goes in the first column of an empty habitat. How many eggs?",
+    "de": "Regelcheck: Mein dritter Vogel kommt in die erste Spalte eines leeren Lebensraums. Wie viele Eier kostet er?"
+  },
+  "t116": {
+    "en": "For these three actions, the basic benefit comes first, then the brown powers in that habitat. The number of birds in other habitats does not change the chosen row's basic benefit.",
+    "de": "Bei diesen drei Aktionen kommt zuerst der Grundertrag, danach folgen die braunen Fähigkeiten dieses Lebensraums. Vögel in anderen Lebensräumen ändern den Grundertrag der gewählten Reihe nicht."
+  },
+  "t117": {
+    "en": "For each food die shown on your action space, remove 1 die from the birdfeeder and take 1 matching food token from the supply. Choose dice one at a time. The invertebrate/seed face gives either 1 invertebrate or 1 seed, never both.",
+    "de": "Nimm für jeden auf deinem Aktionsfeld gezeigten Futterwürfel 1 Würfel aus dem Vogelhäuschen und erhalte 1 passenden Futtermarker aus dem Vorrat. Wähle die Würfel einzeln. Die Seite Wirbellose/Samen ergibt entweder 1 Wirbellose oder 1 Samen, nie beides."
+  },
+  "t118": {
+    "en": "On a space with a card-to-food exchange, you may discard 1 bird card from your hand to take 1 additional die and its matching food token. Then resolve the forest's brown powers.",
+    "de": "Auf einem Feld mit Karte-gegen-Futter-Tausch darfst du 1 Vogelkarte aus deiner Hand abwerfen, um 1 zusätzlichen Würfel und den passenden Futtermarker zu nehmen. Danach folgen die braunen Waldfähigkeiten."
+  },
+  "t119": {
+    "en": "<strong>Empty:<\/strong> immediately roll all 5 dice back in. <strong>All remaining dice show exactly the same face:<\/strong> when you are about to gain food, you may first reroll all 5 dice. A single remaining die qualifies.",
+    "de": "<strong>Leer:<\/strong> Werft sofort alle 5 Würfel wieder hinein. <strong>Alle verbleibenden Würfel zeigen genau dieselbe Seite:<\/strong> Wenn du Futter erhalten darfst, darfst du vorher alle 5 Würfel neu werfen. Auch ein einzelner verbliebener Würfel erfüllt diese Bedingung."
+  },
+  "t120": {
+    "en": "The split invertebrate/seed face is its own face. A seed face plus an invertebrate/seed face are not \"all the same\". Recheck between taking individual dice. A new turn or round is not, by itself, a reason to reroll.",
+    "de": "Die Doppelseite Wirbellose/Samen zählt als eigene Seite. Samen und Wirbellose/Samen sind nicht \"alle gleich\". Prüfe nach jeder einzelnen Würfelwahl erneut. Ein neuer Zug oder eine neue Runde ist allein kein Grund zum Neuwürfeln."
+  },
+  "t121": {
+    "en": "When do we reroll the birdfeeder?",
+    "de": "Wann wird das Vogelhäuschen neu gewürfelt?"
+  },
+  "t122": {
+    "en": "Take the number of eggs shown on the action space and distribute them among any of your birds, in any habitats. Never exceed a bird's egg limit. Eggs with no available space are lost; they cannot wait beside your mat.",
+    "de": "Nimm die auf dem Aktionsfeld angezeigte Zahl Eier und verteile sie auf beliebige eigene Vögel in beliebigen Lebensräumen. Überschreite nie ein Ei-Limit. Eier ohne freien Platz verfallen; sie dürfen nicht neben deinem Tableau warten."
+  },
+  "t123": {
+    "en": "On a space with a food-to-egg exchange, you may return 1 food token from beside your mat for 1 additional egg. Then resolve the grassland's brown powers. Egg colors do not matter.",
+    "de": "Auf einem Feld mit Futter-gegen-Ei-Tausch darfst du 1 Futtermarker von neben deinem Tableau für 1 zusätzliches Ei zurückgeben. Danach folgen die braunen Graslandfähigkeiten. Eierfarben sind unwichtig."
+  },
+  "t124": {
+    "en": "Draw the number of bird cards shown. For each card, choose a face-up card from the bird tray or the top card of the deck. On a space with an egg-to-card exchange, you may discard 1 egg from any of your birds to draw 1 extra card.",
+    "de": "Ziehe so viele Vogelkarten wie angegeben. Wähle für jede Karte eine offene aus der Vogeltränke oder die oberste vom Nachziehstapel. Auf einem Feld mit Ei-gegen-Karte-Tausch darfst du 1 Ei von einem beliebigen eigenen Vogel für 1 zusätzliche Karte abgeben."
+  },
+  "t125": {
+    "en": "<strong>Wait to refill the bird tray until your entire turn ends, including all brown powers.<\/strong> There is no hand limit. If the deck runs out, shuffle the discarded bird cards into a new deck.",
+    "de": "<strong>Füllt die Vogeltränke erst auf, wenn dein ganzer Zug einschließlich aller braunen Fähigkeiten beendet ist.<\/strong> Es gibt kein Handkartenlimit. Ist der Nachziehstapel leer, mischt die abgeworfenen Vogelkarten zu einem neuen Stapel."
+  },
+  "t126": {
+    "en": "This example uses the original mat and does not simulate individual bird powers. Change the bird count to see which basic benefit and optional exchange are uncovered.",
+    "de": "Dieses Beispiel nutzt das ursprüngliche Tableau und simuliert keine einzelnen Vogelfähigkeiten. Ändere die Vogelzahl, um den freiliegenden Grundertrag und Zusatztausch zu sehen."
+  },
+  "t127": {
+    "en": "Example position",
+    "de": "Beispielposition"
+  },
+  "t128": {
+    "en": "Habitat",
+    "de": "Lebensraum"
+  },
+  "t129": {
+    "en": "Forest · Gain Food",
+    "de": "Wald · Futter erhalten"
+  },
+  "t130": {
+    "en": "Grassland · Lay Eggs",
+    "de": "Grasland · Eier legen"
+  },
+  "t131": {
+    "en": "Wetland · Draw Bird Cards",
+    "de": "Wasser · Vogelkarten ziehen"
+  },
+  "t132": {
+    "en": "Birds already in this habitat",
+    "de": "Vögel, die bereits in diesem Lebensraum liegen"
+  },
+  "t133": {
+    "en": "Use the optional exchange, if available",
+    "de": "Zusatztausch nutzen, falls vorhanden"
+  },
+  "t134": {
+    "en": "Basic benefit",
+    "de": "Grundertrag"
+  },
+  "t135": {
+    "en": "Optional exchange",
+    "de": "Freiwilliger Zusatztausch"
+  },
+  "t136": {
+    "en": "Activation order",
+    "de": "Aktivierungsreihenfolge"
+  },
+  "t137": {
+    "en": "Next bird in this habitat",
+    "de": "Nächster Vogel in diesem Lebensraum"
+  },
+  "t138": {
+    "en": "The result shows the basic action only. Eggs still require space on your birds; bird powers may add further benefits. One printed exchange is at most one extra benefit, not a repeatable trade.",
+    "de": "Das Ergebnis zeigt nur die Grundaktion. Eier benötigen weiterhin Platz auf deinen Vögeln; Vogelfähigkeiten können weitere Erträge bringen. Ein aufgedruckter Zusatztausch ergibt höchstens einen Zusatznutzen und ist nicht beliebig wiederholbar."
+  },
+  "t139": {
+    "en": "Try a habitat action",
+    "de": "Eine Lebensraumaktion ausprobieren"
+  },
+  "t141": {
+    "en": "Learn the three timing categories, then read the birds you actually play. Powers are optional, but a stated cost must be paid to receive the benefit linked to that cost.",
+    "de": "Lerne die drei Zeitpunkte und lies dann die Vögel, die du tatsächlich spielst. Fähigkeiten sind freiwillig; verlangte Kosten musst du aber bezahlen, um den daran geknüpften Nutzen zu erhalten."
+  },
+  "t142": {
+    "en": "When Played · white",
+    "de": "Beim Ausspielen · weiß"
+  },
+  "t143": {
+    "en": "Use once, as that bird enters your mat. It does not repeat on later habitat activations.",
+    "de": "Einmal nutzbar, wenn dieser Vogel auf dein Tableau kommt. Spätere Lebensraumaktionen wiederholen diese Fähigkeit nicht."
+  },
+  "t144": {
+    "en": "When Activated · brown",
+    "de": "Bei Aktivierung · braun"
+  },
+  "t145": {
+    "en": "When you take the matching habitat action, resolve brown powers from the rightmost bird toward the left. You may skip a power; do not rearrange their order.",
+    "de": "Wenn du die zugehörige Lebensraumaktion wählst, folgen braune Fähigkeiten vom rechtesten Vogel nach links. Du darfst eine Fähigkeit auslassen, aber ihre Reihenfolge nicht ändern."
+  },
+  "t146": {
+    "en": "Once Between Turns · pink",
+    "de": "1× zwischen deinen Zügen · rosa"
+  },
+  "t147": {"en":"Use on an opponent's turn when the stated trigger happens. Each pink power can be used at most once between your own turns, not once per opponent. It can also trigger once after your final turn, before the game ends.","de":"Nutzbar im Zug eines Mitspielers, wenn der angegebene Auslöser eintritt. Jede rosa Fähigkeit ist zwischen deinen eigenen Zügen höchstens einmal nutzbar, nicht einmal pro Mitspieler. Auch nach deinem letzten Zug kann sie vor Spielende noch einmal ausgelöst werden."},
+  "t148": {
+    "en": "Read where a power gains food or cards: \"from the supply\", \"from the birdfeeder\", \"from the deck\" and \"from your hand\" are different instructions. Taking a benefit is not automatically taking the corresponding action.",
+    "de": "Lies genau, woher eine Fähigkeit Futter oder Karten nimmt: \"aus dem Vorrat\", \"aus dem Vogelhäuschen\", \"vom Nachziehstapel\" und \"aus deiner Hand\" sind unterschiedliche Anweisungen. Ein erhaltener Nutzen ist nicht automatisch die gleichnamige Aktion."
+  },
+  "t149": {
+    "en": "Food and cards can become points",
+    "de": "Futter und Karten können zu Punkten werden"
+  },
+  "t150": {
+    "en": "Food beside your mat",
+    "de": "Futter neben deinem Tableau"
+  },
+  "t151": {
+    "en": "Available to spend. You cannot freely move it onto a bird for points.",
+    "de": "Zum Bezahlen verfügbar. Du darfst es nicht ohne passende Fähigkeit auf einen Vogel legen, um Punkte zu erhalten."
+  },
+  "t152": {
+    "en": "Cached food",
+    "de": "Gelagertes Futter"
+  },
+  "t153": {
+    "en": "Food placed on a bird by a power. Each token is worth 1 point at game end and is not normally available to spend.",
+    "de": "Durch eine Fähigkeit auf einem Vogel abgelegtes Futter. Jeder Marker zählt am Spielende 1 Punkt und steht normalerweise nicht zum Bezahlen zur Verfügung."
+  },
+  "t154": {
+    "en": "Tucked cards",
+    "de": "Untergeschobene Karten"
+  },
+  "t155": {
+    "en": "Cards placed face down under a bird by a power. Each counts as 1 point, not as another played bird. Ignore its printed points, habitat and power.",
+    "de": "Durch eine Fähigkeit verdeckt unter einen Vogel gelegte Karten. Jede zählt 1 Punkt, nicht als weiterer gespielter Vogel. Aufgedruckte Punkte, Lebensräume und Fähigkeiten gelten nicht."
+  },
+  "t156": {
+    "en": "Cached food and tucked cards have no general quantity limit. They stay with their bird; you cannot take them back into your supply or hand unless a card explicitly allows it.",
+    "de": "Für gelagertes Futter und untergeschobene Karten gilt kein allgemeines Mengenlimit. Sie bleiben beim Vogel und kommen nicht ohne ausdrückliche Kartenerlaubnis zurück in deinen Vorrat oder auf deine Hand."
+  },
+  "t157": {
+    "en": "No. That bird's pink power can be used only once in that interval. Other pink birds track their own limit separately. Tell the table what triggers your pink powers.",
+    "de": "Nein. Die rosa Fähigkeit dieses Vogels ist in diesem Zeitraum nur einmal nutzbar. Für andere rosa Vögel gilt jeweils eine eigene Grenze. Sagt der Runde, wodurch eure rosa Fähigkeiten ausgelöst werden."
+  },
+  "t158": {
+    "en": "Check: two opponents trigger my pink power before my next turn. Can I use it twice?",
+    "de": "Regelcheck: Zwei Mitspieler lösen vor meinem nächsten Zug meine rosa Fähigkeit aus. Darf ich sie zweimal nutzen?"
+  },
+  "t159": {
+    "en": "A star nest can match any nest type for a power, goal or bonus card. It does not increase the bird's egg limit. Egg-laying powers still respect capacity and any restrictions about which bird or nest receives the egg.",
+    "de": "Ein Sternnest kann für Fähigkeiten, Ziele und Bonuskarten als jeder Nesttyp gelten. Es erhöht nicht das Ei-Limit. Auch Fähigkeiten zum Eierlegen beachten Kapazität und Einschränkungen zu Vogel oder Nesttyp."
+  },
+  "t160": {
+    "en": "Nests and eggs: the star is wild, the egg limit is not",
+    "de": "Nester und Eier: Der Stern ist ein Joker, das Ei-Limit bleibt bestehen"
+  },
+  "t162": {
+    "en": "Enter how many of the goal's items or complete sets each player has. These are practice values, not a saved game score. The scoring side follows Guide options.",
+    "de": "Trage ein, wie viele Zielobjekte oder vollständige Sets jeder Spieler hat. Dies sind Übungswerte, kein gespeicherter Spielstand. Die Wertungsseite folgt den Leitfadenoptionen."
+  },
+  "t163": {
+    "en": "Round-goal example",
+    "de": "Beispiel zur Rundenwertung"
+  },
+  "t164": {
+    "en": "Round",
+    "de": "Runde"
+  },
+  "t165": {
+    "en": "Items or sets → goal points",
+    "de": "Zielobjekte oder Sets → Zielpunkte"
+  },
+  "t166": {
+    "en": "Player",
+    "de": "Spieler"
+  },
+  "t167": {
+    "en": "Items / sets",
+    "de": "Objekte / Sets"
+  },
+  "t168": {
+    "en": "Points",
+    "de": "Punkte"
+  },
+  "t169": {
+    "en": "The blue side scores your own quantity, up to 5. The green side pools the occupied place values for a tie, divides them equally and rounds down. A quantity of 0 always scores 0.",
+    "de": "Die blaue Seite wertet deine eigene Anzahl bis höchstens 5. Die grüne Seite addiert bei Gleichstand die Werte aller belegten Plätze, teilt sie gleichmäßig und rundet ab. Eine Anzahl von 0 ergibt immer 0 Punkte."
+  },
+  "t170": {
+    "en": "After everyone has used their last action cube, finish the round together. The round goal checks what you have now, not everything you earned earlier in the round.",
+    "de": "Wenn alle ihren letzten Aktionswürfel eingesetzt haben, beendet ihr die Runde gemeinsam. Das Rundenziel zählt euren jetzigen Bestand, nicht alles, was ihr früher in der Runde erhalten habt."
+  },
+  "t171": {
+    "en": "Take the used action cubes off your mat. Use 1 to mark your result for the current round on the goal board, even if you scored 0.",
+    "de": "Nimm die verbrauchten Aktionswürfel von deinem Tableau. Markiere mit 1 davon dein Ergebnis der aktuellen Runde auf der Zieltafel, auch bei 0 Punkten."
+  },
+  "t172": {
+    "en": "Leave all earlier goal cubes in place. The remaining cubes are available next round.",
+    "de": "Alle früheren Zielwürfel bleiben liegen. Die übrigen Würfel stehen in der nächsten Runde zur Verfügung."
+  },
+  "t173": {
+    "en": "Discard the face-up bird cards remaining in the bird tray and reveal 3 new ones. Keep your own birds, eggs, food and hand cards.",
+    "de": "Wirf die noch offenen Vogelkarten aus der Vogeltränke ab und decke 3 neue auf. Eigene Vögel, Eier, Futter und Handkarten bleiben erhalten."
+  },
+  "t174": {
+    "en": "After rounds 1–3, pass the first-player token clockwise. After round 4, score the game; there is no fifth round.",
+    "de": "Gib nach Runde 1–3 den Startspielermarker im Uhrzeigersinn weiter. Nach Runde 4 wertet ihr das Spiel; es gibt keine fünfte Runde."
+  },
+  "t175": {
+    "en": "Round 1",
+    "de": "Runde 1"
+  },
+  "t176": {
+    "en": "8 turns per player",
+    "de": "8 Züge je Spieler"
+  },
+  "t177": {
+    "en": "Round 2",
+    "de": "Runde 2"
+  },
+  "t178": {
+    "en": "7 turns per player",
+    "de": "7 Züge je Spieler"
+  },
+  "t179": {
+    "en": "Round 3",
+    "de": "Runde 3"
+  },
+  "t180": {
+    "en": "6 turns per player",
+    "de": "6 Züge je Spieler"
+  },
+  "t181": {
+    "en": "Round 4",
+    "de": "Runde 4"
+  },
+  "t182": {
+    "en": "5 turns per player",
+    "de": "5 Züge je Spieler"
+  },
+  "t183": {
+    "en": "Score the current round goal",
+    "de": "Das aktuelle Rundenziel werten"
+  },
+  "t184": {
+    "en": "<strong>Blue:<\/strong> score 1 point per qualifying item or complete set, up to 5 points. Other players' quantities do not reduce your score.",
+    "de": "<strong>Blau:<\/strong> Erhalte 1 Punkt pro passendem Zielobjekt oder vollständigem Set, höchstens 5 Punkte. Die Ergebnisse der Mitspieler verringern deine Punkte nicht."
+  },
+  "t185": {
+    "en": "<strong>Green:<\/strong> rank positive quantities from highest to lowest. Use the printed points for the current round. A tie occupies consecutive places: total those points, divide by the number tied, then round down. Skip the places already occupied by the tie. Fourth and fifth place are worth 0.",
+    "de": "<strong>Grün:<\/strong> Ordnet positive Anzahlen absteigend. Nutzt die Punkte der aktuellen Runde. Ein Gleichstand belegt aufeinanderfolgende Plätze: Addiert deren Punkte, teilt durch die Zahl der Beteiligten und rundet ab. Bereits belegte Plätze werden übersprungen. Platz vier und fünf zählen 0."
+  },
+  "t186": {
+    "en": "Example: in round 3, the first three places are worth 6, 3 and 2 points. Two players tied for first receive 4 each: (6 + 3) ÷ 2, rounded down. The next player is third and receives 2, provided they have at least one qualifying item.",
+    "de": "Beispiel: In Runde 3 zählen die ersten drei Plätze 6, 3 und 2 Punkte. Zwei Spieler auf Platz eins erhalten je 4: (6 + 3) ÷ 2, abgerundet. Der nächste Spieler ist Dritter und erhält 2, sofern er mindestens ein passendes Zielobjekt hat."
+  },
+  "t187": {
+    "en": "On either side, a result of zero still uses an action cube. Counting a bird or egg for a goal does not remove it from your mat.",
+    "de": "Auf beiden Seiten setzt ihr auch bei null einen Aktionswürfel ein. Ein für ein Ziel gezählter Vogel oder ein Ei wird nicht vom Tableau entfernt."
+  },
+  "t188": {
+    "en": "Both goal-board sides and ties",
+    "de": "Beide Seiten der Zieltafel und Gleichstände"
+  },
+  "t189": {
+    "en": "Try round-goal scoring",
+    "de": "Rundenwertung ausprobieren"
+  },
+  "t190": {
+    "en": "After round 4: add six scoring categories",
+    "de": "Nach Runde 4: Sechs Wertungskategorien addieren"
+  },
+  "t191": {
+    "en": "Birds",
+    "de": "Vögel"
+  },
+  "t192": {
+    "en": "Add the printed point values of birds on your mat.",
+    "de": "Addiere die aufgedruckten Punktwerte der Vögel auf deinem Tableau."
+  },
+  "t193": {
+    "en": "Score each bonus card you hold according to its own condition. A bird can qualify for more than one bonus.",
+    "de": "Werte jede deiner Bonuskarten nach ihrer eigenen Bedingung. Ein Vogel darf zu mehreren Boni beitragen."
+  },
+  "t194": {
+    "en": "Round goals",
+    "de": "Rundenziele"
+  },
+  "t195": {
+    "en": "Add the points marked on the goal board, including tie adjustments.",
+    "de": "Addiere die auf der Zieltafel markierten Punkte einschließlich der Gleichstandsberechnung."
+  },
+  "t196": {
+    "en": "Eggs",
+    "de": "Eier"
+  },
+  "t197": {
+    "en": "1 point for every egg remaining on your birds.",
+    "de": "1 Punkt für jedes Ei, das noch auf deinen Vögeln liegt."
+  },
+  "t198": {
+    "en": "1 point for every food token cached on your birds.",
+    "de": "1 Punkt für jeden auf deinen Vögeln gelagerten Futtermarker."
+  },
+  "t199": {
+    "en": "1 point for every card tucked under your birds.",
+    "de": "1 Punkt für jede unter deine Vögel geschobene Karte."
+  },
+  "t200": {
+    "en": "<strong>Highest total wins.<\/strong> A tie is broken by the most unspent food tokens beside the mat, not cached food. If still tied, share the win.",
+    "de": "<strong>Die höchste Gesamtpunktzahl gewinnt.<\/strong> Bei Gleichstand entscheiden die meisten ungenutzten Futtermarker neben dem Tableau, nicht gelagertes Futter. Bleibt der Gleichstand, teilt ihr den Sieg."
+  },
+  "t201": {
+    "en": "Hand cards and unused food do not score by themselves. Apply any bonus card that specifically rewards your hand. You do not get a final action to spend leftover resources.",
+    "de": "Handkarten und ungenutztes Futter zählen für sich genommen keine Punkte. Beachte Bonuskarten, die ausdrücklich die Hand werten. Es gibt keine abschließende Zusatzaktion, um Reste auszugeben."
+  },
+  "t203": {
+    "en": "Choose one action, then finish the turn",
+    "de": "Eine Aktion wählen und den Zug beenden"
+  },
+  "t204": {
+    "en": "Play a bird and pay the right costs",
+    "de": "Einen Vogel spielen und richtig bezahlen"
+  },
+  "t205": {
+    "en": "Food, eggs and bird cards",
+    "de": "Futter, Eier und Vogelkarten"
+  },
+  "t206": {
+    "en": "Read timing, not a catalogue of birds",
+    "de": "Zeitpunkte verstehen statt Vögel auswendig lernen"
+  },
+  "t207": {
+    "en": "End a round, then score the game",
+    "de": "Runden beenden und das Spiel werten"
+  },
+  "t208": {
+    "en": "At the table",
+    "de": "Am Spieltisch"
+  },
+  "t209": {
+    "en": "<strong>New bird on the mat:<\/strong> Play a Bird. <strong>Food tokens:<\/strong> Gain Food in the forest. <strong>Eggs:<\/strong> Lay Eggs in the grassland. <strong>More hand cards:<\/strong> Draw Bird Cards in the wetland. The last three also activate that row's brown powers from right to left.",
+    "de": "<strong>Neuer Vogel auf dem Tableau:<\/strong> Vogel spielen. <strong>Futtermarker:<\/strong> Futter erhalten im Wald. <strong>Eier:<\/strong> Eier legen im Grasland. <strong>Mehr Handkarten:<\/strong> Vogelkarten ziehen im Wasser. Die letzten drei aktivieren außerdem die braunen Fähigkeiten ihrer Reihe von rechts nach links."
+  },
+  "t210": {
+    "en": "Which action do I need?",
+    "de": "Welche Aktion brauche ich?"
+  },
+  "t211": {"en":"You may use a habitat with no birds: take its first printed benefit. With 5 birds, use its far-right action space and then the brown powers. You cannot normally add a sixth bird to that habitat. Played birds stay on your mat unless another bird's power removes one; there is no regular discard action. Used action cubes do not block spaces or stop you choosing that action on another turn.","de":"Du darfst einen Lebensraum ohne Vögel nutzen und erhältst den ersten aufgedruckten Ertrag. Bei 5 Vögeln nutzt du das Aktionsfeld ganz rechts und danach die braunen Fähigkeiten. Einen sechsten Vogel kannst du dort normalerweise nicht spielen. Gespielte Vögel bleiben auf deinem Tableau, sofern nicht die Fähigkeit eines anderen Vogels einen entfernt; eine normale Abwurfaktion gibt es nicht. Verbrauchte Aktionswürfel blockieren keine Felder und verhindern keine erneute Wahl dieser Aktion."},
+  "t212": {
+    "en": "Empty rows, full rows and repeating actions",
+    "de": "Leere Reihen, volle Reihen und wiederholte Aktionen"
+  },
+  "t213": {
+    "en": "Pay its printed food plus the column's egg cost: 0 / 1 / 1 / 2 / 2 in columns 1–5. The habitat must be permitted and the slot must be the leftmost empty one in that row. Two food tokens can replace one required food only for playing a bird. No substitute replaces an egg.",
+    "de": "Bezahle die aufgedruckten Futterkosten plus die Ei-Kosten der Spalte: 0 / 1 / 1 / 2 / 2 in Spalte 1–5. Der Lebensraum muss erlaubt und der Platz der am weitesten links liegende freie dieser Reihe sein. Nur beim Spielen eines Vogels können zwei Futtermarker einen verlangten Futtermarker ersetzen. Eier lassen sich so nicht ersetzen."
+  },
+  "t214": {
+    "en": "What must I pay to play a bird?",
+    "de": "Was bezahle ich beim Spielen eines Vogels?"
+  },
+  "t215": {
+    "en": "Empty: roll all 5 dice back in immediately. Identical remaining faces, including a lone die: you may reroll all 5 before gaining food. Check again between individual selections. The invertebrate/seed face is different from either single-food face. The same rules apply when a power lets you gain food from the birdfeeder.",
+    "de": "Leer: sofort alle 5 Würfel wieder hineinwerfen. Gleiche verbleibende Seiten, auch bei nur einem Würfel: vor dem Erhalten von Futter darfst du alle 5 neu werfen. Prüfe dies zwischen einzelnen Würfelwahlen erneut. Wirbellose/Samen ist eine andere Seite als jede einzelne Futterart. Diese Regeln gelten auch beim Erhalten von Futter durch eine Fähigkeit aus dem Vogelhäuschen."
+  },
+  "t216": {
+    "en": "Birdfeeder: empty or identical dice",
+    "de": "Vogelhäuschen: leer oder gleiche Würfelseiten"
+  },
+  "t217": {
+    "en": "Empty tray spaces refill at the end of the entire turn, not after each card or each bird power. Round end replaces all remaining face-up birds. An exhausted deck is rebuilt by shuffling discarded bird cards. There is no hand limit; cards you kept stay in hand between rounds.",
+    "de": "Leere Tränkenplätze werden nach dem gesamten Zug aufgefüllt, nicht nach jeder Karte oder Fähigkeit. Am Rundenende werden alle übrigen offenen Vögel ersetzt. Ist der Nachziehstapel leer, werden abgeworfene Vogelkarten neu gemischt. Es gibt kein Handkartenlimit; behaltene Karten bleiben zwischen Runden auf der Hand."
+  },
+  "t218": {
+    "en": "When do the bird tray and deck refill?",
+    "de": "Wann werden Vogeltränke und Nachziehstapel aufgefüllt?"
+  },
+  "t219": {
+    "en": "The grassland action can place eggs on your birds in any habitat. Never exceed an egg limit, even through a power. Egg colors are interchangeable. Eggs already placed cannot be freely moved between birds. When paying eggs, choose which of your birds lose them; return them to the shared supply.",
+    "de": "Die Graslandaktion darf Eier auf eigene Vögel in jedem Lebensraum legen. Überschreite auch mit einer Fähigkeit nie ein Ei-Limit. Eierfarben sind austauschbar. Bereits gelegte Eier dürfen nicht frei zwischen Vögeln verschoben werden. Beim Bezahlen wählst du, welche eigenen Vögel die Eier abgeben; sie kommen in den gemeinsamen Vorrat."
+  },
+  "t220": {
+    "en": "Egg capacity, placement and spending",
+    "de": "Ei-Limit, Platzierung und Ausgeben"
+  },
+  "t221": {
+    "en": "You may decline a benefit or skip a bird power. You may not claim a linked benefit without paying its required cost. Skipping a habitat's basic benefit does not prevent using its brown powers. An action still uses a cube even if you take fewer benefits or none.",
+    "de": "Du darfst auf einen Ertrag verzichten oder eine Vogelfähigkeit auslassen. Ohne verlangte Kosten zu bezahlen, erhältst du aber nicht den daran geknüpften Nutzen. Ein ausgelassener Grundertrag verhindert die braunen Fähigkeiten des Lebensraums nicht. Eine Aktion verbraucht auch dann einen Würfel, wenn du weniger oder gar keinen Ertrag nimmst."
+  },
+  "t222": {
+    "en": "Optional benefits are not optional costs",
+    "de": "Freiwillige Erträge sind keine freiwilligen Kosten"
+  },
+  "t223": {
+    "en": "Powers and points",
+    "de": "Fähigkeiten und Punkte"
+  },
+  "t224": {"en":"White: when that bird is played. Brown: when you use its habitat, in right-to-left order. Pink: on an opponent's triggering turn, at most once between your own turns for each such power, including once after your final turn before the game ends. Playing a bird does not run a habitat chain. Additional colored timing categories belong to expansions and are outside this guide.","de":"Weiß: wenn dieser Vogel gespielt wird. Braun: bei Nutzung seines Lebensraums, von rechts nach links. Rosa: im auslösenden Mitspielerzug, je Fähigkeit höchstens einmal zwischen den eigenen Zügen und nach deinem letzten Zug noch einmal vor Spielende. Vogel spielen aktiviert keine Lebensraumkette. Weitere farbige Zeitpunkte gehören zu Erweiterungen und werden hier nicht behandelt."},
+  "t225": {
+    "en": "Timing reminder",
+    "de": "Zeitpunkte im Überblick"
+  },
+  "t226": {
+    "en": "Food beside your mat is spendable. Food cached on a bird is normally locked in for 1 point per token. Cards tucked under a bird are each 1 point, not extra birds or their printed values. You may cache food or tuck cards only when an effect permits it.",
+    "de": "Futter neben dem Tableau ist ausgebbar. Auf Vögeln gelagertes Futter bleibt normalerweise für je 1 Punkt liegen. Untergeschobene Karten zählen jeweils 1 Punkt, nicht als zusätzliche Vögel oder mit ihrem aufgedruckten Wert. Futter lagern und Karten unterschieben darfst du nur, wenn ein Effekt es erlaubt."
+  },
+  "t227": {
+    "en": "Cached food is not your spendable food",
+    "de": "Gelagertes Futter ist kein ausgebbares Futter"
+  },
+  "t228": {
+    "en": "A goal for birds with eggs counts each qualifying bird once, however many eggs it holds. An egg goal counts every qualifying egg. One set across habitats needs an egg in each of forest, grassland and wetland; the number of complete sets is the smallest of those three egg totals. A star nest can satisfy a required nest type.",
+    "de": "Ein Ziel für Vögel mit Eiern zählt jeden passenden Vogel einmal, unabhängig von seiner Eierzahl. Ein Eierziel zählt jedes passende Ei. Ein Set über die Lebensräume benötigt je ein Ei in Wald, Grasland und Wasser; die Zahl vollständiger Sets entspricht der kleinsten dieser drei Eierzahlen. Ein Sternnest kann einen verlangten Nesttyp erfüllen."
+  },
+  "t229": {
+    "en": "Read the goal's unit: birds, eggs or sets",
+    "de": "Zieleinheit lesen: Vögel, Eier oder Sets"
+  },
+  "t230": {
+    "en": "Green: share the point values of all places occupied by tied players and round each share down; the next player skips those places. Blue: 1 point per qualifying item or set, maximum 5. With zero qualifying items you score zero on either side, but still leave an action cube on the goal board.",
+    "de": "Grün: Teilt die Punktwerte aller von einem Gleichstand belegten Plätze und rundet jeden Anteil ab; der nächste Spieler überspringt diese Plätze. Blau: 1 Punkt je passendem Objekt oder Set, höchstens 5. Ohne passende Zielobjekte gibt es auf beiden Seiten null Punkte, aber trotzdem bleibt ein Aktionswürfel auf der Zieltafel."
+  },
+  "t231": {
+    "en": "Green ties, blue limits and zero results",
+    "de": "Grüne Gleichstände, blaue Grenze und null Ergebnisse"
+  },
+  "t232": {
+    "en": "Keep birds, eggs, hand cards, bonus cards, cached food, tucked cards and unused food. Return the used cubes from your mat, then leave one on the current goal. Keep earlier goal cubes there too. Replace the tray's birds. Pass the first-player token clockwise after rounds 1-3; after round 4, score the game instead. Do not automatically reroll the birdfeeder or feed your birds.",
+    "de": "Vögel, Eier, Handkarten, Bonuskarten, gelagertes Futter, untergeschobene Karten und ungenutztes Futter bleiben erhalten. Nimm verbrauchte Würfel vom Tableau zurück und lasse einen beim aktuellen Ziel liegen. Frühere Zielwürfel bleiben ebenfalls dort. Ersetzt die Tränkenvögel. Gebt den Startspielermarker nach Runde 1-3 im Uhrzeigersinn weiter; nach Runde 4 folgt stattdessen die Schlusswertung. Würfelt das Vogelhäuschen nicht automatisch neu und füttert eure Vögel nicht."
+  },
+  "t233": {
+    "en": "What survives round end?",
+    "de": "Was bleibt über das Rundenende erhalten?"
+  },
+  "t234": {
+    "en": "After round 4, add bird points, bonus-card points, round-goal points, eggs, cached food and tucked cards. Each of the last three is worth 1 point per item. Unused food beside the mat breaks a tied total; it is not otherwise worth points. A remaining tie is a shared win.",
+    "de": "Addiert nach Runde 4 Vogelpunkte, Bonuskartenpunkte, Rundenzielpunkte, Eier, gelagertes Futter und untergeschobene Karten. Die letzten drei zählen je 1 Punkt pro Stück. Ungenutztes Futter neben dem Tableau entscheidet einen Punktegleichstand; sonst zählt es keine Punkte. Ein verbleibender Gleichstand bedeutet einen geteilten Sieg."
+  },
+  "t235": {
+    "en": "Final scoring and the tie-break",
+    "de": "Schlusswertung und Gleichstand"
+  },
+  "t236": {"en":"Scope and independence","de":"Umfang und Unabhängigkeit"},
+  "t237": {
+    "en": "This is an independent teaching companion for the base game designed by Elizabeth Hargrave, for 2–5 players using the original player mats. It is not affiliated with or endorsed by Stonemaier Games or Feuerland Spiele. You need your own game components.",
+    "de": "Dies ist ein unabhängiger Lernbegleiter zum Grundspiel von Elizabeth Hargrave für 2–5 Spieler mit den ursprünglichen Spielertableaus. Er ist weder mit Stonemaier Games oder Feuerland Spiele verbunden noch von ihnen freigegeben. Ihr benötigt eigenes Spielmaterial."
+  },
+  "t238": {"en":"The explanations and practice examples are newly written. No publisher artwork, logos, card images, card catalogue or full card texts are included. Rules terminology is retained so the guide matches the physical game.","de":"Erklärungen und Übungsbeispiele sind neu formuliert. Verlagsillustrationen, Logos, Kartenbilder, Kartenkataloge und vollständige Kartentexte sind nicht enthalten. Regelbegriffe bleiben erhalten, damit der Leitfaden zum Spielmaterial passt."},
+  "t239": {"en":"Standard random setup, basic actions, the three base-game power timings, round goals and final scoring are covered. Automa, expansions, changed player mats and the pre-arranged quick-start tutorial are not included. Card-specific exceptions are outside this guide; follow the text on your cards.","de":"Behandelt werden zufälliger Standardaufbau, Grundaktionen, die drei Zeitpunkte des Grundspiels, Rundenziele und Schlusswertung. Automa, Erweiterungen, geänderte Spielertableaus und die vorgegebene Schnellstartpartie sind nicht enthalten. Kartenspezifische Ausnahmen sind nicht Teil dieses Leitfadens; folgt dem Kartentext."},
+  "t245": {"en":"About this independent guide","de":"Über diesen unabhängigen Leitfaden"},
+  "t246": {
+    "en": "Rule lessons",
+    "de": "Regellektionen"
+  },
+  "t247": {
+    "en": "<span>Lesson 1<\/span>Turn",
+    "de": "<span>Lektion 1<\/span>Zug"
+  },
+  "t248": {
+    "en": "<span>Lesson 2<\/span>Play a Bird",
+    "de": "<span>Lektion 2<\/span>Vogel spielen"
+  },
+  "t249": {
+    "en": "<span>Lesson 3<\/span>Habitats",
+    "de": "<span>Lektion 3<\/span>Lebensräume"
+  },
+  "t250": {
+    "en": "<span>Lesson 4<\/span>Powers",
+    "de": "<span>Lektion 4<\/span>Fähigkeiten"
+  },
+  "t251": {
+    "en": "<span>Lesson 5<\/span>Round & score",
+    "de": "<span>Lektion 5<\/span>Runde & Wertung"
+  },
+  "t252": {
+    "en": "Unofficial Guide - Wingspan / Flügelschlag",
+    "de": "Unofficial Guide - Wingspan / Flügelschlag"
+  },
+  "t253": {
+    "en": "A bilingual, step-by-step bird-game table guide for standard setup, actions, powers, round goals and scoring.",
+    "de": "Ein zweisprachiger Schritt-für-Schritt-Begleiter für Standardaufbau, Aktionen, Fähigkeiten, Rundenziele und Wertung eines Vogelspiels."
+  },
+  "t254": {
+    "en": "Skip to guide",
+    "de": "Zum Leitfaden springen"
+  },
+  "t255": {
+    "en": "Toggle guide options",
+    "de": "Leitfadenoptionen ein- oder ausblenden"
+  },
+  "t256": {
+    "en": "Guided setup and rules, one decision at a time",
+    "de": "Geführter Spielaufbau und Regeln – eine Entscheidung nach der anderen"
+  },
+  "t257": {
+    "en": "Primary",
+    "de": "Hauptnavigation"
+  },
+  "t258": {
+    "en": "Setup",
+    "de": "Spielaufbau"
+  },
+  "t259": {
+    "en": "Learn",
+    "de": "Lernen"
+  },
+  "t260": {
+    "en": "Reference",
+    "de": "Nachschlagen"
+  },
+  "t261": {
+    "en": "Set up the table",
+    "de": "Spiel vorbereiten"
+  },
+  "t262": {
+    "en": "Base game · 2–5 players · original player mats. Prepare one part of the table at a time, then learn the shared rules without studying every bird.",
+    "de": "Grundspiel · 2–5 Spieler · ursprüngliche Spielertableaus. Bereitet den Tisch Schritt für Schritt vor und lernt die gemeinsamen Regeln, ohne jeden Vogel einzeln durchzugehen."
+  },
+  "t263": {
+    "en": "Setup step controls",
+    "de": "Steuerung der Aufbauschritte"
+  },
+  "t264": {
+    "en": "Back",
+    "de": "Zurück"
+  },
+  "t266": {
+    "en": "Learn the game",
+    "de": "Das Spiel kennenlernen"
+  },
+  "t267": {
+    "en": "Start with the turn, then learn playing birds, habitat actions, power timing and scoring. Each lesson can be opened independently at the table.",
+    "de": "Beginnt mit dem Zug und lernt dann Vogelspielen, Lebensraumaktionen, Fähigkeiten und Wertung. Jede Lektion lässt sich am Tisch einzeln öffnen."
+  },
+  "t268": {
+    "en": "Rules reference",
+    "de": "Regeln zum Nachschlagen"
+  },
+  "t269": {
+    "en": "Open the rule you need. The defaults below assume the base game; follow the text of a card when it explicitly changes a rule.",
+    "de": "Öffne die benötigte Regel. Die folgenden Grundregeln gelten für das Grundspiel; beachte einen Kartentext, wenn er eine Regel ausdrücklich ändert."
+  },
+  "t270": {
+    "en": "Guide options",
+    "de": "Leitfadenoptionen"
+  },
+  "t271": {
+    "en": "Table",
+    "de": "Spielrunde"
+  },
+  "t272": {
+    "en": "Players",
+    "de": "Spieler"
+  },
+  "t273": {
+    "en": "2 players",
+    "de": "2 Spieler"
+  },
+  "t274": {
+    "en": "3 players",
+    "de": "3 Spieler"
+  },
+  "t275": {
+    "en": "4 players",
+    "de": "4 Spieler"
+  },
+  "t276": {
+    "en": "5 players",
+    "de": "5 Spieler"
+  },
+  "t277": {
+    "en": "Goal-board side",
+    "de": "Seite der Zieltafel"
+  },
+  "t278": {
+    "en": "Blue · points per item",
+    "de": "Blau · Punkte pro Zielobjekt"
+  },
+  "t279": {
+    "en": "Green · majority",
+    "de": "Grün · Mehrheitswertung"
+  },
+  "t280": {
+    "en": "Use the same side on the table. Blue is a gentler first introduction; green is the standard competitive scoring. Changing players or this side restarts setup progress.",
+    "de": "Nutzt dieselbe Seite am Tisch. Blau erleichtert den Einstieg; Grün ist die normale Mehrheitswertung. Eine Änderung der Spielerzahl oder dieser Seite setzt den Aufbaufortschritt zurück."
+  },
+  "t281": {
+    "en": "Setup progress",
+    "de": "Aufbaufortschritt"
+  },
+  "t282": {
+    "en": "Completed steps",
+    "de": "Abgeschlossene Schritte"
+  },
+  "t283": {
+    "en": "Start over",
+    "de": "Neu beginnen"
+  },
+  "t284": {
+    "en": "User interface",
+    "de": "Benutzeroberfläche"
+  },
+  "t285": {
+    "en": "Language",
+    "de": "Sprache"
+  },
+  "t286": {
+    "en": "<small>Progress and practice settings stay in this browser.<\/small>",
+    "de": "<small>Fortschritt und Übungseinstellungen bleiben in diesem Browser.<\/small>"
+  }
+};
+        const TITLE_KEY = "t252";
+        const DESCRIPTION_KEY = "t253";
+        const STORAGE_KEY = "bird-habitat-guide:state";
+        const STATE_VERSION = 1;
+        const SETUP_STEPS = 5;
+        const LESSONS = 5;
+        const HABITATS = new Set(["forest", "grassland", "wetland"]);
+        const RANK_POINTS = [[4,1,0,0,0], [5,2,1,0,0], [6,3,2,0,0], [7,4,3,0,0]];
+        const EGG_COST = [0,1,1,2,2];
+        const $ = (id) => document.getElementById(id);
+        const all = (selector) => [...document.querySelectorAll(selector)];
+        // Integrate with the existing shared utility, but remain usable if it is absent.
+        const shared = typeof one !== "undefined" ? one : null;
+        const defaults = () => ({
+            version: STATE_VERSION, language: "en", playerCount: 3, goalBoard: "blue",
+            setupStep: 0, setupProgress: 0, learnStep: 0, openingBirds: 2,
+            demoHabitat: "forest", demoBirds: 2, demoExchange: false,
+            goalRound: 2, goalCounts: [4,4,2,1,0]
+        });
+        let state = defaults();
+        let edited = false;
+        let saveTimer = null;
+        let saveChain = Promise.resolve();
+        let storageFailed = false;
+        const setupPanels = all("[data-setup-panel]");
+        const learnPanels = all("[data-learn-panel]");
+        const learnButtons = all("[data-learn-button]");
+        const textBlocks = all("[data-i18n]");
+        const ariaBlocks = all("[data-i18n-aria]");
+        const lang = (en, de) => state.language === "de" ? de : en;
+        const set = (id, text) => { $(id).textContent = text; };
+        const tr = (key) => STRINGS[key][state.language];
+        const clamp = (v, min, max, fallback) => Number.isInteger(v)
+            ? Math.max(min, Math.min(max, v)) : fallback;
+        const playerLabel = (n) => lang(`Player ${n}`, `Spieler ${n}`);
+        const sideLabel = () => state.goalBoard === "blue"
+            ? lang("Blue · points per item", "Blau · Punkte pro Zielobjekt")
+            : lang("Green · majority", "Grün · Mehrheitswertung");
+
+        function normalize(value) {
+            const base = defaults();
+            if (!value || value.version !== STATE_VERSION) return base;
+            base.language = value.language === "de" ? "de" : "en";
+            base.playerCount = clamp(value.playerCount, 2, 5, base.playerCount);
+            base.goalBoard = value.goalBoard === "green" ? "green" : "blue";
+            base.setupStep = clamp(value.setupStep, 0, SETUP_STEPS, 0);
+            base.setupProgress = Math.max(base.setupStep, clamp(value.setupProgress, 0, SETUP_STEPS, 0));
+            base.learnStep = clamp(value.learnStep, 0, LESSONS - 1, 0);
+            base.openingBirds = clamp(value.openingBirds, 0, 5, 2);
+            base.demoHabitat = HABITATS.has(value.demoHabitat) ? value.demoHabitat : "forest";
+            base.demoBirds = clamp(value.demoBirds, 0, 5, 2);
+            base.demoExchange = value.demoExchange === true && base.demoBirds % 2 === 1;
+            base.goalRound = clamp(value.goalRound, 1, 4, 2);
+            base.goalCounts = base.goalCounts.map((n, i) =>
+                clamp(Array.isArray(value.goalCounts) ? value.goalCounts[i] : undefined, 0, 999, n));
+            return base;
+        }
+
+        function showStorageStatus() {
+            $("storage-warning").hidden = !storageFailed;
+            set("storage-warning", lang(
+                "Progress could not be saved or restored. The guide still works in this tab.",
+                "Fortschritt konnte nicht gespeichert oder geladen werden. Der Leitfaden funktioniert in diesem Tab weiter."
+            ));
+        }
+        async function readStored() {
+            if (shared?.storage?.get) {
+                const value = await shared.storage.get(STORAGE_KEY);
+                return typeof value === "string" ? JSON.parse(value) : value;
+            }
+            const value = localStorage.getItem(STORAGE_KEY);
+            return value ? JSON.parse(value) : null;
+        }
+        async function writeStored(snapshot) {
+            if (shared?.storage?.set) await shared.storage.set(STORAGE_KEY, snapshot);
+            else localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+        }
+        function flushSave() {
+            if (saveTimer !== null) clearTimeout(saveTimer);
+            saveTimer = null;
+            const snapshot = {...state, goalCounts: [...state.goalCounts]};
+            // Serial writes avoid an older asynchronous write winning a race.
+            saveChain = saveChain.then(() => writeStored(snapshot)).catch(() => {
+                storageFailed = true;
+                showStorageStatus();
+            });
+        }
+        function save() {
+            edited = true;
+            if (saveTimer !== null) clearTimeout(saveTimer);
+            saveTimer = setTimeout(flushSave, 120);
+        }
+
+        function renderLanguage() {
+            document.documentElement.lang = state.language;
+            document.title = tr(TITLE_KEY);
+            document.querySelector('meta[name="description"]').content = tr(DESCRIPTION_KEY);
+            // Only authored, bundled strings go through innerHTML. No state or user input does.
+            textBlocks.forEach(el => { el.innerHTML = tr(el.dataset.i18n); });
+            ariaBlocks.forEach(el => { el.setAttribute("aria-label", tr(el.dataset.i18nAria)); });
+            $("language").value = state.language;
+            showStorageStatus();
+        }
+        function renderStations() {
+            const fragment = document.createDocumentFragment();
+            for (let i = 1; i <= state.playerCount; i++) {
+                const item = document.createElement("li");
+                const title = document.createElement("strong");
+                const kit = document.createElement("span");
+                title.textContent = playerLabel(i);
+                kit.textContent = lang(
+                    "1 mat · 8 cubes · 5 bird cards · 2 bonus cards · 5 food tokens",
+                    "1 Tableau · 8 Würfel · 5 Vogelkarten · 2 Bonuskarten · 5 Futtermarker"
+                );
+                item.append(title, kit); fragment.append(item);
+            }
+            $("station-grid").replaceChildren(fragment);
+        }
+        function renderTable() {
+            $("player-count").value = String(state.playerCount);
+            $("goal-board").value = state.goalBoard;
+            set("setup-player-summary", lang(`${state.playerCount} players`, `${state.playerCount} Spieler`));
+            set("setup-style-summary", sideLabel());
+            set("goal-side-visual", sideLabel());
+            set("ready-session-copy", lang(
+                `${state.playerCount} players · ${sideLabel()} · round 1`,
+                `${state.playerCount} Spieler · ${sideLabel()} · Runde 1`
+            ));
+            set("deal-totals", lang(
+                `Before choices, this table needs ${state.playerCount * 8} action cubes, ${state.playerCount * 5} dealt bird cards, ${state.playerCount * 2} dealt bonus cards and ${state.playerCount * 5} starting food tokens in total.`,
+                `Vor der Auswahl benötigt diese Runde insgesamt ${state.playerCount * 8} Aktionswürfel, ${state.playerCount * 5} ausgeteilte Vogelkarten, ${state.playerCount * 2} ausgeteilte Bonuskarten und ${state.playerCount * 5} Start-Futtermarker.`
+            ));
+            const goalCopy = state.goalBoard === "blue" ? lang(
+                "Selected: blue. Count your own qualifying items or complete sets and score that many points, up to 5. Mark zero too.",
+                "Gewählt: Blau. Zähle deine eigenen passenden Objekte oder vollständigen Sets und erhalte entsprechend viele Punkte, höchstens 5. Markiere auch null."
+            ) : lang(
+                "Selected: green. Compare positive quantities and use this round's rank values. Share the points for tied places, rounded down. No qualifying item means zero points.",
+                "Gewählt: Grün. Vergleicht positive Anzahlen und nutzt die Platzierungswerte dieser Runde. Teilt die Punkte belegter Plätze bei Gleichstand und rundet ab. Ohne passendes Zielobjekt gibt es null Punkte."
+            );
+            set("setup-goal-copy", goalCopy);
+            set("learn-goal-copy", goalCopy);
+            renderStations();
+        }
+        function renderSetup(focus = false) {
+            setupPanels.forEach((el, i) => { el.hidden = i !== state.setupStep; });
+            const complete = state.setupStep === SETUP_STEPS;
+            $("setup-progress").value = state.setupProgress;
+            set("setup-progress-text", lang(`${state.setupProgress} of ${SETUP_STEPS}`, `${state.setupProgress} von ${SETUP_STEPS}`));
+            set("setup-step-label", complete ? lang("Setup complete", "Spielaufbau abgeschlossen") :
+                lang(`Step ${state.setupStep + 1} of ${SETUP_STEPS}`, `Schritt ${state.setupStep + 1} von ${SETUP_STEPS}`));
+            $("setup-back").hidden = state.setupStep === 0;
+            $("setup-next").hidden = complete;
+            set("setup-next-label", state.setupStep === SETUP_STEPS - 1
+                ? lang("Finish setup", "Spielaufbau abschließen") : lang("Continue", "Weiter"));
+            if (focus) setupPanels[state.setupStep].querySelector("h3").focus();
+        }
+        function renderLearn(focus = false) {
+            learnPanels.forEach((el, i) => { el.hidden = i !== state.learnStep; });
+            learnButtons.forEach((el, i) => {
+                if (i === state.learnStep) el.setAttribute("aria-current", "step");
+                else el.removeAttribute("aria-current");
+            });
+            if (focus) learnPanels[state.learnStep].querySelector("h3").focus();
+        }
+        function renderOpening() {
+            $("opening-birds").value = String(state.openingBirds);
+            const n = state.openingBirds;
+            set("opening-result", lang(
+                `Keep ${n} bird card${n === 1 ? "" : "s"} + ${5 - n} food token${5 - n === 1 ? "" : "s"}. Return ${n} food token${n === 1 ? "" : "s"} and discard ${5 - n} bird card${5 - n === 1 ? "" : "s"}. Keep 1 bonus card separately.`,
+                `Behalte ${n} ${n === 1 ? "Vogelkarte" : "Vogelkarten"} + ${5 - n} Futtermarker. Gib ${n} Futtermarker zurück und wirf ${5 - n} ${5 - n === 1 ? "Vogelkarte" : "Vogelkarten"} ab. Behalte zusätzlich 1 Bonuskarte.`
+            ));
+        }
+        function renderHabitat() {
+            const n = state.demoBirds;
+            const habitat = state.demoHabitat;
+            const canExchange = n % 2 === 1;
+            if (!canExchange) state.demoExchange = false;
+            const base = Math.floor(n / 2) + (habitat === "grassland" ? 2 : 1);
+            const used = canExchange && state.demoExchange;
+            const total = base + (used ? 1 : 0);
+            $("demo-habitat").value = habitat;
+            $("demo-birds").value = String(n);
+            $("demo-exchange").disabled = !canExchange;
+            $("demo-exchange").checked = used;
+            const benefit = habitat === "forest" ? lang("food tokens from dice", "Futtermarker über Würfel") :
+                habitat === "grassland" ? lang("eggs, if there is room", "Eier, sofern Platz vorhanden ist") :
+                lang("bird cards into your hand", "Vogelkarten auf deine Hand");
+            set("demo-base", `${base} ${benefit}.`);
+            const exchange = habitat === "forest" ? lang("Discard 1 hand card → 1 extra food from a die", "1 Handkarte abwerfen → 1 zusätzliches Futter über einen Würfel") :
+                habitat === "grassland" ? lang("Pay 1 food → 1 extra egg", "1 Futter bezahlen → 1 zusätzliches Ei") :
+                lang("Pay 1 egg → 1 extra bird card", "1 Ei bezahlen → 1 zusätzliche Vogelkarte");
+            set("demo-exchange-help", canExchange ? exchange + "." : lang("No optional exchange is printed on this space.", "Auf diesem Feld ist kein Zusatztausch aufgedruckt."));
+            set("demo-extra", !canExchange ? lang("None on this space.", "Auf diesem Feld keiner.") : used ?
+                `${exchange}. ${lang("Total", "Gesamt")}: ${total} ${benefit}.` :
+                `${exchange}. ${lang("Not used in this example.", "In diesem Beispiel nicht genutzt.")}`);
+            const order = Array.from({length:n}, (_, i) => String(n - i)).join(" → ");
+            set("demo-order", n === 0 ? lang("No birds yet; finish on the left.", "Noch keine Vögel; links beenden.") : lang(
+                `Columns ${order}; brown powers only. Then leave the cube on the left.`,
+                `Spalten ${order}; nur braune Fähigkeiten. Danach bleibt der Würfel links.`
+            ));
+            set("demo-next-bird", n === 5 ? lang(
+                "Habitat full: no sixth bird. The habitat action remains available.",
+                "Lebensraum voll: kein sechster Vogel. Die Lebensraumaktion bleibt verfügbar."
+            ) : lang(
+                `Column ${n + 1}: pay ${EGG_COST[n]} egg${EGG_COST[n] === 1 ? "" : "s"}, plus the bird's food cost.`,
+                `Spalte ${n + 1}: ${EGG_COST[n]} ${EGG_COST[n] === 1 ? "Ei" : "Eier"} plus die Futterkosten des Vogels bezahlen.`
+            ));
+        }
+
+        function goalScores(counts, round, side) {
+            if (side === "blue") return counts.map(n => Math.min(n, 5));
+            const scores = counts.map(() => 0);
+            const positive = counts.map((n, i) => ({n, i})).filter(x => x.n > 0).sort((a,b) => b.n - a.n);
+            let rank = 0;
+            while (rank < positive.length) {
+                let end = rank + 1;
+                while (end < positive.length && positive[end].n === positive[rank].n) end++;
+                const pool = RANK_POINTS[round - 1].slice(rank, end).reduce((sum, v) => sum + v, 0);
+                const share = Math.floor(pool / (end - rank));
+                for (let j = rank; j < end; j++) scores[positive[j].i] = share;
+                rank = end;
+            }
+            return scores;
+        }
+        function renderGoalRows() {
+            $("goal-round").value = String(state.goalRound);
+            set("goal-practice-side", sideLabel());
+            const fragment = document.createDocumentFragment();
+            for (let i = 0; i < state.playerCount; i++) {
+                const row = document.createElement("tr");
+                const title = document.createElement("th");
+                title.scope = "row";
+                const label = document.createElement("label");
+                label.htmlFor = `goal-count-${i}`; label.textContent = playerLabel(i + 1);
+                title.append(label);
+                const entry = document.createElement("td");
+                const input = document.createElement("input");
+                input.type = "number"; input.min = "0"; input.max = "999"; input.step = "1";
+                input.inputMode = "numeric"; input.id = `goal-count-${i}`;
+                input.dataset.goalCount = String(i); input.value = String(state.goalCounts[i]);
+                input.required = true;
+                input.setAttribute("aria-label", lang(`${playerLabel(i+1)}: qualifying items or sets`, `${playerLabel(i+1)}: passende Objekte oder Sets`));
+                input.setAttribute("aria-describedby", "goal-calculation");
+                entry.append(input);
+                const result = document.createElement("td");
+                const output = document.createElement("output");
+                output.id = `goal-points-${i}`;
+                output.setAttribute("for", `goal-count-${i} goal-round goal-board`);
+                result.append(output); row.append(title, entry, result); fragment.append(row);
+            }
+            $("goal-rows").replaceChildren(fragment);
+            renderGoalResult();
+        }
+        function renderGoalResult() {
+            const inputs = all("[data-goal-count]");
+            let valid = true;
+            inputs.forEach(input => {
+                const okay = input.value.trim() !== "" && Number.isInteger(input.valueAsNumber) && input.valueAsNumber >= 0 && input.valueAsNumber <= 999;
+                input.setAttribute("aria-invalid", okay ? "false" : "true");
+                if (!okay) valid = false;
+            });
+            if (!valid) {
+                for (let i = 0; i < state.playerCount; i++) set(`goal-points-${i}`, "—");
+                set("goal-calculation", lang("Enter a whole number from 0 to 999 for each player. No points are calculated while an entry is incomplete.",
+                    "Trage für jeden Spieler eine ganze Zahl von 0 bis 999 ein. Solange eine Eingabe unvollständig ist, werden keine Punkte berechnet."));
+                return;
+            }
+            const counts = inputs.map(input => input.valueAsNumber);
+            counts.forEach((n, i) => { state.goalCounts[i] = n; });
+            const scores = goalScores(counts, state.goalRound, state.goalBoard);
+            scores.forEach((score, i) => set(`goal-points-${i}`, String(score)));
+            const summary = scores.map((score, i) => `${playerLabel(i+1)}: ${score}`).join(" · ");
+            const explanation = state.goalBoard === "blue" ? lang(
+                "Each score is the smaller of that player's quantity and 5. A result of 0 still uses a cube.",
+                "Jede Punktzahl ist die kleinere Zahl aus eigenem Ergebnis und 5. Auch bei 0 wird ein Würfel eingesetzt."
+            ) : lang(
+                `Round ${state.goalRound} place values: ${RANK_POINTS[state.goalRound - 1].join(" / ")}. Ties share the occupied place values, rounded down; zero items score zero.`,
+                `Platzierungswerte in Runde ${state.goalRound}: ${RANK_POINTS[state.goalRound - 1].join(" / ")}. Gleichstände teilen die belegten Platzwerte, abgerundet; null Objekte ergeben null Punkte.`
+            );
+            set("goal-calculation", `${summary}. ${explanation}`);
+        }
+        function renderAll() {
+            renderLanguage(); renderTable(); renderSetup(); renderLearn();
+            renderOpening(); renderHabitat(); renderGoalRows();
+        }
+        function resetSetup() { state.setupStep = 0; state.setupProgress = 0; }
+        function showLesson(index, focus = true) {
+            state.learnStep = clamp(index, 0, LESSONS - 1, 0);
+            renderLearn(focus); save();
+        }
+
+        // Native inputs/buttons support keyboard, touch and screen readers.
+        $("guide-options").addEventListener("submit", e => e.preventDefault());
+        ["opening-example", "habitat-example", "goal-example"].forEach(id => $(id).addEventListener("submit", e => e.preventDefault()));
+        $("language").addEventListener("change", () => {
+            state.language = $("language").value === "de" ? "de" : "en";
+            renderAll(); save();
+        });
+        $("player-count").addEventListener("change", () => {
+            state.playerCount = clamp(Number($("player-count").value), 2, 5, 3);
+            resetSetup(); renderTable(); renderSetup(); renderGoalRows(); save();
+        });
+        $("goal-board").addEventListener("change", () => {
+            state.goalBoard = $("goal-board").value === "green" ? "green" : "blue";
+            resetSetup(); renderTable(); renderSetup(); renderGoalRows(); save();
+        });
+        $("setup-back").addEventListener("click", () => {
+            state.setupStep = Math.max(0, state.setupStep - 1); renderSetup(true); save();
+        });
+        $("setup-next").addEventListener("click", () => {
+            state.setupStep = Math.min(SETUP_STEPS, state.setupStep + 1);
+            state.setupProgress = Math.max(state.setupProgress, state.setupStep);
+            renderSetup(true); save();
+        });
+        learnButtons.forEach((button, index) => {
+            button.addEventListener("click", () => showLesson(index));
+            button.addEventListener("keydown", event => {
+                let next;
+                if (event.key === "ArrowRight") next = (index + 1) % LESSONS;
+                else if (event.key === "ArrowLeft") next = (index + LESSONS - 1) % LESSONS;
+                else if (event.key === "Home") next = 0;
+                else if (event.key === "End") next = LESSONS - 1;
+                else return;
+                event.preventDefault(); showLesson(next, false); learnButtons[next].focus();
+            });
+        });
+        $("opening-birds").addEventListener("change", () => {
+            state.openingBirds = clamp(Number($("opening-birds").value), 0, 5, 2);
+            renderOpening(); save();
+        });
+        $("demo-habitat").addEventListener("change", () => {
+            state.demoHabitat = HABITATS.has($("demo-habitat").value) ? $("demo-habitat").value : "forest";
+            renderHabitat(); save();
+        });
+        $("demo-birds").addEventListener("change", () => {
+            state.demoBirds = clamp(Number($("demo-birds").value), 0, 5, 2);
+            renderHabitat(); save();
+        });
+        $("demo-exchange").addEventListener("change", () => {
+            state.demoExchange = $("demo-exchange").checked;
+            renderHabitat(); save();
+        });
+        $("goal-round").addEventListener("change", () => {
+            state.goalRound = clamp(Number($("goal-round").value), 1, 4, 2);
+            renderGoalResult(); save();
+        });
+        $("goal-rows").addEventListener("input", event => {
+            if (!event.target.matches("[data-goal-count]")) return;
+            renderGoalResult(); save();
+        });
+        $("reset-guide").addEventListener("click", async () => {
+            const message = lang("Reset setup progress, guide options and practice examples?", "Aufbaufortschritt, Leitfadenoptionen und Übungsbeispiele zurücksetzen?");
+            const title = lang("Start over?", "Neu beginnen?");
+            let confirmed = false;
+            if (shared?.confirm) {
+                const confirmation = shared.confirm(message, title);
+                const dialog = document.querySelector("dialog:last-of-type");
+                if (dialog && state.language === "de") {
+                    const cancel = dialog.querySelector('[data-action="cancel"]');
+                    const accept = dialog.querySelector('[data-action="confirm"]');
+                    if (cancel) cancel.textContent = "Abbrechen";
+                    if (accept) accept.textContent = "Bestätigen";
+                }
+                confirmed = await confirmation;
+            } else confirmed = window.confirm(message);
+            if (!confirmed) return;
+            const language = state.language;
+            state = {...defaults(), language};
+            all("main details[open]").forEach(el => { el.open = false; });
+            // Remove a lesson-specific deep link that would otherwise reopen a lesson on reload.
+            if (location.hash) {
+                try { history.replaceState(null, "", location.pathname + location.search); } catch { /* file URL */ }
+            }
+            renderAll(); save();
+            $("setup-title").setAttribute("tabindex", "-1"); $("setup-title").focus();
+        });
+        function followHash(scroll = false) {
+            let id;
+            try { id = decodeURIComponent(location.hash.slice(1)); } catch { return; }
+            const target = id ? $(id) : null;
+            if (!target) return;
+            const panel = target.closest("[data-learn-panel]");
+            if (panel) {
+                state.learnStep = Number(panel.dataset.learnPanel); renderLearn(false);
+            }
+            if (target.tagName === "DETAILS") target.open = true;
+            if (scroll) target.scrollIntoView({block:"start"});
+        }
+        window.addEventListener("hashchange", () => { followHash(true); save(); });
+        document.addEventListener("click", event => {
+            const link = event.target.closest('a[href^="#"]');
+            // Same-fragment links do not fire hashchange; still reopen a hidden lesson.
+            if (link && link.getAttribute("href") === location.hash) {
+                followHash(true); save();
+            }
+        });
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden" && saveTimer !== null) flushSave();
+        });
+        window.addEventListener("pagehide", () => { if (saveTimer !== null) flushSave(); });
+        async function restore() {
+            try {
+                const stored = normalize(await readStored());
+                if (!edited) state = stored;
+            } catch { storageFailed = true; }
+            renderAll(); followHash(Boolean(location.hash));
+        }
+        renderAll();
+        void restore();
+    })();
+
+        </script>
+    </body>
+</html>
