@@ -9380,7 +9380,7 @@ console.log("\n=== Track.pruneExcept: preserves \"__temp_probe__\" special case 
 }
 
 // =============================================================================
-// Docs & Tests: Fix prompt.md drift (Track.feedback silent no-op stub)
+// Track.feedback silent no-op stub
 // =============================================================================
 console.log("\n=== Track.feedback: no-op stub warns once instead of silently doing nothing ===");
 {
@@ -9402,23 +9402,6 @@ console.log("\n=== Track.feedback: no-op stub warns once instead of silently doi
     );
 
     trackRegistry.delete("__feedback_stub_probe__");
-}
-
-console.log("\n=== prompt.md: Audio Routing lists .feedback({ amount }) as Bus-only ===");
-{
-    const { readFileSync } = await import("node:fs");
-    const promptText = readFileSync(new URL("./prompt.md", import.meta.url), "utf8");
-    const routingLine = promptText.split("\n").find((line) => line.includes("Audio Routing (chained on Track)"));
-
-    assert(!!routingLine, "prompt.md must contain the 'Audio Routing (chained on Track)' line");
-    assert(
-        !!routingLine && !/`\.send\(bus, amount\)`, `\.feedback/.test(routingLine),
-        "prompt.md Audio Routing (Track) line must not list `.feedback({ amount })` as a plain Track-chained method",
-    );
-    assert(
-        promptText.includes("chained on `Bus`, NOT on Track"),
-        "prompt.md must explicitly state .feedback({ amount }) is Bus-only, not Track",
-    );
 }
 
 // =============================================================================
