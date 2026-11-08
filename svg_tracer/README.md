@@ -16,6 +16,8 @@ Palette discovery favors flat interior samples rather than edge shadows. A separ
 
 After noise cleanup, newly recovered Auto paints also need distinct color evidence in the original input samples at their support sites. A filtered plateau whose source centroid matches a base paint is marked as an alias. All discovered paints still participate in pixel assignment and mixture decoding: deleting a shade earlier can move otherwise unrelated pixels by changing their available paint evidence. After decoding, aliases merge into their supported base paints; mixture weights and boundary evidence are updated consistently. The check uses the original RGBA input directly and does not require every noisy neighbor of a tiny accent to be flat. Explicit counts and noise-zero tracing do not use this additional merging.
 
+When Auto exceeds 5,000 regions before area cleanup, positive noise cleanup and a minimum region area above 1 enable one additional mixture-fragment recovery pass. This recovery trigger is independent of the 20,000-region capacity limit. It keeps the palette and protects both original-source paint interiors and coherent thin components. Running this pass before minimum-area merging lets antialias fragments consolidate before cleanup can erase a narrow contour or open an enclosed hole. A remaining opaque fragment can merge only into a paint actually supported within its local three-pixel neighborhood, with its original RGB explained by that local pair's finite color-mixture segment. Explicit paint counts, ordinary Auto traces, noise-zero tracing, and disabled area cleanup do not use this recovery. Genuine dense artwork can use the higher capacity without deleting supported paints to get below the old limit. Statistics and warnings report any recovery.
+
 After area cleanup, original working-raster RGB can correct a disconnected fragment that incorrectly uses a paint present elsewhere. Only opaque fragments smaller than another component of the same paint qualify. A pixel must touch exactly two other paints in its eight-neighbor neighborhood; other junction pixels remain unresolved. The original RGB must fit that two-paint mixture substantially better than every mixture where the fragment's own paint has the largest of three coverage weights, including weights below one half. Error allowances use separate 95th-percentile source deviations from interior samples of the relevant paints, excluding the candidate component from its own paint's reference. This avoids treating a large background as evidence about a rare accent. The tails are empirical noise estimates, not guarantees for arbitrary boundary or correlated noise. This correction applies to Auto and explicit counts with positive noise cleanup, independently of the minimum-area setting. Stale mixture evidence is discarded before rebuilding the boundary graph; the palette itself is retained.
 
 An explicit paint count refines the strongest varying RGB histogram buckets, preserving distinct flat paints that share a coarse bucket. Detail recovery protects those separated paints from coarse averages and antialias fringes. Refinement is bounded by the requested count, so strongly varying noisy regions can still outrank a weak similar-paint distinction; Auto retains its conservative noise handling.
@@ -36,11 +38,19 @@ Polygon guides must respect the image frame. A boundary between two regions insi
 
 Native circles and ellipses are emitted when the neighboring face is unpainted. When both sides are painted, matching arc commands avoid differences between primitive and path rendering. Thin faces receive tighter fitting tolerances when detail protection is enabled: opposite boundaries can each consume an error allowance, so fitting them too loosely can visibly vary an outline's width even when it remains connected. The automatic cap retains a quarter-pixel minimum on the narrowest sampled features to avoid chasing antialias noise; an explicitly lower boundary tolerance still takes priority. This protection can require more segments around curves. Spatially distributed ownership witnesses protect local features; speckle cleanup exempts coherent elongated marks when detail protection is enabled.
 
+Distance error alone can accept a cubic with a tiny self-intersection. Cubic fitting rejects such trials analytically while retaining subsequent fitting iterations and valid subdivision information. A simple closed cubic may still share its first and last point. On unguided open chains, anchored closed contours, and free loops, crossings or unresolved close approaches between fitted spans can also be repaired by subdividing only the implicated source intervals. Rotated closed-loop starts are mapped back to the ordered source samples, and the closing seam is treated as an adjacent join. Local checks use the same 0.001-pixel flattening precision and numerical separation margin as refined graph validation. This repair leaves other segments intact and remains subject to the assembled-chain fidelity, clearance, and complete graph checks. Unresolved cases retain the established safe fallback.
+
 A fitting span with only two samples remains a straight segment. Estimated tangents must not bend such an unsupported span into a subpixel loop, especially where several paints meet. This preserves local junction topology without forcing an otherwise smooth perimeter onto the pixel grid.
+
+On a chain implicated by graph validation, a junction tangent that points outside its original incident edge's 90-degree sector can be constrained to the first coverage-sample link. Only the offending endpoint receives this correction, including loops anchored at a shared junction; detected interior corners remain separate fitting boundaries. Four bounded tolerance refinements allow a narrow interface to respect pixel-center ownership when recovered samples pass within 0.02 working pixels. Cubic candidates use the assembled chain's 0.0125-pixel flattening precision so a small excursion can be subdivided locally before it causes a whole-chain sample fallback. Full topology, ownership, clearance, and fidelity validation still determines acceptance.
 
 A thick miter or merged intersection can make an otherwise narrow connected outline appear globally thick. For these networks, local inward depth samples on each side of a boundary restore thin-feature fitting limits. An area-to-perimeter check excludes broad filled regions whose corner samples can look misleadingly thin. Regions already recognized as thin retain their established tolerance. More faithful boundaries can require substantially more SVG segments.
 
 Crossings, junction order, holes, region ownership, and assembled-chain fidelity are checked. When the chord approximation leaves a close approach uncertain, affected curved chains are flattened once at finer precision before changing their fits. The separation margin uses the sum of their flattening error bounds, and every topology check runs again. Unresolved interfaces are retried locally while independent successful fits remain. Each retry halves the actual fitting tolerance, including any thin-detail cap, so retries cannot repeat the same capped fit. An exact pixel-boundary fallback handles difficult topology. Statistics report recovered paints, mixture decoding, feature checks, repairs, and fallbacks. Numerical validation is not a formal proof for arbitrary curves.
+
+Topology validation uses conservative bounding boxes before expensive comparisons. A tree indexes individual fitted rings, including background holes, so ownership witnesses query nearby bounds instead of scanning every face and every hole. Each ring occurs once in the index; the same containment test and even-odd parity remain in force for painted, transparent, and omitted faces. Segment pairs farther apart than the complete flattening-error margin cannot intersect or trigger the proximity check. These filters change only the work performed, not the geometry or acceptance criteria. Deeply overlapping ring bounds can still require many comparisons.
+
+Containment queries reuse the existing polyline distance tree to skip vertical intervals that cannot cross the query ray, retaining the original directed-edge arithmetic and endpoint convention. Swept ownership bands are traversed directly instead of copying whole contours. Intersection checking keeps chain indices, point indices, bounds, and duplicate-query stamps in compact typed buffers, and releases them before refinement and ownership work. Construction-only lattice nodes and edges are released after the shared chains are built. Scalar distance queries avoid allocating unused projection objects. These changes reduce repeated work and allocation without adding production dependencies or changing validation thresholds.
 
 Fitted contours also preserve sampled clearance between nearby parts of the same boundary that are far apart along the curve. If fitting consumes more than 0.75 working pixels of that separation, the chain retries at tighter tolerance, dropping an incompatible guide if necessary. Each retry keeps the initial local search extent so tightening cannot hide the pair that rejected the fit. This protects some narrow spiral openings even when both edges satisfy their individual distance tolerances. It can add segments; sparse samples, unresolved subpixel gaps and tapered tips still limit reconstruction.
 
@@ -52,11 +62,11 @@ Auto paint counts, corner recognition, primitive recognition, and background rem
 
 An intentional narrow color strip touching transparency can be indistinguishable from an opaque compositing fringe. Auto can omit such edge-only accents; set the known paint count to retain them. Conversely, a fringe whose RGB remains consistent through an alpha ramp can resemble a real outline and still be recovered. Transparency is separate from the reported paint count: blue, orange, and transparency require two paints.
 
-Gradients, partial-opacity vector paints, font recovery, and subpixel details without surviving evidence are unsupported. Transparent input uses a 50% alpha cutoff for topology, then alpha coverage to estimate the contour. Coverage inversion assumes approximately sRGB, square-pixel antialiasing; other filters and gamma conventions can change the fit. JPEG variation is treated as generic noise; there is no watermark detector. Safety limits are 4 million working pixels, 5,000 regions, and 450,000 boundary edges.
+Gradients, partial-opacity vector paints, font recovery, and subpixel details without surviving evidence are unsupported. Transparent input uses a 50% alpha cutoff for topology, then alpha coverage to estimate the contour. Coverage inversion assumes approximately sRGB, square-pixel antialiasing; other filters and gamma conventions can change the fit. JPEG variation is treated as generic noise; there is no watermark detector. Safety limits are 4 million working pixels, 20,000 regions, and 450,000 boundary edges. These independent budgets do not guarantee a particular runtime or memory use; complex curves can require substantial validation work even below them. Tracing remains cancelable through the existing worker.
 
 ## Development and verification
 
-`tracer.js` contains the self-contained `createTracer()` factory with no DOM dependency. The browser adapter in `index.html` runs the same core in a worker and exposes `window.FlatLogoTracer.trace(image, options, progress)` for synchronous integrations. Image input is `{width, height, data}` with RGBA bytes; options and tolerances use working pixels. `outputWidth` and `outputHeight` set the exported dimensions.
+`tracer.js` contains the self-contained `createTracer()` factory with no DOM dependency. The browser adapter in `index.html` runs the same core in a worker and exposes `window.FlatLogoTracer.trace(image, options, progress)` for synchronous integrations. Image input is `{width, height, data}` with RGBA bytes; options and tolerances use working pixels. `outputWidth` and `outputHeight` set the exported dimensions. Invalid output dimensions are rejected before image processing; positive fractional dimensions, numeric strings, and nullish defaults retain their existing behavior.
 
 Run the bundled image and invalid-input regression checks from this directory:
 
@@ -66,6 +76,39 @@ bun tests/test.cjs
 
 The runner also works with Node. It uses bundled RGBA fixtures and checks paint counts, unchanged input bytes, finite SVG output, numerical topology validation, and independently closed and connected boundary rings. Cases cover primitives, overlapping objects, thin outlines, small accents, transparency, concave polygons, rounded shapes, organic curves, holes, narrow bridges, JPEG noise, remote-paint antialias decoding, large palettes, four-way contacts, tiny pixels, and seeded pixel-art fields. The original [edge_artifacts fixture](tests/fixtures/edge_artifacts.png) adds opaque RGB fringes and a short false-color strip to clean geometric artwork; it checks the recovered circle's center and radius and the diagonal polygon's straight sides and vertices. Separate transparent outline and isolated accent fixtures protect real thin paints. Regenerate these three PNG/RGBA pairs with
 `bun tests/artwork.js`. No copyrighted reference artwork is used in the tests. Fixture checks establish behavior on those inputs, not universal reconstruction accuracy.
+
+The supplied `source.png` is now stored at `tests/fixtures/source.png` with the user's permission. A frozen 1024-pixel high-quality working raster makes the default-size Auto regression reproducible without browser dependencies. The original image, derivative provenance, source-detail controls, and native-resolution limitation are documented in [tests/SOURCE_IMAGE.md](tests/SOURCE_IMAGE.md). Run the source and genuine-complexity regressions from this directory:
+
+```sh
+node tests/source-image.test.cjs
+node tests/source-helix.test.cjs
+node tests/closed-span-crossings.test.cjs
+node tests/junction-repair.test.cjs
+node tests/cubic-fidelity.test.cjs
+node tests/api-dimensions.test.cjs
+node tests/auto-region-limit.test.cjs
+node tests/region-capacity.test.cjs
+node tests/ring-ownership.test.cjs
+node tests/validation-search.test.cjs
+node tests/worker-factory.test.cjs
+```
+
+New curve regressions can also be run with Bun:
+
+```sh
+bun test tests/cubic-loops.test.js tests/span-crossings.test.js
+```
+
+The source regression uses frozen 1024 working pixels while retaining 1254-pixel SVG output dimensions. The explicit two-color regression requires zero exact and whole-chain sample fallbacks across the complete image, and independently checks 93 ink points, 40 enclosed-paper points, and 15 distinct enclosed faces around the reported helix. The Auto regression adds two previously lost ink points and two previously opened white holes to its original controls. Recovery remains limited by surviving source evidence; one documented Auto ink point is still unresolved. See [tests/SOURCE_IMAGE.md](tests/SOURCE_IMAGE.md) for the fixture provenance and source-regression limits.
+
+The source benchmark uses only Node built-ins and the bundled fixture decoder. Run each measurement in a fresh process while other tracing jobs are idle. Peak RSS is process memory, not a browser memory budget.
+
+```sh
+node tests/source-benchmark.cjs --native --colors=0
+node tests/source-benchmark.cjs --working --colors=2 --svg=result.svg
+```
+
+The benchmark accepts `--debug` to include label and component fingerprints; keep debug disabled for the same workload as the browser worker. It records the core, input and SVG hashes, options, runtime, stage timings, and peak RSS.
 
 Run the focused contour and similar-paint regressions from the repository root:
 

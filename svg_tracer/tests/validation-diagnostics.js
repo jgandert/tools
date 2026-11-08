@@ -5,9 +5,9 @@ import { createDarkBoundaryDiagnostics } from "./dark-boundary-diagnostics.js";
 // Instrument only the study's in-memory copy. The ordinary campaign run is an
 // independent output-equivalence check, and production does not expose stages.
 export function instrumentValidationCore(core) {
-    const replace = (before, after) => {
-        if (core.split(before).length !== 2) throw Error(`Diagnostic hook is not unique: ${before}`);
-        core = core.replace(before, after);
+    const replace = (before, after, count = 1) => {
+        if (core.split(before).length !== count + 1) throw Error(`Unexpected diagnostic hook count (expected ${count}): ${before}`);
+        core = core.split(before).join(after);
     };
     replace("const sourceAliases=[];", "globalThis.validationStages.initialPalette=palette.map(p=>p.hex);globalThis.validationStages.sampleWeights=Array.from({length:n},(_,p)=>opaque[p]?sampleWeight(p):0);globalThis.validationStages.initialLabels=Array.from({length:n},(_,p)=>{if(!opaque[p])return -1;const v=lab(rgb[3*p],rgb[3*p+1],rgb[3*p+2]);let best=Infinity,index=0;palette.forEach((paint,i)=>{const d=cd(v,paint.lab);if(d<best){best=d;index=i;}});return index;});const sourceAliases=[];");
     replace("const modes=palette.map(()=>null);", "globalThis.validationStages.recoveryBins=[...bins.values()].map(bin=>({rgb:bin.s.map(v=>Math.round(v/bin.count)),count:bin.count,core:bin.core,footprintSupport:bin.footprintSupport,alphaSupport:bin.alphaSupport,eligible:bin.core>=1&&bin.count>=6||bin.count>=18}));globalThis.validationStages.recoveryAdmissions=[];const modes=palette.map(()=>null);");
@@ -22,14 +22,14 @@ export function instrumentValidationCore(core) {
     replace("const folded=foldSourceAliases", "globalThis.validationStages.correctedLabels=Array.from(labels);const folded=foldSourceAliases");
     replace("const started=Date.now();", "globalThis.validationStages={events:[]};const started=Date.now();");
     replace("progress('Separating regions and removing small speckles');", "globalThis.validationStages.preparedRGB=Array.from(rgb);progress('Separating regions and removing small speckles');");
-    replace("const mark=(a,b)=>{bad.add(a);if(b!==undefined)bad.add(b);};", "const mark=(a,b,reason='unclassified',point=null)=>{bad.add(a);if(b!==undefined)bad.add(b);globalThis.validationStages.events.push({reason,point,chains:[a,...(b===undefined?[]:[b])],states:[a,...(b===undefined?[]:[b])].map(id=>({id,retry:g.chains[id].retry,tolerance:g.chains[id].fitTolerance,exact:!!g.chains[id].exact}))});};");
+    replace("const mark=(a,b)=>{bad.add(a);if(b!==undefined)bad.add(b);};", "const mark=(a,b,reason='unclassified',point=null)=>{bad.add(a);if(b!==undefined)bad.add(b);globalThis.validationStages.events.push({reason,point,chains:[a,...(b===undefined?[]:[b])],states:[a,...(b===undefined?[]:[b])].map(id=>({id,retry:g.chains[id].retry,tolerance:g.chains[id].fitTolerance,exact:!!g.chains[id].exact}))});};", 2);
     replace("))mark(c.id);", "))mark(c.id,undefined,'bounds');");
-    replace("if(segmentConflict(a,b,t.a,t.b,allowed))mark(c.id,t.c);", "if(segmentConflict(a,b,t.a,t.b,allowed))mark(c.id,t.c,'intersection',{a,b,c:t.a,d:t.b});");
-    replace("mark(c.id,t.c);\n              uncertain", "mark(c.id,t.c,'flattening uncertainty',{a,b,c:t.a,d:t.b});\n              uncertain");
+    replace("if(segmentConflict(a,b,ta,tb,allowed))mark(c.id,other.id);", "if(segmentConflict(a,b,ta,tb,allowed))mark(c.id,other.id,'intersection',{a,b,c:ta,d:tb});");
+    replace("mark(c.id,other.id);\n              uncertain", "mark(c.id,other.id,'flattening uncertainty',{a,b,c:ta,d:tb});\n              uncertain");
     replace("if(!q){mark(c.id);continue;}", "if(!q){mark(c.id,undefined,'collapsed junction');continue;}");
     replace("entries.forEach(e=>mark(e.id));", "entries.forEach(e=>mark(e.id,undefined,'junction order'));");
     replace("if(signed<=1e-8)g.loops[f.id].flat().forEach(h=>mark(h>>1));", "if(signed<=1e-8)g.loops[f.id].flat().forEach(h=>mark(h>>1,undefined,'face area',f.witness));");
-    replace("if(inside(p,swept)){mark(c.id);localized=true;}", "if(inside(p,swept)){mark(c.id,undefined,'witness swept band',p);localized=true;}");
+    replace("if(insideSwept(p,c.raw,c.flat)){mark(c.id);localized=true;}", "if(insideSwept(p,c.raw,c.flat)){mark(c.id,undefined,'witness swept band',p);localized=true;}");
     replace("if(!localized)g.loops[id][j].forEach(h=>mark(h>>1));", "if(!localized)g.loops[id][j].forEach(h=>mark(h>>1,undefined,'witness loop',p));");
     replace("if(!found)g.loops[f.id].flat().forEach(h=>mark(h>>1));", "if(!found)g.loops[f.id].flat().forEach(h=>mark(h>>1,undefined,'witness face',p));");
     return core;

@@ -22,10 +22,14 @@ function createTracer() {
   const reverse = s => s.type === 'L' ? line(s.b, s.a) : s.type === 'C' ?
     {type: 'C', a: s.b, c1: s.c2, c2: s.c1, b: s.a} :
     {...s, a: s.b, b: s.a, sweep: 1 - s.sweep, start: s.start + s.delta, delta: -s.delta};
-  function project(p, a, b) {
-    const den = dist2(a,b), t = den ? clamp(((p.x-a.x)*(b.x-a.x)+(p.y-a.y)*(b.y-a.y))/den,0,1) : 0;
-    const q = {x:a.x+t*(b.x-a.x),y:a.y+t*(b.y-a.y)};
-    return {q,t,d:dist(p,q)};
+  function segmentDistance(p,a,b,projection=null) {
+    const den=dist2(a,b),t=den?clamp(((p.x-a.x)*(b.x-a.x)+(p.y-a.y)*(b.y-a.y))/den,0,1):0;
+    const x=a.x+t*(b.x-a.x),y=a.y+t*(b.y-a.y);
+    if(projection){projection.q.x=x;projection.q.y=y;projection.t=t;}
+    return Math.sqrt(sq(p.x-x)+sq(p.y-y));
+  }
+  function project(p,a,b) {
+    const result={q:{}};result.d=segmentDistance(p,a,b,result);return result;
   }
   function solve(A, b) {
     const n=b.length, m=A.map((r,i)=>[...r,b[i]]);
@@ -611,6 +615,82 @@ function createTracer() {
     }
     return changes.length;
   }
+  function recoverAutoFragments(data, labels, ids, faces, palette, w, h, noise, mixtures) {
+    // A large line drawing can give Auto several paints along the same RGB
+    // mixture line. Resolve only crowded Auto traces, retaining
+    // actual source-color interiors and marks isolated from either mixture side.
+    const mixtureError=3*sq(Math.max(2,noise*.5)),sourceError=3*sq(Math.max(7,noise));
+    const proposals=palette.map((paint,color)=>{
+      const pairs=[];
+      for(let a=0;a<palette.length;a++)for(let b=a+1;b<palette.length;b++) {
+        if(a===color||b===color)continue;
+        const A=palette[a].rgb,D=palette[b].rgb.map((v,c)=>v-A[c]),den=D.reduce((s,v)=>s+v*v,0);
+        if(!den)continue;
+        const t=paint.rgb.reduce((s,v,c)=>s+(v-A[c])*D[c],0)/den;
+        if(t<=.03||t>=.97)continue;
+        const error=paint.rgb.reduce((s,v,c)=>s+sq(v-A[c]-t*D[c]),0);
+        if(error<=mixtureError)pairs.push({a,b,A,D,den,t,mask:((1<<a)|(1<<b))>>>0});
+      }
+      return pairs.sort((a,b)=>b.den-a.den);
+    });
+    if(!proposals.some(pairs=>pairs.length))return {pixels:0,fragments:0};
+    const ownError=new Float64Array(faces.length);
+    const supported=new Uint8Array(faces.length),neighbors=new Uint32Array(faces.length),compatible=new Uint8Array(faces.length).fill(1);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++) {
+      const p=y*w+x,id=ids[p],color=labels[p];
+      if(color<0||!proposals[color].length)continue;
+      if(data[p*4+3]!==255)compatible[id]=0;
+      for(let c=0;c<3;c++)ownError[id]+=sq(data[p*4+c]-palette[color].rgb[c]);
+      // Use the antialias decoder's initial three-pixel search radius. Both
+      // endpoints must occur locally; a remote palette extreme cannot justify
+      // repainting a local gray mark.
+      for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++) {
+        if((!dx&&!dy)||x+dx<0||x+dx>=w||y+dy<0||y+dy>=h)continue;
+        const other=labels[p+dy*w+dx];
+        if(other>=0&&other!==color)neighbors[id]|=1<<other;
+      }
+      if(supported[id]||!x||!y||x+1>=w||y+1>=h)continue;
+      let core=true,coreError=0;
+      for(let dy=-1;dy<=1&&core;dy++)for(let dx=-1;dx<=1;dx++) {
+        const q=p+dy*w+dx;
+        if(ids[q]!==id||data[q*4+3]!==255){core=false;break;}
+        for(let c=0;c<3;c++)coreError+=sq(data[q*4+c]-palette[color].rgb[c]);
+      }
+      // RMS source support allows noise in a real small accent; requiring an
+      // exactly flat or single-bin core would erase those legitimate paints.
+      if(core&&coreError<=27*sq(Math.max(7,noise*1.2)))supported[id]=1;
+    }
+    // A coherent thin paint may have no 3x3 interior at all. Preserve its
+    // original color evidence over the whole component, including noisy strokes.
+    for(const face of faces)if(ownError[face.id]<=face.size*3*sq(Math.max(7,noise*1.2)))supported[face.id]=1;
+    const selected=faces.map(face=>face.color>=0&&!supported[face.id]&&compatible[face.id]?
+      proposals[face.color].find(pair=>((neighbors[face.id]&pair.mask)>>>0)===pair.mask):null);
+    // Validate the complete source fragment before aliasing. A single opaque
+    // subset must not split a translucent or off-mixture component into pieces.
+    for(let p=0;p<labels.length;p++) {
+      const id=ids[p],proposal=selected[id];
+      if(!proposal||!compatible[id])continue;
+      const {A,D,den}=proposal;
+      const t=clamp((D[0]*(data[p*4]-A[0])+D[1]*(data[p*4+1]-A[1])+D[2]*(data[p*4+2]-A[2]))/den,0,1);
+      const error=sq(data[p*4]-A[0]-t*D[0])+sq(data[p*4+1]-A[1]-t*D[1])+sq(data[p*4+2]-A[2]-t*D[2]);
+      if(error>sourceError)compatible[id]=0;
+    }
+    const targets=new Int16Array(faces.length).fill(-1);
+    let fragments=0,pixels=0;
+    for(const face of faces) {
+      const proposal=selected[face.id];
+      if(proposal&&compatible[face.id]) {
+        targets[face.id]=proposal.t<.5?proposal.a:proposal.b;
+        fragments++;
+      }
+    }
+    if(!fragments)return {pixels,fragments};
+    // Alias a whole component to its dominant endpoint. Splitting its pixels
+    // by raw RGB here would invent new disconnected fragments during recovery.
+    for(let p=0;p<labels.length;p++)if(targets[ids[p]]>=0){labels[p]=targets[ids[p]];pixels++;}
+    for(const [pixel,mixture] of mixtures)if(targets[ids[pixel]]>=0||mixture.paints.some(paint=>targets[ids[paint.seed]]>=0))mixtures.delete(pixel);
+    return {pixels,fragments};
+  }
   function components(labels,w,h) {
     const n=w*h,ids=new Int32Array(n).fill(-1),queue=new Int32Array(n),list=[];
     for(let p=0;p<n;p++)if(ids[p]<0) {
@@ -709,7 +789,12 @@ function createTracer() {
       }while(he!==h0);
       if(face>=0)loops[face].push(ring);
     }
-    return {nodes,edges,chains,loops,w,h};
+    // Only junctions and chain starts remain useful after graph construction.
+    // Raw contours retain their immutable points, without retaining every
+    // lattice node, its incident-edge list, and the full edge objects.
+    const endpoints=new Map();
+    for(const c of chains){endpoints.set(c.a.id,c.a);endpoints.set(c.b.id,c.b);}
+    return {nodes:endpoints,edgeCount:edges.length,chains,loops,w,h};
   }
   function sampleBoundaries(g,rgb,faces,palette,alpha,mixtures=new Map()) {
     // The integer-grid contour determines topology, not the curve's control
@@ -796,7 +881,7 @@ function createTracer() {
     const keep=new Uint8Array(p.length);keep[0]=keep[p.length-1]=1;
     const stack=[[0,p.length-1]];
     while(stack.length){const [a,b]=stack.pop();let md=tol,k=-1;
-      for(let i=a+1;i<b;i++){const d=project(p[i],p[a],p[b]).d;if(d>md){md=d;k=i;}}
+      for(let i=a+1;i<b;i++){const d=segmentDistance(p[i],p[a],p[b]);if(d>md){md=d;k=i;}}
       if(k>=0){keep[k]=1;stack.push([a,k],[k,b]);}}
     return [...keep.keys()].filter(i=>keep[i]);
   }
@@ -817,18 +902,7 @@ function createTracer() {
     return point(a.x+t*a.dx,a.y+t*a.dy);
   }
   const polylineTrees=new WeakMap();
-  function nearestPolyline(q,p,pointOut=null) {
-    if(p.length<80) {
-      let d=Infinity;
-      for(let i=1;i<p.length;i++) {
-        const hit=project(q,p[i-1],p[i]);
-        if(hit.d<d) {
-          d=hit.d;
-          if(pointOut){pointOut.x=hit.q.x;pointOut.y=hit.q.y;}
-        }
-      }
-      return d;
-    }
+  function polylineTree(p) {
     let root=polylineTrees.get(p);
     if(!root) {
       const build=(lo,hi)=>{
@@ -839,13 +913,29 @@ function createTracer() {
       };
       root=build(0,p.length-1);polylineTrees.set(p,root);
     }
+    return root;
+  }
+  function nearestPolyline(q,p,pointOut=null) {
+    const hit=pointOut?{q:{}}:null;
+    if(p.length<80) {
+      let d=Infinity;
+      for(let i=1;i<p.length;i++) {
+        const candidate=segmentDistance(q,p[i-1],p[i],hit);
+        if(candidate<d) {
+          d=candidate;
+          if(pointOut){pointOut.x=hit.q.x;pointOut.y=hit.q.y;}
+        }
+      }
+      return d;
+    }
+    const root=polylineTree(p);
     let best=Infinity,bestIndex=Infinity;
     const distance=n=>sq(Math.max(n.minX-q.x,0,q.x-n.maxX))+sq(Math.max(n.minY-q.y,0,q.y-n.maxY));
     const visit=n=>{
       if(distance(n)>best)return;
       if(!n.left) {
         for(let i=n.lo+1;i<=n.hi;i++) {
-          const hit=project(q,p[i-1],p[i]),d2=hit.d*hit.d;
+          const d=segmentDistance(q,p[i-1],p[i],hit),d2=d*d;
           if(d2<best||(pointOut&&d2===best&&i-1<bestIndex)) {
             best=d2;bestIndex=i-1;
             if(pointOut){pointOut.x=hit.q.x;pointOut.y=hit.q.y;}
@@ -882,7 +972,7 @@ function createTracer() {
       for(let j=0;j<inds.length;j++){
         const i0=inds[(j+inds.length-1)%inds.length],i1=inds[(j+1)%inds.length];let pts=[];
         for(let t=i0;;t=(t+1)%(r.length-1)){pts.push(r[t]);if(t===i1)break;}
-        if(pts.every(q=>project(q,r[i0],r[i1]).d<=seedTol)){inds.splice(j,1);changed=true;break;}
+        if(pts.every(q=>segmentDistance(q,r[i0],r[i1])<=seedTol)){inds.splice(j,1);changed=true;break;}
       }
     }
     if(inds.length<3||inds.length>maxSides)return null;
@@ -1157,6 +1247,23 @@ function createTracer() {
     }))accepted.push(a);
     return accepted.map(v=>v.i).sort((a,b)=>a-b);
   }
+  function cubicSelfIntersects(s) {
+    // A small cubic loop can lie entirely inside its distance tolerance. It
+    // must be rejected here so subdivision repairs only that fitting span,
+    // rather than making topology validation discard the complete chain.
+    // For distinct parameters u,v, divide B(u)-B(v) by u-v and solve for
+    // their sum and product. Keep the global checks for degenerate cases.
+    const ax=-s.a.x+3*s.c1.x-3*s.c2.x+s.b.x,ay=-s.a.y+3*s.c1.y-3*s.c2.y+s.b.y;
+    const bx=3*s.a.x-6*s.c1.x+3*s.c2.x,by=3*s.a.y-6*s.c1.y+3*s.c2.y;
+    const cx=3*(s.c1.x-s.a.x),cy=3*(s.c1.y-s.a.y);
+    const den=ax*by-ay*bx;
+    if(Math.abs(den)<1e-12)return false;
+    const sum=-(ax*cy-ay*cx)/den,product=sum*sum-(bx*cy-by*cx)/den;
+    const discriminant=sum*sum-4*product;
+    if(discriminant<=1e-12)return false;
+    const root=Math.sqrt(discriminant),u=(sum-root)/2,v=(sum+root)/2;
+    return u>=0&&v<=1&&!(same(s.a,s.b)&&u<1e-8&&v>1-1e-8);
+  }
   function constrainedCubic(p,ta,tb,tol) {
     const a=p[0],b=p[p.length-1],ts=[0];let length=0;
     for(let i=1;i<p.length;i++){length+=dist(p[i-1],p[i]);ts.push(length);}
@@ -1174,6 +1281,7 @@ function createTracer() {
       let u=det>1e-12?(ra*bb-rb*ab)/det:0,v=det>1e-12?(rb*aa-ra*ab)/det:0;
       if(u<1e-5||v<1e-5||u>length*2||v>length*2)u=v=length/3;
       const s={type:'C',a,b,c1:point(a.x+u*ta.x,a.y+u*ta.y),c2:point(b.x-v*tb.x,b.y-v*tb.y)};
+      const simple=!cubicSelfIntersects(s);
       // Newton projection, bounded monotonically. Parameters are a fitting aid,
       // while acceptance below measures the actual spatial error in BOTH directions.
       for(let i=1;i<p.length-1;i++) {
@@ -1193,10 +1301,12 @@ function createTracer() {
       }
       let error=0,split=Math.floor(p.length/2);
       for(let i=1;i<p.length-1;i++){const d=dist2(p[i],cubicPoint(s,ts[i]));if(d>error){error=d;split=i;}}
-      if(!best||error<best.error)best={segment:s,error,split};
-      if(error<=tol*tol&&bidirectionalError(p,flatten([s],.025),tol))return {...best,segment:s,ok:true};
+      if(!best||(simple&&!best.simple)||(simple===best.simple&&error<best.error))best={segment:s,error,split,simple};
+      // Match the assembled chain's precision. A coarser chord can miss a
+      // small reverse-distance excursion, which would discard the whole fit.
+      if(simple&&error<=tol*tol&&bidirectionalError(p,flatten([s],.0125),tol))return {...best,segment:s,ok:true};
     }
-    if(best&&bidirectionalError(p,flatten([best.segment],.025),tol))best.ok=true;
+    if(best?.simple&&bidirectionalError(p,flatten([best.segment],.0125),tol))best.ok=true;
     return best;
   }
   function fitSmoothSpan(p,tol,ta,tb) {
@@ -1242,7 +1352,7 @@ function createTracer() {
     if(!segments.length)return [];
     const out=[segments[0].a];
     const bez=(a,c1,c2,b,depth)=>{
-      if(depth>=18||Math.max(project(c1,a,b).d,project(c2,a,b).d)<=epsilon){out.push(b);return;}
+      if(depth>=18||Math.max(segmentDistance(c1,a,b),segmentDistance(c2,a,b))<=epsilon){out.push(b);return;}
       const mid=(p,q)=>({x:(p.x+q.x)/2,y:(p.y+q.y)/2});
       const u=mid(a,c1),v=mid(c1,c2),w=mid(c2,b),s=mid(u,v),t=mid(v,w),m=mid(s,t);
       bez(a,u,s,m,depth+1);bez(m,t,w,b,depth+1);
@@ -1291,7 +1401,7 @@ function createTracer() {
       const hi=indices[i];
       const segment=line(p[lo],p[hi]);
       if(dist(segment.a,segment.b)<12)continue;
-      const residual=p.slice(lo,hi+1).reduce((sum,q)=>sum+sq(project(q,segment.a,segment.b).d),0)/(hi-lo+1);
+      const residual=p.slice(lo,hi+1).reduce((sum,q)=>sum+sq(segmentDistance(q,segment.a,segment.b)),0)/(hi-lo+1);
       if(residual>sq(Math.min(tol,.04)))continue;
       if(!tangentsAgree(segment,lo===0?ta:null,hi===p.length-1?tb:null))continue;
       const previous=spans[spans.length-1];
@@ -1400,7 +1510,7 @@ function createTracer() {
     if(p.length<2)return [];
     if(allowSimple) {
       const straight=line(p[0],p[p.length-1]);
-      if(p.every(q=>project(q,p[0],p[p.length-1]).d<=tol)&&tangentsAgree(straight,ta,tb))return [straight];
+      if(p.every(q=>segmentDistance(q,p[0],p[p.length-1])<=tol)&&tangentsAgree(straight,ta,tb))return [straight];
       const arc=arcFit(p,tol);if(arc&&tangentsAgree(arc,ta,tb))return [arc];
       const ellipse=ellipseArcFit(p,tol);if(ellipse&&tangentsAgree(ellipse,ta,tb))return [ellipse];
     }
@@ -1458,7 +1568,7 @@ function createTracer() {
     for(let i=1;i<indices.length;i++)out.push(...fitSpan(p.slice(indices[i-1],indices[i]+1),tol,i===1?ta:null,i===indices.length-1?tb:null,true,preserveStraight));
     return out;
   }
-  function fitClosed(p,tol,free=true,preserveStraight=false) {
+  function fitClosed(p,tol,free=true,preserveStraight=false,ta=null,tb=null) {
     let corners=findCorners(p,true,tol);
     if(!free&&!corners.includes(0))corners.unshift(0);
     const n=p.length-1;
@@ -1470,9 +1580,9 @@ function createTracer() {
         const pts=q.slice(indices[i-1],indices[i]+1);
         if(same(pts[0],pts[pts.length-1])) {
           let k=1;for(let j=2;j<pts.length-1;j++)if(dist2(pts[0],pts[j])>dist2(pts[0],pts[k]))k=j;
-          const t=tangentAt(pts,k),left=fitSpan(pts.slice(0,k+1),tol,null,t,false,preserveStraight),right=fitSpan(pts.slice(k),tol,t,null,false,preserveStraight);
+          const t=tangentAt(pts,k),left=fitSpan(pts.slice(0,k+1),tol,ta,t,false,preserveStraight),right=fitSpan(pts.slice(k),tol,t,tb,false,preserveStraight);
           if(right.length)right[0].smoothStart=true;out.push(...left,...right);
-        } else out.push(...fitSpan(pts,tol,null,null,true,preserveStraight));
+        } else out.push(...fitSpan(pts,tol,i===1?ta:null,i===indices.length-1?tb:null,true,preserveStraight));
       }
       return out;
     }
@@ -1652,6 +1762,84 @@ function createTracer() {
     }
     return true;
   }
+  function repairSpanCrossings(p,segments,tol) {
+    // A closed contour can have the same local span crossings as an open one.
+    // Match its fitted start before mapping sample intervals; corner detection
+    // may rotate a free loop. A shared seam is adjacent, just like other joins.
+    if(!segments.length)return segments;
+    const closed=p.length>2&&same(p[0],p[p.length-1]);
+    if(closed&&!same(segments[0].a,p[0])) {
+      const start=p.findIndex(q=>same(q,segments[0].a));
+      if(start<0)return segments;
+      p=p.slice(start,-1).concat(p.slice(0,start+1));
+    }
+    const crossings=records=>{
+      const edges=[],hash=new Map(),bad=new Set(),cell=12;
+      for(let index=0;index<records.length;index++) {
+        const flat=flatten([records[index].segment],.001);
+        for(let k=1;k<flat.length;k++) {
+          const a=flat[k-1],b=flat[k];if(dist2(a,b)<1e-18)continue;
+          edges.push({a,b,index,curved:records[index].segment.type!=='L'});
+        }
+      }
+      for(let id=0;id<edges.length;id++) {
+        const edge=edges[id],{a,b,index}=edge,margin=.0021;
+        const xmin=Math.floor((Math.min(a.x,b.x)-margin)/cell),xmax=Math.floor((Math.max(a.x,b.x)+margin)/cell);
+        const ymin=Math.floor((Math.min(a.y,b.y)-margin)/cell),ymax=Math.floor((Math.max(a.y,b.y)+margin)/cell),seen=new Set();
+        for(let y=ymin;y<=ymax;y++)for(let x=xmin;x<=xmax;x++) {
+          const key=x+','+y,bin=hash.get(key)||[];
+          for(const other of bin)if(!seen.has(other)) {
+            seen.add(other);const e=edges[other];
+            if(Math.max(a.x,b.x)+margin<Math.min(e.a.x,e.b.x)||Math.max(e.a.x,e.b.x)+margin<Math.min(a.x,b.x)||
+              Math.max(a.y,b.y)+margin<Math.min(e.a.y,e.b.y)||Math.max(e.a.y,e.b.y)+margin<Math.min(a.y,b.y))continue;
+            const adjacent=other===id-1||(closed&&id===edges.length-1&&other===0);
+            if(segmentConflict(a,b,e.a,e.b,adjacent)||(!adjacent&&(edge.curved||e.curved)&&
+              Math.min(segmentDistance(a,e.a,e.b),segmentDistance(b,e.a,e.b),segmentDistance(e.a,a,b),segmentDistance(e.b,a,b))<(edge.curved?.001:0)+(e.curved?.001:0)+.0001)) {
+              bad.add(index);bad.add(e.index);
+            }
+          }
+          if(!hash.has(key))hash.set(key,bin);bin.push(id);
+        }
+      }
+      return bad;
+    };
+    const mapRecords=(ss,start,end,budget)=>{
+      const out=[];let lo=start;
+      for(const segment of ss) {
+        if(!same(segment.a,p[lo]))return null;
+        let hi=lo+1;while(hi<=end&&!same(segment.b,p[hi]))hi++;
+        if(hi>end)return null;
+        out.push({segment,lo,hi,budget});lo=hi;
+      }
+      return lo===end?out:null;
+    };
+    let records=mapRecords(segments,0,p.length-1,tol);
+    // Projected support endpoints have different evidence; leave those fits
+    // to the existing graph repair rather than guessing a sample interval.
+    if(!records)return segments;
+    for(let pass=0;pass<6;pass++) {
+      const bad=crossings(records);if(!bad.size)return records.map(r=>r.segment);
+      const next=[];let changed=false;
+      for(let i=0;i<records.length;i++) {
+        const r=records[i];
+        if(!bad.has(i)||r.hi-r.lo<=1){next.push(r);continue;}
+        // Split the implicated evidence interval, so repeated fitting cannot
+        // retain a tiny cusp or fold while unrelated curves stay intact.
+        const budget=r.budget/2,mid=Math.floor((r.lo+r.hi)/2),t=tangentAt(p,mid,Math.min(8,Math.max(2,(r.hi-r.lo)/4)));
+        const left=fitSpan(p.slice(r.lo,mid+1),budget,segmentTangent(r.segment,true),t,false);
+        const right=fitSpan(p.slice(mid,r.hi+1),budget,t,segmentTangent(r.segment,false),false);
+        if(left[left.length-1].type==='C'&&right[0].type==='C')right[0].smoothStart=true;
+        const ss=left.concat(right);
+        if(ss[0].type==='C')ss[0].smoothStart=r.segment.smoothStart;
+        const replacement=mapRecords(ss,r.lo,r.hi,budget);if(!replacement)return segments;
+        next.push(...replacement);changed=true;
+      }
+      if(!changed)return segments;
+      records=next;
+    }
+    return crossings(records).size?segments:records.map(r=>r.segment);
+  }
+
   function fitChain(c,tol,exact=false,clearanceTolerance=null) {
     tol=Math.min(tol,c.detailTolerance||tol);
     clearanceTolerance??=tol;
@@ -1659,6 +1847,23 @@ function createTracer() {
     let p=(exact?c.raw:c.samples||c.raw).slice();
     const preserveStraight=c.preserveStraight||c.samples===c.raw;
     if(!c.freeLoop){p[0]=c.a.p;p[p.length-1]=c.b.p;}
+    // A long tangent estimate can point across another incident interface at
+    // a tight junction. Tightening distance error alone retains that direction.
+    // On an implicated chain, constrain only departures outside the original
+    // edge's 90-degree sector, using its first coverage-sample link. Those
+    // links stay in disjoint incident sectors; the full graph is checked again.
+    if(!exact&&!c.freeLoop&&c.retry&&c.segments?.length) {
+      for(const start of [true,false]) {
+        const node=start?c.a:c.b;if(node.out.length<3)continue;
+        const last=c.raw.length-1,a=c.raw[start?0:last],b=c.raw[start?1:last-1];
+        const source=unit(b.x-a.x,b.y-a.y),segment=c.segments[start?0:c.segments.length-1];
+        const old=segmentTangent(segment,start),sign=start?1:-1;
+        if(sign*(old.x*source.x+old.y*source.y)<Math.abs(old.x*source.y-old.y*source.x)) {
+          const n=p.length-1,a=p[start?0:n-1],b=p[start?1:n];
+          c[start?'repairTangentA':'repairTangentB']=unit(b.x-a.x,b.y-a.y);
+        }
+      }
+    }
     if(exact)c.segments=rawSegments(p);
     else if(c.curveGuide)c.segments=c.curveGuide;
     else if(c.guide)c.segments=c.guide.slice(1).map((q,i)=>line(c.guide[i],q));
@@ -1680,8 +1885,9 @@ function createTracer() {
           else c.segments=fitClosed(p,tol,true,preserveStraight);
         }
       }
-    } else if(c.closed)c.segments=fitClosed(p,tol,false,preserveStraight);
-    else c.segments=fitOpen(p,tol,c.tangentA,c.tangentB,preserveStraight);
+    } else if(c.closed)c.segments=fitClosed(p,tol,false,preserveStraight,c.repairTangentA,c.repairTangentB);
+    else c.segments=fitOpen(p,tol,c.repairTangentA||c.tangentA,c.repairTangentB||c.tangentB,preserveStraight);
+    if(!exact&&!c.primitive&&!c.guide&&!c.curveGuide)c.segments=repairSpanCrossings(p,c.segments,tol);
     c.flatTolerance=.0125;
     c.flat=flatten(c.segments,c.flatTolerance);
     // The final assembled chain's fidelity is checked too. Safe topology alone
@@ -1711,7 +1917,7 @@ function createTracer() {
   function fitGraph(g,faces,tol,guides=true,exact=false) {
     for(const n of g.nodes.values()){n.p=n.original;n.locked=false;}
     for(const c of g.chains){
-      c.guide=null;c.curveGuide=null;c.guideKind=null;c.primitive=null;c.retry=0;c.tangentA=null;c.tangentB=null;
+      c.guide=null;c.curveGuide=null;c.guideKind=null;c.primitive=null;c.retry=0;c.tangentA=null;c.tangentB=null;c.repairTangentA=null;c.repairTangentB=null;
       c.detailTolerance=tol;
       c.preserveStraight=false;
       if(g.preserveDetails&&!exact) {
@@ -1756,9 +1962,11 @@ function createTracer() {
       for(const id of reset){const n=g.nodes.get(id);n.p=n.original;n.locked=false;}
       progress(`Repairing ${affected.size} boundary chains locally (pass ${passes})`);
       for(const id of affected) {
-        const c=g.chains[id];repaired.add(id);c.guide=null;c.curveGuide=null;c.guideKind=null;c.retry=Math.min(3,c.retry+1);
-        // Tighten the actual fit budget, including any thin-detail cap.
-        fitChain(c,c.fitTolerance/2,c.retry===3);
+        const c=g.chains[id];repaired.add(id);c.guide=null;c.curveGuide=null;c.guideKind=null;c.retry=Math.min(5,c.retry+1);
+        // Coverage samples can pass within .02px of an ownership witness.
+        // Four bounded refinements take the usual .25px detail budget below
+        // that gap before exact fallback; each still passes every graph check.
+        fitChain(c,c.fitTolerance/2,c.retry===5);
       }
       validation=validate(g,faces);
     }
@@ -1774,18 +1982,44 @@ function createTracer() {
     const ab1=cross(a,b,c),ab2=cross(a,b,d),cd1=cross(c,d,a),cd2=cross(c,d,b);
     if(((ab1>tol&&ab2<-tol)||(ab1<-tol&&ab2>tol))&&((cd1>tol&&cd2<-tol)||(cd1<-tol&&cd2>tol)))return true;
     const touches=[];
-    if(Math.abs(ab1)<=tol&&project(c,a,b).d<=tol)touches.push(c);
-    if(Math.abs(ab2)<=tol&&project(d,a,b).d<=tol)touches.push(d);
-    if(Math.abs(cd1)<=tol&&project(a,c,d).d<=tol)touches.push(a);
-    if(Math.abs(cd2)<=tol&&project(b,c,d).d<=tol)touches.push(b);
+    if(Math.abs(ab1)<=tol&&segmentDistance(c,a,b)<=tol)touches.push(c);
+    if(Math.abs(ab2)<=tol&&segmentDistance(d,a,b)<=tol)touches.push(d);
+    if(Math.abs(cd1)<=tol&&segmentDistance(a,c,d)<=tol)touches.push(a);
+    if(Math.abs(cd2)<=tol&&segmentDistance(b,c,d)<=tol)touches.push(b);
     if(!touches.length)return false;
     if(!allowEndpoint)return true;
     // An allowed common vertex must not extend to an overlapping interval.
     return touches.some(p=>!((same(p,a)||same(p,b))&&(same(p,c)||same(p,d))))||
       (touches.some(p=>dist(p,touches[0])>tol));
   }
-  function inside(p,poly) {
-    let yes=false;for(let i=1;i<poly.length;i++){const a=poly[i-1],b=poly[i];if((a.y>p.y)!==(b.y>p.y)&&p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x)yes=!yes;}return yes;
+  function inside(p,poly,reversed=false) {
+    let yes=false;
+    const scan=(lo,hi)=>{
+      for(let i=lo+1;i<=hi;i++){
+        const a=poly[reversed?i:i-1],b=poly[reversed?i-1:i];
+        if((a.y>p.y)!==(b.y>p.y)&&p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x)yes=!yes;
+      }
+    };
+    if(poly.length<80)scan(0,poly.length-1);
+    else {
+      // Reuse the distance-query tree. A horizontal ray cannot cross an edge
+      // whose complete y interval lies above or below the query; the exact
+      // directed-edge test, including its endpoint convention, stays the same.
+      const visit=n=>{
+        if(p.y<n.minY||p.y>=n.maxY)return;
+        if(!n.left)scan(n.lo,n.hi);else{visit(n.left);visit(n.right);}
+      };
+      visit(polylineTree(poly));
+    }
+    return yes;
+  }
+  function insideSwept(p,raw,flat) {
+    // Walk the same closed band as raw + reversed fit + raw start. Avoid
+    // copying long contours for every displaced ownership witness.
+    let yes=inside(p,raw)!==inside(p,flat,true);
+    for(const [a,b] of [[raw[raw.length-1],flat[flat.length-1]],[flat[0],raw[0]]])
+      if((a.y>p.y)!==(b.y>p.y)&&p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x)yes=!yes;
+    return yes;
   }
   function witnesses(ids,w,h,faces,preserveDetails=false,rgb=null,palette=[],noise=0,g=null) {
     const d=new Int32Array(w*h);d.fill(w+h);
@@ -1852,39 +2086,61 @@ function createTracer() {
       }
     }
   }
-  function validate(g,faces,exact=false,allowRefinement=true) {
-    const bad=new Set(),uncertain=new Set(),hash=new Map(),segments=[],cell=12;
+  function validateIntersections(g) {
+    const bad=new Set(),uncertain=new Set(),hash=new Map(),cell=12;
+    const capacity=g.chains.reduce((n,c)=>n+Math.max(0,c.flat.length-1),0);
+    // Dense inputs can validate over 500,000 chords on each retry.
+    // Keep indices and bounds in compact buffers; endpoint objects already
+    // belong to each chain. One stamp per chord suppresses duplicate queries.
+    const chainIds=new Uint32Array(capacity),pointIndices=new Uint32Array(capacity),seen=new Uint32Array(capacity);
+    const minXs=new Float64Array(capacity),minYs=new Float64Array(capacity),maxXs=new Float64Array(capacity),maxYs=new Float64Array(capacity);
+    const curved=g.chains.map(c=>c.segments.some(s=>s.type!=='L'));let checkedSegments=0;
     const mark=(a,b)=>{bad.add(a);if(b!==undefined)bad.add(b);};
+    const outside=p=>p.x< -1e-7||p.y< -1e-7||p.x>g.w+1e-7||p.y>g.h+1e-7;
     for(const c of g.chains){
-      const p=c.flat;
+      const p=c.flat,isCurved=curved[c.id];
       for(let i=1;i<p.length;i++){
         const a=p[i-1],b=p[i];if(dist2(a,b)<1e-18)continue;
-        if([a,b].some(q=>q.x< -1e-7||q.y< -1e-7||q.x>g.w+1e-7||q.y>g.h+1e-7))mark(c.id);
-        const s={a,b,c:c.id,i,n:p.length-1,curved:c.segments.some(s=>s.type!=='L')},id=segments.length,found=new Set();segments.push(s);
+        if(outside(a)||outside(b))mark(c.id);
+        const id=checkedSegments++,minX=Math.min(a.x,b.x),maxX=Math.max(a.x,b.x),minY=Math.min(a.y,b.y),maxY=Math.max(a.y,b.y);
+        chainIds[id]=c.id;pointIndices[id]=i;minXs[id]=minX;maxXs[id]=maxX;minYs[id]=minY;maxYs[id]=maxY;
         const xmin=Math.floor((Math.min(a.x,b.x)-.026)/cell),xmax=Math.floor((Math.max(a.x,b.x)+.026)/cell),ymin=Math.floor((Math.min(a.y,b.y)-.026)/cell),ymax=Math.floor((Math.max(a.y,b.y)+.026)/cell);
         for(let y=ymin;y<=ymax;y++)for(let x=xmin;x<=xmax;x++){
           const key=x+','+y,bin=hash.get(key)||[];
-          for(const j of bin)if(!found.has(j)){
-            found.add(j);const t=segments[j],other=g.chains[t.c];
-            const adjacent=c.id===t.c&&(Math.abs(i-t.i)===1||(c.closed&&((i===1&&t.i===s.n)||(t.i===1&&i===s.n))));
+          for(const j of bin)if(seen[j]!==id+1){
+            seen[j]=id+1;const other=g.chains[chainIds[j]],otherCurved=curved[other.id];
+            // The hash cell is deliberately coarse. Reject pairs whose bounds
+            // are farther apart than the complete curve-flattening margin
+            // before doing endpoint, intersection, and distance calculations.
+            const margin=(isCurved?c.flatTolerance:0)+(otherCurved?other.flatTolerance:0)+.0001;
+            if(maxX+margin<minXs[j]||maxXs[j]+margin<minX||maxY+margin<minYs[j]||maxYs[j]+margin<minY)continue;
+            const previous=pointIndices[j],ta=other.flat[previous-1],tb=other.flat[previous];
+            const adjacent=c.id===other.id&&(Math.abs(i-previous)===1||(c.closed&&((i===1&&previous===p.length-1)||(previous===1&&i===p.length-1))));
             let allowed=adjacent;
-            if(c.id!==t.c){
+            if(c.id!==other.id&&(c.a===other.a||c.a===other.b||c.b===other.a||c.b===other.b)){
               for(const [u,pu] of [[c.a,p[0]],[c.b,p[p.length-1]]])for(const [v,pv] of [[other.a,other.flat[0]],[other.b,other.flat[other.flat.length-1]]])
-                if(u===v&&same(pu,pv)&&(same(a,pu)||same(b,pu))&&(same(t.a,pv)||same(t.b,pv)))allowed=true;
+                if(u===v&&same(pu,pv)&&(same(a,pu)||same(b,pu))&&(same(ta,pv)||same(tb,pv)))allowed=true;
             }
-            if(segmentConflict(a,b,t.a,t.b,allowed))mark(c.id,t.c);
+            if(segmentConflict(a,b,ta,tb,allowed))mark(c.id,other.id);
             // A close pair of chords may be ambiguous at the current precision.
             // Keep the margin tied to each curve's actual flattening bound.
-            else if(!allowed&&(s.curved||t.curved)&&Math.min(project(a,t.a,t.b).d,project(b,t.a,t.b).d,project(t.a,a,b).d,project(t.b,a,b).d)<(s.curved?c.flatTolerance:0)+(t.curved?other.flatTolerance:0)+.0001) {
-              mark(c.id,t.c);
+            else if(!allowed&&(isCurved||otherCurved)&&Math.min(segmentDistance(a,ta,tb),segmentDistance(b,ta,tb),segmentDistance(ta,a,b),segmentDistance(tb,a,b))<(isCurved?c.flatTolerance:0)+(otherCurved?other.flatTolerance:0)+.0001) {
+              mark(c.id,other.id);
               uncertain.add(c.id);
-              uncertain.add(t.c);
+              uncertain.add(other.id);
             }
           }
           if(!hash.has(key))hash.set(key,bin);bin.push(id);
         }
       }
     }
+    return {bad,uncertain,checkedSegments};
+  }
+  function validate(g,faces,exact=false,allowRefinement=true) {
+    // Let each intersection pass release its spatial index before refinement
+    // or ownership checks allocate their own working data.
+    let {bad,uncertain,checkedSegments}=validateIntersections(g);
+    const mark=(a,b)=>{bad.add(a);if(b!==undefined)bad.add(b);};
     // Resolve chord uncertainty locally before changing otherwise valid curves.
     // Any ambiguity remaining after this one refinement still requires repair.
     if(allowRefinement) {
@@ -1896,7 +2152,7 @@ function createTracer() {
         c.flat=flatten(c.segments,c.flatTolerance);
         refined=true;
       }
-      if(refined)return validate(g,faces,exact,false);
+      if(refined)({bad,uncertain,checkedSegments}=validateIntersections(g));
     }
     // Preserve the cyclic order of incident boundaries at every junction.
     const incident=new Map();
@@ -1910,17 +2166,48 @@ function createTracer() {
       if(a.some((id,i)=>id!==b[(off+i)%b.length]))entries.forEach(e=>mark(e.id));
     }
     const models=faces.map(f=>{
-      const rings=g.loops[f.id].map(r=>ringPoints(r,g.chains,'flat')),pts=rings.flat();
+      const rings=g.loops[f.id].map(r=>ringPoints(r,g.chains,'flat'));
       let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-      for(const p of pts){minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y);}
+      const bounds=rings.map(ring=>{
+        const box={minX:Infinity,minY:Infinity,maxX:-Infinity,maxY:-Infinity};
+        for(const p of ring){box.minX=Math.min(box.minX,p.x);box.maxX=Math.max(box.maxX,p.x);box.minY=Math.min(box.minY,p.y);box.maxY=Math.max(box.maxY,p.y);}
+        minX=Math.min(minX,box.minX);maxX=Math.max(maxX,box.maxX);minY=Math.min(minY,box.minY);maxY=Math.max(maxY,box.maxY);
+        return box;
+      });
       const signed=rings.reduce((s,p)=>s+area(p),0);if(signed<=1e-8)g.loops[f.id].flat().forEach(h=>mark(h>>1));
-      return {rings,minX,minY,maxX,maxY};
+      return {rings,bounds,minX,minY,maxX,maxY};
     });
+    // Index individual rings, including background holes. Scanning every face
+    // or every hole for every witness makes separated marks quadratic even
+    // when their bounds immediately reject almost all containment tests.
+    // Each ring is stored once; broad outer rings do not fill a spatial grid.
+    const entries=[];
+    for(let face=0;face<models.length;face++)for(let ring=0;ring<models[face].rings.length;ring++)entries.push({face,ring,...models[face].bounds[ring]});
+    function indexRings(items) {
+      if(!items.length)return null;
+      let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+      for(const item of items){minX=Math.min(minX,item.minX);minY=Math.min(minY,item.minY);maxX=Math.max(maxX,item.maxX);maxY=Math.max(maxY,item.maxY);}
+      if(items.length<=8)return {minX,minY,maxX,maxY,items};
+      const axis=maxX-minX>=maxY-minY?'X':'Y';
+      items.sort((a,b)=>(a['min'+axis]+a['max'+axis])-(b['min'+axis]+b['max'+axis]));
+      const middle=Math.floor(items.length/2);
+      return {minX,minY,maxX,maxY,left:indexRings(items.slice(0,middle)),right:indexRings(items.slice(middle))};
+    }
+    const ringIndex=indexRings(entries);
+    function collectOwners(node,p,owners) {
+      if(!node||p.x<node.minX||p.x>node.maxX||p.y<node.minY||p.y>node.maxY)return;
+      if(node.items) {
+        for(const item of node.items)if(p.x>=item.minX&&p.x<=item.maxX&&p.y>=item.minY&&p.y<=item.maxY&&inside(p,models[item.face].rings[item.ring])) {
+          if(owners.has(item.face))owners.delete(item.face);else owners.add(item.face);
+        }
+      } else {collectOwners(node.left,p,owners);collectOwners(node.right,p,owners);}
+    }
     // Detect vanished features and changed nesting, which intersections alone miss.
     // All faces, including transparent / removed background faces, participate.
+    // The index rejects only impossible ring bounds; even-odd parity is unchanged.
     for(const f of faces)for(const p of [f.witness,...(f.probes||[])]){
-      const owners=[];
-      for(let i=0;i<models.length;i++){const m=models[i];if(p.x<m.minX||p.x>m.maxX||p.y<m.minY||p.y>m.maxY)continue;let yes=false;for(const r of m.rings)if(inside(p,r))yes=!yes;if(yes)owners.push(i);}
+      const ownerSet=new Set();collectOwners(ringIndex,p,ownerSet);
+      const owners=[...ownerSet].sort((a,b)=>a-b);
       if(owners.length!==1||owners[0]!==f.id) {
         // A face can have many unrelated hole boundaries. Blaming all of a
         // background face's loops makes one vanished speck degrade the whole
@@ -1937,8 +2224,8 @@ function createTracer() {
             // avoids blaming an entire body outline for a tiny adjacent sliver.
             let localized=false;
             for(const he of g.loops[id][j]) {
-              const c=g.chains[he>>1],swept=c.raw.concat(c.flat.slice().reverse(),[c.raw[0]]);
-              if(inside(p,swept)){mark(c.id);localized=true;}
+              const c=g.chains[he>>1];
+              if(insideSwept(p,c.raw,c.flat)){mark(c.id);localized=true;}
             }
             if(!localized)g.loops[id][j].forEach(h=>mark(h>>1));
             found=true;
@@ -1947,7 +2234,7 @@ function createTracer() {
         if(!found)g.loops[f.id].flat().forEach(h=>mark(h>>1));
       }
     }
-    return {ok:bad.size===0,bad,models,checkedSegments:segments.length};
+    return {ok:bad.size===0,bad,checkedSegments};
   }
   function segmentString(s) {
     if(s.type==='L')return `L${xy(s.b)}`;
@@ -1961,7 +2248,7 @@ function createTracer() {
     const pts=segments.map(s=>s.a);let changed=true;
     while(changed&&pts.length>3){changed=false;for(let i=0;i<pts.length;i++){
       const a=pts[(i+pts.length-1)%pts.length],b=pts[i],c=pts[(i+1)%pts.length];
-      if(project(b,a,c).d<1e-9){pts.splice(i,1);changed=true;break;}
+      if(segmentDistance(b,a,c)<1e-9){pts.splice(i,1);changed=true;break;}
     }}
     return pts.length<=128?pts:null;
   }
@@ -1995,8 +2282,7 @@ function createTracer() {
       }
       counts.path++;parts.push(`<path fill="${fill}" fill-rule="evenodd" d="${all.map(pathString).join('')}"/>`);
     }
-    const ow=Number(options.outputWidth??g.w),oh=Number(options.outputHeight??g.h);
-    if(!Number.isFinite(ow)||!Number.isFinite(oh)||ow<=0||oh<=0)throw Error('Invalid SVG output dimensions.');
+    const ow=options.outputWidth,oh=options.outputHeight;
     const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${ow}" height="${oh}" viewBox="0 0 ${g.w} ${g.h}">\n${parts.join('\n')}\n</svg>`;
     return {svg,counts};
   }
@@ -2017,19 +2303,35 @@ function createTracer() {
     const opts={colors:0,tolerance:1.25,noise:10,minArea:6,removeBackground:false,preserveDetails:true,smoothJunctions:true,...options};
     for(const key of ['colors','tolerance','noise','minArea'])if(!Number.isFinite(+opts[key]))throw Error(`Invalid ${key}.`);
     opts.colors=clamp(Math.round(opts.colors),0,64);opts.tolerance=clamp(+opts.tolerance,.15,6);opts.noise=clamp(+opts.noise,0,40);opts.minArea=clamp(Math.round(opts.minArea),0,10000);
+    opts.outputWidth=Number(opts.outputWidth??w);opts.outputHeight=Number(opts.outputHeight??h);
+    if(!Number.isFinite(opts.outputWidth)||!Number.isFinite(opts.outputHeight)||opts.outputWidth<=0||opts.outputHeight<=0)throw Error('Invalid SVG output dimensions.');
+    // Keep ambiguous-fragment recovery at its established trigger while allowing
+    // denser source-supported artwork through the independent capacity guard.
+    const autoRecoveryRegions=5000,maxRegions=20000;
+    const regionLimitError=()=>Error(`More than 20,000 regions (${faces.length.toLocaleString('en-US')} detected). Reduce the working size or clean up unwanted speckles.`);
     const started=Date.now();progress('Denoising and finding flat colors');
     const {rgb,opaque,alpha}=prepare(data,w,h,opts.noise),{palette,labels,relabeledPixels:decodedRelabeledPixels=0,uncertainPixels=0,recoveredPaints=0,threePaintPixels=0,weakPaintPixels=0,mixtures=new Map()}=quantize(rgb,opaque,w,h,opts.colors,opts.noise,opts.preserveDetails,alpha,opts.noise>0?data:null);
     progress('Separating regions and removing small speckles');
+    let autoRecovery={pixels:0,fragments:0};
+    if(!opts.colors&&opts.noise>0&&opts.minArea>1) {
+      const {ids,list:faces}=components(labels,w,h);
+      if(faces.length>autoRecoveryRegions) {
+        // Reconcile mixture shades before area cleanup can erase fragments
+        // of one continuous source contour or open its enclosed holes.
+        progress('Resolving mixture-color fragments in Auto');
+        autoRecovery=recoverAutoFragments(data,labels,ids,faces,palette,w,h,opts.noise,mixtures);
+      }
+    }
     const removedPixels=removeSpeckles(labels,w,h,opts.minArea,palette,opts.preserveDetails);
     let {ids,list:faces}=components(labels,w,h);
-    if(faces.length>5000)throw Error('More than 5,000 regions. Increase speckle cleanup or reduce the working size.');
+    if(faces.length>maxRegions)throw regionLimitError();
     const sourceRelabeledPixels=refineSourceOwnership(data,labels,ids,faces,palette,w,h,opts.noise,mixtures);
     if(sourceRelabeledPixels) {
       ({ids,list:faces}=components(labels,w,h));
-      if(faces.length>5000)throw Error('More than 5,000 regions. Increase speckle cleanup or reduce the working size.');
+      if(faces.length>maxRegions)throw regionLimitError();
     }
-    const relabeledPixels=decodedRelabeledPixels+sourceRelabeledPixels;
-    const retainedThreePaintPixels=sourceRelabeledPixels?[...mixtures.values()].filter(mixture=>mixture.paints.length===3).length:threePaintPixels;
+    const relabeledPixels=decodedRelabeledPixels+sourceRelabeledPixels+autoRecovery.pixels;
+    const retainedThreePaintPixels=sourceRelabeledPixels||autoRecovery.pixels?[...mixtures.values()].filter(mixture=>mixture.paints.length===3).length:threePaintPixels;
     let background=-1;
     if(opts.removeBackground){const border=new Map();const add=p=>{border.set(labels[p],(border.get(labels[p])||0)+1);};
       for(let x=0;x<w;x++){add(x);if(h>1)add((h-1)*w+x);}for(let y=1;y<h-1;y++){add(y*w);if(w>1)add(y*w+w-1);}
@@ -2050,14 +2352,15 @@ function createTracer() {
     if(globalExactFallback)warnings.push('Used exact pixel geometry for the whole network after local repairs were exhausted.');
     else if(fallbackChains)warnings.push(`${fallbackChains} boundary chains required exact pixel geometry; unrelated fits were retained.`);
     else if(repairedChains)warnings.push(`Tightened fits on ${repairedChains} boundary chains; unrelated fits were retained.`);
+    if(autoRecovery.fragments)warnings.push(`Auto merged ${autoRecovery.fragments} mixture-color fragments after the 5,000-region recovery trigger; source-supported interiors and coherent thin marks were retained. Set a known color count to control ambiguous thin shades.`);
     if(!opts.colors)warnings.push('Automatic color count is heuristic; set the known count to retain tiny accents or distinguish similar paints.');
     if(opts.removeBackground)warnings.push(background<0?'Transparency dominates the border; no opaque background paint was removed.':'Removed only border-connected regions of the most frequent border color; enclosed regions of that color remain.');
     const result=exportSVG(g,faces,palette,opts);
     const stats={version:4,width:w,height:h,colors:palette.length,palette:palette.map(p=>p.hex),regions:faces.length,visibleRegions:faces.filter(f=>f.color>=0&&!f.omit).length,
-      recoveredPaints,threePaintPixels:retainedThreePaintPixels,weakPaintPixels,alphaBoundarySamples:g.alphaSamples||0,primitiveGuides:g.primitiveGuides,junctionJoins:g.junctionJoins,
+      recoveredPaints,autoMergedFragments:autoRecovery.fragments,autoMergedPixels:autoRecovery.pixels,threePaintPixels:retainedThreePaintPixels,weakPaintPixels,alphaBoundarySamples:g.alphaSamples||0,primitiveGuides:g.primitiveGuides,junctionJoins:g.junctionJoins,
       featureProbes:faces.reduce((n,f)=>n+(f.probes?.length||0),0),detailLimitedChains:g.chains.filter(c=>c.detailTolerance<tolerance).length,
       sampleFallbackChains:g.chains.filter(c=>c.sampleFallback).length,
-      sharedChains:g.chains.length,rawEdges:g.edges.length,segments:g.chains.reduce((s,c)=>s+c.segments.length,0),removedPixels,relabeledPixels,uncertainPixels,guideCount,tolerance,
+      sharedChains:g.chains.length,rawEdges:g.edgeCount,segments:g.chains.reduce((s,c)=>s+c.segments.length,0),removedPixels,relabeledPixels,uncertainPixels,guideCount,tolerance,
       exactFallback:fallbackChains>0,fallbackChains,minimumTolerance,repairPasses,repairedChains,globalExactFallback,validation:'passed (adaptive flattening within 0.0125 working pixels)',checkedSegments:validation.checkedSegments,
       ...smoothnessReport(g.chains),elements:result.counts,primitives:{circle:g.chains.filter(c=>c.primitive?.type==='circle').length,ellipse:g.chains.filter(c=>c.primitive?.type==='ellipse').length,roundedRect:g.chains.filter(c=>c.primitive?.type==='roundedRect').length},ms:Date.now()-started,warnings};
     const output={svg:result.svg,stats};
