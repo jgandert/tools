@@ -1,0 +1,11 @@
+# Keep agent state, protected paths, and SVG assets out of routine searches.
+.git/
+.agent/
+.claude/
+/motif/examples/
+/motif/game/
+/z non-publish/
+/ISSUES/DO NOT READ/
+*.svg
+/svg_tracer/copyrighted/
+/svg_tracer/tests/fixtures/
