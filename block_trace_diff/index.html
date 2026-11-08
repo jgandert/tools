@@ -268,7 +268,7 @@ function calculateSalesTax(subtotal, region) {
 <script type="module">
     import { BlockTraceDiff } from "./block_trace_diff.js";
 
-    // --- Log Hijacker ---
+    // Log concise comparison summaries without intercepting the console.
     const debugLogEl = document.getElementById("debug-log");
     const appendToDebugLog = (type, message) => {
         const span = document.createElement("span");
@@ -276,34 +276,6 @@ function calculateSalesTax(subtotal, region) {
         span.textContent = `[${new Date().toLocaleTimeString()}] [${type.toUpperCase()}] ${message}\n`;
         debugLogEl.appendChild(span);
         debugLogEl.scrollTop = debugLogEl.scrollHeight;
-    };
-
-    const originalLog = console.log;
-    const originalWarn = console.warn;
-    const originalError = console.error;
-
-    const formatArg = (arg) => {
-        if (typeof arg === "object" && arg !== null) {
-            try {
-                return JSON.stringify(arg, null, 2);
-            } catch (e) {
-                return String(arg);
-            }
-        }
-        return String(arg);
-    };
-
-    console.log = (...args) => {
-        originalLog(...args);
-        appendToDebugLog("log", args.map(formatArg).join(" "));
-    };
-    console.warn = (...args) => {
-        originalWarn(...args);
-        appendToDebugLog("warn", args.map(formatArg).join(" "));
-    };
-    console.error = (...args) => {
-        originalError(...args);
-        appendToDebugLog("error", args.map(formatArg).join(" "));
     };
 
     // --- UI Rendering Pipeline ---
@@ -340,21 +312,37 @@ function calculateSalesTax(subtotal, region) {
         };
     }
 
+    // An empty text box represents no lines. Keep final empty lines in nonempty
+    // text, so a trailing newline remains observable when blank edits are shown.
+    const splitLines = text => text === "" ? [] : text.split("\n");
+
     const triggerDiff = () => {
         if (!diffForm.reportValidity()) return;
 
-        const src = sourceTa.value.split("\n");
-        const targetLines = targetTa.value.split("\n");
-        const engine = getEngine();
-        const rawOps = engine.diff(src, targetLines);
-        console.log(`Computed diff with ${rawOps.length} raw operations:`, rawOps);
-        const chunks = chunkOperations(rawOps);
-        outputEl.innerHTML = "";
-        chunks.forEach(chunk => {
-            if (chunk.type === "MOVE_FROM") return; // Skip MOVE_FROM redundant block; MOVE_TO shows the actual diff
-            renderChunk(chunk);
-        });
+        try {
+            const started = performance.now();
+            const src = splitLines(sourceTa.value);
+            const targetLines = splitLines(targetTa.value);
+            const rawOps = getEngine().diff(src, targetLines);
+            const chunks = chunkOperations(rawOps);
+            const fragment = document.createDocumentFragment();
+            for (const chunk of chunks) {
+                // The destination shows the move and any edits within it.
+                if (chunk.type !== "MOVE_FROM") fragment.appendChild(renderChunk(chunk));
+            }
+            outputEl.replaceChildren(fragment);
+            const message = `${src.length} source lines, ${targetLines.length} target lines; ` +
+                `${rawOps.length} operations in ${(performance.now() - started).toFixed(1)} ms.`;
+            appendToDebugLog("info", message);
+        } catch (error) {
+            appendToDebugLog("error", `Comparison failed: ${error.message}`);
+        }
     };
+
+    diffForm.addEventListener("submit", event => {
+        event.preventDefault();
+        triggerDiff();
+    });
 
     const debouncedDiff = debounce(triggerDiff, 250);
 
@@ -379,9 +367,12 @@ function calculateSalesTax(subtotal, region) {
         const file = inputEl.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
-            textareaEl.value = e.target.result;
+        reader.onload = () => {
+            textareaEl.value = reader.result;
             triggerDiff();
+        };
+        reader.onerror = () => {
+            appendToDebugLog("error", `Could not read ${file.name}.`);
         };
         reader.readAsText(file);
         inputEl.value = "";
@@ -515,7 +506,7 @@ function calculateSalesTax(subtotal, region) {
         pre.appendChild(code);
         details.appendChild(summary);
         details.appendChild(pre);
-        outputEl.appendChild(details);
+        return details;
     }
 </script>
 </body>

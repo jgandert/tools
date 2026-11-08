@@ -1,0 +1,13 @@
+{
+  "name": "block-trace-diff",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 test_block_trace.js review_block_trace.mjs test_diff_properties.mjs",
+    "test:browser": "node test_browser.mjs",
+    "benchmark": "node benchmark_block_trace.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

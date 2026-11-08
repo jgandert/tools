@@ -1,5 +1,4 @@
 import strictAssert from "node:assert/strict";
-import { performance } from "node:perf_hooks";
 import { StringInterner, BlockTraceDiff } from "./block_trace_diff.js";
 
 let passed = 0, failed = 0;
@@ -193,74 +192,6 @@ function createRandom(seed) {
         state = (Math.imul(1664525, state) + 1013904223) >>> 0;
         return Math.floor((state / 4294967296) * n);
     };
-}
-
-// Benchmarks are opt-in; ordinary tests use deterministic work-count checks instead
-// of environment-sensitive timing thresholds. Run: node test_block_trace.js --benchmark
-function runBenchmarks() {
-    const median = values => values.slice().sort((a, b) => a - b)[values.length >> 1];
-    console.log(`Node ${process.version}; milliseconds; median of three measured runs.`);
-    for (let i = 0; i < 4; i++) {
-        const lines = Array.from({ length: 1000 }, (_, j) => `line-${j}`);
-        new BlockTraceDiff().diff(lines, lines.slice());
-    }
-    for (const modified of [false, true]) {
-        for (const n of [2000, 4000, 8000, 16000]) {
-            const totals = [], expansionTimes = [];
-            for (let rep = 0; rep < 3; rep++) {
-                const engine = new BlockTraceDiff();
-                const original = engine._seedAndExpand;
-                engine._seedAndExpand = function(...args) {
-                    const start = performance.now();
-                    const result = original.apply(this, args);
-                    expansionTimes.push(performance.now() - start);
-                    return result;
-                };
-                const source = Array.from({ length: n }, (_, i) => `line-${i}`);
-                const target = source.slice();
-                if (modified) target[n >> 1] = "changed";
-                const start = performance.now();
-                const result = engine.diff(source, target);
-                totals.push(performance.now() - start);
-                strictAssert.equal(result.length, n);
-                strictAssert.equal(result.filter(op => op.type === "REPLACE").length, modified ? 1 : 0);
-            }
-            console.log(JSON.stringify({
-                case: modified ? "nearly-identical-unique" : "identical-unique", linesPerSide: n,
-                totalMs: median(totals), seedExpandMs: median(expansionTimes),
-            }));
-        }
-    }
-    // Isolate run construction and weighted stationary selection, not Myers/output.
-    // maxStitchGap=0 preserves independent exact two-line blocks separated by edits.
-    for (const count of [1000, 2000, 4000, 8000]) {
-        const times = [];
-        for (let rep = 0; rep < 3; rep++) {
-            const engine = new BlockTraceDiff({ maxStitchGap: 0 });
-            const a = Array.from({ length: count }, (_, i) =>
-                [`block-${i}-a`, `block-${i}-b`, `src-${i}`]).flat();
-            const b = Array.from({ length: count }, (_, i) =>
-                [`block-${i}-a`, `block-${i}-b`, `dst-${i}`]).flat();
-            const source = engine._normalizeAndIntern(a);
-            const target = engine._normalizeAndIntern(b);
-            const moves = engine._gapStitching(engine._greedyMasking(engine._seedAndExpand(
-                engine._findAnchors(source, target), source, target)));
-            engine._myersDiff = () => [];
-            engine._buildFinalOutput = () => [];
-            const start = performance.now();
-            engine._fallbackDiffAndReassemble(source, target, moves, a, b);
-            times.push(performance.now() - start);
-        }
-        console.log(JSON.stringify({
-            case: "run-building-and-stationary-selection", moves: count, linesPerSide: count * 3,
-            totalMs: median(times),
-        }));
-    }
-}
-
-if (process.argv.includes("--benchmark")) {
-    runBenchmarks();
-    process.exit(0);
 }
 
 // =============================================================================
@@ -1390,4 +1321,4 @@ if (failures.length > 0) {
 }
 console.log("=".repeat(60));
 
-process.exit(failed > 0 ? 1 : 0);
+process.exitCode = failed > 0 ? 1 : 0;

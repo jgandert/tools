@@ -42,16 +42,29 @@ class BlockTraceDiff {
                 throw new TypeError(`${name} must be a boolean`);
             }
         }
+        // A configured engine can be reused, but its validated settings cannot
+        // be replaced with unchecked values between comparisons.
+        for (const name of ["kGramSize", "maxStitchGap", "maxOccurrences", "ignoreLeadingWhitespace", "ignoreTrailingWhitespace", "ignoreInternalWhitespace", "skipWhitespaceOps"]) {
+            Object.defineProperty(this, name, { writable: false, configurable: false });
+        }
         // maxOccurrences: 0 intentionally disables anchoring (Myers-only fallback).
         this.interner = new StringInterner();
         this.moveCounter = 0;
     }
 
     diff(sourceLines, targetLines) {
+        this._validateLines(sourceLines, "sourceLines");
+        this._validateLines(targetLines, "targetLines");
         this.moveCounter = 0;
         this.interner = new StringInterner();
         const src = this._normalizeAndIntern(sourceLines);
         const target = this._normalizeAndIntern(targetLines);
+
+        // Normalized equality needs neither anchors nor an edit graph. Preserve
+        // the two raw texts, including matched blanks and ignored formatting.
+        if (src.length === target.length && src.every((line, i) => line.intVal === target[i].intVal)) {
+            return src.map((line, i) => this._formatEqual(line, target[i]));
+        }
 
         const anchors = this._findAnchors(src, target);
         const candidates = this._seedAndExpand(anchors, src, target);
@@ -61,6 +74,15 @@ class BlockTraceDiff {
 
         const rawOps = this._fallbackDiffAndReassemble(src, target, moves, sourceLines, targetLines);
         return this._presentOperations(rawOps);
+    }
+
+    _validateLines(lines, name) {
+        if (!Array.isArray(lines)) throw new TypeError(`${name} must be an array of strings`);
+        for (let i = 0; i < lines.length; i++) {
+            if (!Object.hasOwn(lines, i) || typeof lines[i] !== "string") {
+                throw new TypeError(`${name}[${i}] must be a string`);
+            }
+        }
     }
 
     _presentOperations(ops, pairReplacements = true) {
@@ -95,8 +117,7 @@ class BlockTraceDiff {
                 visible.push(op);
             }
         }
-        const sortedOps = this._sortOperations(visible);
-        return pairReplacements ? this._identifyReplacements(sortedOps) : sortedOps;
+        return pairReplacements ? this._identifyReplacements(visible) : this._sortOperations(visible);
     }
 
     _normalizeAndIntern(lines) {
@@ -124,30 +145,30 @@ class BlockTraceDiff {
 
     _findAnchors(src, target) {
         if (this.maxOccurrences === 0 || src.length < this.kGramSize || target.length < this.kGramSize) return [];
-        const hashKGram = (arr, startIndex, k) => {
-            let hash = "";
-            for (let i = 0; i < k; i++) hash += arr[startIndex + i].intVal + ",";
-            return hash;
-        };
-
-        const buildMap = (arr) => {
+        const [srcKeys, targetKeys] = this._kGramKeys(src, target);
+        const buildMap = (keys, acceptedKeys) => {
             const map = new Map();
-            for (let i = 0; i <= arr.length - this.kGramSize; i++) {
-                const hash = hashKGram(arr, i, this.kGramSize);
-                if (!map.has(hash)) map.set(hash, []);
-                map.get(hash).push(i);
+            for (let i = 0; i < keys.length; i++) {
+                const key = keys[i];
+                if (acceptedKeys && !acceptedKeys.get(key)) continue;
+                const indices = map.get(key);
+                if (indices === undefined) {
+                    map.set(key, [i]);
+                } else if (indices !== null) {
+                    // Once an anchor is too common, discard its positions and
+                    // retain only the rejection marker, regardless of file size.
+                    if (indices.length === this.maxOccurrences) map.set(key, null);
+                    else indices.push(i);
+                }
             }
             return map;
         };
-
-        const srcMap = buildMap(src);
-        const targetMap = buildMap(target);
+        const srcMap = buildMap(srcKeys);
+        const targetMap = buildMap(targetKeys, srcMap);
         const anchors = [];
-
-        for (const [hash, srcIndices] of srcMap.entries()) {
-            const targetIndices = targetMap.get(hash);
-            // Bounded N:M matching handles duplicated blocks without combinatorial explosions
-            if (targetIndices && srcIndices.length <= this.maxOccurrences && targetIndices.length <= this.maxOccurrences) {
+        for (const [key, srcIndices] of srcMap) {
+            const targetIndices = targetMap.get(key);
+            if (srcIndices && targetIndices) {
                 for (const s of srcIndices) {
                     for (const t of targetIndices) {
                         anchors.push({ srcStart: s, targetStart: t });
@@ -156,6 +177,44 @@ class BlockTraceDiff {
             }
         }
         return anchors;
+    }
+
+    _kGramKeys(src, target) {
+        const k = this.kGramSize;
+        let sourceRanks = src.map(line => line.intVal);
+        let targetRanks = target.map(line => line.intVal);
+        if (k === 1) return [sourceRanks, targetRanks];
+
+        // Intern pairs of equal-length windows, doubling their span each pass.
+        // The final prefix/suffix windows may overlap; together they cover all
+        // k lines. Keys are exact identities, without probabilistic hash matches,
+        // and building long windows takes O((N + M) log k), not O((N + M) k).
+        let span = 1;
+        while (span * 2 < k) {
+            const pairs = new Map();
+            const rankPairs = ranks => {
+                const result = new Int32Array(ranks.length - span);
+                for (let i = 0; i < result.length; i++) {
+                    const pair = `${ranks[i]},${ranks[i + span]}`;
+                    let rank = pairs.get(pair);
+                    if (rank === undefined) {
+                        rank = pairs.size;
+                        pairs.set(pair, rank);
+                    }
+                    result[i] = rank;
+                }
+                return result;
+            };
+            sourceRanks = rankPairs(sourceRanks);
+            targetRanks = rankPairs(targetRanks);
+            span *= 2;
+        }
+        const keys = (ranks, length) => {
+            const result = new Array(length - k + 1);
+            for (let i = 0; i < result.length; i++) result[i] = `${ranks[i]},${ranks[i + k - span]}`;
+            return result;
+        };
+        return [keys(sourceRanks, src.length), keys(targetRanks, target.length)];
     }
 
     _seedAndExpand(anchors, src, target) {
@@ -219,7 +278,16 @@ class BlockTraceDiff {
             return Math.abs(a.srcStart - a.targetStart) - Math.abs(b.srcStart - b.targetStart);
         });
 
-        const claimedSrc = new Set(), claimedTarget = new Set(), finalMoves = [];
+        let sourceLength = 0, targetLength = 0;
+        for (const candidate of candidates) {
+            sourceLength = Math.max(sourceLength, candidate.srcEnd + 1);
+            targetLength = Math.max(targetLength, candidate.targetEnd + 1);
+        }
+        // Claiming dense line indices needs one byte per line, rather than a
+        // hash-set entry for every claimed position in both documents.
+        const claimedSrc = new Uint8Array(sourceLength);
+        const claimedTarget = new Uint8Array(targetLength);
+        const finalMoves = [];
 
         for (const cand of candidates) {
             let i = 0;
@@ -228,13 +296,13 @@ class BlockTraceDiff {
             const tStart = cand.targetStart;
 
             while (i < length) {
-                while (i < length && (claimedSrc.has(sStart + i) || claimedTarget.has(tStart + i))) {
+                while (i < length && (claimedSrc[sStart + i] || claimedTarget[tStart + i])) {
                     i++;
                 }
                 if (i >= length) break;
 
                 const segStart = i;
-                while (i < length && !claimedSrc.has(sStart + i) && !claimedTarget.has(tStart + i)) {
+                while (i < length && !claimedSrc[sStart + i] && !claimedTarget[tStart + i]) {
                     i++;
                 }
                 const segEnd = i - 1;
@@ -246,8 +314,8 @@ class BlockTraceDiff {
                     const matchedTargetStart = tStart + segStart;
                     const matchedTargetEnd = tStart + segEnd;
 
-                    for (let j = matchedSrcStart; j <= matchedSrcEnd; j++) claimedSrc.add(j);
-                    for (let j = matchedTargetStart; j <= matchedTargetEnd; j++) claimedTarget.add(j);
+                    claimedSrc.fill(1, matchedSrcStart, matchedSrcEnd + 1);
+                    claimedTarget.fill(1, matchedTargetStart, matchedTargetEnd + 1);
 
                     finalMoves.push({
                         srcStart: matchedSrcStart,
@@ -342,45 +410,42 @@ class BlockTraceDiff {
         const bySourceStart = new Map(moves.map(m => [m.srcStart, m]));
         const byTargetStart = new Map(moves.map(m => [m.targetStart, m]));
 
-        const srcRun = [], targetRun = [];
-        const buildRun = (arr, isSrc, runTarget) => {
+        const buildRun = (arr, isSrc) => {
+            if (moves.length === 0) return arr;
+            const run = [];
             const byStart = isSrc ? bySourceStart : byTargetStart;
             let i = 0;
             while (i < arr.length) {
                 const move = byStart.get(i);
                 if (move) {
-                    runTarget.push({ isToken: true, val: move.tokenVal, move });
+                    run.push({ isToken: true, val: move.tokenVal, move });
                     i = isSrc ? move.srcEnd + 1 : move.targetEnd + 1;
                 } else {
-                    runTarget.push({ isToken: false, val: arr[i].intVal, data: arr[i] });
+                    run.push(arr[i]);
                     i++;
                 }
             }
+            return run;
         };
-
-        buildRun(src, true, srcRun);
-        buildRun(target, false, targetRun);
+        const srcRun = buildRun(src, true);
+        const targetRun = buildRun(target, false);
 
         const stationary = this._selectStationaryMoves(moves);
         const targetPositions = new Map();
         targetRun.forEach((node, i) => {
             if (node.isToken) targetPositions.set(node.move.id, i);
         });
-        const srcVals = srcRun.map(node => node.val);
+        const srcVals = srcRun.map(node => node.isToken ? node.val : node.intVal);
         // Nonstationary tokens must produce both a deletion and an insertion.
         // Keep their target values disjoint from source tokens and interned lines.
-        const targetVals = targetRun.map(node => node.isToken && !stationary.has(node.move.id) ? node.val - moves.length : node.val);
+        const targetVals = targetRun.map(node => node.isToken
+            ? node.val - (stationary.has(node.move.id) ? 0 : moves.length)
+            : node.intVal);
         const myersScript = [];
         let srcStart = 0, targetStart = 0;
         const appendGap = (srcEnd, targetEnd) => {
-            const script = this._myersDiff(srcVals.slice(srcStart, srcEnd), targetVals.slice(targetStart, targetEnd));
-            for (const op of script) {
-                myersScript.push({
-                    type: op.type,
-                    srcIdx: op.srcIdx === null ? null : op.srcIdx + srcStart,
-                    targetIdx: op.targetIdx === null ? null : op.targetIdx + targetStart,
-                });
-            }
+            const script = this._myersDiff(srcVals, targetVals, srcStart, srcEnd, targetStart, targetEnd);
+            for (const op of script) myersScript.push(op);
         };
         for (let i = 0; i < srcRun.length; i++) {
             const node = srcRun[i];
@@ -395,50 +460,77 @@ class BlockTraceDiff {
         return this._buildFinalOutput(myersScript, srcRun, targetRun, rawSrc, rawTarget, src, target);
     }
 
-    _myersDiff(a, b) {
+    _myersDiff(a, b, aStart = 0, aEnd = a.length, bStart = 0, bEnd = b.length) {
         const script = [];
-        this._myersLinear(a, 0, a.length, b, 0, b.length, script);
+        this._myersLinear(a, aStart, aEnd, b, bStart, bEnd, script);
         return script;
     }
 
     _myersLinear(a, aStart, aEnd, b, bStart, bEnd, script) {
-        let N = aEnd - aStart;
-        let M = bEnd - bStart;
-
-        while (N > 0 && M > 0 && a[aStart] === b[bStart]) {
-            script.push({ type: "EQUAL", srcIdx: aStart, targetIdx: bStart });
-            aStart++;
-            bStart++;
-            N--;
-            M--;
-        }
-
-        let suffixLength = 0;
-        while (N > 0 && M > 0 && a[aStart + N - 1] === b[bStart + M - 1]) {
-            suffixLength++;
-            N--;
-            M--;
-        }
-        aEnd -= suffixLength;
-        bEnd -= suffixLength;
-
-        if (N === 0) {
-            for (let i = 0; i < M; i++) {
-                script.push({ type: "INSERT", srcIdx: null, targetIdx: bStart + i });
+        // An explicit stack avoids depending on the runtime's recursion limit.
+        // Suffix tasks keep the output in order while each split is processed.
+        const pending = [{ aStart, aEnd, bStart, bEnd }];
+        while (pending.length) {
+            const range = pending.pop();
+            ({ aStart, aEnd, bStart, bEnd } = range);
+            if (range.equalLength !== undefined) {
+                for (let i = 0; i < range.equalLength; i++) {
+                    script.push({ type: "EQUAL", srcIdx: aStart + i, targetIdx: bStart + i });
+                }
+                continue;
             }
-        } else if (M === 0) {
-            for (let i = 0; i < N; i++) {
-                script.push({ type: "DELETE", srcIdx: aStart + i, targetIdx: null });
+            while (aStart < aEnd && bStart < bEnd && a[aStart] === b[bStart]) {
+                script.push({ type: "EQUAL", srcIdx: aStart++, targetIdx: bStart++ });
             }
-        } else {
-            const split = this._findMiddleSnake(a, aStart, aEnd, b, bStart, bEnd);
-            this._myersLinear(a, aStart, aStart + split.x, b, bStart, bStart + split.y, script);
-            this._myersLinear(a, aStart + split.x, aEnd, b, bStart + split.y, bEnd, script);
-        }
+            let suffixLength = 0;
+            while (aStart < aEnd && bStart < bEnd && a[aEnd - 1] === b[bEnd - 1]) {
+                aEnd--;
+                bEnd--;
+                suffixLength++;
+            }
+            if (suffixLength) pending.push({ aStart: aEnd, bStart: bEnd, equalLength: suffixLength });
 
-        for (let i = 0; i < suffixLength; i++) {
-            script.push({ type: "EQUAL", srcIdx: aEnd + i, targetIdx: bEnd + i });
+            const N = aEnd - aStart, M = bEnd - bStart;
+            if (N === 0 || M === 0 || (N + M >= 128 && !this._haveCommonValues(a, aStart, aEnd, b, bStart, bEnd))) {
+                // Disjoint ranges have a known shortest script. In particular,
+                // unrelated large files should not search a quadratic edit graph.
+                for (let i = aStart; i < aEnd; i++) script.push({ type: "DELETE", srcIdx: i, targetIdx: null });
+                for (let i = bStart; i < bEnd; i++) script.push({ type: "INSERT", srcIdx: null, targetIdx: i });
+            } else if (N === 1) {
+                let match = bStart;
+                while (match < bEnd && a[aStart] !== b[match]) match++;
+                if (match === bEnd) script.push({ type: "DELETE", srcIdx: aStart, targetIdx: null });
+                for (let i = bStart; i < bEnd; i++) {
+                    script.push(i === match
+                        ? { type: "EQUAL", srcIdx: aStart, targetIdx: i }
+                        : { type: "INSERT", srcIdx: null, targetIdx: i });
+                }
+            } else if (M === 1) {
+                let match = aStart;
+                while (match < aEnd && a[match] !== b[bStart]) match++;
+                for (let i = aStart; i < aEnd; i++) {
+                    script.push(i === match
+                        ? { type: "EQUAL", srcIdx: i, targetIdx: bStart }
+                        : { type: "DELETE", srcIdx: i, targetIdx: null });
+                }
+                if (match === aEnd) script.push({ type: "INSERT", srcIdx: null, targetIdx: bStart });
+            } else {
+                const split = this._findMiddleSnake(a, aStart, aEnd, b, bStart, bEnd);
+                if ((split.x === 0 && split.y === 0) || (split.x === N && split.y === M)) {
+                    throw new Error("Myers split did not make progress");
+                }
+                pending.push({ aStart: aStart + split.x, aEnd, bStart: bStart + split.y, bEnd });
+                pending.push({ aStart, aEnd: aStart + split.x, bStart, bEnd: bStart + split.y });
+            }
         }
+    }
+
+    _haveCommonValues(a, aStart, aEnd, b, bStart, bEnd) {
+        if (aEnd - aStart > bEnd - bStart) return this._haveCommonValues(b, bStart, bEnd, a, aStart, aEnd);
+        const values = new Set();
+        for (let i = aStart; i < aEnd; i++) values.add(a[i]);
+        for (let i = bStart; i < bEnd; i++) if (values.has(b[i])) return true;
+        return false;
     }
 
     _findMiddleSnake(a, aStart, aEnd, b, bStart, bEnd) {
@@ -451,73 +543,70 @@ class BlockTraceDiff {
         const vf = new Int32Array(2 * max + 3);
         const vb = new Int32Array(2 * max + 3);
         const vOffset = max + 1;
-
+        vf.fill(-1);
+        vb.fill(N + 1);
         vf[vOffset] = 0;
         vb[vOffset] = N;
 
+        // Clipped bounds move one diagonal per layer, so each predecessor is
+        // from the previous layer or is an untouched sentinel. Valid predecessors
+        // are already in the grid: a step only needs to check its changed axis.
         for (let d = 1; d <= max; d++) {
-            for (let k = d; k >= -d; k -= 2) {
+            // A path cannot delete more than N or insert more than M values.
+            // Clipping those impossible diagonals is crucial for uneven inputs.
+            const forwardMin = Math.max(-d, d - 2 * M);
+            const forwardMax = Math.min(d, 2 * N - d);
+            for (let k = forwardMax; k >= forwardMin; k -= 2) {
                 const kc = k + vOffset;
-                let x_prev;
-                let y_prev;
-                if (k === -d || (k !== d && vf[kc - 1] < vf[kc + 1])) {
-                    x_prev = vf[kc + 1];
-                    y_prev = x_prev - (k + 1);
-                } else {
-                    x_prev = vf[kc - 1];
-                    y_prev = x_prev - (k - 1);
+                const down = vf[kc + 1], right = vf[kc - 1] + 1;
+                const canDown = down >= 0 && down - k <= M;
+                const canRight = right > 0 && right <= N;
+                if (!canDown && !canRight) {
+                    vf[kc] = -1;
+                    continue;
                 }
-
-                let px;
-                if (k === -d || (k !== d && vf[kc - 1] < vf[kc + 1])) {
-                    px = vf[kc + 1];
-                } else {
-                    px = vf[kc - 1] + 1;
-                }
-
-                let x = px;
+                const fromDown = canDown && (!canRight || down >= right);
+                const previousX = fromDown ? down : right - 1;
+                const previousY = previousX - (fromDown ? k + 1 : k - 1);
+                let x = fromDown ? down : right;
                 let y = x - k;
-
                 while (x < N && y < M && a[aStart + x] === b[bStart + y]) {
                     x++;
                     y++;
                 }
                 vf[kc] = x;
-
                 if (odd && k >= delta - (d - 1) && k <= delta + (d - 1)) {
-                    if (x >= vb[kc - delta]) {
-                        return { x: x_prev, y: y_prev };
-                    }
+                    if (x >= vb[kc - delta]) return { x: previousX, y: previousY };
                 }
             }
 
-            for (let k = d; k >= -d; k -= 2) {
+            const backwardMin = Math.max(-d, d - 2 * N);
+            const backwardMax = Math.min(d, 2 * M - d);
+            for (let k = backwardMax; k >= backwardMin; k -= 2) {
                 const kc = k + vOffset;
-                let midX;
-                if (k === d || (k !== -d && vb[kc - 1] < vb[kc + 1])) {
-                    midX = vb[kc - 1];
-                } else {
-                    midX = vb[kc + 1] - 1;
+                const diagonal = k + delta;
+                const up = vb[kc - 1], left = vb[kc + 1] - 1;
+                const canUp = up <= N && up - diagonal >= 0;
+                const canLeft = left < N && left >= 0;
+                if (!canUp && !canLeft) {
+                    vb[kc] = N + 1;
+                    continue;
                 }
-                let midY = midX - (k + delta);
-
+                const midX = canUp && (!canLeft || up <= left) ? up : left;
+                const midY = midX - diagonal;
                 let x = midX;
                 let y = midY;
-
                 while (x > 0 && y > 0 && a[aStart + x - 1] === b[bStart + y - 1]) {
                     x--;
                     y--;
                 }
                 vb[kc] = x;
-
-                if (!odd && (k + delta) >= -d && (k + delta) <= d) {
-                    if (x <= vf[kc + delta]) {
-                        return { x: midX, y: midY };
-                    }
+                if (!odd && diagonal >= -d && diagonal <= d) {
+                    if (x <= vf[kc + delta]) return { x: midX, y: midY };
                 }
             }
         }
-        return { x: 0, y: 0 };
+        throw new Error("Myers search could not find an overlap");
     }
 
     _formatEqual(src, target) {
@@ -550,7 +639,7 @@ class BlockTraceDiff {
                     }
                 } else {
                     const nTarget = targetRun[op.targetIdx];
-                    output.push(this._formatEqual(n.data, nTarget.data));
+                    output.push(this._formatEqual(n, nTarget));
                 }
             } else if (op.type === "DELETE") {
                 const n = srcRun[op.srcIdx];
@@ -559,8 +648,8 @@ class BlockTraceDiff {
                 } else {
                     output.push({
                         type: "DELETE",
-                        text: n.data.originalText,
-                        srcLine: n.data.originalIndex + 1,
+                        text: n.originalText,
+                        srcLine: n.originalIndex + 1,
                     });
                 }
             } else if (op.type === "INSERT") {
@@ -570,8 +659,8 @@ class BlockTraceDiff {
                 } else {
                     output.push({
                         type: "INSERT",
-                        text: n.data.originalText,
-                        targetLine: n.data.originalIndex + 1,
+                        text: n.originalText,
+                        targetLine: n.originalIndex + 1,
                     });
                 }
             }
@@ -643,19 +732,15 @@ class BlockTraceDiff {
                 result.push(ops[i]);
                 i++;
             } else {
-                const block = [];
-                while (i < n && ops[i].type !== "EQUAL") {
-                    block.push(ops[i]);
-                    i++;
+                const start = i;
+                while (i < n && ops[i].type !== "EQUAL") i++;
+                // Stable partition preserves each document's consuming order.
+                for (let j = start; j < i; j++) {
+                    if (ops[j].type === "DELETE" || ops[j].type === "MOVE_FROM") result.push(ops[j]);
                 }
-                block.sort((a, b) => {
-                    const aIsDel = a.type === "DELETE" || a.type === "MOVE_FROM";
-                    const bIsDel = b.type === "DELETE" || b.type === "MOVE_FROM";
-                    if (aIsDel && !bIsDel) return -1;
-                    if (!aIsDel && bIsDel) return 1;
-                    return 0;
-                });
-                for (const op of block) result.push(op);
+                for (let j = start; j < i; j++) {
+                    if (ops[j].type !== "DELETE" && ops[j].type !== "MOVE_FROM") result.push(ops[j]);
+                }
             }
         }
         return result;
@@ -672,16 +757,15 @@ class BlockTraceDiff {
                 i++;
                 continue;
             }
-            const block = [];
+            const source = [], target = [];
             while (i < n && ops[i].type !== "EQUAL") {
-                block.push(ops[i]);
-                i++;
+                const op = ops[i++];
+                if (op.type === "DELETE" || op.type === "MOVE_FROM") source.push(op);
+                else target.push(op);
             }
             // Keep each side's consuming operations in order. Moves can interrupt
             // replacement pairing, but must be emitted before any later line on
             // their own side; grouping all move operations at the end breaks this.
-            const source = block.filter(op => op.type === "DELETE" || op.type === "MOVE_FROM");
-            const target = block.filter(op => op.type === "INSERT" || op.type === "MOVE_TO");
             let s = 0, t = 0;
             while (s < source.length || t < target.length) {
                 if (s < source.length && source[s].type === "MOVE_FROM") {
