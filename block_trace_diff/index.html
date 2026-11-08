@@ -473,7 +473,10 @@ function calculateSalesTax(subtotal, region) {
             }
         }
 
-        summary.textContent = `[${label}] ${lineInfo}`;
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = label;
+        summary.append(tag, document.createTextNode(` ${lineInfo}`));
 
         const pre = document.createElement("pre");
         const code = document.createElement("code");
